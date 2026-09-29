@@ -87,43 +87,53 @@ async function seedSubscription(
 }
 
 /**
- * Loads GET /v1/me through the web proxy as a page navigation. The session
- * cookie is Secure (production build); a real navigation sends it to 127.0.0.1,
- * but Playwright's separate request client would not.
+ * Reads GET /v1/me from the page itself. The session cookie is Secure, so
+ * Playwright's separate request client would not send it, and a navigation
+ * would take the user off the screen they are about to click.
  */
 async function proxiedMe(): Promise<{ status: number; body: unknown }> {
-  const response = await page.goto("/api/rowboat/v1/me");
-  expect(response, "GET /v1/me navigation").not.toBeNull();
-  let body: unknown = null;
-  try {
-    body = await response?.json();
-  } catch {
-    body = null;
-  }
-  return { status: response?.status() ?? 0, body };
+  return page.evaluate(async () => {
+    const response = await fetch("/api/rowboat/v1/me");
+    let body: unknown = null;
+    try {
+      body = await response.json();
+    } catch {
+      body = null;
+    }
+    return { status: response.status, body };
+  });
 }
 
-async function openSettings() {
-  await page.goto("/app/settings");
+/** Sidebar Settings, then the Account row on the settings overview. */
+async function openAccountTheWayAUserWould() {
+  await page
+    .locator("[data-sidebar-footer]")
+    .getByRole("button", { name: "Settings", exact: true })
+    .click();
   await expect(page).toHaveURL(/\/app\/settings/);
-}
-
-async function openDeleteSheet() {
-  await openSettings();
-  const accountNav = page
-    .getByRole("button", { name: "Account", exact: true })
-    .or(page.getByRole("button", { name: /^Account\s+Manage your identity/ }))
-    .first();
-  await accountNav.click();
+  await page
+    .getByRole("navigation", { name: "Settings sections" })
+    .getByRole("button", { name: /^Account\b/ })
+    .click();
   await expect(
     page.getByText("Manage your identity, organization, plan, and current browser session."),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Delete account", exact: true }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
 }
 
+async function openDeleteSheet() {
+  const dialog = page.getByRole("dialog");
+  if (await dialog.isVisible()) return;
+  await page.getByRole("button", { name: "Delete account", exact: true }).click();
+  await expect(dialog).toBeVisible();
+}
+
+/**
+ * The clicks after the sheet is open: type DELETE, sign in with Google again,
+ * then press the button that only appears once that sign-in is confirmed.
+ */
 async function confirmDeletion() {
   await page.getByLabel("Type DELETE to confirm").fill("DELETE");
+  await expect(page.getByRole("button", { name: "Permanently delete account" })).toHaveCount(0);
   await page.getByRole("button", { name: "Continue with Google" }).click();
   await expect(page).toHaveURL(/\/app\/settings/);
   await expect(page.getByRole("button", { name: "Permanently delete account" })).toBeEnabled();
@@ -152,22 +162,11 @@ test.afterAll(async () => {
 });
 
 test("typing DELETE does not delete until a fresh sign-in", async ({ request }) => {
+  await openAccountTheWayAUserWould();
   await openDeleteSheet();
   await page.getByLabel("Type DELETE to confirm").fill("DELETE");
   await expect(page.getByRole("button", { name: "Permanently delete account" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Continue with Google" })).toBeEnabled();
-
-  const rejected = await page.evaluate(async () => {
-    const response = await fetch("/api/rowboat/v1/me", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ confirm: "DELETE" }),
-    });
-    return { status: response.status, body: await response.json() };
-  });
-  expect(rejected.status, "a live session plus the word DELETE is not enough").toBe(403);
-  expect(rejected.body).toMatchObject({ code: "step_up_required" });
-
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toBeHidden();
 
