@@ -11665,6 +11665,11 @@ export interface components {
       /** @description Source-backed company categories. */
       categories: string[];
       /**
+       * @description Commitments currently recorded on this relationship.
+       * @example 4
+       */
+      commitmentCount?: number;
+      /**
        * @description Source-backed company description.
        * @example Builds AI infrastructure for customer operations.
        */
@@ -11688,6 +11693,11 @@ export interface components {
        * @example Jordan Buyer
        */
       displayName: string;
+      /**
+       * @description Observed email threads currently attached to this relationship.
+       * @example 12
+       */
+      emailThreadCount?: number;
       /**
        * @description Direction of engagement.
        * @example declining
@@ -11761,6 +11771,11 @@ export interface components {
        * @example 1
        */
       openActions?: number;
+      /**
+       * @description Active people currently attached to this relationship.
+       * @example 3
+       */
+      peopleCount?: number;
       /**
        * @description Primary email address.
        * @example buyer@example.com

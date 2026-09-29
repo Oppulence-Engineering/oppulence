@@ -668,6 +668,10 @@ export const ListRelationshipIdentityCandidates200Response = zod
                 categories: zod
                   .array(zod.string().describe("Category."))
                   .describe("Source-backed company categories."),
+                commitmentCount: zod
+                  .int()
+                  .optional()
+                  .describe("Commitments currently recorded on this relationship."),
                 companyDescription: zod
                   .string()
                   .optional()
@@ -685,6 +689,10 @@ export const ListRelationshipIdentityCandidates200Response = zod
                   .optional()
                   .describe("Citation URLs keyed by enriched company field."),
                 displayName: zod.string().describe("Human display name."),
+                emailThreadCount: zod
+                  .int()
+                  .optional()
+                  .describe("Observed email threads currently attached to this relationship."),
                 engagement: zod
                   .enum(["unknown", "increasing", "steady", "declining", "dormant"])
                   .describe("Direction of engagement."),
@@ -731,6 +739,10 @@ export const ListRelationshipIdentityCandidates200Response = zod
                   .int()
                   .optional()
                   .describe("Open queue actions for this relationship."),
+                peopleCount: zod
+                  .int()
+                  .optional()
+                  .describe("Active people currently attached to this relationship."),
                 primaryEmail: zod.string().optional().describe("Primary email address."),
                 projectedAt: zod.iso
                   .datetime({ offset: true })
@@ -817,6 +829,10 @@ export const ListRelationshipIdentityCandidates200Response = zod
                 categories: zod
                   .array(zod.string().describe("Category."))
                   .describe("Source-backed company categories."),
+                commitmentCount: zod
+                  .int()
+                  .optional()
+                  .describe("Commitments currently recorded on this relationship."),
                 companyDescription: zod
                   .string()
                   .optional()
@@ -834,6 +850,10 @@ export const ListRelationshipIdentityCandidates200Response = zod
                   .optional()
                   .describe("Citation URLs keyed by enriched company field."),
                 displayName: zod.string().describe("Human display name."),
+                emailThreadCount: zod
+                  .int()
+                  .optional()
+                  .describe("Observed email threads currently attached to this relationship."),
                 engagement: zod
                   .enum(["unknown", "increasing", "steady", "declining", "dormant"])
                   .describe("Direction of engagement."),
@@ -880,6 +900,10 @@ export const ListRelationshipIdentityCandidates200Response = zod
                   .int()
                   .optional()
                   .describe("Open queue actions for this relationship."),
+                peopleCount: zod
+                  .int()
+                  .optional()
+                  .describe("Active people currently attached to this relationship."),
                 primaryEmail: zod.string().optional().describe("Primary email address."),
                 projectedAt: zod.iso
                   .datetime({ offset: true })
@@ -1018,6 +1042,10 @@ export const GetRelationshipIdentityCandidate200Response = zod
         categories: zod
           .array(zod.string().describe("Category."))
           .describe("Source-backed company categories."),
+        commitmentCount: zod
+          .int()
+          .optional()
+          .describe("Commitments currently recorded on this relationship."),
         companyDescription: zod.string().optional().describe("Source-backed company description."),
         companyEnrichedAt: zod.iso
           .datetime({ offset: true })
@@ -1032,6 +1060,10 @@ export const GetRelationshipIdentityCandidate200Response = zod
           .optional()
           .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
+        emailThreadCount: zod
+          .int()
+          .optional()
+          .describe("Observed email threads currently attached to this relationship."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
           .describe("Direction of engagement."),
@@ -1066,6 +1098,10 @@ export const GetRelationshipIdentityCandidate200Response = zod
         nextAction: zod.string().optional().describe("Recommended next action."),
         nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
         openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+        peopleCount: zod
+          .int()
+          .optional()
+          .describe("Active people currently attached to this relationship."),
         primaryEmail: zod.string().optional().describe("Primary email address."),
         projectedAt: zod.iso
           .datetime({ offset: true })
@@ -1148,6 +1184,10 @@ export const GetRelationshipIdentityCandidate200Response = zod
         categories: zod
           .array(zod.string().describe("Category."))
           .describe("Source-backed company categories."),
+        commitmentCount: zod
+          .int()
+          .optional()
+          .describe("Commitments currently recorded on this relationship."),
         companyDescription: zod.string().optional().describe("Source-backed company description."),
         companyEnrichedAt: zod.iso
           .datetime({ offset: true })
@@ -1162,6 +1202,10 @@ export const GetRelationshipIdentityCandidate200Response = zod
           .optional()
           .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
+        emailThreadCount: zod
+          .int()
+          .optional()
+          .describe("Observed email threads currently attached to this relationship."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
           .describe("Direction of engagement."),
@@ -1196,6 +1240,10 @@ export const GetRelationshipIdentityCandidate200Response = zod
         nextAction: zod.string().optional().describe("Recommended next action."),
         nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
         openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+        peopleCount: zod
+          .int()
+          .optional()
+          .describe("Active people currently attached to this relationship."),
         primaryEmail: zod.string().optional().describe("Primary email address."),
         projectedAt: zod.iso
           .datetime({ offset: true })
@@ -1339,6 +1387,10 @@ export const DecideRelationshipIdentityCandidate200Response = zod
         categories: zod
           .array(zod.string().describe("Category."))
           .describe("Source-backed company categories."),
+        commitmentCount: zod
+          .int()
+          .optional()
+          .describe("Commitments currently recorded on this relationship."),
         companyDescription: zod.string().optional().describe("Source-backed company description."),
         companyEnrichedAt: zod.iso
           .datetime({ offset: true })
@@ -1353,6 +1405,10 @@ export const DecideRelationshipIdentityCandidate200Response = zod
           .optional()
           .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
+        emailThreadCount: zod
+          .int()
+          .optional()
+          .describe("Observed email threads currently attached to this relationship."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
           .describe("Direction of engagement."),
@@ -1387,6 +1443,10 @@ export const DecideRelationshipIdentityCandidate200Response = zod
         nextAction: zod.string().optional().describe("Recommended next action."),
         nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
         openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+        peopleCount: zod
+          .int()
+          .optional()
+          .describe("Active people currently attached to this relationship."),
         primaryEmail: zod.string().optional().describe("Primary email address."),
         projectedAt: zod.iso
           .datetime({ offset: true })
@@ -1469,6 +1529,10 @@ export const DecideRelationshipIdentityCandidate200Response = zod
         categories: zod
           .array(zod.string().describe("Category."))
           .describe("Source-backed company categories."),
+        commitmentCount: zod
+          .int()
+          .optional()
+          .describe("Commitments currently recorded on this relationship."),
         companyDescription: zod.string().optional().describe("Source-backed company description."),
         companyEnrichedAt: zod.iso
           .datetime({ offset: true })
@@ -1483,6 +1547,10 @@ export const DecideRelationshipIdentityCandidate200Response = zod
           .optional()
           .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
+        emailThreadCount: zod
+          .int()
+          .optional()
+          .describe("Observed email threads currently attached to this relationship."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
           .describe("Direction of engagement."),
@@ -1517,6 +1585,10 @@ export const DecideRelationshipIdentityCandidate200Response = zod
         nextAction: zod.string().optional().describe("Recommended next action."),
         nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
         openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+        peopleCount: zod
+          .int()
+          .optional()
+          .describe("Active people currently attached to this relationship."),
         primaryEmail: zod.string().optional().describe("Primary email address."),
         projectedAt: zod.iso
           .datetime({ offset: true })
@@ -2902,6 +2974,10 @@ export const ListRelationships200Response = zod
             categories: zod
               .array(zod.string().describe("Category."))
               .describe("Source-backed company categories."),
+            commitmentCount: zod
+              .int()
+              .optional()
+              .describe("Commitments currently recorded on this relationship."),
             companyDescription: zod
               .string()
               .optional()
@@ -2919,6 +2995,10 @@ export const ListRelationships200Response = zod
               .optional()
               .describe("Citation URLs keyed by enriched company field."),
             displayName: zod.string().describe("Human display name."),
+            emailThreadCount: zod
+              .int()
+              .optional()
+              .describe("Observed email threads currently attached to this relationship."),
             engagement: zod
               .enum(["unknown", "increasing", "steady", "declining", "dormant"])
               .describe("Direction of engagement."),
@@ -2959,6 +3039,10 @@ export const ListRelationships200Response = zod
               .nullish()
               .describe("Next planned action."),
             openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+            peopleCount: zod
+              .int()
+              .optional()
+              .describe("Active people currently attached to this relationship."),
             primaryEmail: zod.string().optional().describe("Primary email address."),
             projectedAt: zod.iso
               .datetime({ offset: true })
@@ -3036,6 +3120,10 @@ export const CreateRelationship201Response = zod
     categories: zod
       .array(zod.string().describe("Category."))
       .describe("Source-backed company categories."),
+    commitmentCount: zod
+      .int()
+      .optional()
+      .describe("Commitments currently recorded on this relationship."),
     companyDescription: zod.string().optional().describe("Source-backed company description."),
     companyEnrichedAt: zod.iso
       .datetime({ offset: true })
@@ -3050,6 +3138,10 @@ export const CreateRelationship201Response = zod
       .optional()
       .describe("Citation URLs keyed by enriched company field."),
     displayName: zod.string().describe("Human display name."),
+    emailThreadCount: zod
+      .int()
+      .optional()
+      .describe("Observed email threads currently attached to this relationship."),
     engagement: zod
       .enum(["unknown", "increasing", "steady", "declining", "dormant"])
       .describe("Direction of engagement."),
@@ -3084,6 +3176,10 @@ export const CreateRelationship201Response = zod
     nextAction: zod.string().optional().describe("Recommended next action."),
     nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
     openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+    peopleCount: zod
+      .int()
+      .optional()
+      .describe("Active people currently attached to this relationship."),
     primaryEmail: zod.string().optional().describe("Primary email address."),
     projectedAt: zod.iso
       .datetime({ offset: true })
@@ -4127,6 +4223,10 @@ export const GetRelationship200Response = zod
         categories: zod
           .array(zod.string().describe("Category."))
           .describe("Source-backed company categories."),
+        commitmentCount: zod
+          .int()
+          .optional()
+          .describe("Commitments currently recorded on this relationship."),
         companyDescription: zod.string().optional().describe("Source-backed company description."),
         companyEnrichedAt: zod.iso
           .datetime({ offset: true })
@@ -4141,6 +4241,10 @@ export const GetRelationship200Response = zod
           .optional()
           .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
+        emailThreadCount: zod
+          .int()
+          .optional()
+          .describe("Observed email threads currently attached to this relationship."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
           .describe("Direction of engagement."),
@@ -4175,6 +4279,10 @@ export const GetRelationship200Response = zod
         nextAction: zod.string().optional().describe("Recommended next action."),
         nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
         openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+        peopleCount: zod
+          .int()
+          .optional()
+          .describe("Active people currently attached to this relationship."),
         primaryEmail: zod.string().optional().describe("Primary email address."),
         projectedAt: zod.iso
           .datetime({ offset: true })
@@ -4348,6 +4456,10 @@ export const RetractRelationshipAssertion200Response = zod
     categories: zod
       .array(zod.string().describe("Category."))
       .describe("Source-backed company categories."),
+    commitmentCount: zod
+      .int()
+      .optional()
+      .describe("Commitments currently recorded on this relationship."),
     companyDescription: zod.string().optional().describe("Source-backed company description."),
     companyEnrichedAt: zod.iso
       .datetime({ offset: true })
@@ -4362,6 +4474,10 @@ export const RetractRelationshipAssertion200Response = zod
       .optional()
       .describe("Citation URLs keyed by enriched company field."),
     displayName: zod.string().describe("Human display name."),
+    emailThreadCount: zod
+      .int()
+      .optional()
+      .describe("Observed email threads currently attached to this relationship."),
     engagement: zod
       .enum(["unknown", "increasing", "steady", "declining", "dormant"])
       .describe("Direction of engagement."),
@@ -4396,6 +4512,10 @@ export const RetractRelationshipAssertion200Response = zod
     nextAction: zod.string().optional().describe("Recommended next action."),
     nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
     openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+    peopleCount: zod
+      .int()
+      .optional()
+      .describe("Active people currently attached to this relationship."),
     primaryEmail: zod.string().optional().describe("Primary email address."),
     projectedAt: zod.iso
       .datetime({ offset: true })
@@ -5361,6 +5481,10 @@ export const CorrectConversationEvidence201Response = zod
         categories: zod
           .array(zod.string().describe("Category."))
           .describe("Source-backed company categories."),
+        commitmentCount: zod
+          .int()
+          .optional()
+          .describe("Commitments currently recorded on this relationship."),
         companyDescription: zod.string().optional().describe("Source-backed company description."),
         companyEnrichedAt: zod.iso
           .datetime({ offset: true })
@@ -5375,6 +5499,10 @@ export const CorrectConversationEvidence201Response = zod
           .optional()
           .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
+        emailThreadCount: zod
+          .int()
+          .optional()
+          .describe("Observed email threads currently attached to this relationship."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
           .describe("Direction of engagement."),
@@ -5409,6 +5537,10 @@ export const CorrectConversationEvidence201Response = zod
         nextAction: zod.string().optional().describe("Recommended next action."),
         nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
         openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+        peopleCount: zod
+          .int()
+          .optional()
+          .describe("Active people currently attached to this relationship."),
         primaryEmail: zod.string().optional().describe("Primary email address."),
         projectedAt: zod.iso
           .datetime({ offset: true })
@@ -5743,6 +5875,10 @@ export const DecideConversationChange201Response = zod
         categories: zod
           .array(zod.string().describe("Category."))
           .describe("Source-backed company categories."),
+        commitmentCount: zod
+          .int()
+          .optional()
+          .describe("Commitments currently recorded on this relationship."),
         companyDescription: zod.string().optional().describe("Source-backed company description."),
         companyEnrichedAt: zod.iso
           .datetime({ offset: true })
@@ -5757,6 +5893,10 @@ export const DecideConversationChange201Response = zod
           .optional()
           .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
+        emailThreadCount: zod
+          .int()
+          .optional()
+          .describe("Observed email threads currently attached to this relationship."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
           .describe("Direction of engagement."),
@@ -5791,6 +5931,10 @@ export const DecideConversationChange201Response = zod
         nextAction: zod.string().optional().describe("Recommended next action."),
         nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
         openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+        peopleCount: zod
+          .int()
+          .optional()
+          .describe("Active people currently attached to this relationship."),
         primaryEmail: zod.string().optional().describe("Primary email address."),
         projectedAt: zod.iso
           .datetime({ offset: true })
@@ -6159,6 +6303,10 @@ export const CorrectRelationship201Response = zod
     categories: zod
       .array(zod.string().describe("Category."))
       .describe("Source-backed company categories."),
+    commitmentCount: zod
+      .int()
+      .optional()
+      .describe("Commitments currently recorded on this relationship."),
     companyDescription: zod.string().optional().describe("Source-backed company description."),
     companyEnrichedAt: zod.iso
       .datetime({ offset: true })
@@ -6173,6 +6321,10 @@ export const CorrectRelationship201Response = zod
       .optional()
       .describe("Citation URLs keyed by enriched company field."),
     displayName: zod.string().describe("Human display name."),
+    emailThreadCount: zod
+      .int()
+      .optional()
+      .describe("Observed email threads currently attached to this relationship."),
     engagement: zod
       .enum(["unknown", "increasing", "steady", "declining", "dormant"])
       .describe("Direction of engagement."),
@@ -6207,6 +6359,10 @@ export const CorrectRelationship201Response = zod
     nextAction: zod.string().optional().describe("Recommended next action."),
     nextActionAt: zod.iso.datetime({ offset: true }).nullish().describe("Next planned action."),
     openActions: zod.int().optional().describe("Open queue actions for this relationship."),
+    peopleCount: zod
+      .int()
+      .optional()
+      .describe("Active people currently attached to this relationship."),
     primaryEmail: zod.string().optional().describe("Primary email address."),
     projectedAt: zod.iso
       .datetime({ offset: true })

@@ -462,6 +462,7 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           { length: faker.number.int({ min: 1, max: 10 }) },
           (_, i) => i + 1,
         ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+        commitmentCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
         companyDescription: faker.helpers.arrayElement([
           faker.string.alpha({ length: { min: 10, max: 20 } }),
           undefined,
@@ -473,6 +474,7 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
         companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
         companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
         displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        emailThreadCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
         engagement: faker.helpers.arrayElement([
           "unknown",
           "increasing",
@@ -530,6 +532,7 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           undefined,
         ]),
         openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
+        peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
         primaryEmail: faker.helpers.arrayElement([
           faker.string.alpha({ length: { min: 10, max: 20 } }),
           undefined,
@@ -622,6 +625,7 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           { length: faker.number.int({ min: 1, max: 10 }) },
           (_, i) => i + 1,
         ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+        commitmentCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
         companyDescription: faker.helpers.arrayElement([
           faker.string.alpha({ length: { min: 10, max: 20 } }),
           undefined,
@@ -633,6 +637,7 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
         companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
         companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
         displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        emailThreadCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
         engagement: faker.helpers.arrayElement([
           "unknown",
           "increasing",
@@ -690,6 +695,7 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           undefined,
         ]),
         openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
+        peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
         primaryEmail: faker.helpers.arrayElement([
           faker.string.alpha({ length: { min: 10, max: 20 } }),
           undefined,
@@ -814,6 +820,7 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
     categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
       () => faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
+    commitmentCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     companyDescription: faker.helpers.arrayElement([
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
@@ -825,6 +832,7 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
     companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    emailThreadCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     engagement: faker.helpers.arrayElement([
       "unknown",
       "increasing",
@@ -881,6 +889,7 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     primaryEmail: faker.helpers.arrayElement([
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
@@ -967,6 +976,7 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
     categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
       () => faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
+    commitmentCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     companyDescription: faker.helpers.arrayElement([
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
@@ -978,6 +988,7 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
     companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    emailThreadCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     engagement: faker.helpers.arrayElement([
       "unknown",
       "increasing",
@@ -1034,6 +1045,7 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     primaryEmail: faker.helpers.arrayElement([
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
@@ -1151,6 +1163,7 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
     categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
       () => faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
+    commitmentCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     companyDescription: faker.helpers.arrayElement([
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
@@ -1162,6 +1175,7 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
     companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    emailThreadCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     engagement: faker.helpers.arrayElement([
       "unknown",
       "increasing",
@@ -1218,6 +1232,7 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     primaryEmail: faker.helpers.arrayElement([
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
@@ -1304,6 +1319,7 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
     categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
       () => faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
+    commitmentCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     companyDescription: faker.helpers.arrayElement([
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
@@ -1315,6 +1331,7 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
     companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    emailThreadCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     engagement: faker.helpers.arrayElement([
       "unknown",
       "increasing",
@@ -1371,6 +1388,7 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     primaryEmail: faker.helpers.arrayElement([
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
@@ -2347,6 +2365,7 @@ export const getListRelationshipsResponseMock = (
         { length: faker.number.int({ min: 1, max: 10 }) },
         (_, i) => i + 1,
       ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+      commitmentCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
       companyDescription: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
@@ -2358,6 +2377,7 @@ export const getListRelationshipsResponseMock = (
       companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
       companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
       displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      emailThreadCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
       engagement: faker.helpers.arrayElement([
         "unknown",
         "increasing",
@@ -2415,6 +2435,7 @@ export const getListRelationshipsResponseMock = (
         undefined,
       ]),
       openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
+      peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
       primaryEmail: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
@@ -2462,6 +2483,7 @@ export const getCreateRelationshipResponseMock = (
   categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => faker.string.alpha({ length: { min: 10, max: 20 } }),
   ),
+  commitmentCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
   companyDescription: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
@@ -2473,6 +2495,7 @@ export const getCreateRelationshipResponseMock = (
   companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
   companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
   displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  emailThreadCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
   engagement: faker.helpers.arrayElement([
     "unknown",
     "increasing",
@@ -2529,6 +2552,7 @@ export const getCreateRelationshipResponseMock = (
     undefined,
   ]),
   openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
+  peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
   primaryEmail: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
@@ -3473,6 +3497,7 @@ export const getGetRelationshipResponseMock = (
         { length: faker.number.int({ min: 1, max: 10 }) },
         (_, i) => i + 1,
       ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+      commitmentCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
       companyDescription: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
@@ -3484,6 +3509,7 @@ export const getGetRelationshipResponseMock = (
       companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
       companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
       displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      emailThreadCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
       engagement: faker.helpers.arrayElement([
         "unknown",
         "increasing",
@@ -3541,6 +3567,7 @@ export const getGetRelationshipResponseMock = (
         undefined,
       ]),
       openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
+      peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
       primaryEmail: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
@@ -3598,6 +3625,7 @@ export const getRetractRelationshipAssertionResponseMock = (
   categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => faker.string.alpha({ length: { min: 10, max: 20 } }),
   ),
+  commitmentCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
   companyDescription: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
@@ -3609,6 +3637,7 @@ export const getRetractRelationshipAssertionResponseMock = (
   companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
   companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
   displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  emailThreadCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
   engagement: faker.helpers.arrayElement([
     "unknown",
     "increasing",
@@ -3665,6 +3694,7 @@ export const getRetractRelationshipAssertionResponseMock = (
     undefined,
   ]),
   openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
+  peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
   primaryEmail: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
@@ -4158,6 +4188,7 @@ export const getCorrectConversationEvidenceResponseMock = (
     categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
       () => faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
+    commitmentCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     companyDescription: faker.helpers.arrayElement([
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
@@ -4169,6 +4200,7 @@ export const getCorrectConversationEvidenceResponseMock = (
     companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    emailThreadCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     engagement: faker.helpers.arrayElement([
       "unknown",
       "increasing",
@@ -4225,6 +4257,7 @@ export const getCorrectConversationEvidenceResponseMock = (
       undefined,
     ]),
     openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     primaryEmail: faker.helpers.arrayElement([
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
@@ -4467,6 +4500,7 @@ export const getDecideConversationChangeResponseMock = (
     categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
       () => faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
+    commitmentCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     companyDescription: faker.helpers.arrayElement([
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
@@ -4478,6 +4512,7 @@ export const getDecideConversationChangeResponseMock = (
     companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    emailThreadCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     engagement: faker.helpers.arrayElement([
       "unknown",
       "increasing",
@@ -4534,6 +4569,7 @@ export const getDecideConversationChangeResponseMock = (
       undefined,
     ]),
     openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
     primaryEmail: faker.helpers.arrayElement([
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
@@ -4627,6 +4663,7 @@ export const getCorrectRelationshipResponseMock = (
   categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => faker.string.alpha({ length: { min: 10, max: 20 } }),
   ),
+  commitmentCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
   companyDescription: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
@@ -4638,6 +4675,7 @@ export const getCorrectRelationshipResponseMock = (
   companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
   companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
   displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  emailThreadCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
   engagement: faker.helpers.arrayElement([
     "unknown",
     "increasing",
@@ -4694,6 +4732,7 @@ export const getCorrectRelationshipResponseMock = (
     undefined,
   ]),
   openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
+  peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
   primaryEmail: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,

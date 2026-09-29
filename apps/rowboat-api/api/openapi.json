@@ -13222,6 +13222,11 @@
             },
             "type": "array"
           },
+          "commitmentCount": {
+            "description": "Commitments currently recorded on this relationship.",
+            "example": 4,
+            "type": "integer"
+          },
           "companyDescription": {
             "description": "Source-backed company description.",
             "example": "Builds AI infrastructure for customer operations.",
@@ -13248,6 +13253,11 @@
             "description": "Human display name.",
             "example": "Jordan Buyer",
             "type": "string"
+          },
+          "emailThreadCount": {
+            "description": "Observed email threads currently attached to this relationship.",
+            "example": 12,
+            "type": "integer"
           },
           "engagement": {
             "description": "Direction of engagement.",
@@ -13331,6 +13341,11 @@
           "openActions": {
             "description": "Open queue actions for this relationship.",
             "example": 1,
+            "type": "integer"
+          },
+          "peopleCount": {
+            "description": "Active people currently attached to this relationship.",
+            "example": 3,
             "type": "integer"
           },
           "primaryEmail": {
