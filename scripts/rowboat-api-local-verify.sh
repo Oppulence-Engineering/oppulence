@@ -63,7 +63,11 @@ kill_wait() {
 }
 
 stop_built() {
-  local name="$1" pidfile="$WORK/${name}.pid" pid exe
+  local name="$1"
+  # ${name} cannot share the local declaration above: bash expands the
+  # right-hand side before the assignment, and set -u then aborts.
+  local pidfile="$WORK/${name}.pid"
+  local pid exe
   if [[ -f "$pidfile" ]]; then
     pid="$(cat "$pidfile" 2>/dev/null || true)"
     kill_wait "$pid"
