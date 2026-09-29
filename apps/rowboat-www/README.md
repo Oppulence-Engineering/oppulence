@@ -50,6 +50,8 @@ npm run dev:local   # same ports without the preflight (see scripts/dev-local.sh
 
 Both point at rowboat-api on `18080`. Start the API with `docker compose -f
 docker-compose.rowboat-api.yml up -d` or `make api-up` from the repo root.
+The compose stack includes Temporal and the worker. Assistant chat calls
+OpenRouter, so the root `.env` needs `OPENROUTER_API_KEY`.
 
 ### Developer tooling (dev only)
 
