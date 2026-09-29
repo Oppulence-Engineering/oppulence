@@ -5,14 +5,17 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { AccountDeletionRequestConfirm } from "./accountDeletionRequestConfirm";
 
 /**
- * Request body for DELETE /v1/me. confirm is intent. stepUpToken is the fresh authentication proof.
+ * A short-lived deletion challenge. The response never includes the email code or the step-up token.
  */
-export interface AccountDeletionRequest {
-  /** Must be the literal value DELETE. */
-  confirm: AccountDeletionRequestConfirm;
-  /** Single-use proof from POST /v1/me/deletion-challenges/{id}/verify. Typing DELETE does not satisfy this. */
-  stepUpToken: string;
+export interface AccountDeletionChallenge {
+  /** Challenge to verify. */
+  challengeId: string;
+  /** RFC3339 expiry. */
+  expiresAt: string;
+  /** oauth_reauth or email_otp. */
+  method: string;
+  /** When true, only a re-authentication that asserted MFA can verify the challenge. */
+  mfaRequired: boolean;
 }

@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 
-import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { expect, test, type APIRequestContext, type BrowserContext, type Page } from "@playwright/test";
 import { z } from "zod";
 
 /**
@@ -9,9 +9,9 @@ import { z } from "zod";
  * Account sheet, rowboat-api DELETE /v1/me, PostgreSQL, and the devstack
  * Stripe and WorkOS mocks. Run by scripts/account-deletion-e2e.sh.
  *
- * The suite signs in once and keeps one page, like a user who cancels, meets a
- * refusal, and then deletes the account. One sign-in also keeps the suite under
- * the API's per-client sign-in rate limit.
+ * The suite onboards once through Sign up and keeps one page, like a user who
+ * cancels, meets a refusal, and then deletes the account. One sign-in also
+ * keeps the suite under the API's per-client sign-in rate limit.
  */
 
 const devstackURL = process.env.STACK_DEVSTACK_URL ?? "http://127.0.0.1:8090";
@@ -32,6 +32,7 @@ const MeSchema = z.object({
 
 test.describe.configure({ mode: "serial" });
 
+let context: BrowserContext;
 let page: Page;
 let userID: string;
 
@@ -87,64 +88,90 @@ async function seedSubscription(
 }
 
 /**
- * Loads GET /v1/me through the web proxy as a page navigation. The session
- * cookie is Secure (production build); a real navigation sends it to 127.0.0.1,
- * but Playwright's separate request client would not.
+ * Reads GET /v1/me from the page itself. The session cookie is Secure, so
+ * Playwright's separate request client would not send it, and a navigation
+ * would take the user off the screen they are about to click.
  */
 async function proxiedMe(): Promise<{ status: number; body: unknown }> {
-  const response = await page.goto("/api/rowboat/v1/me");
-  expect(response, "GET /v1/me navigation").not.toBeNull();
-  let body: unknown = null;
-  try {
-    body = await response?.json();
-  } catch {
-    body = null;
-  }
-  return { status: response?.status() ?? 0, body };
+  return page.evaluate(async () => {
+    const response = await fetch("/api/rowboat/v1/me");
+    let body: unknown = null;
+    try {
+      body = await response.json();
+    } catch {
+      body = null;
+    }
+    return { status: response.status, body };
+  });
 }
 
-async function openSettings() {
-  await page.goto("/app/settings");
+/** Sidebar Settings, then the Account row on the settings overview. */
+async function openAccountTheWayAUserWould() {
+  await page
+    .locator("[data-sidebar-footer]")
+    .getByRole("button", { name: "Settings", exact: true })
+    .click();
   await expect(page).toHaveURL(/\/app\/settings/);
-}
-
-async function openDeleteSheet() {
-  await openSettings();
-  const accountNav = page
-    .getByRole("button", { name: "Account", exact: true })
-    .or(page.getByRole("button", { name: /^Account\s+Manage your identity/ }))
-    .first();
-  await accountNav.click();
+  await page
+    .getByRole("navigation", { name: "Settings sections" })
+    .getByRole("button", { name: /^Account\b/ })
+    .click();
   await expect(
     page.getByText("Manage your identity, organization, plan, and current browser session."),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Delete account", exact: true }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
 }
 
+async function openDeleteSheet() {
+  const dialog = page.getByRole("dialog");
+  if (await dialog.isVisible()) return;
+  await page.getByRole("button", { name: "Delete account", exact: true }).click();
+  await expect(dialog).toBeVisible();
+}
+
+/**
+ * The clicks after the sheet is open. Typing DELETE enables one button.
+ * That button sends the user through Google, and the account is deleted
+ * when they come back — there is no second confirmation.
+ */
 async function confirmDeletion() {
   await page.getByLabel("Type DELETE to confirm").fill("DELETE");
   await page.getByRole("button", { name: "Permanently delete account" }).click();
+  await expect(
+    page.getByText("Your account is deleted").or(page.getByRole("alert")),
+  ).toBeVisible();
 }
 
 test.beforeAll(async ({ browser }, testInfo) => {
   expect(fixtureSecret, "DEVSTACK_FIXTURE_SECRET is required").not.toBe("");
   expect(databaseURL, "DATABASE_URL is required").not.toBe("");
-  page = await browser.newPage({ baseURL: testInfo.project.use.baseURL });
-  await page.goto(`/api/auth/workos/login?return_to=${encodeURIComponent("/app/settings")}`);
-  await expect(page).toHaveURL(/\/app\/settings/);
+  context = await browser.newContext({
+    baseURL: testInfo.project.use.baseURL,
+    recordVideo: { dir: testInfo.outputDir, size: { width: 1280, height: 720 } },
+  });
+  page = await context.newPage();
+  await page.goto("/sign-up");
+  await page.getByRole("link", { name: "Continue with Google" }).click();
+  await expect(page).toHaveURL(/\/app\/?$/);
   const me = await proxiedMe();
   expect(me.status, "GET /v1/me through the web proxy").toBe(200);
   userID = MeSchema.parse(me.body).user.id;
+  expect(userCount(userID), "the first sign-in creates the account").toBe(1);
+  // Sign-in spends two auth-broker requests (login URL and code exchange).
+  // Each deletion re-auth spends two more, and the broker allows five per
+  // ten seconds. Let this sign-in age out so the two re-auths below fit.
+  await page.waitForTimeout(10_000);
 });
 
 test.afterAll(async () => {
-  await page?.close();
+  await context?.close();
 });
 
-test("closing the confirmation sends nothing and keeps the account", async ({ request }) => {
+test("typing DELETE does not delete until a fresh sign-in", async ({ request }) => {
+  await openAccountTheWayAUserWould();
   await openDeleteSheet();
   await page.getByLabel("Type DELETE to confirm").fill("DELETE");
+  await expect(page.getByRole("button", { name: "Permanently delete account" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Email me a code instead" })).toBeEnabled();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toBeHidden();
 

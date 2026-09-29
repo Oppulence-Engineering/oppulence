@@ -12,6 +12,8 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// AccountDeletionChallenge is the client for interacting with the AccountDeletionChallenge builders.
+	AccountDeletionChallenge *AccountDeletionChallengeClient
 	// ActionOutcome is the client for interacting with the ActionOutcome builders.
 	ActionOutcome *ActionOutcomeClient
 	// ActionProposal is the client for interacting with the ActionProposal builders.
@@ -321,6 +323,7 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.AccountDeletionChallenge = NewAccountDeletionChallengeClient(tx.config)
 	tx.ActionOutcome = NewActionOutcomeClient(tx.config)
 	tx.ActionProposal = NewActionProposalClient(tx.config)
 	tx.AgentApproval = NewAgentApprovalClient(tx.config)
@@ -419,7 +422,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: ActionOutcome.QueryXXX(), the query will be executed
+// applies a query, for example: AccountDeletionChallenge.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

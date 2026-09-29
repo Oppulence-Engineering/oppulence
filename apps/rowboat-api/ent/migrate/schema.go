@@ -9,6 +9,51 @@ import (
 )
 
 var (
+	// AccountDeletionChallengesColumns holds the columns for the "account_deletion_challenges" table.
+	AccountDeletionChallengesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "method", Type: field.TypeString},
+		{Name: "baseline_auth_time", Type: field.TypeInt64, Default: 0},
+		{Name: "mfa_required", Type: field.TypeBool, Default: false},
+		{Name: "code_hash", Type: field.TypeString, Nullable: true},
+		{Name: "token_hash", Type: field.TypeString, Nullable: true},
+		{Name: "attempts", Type: field.TypeInt, Default: 0},
+		{Name: "expires_at", Type: field.TypeTime},
+		{Name: "verified_at", Type: field.TypeTime, Nullable: true},
+		{Name: "consumed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "user_account_deletion_challenges", Type: field.TypeUUID},
+	}
+	// AccountDeletionChallengesTable holds the schema information for the "account_deletion_challenges" table.
+	AccountDeletionChallengesTable = &schema.Table{
+		Name:       "account_deletion_challenges",
+		Columns:    AccountDeletionChallengesColumns,
+		PrimaryKey: []*schema.Column{AccountDeletionChallengesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "account_deletion_challenges_users_account_deletion_challenges",
+				Columns:    []*schema.Column{AccountDeletionChallengesColumns[12]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "accountdeletionchallenge_expires_at",
+				Unique:  false,
+				Columns: []*schema.Column{AccountDeletionChallengesColumns[9]},
+			},
+			{
+				Name:    "accountdeletionchallenge_token_hash",
+				Unique:  true,
+				Columns: []*schema.Column{AccountDeletionChallengesColumns[7]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "token_hash IS NOT NULL",
+				},
+			},
+		},
+	}
 	// ActionOutcomesColumns holds the columns for the "action_outcomes" table.
 	ActionOutcomesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -4561,6 +4606,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AccountDeletionChallengesTable,
 		ActionOutcomesTable,
 		ActionProposalsTable,
 		AgentApprovalsTable,
@@ -4657,6 +4703,7 @@ var (
 )
 
 func init() {
+	AccountDeletionChallengesTable.ForeignKeys[0].RefTable = UsersTable
 	ActionOutcomesTable.ForeignKeys[0].RefTable = RevenueActionsTable
 	ActionOutcomesTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
 	ActionOutcomesTable.ForeignKeys[2].RefTable = UsersTable

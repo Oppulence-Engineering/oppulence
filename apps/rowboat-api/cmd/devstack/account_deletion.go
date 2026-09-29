@@ -11,6 +11,9 @@ package main
 //	GET    /v1/subscriptions/{id}
 //	DELETE /v1/subscriptions/{id}
 //	DELETE /user_management/users/{id}
+//	GET    /user_management/users/{id}/auth_factors
+//	GET    /user_management/users/{id}/sessions
+//	POST   /user_management/sessions/revoke
 //
 // Fixture routes exist only when DEVSTACK_FIXTURE_SECRET is set, and each
 // request must send that secret in the X-Devstack-Fixture-Secret header:
@@ -45,6 +48,7 @@ type accountDeletionMocks struct {
 	cancelFailures     map[string]int
 	cancelled          []string
 	deletedWorkOSUsers []string
+	revokedSessions    []string
 }
 
 func newAccountDeletionMocks() *accountDeletionMocks {
@@ -56,6 +60,9 @@ func registerAccountDeletionMocks(mux *http.ServeMux, mocks *accountDeletionMock
 	mux.HandleFunc("GET /v1/subscriptions/{id}", mocks.getSubscription)
 	mux.HandleFunc("DELETE /v1/subscriptions/{id}", mocks.cancelSubscription)
 	mux.HandleFunc("DELETE /user_management/users/{id}", mocks.deleteWorkOSUser)
+	mux.HandleFunc("GET /user_management/users/{id}/auth_factors", mocks.listAuthFactors)
+	mux.HandleFunc("GET /user_management/users/{id}/sessions", mocks.listSessions)
+	mux.HandleFunc("POST /user_management/sessions/revoke", mocks.revokeSession)
 	if fixtureSecret == "" {
 		return
 	}
@@ -164,6 +171,45 @@ func (m *accountDeletionMocks) deleteWorkOSUser(w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// listAuthFactors reports no enrolled factors. Devstack accounts can use
+// either OAuth re-authentication or email OTP. A missing route would make
+// deletion fail closed with 503.
+func (m *accountDeletionMocks) listAuthFactors(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Query().Get("after") != "" {
+		writeJSON(w, map[string]any{"data": []any{}, "list_metadata": map[string]any{"after": nil}})
+		return
+	}
+	writeJSON(w, map[string]any{"data": []any{}, "list_metadata": map[string]any{"after": nil}})
+}
+
+func (m *accountDeletionMocks) listSessions(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Query().Get("after") != "" {
+		writeJSON(w, map[string]any{"data": []any{}, "list_metadata": map[string]any{"after": nil}})
+		return
+	}
+	writeJSON(w, map[string]any{
+		"data":          []any{map[string]string{"id": "session_" + r.PathValue("id")}},
+		"list_metadata": map[string]any{"after": nil},
+	})
+}
+
+func (m *accountDeletionMocks) revokeSession(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		SessionID string `json:"session_id"`
+	}
+	if !decodeFixture(w, r, &req) {
+		return
+	}
+	if req.SessionID == "" {
+		http.Error(w, "session_id is required", http.StatusBadRequest)
+		return
+	}
+	m.mu.Lock()
+	m.revokedSessions = append(m.revokedSessions, req.SessionID)
+	m.mu.Unlock()
+	w.WriteHeader(http.StatusOK)
+}
+
 func decodeFixture(w http.ResponseWriter, r *http.Request, dst any) bool {
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<16))
 	if err == nil {
@@ -220,6 +266,7 @@ func (m *accountDeletionMocks) state(w http.ResponseWriter, _ *http.Request) {
 		"subscriptions":          m.subscriptions,
 		"cancelledSubscriptions": append([]string{}, m.cancelled...),
 		"deletedWorkOSUsers":     append([]string{}, m.deletedWorkOSUsers...),
+		"revokedSessions":        append([]string{}, m.revokedSessions...),
 	})
 }
 
@@ -229,6 +276,7 @@ func (m *accountDeletionMocks) reset(w http.ResponseWriter, _ *http.Request) {
 	m.cancelFailures = map[string]int{}
 	m.cancelled = nil
 	m.deletedWorkOSUsers = nil
+	m.revokedSessions = nil
 	m.mu.Unlock()
 	writeJSON(w, map[string]bool{"ok": true})
 }

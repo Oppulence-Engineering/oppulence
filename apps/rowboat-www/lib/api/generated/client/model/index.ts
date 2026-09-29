@@ -6,9 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./accountDeletionChallenge";
+export * from "./accountDeletionChallengeStart";
+export * from "./accountDeletionChallengeVerify";
 export * from "./accountDeletionReceipt";
 export * from "./accountDeletionRequest";
 export * from "./accountDeletionRequestConfirm";
+export * from "./accountDeletionStepUp";
 export * from "./acknowledgeMissionControl201";
 export * from "./acknowledgeMissionControlBody";
 export * from "./actionOutcome";

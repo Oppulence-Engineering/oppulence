@@ -20,6 +20,13 @@ type Enricher interface {
 	Email(ctx context.Context, workosUserID string) (string, error)
 	// DeleteUser removes the identity during account deletion.
 	DeleteUser(ctx context.Context, workosUserID string) error
+	// ListAuthFactorTypes returns enrolled second-factor types. Account
+	// deletion uses this to refuse an email code when a stronger factor exists.
+	// An error fails closed: an unknown enrollment must not unlock email OTP.
+	ListAuthFactorTypes(ctx context.Context, workosUserID string) ([]string, error)
+	// RevokeSessions invalidates every live identity-provider session so a
+	// stolen cookie cannot keep acting after the account is gone.
+	RevokeSessions(ctx context.Context, workosUserID string) error
 }
 
 // NoopEnricher returns no enrichment.
@@ -30,6 +37,15 @@ func (NoopEnricher) Email(context.Context, string) (string, error) { return "", 
 
 // DeleteUser does nothing: there is no WorkOS identity without an API key.
 func (NoopEnricher) DeleteUser(context.Context, string) error { return nil }
+
+// ListAuthFactorTypes reports no factors. Local dev has no identity provider
+// to ask, so email OTP stays available when the mailer is configured.
+func (NoopEnricher) ListAuthFactorTypes(context.Context, string) ([]string, error) {
+	return nil, nil
+}
+
+// RevokeSessions does nothing: there is no remote session store to clear.
+func (NoopEnricher) RevokeSessions(context.Context, string) error { return nil }
 
 // ErrIdentityDeleted means that the token belongs to a deleted account. The
 // token can stay valid until it expires, but it must not create the account

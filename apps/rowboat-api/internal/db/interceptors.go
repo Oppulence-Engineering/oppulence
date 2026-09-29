@@ -7,6 +7,7 @@ import (
 
 	coreent "entgo.io/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/accountdeletionchallenge"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
@@ -97,6 +98,7 @@ import (
 // this generated entity/foreign-key map to inject the authenticated user's id
 // into every update/delete predicate.
 var tenantUserColumns = map[string]string{
+	ent.TypeAccountDeletionChallenge:          accountdeletionchallenge.UserColumn,
 	ent.TypeActionOutcome:                     actionoutcome.UserColumn,
 	ent.TypeActionProposal:                    actionproposal.UserColumn,
 	ent.TypeApprovalToken:                     approvaltoken.UserColumn,
@@ -313,6 +315,13 @@ func registerInterceptors(client *ent.Client, log *zap.Logger) {
 		func(ctx context.Context, q *ent.CloudEventQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(cloudevent.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.AccountDeletionChallenge.Intercept(intercept.TraverseAccountDeletionChallenge(
+		func(ctx context.Context, q *ent.AccountDeletionChallengeQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(accountdeletionchallenge.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 

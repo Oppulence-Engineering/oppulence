@@ -211,6 +211,56 @@
       }
     },
     "schemas": {
+      "AccountDeletionChallenge": {
+        "description": "A short-lived deletion challenge. The response never includes the email code or the step-up token.",
+        "properties": {
+          "challengeId": {
+            "description": "Challenge to verify.",
+            "example": "5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f",
+            "type": "string"
+          },
+          "expiresAt": {
+            "description": "RFC3339 expiry.",
+            "example": "2026-09-15T10:10:00Z",
+            "type": "string"
+          },
+          "method": {
+            "description": "oauth_reauth or email_otp.",
+            "example": "oauth_reauth",
+            "type": "string"
+          },
+          "mfaRequired": {
+            "description": "When true, only a re-authentication that asserted MFA can verify the challenge.",
+            "example": false,
+            "type": "boolean"
+          }
+        },
+        "required": ["challengeId", "method", "expiresAt", "mfaRequired"],
+        "type": "object"
+      },
+      "AccountDeletionChallengeStart": {
+        "description": "Which fresh factor to use before account deletion.",
+        "properties": {
+          "method": {
+            "description": "oauth_reauth or email_otp.",
+            "example": "oauth_reauth",
+            "type": "string"
+          }
+        },
+        "required": ["method"],
+        "type": "object"
+      },
+      "AccountDeletionChallengeVerify": {
+        "description": "Email code for an email_otp challenge. Send an empty object for oauth_reauth.",
+        "properties": {
+          "code": {
+            "description": "One-time code from the account email.",
+            "example": "482913",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "AccountDeletionReceipt": {
         "description": "Response for DELETE /v1/me. Holds no personal data.",
         "properties": {
@@ -268,16 +318,38 @@
         "type": "object"
       },
       "AccountDeletionRequest": {
-        "description": "Request body for DELETE /v1/me.",
+        "description": "Request body for DELETE /v1/me. confirm is intent. stepUpToken is the fresh authentication proof.",
         "properties": {
           "confirm": {
             "description": "Must be the literal value DELETE.",
             "enum": ["DELETE"],
             "example": "DELETE",
             "type": "string"
+          },
+          "stepUpToken": {
+            "description": "Single-use proof from POST /v1/me/deletion-challenges/{id}/verify. Typing DELETE does not satisfy this.",
+            "example": "dG9rZW4",
+            "type": "string"
           }
         },
-        "required": ["confirm"],
+        "required": ["confirm", "stepUpToken"],
+        "type": "object"
+      },
+      "AccountDeletionStepUp": {
+        "description": "Single-use deletion proof. It expires quickly and cannot be reused.",
+        "properties": {
+          "expiresAt": {
+            "description": "RFC3339 expiry of the proof.",
+            "example": "2026-09-15T10:05:00Z",
+            "type": "string"
+          },
+          "stepUpToken": {
+            "description": "Single-use proof from POST /v1/me/deletion-challenges/{id}/verify. Typing DELETE does not satisfy this.",
+            "example": "dG9rZW4",
+            "type": "string"
+          }
+        },
+        "required": ["stepUpToken", "expiresAt"],
         "type": "object"
       },
       "ActionOutcome": {
@@ -21700,20 +21772,21 @@
     },
     "/v1/me": {
       "delete": {
-        "description": "Permanently deletes the authenticated account. The API first cancels every live Stripe subscription of the user (an account that Stripe can still charge is never deleted), then revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, and deletes the WorkOS identity. The request body must confirm the deletion.",
+        "description": "Permanently deletes the authenticated account. An existing session is not sufficient: the caller must present a single-use step-up token from a fresh re-authentication or email code. The API then cancels every live Stripe subscription (an account that Stripe can still charge is never deleted), revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, revokes identity-provider sessions, and deletes the WorkOS identity.",
         "operationId": "deleteMe",
         "requestBody": {
           "content": {
             "application/json": {
               "example": {
-                "confirm": "DELETE"
+                "confirm": "DELETE",
+                "stepUpToken": "dG9rZW4"
               },
               "schema": {
                 "$ref": "#/components/schemas/AccountDeletionRequest"
               }
             }
           },
-          "description": "Deletion confirmation.",
+          "description": "Intent confirmation plus a single-use step-up proof.",
           "required": true
         },
         "responses": {
@@ -21757,6 +21830,24 @@
           },
           "401": {
             "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "step_up_required",
+                  "detail": "sign in again before deleting this account",
+                  "requestId": "req-abc123",
+                  "status": 403,
+                  "title": "Forbidden",
+                  "type": "https://api.rowboat.dev/problems/step_up_required"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "The session has not completed a fresh step-up."
           },
           "409": {
             "content": {
@@ -21863,6 +21954,188 @@
           }
         ],
         "summary": "Get current user and billing state",
+        "tags": ["Billing"]
+      }
+    },
+    "/v1/me/deletion-challenges": {
+      "post": {
+        "description": "Starts a short-lived challenge for account deletion. oauth_reauth requires a later sign-in whose auth_time is newer than this challenge. email_otp sends a one-time code to the account email and is refused when a second factor is enrolled. The code itself is never returned.",
+        "operationId": "startAccountDeletionChallenge",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "method": "oauth_reauth"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/AccountDeletionChallengeStart"
+              }
+            }
+          },
+          "description": "Which fresh factor to use.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "challengeId": "5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f",
+                  "expiresAt": "2026-09-15T10:10:00Z",
+                  "method": "oauth_reauth",
+                  "mfaRequired": false
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionChallenge"
+                }
+              }
+            },
+            "description": "Challenge created."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "mfa_required",
+                  "detail": "use your identity provider to confirm this deletion",
+                  "requestId": "req-abc123",
+                  "status": 403,
+                  "title": "Forbidden",
+                  "type": "https://api.rowboat.dev/problems/mfa_required"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Email OTP cannot replace an enrolled second factor."
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "step_up_unavailable",
+                  "detail": "email verification is not available",
+                  "requestId": "req-abc123",
+                  "status": 503,
+                  "title": "Service Unavailable",
+                  "type": "https://api.rowboat.dev/problems/step_up_unavailable"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "The requested factor is not available."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Start account-deletion step-up",
+        "tags": ["Billing"]
+      }
+    },
+    "/v1/me/deletion-challenges/{id}/verify": {
+      "post": {
+        "description": "Turns a fresh re-authentication or email code into a single-use step-up token. The token expires within minutes and is consumed by the first deletion attempt.",
+        "operationId": "verifyAccountDeletionChallenge",
+        "parameters": [
+          {
+            "description": "Challenge id.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Challenge id.",
+              "example": "5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "code": "482913"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/AccountDeletionChallengeVerify"
+              }
+            }
+          },
+          "description": "Email code when the challenge method is email_otp. Omitted for oauth_reauth.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "expiresAt": "2026-09-15T10:05:00Z",
+                  "stepUpToken": "dG9rZW4"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionStepUp"
+                }
+              }
+            },
+            "description": "Single-use proof."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "reauth_required",
+                  "detail": "sign in again before deleting this account",
+                  "requestId": "req-abc123",
+                  "status": 403,
+                  "title": "Forbidden",
+                  "type": "https://api.rowboat.dev/problems/reauth_required"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "The session is not a fresh re-authentication, the code is wrong, or MFA was required and not asserted."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "step_up_not_found",
+                  "detail": "deletion challenge not found",
+                  "requestId": "req-abc123",
+                  "status": 404,
+                  "title": "Not Found",
+                  "type": "https://api.rowboat.dev/problems/step_up_not_found"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unknown or already finished challenge."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Verify account-deletion step-up",
         "tags": ["Billing"]
       }
     },

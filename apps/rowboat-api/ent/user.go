@@ -187,9 +187,11 @@ type UserEdges struct {
 	UserPreferences []*UserPreference `json:"user_preferences,omitempty"`
 	// ConsoleResources holds the value of the console_resources edge.
 	ConsoleResources []*ConsoleResource `json:"console_resources,omitempty"`
+	// AccountDeletionChallenges holds the value of the account_deletion_challenges edge.
+	AccountDeletionChallenges []*AccountDeletionChallenge `json:"account_deletion_challenges,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [75]bool
+	loadedTypes [76]bool
 	// totalCount holds the count of the edges above.
 	totalCount [66]map[string]int
 
@@ -267,6 +269,7 @@ type UserEdges struct {
 	namedApprovalTokens                     map[string][]*ApprovalToken
 	namedUserPreferences                    map[string][]*UserPreference
 	namedConsoleResources                   map[string][]*ConsoleResource
+	namedAccountDeletionChallenges          map[string][]*AccountDeletionChallenge
 }
 
 // SubscriptionOrErr returns the Subscription value or an error if the edge
@@ -946,6 +949,15 @@ func (e UserEdges) ConsoleResourcesOrErr() ([]*ConsoleResource, error) {
 	return nil, &NotLoadedError{edge: "console_resources"}
 }
 
+// AccountDeletionChallengesOrErr returns the AccountDeletionChallenges value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) AccountDeletionChallengesOrErr() ([]*AccountDeletionChallenge, error) {
+	if e.loadedTypes[75] {
+		return e.AccountDeletionChallenges, nil
+	}
+	return nil, &NotLoadedError{edge: "account_deletion_challenges"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -1394,6 +1406,11 @@ func (_m *User) QueryUserPreferences() *UserPreferenceQuery {
 // QueryConsoleResources queries the "console_resources" edge of the User entity.
 func (_m *User) QueryConsoleResources() *ConsoleResourceQuery {
 	return NewUserClient(_m.config).QueryConsoleResources(_m)
+}
+
+// QueryAccountDeletionChallenges queries the "account_deletion_challenges" edge of the User entity.
+func (_m *User) QueryAccountDeletionChallenges() *AccountDeletionChallengeQuery {
+	return NewUserClient(_m.config).QueryAccountDeletionChallenges(_m)
 }
 
 // Update returns a builder for updating this User.
@@ -3210,6 +3227,30 @@ func (_m *User) appendNamedConsoleResources(name string, edges ...*ConsoleResour
 		_m.Edges.namedConsoleResources[name] = []*ConsoleResource{}
 	} else {
 		_m.Edges.namedConsoleResources[name] = append(_m.Edges.namedConsoleResources[name], edges...)
+	}
+}
+
+// NamedAccountDeletionChallenges returns the AccountDeletionChallenges named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedAccountDeletionChallenges(name string) ([]*AccountDeletionChallenge, error) {
+	if _m.Edges.namedAccountDeletionChallenges == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedAccountDeletionChallenges[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedAccountDeletionChallenges(name string, edges ...*AccountDeletionChallenge) {
+	if _m.Edges.namedAccountDeletionChallenges == nil {
+		_m.Edges.namedAccountDeletionChallenges = make(map[string][]*AccountDeletionChallenge)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedAccountDeletionChallenges[name] = []*AccountDeletionChallenge{}
+	} else {
+		_m.Edges.namedAccountDeletionChallenges[name] = append(_m.Edges.namedAccountDeletionChallenges[name], edges...)
 	}
 }
 

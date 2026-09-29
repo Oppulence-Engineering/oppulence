@@ -169,6 +169,26 @@ func TestLoginURLProvider(t *testing.T) {
 	}
 }
 
+func TestLoginURLStepUpForcesAuthKitReauthentication(t *testing.T) {
+	h := workosauth.New("client_test", "sk_test_key", "https://api.workos.com", "", zap.NewNop())
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet,
+		"/login-url?redirect_uri=http://localhost:8080/oauth/callback&state=s1&provider=GoogleOAuth&max_age=0&prompt=login", nil)
+	h.LoginURL(rec, req)
+	var out struct {
+		URL string `json:"url"`
+	}
+	_ = json.Unmarshal(rec.Body.Bytes(), &out)
+	for _, want := range []string{"provider=authkit", "max_age=0", "prompt=login"} {
+		if !strings.Contains(out.URL, want) {
+			t.Errorf("login url %q missing %q", out.URL, want)
+		}
+	}
+	if strings.Contains(out.URL, "GoogleOAuth") {
+		t.Errorf("step-up login url kept the direct provider: %s", out.URL)
+	}
+}
+
 func TestUnconfiguredReturns502(t *testing.T) {
 	h := workosauth.New("", "", "", "", zap.NewNop()) // no creds
 	rec := httptest.NewRecorder()

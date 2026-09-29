@@ -2,6 +2,9 @@ import { z } from "zod";
 
 export const WorkOSLoginQuerySchema = z.object({
   return_to: z.string().optional(),
+  // Only the literal 0 is forwarded. Any other value is a normal sign-in,
+  // so a caller cannot use this route to skip the hosted picker.
+  max_age: z.literal("0").optional(),
 });
 
 export const WorkOSCallbackQuerySchema = z.object({
