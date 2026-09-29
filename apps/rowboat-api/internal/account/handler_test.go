@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
@@ -83,11 +84,28 @@ func (f *fakeStripe) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type fakeIdentity struct{ deleted []string }
+type fakeIdentity struct {
+	deleted   []string
+	revoked   []string
+	factors   []string
+	factorErr error
+}
 
 func (f *fakeIdentity) DeleteUser(_ context.Context, workosUserID string) error {
 	f.deleted = append(f.deleted, workosUserID)
 	return nil
+}
+
+func (f *fakeIdentity) RevokeSessions(_ context.Context, workosUserID string) error {
+	f.revoked = append(f.revoked, workosUserID)
+	return nil
+}
+
+func (f *fakeIdentity) ListAuthFactorTypes(context.Context, string) ([]string, error) {
+	if f.factorErr != nil {
+		return nil, f.factorErr
+	}
+	return append([]string(nil), f.factors...), nil
 }
 
 type harness struct {
@@ -142,7 +160,7 @@ func newHarnessWith(t *testing.T, database *db.DB) *harness {
 
 func (h *harness) deleteAccount(t *testing.T, u *ent.User, confirm string) (*httptest.ResponseRecorder, account.Receipt) {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodDelete, "/v1/me", strings.NewReader(fmt.Sprintf(`{"confirm":%q}`, confirm)))
+	req := httptest.NewRequest(http.MethodDelete, "/v1/me", strings.NewReader(confirmedDeleteBody(t, h.handler, u, confirm)))
 	req.Header.Set("Content-Type", "application/json")
 	req = req.WithContext(auth.WithUser(context.Background(), u)) // simulate RequireJWT
 	rec := httptest.NewRecorder()
@@ -154,6 +172,66 @@ func (h *harness) deleteAccount(t *testing.T, u *ent.User, confirm string) (*htt
 		}
 	}
 	return rec, receipt
+}
+
+// confirmedDeleteBody is the DELETE body the tests send. The word DELETE is
+// only intent; a real deletion also carries a single-use proof minted through
+// the same handlers a client would call.
+func confirmedDeleteBody(t *testing.T, handler *account.Handler, u *ent.User, confirm string) string {
+	t.Helper()
+	if confirm != "DELETE" {
+		return fmt.Sprintf(`{"confirm":%q}`, confirm)
+	}
+	return fmt.Sprintf(`{"confirm":"DELETE","stepUpToken":%q}`, mintDeletionProof(t, handler, u))
+}
+
+func userActor(u *ent.User, authTime int64, methods ...string) context.Context {
+	return auth.WithActor(auth.WithUser(context.Background(), u), &auth.Actor{
+		Kind:         auth.KindUser,
+		UserID:       u.ID,
+		WorkOSUserID: u.WorkosUserID,
+		AuthTime:     authTime,
+		AuthMethods:  methods,
+	})
+}
+
+// mintDeletionProof starts an OAuth challenge against a baseline session, then
+// verifies it with a strictly newer auth_time. Tests that expect deletion to
+// proceed use this so they still exercise Stripe and the database.
+func mintDeletionProof(t *testing.T, handler *account.Handler, u *ent.User) string {
+	t.Helper()
+	now := time.Now().Unix()
+	start := httptest.NewRequest(http.MethodPost, "/v1/me/deletion-challenges", strings.NewReader(`{"method":"oauth_reauth"}`))
+	start.Header.Set("Content-Type", "application/json")
+	start = start.WithContext(userActor(u, now-120))
+	rec := httptest.NewRecorder()
+	handler.StartDeletionChallenge(rec, start)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("start deletion challenge: %d %s", rec.Code, rec.Body.String())
+	}
+	var started struct {
+		ChallengeID string `json:"challengeId"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &started); err != nil || started.ChallengeID == "" {
+		t.Fatalf("start deletion challenge body: %s", rec.Body.String())
+	}
+	verify := httptest.NewRequest(http.MethodPost, "/verify", strings.NewReader(`{}`))
+	verify.Header.Set("Content-Type", "application/json")
+	route := chi.NewRouteContext()
+	route.URLParams.Add("id", started.ChallengeID)
+	verify = verify.WithContext(context.WithValue(userActor(u, now-30), chi.RouteCtxKey, route))
+	rec = httptest.NewRecorder()
+	handler.VerifyDeletionChallenge(rec, verify)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("verify deletion challenge: %d %s", rec.Code, rec.Body.String())
+	}
+	var proof struct {
+		StepUpToken string `json:"stepUpToken"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &proof); err != nil || proof.StepUpToken == "" {
+		t.Fatalf("verify deletion challenge body: %s", rec.Body.String())
+	}
+	return proof.StepUpToken
 }
 
 var internal = auth.WithInternal(context.Background())

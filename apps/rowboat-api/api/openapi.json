@@ -211,6 +211,56 @@
       }
     },
     "schemas": {
+      "AccountDeletionChallenge": {
+        "description": "A short-lived deletion challenge. The response never includes the email code or the step-up token.",
+        "properties": {
+          "challengeId": {
+            "description": "Challenge to verify.",
+            "example": "5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f",
+            "type": "string"
+          },
+          "expiresAt": {
+            "description": "RFC3339 expiry.",
+            "example": "2026-09-15T10:10:00Z",
+            "type": "string"
+          },
+          "method": {
+            "description": "oauth_reauth or email_otp.",
+            "example": "oauth_reauth",
+            "type": "string"
+          },
+          "mfaRequired": {
+            "description": "When true, only a re-authentication that asserted MFA can verify the challenge.",
+            "example": false,
+            "type": "boolean"
+          }
+        },
+        "required": ["challengeId", "method", "expiresAt", "mfaRequired"],
+        "type": "object"
+      },
+      "AccountDeletionChallengeStart": {
+        "description": "Which fresh factor to use before account deletion.",
+        "properties": {
+          "method": {
+            "description": "oauth_reauth or email_otp.",
+            "example": "oauth_reauth",
+            "type": "string"
+          }
+        },
+        "required": ["method"],
+        "type": "object"
+      },
+      "AccountDeletionChallengeVerify": {
+        "description": "Email code for an email_otp challenge. Send an empty object for oauth_reauth.",
+        "properties": {
+          "code": {
+            "description": "One-time code from the account email.",
+            "example": "482913",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "AccountDeletionReceipt": {
         "description": "Response for DELETE /v1/me. Holds no personal data.",
         "properties": {
@@ -268,16 +318,38 @@
         "type": "object"
       },
       "AccountDeletionRequest": {
-        "description": "Request body for DELETE /v1/me.",
+        "description": "Request body for DELETE /v1/me. confirm is intent. stepUpToken is the fresh authentication proof.",
         "properties": {
           "confirm": {
             "description": "Must be the literal value DELETE.",
             "enum": ["DELETE"],
             "example": "DELETE",
             "type": "string"
+          },
+          "stepUpToken": {
+            "description": "Single-use proof from POST /v1/me/deletion-challenges/{id}/verify. Typing DELETE does not satisfy this.",
+            "example": "dG9rZW4",
+            "type": "string"
           }
         },
-        "required": ["confirm"],
+        "required": ["confirm", "stepUpToken"],
+        "type": "object"
+      },
+      "AccountDeletionStepUp": {
+        "description": "Single-use deletion proof. It expires quickly and cannot be reused.",
+        "properties": {
+          "expiresAt": {
+            "description": "RFC3339 expiry of the proof.",
+            "example": "2026-09-15T10:05:00Z",
+            "type": "string"
+          },
+          "stepUpToken": {
+            "description": "Single-use proof from POST /v1/me/deletion-challenges/{id}/verify. Typing DELETE does not satisfy this.",
+            "example": "dG9rZW4",
+            "type": "string"
+          }
+        },
+        "required": ["stepUpToken", "expiresAt"],
         "type": "object"
       },
       "ActionOutcome": {
@@ -3723,6 +3795,57 @@
         ],
         "description": "One cross-account register row with its reader-facing state and account."
       },
+      "CommunicationAccess": {
+        "description": "Authorized communication fields for one actor.",
+        "properties": {
+          "attachments": {
+            "description": "Attachment visibility.",
+            "example": false,
+            "type": "boolean"
+          },
+          "body": {
+            "description": "Body visibility.",
+            "example": false,
+            "type": "boolean"
+          },
+          "metadata": {
+            "description": "Metadata visibility.",
+            "example": true,
+            "type": "boolean"
+          },
+          "policyVersion": {
+            "description": "Policy version.",
+            "example": 1,
+            "type": "integer"
+          },
+          "protected": {
+            "description": "Protected recipient match.",
+            "example": false,
+            "type": "boolean"
+          },
+          "reason": {
+            "description": "Reason code for the ledger entry.",
+            "enum": [
+              "llm_call",
+              "llm_call_reserve",
+              "llm_settle",
+              "voice_tts",
+              "exa_search",
+              "grant",
+              "refund"
+            ],
+            "example": "llm_settle",
+            "type": "string"
+          },
+          "subject": {
+            "description": "Subject visibility.",
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": ["metadata", "subject", "body", "attachments", "reason"],
+        "type": "object"
+      },
       "CommunicationAttachment": {
         "properties": {
           "checksum": {
@@ -4231,6 +4354,107 @@
           "workspace",
           "owner"
         ],
+        "type": "object"
+      },
+      "CommunicationTimelineItem": {
+        "description": "One redacted communication metadata row.",
+        "properties": {
+          "access": {
+            "$ref": "#/components/schemas/CommunicationAccess"
+          },
+          "attachmentCount": {
+            "description": "Attachment count.",
+            "example": 1,
+            "type": "integer"
+          },
+          "bodyLocked": {
+            "description": "Whether the body remains locked.",
+            "example": true,
+            "type": "boolean"
+          },
+          "direction": {
+            "description": "Direction.",
+            "example": "inbound",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "interactionType": {
+            "description": "Interaction kind.",
+            "enum": ["email", "meeting"],
+            "example": "email",
+            "type": "string"
+          },
+          "occurredAt": {
+            "description": "When it occurred.",
+            "example": "2026-09-06T12:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "ownerId": {
+            "description": "Mailbox owner.",
+            "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "source": {
+            "description": "Provider source.",
+            "enum": ["gmail", "calendar"],
+            "example": "gmail",
+            "type": "string"
+          },
+          "subject": {
+            "description": "Redacted subject.",
+            "example": "Follow up",
+            "type": "string"
+          },
+          "visibility": {
+            "description": "Stored visibility.",
+            "enum": ["private", "metadata", "full"],
+            "example": "metadata",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "interactionType",
+          "occurredAt",
+          "visibility",
+          "ownerId",
+          "bodyLocked",
+          "access"
+        ],
+        "type": "object"
+      },
+      "CommunicationTimelinePage": {
+        "description": "Paginated communication timeline.",
+        "properties": {
+          "hasMore": {
+            "description": "More pages exist.",
+            "example": false,
+            "type": "boolean"
+          },
+          "items": {
+            "description": "Timeline items.",
+            "items": {
+              "$ref": "#/components/schemas/CommunicationTimelineItem"
+            },
+            "type": "array"
+          },
+          "nextBefore": {
+            "description": "Cursor for the next page.",
+            "example": "2026-09-06T12:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": ["items", "hasMore"],
         "type": "object"
       },
       "ConfigResponse": {
@@ -21533,20 +21757,21 @@
     },
     "/v1/me": {
       "delete": {
-        "description": "Permanently deletes the authenticated account. The API first cancels every live Stripe subscription of the user (an account that Stripe can still charge is never deleted), then revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, and deletes the WorkOS identity. The request body must confirm the deletion.",
+        "description": "Permanently deletes the authenticated account. An existing session is not sufficient: the caller must present a single-use step-up token from a fresh re-authentication or email code. The API then cancels every live Stripe subscription (an account that Stripe can still charge is never deleted), revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, revokes identity-provider sessions, and deletes the WorkOS identity.",
         "operationId": "deleteMe",
         "requestBody": {
           "content": {
             "application/json": {
               "example": {
-                "confirm": "DELETE"
+                "confirm": "DELETE",
+                "stepUpToken": "dG9rZW4"
               },
               "schema": {
                 "$ref": "#/components/schemas/AccountDeletionRequest"
               }
             }
           },
-          "description": "Deletion confirmation.",
+          "description": "Intent confirmation plus a single-use step-up proof.",
           "required": true
         },
         "responses": {
@@ -21590,6 +21815,24 @@
           },
           "401": {
             "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "step_up_required",
+                  "detail": "sign in again before deleting this account",
+                  "requestId": "req-abc123",
+                  "status": 403,
+                  "title": "Forbidden",
+                  "type": "https://api.rowboat.dev/problems/step_up_required"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "The session has not completed a fresh step-up."
           },
           "409": {
             "content": {
@@ -21696,6 +21939,188 @@
           }
         ],
         "summary": "Get current user and billing state",
+        "tags": ["Billing"]
+      }
+    },
+    "/v1/me/deletion-challenges": {
+      "post": {
+        "description": "Starts a short-lived challenge for account deletion. oauth_reauth requires a later sign-in whose auth_time is newer than this challenge. email_otp sends a one-time code to the account email and is refused when a second factor is enrolled. The code itself is never returned.",
+        "operationId": "startAccountDeletionChallenge",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "method": "oauth_reauth"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/AccountDeletionChallengeStart"
+              }
+            }
+          },
+          "description": "Which fresh factor to use.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "challengeId": "5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f",
+                  "expiresAt": "2026-09-15T10:10:00Z",
+                  "method": "oauth_reauth",
+                  "mfaRequired": false
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionChallenge"
+                }
+              }
+            },
+            "description": "Challenge created."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "mfa_required",
+                  "detail": "use your identity provider to confirm this deletion",
+                  "requestId": "req-abc123",
+                  "status": 403,
+                  "title": "Forbidden",
+                  "type": "https://api.rowboat.dev/problems/mfa_required"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Email OTP cannot replace an enrolled second factor."
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "step_up_unavailable",
+                  "detail": "email verification is not available",
+                  "requestId": "req-abc123",
+                  "status": 503,
+                  "title": "Service Unavailable",
+                  "type": "https://api.rowboat.dev/problems/step_up_unavailable"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "The requested factor is not available."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Start account-deletion step-up",
+        "tags": ["Billing"]
+      }
+    },
+    "/v1/me/deletion-challenges/{id}/verify": {
+      "post": {
+        "description": "Turns a fresh re-authentication or email code into a single-use step-up token. The token expires within minutes and is consumed by the first deletion attempt.",
+        "operationId": "verifyAccountDeletionChallenge",
+        "parameters": [
+          {
+            "description": "Challenge id.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Challenge id.",
+              "example": "5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "code": "482913"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/AccountDeletionChallengeVerify"
+              }
+            }
+          },
+          "description": "Email code when the challenge method is email_otp. Omitted for oauth_reauth.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "expiresAt": "2026-09-15T10:05:00Z",
+                  "stepUpToken": "dG9rZW4"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionStepUp"
+                }
+              }
+            },
+            "description": "Single-use proof."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "reauth_required",
+                  "detail": "sign in again before deleting this account",
+                  "requestId": "req-abc123",
+                  "status": 403,
+                  "title": "Forbidden",
+                  "type": "https://api.rowboat.dev/problems/reauth_required"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "The session is not a fresh re-authentication, the code is wrong, or MFA was required and not asserted."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "step_up_not_found",
+                  "detail": "deletion challenge not found",
+                  "requestId": "req-abc123",
+                  "status": 404,
+                  "title": "Not Found",
+                  "type": "https://api.rowboat.dev/problems/step_up_not_found"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unknown or already finished challenge."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Verify account-deletion step-up",
         "tags": ["Billing"]
       }
     },
@@ -23880,6 +24305,68 @@
           }
         ],
         "summary": "Append a commitment transition",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/communication-timeline": {
+      "get": {
+        "description": "Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship.",
+        "operationId": "getRelationshipCommunicationTimeline",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Maximum items (1-100).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Return items before this RFC3339 timestamp.",
+            "in": "query",
+            "name": "before",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommunicationTimelinePage"
+                }
+              }
+            },
+            "description": "Communication timeline."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get communication timeline",
         "tags": ["Relationship Intelligence"]
       }
     },
@@ -26440,6 +26927,135 @@
         ],
         "summary": "Get current revenue workspace",
         "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-workspaces/current/communications/attachments/{attachmentId}/content": {
+      "get": {
+        "description": "Returns one scanned text attachment when policy and grants allow it.",
+        "operationId": "getCommunicationAttachmentContent",
+        "parameters": [
+          {
+            "description": "Attachment id.",
+            "in": "path",
+            "name": "attachmentId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Attachment result.",
+                  "properties": {
+                    "access": {
+                      "$ref": "#/components/schemas/CommunicationAccess"
+                    },
+                    "content": {
+                      "description": "UTF-8 content.",
+                      "example": "Quarterly plan",
+                      "type": "string"
+                    },
+                    "filename": {
+                      "description": "Filename.",
+                      "example": "notes.txt",
+                      "type": "string"
+                    },
+                    "mimeType": {
+                      "description": "MIME type.",
+                      "example": "text/plain",
+                      "type": "string"
+                    },
+                    "scanStatus": {
+                      "description": "Scan status.",
+                      "example": "clean",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Authorized attachment."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get authorized attachment content",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/revenue-workspaces/current/communications/{interactionId}/body": {
+      "get": {
+        "description": "Returns the plain-text body for one interaction when policy and grants allow it.",
+        "operationId": "getCommunicationInteractionBody",
+        "parameters": [
+          {
+            "description": "Interaction id.",
+            "in": "path",
+            "name": "interactionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Body result.",
+                  "properties": {
+                    "access": {
+                      "$ref": "#/components/schemas/CommunicationAccess"
+                    },
+                    "body": {
+                      "description": "Plain-text body.",
+                      "example": "Thanks for the update.",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Authorized body."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get authorized communication body",
+        "tags": ["Relationship Intelligence"]
       }
     },
     "/v1/revenue-workspaces/link": {

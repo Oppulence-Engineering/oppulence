@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/accountdeletionchallenge"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
@@ -1301,6 +1302,21 @@ func (_c *UserCreate) AddConsoleResources(v ...*ConsoleResource) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddConsoleResourceIDs(ids...)
+}
+
+// AddAccountDeletionChallengeIDs adds the "account_deletion_challenges" edge to the AccountDeletionChallenge entity by IDs.
+func (_c *UserCreate) AddAccountDeletionChallengeIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddAccountDeletionChallengeIDs(ids...)
+	return _c
+}
+
+// AddAccountDeletionChallenges adds the "account_deletion_challenges" edges to the AccountDeletionChallenge entity.
+func (_c *UserCreate) AddAccountDeletionChallenges(v ...*AccountDeletionChallenge) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAccountDeletionChallengeIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -2617,6 +2633,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AccountDeletionChallengesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AccountDeletionChallengesTable,
+			Columns: []string{user.AccountDeletionChallengesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accountdeletionchallenge.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

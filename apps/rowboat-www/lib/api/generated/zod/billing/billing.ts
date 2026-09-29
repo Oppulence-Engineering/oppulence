@@ -8,14 +8,21 @@
 import * as zod from "zod";
 
 /**
- * Permanently deletes the authenticated account. The API first cancels every live Stripe subscription of the user (an account that Stripe can still charge is never deleted), then revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, and deletes the WorkOS identity. The request body must confirm the deletion.
+ * Permanently deletes the authenticated account. An existing session is not sufficient: the caller must present a single-use step-up token from a fresh re-authentication or email code. The API then cancels every live Stripe subscription (an account that Stripe can still charge is never deleted), revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, revokes identity-provider sessions, and deletes the WorkOS identity.
  * @summary Delete the current account
  */
 export const DeleteMeBody = zod
   .strictObject({
     confirm: zod.enum(["DELETE"]).describe("Must be the literal value DELETE."),
+    stepUpToken: zod
+      .string()
+      .describe(
+        "Single-use proof from POST \/v1\/me\/deletion-challenges\/{id}\/verify. Typing DELETE does not satisfy this.",
+      ),
   })
-  .describe("Request body for DELETE /v1/me.");
+  .describe(
+    "Request body for DELETE \/v1\/me. confirm is intent. stepUpToken is the fresh authentication proof.",
+  );
 
 export const DeleteMe200Response = zod
   .strictObject({
@@ -30,7 +37,7 @@ export const DeleteMe200Response = zod
     workspacesDeleted: zod.int().describe("Workspaces deleted with the account."),
     workspacesTransferred: zod.int().describe("Shared workspaces given to another member."),
   })
-  .describe("Response for DELETE /v1/me. Holds no personal data.");
+  .describe("Response for DELETE \/v1\/me. Holds no personal data.");
 
 export const DeleteMe400Response = zod
   .strictObject({
@@ -48,6 +55,21 @@ export const DeleteMe400Response = zod
   );
 
 export const DeleteMe401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const DeleteMe403Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),
@@ -123,7 +145,7 @@ export const GetMe200Response = zod
           .enum(["active", "trialing", "past_due", "canceled"])
           .nullable()
           .describe(
-            "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
           ),
         trialExpiresAt: zod
           .string()
@@ -166,7 +188,7 @@ export const GetMe200Response = zod
       })
       .describe("User that owns this row."),
   })
-  .describe("Response for GET /v1/me.");
+  .describe("Response for GET \/v1\/me.");
 
 export const GetMe401Response = zod
   .strictObject({
@@ -199,6 +221,159 @@ export const GetMe500Response = zod
   );
 
 export const GetMe503Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Starts a short-lived challenge for account deletion. oauth_reauth requires a later sign-in whose auth_time is newer than this challenge. email_otp sends a one-time code to the account email and is refused when a second factor is enrolled. The code itself is never returned.
+ * @summary Start account-deletion step-up
+ */
+export const StartAccountDeletionChallengeBody = zod
+  .strictObject({
+    method: zod.string().describe("oauth_reauth or email_otp."),
+  })
+  .describe("Which fresh factor to use before account deletion.");
+
+export const StartAccountDeletionChallenge201Response = zod
+  .strictObject({
+    challengeId: zod.string().describe("Challenge to verify."),
+    expiresAt: zod.string().describe("RFC3339 expiry."),
+    method: zod.string().describe("oauth_reauth or email_otp."),
+    mfaRequired: zod
+      .boolean()
+      .describe("When true, only a re-authentication that asserted MFA can verify the challenge."),
+  })
+  .describe(
+    "A short-lived deletion challenge. The response never includes the email code or the step-up token.",
+  );
+
+export const StartAccountDeletionChallenge400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const StartAccountDeletionChallenge401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const StartAccountDeletionChallenge403Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const StartAccountDeletionChallenge503Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Turns a fresh re-authentication or email code into a single-use step-up token. The token expires within minutes and is consumed by the first deletion attempt.
+ * @summary Verify account-deletion step-up
+ */
+export const VerifyAccountDeletionChallengeParams = zod.object({
+  id: zod.string().describe("Challenge id."),
+});
+
+export const VerifyAccountDeletionChallengeBody = zod
+  .strictObject({
+    code: zod.string().optional().describe("One-time code from the account email."),
+  })
+  .describe("Email code for an email_otp challenge. Send an empty object for oauth_reauth.");
+
+export const VerifyAccountDeletionChallenge200Response = zod
+  .strictObject({
+    expiresAt: zod.string().describe("RFC3339 expiry of the proof."),
+    stepUpToken: zod
+      .string()
+      .describe(
+        "Single-use proof from POST \/v1\/me\/deletion-challenges\/{id}\/verify. Typing DELETE does not satisfy this.",
+      ),
+  })
+  .describe("Single-use deletion proof. It expires quickly and cannot be reused.");
+
+export const VerifyAccountDeletionChallenge401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const VerifyAccountDeletionChallenge403Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const VerifyAccountDeletionChallenge404Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),

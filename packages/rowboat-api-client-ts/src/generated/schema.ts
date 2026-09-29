@@ -1536,9 +1536,49 @@ export interface paths {
     post?: never;
     /**
      * Delete the current account
-     * @description Permanently deletes the authenticated account. The API first cancels every live Stripe subscription of the user (an account that Stripe can still charge is never deleted), then revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, and deletes the WorkOS identity. The request body must confirm the deletion.
+     * @description Permanently deletes the authenticated account. An existing session is not sufficient: the caller must present a single-use step-up token from a fresh re-authentication or email code. The API then cancels every live Stripe subscription (an account that Stripe can still charge is never deleted), revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, revokes identity-provider sessions, and deletes the WorkOS identity.
      */
     delete: operations["deleteMe"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/me/deletion-challenges": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Start account-deletion step-up
+     * @description Starts a short-lived challenge for account deletion. oauth_reauth requires a later sign-in whose auth_time is newer than this challenge. email_otp sends a one-time code to the account email and is refused when a second factor is enrolled. The code itself is never returned.
+     */
+    post: operations["startAccountDeletionChallenge"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/me/deletion-challenges/{id}/verify": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Verify account-deletion step-up
+     * @description Turns a fresh re-authentication or email code into a single-use step-up token. The token expires within minutes and is consumed by the first deletion attempt.
+     */
+    post: operations["verifyAccountDeletionChallenge"];
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -2062,6 +2102,26 @@ export interface paths {
      * @description Validates the state machine and appends one idempotent event before atomically updating the materialized projection.
      */
     post: operations["appendCommitmentTransition"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/communication-timeline": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get communication timeline
+     * @description Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship.
+     */
+    get: operations["getRelationshipCommunicationTimeline"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -2700,6 +2760,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/revenue-workspaces/current/communications/attachments/{attachmentId}/content": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get authorized attachment content
+     * @description Returns one scanned text attachment when policy and grants allow it.
+     */
+    get: operations["getCommunicationAttachmentContent"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-workspaces/current/communications/{interactionId}/body": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get authorized communication body
+     * @description Returns the plain-text body for one interaction when policy and grants allow it.
+     */
+    get: operations["getCommunicationInteractionBody"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/revenue-workspaces/link": {
     parameters: {
       query?: never;
@@ -2988,6 +3088,45 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** @description A short-lived deletion challenge. The response never includes the email code or the step-up token. */
+    AccountDeletionChallenge: {
+      /**
+       * @description Challenge to verify.
+       * @example 5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f
+       */
+      challengeId: string;
+      /**
+       * @description RFC3339 expiry.
+       * @example 2026-09-15T10:10:00Z
+       */
+      expiresAt: string;
+      /**
+       * @description oauth_reauth or email_otp.
+       * @example oauth_reauth
+       */
+      method: string;
+      /**
+       * @description When true, only a re-authentication that asserted MFA can verify the challenge.
+       * @example false
+       */
+      mfaRequired: boolean;
+    };
+    /** @description Which fresh factor to use before account deletion. */
+    AccountDeletionChallengeStart: {
+      /**
+       * @description oauth_reauth or email_otp.
+       * @example oauth_reauth
+       */
+      method: string;
+    };
+    /** @description Email code for an email_otp challenge. Send an empty object for oauth_reauth. */
+    AccountDeletionChallengeVerify: {
+      /**
+       * @description One-time code from the account email.
+       * @example 482913
+       */
+      code?: string;
+    };
     /** @description Response for DELETE /v1/me. Holds no personal data. */
     AccountDeletionReceipt: {
       /**
@@ -3031,7 +3170,7 @@ export interface components {
        */
       workspacesTransferred: number;
     };
-    /** @description Request body for DELETE /v1/me. */
+    /** @description Request body for DELETE /v1/me. confirm is intent. stepUpToken is the fresh authentication proof. */
     AccountDeletionRequest: {
       /**
        * @description Must be the literal value DELETE.
@@ -3039,6 +3178,24 @@ export interface components {
        * @enum {string}
        */
       confirm: "DELETE";
+      /**
+       * @description Single-use proof from POST /v1/me/deletion-challenges/{id}/verify. Typing DELETE does not satisfy this.
+       * @example dG9rZW4
+       */
+      stepUpToken: string;
+    };
+    /** @description Single-use deletion proof. It expires quickly and cannot be reused. */
+    AccountDeletionStepUp: {
+      /**
+       * @description RFC3339 expiry of the proof.
+       * @example 2026-09-15T10:05:00Z
+       */
+      expiresAt: string;
+      /**
+       * @description Single-use proof from POST /v1/me/deletion-challenges/{id}/verify. Typing DELETE does not satisfy this.
+       * @example dG9rZW4
+       */
+      stepUpToken: string;
     };
     ActionOutcome: {
       action: components["schemas"]["RevenueAction"];
@@ -5372,6 +5529,52 @@ export interface components {
         | "cancelled"
         | "superseded";
     };
+    /** @description Authorized communication fields for one actor. */
+    CommunicationAccess: {
+      /**
+       * @description Attachment visibility.
+       * @example false
+       */
+      attachments: boolean;
+      /**
+       * @description Body visibility.
+       * @example false
+       */
+      body: boolean;
+      /**
+       * @description Metadata visibility.
+       * @example true
+       */
+      metadata: boolean;
+      /**
+       * @description Policy version.
+       * @example 1
+       */
+      policyVersion?: number;
+      /**
+       * @description Protected recipient match.
+       * @example false
+       */
+      protected?: boolean;
+      /**
+       * @description Reason code for the ledger entry.
+       * @example llm_settle
+       * @enum {string}
+       */
+      reason:
+        | "llm_call"
+        | "llm_call_reserve"
+        | "llm_settle"
+        | "voice_tts"
+        | "exa_search"
+        | "grant"
+        | "refund";
+      /**
+       * @description Subject visibility.
+       * @example true
+       */
+      subject: boolean;
+    };
     CommunicationAttachment: {
       checksum?: string;
       /**
@@ -5625,6 +5828,82 @@ export interface components {
        */
       updated_at: string;
       workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    /** @description One redacted communication metadata row. */
+    CommunicationTimelineItem: {
+      access: components["schemas"]["CommunicationAccess"];
+      /**
+       * @description Attachment count.
+       * @example 1
+       */
+      attachmentCount?: number;
+      /**
+       * @description Whether the body remains locked.
+       * @example true
+       */
+      bodyLocked: boolean;
+      /**
+       * @description Direction.
+       * @example inbound
+       */
+      direction?: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Interaction kind.
+       * @example email
+       * @enum {string}
+       */
+      interactionType: "email" | "meeting";
+      /**
+       * Format: date-time
+       * @description When it occurred.
+       * @example 2026-09-06T12:00:00Z
+       */
+      occurredAt: string;
+      /**
+       * Format: uuid
+       * @description Mailbox owner.
+       * @example 7b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      ownerId: string;
+      /**
+       * @description Provider source.
+       * @example gmail
+       * @enum {string}
+       */
+      source: "gmail" | "calendar";
+      /**
+       * @description Redacted subject.
+       * @example Follow up
+       */
+      subject?: string;
+      /**
+       * @description Stored visibility.
+       * @example metadata
+       * @enum {string}
+       */
+      visibility: "private" | "metadata" | "full";
+    };
+    /** @description Paginated communication timeline. */
+    CommunicationTimelinePage: {
+      /**
+       * @description More pages exist.
+       * @example false
+       */
+      hasMore: boolean;
+      /** @description Timeline items. */
+      items: components["schemas"]["CommunicationTimelineItem"][];
+      /**
+       * Format: date-time
+       * @description Cursor for the next page.
+       * @example 2026-09-06T12:00:00Z
+       */
+      nextBefore?: string | null;
     };
     /** @description Public bootstrap values consumed by the desktop before sign-in. */
     ConfigResponse: {
@@ -17398,12 +17677,13 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
-    /** @description Deletion confirmation. */
+    /** @description Intent confirmation plus a single-use step-up proof. */
     requestBody: {
       content: {
         /**
          * @example {
-         *       "confirm": "DELETE"
+         *       "confirm": "DELETE",
+         *       "stepUpToken": "dG9rZW4"
          *     }
          */
         "application/json": components["schemas"]["AccountDeletionRequest"];
@@ -17451,6 +17731,25 @@ export interface operations {
         };
       };
       401: components["responses"]["401"];
+      /** @description The session has not completed a fresh step-up. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "step_up_required",
+           *       "detail": "sign in again before deleting this account",
+           *       "requestId": "req-abc123",
+           *       "status": 403,
+           *       "title": "Forbidden",
+           *       "type": "https://api.rowboat.dev/problems/step_up_required"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
       /** @description A shared workspace has no member who can take ownership. */
       409: {
         headers: {
@@ -17485,6 +17784,162 @@ export interface operations {
            *       "status": 502,
            *       "title": "Bad Gateway",
            *       "type": "https://api.rowboat.dev/problems/billing_cancellation_failed"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  startAccountDeletionChallenge: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Which fresh factor to use. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "method": "oauth_reauth"
+         *     }
+         */
+        "application/json": components["schemas"]["AccountDeletionChallengeStart"];
+      };
+    };
+    responses: {
+      /** @description Challenge created. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "challengeId": "5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f",
+           *       "expiresAt": "2026-09-15T10:10:00Z",
+           *       "method": "oauth_reauth",
+           *       "mfaRequired": false
+           *     }
+           */
+          "application/json": components["schemas"]["AccountDeletionChallenge"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      /** @description Email OTP cannot replace an enrolled second factor. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "mfa_required",
+           *       "detail": "use your identity provider to confirm this deletion",
+           *       "requestId": "req-abc123",
+           *       "status": 403,
+           *       "title": "Forbidden",
+           *       "type": "https://api.rowboat.dev/problems/mfa_required"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description The requested factor is not available. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "step_up_unavailable",
+           *       "detail": "email verification is not available",
+           *       "requestId": "req-abc123",
+           *       "status": 503,
+           *       "title": "Service Unavailable",
+           *       "type": "https://api.rowboat.dev/problems/step_up_unavailable"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  verifyAccountDeletionChallenge: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Challenge id. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    /** @description Email code when the challenge method is email_otp. Omitted for oauth_reauth. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "code": "482913"
+         *     }
+         */
+        "application/json": components["schemas"]["AccountDeletionChallengeVerify"];
+      };
+    };
+    responses: {
+      /** @description Single-use proof. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "expiresAt": "2026-09-15T10:05:00Z",
+           *       "stepUpToken": "dG9rZW4"
+           *     }
+           */
+          "application/json": components["schemas"]["AccountDeletionStepUp"];
+        };
+      };
+      401: components["responses"]["401"];
+      /** @description The session is not a fresh re-authentication, the code is wrong, or MFA was required and not asserted. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "reauth_required",
+           *       "detail": "sign in again before deleting this account",
+           *       "requestId": "req-abc123",
+           *       "status": 403,
+           *       "title": "Forbidden",
+           *       "type": "https://api.rowboat.dev/problems/reauth_required"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description Unknown or already finished challenge. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "step_up_not_found",
+           *       "detail": "deletion challenge not found",
+           *       "requestId": "req-abc123",
+           *       "status": 404,
+           *       "title": "Not Found",
+           *       "type": "https://api.rowboat.dev/problems/step_up_not_found"
            *     }
            */
           "application/problem+json": components["schemas"]["ErrorEnvelope"];
@@ -18858,6 +19313,36 @@ export interface operations {
       401: components["responses"]["401"];
       404: components["responses"]["404"];
       409: components["responses"]["409"];
+    };
+  };
+  getRelationshipCommunicationTimeline: {
+    parameters: {
+      query?: {
+        /** @description Maximum items (1-100). */
+        limit?: number;
+        /** @description Return items before this RFC3339 timestamp. */
+        before?: string;
+      };
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Communication timeline. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CommunicationTimelinePage"];
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
     };
   };
   resolveRelationshipContradiction: {
@@ -20517,6 +21002,87 @@ export interface operations {
         };
       };
       401: components["responses"]["401"];
+    };
+  };
+  getCommunicationAttachmentContent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Attachment id. */
+        attachmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Authorized attachment. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            access?: components["schemas"]["CommunicationAccess"];
+            /**
+             * @description UTF-8 content.
+             * @example Quarterly plan
+             */
+            content?: string;
+            /**
+             * @description Filename.
+             * @example notes.txt
+             */
+            filename?: string;
+            /**
+             * @description MIME type.
+             * @example text/plain
+             */
+            mimeType?: string;
+            /**
+             * @description Scan status.
+             * @example clean
+             */
+            scanStatus?: string;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      404: components["responses"]["404"];
+    };
+  };
+  getCommunicationInteractionBody: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Interaction id. */
+        interactionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Authorized body. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            access?: components["schemas"]["CommunicationAccess"];
+            /**
+             * @description Plain-text body.
+             * @example Thanks for the update.
+             */
+            body?: string;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      404: components["responses"]["404"];
     };
   };
   linkRevenueWorkspace: {

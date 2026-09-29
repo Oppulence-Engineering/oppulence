@@ -2101,6 +2101,29 @@ func HasConsoleResourcesWith(preds ...predicate.ConsoleResource) predicate.User 
 	})
 }
 
+// HasAccountDeletionChallenges applies the HasEdge predicate on the "account_deletion_challenges" edge.
+func HasAccountDeletionChallenges() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, AccountDeletionChallengesTable, AccountDeletionChallengesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAccountDeletionChallengesWith applies the HasEdge predicate on the "account_deletion_challenges" edge with a given conditions (other predicates).
+func HasAccountDeletionChallengesWith(preds ...predicate.AccountDeletionChallenge) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newAccountDeletionChallengesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.User) predicate.User {
 	return predicate.User(sql.AndPredicates(predicates...))

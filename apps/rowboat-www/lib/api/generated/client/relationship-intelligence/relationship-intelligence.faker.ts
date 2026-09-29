@@ -12,12 +12,15 @@ import type {
   ApproveMutualActionPlan200,
   BetaDiagnostics,
   CommitmentDependency,
+  CommunicationTimelinePage,
   ConversationDeletionReceipt,
   CorrectConversationEvidence201,
   CreateMutualActionPlan201,
   DecideConversationChange201,
   ExportCommitment200One,
   GetCommitmentEvents200,
+  GetCommunicationAttachmentContent200,
+  GetCommunicationInteractionBody200,
   GetConversationPolicy200,
   GetPublicMutualActionPlan200,
   GetRelationship200,
@@ -3899,6 +3902,52 @@ export const getAppendCommitmentTransitionResponseMock = (
   ...overrideResponse,
 });
 
+export const getGetRelationshipCommunicationTimelineResponseMock = (
+  overrideResponse: Partial<Extract<CommunicationTimelinePage, object>> = {},
+): CommunicationTimelinePage => ({
+  hasMore: faker.datatype.boolean(),
+  items: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+    access: {
+      attachments: faker.datatype.boolean(),
+      body: faker.datatype.boolean(),
+      metadata: faker.datatype.boolean(),
+      policyVersion: faker.helpers.arrayElement([faker.number.int(), undefined]),
+      protected: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
+      reason: faker.helpers.arrayElement([
+        "llm_call",
+        "llm_call_reserve",
+        "llm_settle",
+        "voice_tts",
+        "exa_search",
+        "grant",
+        "refund",
+      ] as const),
+      subject: faker.datatype.boolean(),
+    },
+    attachmentCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    bodyLocked: faker.datatype.boolean(),
+    direction: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    id: faker.string.uuid(),
+    interactionType: faker.helpers.arrayElement(["email", "meeting"] as const),
+    occurredAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+    ownerId: faker.string.uuid(),
+    source: faker.helpers.arrayElement(["gmail", "calendar"] as const),
+    subject: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    visibility: faker.helpers.arrayElement(["private", "metadata", "full"] as const),
+  })),
+  nextBefore: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+    undefined,
+  ]),
+  ...overrideResponse,
+});
+
 export const getResolveRelationshipContradictionResponseMock =
   (): ResolveRelationshipContradiction201 => ({});
 
@@ -4738,6 +4787,78 @@ export const getGetRelationshipTimelineResponseMock = (
         undefined,
       ]),
     })),
+    undefined,
+  ]),
+  ...overrideResponse,
+});
+
+export const getGetCommunicationAttachmentContentResponseMock = (
+  overrideResponse: Partial<Extract<GetCommunicationAttachmentContent200, object>> = {},
+): GetCommunicationAttachmentContent200 => ({
+  access: faker.helpers.arrayElement([
+    {
+      attachments: faker.datatype.boolean(),
+      body: faker.datatype.boolean(),
+      metadata: faker.datatype.boolean(),
+      policyVersion: faker.helpers.arrayElement([faker.number.int(), undefined]),
+      protected: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
+      reason: faker.helpers.arrayElement([
+        "llm_call",
+        "llm_call_reserve",
+        "llm_settle",
+        "voice_tts",
+        "exa_search",
+        "grant",
+        "refund",
+      ] as const),
+      subject: faker.datatype.boolean(),
+    },
+    undefined,
+  ]),
+  content: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  filename: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  mimeType: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  scanStatus: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  ...overrideResponse,
+});
+
+export const getGetCommunicationInteractionBodyResponseMock = (
+  overrideResponse: Partial<Extract<GetCommunicationInteractionBody200, object>> = {},
+): GetCommunicationInteractionBody200 => ({
+  access: faker.helpers.arrayElement([
+    {
+      attachments: faker.datatype.boolean(),
+      body: faker.datatype.boolean(),
+      metadata: faker.datatype.boolean(),
+      policyVersion: faker.helpers.arrayElement([faker.number.int(), undefined]),
+      protected: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
+      reason: faker.helpers.arrayElement([
+        "llm_call",
+        "llm_call_reserve",
+        "llm_settle",
+        "voice_tts",
+        "exa_search",
+        "grant",
+        "refund",
+      ] as const),
+      subject: faker.datatype.boolean(),
+    },
+    undefined,
+  ]),
+  body: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
   ...overrideResponse,

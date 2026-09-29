@@ -97,6 +97,9 @@ func removeInternalSchemas(schemas obj) {
 	delete(schemas, "ConnectorCredentialRecovery")
 	delete(schemas, "ConnectorRevocationJob")
 	delete(schemas, "DeletedIdentity")
+	// The deletion challenge stores code and token hashes. It is an internal
+	// ledger, not a client resource.
+	delete(schemas, "AccountDeletionChallenge")
 	for _, schemaValue := range schemas {
 		schema, ok := schemaValue.(obj)
 		if !ok {
@@ -105,10 +108,11 @@ func removeInternalSchemas(schemas obj) {
 		properties, _ := schema["properties"].(obj)
 		delete(properties, "refresh_token_encrypted")
 		delete(properties, "api_key_encrypted")
+		delete(properties, "account_deletion_challenges")
 		if required, ok := schema["required"].([]any); ok {
 			filtered := required[:0]
 			for _, field := range required {
-				if field != "refresh_token_encrypted" && field != "api_key_encrypted" {
+				if field != "refresh_token_encrypted" && field != "api_key_encrypted" && field != "account_deletion_challenges" {
 					filtered = append(filtered, field)
 				}
 			}
@@ -282,7 +286,26 @@ func addBillingSchemas(schemas obj) {
 	}, "plan", "status", "trialExpiresAt", "usage")
 	confirmSchema := stringSchema("Must be the literal value DELETE.", "DELETE")
 	confirmSchema["enum"] = []any{"DELETE"}
-	schemas["AccountDeletionRequest"] = objectSchema("Request body for DELETE /v1/me.", obj{"confirm": confirmSchema}, "confirm")
+	stepUpTokenSchema := stringSchema("Single-use proof from POST /v1/me/deletion-challenges/{id}/verify. Typing DELETE does not satisfy this.", "dG9rZW4")
+	schemas["AccountDeletionRequest"] = objectSchema("Request body for DELETE /v1/me. confirm is intent. stepUpToken is the fresh authentication proof.", obj{
+		"confirm": confirmSchema, "stepUpToken": stepUpTokenSchema,
+	}, "confirm", "stepUpToken")
+	schemas["AccountDeletionChallenge"] = objectSchema("A short-lived deletion challenge. The response never includes the email code or the step-up token.", obj{
+		"challengeId": stringSchema("Challenge to verify.", "5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f"),
+		"method":      stringSchema("oauth_reauth or email_otp.", "oauth_reauth"),
+		"expiresAt":   stringSchema("RFC3339 expiry.", "2026-09-15T10:10:00Z"),
+		"mfaRequired": boolSchema("When true, only a re-authentication that asserted MFA can verify the challenge.", false),
+	}, "challengeId", "method", "expiresAt", "mfaRequired")
+	schemas["AccountDeletionChallengeStart"] = objectSchema("Which fresh factor to use before account deletion.", obj{
+		"method": stringSchema("oauth_reauth or email_otp.", "oauth_reauth"),
+	}, "method")
+	schemas["AccountDeletionChallengeVerify"] = objectSchema("Email code for an email_otp challenge. Send an empty object for oauth_reauth.", obj{
+		"code": stringSchema("One-time code from the account email.", "482913"),
+	})
+	schemas["AccountDeletionStepUp"] = objectSchema("Single-use deletion proof. It expires quickly and cannot be reused.", obj{
+		"stepUpToken": stepUpTokenSchema,
+		"expiresAt":   stringSchema("RFC3339 expiry of the proof.", "2026-09-15T10:05:00Z"),
+	}, "stepUpToken", "expiresAt")
 	schemas["AccountDeletionReceipt"] = objectSchema("Response for DELETE /v1/me. Holds no personal data.", obj{
 		"receiptId":              stringSchema("Receipt identifier for support.", "5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f"),
 		"requestedAt":            stringSchema("When the deletion started (RFC 3339).", "2026-09-15T10:00:00Z"),
@@ -1238,8 +1261,8 @@ func addBillingPaths(paths obj) {
 		"500": responseRef("500"),
 		"503": responseRef("503"),
 	})}
-	paths["/v1/me"].(obj)["delete"] = operation("Billing", "Delete the current account", "Permanently deletes the authenticated account. The API first cancels every live Stripe subscription of the user (an account that Stripe can still charge is never deleted), then revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, and deletes the WorkOS identity. The request body must confirm the deletion.", "deleteMe", bearer(), nil,
-		jsonRequest("Deletion confirmation.", ref("AccountDeletionRequest"), obj{"confirm": "DELETE"}),
+	paths["/v1/me"].(obj)["delete"] = operation("Billing", "Delete the current account", "Permanently deletes the authenticated account. An existing session is not sufficient: the caller must present a single-use step-up token from a fresh re-authentication or email code. The API then cancels every live Stripe subscription (an account that Stripe can still charge is never deleted), revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, revokes identity-provider sessions, and deletes the WorkOS identity.", "deleteMe", bearer(), nil,
+		jsonRequest("Intent confirmation plus a single-use step-up proof.", ref("AccountDeletionRequest"), obj{"confirm": "DELETE", "stepUpToken": "dG9rZW4"}),
 		obj{
 			"200": jsonResponse("Account deleted. The receipt records what the deletion did.", ref("AccountDeletionReceipt"), obj{
 				"receiptId": "5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f", "requestedAt": "2026-09-15T10:00:00Z", "completedAt": "2026-09-15T10:00:02Z",
@@ -1247,10 +1270,29 @@ func addBillingPaths(paths obj) {
 			}),
 			"400": problemResponse("The confirmation is missing or wrong.", ref("ErrorEnvelope"), problemExample(400, "Bad Request", `set "confirm" to "DELETE" to delete this account`, "confirmation_required")),
 			"401": responseRef("401"),
+			"403": problemResponse("The session has not completed a fresh step-up.", ref("ErrorEnvelope"), problemExample(403, "Forbidden", "sign in again before deleting this account", "step_up_required")),
 			"409": problemResponse("A shared workspace has no member who can take ownership.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "your workspace has other members and none of them can take ownership; remove the other members first", "workspace_successor_required")),
 			"500": responseRef("500"),
 			"502": problemResponse("Stripe did not cancel the subscription, so nothing was deleted.", ref("ErrorEnvelope"), problemExample(502, "Bad Gateway", "could not cancel the subscription, so the account was not deleted", "billing_cancellation_failed")),
 		})
+	paths["/v1/me/deletion-challenges"] = obj{"post": operation("Billing", "Start account-deletion step-up", "Starts a short-lived challenge for account deletion. oauth_reauth requires a later sign-in whose auth_time is newer than this challenge. email_otp sends a one-time code to the account email and is refused when a second factor is enrolled. The code itself is never returned.", "startAccountDeletionChallenge", bearer(), nil,
+		jsonRequest("Which fresh factor to use.", ref("AccountDeletionChallengeStart"), obj{"method": "oauth_reauth"}),
+		obj{
+			"201": jsonResponse("Challenge created.", ref("AccountDeletionChallenge"), obj{"challengeId": "5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f", "method": "oauth_reauth", "expiresAt": "2026-09-15T10:10:00Z", "mfaRequired": false}),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"403": problemResponse("Email OTP cannot replace an enrolled second factor.", ref("ErrorEnvelope"), problemExample(403, "Forbidden", "use your identity provider to confirm this deletion", "mfa_required")),
+			"503": problemResponse("The requested factor is not available.", ref("ErrorEnvelope"), problemExample(503, "Service Unavailable", "email verification is not available", "step_up_unavailable")),
+		})}
+	paths["/v1/me/deletion-challenges/{id}/verify"] = obj{"post": operation("Billing", "Verify account-deletion step-up", "Turns a fresh re-authentication or email code into a single-use step-up token. The token expires within minutes and is consumed by the first deletion attempt.", "verifyAccountDeletionChallenge", bearer(), []any{
+		pathParam("id", "Challenge id.", stringSchema("Challenge id.", "5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f")),
+	}, jsonRequest("Email code when the challenge method is email_otp. Omitted for oauth_reauth.", ref("AccountDeletionChallengeVerify"), obj{"code": "482913"}),
+		obj{
+			"200": jsonResponse("Single-use proof.", ref("AccountDeletionStepUp"), obj{"stepUpToken": "dG9rZW4", "expiresAt": "2026-09-15T10:05:00Z"}),
+			"401": responseRef("401"),
+			"403": problemResponse("The session is not a fresh re-authentication, the code is wrong, or MFA was required and not asserted.", ref("ErrorEnvelope"), problemExample(403, "Forbidden", "sign in again before deleting this account", "reauth_required")),
+			"404": problemResponse("Unknown or already finished challenge.", ref("ErrorEnvelope"), problemExample(404, "Not Found", "deletion challenge not found", "step_up_not_found")),
+		})}
 }
 
 func addBackgroundTaskPaths(paths obj) {

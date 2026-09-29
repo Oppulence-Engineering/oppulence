@@ -8,9 +8,11 @@
 import type { AccountDeletionRequestConfirm } from "./accountDeletionRequestConfirm";
 
 /**
- * Request body for DELETE /v1/me.
+ * Request body for DELETE /v1/me. confirm is intent. stepUpToken is the fresh authentication proof.
  */
 export interface AccountDeletionRequest {
   /** Must be the literal value DELETE. */
   confirm: AccountDeletionRequestConfirm;
+  /** Single-use proof from POST /v1/me/deletion-challenges/{id}/verify. Typing DELETE does not satisfy this. */
+  stepUpToken: string;
 }

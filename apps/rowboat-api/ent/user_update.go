@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/accountdeletionchallenge"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
@@ -1290,6 +1291,21 @@ func (_u *UserUpdate) AddConsoleResources(v ...*ConsoleResource) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddConsoleResourceIDs(ids...)
+}
+
+// AddAccountDeletionChallengeIDs adds the "account_deletion_challenges" edge to the AccountDeletionChallenge entity by IDs.
+func (_u *UserUpdate) AddAccountDeletionChallengeIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddAccountDeletionChallengeIDs(ids...)
+	return _u
+}
+
+// AddAccountDeletionChallenges adds the "account_deletion_challenges" edges to the AccountDeletionChallenge entity.
+func (_u *UserUpdate) AddAccountDeletionChallenges(v ...*AccountDeletionChallenge) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAccountDeletionChallengeIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -2855,6 +2871,27 @@ func (_u *UserUpdate) RemoveConsoleResources(v ...*ConsoleResource) *UserUpdate 
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveConsoleResourceIDs(ids...)
+}
+
+// ClearAccountDeletionChallenges clears all "account_deletion_challenges" edges to the AccountDeletionChallenge entity.
+func (_u *UserUpdate) ClearAccountDeletionChallenges() *UserUpdate {
+	_u.mutation.ClearAccountDeletionChallenges()
+	return _u
+}
+
+// RemoveAccountDeletionChallengeIDs removes the "account_deletion_challenges" edge to AccountDeletionChallenge entities by IDs.
+func (_u *UserUpdate) RemoveAccountDeletionChallengeIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveAccountDeletionChallengeIDs(ids...)
+	return _u
+}
+
+// RemoveAccountDeletionChallenges removes "account_deletion_challenges" edges to AccountDeletionChallenge entities.
+func (_u *UserUpdate) RemoveAccountDeletionChallenges(v ...*AccountDeletionChallenge) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAccountDeletionChallengeIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -6292,6 +6329,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.AccountDeletionChallengesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AccountDeletionChallengesTable,
+			Columns: []string{user.AccountDeletionChallengesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accountdeletionchallenge.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedAccountDeletionChallengesIDs(); len(nodes) > 0 && !_u.mutation.AccountDeletionChallengesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AccountDeletionChallengesTable,
+			Columns: []string{user.AccountDeletionChallengesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accountdeletionchallenge.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AccountDeletionChallengesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AccountDeletionChallengesTable,
+			Columns: []string{user.AccountDeletionChallengesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accountdeletionchallenge.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -7499,6 +7581,21 @@ func (_u *UserUpdateOne) AddConsoleResources(v ...*ConsoleResource) *UserUpdateO
 		ids[i] = v[i].ID
 	}
 	return _u.AddConsoleResourceIDs(ids...)
+}
+
+// AddAccountDeletionChallengeIDs adds the "account_deletion_challenges" edge to the AccountDeletionChallenge entity by IDs.
+func (_u *UserUpdateOne) AddAccountDeletionChallengeIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddAccountDeletionChallengeIDs(ids...)
+	return _u
+}
+
+// AddAccountDeletionChallenges adds the "account_deletion_challenges" edges to the AccountDeletionChallenge entity.
+func (_u *UserUpdateOne) AddAccountDeletionChallenges(v ...*AccountDeletionChallenge) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAccountDeletionChallengeIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -9064,6 +9161,27 @@ func (_u *UserUpdateOne) RemoveConsoleResources(v ...*ConsoleResource) *UserUpda
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveConsoleResourceIDs(ids...)
+}
+
+// ClearAccountDeletionChallenges clears all "account_deletion_challenges" edges to the AccountDeletionChallenge entity.
+func (_u *UserUpdateOne) ClearAccountDeletionChallenges() *UserUpdateOne {
+	_u.mutation.ClearAccountDeletionChallenges()
+	return _u
+}
+
+// RemoveAccountDeletionChallengeIDs removes the "account_deletion_challenges" edge to AccountDeletionChallenge entities by IDs.
+func (_u *UserUpdateOne) RemoveAccountDeletionChallengeIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveAccountDeletionChallengeIDs(ids...)
+	return _u
+}
+
+// RemoveAccountDeletionChallenges removes "account_deletion_challenges" edges to AccountDeletionChallenge entities.
+func (_u *UserUpdateOne) RemoveAccountDeletionChallenges(v ...*AccountDeletionChallenge) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAccountDeletionChallengeIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -12524,6 +12642,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.AccountDeletionChallengesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AccountDeletionChallengesTable,
+			Columns: []string{user.AccountDeletionChallengesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accountdeletionchallenge.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedAccountDeletionChallengesIDs(); len(nodes) > 0 && !_u.mutation.AccountDeletionChallengesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AccountDeletionChallengesTable,
+			Columns: []string{user.AccountDeletionChallengesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accountdeletionchallenge.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AccountDeletionChallengesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AccountDeletionChallengesTable,
+			Columns: []string{user.AccountDeletionChallengesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(accountdeletionchallenge.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

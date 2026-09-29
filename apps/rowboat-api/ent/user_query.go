@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/accountdeletionchallenge"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
@@ -173,6 +174,7 @@ type UserQuery struct {
 	withApprovalTokens                          *ApprovalTokenQuery
 	withUserPreferences                         *UserPreferenceQuery
 	withConsoleResources                        *ConsoleResourceQuery
+	withAccountDeletionChallenges               *AccountDeletionChallengeQuery
 	modifiers                                   []func(*sql.Selector)
 	loadTotal                                   []func(context.Context, []*User) error
 	withNamedLedgerEntries                      map[string]*CreditLedgerQuery
@@ -249,6 +251,7 @@ type UserQuery struct {
 	withNamedApprovalTokens                     map[string]*ApprovalTokenQuery
 	withNamedUserPreferences                    map[string]*UserPreferenceQuery
 	withNamedConsoleResources                   map[string]*ConsoleResourceQuery
+	withNamedAccountDeletionChallenges          map[string]*AccountDeletionChallengeQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -1935,6 +1938,28 @@ func (_q *UserQuery) QueryConsoleResources() *ConsoleResourceQuery {
 	return query
 }
 
+// QueryAccountDeletionChallenges chains the current query on the "account_deletion_challenges" edge.
+func (_q *UserQuery) QueryAccountDeletionChallenges() *AccountDeletionChallengeQuery {
+	query := (&AccountDeletionChallengeClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(accountdeletionchallenge.Table, accountdeletionchallenge.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.AccountDeletionChallengesTable, user.AccountDeletionChallengesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first User entity from the query.
 // Returns a *NotFoundError when no User was found.
 func (_q *UserQuery) First(ctx context.Context) (*User, error) {
@@ -2202,6 +2227,7 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withApprovalTokens:                     _q.withApprovalTokens.Clone(),
 		withUserPreferences:                    _q.withUserPreferences.Clone(),
 		withConsoleResources:                   _q.withConsoleResources.Clone(),
+		withAccountDeletionChallenges:          _q.withAccountDeletionChallenges.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -3033,6 +3059,17 @@ func (_q *UserQuery) WithConsoleResources(opts ...func(*ConsoleResourceQuery)) *
 	return _q
 }
 
+// WithAccountDeletionChallenges tells the query-builder to eager-load the nodes that are connected to
+// the "account_deletion_challenges" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithAccountDeletionChallenges(opts ...func(*AccountDeletionChallengeQuery)) *UserQuery {
+	query := (&AccountDeletionChallengeClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAccountDeletionChallenges = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -3111,7 +3148,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [75]bool{
+		loadedTypes = [76]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
@@ -3187,6 +3224,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withApprovalTokens != nil,
 			_q.withUserPreferences != nil,
 			_q.withConsoleResources != nil,
+			_q.withAccountDeletionChallenges != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -3810,6 +3848,15 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withAccountDeletionChallenges; query != nil {
+		if err := _q.loadAccountDeletionChallenges(ctx, query, nodes,
+			func(n *User) { n.Edges.AccountDeletionChallenges = []*AccountDeletionChallenge{} },
+			func(n *User, e *AccountDeletionChallenge) {
+				n.Edges.AccountDeletionChallenges = append(n.Edges.AccountDeletionChallenges, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedLedgerEntries {
 		if err := _q.loadLedgerEntries(ctx, query, nodes,
 			func(n *User) { n.appendNamedLedgerEntries(name) },
@@ -4329,6 +4376,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadConsoleResources(ctx, query, nodes,
 			func(n *User) { n.appendNamedConsoleResources(name) },
 			func(n *User, e *ConsoleResource) { n.appendNamedConsoleResources(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedAccountDeletionChallenges {
+		if err := _q.loadAccountDeletionChallenges(ctx, query, nodes,
+			func(n *User) { n.appendNamedAccountDeletionChallenges(name) },
+			func(n *User, e *AccountDeletionChallenge) { n.appendNamedAccountDeletionChallenges(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -6662,6 +6716,37 @@ func (_q *UserQuery) loadConsoleResources(ctx context.Context, query *ConsoleRes
 	}
 	return nil
 }
+func (_q *UserQuery) loadAccountDeletionChallenges(ctx context.Context, query *AccountDeletionChallengeQuery, nodes []*User, init func(*User), assign func(*User, *AccountDeletionChallenge)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.AccountDeletionChallenge(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.AccountDeletionChallengesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_account_deletion_challenges
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_account_deletion_challenges" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_account_deletion_challenges" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -7780,6 +7865,20 @@ func (_q *UserQuery) WithNamedConsoleResources(name string, opts ...func(*Consol
 		_q.withNamedConsoleResources = make(map[string]*ConsoleResourceQuery)
 	}
 	_q.withNamedConsoleResources[name] = query
+	return _q
+}
+
+// WithNamedAccountDeletionChallenges tells the query-builder to eager-load the nodes that are connected to the "account_deletion_challenges"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedAccountDeletionChallenges(name string, opts ...func(*AccountDeletionChallengeQuery)) *UserQuery {
+	query := (&AccountDeletionChallengeClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedAccountDeletionChallenges == nil {
+		_q.withNamedAccountDeletionChallenges = make(map[string]*AccountDeletionChallengeQuery)
+	}
+	_q.withNamedAccountDeletionChallenges[name] = query
 	return _q
 }
 

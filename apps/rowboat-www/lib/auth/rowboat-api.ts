@@ -56,6 +56,9 @@ export async function getWorkOSLoginURL(input: {
   state: string;
   codeChallenge: string;
   provider?: string;
+  /** Forces an interactive AuthKit sign-in. Used for account-deletion step-up. */
+  maxAge?: "0";
+  prompt?: "login";
 }): Promise<string> {
   const url = rowboatAuthApiURL("/v1/auth/workos/login-url");
   url.searchParams.set("redirect_uri", input.redirectURI);
@@ -63,6 +66,12 @@ export async function getWorkOSLoginURL(input: {
   url.searchParams.set("code_challenge", input.codeChallenge);
   if (input.provider) {
     url.searchParams.set("provider", input.provider);
+  }
+  if (input.maxAge === "0") {
+    url.searchParams.set("max_age", "0");
+  }
+  if (input.prompt) {
+    url.searchParams.set("prompt", input.prompt);
   }
 
   let res: Response;

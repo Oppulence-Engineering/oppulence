@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/contrib/entgql"
+	"entgo.io/contrib/entoas"
 	"entgo.io/contrib/entproto"
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
@@ -139,5 +140,8 @@ func (User) Edges() []ent.Edge {
 		// Authenticated console state.
 		edge.To("user_preferences", UserPreference.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip(), entgql.Skip()),
 		edge.To("console_resources", ConsoleResource.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip(), entgql.Skip()),
+		// Short-lived proof that the account owner re-authenticated before deletion.
+		edge.To("account_deletion_challenges", AccountDeletionChallenge.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip(), entgql.Skip(), entoas.Skip(true)),
 	}
 }

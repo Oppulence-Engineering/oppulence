@@ -7,7 +7,12 @@
  */
 import { faker } from "@faker-js/faker";
 
-import type { AccountDeletionReceipt, MeResponse } from "../model";
+import type {
+  AccountDeletionChallenge,
+  AccountDeletionReceipt,
+  AccountDeletionStepUp,
+  MeResponse,
+} from "../model";
 
 export const getDeleteMeResponseMock = (
   overrideResponse: Partial<Extract<AccountDeletionReceipt, object>> = {},
@@ -57,5 +62,23 @@ export const getGetMeResponseMock = (
     },
   },
   user: { email: faker.string.alpha({ length: { min: 10, max: 20 } }), id: faker.string.uuid() },
+  ...overrideResponse,
+});
+
+export const getStartAccountDeletionChallengeResponseMock = (
+  overrideResponse: Partial<Extract<AccountDeletionChallenge, object>> = {},
+): AccountDeletionChallenge => ({
+  challengeId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  expiresAt: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  method: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  mfaRequired: faker.datatype.boolean(),
+  ...overrideResponse,
+});
+
+export const getVerifyAccountDeletionChallengeResponseMock = (
+  overrideResponse: Partial<Extract<AccountDeletionStepUp, object>> = {},
+): AccountDeletionStepUp => ({
+  expiresAt: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  stepUpToken: faker.string.alpha({ length: { min: 10, max: 20 } }),
   ...overrideResponse,
 });

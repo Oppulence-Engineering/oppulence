@@ -15,13 +15,17 @@ export async function GET(request: NextRequest) {
   const redirectURI = new URL("/api/auth/callback", origin).toString();
 
   try {
+    // Account deletion asks for max_age=0. That parameter only re-authenticates
+    // when the provider is AuthKit, so this request must not jump straight to
+    // GoogleOAuth. prompt=login gives the local devstack a newer auth_time.
+    const reauth = query.success && query.data.max_age === "0";
     const url = await getWorkOSLoginURL({
       redirectURI,
       state: pkce.state,
       codeChallenge: pkce.codeChallenge,
-      // Skip the hosted AuthKit picker and go straight to the configured
-      // identity provider (e.g. GoogleOAuth). Unset → hosted AuthKit.
-      provider: process.env.ROWBOAT_WWW_WORKOS_PROVIDER,
+      provider: reauth ? "authkit" : process.env.ROWBOAT_WWW_WORKOS_PROVIDER,
+      maxAge: reauth ? "0" : undefined,
+      prompt: reauth ? "login" : undefined,
     });
     const response = NextResponse.redirect(url);
     setPKCECookie(response, pkce);

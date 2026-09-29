@@ -19,6 +19,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/billing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/email"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 )
 
@@ -28,10 +29,17 @@ const confirmation = "DELETE"
 
 var errNoSuccessor = errors.New("account: shared workspace has no eligible successor")
 
-// IdentityDeleter removes the identity-provider user. auth.WorkOSEnricher and
-// auth.NoopEnricher implement it.
+// IdentityDeleter removes the identity-provider user and answers the questions
+// account deletion needs before it will destroy anything. auth.WorkOSEnricher
+// and auth.NoopEnricher implement it.
 type IdentityDeleter interface {
 	DeleteUser(ctx context.Context, workosUserID string) error
+	// RevokeSessions invalidates every live identity-provider session. Deleting
+	// the user does this too; the explicit call covers a user-delete failure.
+	RevokeSessions(ctx context.Context, workosUserID string) error
+	// ListAuthFactorTypes returns enrolled second-factor types. A non-empty
+	// list means email OTP is not an acceptable deletion proof.
+	ListAuthFactorTypes(ctx context.Context, workosUserID string) ([]string, error)
 }
 
 // Handler serves DELETE /v1/me.
@@ -40,6 +48,7 @@ type Handler struct {
 	billing    *billing.Handler
 	connectors *connectors.Handler
 	identity   IdentityDeleter
+	mailer     email.Sender
 	log        *zap.Logger
 	now        func() time.Time
 }
@@ -73,13 +82,17 @@ type Receipt struct {
 //
 // The steps run in this order, and each one stops the request if it fails
 // before any data is deleted:
-//  1. Plan the workspaces. A shared workspace with no eligible successor → 409.
-//  2. Cancel every Stripe subscription. Failure → 502. An account that Stripe
+//  1. Require the exact confirmation word. That word is intent, not identity.
+//  2. Consume a single-use step-up proof. A stolen session that never completed
+//     a fresh factor cannot pass this check, and the proof cannot be reused.
+//  3. Plan the workspaces. A shared workspace with no eligible successor → 409.
+//  4. Cancel every Stripe subscription. Failure → 502. An account that Stripe
 //     can still charge is never deleted.
-//  3. Revoke every connector grant (durable jobs keep retrying).
-//  4. Delete the account in one database transaction (db.DeleteAccount).
-//  5. Delete the WorkOS identity, so the next sign-in cannot recreate the user.
-//     The data is already gone, so a failure here is logged for a retry.
+//  5. Revoke every connector grant (durable jobs keep retrying).
+//  6. Delete the account in one database transaction (db.DeleteAccount).
+//  7. Revoke identity-provider sessions, then delete the WorkOS identity, so
+//     the next sign-in cannot recreate the user. The data is already gone, so
+//     a failure here is logged for a retry.
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	u, ok := auth.UserFromCtx(r.Context())
 	if !ok {
@@ -87,7 +100,8 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Confirm string `json:"confirm"`
+		Confirm     string `json:"confirm"`
+		StepUpToken string `json:"stepUpToken"`
 	}
 	if !httpx.DecodeJSON(w, r, 1<<10, &body) {
 		return
@@ -96,7 +110,19 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, `set "confirm" to "DELETE" to delete this account`, "confirmation_required")
 		return
 	}
+	// DELETE is intent. The step-up token is the authentication factor, and it
+	// is burned before Stripe or the database are touched so a replay cannot
+	// pass the check twice.
 	ctx := r.Context()
+	if err := h.consumeDeletionProof(ctx, u, body.StepUpToken); err != nil {
+		if !errors.Is(err, errStepUpRequired) {
+			h.log.Error("account deletion: step-up", zap.Error(err))
+			httpx.Error(w, http.StatusInternalServerError, "could not delete the account", "internal_error")
+			return
+		}
+		httpx.Error(w, http.StatusForbidden, "sign in again before deleting this account", "step_up_required")
+		return
+	}
 	receipt := Receipt{ReceiptID: uuid.NewString(), RequestedAt: h.now().Format(time.RFC3339)}
 	log := h.log.With(zap.String("receipt_id", receipt.ReceiptID), zap.String("user_id", u.ID.String()))
 
@@ -150,6 +176,10 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	receipt.WorkspacesTransferred = len(transfers)
 	receipt.WorkspacesDeleted = workspacesDeleted
 
+	if err := h.identity.RevokeSessions(work, u.WorkosUserID); err != nil {
+		log.Error("account deletion: data deleted but identity sessions were not revoked",
+			zap.String("workos_user_id", u.WorkosUserID), zap.Error(err))
+	}
 	if err := h.identity.DeleteUser(work, u.WorkosUserID); err != nil {
 		log.Error("account deletion: data deleted but the WorkOS identity remains; delete it manually",
 			zap.String("workos_user_id", u.WorkosUserID), zap.Error(err))

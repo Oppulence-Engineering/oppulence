@@ -8,6 +8,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/accountdeletionchallenge"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
@@ -154,6 +155,33 @@ func (f TraverseFunc) Traverse(ctx context.Context, q ent.Query) error {
 		return err
 	}
 	return f(ctx, query)
+}
+
+// The AccountDeletionChallengeFunc type is an adapter to allow the use of ordinary function as a Querier.
+type AccountDeletionChallengeFunc func(context.Context, *ent.AccountDeletionChallengeQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f AccountDeletionChallengeFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.AccountDeletionChallengeQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.AccountDeletionChallengeQuery", q)
+}
+
+// The TraverseAccountDeletionChallenge type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseAccountDeletionChallenge func(context.Context, *ent.AccountDeletionChallengeQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseAccountDeletionChallenge) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseAccountDeletionChallenge) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.AccountDeletionChallengeQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.AccountDeletionChallengeQuery", q)
 }
 
 // The ActionOutcomeFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -2562,6 +2590,8 @@ func (f TraverseWorkspaceFeatureControl) Traverse(ctx context.Context, q ent.Que
 // NewQuery returns the generic Query interface for the given typed query.
 func NewQuery(q ent.Query) (Query, error) {
 	switch q := q.(type) {
+	case *ent.AccountDeletionChallengeQuery:
+		return &query[*ent.AccountDeletionChallengeQuery, predicate.AccountDeletionChallenge, accountdeletionchallenge.OrderOption]{typ: ent.TypeAccountDeletionChallenge, tq: q}, nil
 	case *ent.ActionOutcomeQuery:
 		return &query[*ent.ActionOutcomeQuery, predicate.ActionOutcome, actionoutcome.OrderOption]{typ: ent.TypeActionOutcome, tq: q}, nil
 	case *ent.ActionProposalQuery:

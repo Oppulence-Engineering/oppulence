@@ -81,6 +81,7 @@ type authCode struct {
 	nonce       string
 	amr         []string
 	acr         string
+	authTime    int64
 	expires     time.Time
 }
 
@@ -103,6 +104,8 @@ type session struct {
 	clientID string
 	audience string
 	scope    string
+	amr      []string
+	authTime int64
 }
 
 type oauthRefreshFaultPlan struct {
@@ -325,6 +328,7 @@ func handleAuthorize(w http.ResponseWriter, r *http.Request) {
 		nonce:       q.Get("nonce"),
 		amr:         workOSAMR(q),
 		acr:         q.Get("acr_values"),
+		authTime:    workOSAuthTime(q),
 		expires:     time.Now().Add(5 * time.Minute),
 	})
 
@@ -344,10 +348,22 @@ func handleAuthorize(w http.ResponseWriter, r *http.Request) {
 }
 
 func workOSAMR(q url.Values) []string {
-	if q.Get("acr_values") != "" || q.Get("prompt") == "login" {
+	if q.Get("acr_values") != "" || q.Get("prompt") == "login" || q.Get("max_age") == "0" {
 		return []string{"pwd", "mfa"}
 	}
 	return []string{"pwd"}
+}
+
+// workOSAuthTime is the interactive authentication instant. A re-authentication
+// (prompt=login or max_age=0) is stamped one second ahead so it stays strictly
+// newer than a login issued in the same second. Refresh must reuse this value
+// instead of minting a new one.
+func workOSAuthTime(q url.Values) int64 {
+	now := time.Now().Unix()
+	if q.Get("prompt") == "login" || q.Get("max_age") == "0" {
+		return now + 1
+	}
+	return now
 }
 
 func handleHydraConsentRequest(w http.ResponseWriter, r *http.Request) {
@@ -462,8 +478,12 @@ func tokenFromCode(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	rt, _ := randomToken(32)
-	refreshDB.Store(rt, session{sub: ac.sub, email: ac.email, clientID: ac.clientID, audience: ac.audience, scope: ac.scope})
-	writeTokenResponse(w, ac.sub, ac.email, ac.clientID, ac.audience, ac.scope, ac.nonce, rt, ac.amr, ac.acr)
+	issued := ac.authTime
+	if issued == 0 {
+		issued = time.Now().Unix()
+	}
+	refreshDB.Store(rt, session{sub: ac.sub, email: ac.email, clientID: ac.clientID, audience: ac.audience, scope: ac.scope, amr: ac.amr, authTime: issued})
+	writeTokenResponse(w, ac.sub, ac.email, ac.clientID, ac.audience, ac.scope, ac.nonce, rt, ac.amr, ac.acr, issued)
 }
 
 func tokenFromRefresh(w http.ResponseWriter, r *http.Request) {
@@ -507,10 +527,10 @@ func tokenFromRefresh(w http.ResponseWriter, r *http.Request) {
 		s = value.(session)
 	}
 	if plan == nil {
-		writeTokenResponse(w, s.sub, s.email, s.clientID, s.audience, s.scope, "", rotated, nil, "")
+		writeTokenResponse(w, s.sub, s.email, s.clientID, s.audience, s.scope, "", rotated, s.amr, "", s.authTime)
 		return
 	}
-	raw, err := json.Marshal(tokenResponse(s.sub, s.email, s.clientID, s.audience, s.scope, "", rotated, nil, ""))
+	raw, err := json.Marshal(tokenResponse(s.sub, s.email, s.clientID, s.audience, s.scope, "", rotated, s.amr, "", s.authTime))
 	if err != nil {
 		http.Error(w, "encode token response", http.StatusInternalServerError)
 		return
@@ -554,27 +574,36 @@ func issueRefreshToken(source string) (session, string, bool) {
 	return s, rotated, true
 }
 
-func writeTokenResponse(w http.ResponseWriter, sub, email, clientID, tokenAudience, scope, nonce, refreshToken string, amr []string, acr string) {
-	writeJSON(w, tokenResponse(sub, email, clientID, tokenAudience, scope, nonce, refreshToken, amr, acr))
+func writeTokenResponse(w http.ResponseWriter, sub, email, clientID, tokenAudience, scope, nonce, refreshToken string, amr []string, acr string, authTime int64) {
+	writeJSON(w, tokenResponse(sub, email, clientID, tokenAudience, scope, nonce, refreshToken, amr, acr, authTime))
 }
 
-func tokenResponse(sub, email, clientID, tokenAudience, scope, nonce, refreshToken string, amr []string, acr string) map[string]any {
-	access := signToken(jwt.MapClaims{
-		"iss":   issuer,
-		"aud":   def(tokenAudience, audience),
-		"sub":   sub,
-		"iat":   time.Now().Unix(),
-		"exp":   time.Now().Add(time.Hour).Unix(),
-		"scope": scope,
-		"ext":   map[string]any{"workos_user_id": sub, "workos_org_id": "org_dev_1", "email": email},
-	})
+func tokenResponse(sub, email, clientID, tokenAudience, scope, nonce, refreshToken string, amr []string, acr string, authTime int64) map[string]any {
+	if authTime == 0 {
+		authTime = time.Now().Unix()
+	}
+	accessClaims := jwt.MapClaims{
+		"iss":       issuer,
+		"aud":       def(tokenAudience, audience),
+		"sub":       sub,
+		"iat":       time.Now().Unix(),
+		"exp":       time.Now().Add(time.Hour).Unix(),
+		"auth_time": authTime,
+		"scope":     scope,
+		"ext":       map[string]any{"workos_user_id": sub, "workos_org_id": "org_dev_1", "email": email},
+	}
+	if len(amr) > 0 {
+		accessClaims["amr"] = amr
+	}
+	access := signToken(accessClaims)
 	idClaims := jwt.MapClaims{
-		"iss":   issuer,
-		"aud":   clientID,
-		"sub":   sub,
-		"iat":   time.Now().Unix(),
-		"exp":   time.Now().Add(time.Hour).Unix(),
-		"email": email,
+		"iss":       issuer,
+		"aud":       clientID,
+		"sub":       sub,
+		"iat":       time.Now().Unix(),
+		"exp":       time.Now().Add(time.Hour).Unix(),
+		"auth_time": authTime,
+		"email":     email,
 	}
 	if nonce != "" {
 		idClaims["nonce"] = nonce
@@ -778,6 +807,8 @@ func handleWorkOSAuthenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var sub, email string
+	var amr []string
+	var authTime int64
 	switch req.GrantType {
 	case "authorization_code":
 		v, ok := authCodes.LoadAndDelete(req.Code)
@@ -797,7 +828,7 @@ func handleWorkOSAuthenticate(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		sub, email = ac.sub, ac.email
+		sub, email, amr, authTime = ac.sub, ac.email, ac.amr, ac.authTime
 	case "refresh_token":
 		v, ok := refreshDB.Load(req.RefreshToken)
 		if !ok {
@@ -805,23 +836,31 @@ func handleWorkOSAuthenticate(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		s := v.(session)
-		sub, email = s.sub, s.email
+		sub, email, amr, authTime = s.sub, s.email, s.amr, s.authTime
 	default:
 		tokenError(w, "unsupported_grant_type")
 		return
 	}
 
+	if authTime == 0 {
+		authTime = time.Now().Unix()
+	}
 	rt, _ := randomToken(32)
-	refreshDB.Store(rt, session{sub: sub, email: email, clientID: req.ClientID, scope: "openid email profile"})
-	access := signToken(jwt.MapClaims{
-		"iss":   issuer,
-		"aud":   audience,
-		"sub":   sub,
-		"iat":   time.Now().Unix(),
-		"exp":   time.Now().Add(time.Hour).Unix(),
-		"scope": "openid email profile",
-		"ext":   map[string]any{"workos_user_id": sub, "workos_org_id": "org_dev_1", "email": email},
-	})
+	refreshDB.Store(rt, session{sub: sub, email: email, clientID: req.ClientID, scope: "openid email profile", amr: amr, authTime: authTime})
+	accessClaims := jwt.MapClaims{
+		"iss":       issuer,
+		"aud":       audience,
+		"sub":       sub,
+		"iat":       time.Now().Unix(),
+		"exp":       time.Now().Add(time.Hour).Unix(),
+		"auth_time": authTime,
+		"scope":     "openid email profile",
+		"ext":       map[string]any{"workos_user_id": sub, "workos_org_id": "org_dev_1", "email": email},
+	}
+	if len(amr) > 0 {
+		accessClaims["amr"] = amr
+	}
+	access := signToken(accessClaims)
 	writeJSON(w, map[string]any{
 		"user":          map[string]string{"id": sub, "email": email},
 		"access_token":  access,
@@ -835,16 +874,26 @@ func handleMint(w http.ResponseWriter, r *http.Request) {
 	workosID := def(r.URL.Query().Get("workos_user_id"), "user_dev_1")
 	workosOrgID := def(r.URL.Query().Get("workos_org_id"), "org_dev_1")
 	email := def(r.URL.Query().Get("email"), "dev@solomon-ai.co")
-	token := signToken(jwt.MapClaims{
-		"iss":   issuer,
-		"aud":   audience,
-		"sub":   workosID,
-		"iat":   time.Now().Unix(),
-		"exp":   time.Now().Add(time.Hour).Unix(),
-		"scope": "openid email profile offline_access",
-		"ext":   map[string]any{"workos_user_id": workosID, "workos_org_id": workosOrgID, "email": email},
-	})
-	writeJSON(w, map[string]string{"token": token})
+	authTime := time.Now().Unix()
+	if raw := strings.TrimSpace(r.URL.Query().Get("auth_time")); raw != "" {
+		if parsed, err := strconv.ParseInt(raw, 10, 64); err == nil {
+			authTime = parsed
+		}
+	}
+	claims := jwt.MapClaims{
+		"iss":       issuer,
+		"aud":       audience,
+		"sub":       workosID,
+		"iat":       time.Now().Unix(),
+		"exp":       time.Now().Add(time.Hour).Unix(),
+		"auth_time": authTime,
+		"scope":     "openid email profile offline_access",
+		"ext":       map[string]any{"workos_user_id": workosID, "workos_org_id": workosOrgID, "email": email},
+	}
+	if raw := strings.TrimSpace(r.URL.Query().Get("amr")); raw != "" {
+		claims["amr"] = strings.Split(raw, ",")
+	}
+	writeJSON(w, map[string]string{"token": signToken(claims)})
 }
 
 // handleGoogleTokenMock stands in for Google's token endpoint so the backend's

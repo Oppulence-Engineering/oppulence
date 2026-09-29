@@ -71,5 +71,7 @@ describe("api route schemas", () => {
   it("defaults login return_to when omitted", () => {
     expect(WorkOSLoginQuerySchema.parse({}).return_to).toBeUndefined();
     expect(WorkOSLoginQuerySchema.parse({ return_to: "/app" }).return_to).toBe("/app");
+    expect(WorkOSLoginQuerySchema.parse({ max_age: "0" }).max_age).toBe("0");
+    expect(WorkOSLoginQuerySchema.safeParse({ max_age: "1" }).success).toBe(false);
   });
 });

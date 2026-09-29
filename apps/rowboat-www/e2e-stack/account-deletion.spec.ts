@@ -124,6 +124,9 @@ async function openDeleteSheet() {
 
 async function confirmDeletion() {
   await page.getByLabel("Type DELETE to confirm").fill("DELETE");
+  await page.getByRole("button", { name: "Continue with Google" }).click();
+  await expect(page).toHaveURL(/\/app\/settings/);
+  await expect(page.getByRole("button", { name: "Permanently delete account" })).toBeEnabled();
   await page.getByRole("button", { name: "Permanently delete account" }).click();
 }
 

@@ -8,11 +8,26 @@
 import { HttpResponse, http } from "msw";
 import type { RequestHandlerOptions } from "msw";
 
-import type { AccountDeletionReceipt, MeResponse } from "../model";
+import type {
+  AccountDeletionChallenge,
+  AccountDeletionReceipt,
+  AccountDeletionStepUp,
+  MeResponse,
+} from "../model";
 
-import { getDeleteMeResponseMock, getGetMeResponseMock } from "./billing.faker";
+import {
+  getDeleteMeResponseMock,
+  getGetMeResponseMock,
+  getStartAccountDeletionChallengeResponseMock,
+  getVerifyAccountDeletionChallengeResponseMock,
+} from "./billing.faker";
 
-export { getDeleteMeResponseMock, getGetMeResponseMock } from "./billing.faker";
+export {
+  getDeleteMeResponseMock,
+  getGetMeResponseMock,
+  getStartAccountDeletionChallengeResponseMock,
+  getVerifyAccountDeletionChallengeResponseMock,
+} from "./billing.faker";
 
 export const getDeleteMeMockHandler = (
   overrideResponse?:
@@ -59,4 +74,57 @@ export const getGetMeMockHandler = (
     options,
   );
 };
-export const getBillingMock = () => [getDeleteMeMockHandler(), getGetMeMockHandler()];
+
+export const getStartAccountDeletionChallengeMockHandler = (
+  overrideResponse?:
+    | AccountDeletionChallenge
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<AccountDeletionChallenge> | AccountDeletionChallenge),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/me/deletion-challenges",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getStartAccountDeletionChallengeResponseMock(),
+        { status: 201 },
+      );
+    },
+    options,
+  );
+};
+
+export const getVerifyAccountDeletionChallengeMockHandler = (
+  overrideResponse?:
+    | AccountDeletionStepUp
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<AccountDeletionStepUp> | AccountDeletionStepUp),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/me/deletion-challenges/:id/verify",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getVerifyAccountDeletionChallengeResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+export const getBillingMock = () => [
+  getDeleteMeMockHandler(),
+  getGetMeMockHandler(),
+  getStartAccountDeletionChallengeMockHandler(),
+  getVerifyAccountDeletionChallengeMockHandler(),
+];

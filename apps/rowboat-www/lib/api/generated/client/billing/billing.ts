@@ -6,10 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 import type {
+  AccountDeletionChallenge,
+  AccountDeletionChallengeStart,
+  AccountDeletionChallengeVerify,
   AccountDeletionReceipt,
   AccountDeletionRequest,
+  AccountDeletionStepUp,
   ErrorEnvelope,
   MeResponse,
+  N400Response,
   N401Response,
   N500Response,
   N503Response,
@@ -28,6 +33,11 @@ export type deleteMeResponse400 = {
 export type deleteMeResponse401 = {
   data: N401Response;
   status: 401;
+};
+
+export type deleteMeResponse403 = {
+  data: ErrorEnvelope;
+  status: 403;
 };
 
 export type deleteMeResponse409 = {
@@ -51,6 +61,7 @@ export type deleteMeResponseSuccess = deleteMeResponse200 & {
 export type deleteMeResponseError = (
   | deleteMeResponse400
   | deleteMeResponse401
+  | deleteMeResponse403
   | deleteMeResponse409
   | deleteMeResponse500
   | deleteMeResponse502
@@ -65,36 +76,17 @@ export const getDeleteMeUrl = () => {
 };
 
 /**
- * Permanently deletes the authenticated account. The API first cancels every live Stripe subscription of the user (an account that Stripe can still charge is never deleted), then revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, and deletes the WorkOS identity. The request body must confirm the deletion.
+ * Permanently deletes the authenticated account. An existing session is not sufficient: the caller must present a single-use step-up token from a fresh re-authentication or email code. The API then cancels every live Stripe subscription (an account that Stripe can still charge is never deleted), revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, revokes identity-provider sessions, and deletes the WorkOS identity.
  * @summary Delete the current account
  */
 export const deleteMe = async (
   accountDeletionRequest: AccountDeletionRequest,
   options?: RequestInit,
 ): Promise<deleteMeResponse> => {
-  const getHeaders = (
-    h?: NonNullable<RequestInit["headers"]>,
-  ): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(
-          h as Iterable<Iterable<string>>,
-          (entry) => Array.from(entry) as [string, string],
-        ),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
   const res = await fetch(getDeleteMeUrl(), {
     ...options,
     method: "DELETE",
-    headers: { "Content-Type": "application/json", ...getHeaders(options?.headers) },
+    headers: { "Content-Type": "application/json", ...options?.headers },
     body: JSON.stringify(accountDeletionRequest),
   });
 
@@ -151,4 +143,139 @@ export const getMe = async (options?: RequestInit): Promise<getMeResponse> => {
 
   const data: getMeResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as getMeResponse;
+};
+
+export type startAccountDeletionChallengeResponse201 = {
+  data: AccountDeletionChallenge;
+  status: 201;
+};
+
+export type startAccountDeletionChallengeResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type startAccountDeletionChallengeResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type startAccountDeletionChallengeResponse403 = {
+  data: ErrorEnvelope;
+  status: 403;
+};
+
+export type startAccountDeletionChallengeResponse503 = {
+  data: ErrorEnvelope;
+  status: 503;
+};
+
+export type startAccountDeletionChallengeResponseSuccess =
+  startAccountDeletionChallengeResponse201 & {
+    headers: Headers;
+  };
+export type startAccountDeletionChallengeResponseError = (
+  | startAccountDeletionChallengeResponse400
+  | startAccountDeletionChallengeResponse401
+  | startAccountDeletionChallengeResponse403
+  | startAccountDeletionChallengeResponse503
+) & {
+  headers: Headers;
+};
+
+export type startAccountDeletionChallengeResponse =
+  startAccountDeletionChallengeResponseSuccess | startAccountDeletionChallengeResponseError;
+
+export const getStartAccountDeletionChallengeUrl = () => {
+  return `/v1/me/deletion-challenges`;
+};
+
+/**
+ * Starts a short-lived challenge for account deletion. oauth_reauth requires a later sign-in whose auth_time is newer than this challenge. email_otp sends a one-time code to the account email and is refused when a second factor is enrolled. The code itself is never returned.
+ * @summary Start account-deletion step-up
+ */
+export const startAccountDeletionChallenge = async (
+  accountDeletionChallengeStart: AccountDeletionChallengeStart,
+  options?: RequestInit,
+): Promise<startAccountDeletionChallengeResponse> => {
+  const res = await fetch(getStartAccountDeletionChallengeUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(accountDeletionChallengeStart),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: startAccountDeletionChallengeResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as startAccountDeletionChallengeResponse;
+};
+
+export type verifyAccountDeletionChallengeResponse200 = {
+  data: AccountDeletionStepUp;
+  status: 200;
+};
+
+export type verifyAccountDeletionChallengeResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type verifyAccountDeletionChallengeResponse403 = {
+  data: ErrorEnvelope;
+  status: 403;
+};
+
+export type verifyAccountDeletionChallengeResponse404 = {
+  data: ErrorEnvelope;
+  status: 404;
+};
+
+export type verifyAccountDeletionChallengeResponseSuccess =
+  verifyAccountDeletionChallengeResponse200 & {
+    headers: Headers;
+  };
+export type verifyAccountDeletionChallengeResponseError = (
+  | verifyAccountDeletionChallengeResponse401
+  | verifyAccountDeletionChallengeResponse403
+  | verifyAccountDeletionChallengeResponse404
+) & {
+  headers: Headers;
+};
+
+export type verifyAccountDeletionChallengeResponse =
+  verifyAccountDeletionChallengeResponseSuccess | verifyAccountDeletionChallengeResponseError;
+
+export const getVerifyAccountDeletionChallengeUrl = (id: string) => {
+  return `/v1/me/deletion-challenges/${id}/verify`;
+};
+
+/**
+ * Turns a fresh re-authentication or email code into a single-use step-up token. The token expires within minutes and is consumed by the first deletion attempt.
+ * @summary Verify account-deletion step-up
+ */
+export const verifyAccountDeletionChallenge = async (
+  id: string,
+  accountDeletionChallengeVerify: AccountDeletionChallengeVerify,
+  options?: RequestInit,
+): Promise<verifyAccountDeletionChallengeResponse> => {
+  const res = await fetch(getVerifyAccountDeletionChallengeUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(accountDeletionChallengeVerify),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: verifyAccountDeletionChallengeResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as verifyAccountDeletionChallengeResponse;
 };

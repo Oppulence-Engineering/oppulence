@@ -225,10 +225,90 @@ func (s *deletionStack) seedAccountData(t *testing.T, u *ent.User) accountData {
 
 func (s *deletionStack) deleteAccount(t *testing.T, token, confirm string) (int, map[string]any) {
 	t.Helper()
-	status, raw := s.send(t, http.MethodDelete, s.api+"/v1/me", token, fmt.Sprintf(`{"confirm":%q}`, confirm), nil)
+	bodyText := fmt.Sprintf(`{"confirm":%q}`, confirm)
+	// The confirmation word is intent. A real deletion has to present a
+	// single-use proof from a newer interactive sign-in.
+	if confirm == "DELETE" {
+		proof, status, problem := s.stepUp(t, token)
+		if status != http.StatusOK {
+			return status, problem
+		}
+		bodyText = fmt.Sprintf(`{"confirm":"DELETE","stepUpToken":%q}`, proof)
+	}
+	status, raw := s.send(t, http.MethodDelete, s.api+"/v1/me", token, bodyText, nil)
 	body := map[string]any{}
 	_ = json.Unmarshal(raw, &body)
 	return status, body
+}
+
+// stepUp records the current session as a baseline, then verifies with a
+// token whose auth_time is strictly newer. The original bearer is what
+// DELETE still uses; only the verify call presents the fresh sign-in.
+func (s *deletionStack) stepUp(t *testing.T, token string) (string, int, map[string]any) {
+	t.Helper()
+	status, raw := s.send(t, http.MethodPost, s.api+"/v1/me/deletion-challenges", token, `{"method":"oauth_reauth"}`, nil)
+	body := map[string]any{}
+	_ = json.Unmarshal(raw, &body)
+	if status != http.StatusCreated {
+		return "", status, body
+	}
+	reauth := s.mintReauth(t, token)
+	status, raw = s.send(t, http.MethodPost, s.api+"/v1/me/deletion-challenges/"+fmt.Sprint(body["challengeId"])+"/verify", reauth, `{}`, nil)
+	body = map[string]any{}
+	_ = json.Unmarshal(raw, &body)
+	if status != http.StatusOK {
+		return "", status, body
+	}
+	return fmt.Sprint(body["stepUpToken"]), status, body
+}
+
+func (s *deletionStack) mintReauth(t *testing.T, token string) string {
+	t.Helper()
+	workosID, orgID, email := devTokenIdentity(token)
+	query := url.Values{
+		"workos_user_id": {workosID},
+		"workos_org_id":  {orgID},
+		"email":          {email},
+		"auth_time":      {strconv.FormatInt(time.Now().Unix()+30, 10)},
+	}
+	status, raw := s.send(t, http.MethodGet, s.devstack+"/mint?"+query.Encode(), "", "", nil)
+	if status != http.StatusOK {
+		t.Fatalf("reauth mint = %d: %s", status, raw)
+	}
+	var minted struct {
+		Token string `json:"token"`
+	}
+	if err := json.Unmarshal(raw, &minted); err != nil || minted.Token == "" {
+		t.Fatalf("reauth mint response %s: %v", raw, err)
+	}
+	return minted.Token
+}
+
+func devTokenIdentity(token string) (workosID, orgID, email string) {
+	parts := strings.Split(token, ".")
+	if len(parts) < 2 {
+		return "", "", ""
+	}
+	raw, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return "", "", ""
+	}
+	var claims struct {
+		Sub string `json:"sub"`
+		Ext struct {
+			WorkOSUserID string `json:"workos_user_id"`
+			WorkOSOrgID  string `json:"workos_org_id"`
+			Email        string `json:"email"`
+		} `json:"ext"`
+	}
+	if err := json.Unmarshal(raw, &claims); err != nil {
+		return "", "", ""
+	}
+	workosID = claims.Ext.WorkOSUserID
+	if workosID == "" {
+		workosID = claims.Sub
+	}
+	return workosID, claims.Ext.WorkOSOrgID, claims.Ext.Email
 }
 
 func (s *deletionStack) userExists(u *ent.User) bool {

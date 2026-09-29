@@ -11,6 +11,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/accountdeletionchallenge"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
@@ -114,6 +115,7 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
+	TypeAccountDeletionChallenge          = "AccountDeletionChallenge"
 	TypeActionOutcome                     = "ActionOutcome"
 	TypeActionProposal                    = "ActionProposal"
 	TypeAgentApproval                     = "AgentApproval"
@@ -204,6 +206,1093 @@ const (
 	TypeVoiceSyncItem                     = "VoiceSyncItem"
 	TypeWorkspaceFeatureControl           = "WorkspaceFeatureControl"
 )
+
+// AccountDeletionChallengeMutation represents an operation that mutates the AccountDeletionChallenge nodes in the graph.
+type AccountDeletionChallengeMutation struct {
+	config
+	op                    Op
+	typ                   string
+	id                    *uuid.UUID
+	created_at            *time.Time
+	updated_at            *time.Time
+	method                *string
+	baseline_auth_time    *int64
+	addbaseline_auth_time *int64
+	mfa_required          *bool
+	code_hash             *string
+	token_hash            *string
+	attempts              *int
+	addattempts           *int
+	expires_at            *time.Time
+	verified_at           *time.Time
+	consumed_at           *time.Time
+	clearedFields         map[string]struct{}
+	user                  *uuid.UUID
+	cleareduser           bool
+	done                  bool
+	oldValue              func(context.Context) (*AccountDeletionChallenge, error)
+	predicates            []predicate.AccountDeletionChallenge
+}
+
+var _ ent.Mutation = (*AccountDeletionChallengeMutation)(nil)
+
+// accountdeletionchallengeOption allows management of the mutation configuration using functional options.
+type accountdeletionchallengeOption func(*AccountDeletionChallengeMutation)
+
+// newAccountDeletionChallengeMutation creates new mutation for the AccountDeletionChallenge entity.
+func newAccountDeletionChallengeMutation(c config, op Op, opts ...accountdeletionchallengeOption) *AccountDeletionChallengeMutation {
+	m := &AccountDeletionChallengeMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeAccountDeletionChallenge,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withAccountDeletionChallengeID sets the ID field of the mutation.
+func withAccountDeletionChallengeID(id uuid.UUID) accountdeletionchallengeOption {
+	return func(m *AccountDeletionChallengeMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *AccountDeletionChallenge
+		)
+		m.oldValue = func(ctx context.Context) (*AccountDeletionChallenge, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().AccountDeletionChallenge.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withAccountDeletionChallenge sets the old AccountDeletionChallenge of the mutation.
+func withAccountDeletionChallenge(node *AccountDeletionChallenge) accountdeletionchallengeOption {
+	return func(m *AccountDeletionChallengeMutation) {
+		m.oldValue = func(context.Context) (*AccountDeletionChallenge, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m AccountDeletionChallengeMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m AccountDeletionChallengeMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of AccountDeletionChallenge entities.
+func (m *AccountDeletionChallengeMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *AccountDeletionChallengeMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *AccountDeletionChallengeMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().AccountDeletionChallenge.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *AccountDeletionChallengeMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *AccountDeletionChallengeMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the AccountDeletionChallenge entity.
+// If the AccountDeletionChallenge object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccountDeletionChallengeMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *AccountDeletionChallengeMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *AccountDeletionChallengeMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *AccountDeletionChallengeMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the AccountDeletionChallenge entity.
+// If the AccountDeletionChallenge object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccountDeletionChallengeMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *AccountDeletionChallengeMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetMethod sets the "method" field.
+func (m *AccountDeletionChallengeMutation) SetMethod(s string) {
+	m.method = &s
+}
+
+// Method returns the value of the "method" field in the mutation.
+func (m *AccountDeletionChallengeMutation) Method() (r string, exists bool) {
+	v := m.method
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMethod returns the old "method" field's value of the AccountDeletionChallenge entity.
+// If the AccountDeletionChallenge object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccountDeletionChallengeMutation) OldMethod(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMethod is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMethod requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMethod: %w", err)
+	}
+	return oldValue.Method, nil
+}
+
+// ResetMethod resets all changes to the "method" field.
+func (m *AccountDeletionChallengeMutation) ResetMethod() {
+	m.method = nil
+}
+
+// SetBaselineAuthTime sets the "baseline_auth_time" field.
+func (m *AccountDeletionChallengeMutation) SetBaselineAuthTime(i int64) {
+	m.baseline_auth_time = &i
+	m.addbaseline_auth_time = nil
+}
+
+// BaselineAuthTime returns the value of the "baseline_auth_time" field in the mutation.
+func (m *AccountDeletionChallengeMutation) BaselineAuthTime() (r int64, exists bool) {
+	v := m.baseline_auth_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBaselineAuthTime returns the old "baseline_auth_time" field's value of the AccountDeletionChallenge entity.
+// If the AccountDeletionChallenge object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccountDeletionChallengeMutation) OldBaselineAuthTime(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBaselineAuthTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBaselineAuthTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBaselineAuthTime: %w", err)
+	}
+	return oldValue.BaselineAuthTime, nil
+}
+
+// AddBaselineAuthTime adds i to the "baseline_auth_time" field.
+func (m *AccountDeletionChallengeMutation) AddBaselineAuthTime(i int64) {
+	if m.addbaseline_auth_time != nil {
+		*m.addbaseline_auth_time += i
+	} else {
+		m.addbaseline_auth_time = &i
+	}
+}
+
+// AddedBaselineAuthTime returns the value that was added to the "baseline_auth_time" field in this mutation.
+func (m *AccountDeletionChallengeMutation) AddedBaselineAuthTime() (r int64, exists bool) {
+	v := m.addbaseline_auth_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetBaselineAuthTime resets all changes to the "baseline_auth_time" field.
+func (m *AccountDeletionChallengeMutation) ResetBaselineAuthTime() {
+	m.baseline_auth_time = nil
+	m.addbaseline_auth_time = nil
+}
+
+// SetMfaRequired sets the "mfa_required" field.
+func (m *AccountDeletionChallengeMutation) SetMfaRequired(b bool) {
+	m.mfa_required = &b
+}
+
+// MfaRequired returns the value of the "mfa_required" field in the mutation.
+func (m *AccountDeletionChallengeMutation) MfaRequired() (r bool, exists bool) {
+	v := m.mfa_required
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMfaRequired returns the old "mfa_required" field's value of the AccountDeletionChallenge entity.
+// If the AccountDeletionChallenge object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccountDeletionChallengeMutation) OldMfaRequired(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMfaRequired is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMfaRequired requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMfaRequired: %w", err)
+	}
+	return oldValue.MfaRequired, nil
+}
+
+// ResetMfaRequired resets all changes to the "mfa_required" field.
+func (m *AccountDeletionChallengeMutation) ResetMfaRequired() {
+	m.mfa_required = nil
+}
+
+// SetCodeHash sets the "code_hash" field.
+func (m *AccountDeletionChallengeMutation) SetCodeHash(s string) {
+	m.code_hash = &s
+}
+
+// CodeHash returns the value of the "code_hash" field in the mutation.
+func (m *AccountDeletionChallengeMutation) CodeHash() (r string, exists bool) {
+	v := m.code_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCodeHash returns the old "code_hash" field's value of the AccountDeletionChallenge entity.
+// If the AccountDeletionChallenge object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccountDeletionChallengeMutation) OldCodeHash(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCodeHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCodeHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCodeHash: %w", err)
+	}
+	return oldValue.CodeHash, nil
+}
+
+// ClearCodeHash clears the value of the "code_hash" field.
+func (m *AccountDeletionChallengeMutation) ClearCodeHash() {
+	m.code_hash = nil
+	m.clearedFields[accountdeletionchallenge.FieldCodeHash] = struct{}{}
+}
+
+// CodeHashCleared returns if the "code_hash" field was cleared in this mutation.
+func (m *AccountDeletionChallengeMutation) CodeHashCleared() bool {
+	_, ok := m.clearedFields[accountdeletionchallenge.FieldCodeHash]
+	return ok
+}
+
+// ResetCodeHash resets all changes to the "code_hash" field.
+func (m *AccountDeletionChallengeMutation) ResetCodeHash() {
+	m.code_hash = nil
+	delete(m.clearedFields, accountdeletionchallenge.FieldCodeHash)
+}
+
+// SetTokenHash sets the "token_hash" field.
+func (m *AccountDeletionChallengeMutation) SetTokenHash(s string) {
+	m.token_hash = &s
+}
+
+// TokenHash returns the value of the "token_hash" field in the mutation.
+func (m *AccountDeletionChallengeMutation) TokenHash() (r string, exists bool) {
+	v := m.token_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTokenHash returns the old "token_hash" field's value of the AccountDeletionChallenge entity.
+// If the AccountDeletionChallenge object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccountDeletionChallengeMutation) OldTokenHash(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTokenHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTokenHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTokenHash: %w", err)
+	}
+	return oldValue.TokenHash, nil
+}
+
+// ClearTokenHash clears the value of the "token_hash" field.
+func (m *AccountDeletionChallengeMutation) ClearTokenHash() {
+	m.token_hash = nil
+	m.clearedFields[accountdeletionchallenge.FieldTokenHash] = struct{}{}
+}
+
+// TokenHashCleared returns if the "token_hash" field was cleared in this mutation.
+func (m *AccountDeletionChallengeMutation) TokenHashCleared() bool {
+	_, ok := m.clearedFields[accountdeletionchallenge.FieldTokenHash]
+	return ok
+}
+
+// ResetTokenHash resets all changes to the "token_hash" field.
+func (m *AccountDeletionChallengeMutation) ResetTokenHash() {
+	m.token_hash = nil
+	delete(m.clearedFields, accountdeletionchallenge.FieldTokenHash)
+}
+
+// SetAttempts sets the "attempts" field.
+func (m *AccountDeletionChallengeMutation) SetAttempts(i int) {
+	m.attempts = &i
+	m.addattempts = nil
+}
+
+// Attempts returns the value of the "attempts" field in the mutation.
+func (m *AccountDeletionChallengeMutation) Attempts() (r int, exists bool) {
+	v := m.attempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAttempts returns the old "attempts" field's value of the AccountDeletionChallenge entity.
+// If the AccountDeletionChallenge object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccountDeletionChallengeMutation) OldAttempts(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAttempts is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAttempts requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAttempts: %w", err)
+	}
+	return oldValue.Attempts, nil
+}
+
+// AddAttempts adds i to the "attempts" field.
+func (m *AccountDeletionChallengeMutation) AddAttempts(i int) {
+	if m.addattempts != nil {
+		*m.addattempts += i
+	} else {
+		m.addattempts = &i
+	}
+}
+
+// AddedAttempts returns the value that was added to the "attempts" field in this mutation.
+func (m *AccountDeletionChallengeMutation) AddedAttempts() (r int, exists bool) {
+	v := m.addattempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAttempts resets all changes to the "attempts" field.
+func (m *AccountDeletionChallengeMutation) ResetAttempts() {
+	m.attempts = nil
+	m.addattempts = nil
+}
+
+// SetExpiresAt sets the "expires_at" field.
+func (m *AccountDeletionChallengeMutation) SetExpiresAt(t time.Time) {
+	m.expires_at = &t
+}
+
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
+func (m *AccountDeletionChallengeMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expires_at" field's value of the AccountDeletionChallenge entity.
+// If the AccountDeletionChallenge object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccountDeletionChallengeMutation) OldExpiresAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ResetExpiresAt resets all changes to the "expires_at" field.
+func (m *AccountDeletionChallengeMutation) ResetExpiresAt() {
+	m.expires_at = nil
+}
+
+// SetVerifiedAt sets the "verified_at" field.
+func (m *AccountDeletionChallengeMutation) SetVerifiedAt(t time.Time) {
+	m.verified_at = &t
+}
+
+// VerifiedAt returns the value of the "verified_at" field in the mutation.
+func (m *AccountDeletionChallengeMutation) VerifiedAt() (r time.Time, exists bool) {
+	v := m.verified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVerifiedAt returns the old "verified_at" field's value of the AccountDeletionChallenge entity.
+// If the AccountDeletionChallenge object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccountDeletionChallengeMutation) OldVerifiedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVerifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVerifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVerifiedAt: %w", err)
+	}
+	return oldValue.VerifiedAt, nil
+}
+
+// ClearVerifiedAt clears the value of the "verified_at" field.
+func (m *AccountDeletionChallengeMutation) ClearVerifiedAt() {
+	m.verified_at = nil
+	m.clearedFields[accountdeletionchallenge.FieldVerifiedAt] = struct{}{}
+}
+
+// VerifiedAtCleared returns if the "verified_at" field was cleared in this mutation.
+func (m *AccountDeletionChallengeMutation) VerifiedAtCleared() bool {
+	_, ok := m.clearedFields[accountdeletionchallenge.FieldVerifiedAt]
+	return ok
+}
+
+// ResetVerifiedAt resets all changes to the "verified_at" field.
+func (m *AccountDeletionChallengeMutation) ResetVerifiedAt() {
+	m.verified_at = nil
+	delete(m.clearedFields, accountdeletionchallenge.FieldVerifiedAt)
+}
+
+// SetConsumedAt sets the "consumed_at" field.
+func (m *AccountDeletionChallengeMutation) SetConsumedAt(t time.Time) {
+	m.consumed_at = &t
+}
+
+// ConsumedAt returns the value of the "consumed_at" field in the mutation.
+func (m *AccountDeletionChallengeMutation) ConsumedAt() (r time.Time, exists bool) {
+	v := m.consumed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConsumedAt returns the old "consumed_at" field's value of the AccountDeletionChallenge entity.
+// If the AccountDeletionChallenge object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccountDeletionChallengeMutation) OldConsumedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConsumedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConsumedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConsumedAt: %w", err)
+	}
+	return oldValue.ConsumedAt, nil
+}
+
+// ClearConsumedAt clears the value of the "consumed_at" field.
+func (m *AccountDeletionChallengeMutation) ClearConsumedAt() {
+	m.consumed_at = nil
+	m.clearedFields[accountdeletionchallenge.FieldConsumedAt] = struct{}{}
+}
+
+// ConsumedAtCleared returns if the "consumed_at" field was cleared in this mutation.
+func (m *AccountDeletionChallengeMutation) ConsumedAtCleared() bool {
+	_, ok := m.clearedFields[accountdeletionchallenge.FieldConsumedAt]
+	return ok
+}
+
+// ResetConsumedAt resets all changes to the "consumed_at" field.
+func (m *AccountDeletionChallengeMutation) ResetConsumedAt() {
+	m.consumed_at = nil
+	delete(m.clearedFields, accountdeletionchallenge.FieldConsumedAt)
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *AccountDeletionChallengeMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *AccountDeletionChallengeMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *AccountDeletionChallengeMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *AccountDeletionChallengeMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *AccountDeletionChallengeMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *AccountDeletionChallengeMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the AccountDeletionChallengeMutation builder.
+func (m *AccountDeletionChallengeMutation) Where(ps ...predicate.AccountDeletionChallenge) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the AccountDeletionChallengeMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *AccountDeletionChallengeMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.AccountDeletionChallenge, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *AccountDeletionChallengeMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *AccountDeletionChallengeMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (AccountDeletionChallenge).
+func (m *AccountDeletionChallengeMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *AccountDeletionChallengeMutation) Fields() []string {
+	fields := make([]string, 0, 11)
+	if m.created_at != nil {
+		fields = append(fields, accountdeletionchallenge.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, accountdeletionchallenge.FieldUpdatedAt)
+	}
+	if m.method != nil {
+		fields = append(fields, accountdeletionchallenge.FieldMethod)
+	}
+	if m.baseline_auth_time != nil {
+		fields = append(fields, accountdeletionchallenge.FieldBaselineAuthTime)
+	}
+	if m.mfa_required != nil {
+		fields = append(fields, accountdeletionchallenge.FieldMfaRequired)
+	}
+	if m.code_hash != nil {
+		fields = append(fields, accountdeletionchallenge.FieldCodeHash)
+	}
+	if m.token_hash != nil {
+		fields = append(fields, accountdeletionchallenge.FieldTokenHash)
+	}
+	if m.attempts != nil {
+		fields = append(fields, accountdeletionchallenge.FieldAttempts)
+	}
+	if m.expires_at != nil {
+		fields = append(fields, accountdeletionchallenge.FieldExpiresAt)
+	}
+	if m.verified_at != nil {
+		fields = append(fields, accountdeletionchallenge.FieldVerifiedAt)
+	}
+	if m.consumed_at != nil {
+		fields = append(fields, accountdeletionchallenge.FieldConsumedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *AccountDeletionChallengeMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case accountdeletionchallenge.FieldCreatedAt:
+		return m.CreatedAt()
+	case accountdeletionchallenge.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case accountdeletionchallenge.FieldMethod:
+		return m.Method()
+	case accountdeletionchallenge.FieldBaselineAuthTime:
+		return m.BaselineAuthTime()
+	case accountdeletionchallenge.FieldMfaRequired:
+		return m.MfaRequired()
+	case accountdeletionchallenge.FieldCodeHash:
+		return m.CodeHash()
+	case accountdeletionchallenge.FieldTokenHash:
+		return m.TokenHash()
+	case accountdeletionchallenge.FieldAttempts:
+		return m.Attempts()
+	case accountdeletionchallenge.FieldExpiresAt:
+		return m.ExpiresAt()
+	case accountdeletionchallenge.FieldVerifiedAt:
+		return m.VerifiedAt()
+	case accountdeletionchallenge.FieldConsumedAt:
+		return m.ConsumedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *AccountDeletionChallengeMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case accountdeletionchallenge.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case accountdeletionchallenge.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case accountdeletionchallenge.FieldMethod:
+		return m.OldMethod(ctx)
+	case accountdeletionchallenge.FieldBaselineAuthTime:
+		return m.OldBaselineAuthTime(ctx)
+	case accountdeletionchallenge.FieldMfaRequired:
+		return m.OldMfaRequired(ctx)
+	case accountdeletionchallenge.FieldCodeHash:
+		return m.OldCodeHash(ctx)
+	case accountdeletionchallenge.FieldTokenHash:
+		return m.OldTokenHash(ctx)
+	case accountdeletionchallenge.FieldAttempts:
+		return m.OldAttempts(ctx)
+	case accountdeletionchallenge.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
+	case accountdeletionchallenge.FieldVerifiedAt:
+		return m.OldVerifiedAt(ctx)
+	case accountdeletionchallenge.FieldConsumedAt:
+		return m.OldConsumedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown AccountDeletionChallenge field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AccountDeletionChallengeMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case accountdeletionchallenge.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case accountdeletionchallenge.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case accountdeletionchallenge.FieldMethod:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMethod(v)
+		return nil
+	case accountdeletionchallenge.FieldBaselineAuthTime:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBaselineAuthTime(v)
+		return nil
+	case accountdeletionchallenge.FieldMfaRequired:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMfaRequired(v)
+		return nil
+	case accountdeletionchallenge.FieldCodeHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCodeHash(v)
+		return nil
+	case accountdeletionchallenge.FieldTokenHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTokenHash(v)
+		return nil
+	case accountdeletionchallenge.FieldAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAttempts(v)
+		return nil
+	case accountdeletionchallenge.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
+		return nil
+	case accountdeletionchallenge.FieldVerifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVerifiedAt(v)
+		return nil
+	case accountdeletionchallenge.FieldConsumedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConsumedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown AccountDeletionChallenge field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *AccountDeletionChallengeMutation) AddedFields() []string {
+	var fields []string
+	if m.addbaseline_auth_time != nil {
+		fields = append(fields, accountdeletionchallenge.FieldBaselineAuthTime)
+	}
+	if m.addattempts != nil {
+		fields = append(fields, accountdeletionchallenge.FieldAttempts)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *AccountDeletionChallengeMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case accountdeletionchallenge.FieldBaselineAuthTime:
+		return m.AddedBaselineAuthTime()
+	case accountdeletionchallenge.FieldAttempts:
+		return m.AddedAttempts()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AccountDeletionChallengeMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case accountdeletionchallenge.FieldBaselineAuthTime:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddBaselineAuthTime(v)
+		return nil
+	case accountdeletionchallenge.FieldAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAttempts(v)
+		return nil
+	}
+	return fmt.Errorf("unknown AccountDeletionChallenge numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *AccountDeletionChallengeMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(accountdeletionchallenge.FieldCodeHash) {
+		fields = append(fields, accountdeletionchallenge.FieldCodeHash)
+	}
+	if m.FieldCleared(accountdeletionchallenge.FieldTokenHash) {
+		fields = append(fields, accountdeletionchallenge.FieldTokenHash)
+	}
+	if m.FieldCleared(accountdeletionchallenge.FieldVerifiedAt) {
+		fields = append(fields, accountdeletionchallenge.FieldVerifiedAt)
+	}
+	if m.FieldCleared(accountdeletionchallenge.FieldConsumedAt) {
+		fields = append(fields, accountdeletionchallenge.FieldConsumedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *AccountDeletionChallengeMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *AccountDeletionChallengeMutation) ClearField(name string) error {
+	switch name {
+	case accountdeletionchallenge.FieldCodeHash:
+		m.ClearCodeHash()
+		return nil
+	case accountdeletionchallenge.FieldTokenHash:
+		m.ClearTokenHash()
+		return nil
+	case accountdeletionchallenge.FieldVerifiedAt:
+		m.ClearVerifiedAt()
+		return nil
+	case accountdeletionchallenge.FieldConsumedAt:
+		m.ClearConsumedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown AccountDeletionChallenge nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *AccountDeletionChallengeMutation) ResetField(name string) error {
+	switch name {
+	case accountdeletionchallenge.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case accountdeletionchallenge.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case accountdeletionchallenge.FieldMethod:
+		m.ResetMethod()
+		return nil
+	case accountdeletionchallenge.FieldBaselineAuthTime:
+		m.ResetBaselineAuthTime()
+		return nil
+	case accountdeletionchallenge.FieldMfaRequired:
+		m.ResetMfaRequired()
+		return nil
+	case accountdeletionchallenge.FieldCodeHash:
+		m.ResetCodeHash()
+		return nil
+	case accountdeletionchallenge.FieldTokenHash:
+		m.ResetTokenHash()
+		return nil
+	case accountdeletionchallenge.FieldAttempts:
+		m.ResetAttempts()
+		return nil
+	case accountdeletionchallenge.FieldExpiresAt:
+		m.ResetExpiresAt()
+		return nil
+	case accountdeletionchallenge.FieldVerifiedAt:
+		m.ResetVerifiedAt()
+		return nil
+	case accountdeletionchallenge.FieldConsumedAt:
+		m.ResetConsumedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown AccountDeletionChallenge field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *AccountDeletionChallengeMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, accountdeletionchallenge.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *AccountDeletionChallengeMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case accountdeletionchallenge.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *AccountDeletionChallengeMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *AccountDeletionChallengeMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *AccountDeletionChallengeMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, accountdeletionchallenge.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *AccountDeletionChallengeMutation) EdgeCleared(name string) bool {
+	switch name {
+	case accountdeletionchallenge.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *AccountDeletionChallengeMutation) ClearEdge(name string) error {
+	switch name {
+	case accountdeletionchallenge.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown AccountDeletionChallenge unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *AccountDeletionChallengeMutation) ResetEdge(name string) error {
+	switch name {
+	case accountdeletionchallenge.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown AccountDeletionChallenge edge %s", name)
+}
 
 // ActionOutcomeMutation represents an operation that mutates the ActionOutcome nodes in the graph.
 type ActionOutcomeMutation struct {
@@ -116387,6 +117476,9 @@ type UserMutation struct {
 	console_resources                           map[uuid.UUID]struct{}
 	removedconsole_resources                    map[uuid.UUID]struct{}
 	clearedconsole_resources                    bool
+	account_deletion_challenges                 map[uuid.UUID]struct{}
+	removedaccount_deletion_challenges          map[uuid.UUID]struct{}
+	clearedaccount_deletion_challenges          bool
 	done                                        bool
 	oldValue                                    func(context.Context) (*User, error)
 	predicates                                  []predicate.User
@@ -120737,6 +121829,60 @@ func (m *UserMutation) ResetConsoleResources() {
 	m.removedconsole_resources = nil
 }
 
+// AddAccountDeletionChallengeIDs adds the "account_deletion_challenges" edge to the AccountDeletionChallenge entity by ids.
+func (m *UserMutation) AddAccountDeletionChallengeIDs(ids ...uuid.UUID) {
+	if m.account_deletion_challenges == nil {
+		m.account_deletion_challenges = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.account_deletion_challenges[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAccountDeletionChallenges clears the "account_deletion_challenges" edge to the AccountDeletionChallenge entity.
+func (m *UserMutation) ClearAccountDeletionChallenges() {
+	m.clearedaccount_deletion_challenges = true
+}
+
+// AccountDeletionChallengesCleared reports if the "account_deletion_challenges" edge to the AccountDeletionChallenge entity was cleared.
+func (m *UserMutation) AccountDeletionChallengesCleared() bool {
+	return m.clearedaccount_deletion_challenges
+}
+
+// RemoveAccountDeletionChallengeIDs removes the "account_deletion_challenges" edge to the AccountDeletionChallenge entity by IDs.
+func (m *UserMutation) RemoveAccountDeletionChallengeIDs(ids ...uuid.UUID) {
+	if m.removedaccount_deletion_challenges == nil {
+		m.removedaccount_deletion_challenges = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.account_deletion_challenges, ids[i])
+		m.removedaccount_deletion_challenges[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAccountDeletionChallenges returns the removed IDs of the "account_deletion_challenges" edge to the AccountDeletionChallenge entity.
+func (m *UserMutation) RemovedAccountDeletionChallengesIDs() (ids []uuid.UUID) {
+	for id := range m.removedaccount_deletion_challenges {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AccountDeletionChallengesIDs returns the "account_deletion_challenges" edge IDs in the mutation.
+func (m *UserMutation) AccountDeletionChallengesIDs() (ids []uuid.UUID) {
+	for id := range m.account_deletion_challenges {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAccountDeletionChallenges resets all changes to the "account_deletion_challenges" edge.
+func (m *UserMutation) ResetAccountDeletionChallenges() {
+	m.account_deletion_challenges = nil
+	m.clearedaccount_deletion_challenges = false
+	m.removedaccount_deletion_challenges = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -120953,7 +122099,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 75)
+	edges := make([]string, 0, 76)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -121178,6 +122324,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.console_resources != nil {
 		edges = append(edges, user.EdgeConsoleResources)
+	}
+	if m.account_deletion_challenges != nil {
+		edges = append(edges, user.EdgeAccountDeletionChallenges)
 	}
 	return edges
 }
@@ -121634,13 +122783,19 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeAccountDeletionChallenges:
+		ids := make([]ent.Value, 0, len(m.account_deletion_challenges))
+		for id := range m.account_deletion_challenges {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 75)
+	edges := make([]string, 0, 76)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -121862,6 +123017,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedconsole_resources != nil {
 		edges = append(edges, user.EdgeConsoleResources)
+	}
+	if m.removedaccount_deletion_challenges != nil {
+		edges = append(edges, user.EdgeAccountDeletionChallenges)
 	}
 	return edges
 }
@@ -122314,13 +123472,19 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeAccountDeletionChallenges:
+		ids := make([]ent.Value, 0, len(m.removedaccount_deletion_challenges))
+		for id := range m.removedaccount_deletion_challenges {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 75)
+	edges := make([]string, 0, 76)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -122546,6 +123710,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedconsole_resources {
 		edges = append(edges, user.EdgeConsoleResources)
 	}
+	if m.clearedaccount_deletion_challenges {
+		edges = append(edges, user.EdgeAccountDeletionChallenges)
+	}
 	return edges
 }
 
@@ -122703,6 +123870,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.cleareduser_preferences
 	case user.EdgeConsoleResources:
 		return m.clearedconsole_resources
+	case user.EdgeAccountDeletionChallenges:
+		return m.clearedaccount_deletion_challenges
 	}
 	return false
 }
@@ -122946,6 +124115,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeConsoleResources:
 		m.ResetConsoleResources()
+		return nil
+	case user.EdgeAccountDeletionChallenges:
+		m.ResetAccountDeletionChallenges()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

@@ -36,6 +36,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/docs"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/email"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/embeddings"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/entities"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/feedback"
@@ -379,6 +380,9 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	connectorsH.SetOutboundPolicy(vendorPolicy)
 	connectorsH.SetRefreshDedup(refreshCache, sealer)
 	accountH := account.New(database, billingH, connectorsH, enricher, log)
+	// Email OTP is the fallback factor for accounts with no second factor.
+	// A missing Resend key disables that factor; OAuth re-authentication stays.
+	accountH.SetMailer(email.NewResend(email.ResendConfig{APIKey: cfg.ResendAPIKey, From: cfg.EmailFrom}))
 	srv.AddReadyCheck("connector_credential_custody", connectorsH.CredentialCustodyReady)
 	srv.AddReadyCheck("connector_refresh_failure_persistence", connectorsH.RefreshFailurePersistenceReady)
 	srv.AddShutdownHook("connector_credential_custody", connectorsH.BeginCredentialCustodyShutdown)
@@ -807,6 +811,13 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		// Account deletion is irreversible and calls Stripe and WorkOS: a tight
 		// per-user bucket stops a loop or a replay from hammering either vendor.
 		r.With(rl.PerUserWindow(ratelimit.GroupDefault+":account_delete", 5, time.Hour)).Delete("/v1/me", accountH.Delete)
+		// Challenge and verify have their own buckets so a mistyped code does
+		// not consume the deletion budget, and a session cannot mint proofs
+		// without bound.
+		r.With(rl.PerUserWindow(ratelimit.GroupDefault+":account_delete_challenge", 5, time.Hour)).
+			Post("/v1/me/deletion-challenges", accountH.StartDeletionChallenge)
+		r.With(rl.PerUserWindow(ratelimit.GroupDefault+":account_delete_verify", 30, time.Hour)).
+			Post("/v1/me/deletion-challenges/{id}/verify", accountH.VerifyDeletionChallenge)
 		// Shape adapter for the upstream renderer's Better Auth useSession hook.
 		// RequireJWT above remains the sole credential verifier.
 		r.Get("/api/auth/get-session", voiceCloudH.Session)
