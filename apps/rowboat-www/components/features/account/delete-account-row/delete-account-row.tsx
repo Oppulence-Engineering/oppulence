@@ -63,7 +63,7 @@ const StoredChallengeSchema = z.object({
   challengeId: z.string().min(1),
 });
 
-type Phase = "intent" | "email" | "ready";
+type Phase = "intent" | "email" | "deleting";
 
 function signOut() {
   window.location.assign("/api/auth/logout");
@@ -82,10 +82,11 @@ function deletionError(code: string): string {
 
 /**
  * Self-serve account deletion (DELETE /v1/me). Typing DELETE records intent.
- * The API still requires a fresh identity proof: a Google re-authentication
- * whose auth_time is newer than this challenge, or a one-time email code when
- * no second factor is enrolled. The proof is single-use and is not written to
- * storage.
+ * One button then proves identity and finishes the deletion: Google
+ * re-authentication, or a one-time email code when no second factor is
+ * enrolled. The API still requires that proof. It is single-use, stays in
+ * memory, and is never written to storage. Coming back from Google deletes
+ * the account only because this button stored the challenge first.
  */
 export function DeleteAccountRow() {
   const [open, setOpen] = React.useState(false);
@@ -93,7 +94,6 @@ export function DeleteAccountRow() {
   const [phase, setPhase] = React.useState<Phase>("intent");
   const [code, setCode] = React.useState("");
   const [challengeId, setChallengeId] = React.useState<string | null>(null);
-  const [stepUpToken, setStepUpToken] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [receipt, setReceipt] = React.useState<Receipt | null>(null);
@@ -103,14 +103,51 @@ export function DeleteAccountRow() {
     setPhase("intent");
     setCode("");
     setChallengeId(null);
-    setStepUpToken(null);
   }
+
+  const deleteAccount = React.useCallback(async (token: string) => {
+    if (!token) {
+      setPhase("intent");
+      setError(ACCOUNT_DELETION_ERRORS.step_up_required);
+      return;
+    }
+    setPending(true);
+    setError(null);
+    setPhase("deleting");
+    try {
+      const response = await dashboardFetch("/api/rowboat/v1/me", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: "DELETE", stepUpToken: token }),
+      });
+      if (response.ok) {
+        const parsed = ReceiptSchema.safeParse(await response.json().catch(() => null));
+        if (parsed.success) {
+          setReceipt(parsed.data);
+        } else {
+          signOut();
+        }
+        return;
+      }
+      const body: unknown = await response.json().catch(() => null);
+      // The proof is burned on the first attempt, including a billing failure,
+      // so the next try has to be a new factor.
+      setPhase("intent");
+      setError(deletionError(problemCode(body)));
+    } catch {
+      setPhase("intent");
+      setError(ACCOUNT_DELETION_FALLBACK);
+    } finally {
+      setPending(false);
+    }
+  }, []);
 
   const verifyStoredChallenge = React.useCallback(async (id: string) => {
     setPending(true);
     setError(null);
     setOpen(true);
     setConfirmation("DELETE");
+    setPhase("deleting");
     try {
       const response = await dashboardFetch(
         `/api/rowboat/v1/me/deletion-challenges/${encodeURIComponent(id)}/verify`,
@@ -127,15 +164,14 @@ export function DeleteAccountRow() {
         setError(deletionError(problemCode(body)));
         return;
       }
-      setStepUpToken(parsed.data.stepUpToken);
-      setPhase("ready");
+      await deleteAccount(parsed.data.stepUpToken);
     } catch {
       resetIntent();
       setError(ACCOUNT_DELETION_FALLBACK);
     } finally {
       setPending(false);
     }
-  }, []);
+  }, [deleteAccount]);
 
   React.useEffect(() => {
     if (resumeStarted.current) return;
@@ -223,46 +259,8 @@ export function DeleteAccountRow() {
         setError(deletionError(codeName));
         return;
       }
-      setStepUpToken(parsed.data.stepUpToken);
-      setPhase("ready");
+      await deleteAccount(parsed.data.stepUpToken);
     } catch {
-      setError(ACCOUNT_DELETION_FALLBACK);
-    } finally {
-      setPending(false);
-    }
-  }
-
-  async function deleteAccount() {
-    if (!stepUpToken) {
-      setError(ACCOUNT_DELETION_ERRORS.step_up_required);
-      return;
-    }
-    setPending(true);
-    setError(null);
-    try {
-      const response = await dashboardFetch("/api/rowboat/v1/me", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirm: "DELETE", stepUpToken }),
-      });
-      if (response.ok) {
-        const parsed = ReceiptSchema.safeParse(await response.json().catch(() => null));
-        if (parsed.success) {
-          setReceipt(parsed.data);
-        } else {
-          signOut();
-        }
-        return;
-      }
-      const body: unknown = await response.json().catch(() => null);
-      // The proof is burned on the first attempt, including a billing failure,
-      // so the next try has to be a new factor.
-      setStepUpToken(null);
-      setPhase("intent");
-      setError(deletionError(problemCode(body)));
-    } catch {
-      setStepUpToken(null);
-      setPhase("intent");
       setError(ACCOUNT_DELETION_FALLBACK);
     } finally {
       setPending(false);
@@ -362,9 +360,10 @@ export function DeleteAccountRow() {
                       value={code}
                     />
                   </label>
-                ) : null}
-                {phase === "ready" ? (
-                  <p className="text-sm text-muted-foreground">Identity confirmed. You can delete this account.</p>
+                ) : phase === "intent" ? (
+                  <p className="text-sm text-muted-foreground">
+                    Google confirms it is you. We delete the account when you come back.
+                  </p>
                 ) : null}
                 {error ? (
                   <p className="text-sm text-destructive" role="alert">
@@ -373,29 +372,29 @@ export function DeleteAccountRow() {
                 ) : null}
               </div>
               <SheetFooter>
-                {phase === "ready" ? (
-                  <Button
-                    disabled={!intentReady || !stepUpToken || pending}
-                    onClick={() => void deleteAccount()}
-                    variant="destructive"
-                  >
-                    {pending ? "Deleting…" : "Permanently delete account"}
+                {phase === "deleting" ? (
+                  <Button disabled variant="destructive">
+                    Deleting…
                   </Button>
                 ) : phase === "email" ? (
                   <Button disabled={code.trim().length < 6 || pending} onClick={() => void verifyCode()}>
-                    {pending ? "Checking…" : "Verify code"}
+                    {pending ? "Checking…" : "Verify and delete"}
                   </Button>
                 ) : (
                   <>
-                    <Button disabled={!intentReady || pending} onClick={() => void continueWithGoogle()}>
-                      Continue with Google
+                    <Button
+                      disabled={!intentReady || pending}
+                      onClick={() => void continueWithGoogle()}
+                      variant="destructive"
+                    >
+                      {pending ? "Continuing…" : "Permanently delete account"}
                     </Button>
                     <Button
                       disabled={!intentReady || pending}
                       onClick={() => void emailCode()}
                       variant="outline"
                     >
-                      Email me a code
+                      Email me a code instead
                     </Button>
                   </>
                 )}

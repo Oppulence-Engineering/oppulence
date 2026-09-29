@@ -129,16 +129,16 @@ async function openDeleteSheet() {
 }
 
 /**
- * The clicks after the sheet is open: type DELETE, sign in with Google again,
- * then press the button that only appears once that sign-in is confirmed.
+ * The clicks after the sheet is open. Typing DELETE enables one button.
+ * That button sends the user through Google, and the account is deleted
+ * when they come back — there is no second confirmation.
  */
 async function confirmDeletion() {
   await page.getByLabel("Type DELETE to confirm").fill("DELETE");
-  await expect(page.getByRole("button", { name: "Permanently delete account" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Continue with Google" }).click();
-  await expect(page).toHaveURL(/\/app\/settings/);
-  await expect(page.getByRole("button", { name: "Permanently delete account" })).toBeEnabled();
   await page.getByRole("button", { name: "Permanently delete account" }).click();
+  await expect(
+    page.getByText("Your account is deleted").or(page.getByRole("alert")),
+  ).toBeVisible();
 }
 
 test.beforeAll(async ({ browser }, testInfo) => {
@@ -170,8 +170,8 @@ test("typing DELETE does not delete until a fresh sign-in", async ({ request }) 
   await openAccountTheWayAUserWould();
   await openDeleteSheet();
   await page.getByLabel("Type DELETE to confirm").fill("DELETE");
-  await expect(page.getByRole("button", { name: "Permanently delete account" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Continue with Google" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Permanently delete account" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Email me a code instead" })).toBeEnabled();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toBeHidden();
 

@@ -16,8 +16,8 @@ import { DeleteAccountRow } from "./delete-account-row";
 const assign = vi.fn();
 const SUBMIT = "Permanently delete account";
 const CONFIRM_LABEL = "Type DELETE to confirm";
-const EMAIL_CODE = "Email me a code";
-const GOOGLE = "Continue with Google";
+const EMAIL_CODE = "Email me a code instead";
+const VERIFY = "Verify and delete";
 const DELETED_TITLE = "Your account is deleted";
 const SUCCESSOR_MESSAGE = "Remove the other members first";
 const BILLING_MESSAGE = "We could not cancel your subscription, so your account was not deleted.";
@@ -79,8 +79,7 @@ async function confirmAndSubmit(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText(CONFIRM_LABEL), "DELETE");
   await user.click(screen.getByRole("button", { name: EMAIL_CODE }));
   await user.type(await screen.findByLabelText("Verification code"), "123456");
-  await user.click(screen.getByRole("button", { name: "Verify code" }));
-  await user.click(await screen.findByRole("button", { name: SUBMIT }));
+  await user.click(screen.getByRole("button", { name: VERIFY }));
 }
 
 describe("DeleteAccountRow", () => {
@@ -116,9 +115,9 @@ describe("DeleteAccountRow", () => {
     it("starts with an empty confirmation and no deletion request", async () => {
       await openSheet();
       expect(screen.getByLabelText(CONFIRM_LABEL)).toHaveValue("");
-      expect(screen.queryByRole("button", { name: SUBMIT })).not.toBeInTheDocument();
-      expect(screen.getByRole("button", { name: GOOGLE })).toBeDisabled();
+      expect(screen.getByRole("button", { name: SUBMIT })).toBeDisabled();
       expect(screen.getByRole("button", { name: EMAIL_CODE })).toBeDisabled();
+      expect(dashboardFetch).not.toHaveBeenCalled();
     });
 
     it.each(["delete", "Delete", "DELETE ", " DELETE", "DELET", "DELETEX", "D E L E T E"])(
@@ -126,28 +125,27 @@ describe("DeleteAccountRow", () => {
       async (typed) => {
         const user = await openSheet();
         await user.type(screen.getByLabelText(CONFIRM_LABEL), typed);
-        expect(screen.queryByRole("button", { name: SUBMIT })).not.toBeInTheDocument();
-        expect(screen.getByRole("button", { name: GOOGLE })).toBeDisabled();
+        expect(screen.getByRole("button", { name: SUBMIT })).toBeDisabled();
+        expect(screen.getByRole("button", { name: EMAIL_CODE })).toBeDisabled();
         expect(dashboardFetch).not.toHaveBeenCalled();
       },
     );
 
-    it("offers a fresh sign-in only after the exact word DELETE", async () => {
+    it("enables deletion only after the exact word DELETE", async () => {
       const user = await openSheet();
       await user.type(screen.getByLabelText(CONFIRM_LABEL), "DELETE");
-      expect(screen.getByRole("button", { name: GOOGLE })).toBeEnabled();
+      expect(screen.getByRole("button", { name: SUBMIT })).toBeEnabled();
       expect(screen.getByRole("button", { name: EMAIL_CODE })).toBeEnabled();
-      expect(screen.queryByRole("button", { name: SUBMIT })).not.toBeInTheDocument();
       expect(dashboardFetch).not.toHaveBeenCalled();
     });
 
-    it("hides the sign-in actions when the user edits the word", async () => {
+    it("disables deletion when the user edits the word", async () => {
       const user = await openSheet();
       const input = screen.getByLabelText(CONFIRM_LABEL);
       await user.type(input, "DELETE");
       await user.type(input, "{Backspace}");
-      expect(screen.getByRole("button", { name: GOOGLE })).toBeDisabled();
-      expect(screen.queryByRole("button", { name: SUBMIT })).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: SUBMIT })).toBeDisabled();
+      expect(screen.getByRole("button", { name: EMAIL_CODE })).toBeDisabled();
     });
 
     it("clears the confirmation and the error when the user closes the sheet", async () => {
@@ -162,7 +160,7 @@ describe("DeleteAccountRow", () => {
       await user.click(screen.getByRole("button", { name: "Delete account" }));
       expect(screen.getByLabelText(CONFIRM_LABEL)).toHaveValue("");
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-      expect(screen.getByRole("button", { name: GOOGLE })).toBeDisabled();
+      expect(screen.getByRole("button", { name: SUBMIT })).toBeDisabled();
       expect(assign).not.toHaveBeenCalled();
     });
   });
@@ -174,7 +172,7 @@ describe("DeleteAccountRow", () => {
       );
       const user = await openSheet();
       await user.type(screen.getByLabelText(CONFIRM_LABEL), "DELETE");
-      await user.click(screen.getByRole("button", { name: GOOGLE }));
+      await user.click(screen.getByRole("button", { name: SUBMIT }));
 
       await waitFor(() => expect(assign).toHaveBeenCalledTimes(1));
       const [url, init] = dashboardFetch.mock.calls[0] as [string, RequestInit];
@@ -186,25 +184,48 @@ describe("DeleteAccountRow", () => {
       expect(JSON.parse(window.sessionStorage.getItem(CHALLENGE_KEY) ?? "")).toEqual({
         challengeId: CHALLENGE.challengeId,
       });
-      expect(screen.queryByRole("button", { name: SUBMIT })).not.toBeInTheDocument();
+      expect(dashboardFetch.mock.calls.map(([called]) => called)).not.toContain("/api/rowboat/v1/me");
     });
 
-    it("turns a returned re-authentication into a ready deletion", async () => {
+    it("deletes as soon as the Google sign-in comes back", async () => {
       window.sessionStorage.setItem(
         CHALLENGE_KEY,
         JSON.stringify({ challengeId: CHALLENGE.challengeId }),
       );
-      dashboardFetch.mockResolvedValue(json(200, PROOF));
+      dashboardFetch.mockImplementation(async (url: string) => {
+        if (String(url).includes("/verify")) return json(200, PROOF);
+        return json(200, RECEIPT);
+      });
       render(<DeleteAccountRow />);
 
-      expect(await screen.findByText(/Identity confirmed/)).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: SUBMIT })).toBeEnabled();
+      expect(await screen.findByText(DELETED_TITLE)).toBeInTheDocument();
       expect(window.sessionStorage.getItem(CHALLENGE_KEY)).toBeNull();
-      const [url, init] = dashboardFetch.mock.calls[0] as [string, RequestInit];
-      expect(url).toBe(
+      const [verifyUrl, verifyInit] = dashboardFetch.mock.calls[0] as [string, RequestInit];
+      expect(verifyUrl).toBe(
         `/api/rowboat/v1/me/deletion-challenges/${CHALLENGE.challengeId}/verify`,
       );
-      expect(JSON.parse(init.body as string)).toEqual({});
+      expect(JSON.parse(verifyInit.body as string)).toEqual({});
+      const [deleteUrl, deleteInit] = dashboardFetch.mock.calls[1] as [string, RequestInit];
+      expect(deleteUrl).toBe("/api/rowboat/v1/me");
+      expect(deleteInit.method).toBe("DELETE");
+      expect(JSON.parse(deleteInit.body as string)).toEqual({
+        confirm: "DELETE",
+        stepUpToken: PROOF.stepUpToken,
+      });
+    });
+
+    it("does not delete when the returned sign-in cannot be verified", async () => {
+      window.sessionStorage.setItem(
+        CHALLENGE_KEY,
+        JSON.stringify({ challengeId: CHALLENGE.challengeId }),
+      );
+      dashboardFetch.mockResolvedValue(json(403, { code: "step_up_required" }));
+      render(<DeleteAccountRow />);
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("Sign in again");
+      expect(dashboardFetch).toHaveBeenCalledTimes(1);
+      expect(assign).not.toHaveBeenCalled();
+      expect(screen.queryByText(DELETED_TITLE)).not.toBeInTheDocument();
     });
   });
 
@@ -358,8 +379,8 @@ describe("DeleteAccountRow", () => {
       const user = await openSheet();
       await confirmAndSubmit(user);
       await screen.findByRole("alert");
-      expect(screen.queryByRole("button", { name: SUBMIT })).not.toBeInTheDocument();
-      expect(screen.getByRole("button", { name: GOOGLE })).toBeEnabled();
+      expect(screen.getByRole("button", { name: SUBMIT })).toBeEnabled();
+      expect(screen.getByRole("button", { name: EMAIL_CODE })).toBeEnabled();
       expect(screen.getByLabelText(CONFIRM_LABEL)).toHaveValue("DELETE");
     });
 
@@ -379,8 +400,7 @@ describe("DeleteAccountRow", () => {
 
       await user.click(screen.getByRole("button", { name: EMAIL_CODE }));
       await user.type(await screen.findByLabelText("Verification code"), "123456");
-      await user.click(screen.getByRole("button", { name: "Verify code" }));
-      await user.click(await screen.findByRole("button", { name: SUBMIT }));
+      await user.click(screen.getByRole("button", { name: VERIFY }));
       expect(await screen.findByText(DELETED_TITLE)).toBeInTheDocument();
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     });
