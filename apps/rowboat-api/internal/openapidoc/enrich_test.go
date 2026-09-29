@@ -163,6 +163,8 @@ func TestEnrichRejectsInternalCredentialCustodyFromPublicSchemas(t *testing.T) {
 		"ConnectorCredentialCleanupJob": obj{"type": "object"},
 		"ConnectorCredentialRecovery":   obj{"type": "object"},
 		"DeletedIdentity":               obj{"type": "object"},
+		"BillingRetention":              obj{"type": "object"},
+		"TermsAssent":                   obj{"type": "object"},
 		"MCPConnection": obj{
 			"type":       "object",
 			"properties": obj{"connector": obj{"type": "string"}, "refresh_token_encrypted": obj{"type": "string"}, "api_key_encrypted": obj{"type": "string"}},
@@ -172,7 +174,7 @@ func TestEnrichRejectsInternalCredentialCustodyFromPublicSchemas(t *testing.T) {
 
 	Enrich(spec)
 	schemas := asObj(asObj(spec["components"])["schemas"])
-	for _, internal := range []string{"ConnectorRevocationJob", "ConnectorCredentialCleanupJob", "ConnectorCredentialRecovery", "DeletedIdentity"} {
+	for _, internal := range []string{"ConnectorRevocationJob", "ConnectorCredentialCleanupJob", "ConnectorCredentialRecovery", "DeletedIdentity", "BillingRetention", "TermsAssent"} {
 		if schemas[internal] != nil {
 			t.Fatalf("internal custody schema %s leaked into public OpenAPI", internal)
 		}

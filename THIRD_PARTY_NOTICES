@@ -1,0 +1,23 @@
+Third-party notices
+====================
+
+This file names components the desktop package ships or links that are not
+covered by the Apache License 2.0 grant in LICENSE. It is not a complete scan
+of every transitive dependency.
+
+whisper.cpp
+-----------
+
+The desktop app stages a whisper.cpp transcription binary (MIT License).
+The binary is built from an upstream pin; the whisper.cpp LICENSE text is not
+vendored next to the binary. Copyright remains with the whisper.cpp authors.
+See https://github.com/ggml-org/whisper.cpp
+
+sharp / libvips
+---------------
+
+The desktop image pipeline uses the npm package `sharp`, which links libvips.
+libvips is licensed under the GNU Lesser General Public License,
+version 3 or later (LGPL-3.0-or-later). That license is not Apache 2.0.
+A recipient who wants the corresponding library source can use the version
+recorded in the desktop lockfile.

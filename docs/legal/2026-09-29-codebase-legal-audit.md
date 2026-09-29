@@ -7,7 +7,7 @@
 
 This is an engineering compliance review. It is not a legal opinion, not attorney work product, and not a certification under the GDPR, UK GDPR, CCPA/CPRA, or any other law. A lawyer should decide which items to change in the public documents, the product, or both. Contracts with vendors (DPAs, SCCs, Stripe tax settings, OpenRouter account privacy settings, WorkOS configuration) are outside the repository and are marked unverified.
 
-Remediation is tracked in `docs/legal/2026-09-29-conformance-plan.md`. The first code changes make desktop analytics fail-closed, stop sending account email to PostHog, honor Global Privacy Control on the web by suppressing analytics, and set OpenRouter `provider.data_collection` to `deny` on hosted model calls. The privacy policy’s analytics sentence now names PostHog and says capture is off until the user turns it on. Deletion, export, assent records, Apache boundary text, and `security.txt` are still open in that plan.
+Remediation is tracked in `docs/legal/2026-09-29-conformance-plan.md`. Items 1 through 6 of that plan are implemented on this branch: analytics is off until the user turns it on, hosted model calls set OpenRouter `provider.data_collection` to `deny`, the web client honors Global Privacy Control, account deletion retries the identity-provider wipe and keeps a billing row with no email, disconnect clears that user’s synced bodies, `GET /v1/me/export` returns the caller’s relationships and notes, first sign-in stores the Terms version, and `/.well-known/security.txt` plus `THIRD_PARTY_NOTICES` are published. Item 7 (postal address, executed DPAs, an EU representative, a full subprocessors page) stays open because those facts are not in the repository. The findings below are the audit as it was written; the plan is the status of the fixes.
 
 ## What is published
 
@@ -19,11 +19,11 @@ Remediation is tracked in `docs/legal/2026-09-29-conformance-plan.md`. The first
 | Security and privacy (product description, not a policy) | `apps/rowboat-www/app/(marketing)/sim-landing/subpages/sim-security-page.tsx` | none |
 | Apache License 2.0 | `LICENSE` | n/a |
 | Fork notice | `NOTICE` | copyright 2026 |
-| Docs license page | `apps/docs/docs/getting-started/license.mdx` | still points at upstream Rowboat Labs |
+| Docs license page | `apps/docs/docs/getting-started/license.mdx` | points at this repository’s `LICENSE` and `NOTICE` |
 
-Footer and sitemap link Privacy, Terms, and Responsible Disclosure (`apps/rowboat-www/app/(marketing)/site.ts`, `apps/rowboat-www/app/sitemap.ts`). There is no public cookie policy, subprocessors page, data processing addendum, or `/.well-known/security.txt`.
+Footer and sitemap link Privacy, Terms, and Responsible Disclosure (`apps/rowboat-www/app/(marketing)/site.ts`, `apps/rowboat-www/app/sitemap.ts`). There is no public cookie policy, subprocessors page, or data processing addendum. `/.well-known/security.txt` is served by the marketing site and the API.
 
-Sign-in and sign-up show “By continuing, you agree to our Terms and Privacy Policy” next to the Google button (`apps/rowboat-www/components/auth/auth-shell.tsx`). That is a link, not a stored acceptance record.
+Sign-in and sign-up show “By continuing, you agree to our Terms and Privacy Policy, and you confirm that you are at least 18 years old” next to the Google button (`apps/rowboat-www/components/auth/auth-shell.tsx`). The API stores the Terms version and the time on first sight of a verified token.
 
 ## Severity summary
 

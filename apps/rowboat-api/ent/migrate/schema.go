@@ -882,6 +882,24 @@ var (
 			},
 		},
 	}
+	// BillingRetentionsColumns holds the columns for the "billing_retentions" table.
+	BillingRetentionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "plan", Type: field.TypeString},
+		{Name: "status", Type: field.TypeString},
+		{Name: "stripe_customer_id", Type: field.TypeString, Nullable: true},
+		{Name: "stripe_subscription_id", Type: field.TypeString, Nullable: true},
+		{Name: "trial_expires_at", Type: field.TypeTime, Nullable: true},
+		{Name: "retained_at", Type: field.TypeTime},
+	}
+	// BillingRetentionsTable holds the schema information for the "billing_retentions" table.
+	BillingRetentionsTable = &schema.Table{
+		Name:       "billing_retentions",
+		Columns:    BillingRetentionsColumns,
+		PrimaryKey: []*schema.Column{BillingRetentionsColumns[0]},
+	}
 	// CaptureArtifactsColumns holds the columns for the "capture_artifacts" table.
 	CaptureArtifactsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -4336,6 +4354,36 @@ var (
 			},
 		},
 	}
+	// TermsAssentsColumns holds the columns for the "terms_assents" table.
+	TermsAssentsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "terms_version", Type: field.TypeString},
+		{Name: "accepted_at", Type: field.TypeTime},
+		{Name: "user_terms_assents", Type: field.TypeUUID},
+	}
+	// TermsAssentsTable holds the schema information for the "terms_assents" table.
+	TermsAssentsTable = &schema.Table{
+		Name:       "terms_assents",
+		Columns:    TermsAssentsColumns,
+		PrimaryKey: []*schema.Column{TermsAssentsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "terms_assents_users_terms_assents",
+				Columns:    []*schema.Column{TermsAssentsColumns[5]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "termsassent_terms_version_user_terms_assents",
+				Unique:  true,
+				Columns: []*schema.Column{TermsAssentsColumns[3], TermsAssentsColumns[5]},
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -4623,6 +4671,7 @@ var (
 		BackgroundTaskRunsTable,
 		BackgroundTaskRunEventsTable,
 		BackgroundTaskScheduleStatesTable,
+		BillingRetentionsTable,
 		CaptureArtifactsTable,
 		CloudEventsTable,
 		CommitmentsTable,
@@ -4690,6 +4739,7 @@ var (
 		SubscriptionsTable,
 		SubscriptionHistoriesTable,
 		TenantEvidenceKeysTable,
+		TermsAssentsTable,
 		UsersTable,
 		UserHistoriesTable,
 		UserPreferencesTable,
@@ -4877,6 +4927,7 @@ func init() {
 	SubscriptionsTable.ForeignKeys[0].RefTable = UsersTable
 	TenantEvidenceKeysTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
 	TenantEvidenceKeysTable.ForeignKeys[1].RefTable = UsersTable
+	TermsAssentsTable.ForeignKeys[0].RefTable = UsersTable
 	UserPreferencesTable.ForeignKeys[0].RefTable = UsersTable
 	VoiceAPIKeysTable.ForeignKeys[0].RefTable = UsersTable
 	VoiceSyncItemsTable.ForeignKeys[0].RefTable = UsersTable

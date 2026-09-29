@@ -100,6 +100,10 @@ func removeInternalSchemas(schemas obj) {
 	// The deletion challenge stores code and token hashes. It is an internal
 	// ledger, not a client resource.
 	delete(schemas, "AccountDeletionChallenge")
+	// Tax facts kept after account deletion, and the Terms assent ledger.
+	// Neither is a client resource.
+	delete(schemas, "BillingRetention")
+	delete(schemas, "TermsAssent")
 	for _, schemaValue := range schemas {
 		schema, ok := schemaValue.(obj)
 		if !ok {
@@ -109,10 +113,14 @@ func removeInternalSchemas(schemas obj) {
 		delete(properties, "refresh_token_encrypted")
 		delete(properties, "api_key_encrypted")
 		delete(properties, "account_deletion_challenges")
+		delete(properties, "terms_assents")
 		if required, ok := schema["required"].([]any); ok {
 			filtered := required[:0]
 			for _, field := range required {
-				if field != "refresh_token_encrypted" && field != "api_key_encrypted" && field != "account_deletion_challenges" {
+				switch field {
+				case "refresh_token_encrypted", "api_key_encrypted", "account_deletion_challenges", "terms_assents":
+					continue
+				default:
 					filtered = append(filtered, field)
 				}
 			}

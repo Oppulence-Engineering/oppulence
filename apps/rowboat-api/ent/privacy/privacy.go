@@ -519,6 +519,30 @@ func (f BackgroundTaskScheduleStateMutationRuleFunc) EvalMutation(ctx context.Co
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.BackgroundTaskScheduleStateMutation", m)
 }
 
+// The BillingRetentionQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type BillingRetentionQueryRuleFunc func(context.Context, *ent.BillingRetentionQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f BillingRetentionQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.BillingRetentionQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.BillingRetentionQuery", q)
+}
+
+// The BillingRetentionMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type BillingRetentionMutationRuleFunc func(context.Context, *ent.BillingRetentionMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f BillingRetentionMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.BillingRetentionMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.BillingRetentionMutation", m)
+}
+
 // The CaptureArtifactQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type CaptureArtifactQueryRuleFunc func(context.Context, *ent.CaptureArtifactQuery) error
@@ -2127,6 +2151,30 @@ func (f TenantEvidenceKeyMutationRuleFunc) EvalMutation(ctx context.Context, m e
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.TenantEvidenceKeyMutation", m)
 }
 
+// The TermsAssentQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type TermsAssentQueryRuleFunc func(context.Context, *ent.TermsAssentQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f TermsAssentQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.TermsAssentQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.TermsAssentQuery", q)
+}
+
+// The TermsAssentMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type TermsAssentMutationRuleFunc func(context.Context, *ent.TermsAssentMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f TermsAssentMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.TermsAssentMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.TermsAssentMutation", m)
+}
+
 // The UserQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type UserQueryRuleFunc func(context.Context, *ent.UserQuery) error
@@ -2340,6 +2388,8 @@ func queryFilter(q ent.Query) (Filter, error) {
 		return q.Filter(), nil
 	case *ent.BackgroundTaskScheduleStateQuery:
 		return q.Filter(), nil
+	case *ent.BillingRetentionQuery:
+		return q.Filter(), nil
 	case *ent.CaptureArtifactQuery:
 		return q.Filter(), nil
 	case *ent.CloudEventQuery:
@@ -2474,6 +2524,8 @@ func queryFilter(q ent.Query) (Filter, error) {
 		return q.Filter(), nil
 	case *ent.TenantEvidenceKeyQuery:
 		return q.Filter(), nil
+	case *ent.TermsAssentQuery:
+		return q.Filter(), nil
 	case *ent.UserQuery:
 		return q.Filter(), nil
 	case *ent.UserHistoryQuery:
@@ -2526,6 +2578,8 @@ func mutationFilter(m ent.Mutation) (Filter, error) {
 	case *ent.BackgroundTaskRunEventMutation:
 		return m.Filter(), nil
 	case *ent.BackgroundTaskScheduleStateMutation:
+		return m.Filter(), nil
+	case *ent.BillingRetentionMutation:
 		return m.Filter(), nil
 	case *ent.CaptureArtifactMutation:
 		return m.Filter(), nil
@@ -2660,6 +2714,8 @@ func mutationFilter(m ent.Mutation) (Filter, error) {
 	case *ent.SubscriptionHistoryMutation:
 		return m.Filter(), nil
 	case *ent.TenantEvidenceKeyMutation:
+		return m.Filter(), nil
+	case *ent.TermsAssentMutation:
 		return m.Filter(), nil
 	case *ent.UserMutation:
 		return m.Filter(), nil

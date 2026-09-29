@@ -1,0 +1,5 @@
+Contact: mailto:security@oppulence.io
+Expires: 2027-09-08T00:00:00.000Z
+Preferred-Languages: en
+Policy: https://oppulence.io/responsible-disclosure
+Canonical: https://oppulence.io/.well-known/security.txt

@@ -23,6 +23,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectormetrics"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/retention"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -649,7 +650,9 @@ func (h *Handler) revokeConnection(ctx context.Context, owner *ent.User, connect
 		}
 		if fresh.Status == "revoked" || fresh.Status == "invalidated" {
 			_ = tx.Rollback()
-			return nil
+			// A previous attempt wrote the tombstone and then failed while
+			// deleting synced bodies. Retry the deletion; it is idempotent.
+			return h.redactSyncedContent(ctx, owner, fresh.Connector)
 		}
 		now := time.Now().UTC()
 		revocationCredential = append(revocationCredential[:0], fresh.RefreshTokenEncrypted...)
@@ -746,6 +749,17 @@ func (h *Handler) revokeConnection(ctx context.Context, owner *ent.User, connect
 		outcome = "provider_pending"
 	}
 	connectormetrics.Revocation.WithLabelValues(connection.Connector, outcome).Inc()
+	return h.redactSyncedContent(ctx, owner, connection.Connector)
+}
+
+// redactSyncedContent deletes provider bodies for this connection and leaves
+// the revoked connection row in place. The privacy policy says previously
+// synced data is deleted on disconnect. Audit rows and action-history quotes
+// are not rewritten.
+func (h *Handler) redactSyncedContent(ctx context.Context, owner *ent.User, connector string) error {
+	if err := retention.RedactSources(ctx, h.client, owner, retention.SourcesForConnector(connector)...); err != nil {
+		return fmt.Errorf("delete synced source content: %w", err)
+	}
 	return nil
 }
 

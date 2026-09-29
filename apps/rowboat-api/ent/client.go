@@ -34,6 +34,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/billingretention"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/captureartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
@@ -101,6 +102,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscriptionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/termsassent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
@@ -148,6 +150,8 @@ type Client struct {
 	BackgroundTaskRunEvent *BackgroundTaskRunEventClient
 	// BackgroundTaskScheduleState is the client for interacting with the BackgroundTaskScheduleState builders.
 	BackgroundTaskScheduleState *BackgroundTaskScheduleStateClient
+	// BillingRetention is the client for interacting with the BillingRetention builders.
+	BillingRetention *BillingRetentionClient
 	// CaptureArtifact is the client for interacting with the CaptureArtifact builders.
 	CaptureArtifact *CaptureArtifactClient
 	// CloudEvent is the client for interacting with the CloudEvent builders.
@@ -282,6 +286,8 @@ type Client struct {
 	SubscriptionHistory *SubscriptionHistoryClient
 	// TenantEvidenceKey is the client for interacting with the TenantEvidenceKey builders.
 	TenantEvidenceKey *TenantEvidenceKeyClient
+	// TermsAssent is the client for interacting with the TermsAssent builders.
+	TermsAssent *TermsAssentClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 	// UserHistory is the client for interacting with the UserHistory builders.
@@ -327,6 +333,7 @@ func (c *Client) init() {
 	c.BackgroundTaskRun = NewBackgroundTaskRunClient(c.config)
 	c.BackgroundTaskRunEvent = NewBackgroundTaskRunEventClient(c.config)
 	c.BackgroundTaskScheduleState = NewBackgroundTaskScheduleStateClient(c.config)
+	c.BillingRetention = NewBillingRetentionClient(c.config)
 	c.CaptureArtifact = NewCaptureArtifactClient(c.config)
 	c.CloudEvent = NewCloudEventClient(c.config)
 	c.Commitment = NewCommitmentClient(c.config)
@@ -394,6 +401,7 @@ func (c *Client) init() {
 	c.Subscription = NewSubscriptionClient(c.config)
 	c.SubscriptionHistory = NewSubscriptionHistoryClient(c.config)
 	c.TenantEvidenceKey = NewTenantEvidenceKeyClient(c.config)
+	c.TermsAssent = NewTermsAssentClient(c.config)
 	c.User = NewUserClient(c.config)
 	c.UserHistory = NewUserHistoryClient(c.config)
 	c.UserPreference = NewUserPreferenceClient(c.config)
@@ -537,6 +545,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		BackgroundTaskRun:                 NewBackgroundTaskRunClient(cfg),
 		BackgroundTaskRunEvent:            NewBackgroundTaskRunEventClient(cfg),
 		BackgroundTaskScheduleState:       NewBackgroundTaskScheduleStateClient(cfg),
+		BillingRetention:                  NewBillingRetentionClient(cfg),
 		CaptureArtifact:                   NewCaptureArtifactClient(cfg),
 		CloudEvent:                        NewCloudEventClient(cfg),
 		Commitment:                        NewCommitmentClient(cfg),
@@ -604,6 +613,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Subscription:                      NewSubscriptionClient(cfg),
 		SubscriptionHistory:               NewSubscriptionHistoryClient(cfg),
 		TenantEvidenceKey:                 NewTenantEvidenceKeyClient(cfg),
+		TermsAssent:                       NewTermsAssentClient(cfg),
 		User:                              NewUserClient(cfg),
 		UserHistory:                       NewUserHistoryClient(cfg),
 		UserPreference:                    NewUserPreferenceClient(cfg),
@@ -646,6 +656,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		BackgroundTaskRun:                 NewBackgroundTaskRunClient(cfg),
 		BackgroundTaskRunEvent:            NewBackgroundTaskRunEventClient(cfg),
 		BackgroundTaskScheduleState:       NewBackgroundTaskScheduleStateClient(cfg),
+		BillingRetention:                  NewBillingRetentionClient(cfg),
 		CaptureArtifact:                   NewCaptureArtifactClient(cfg),
 		CloudEvent:                        NewCloudEventClient(cfg),
 		Commitment:                        NewCommitmentClient(cfg),
@@ -713,6 +724,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Subscription:                      NewSubscriptionClient(cfg),
 		SubscriptionHistory:               NewSubscriptionHistoryClient(cfg),
 		TenantEvidenceKey:                 NewTenantEvidenceKeyClient(cfg),
+		TermsAssent:                       NewTermsAssentClient(cfg),
 		User:                              NewUserClient(cfg),
 		UserHistory:                       NewUserHistoryClient(cfg),
 		UserPreference:                    NewUserPreferenceClient(cfg),
@@ -753,11 +765,11 @@ func (c *Client) Use(hooks ...Hook) {
 		c.AgentSessionEvent, c.AgentToolCall, c.AgentToolResultBlob, c.AgentTurn,
 		c.ApprovalToken, c.BackgroundTask, c.BackgroundTaskArtifact,
 		c.BackgroundTaskRun, c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState,
-		c.CaptureArtifact, c.CloudEvent, c.Commitment, c.CommitmentDependency,
-		c.CommitmentEvent, c.CommunicationAttachment, c.CommunicationInteraction,
-		c.CommunicationParticipant, c.CommunicationPrivacyPolicy,
-		c.CommunicationPrivacyRule, c.CommunicationShareGrant,
-		c.CommunicationSyncCursor, c.ConnectorAuditEvent,
+		c.BillingRetention, c.CaptureArtifact, c.CloudEvent, c.Commitment,
+		c.CommitmentDependency, c.CommitmentEvent, c.CommunicationAttachment,
+		c.CommunicationInteraction, c.CommunicationParticipant,
+		c.CommunicationPrivacyPolicy, c.CommunicationPrivacyRule,
+		c.CommunicationShareGrant, c.CommunicationSyncCursor, c.ConnectorAuditEvent,
 		c.ConnectorCredentialCleanupJob, c.ConnectorCredentialRecovery,
 		c.ConnectorRevocationJob, c.ConsoleResource,
 		c.ConversationIntelligenceArtifact, c.CreditLedger, c.DeletedIdentity,
@@ -776,8 +788,8 @@ func (c *Client) Use(hooks ...Hook) {
 		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueLeakScan,
 		c.RevenueOutboxEvent, c.RevenueTrustEvent, c.RevenueWorkspace,
 		c.RevenueWorkspaceMember, c.Subscription, c.SubscriptionHistory,
-		c.TenantEvidenceKey, c.User, c.UserHistory, c.UserPreference, c.VoiceAPIKey,
-		c.VoiceSyncItem, c.WorkspaceFeatureControl,
+		c.TenantEvidenceKey, c.TermsAssent, c.User, c.UserHistory, c.UserPreference,
+		c.VoiceAPIKey, c.VoiceSyncItem, c.WorkspaceFeatureControl,
 	} {
 		n.Use(hooks...)
 	}
@@ -792,11 +804,11 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.AgentSessionEvent, c.AgentToolCall, c.AgentToolResultBlob, c.AgentTurn,
 		c.ApprovalToken, c.BackgroundTask, c.BackgroundTaskArtifact,
 		c.BackgroundTaskRun, c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState,
-		c.CaptureArtifact, c.CloudEvent, c.Commitment, c.CommitmentDependency,
-		c.CommitmentEvent, c.CommunicationAttachment, c.CommunicationInteraction,
-		c.CommunicationParticipant, c.CommunicationPrivacyPolicy,
-		c.CommunicationPrivacyRule, c.CommunicationShareGrant,
-		c.CommunicationSyncCursor, c.ConnectorAuditEvent,
+		c.BillingRetention, c.CaptureArtifact, c.CloudEvent, c.Commitment,
+		c.CommitmentDependency, c.CommitmentEvent, c.CommunicationAttachment,
+		c.CommunicationInteraction, c.CommunicationParticipant,
+		c.CommunicationPrivacyPolicy, c.CommunicationPrivacyRule,
+		c.CommunicationShareGrant, c.CommunicationSyncCursor, c.ConnectorAuditEvent,
 		c.ConnectorCredentialCleanupJob, c.ConnectorCredentialRecovery,
 		c.ConnectorRevocationJob, c.ConsoleResource,
 		c.ConversationIntelligenceArtifact, c.CreditLedger, c.DeletedIdentity,
@@ -815,8 +827,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueLeakScan,
 		c.RevenueOutboxEvent, c.RevenueTrustEvent, c.RevenueWorkspace,
 		c.RevenueWorkspaceMember, c.Subscription, c.SubscriptionHistory,
-		c.TenantEvidenceKey, c.User, c.UserHistory, c.UserPreference, c.VoiceAPIKey,
-		c.VoiceSyncItem, c.WorkspaceFeatureControl,
+		c.TenantEvidenceKey, c.TermsAssent, c.User, c.UserHistory, c.UserPreference,
+		c.VoiceAPIKey, c.VoiceSyncItem, c.WorkspaceFeatureControl,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -859,6 +871,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.BackgroundTaskRunEvent.mutate(ctx, m)
 	case *BackgroundTaskScheduleStateMutation:
 		return c.BackgroundTaskScheduleState.mutate(ctx, m)
+	case *BillingRetentionMutation:
+		return c.BillingRetention.mutate(ctx, m)
 	case *CaptureArtifactMutation:
 		return c.CaptureArtifact.mutate(ctx, m)
 	case *CloudEventMutation:
@@ -993,6 +1007,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.SubscriptionHistory.mutate(ctx, m)
 	case *TenantEvidenceKeyMutation:
 		return c.TenantEvidenceKey.mutate(ctx, m)
+	case *TermsAssentMutation:
+		return c.TermsAssent.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	case *UserHistoryMutation:
@@ -3909,6 +3925,139 @@ func (c *BackgroundTaskScheduleStateClient) mutate(ctx context.Context, m *Backg
 		return (&BackgroundTaskScheduleStateDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown BackgroundTaskScheduleState mutation op: %q", m.Op())
+	}
+}
+
+// BillingRetentionClient is a client for the BillingRetention schema.
+type BillingRetentionClient struct {
+	config
+}
+
+// NewBillingRetentionClient returns a client for the BillingRetention from the given config.
+func NewBillingRetentionClient(c config) *BillingRetentionClient {
+	return &BillingRetentionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `billingretention.Hooks(f(g(h())))`.
+func (c *BillingRetentionClient) Use(hooks ...Hook) {
+	c.hooks.BillingRetention = append(c.hooks.BillingRetention, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `billingretention.Intercept(f(g(h())))`.
+func (c *BillingRetentionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.BillingRetention = append(c.inters.BillingRetention, interceptors...)
+}
+
+// Create returns a builder for creating a BillingRetention entity.
+func (c *BillingRetentionClient) Create() *BillingRetentionCreate {
+	mutation := newBillingRetentionMutation(c.config, OpCreate)
+	return &BillingRetentionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of BillingRetention entities.
+func (c *BillingRetentionClient) CreateBulk(builders ...*BillingRetentionCreate) *BillingRetentionCreateBulk {
+	return &BillingRetentionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *BillingRetentionClient) MapCreateBulk(slice any, setFunc func(*BillingRetentionCreate, int)) *BillingRetentionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &BillingRetentionCreateBulk{err: fmt.Errorf("calling to BillingRetentionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*BillingRetentionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &BillingRetentionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for BillingRetention.
+func (c *BillingRetentionClient) Update() *BillingRetentionUpdate {
+	mutation := newBillingRetentionMutation(c.config, OpUpdate)
+	return &BillingRetentionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BillingRetentionClient) UpdateOne(_m *BillingRetention) *BillingRetentionUpdateOne {
+	mutation := newBillingRetentionMutation(c.config, OpUpdateOne, withBillingRetention(_m))
+	return &BillingRetentionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BillingRetentionClient) UpdateOneID(id uuid.UUID) *BillingRetentionUpdateOne {
+	mutation := newBillingRetentionMutation(c.config, OpUpdateOne, withBillingRetentionID(id))
+	return &BillingRetentionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for BillingRetention.
+func (c *BillingRetentionClient) Delete() *BillingRetentionDelete {
+	mutation := newBillingRetentionMutation(c.config, OpDelete)
+	return &BillingRetentionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BillingRetentionClient) DeleteOne(_m *BillingRetention) *BillingRetentionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BillingRetentionClient) DeleteOneID(id uuid.UUID) *BillingRetentionDeleteOne {
+	builder := c.Delete().Where(billingretention.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BillingRetentionDeleteOne{builder}
+}
+
+// Query returns a query builder for BillingRetention.
+func (c *BillingRetentionClient) Query() *BillingRetentionQuery {
+	return &BillingRetentionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBillingRetention},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a BillingRetention entity by its id.
+func (c *BillingRetentionClient) Get(ctx context.Context, id uuid.UUID) (*BillingRetention, error) {
+	return c.Query().Where(billingretention.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BillingRetentionClient) GetX(ctx context.Context, id uuid.UUID) *BillingRetention {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *BillingRetentionClient) Hooks() []Hook {
+	return c.hooks.BillingRetention
+}
+
+// Interceptors returns the client interceptors.
+func (c *BillingRetentionClient) Interceptors() []Interceptor {
+	return c.inters.BillingRetention
+}
+
+func (c *BillingRetentionClient) mutate(ctx context.Context, m *BillingRetentionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BillingRetentionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BillingRetentionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BillingRetentionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BillingRetentionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown BillingRetention mutation op: %q", m.Op())
 	}
 }
 
@@ -16597,6 +16746,156 @@ func (c *TenantEvidenceKeyClient) mutate(ctx context.Context, m *TenantEvidenceK
 	}
 }
 
+// TermsAssentClient is a client for the TermsAssent schema.
+type TermsAssentClient struct {
+	config
+}
+
+// NewTermsAssentClient returns a client for the TermsAssent from the given config.
+func NewTermsAssentClient(c config) *TermsAssentClient {
+	return &TermsAssentClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `termsassent.Hooks(f(g(h())))`.
+func (c *TermsAssentClient) Use(hooks ...Hook) {
+	c.hooks.TermsAssent = append(c.hooks.TermsAssent, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `termsassent.Intercept(f(g(h())))`.
+func (c *TermsAssentClient) Intercept(interceptors ...Interceptor) {
+	c.inters.TermsAssent = append(c.inters.TermsAssent, interceptors...)
+}
+
+// Create returns a builder for creating a TermsAssent entity.
+func (c *TermsAssentClient) Create() *TermsAssentCreate {
+	mutation := newTermsAssentMutation(c.config, OpCreate)
+	return &TermsAssentCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of TermsAssent entities.
+func (c *TermsAssentClient) CreateBulk(builders ...*TermsAssentCreate) *TermsAssentCreateBulk {
+	return &TermsAssentCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TermsAssentClient) MapCreateBulk(slice any, setFunc func(*TermsAssentCreate, int)) *TermsAssentCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TermsAssentCreateBulk{err: fmt.Errorf("calling to TermsAssentClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TermsAssentCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TermsAssentCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for TermsAssent.
+func (c *TermsAssentClient) Update() *TermsAssentUpdate {
+	mutation := newTermsAssentMutation(c.config, OpUpdate)
+	return &TermsAssentUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TermsAssentClient) UpdateOne(_m *TermsAssent) *TermsAssentUpdateOne {
+	mutation := newTermsAssentMutation(c.config, OpUpdateOne, withTermsAssent(_m))
+	return &TermsAssentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TermsAssentClient) UpdateOneID(id uuid.UUID) *TermsAssentUpdateOne {
+	mutation := newTermsAssentMutation(c.config, OpUpdateOne, withTermsAssentID(id))
+	return &TermsAssentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for TermsAssent.
+func (c *TermsAssentClient) Delete() *TermsAssentDelete {
+	mutation := newTermsAssentMutation(c.config, OpDelete)
+	return &TermsAssentDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TermsAssentClient) DeleteOne(_m *TermsAssent) *TermsAssentDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TermsAssentClient) DeleteOneID(id uuid.UUID) *TermsAssentDeleteOne {
+	builder := c.Delete().Where(termsassent.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TermsAssentDeleteOne{builder}
+}
+
+// Query returns a query builder for TermsAssent.
+func (c *TermsAssentClient) Query() *TermsAssentQuery {
+	return &TermsAssentQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTermsAssent},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a TermsAssent entity by its id.
+func (c *TermsAssentClient) Get(ctx context.Context, id uuid.UUID) (*TermsAssent, error) {
+	return c.Query().Where(termsassent.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TermsAssentClient) GetX(ctx context.Context, id uuid.UUID) *TermsAssent {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a TermsAssent.
+func (c *TermsAssentClient) QueryUser(_m *TermsAssent) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(termsassent.Table, termsassent.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, termsassent.UserTable, termsassent.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *TermsAssentClient) Hooks() []Hook {
+	hooks := c.hooks.TermsAssent
+	return append(hooks[:len(hooks):len(hooks)], termsassent.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *TermsAssentClient) Interceptors() []Interceptor {
+	return c.inters.TermsAssent
+}
+
+func (c *TermsAssentClient) mutate(ctx context.Context, m *TermsAssentMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TermsAssentCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TermsAssentUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TermsAssentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TermsAssentDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown TermsAssent mutation op: %q", m.Op())
+	}
+}
+
 // UserClient is a client for the User schema.
 type UserClient struct {
 	config
@@ -17921,6 +18220,22 @@ func (c *UserClient) QueryAccountDeletionChallenges(_m *User) *AccountDeletionCh
 	return query
 }
 
+// QueryTermsAssents queries the terms_assents edge of a User.
+func (c *UserClient) QueryTermsAssents(_m *User) *TermsAssentQuery {
+	query := (&TermsAssentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(termsassent.Table, termsassent.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.TermsAssentsTable, user.TermsAssentsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -18702,8 +19017,8 @@ type (
 		AgentDefinition, AgentDefinitionHistory, AgentSession, AgentSessionEvent,
 		AgentToolCall, AgentToolResultBlob, AgentTurn, ApprovalToken, BackgroundTask,
 		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
-		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
-		CommitmentDependency, CommitmentEvent, CommunicationAttachment,
+		BackgroundTaskScheduleState, BillingRetention, CaptureArtifact, CloudEvent,
+		Commitment, CommitmentDependency, CommitmentEvent, CommunicationAttachment,
 		CommunicationInteraction, CommunicationParticipant, CommunicationPrivacyPolicy,
 		CommunicationPrivacyRule, CommunicationShareGrant, CommunicationSyncCursor,
 		ConnectorAuditEvent, ConnectorCredentialCleanupJob,
@@ -18722,7 +19037,7 @@ type (
 		RelationshipStateSnapshot, RevenueAction, RevenueActionRevision,
 		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueTrustEvent,
 		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
-		TenantEvidenceKey, User, UserHistory, UserPreference, VoiceAPIKey,
+		TenantEvidenceKey, TermsAssent, User, UserHistory, UserPreference, VoiceAPIKey,
 		VoiceSyncItem, WorkspaceFeatureControl []ent.Hook
 	}
 	inters struct {
@@ -18730,8 +19045,8 @@ type (
 		AgentDefinition, AgentDefinitionHistory, AgentSession, AgentSessionEvent,
 		AgentToolCall, AgentToolResultBlob, AgentTurn, ApprovalToken, BackgroundTask,
 		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
-		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
-		CommitmentDependency, CommitmentEvent, CommunicationAttachment,
+		BackgroundTaskScheduleState, BillingRetention, CaptureArtifact, CloudEvent,
+		Commitment, CommitmentDependency, CommitmentEvent, CommunicationAttachment,
 		CommunicationInteraction, CommunicationParticipant, CommunicationPrivacyPolicy,
 		CommunicationPrivacyRule, CommunicationShareGrant, CommunicationSyncCursor,
 		ConnectorAuditEvent, ConnectorCredentialCleanupJob,
@@ -18750,7 +19065,7 @@ type (
 		RelationshipStateSnapshot, RevenueAction, RevenueActionRevision,
 		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueTrustEvent,
 		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
-		TenantEvidenceKey, User, UserHistory, UserPreference, VoiceAPIKey,
+		TenantEvidenceKey, TermsAssent, User, UserHistory, UserPreference, VoiceAPIKey,
 		VoiceSyncItem, WorkspaceFeatureControl []ent.Interceptor
 	}
 )

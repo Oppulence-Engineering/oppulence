@@ -6,9 +6,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/deletedidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/termsassent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
 	"go.uber.org/zap"
@@ -106,6 +108,7 @@ func (m *Middleware) refreshUser(ctx context.Context, u *ent.User, claims *oauth
 		}
 	}
 	if !emailChanged && orgOp == "" {
+		m.recordTermsAssent(ctx, u)
 		return u
 	}
 
@@ -124,7 +127,40 @@ func (m *Middleware) refreshUser(ctx context.Context, u *ent.User, claims *oauth
 	if orgOp != "" {
 		m.audit.OrgMapped(ctx, orgOp, updated.ID.String(), claims.WorkOSOrgID)
 	}
+	m.recordTermsAssent(ctx, updated)
 	return updated
+}
+
+// recordTermsAssent stores the current published Terms version the first time
+// this user is seen under it. A second request for the same version does not
+// move the timestamp. Failure is logged: a mirror refresh must not fail the
+// request, and the next request tries again.
+func (m *Middleware) recordTermsAssent(ctx context.Context, u *ent.User) {
+	if u == nil {
+		return
+	}
+	internal := WithInternal(ctx)
+	exists, err := m.client.TermsAssent.Query().
+		Where(
+			termsassent.HasUserWith(user.IDEQ(u.ID)),
+			termsassent.TermsVersionEQ(CurrentTermsVersion),
+		).
+		Exist(internal)
+	if err != nil {
+		m.log.Warn("terms assent lookup failed", zap.Error(err))
+		return
+	}
+	if exists {
+		return
+	}
+	err = m.client.TermsAssent.Create().
+		SetUser(u).
+		SetTermsVersion(CurrentTermsVersion).
+		SetAcceptedAt(time.Now().UTC()).
+		Exec(internal)
+	if err != nil && !ent.IsConstraintError(err) {
+		m.log.Warn("terms assent record failed", zap.Error(err))
+	}
 }
 
 // createUser creates the user + free-tier subscription in one transaction.
@@ -172,6 +208,16 @@ func (m *Middleware) createUser(ctx context.Context, claims *oauthrs.Claims) (*e
 		Save(provisionCtx); err != nil {
 		_ = tx.Rollback()
 		return nil, fmt.Errorf("mint free-tier subscription: %w", err)
+	}
+	// The sign-in page says continuing is agreement, and this is the first
+	// verified token. Record the published Terms version at that moment.
+	if err := tx.TermsAssent.Create().
+		SetUser(u).
+		SetTermsVersion(CurrentTermsVersion).
+		SetAcceptedAt(time.Now().UTC()).
+		Exec(provisionCtx); err != nil {
+		_ = tx.Rollback()
+		return nil, fmt.Errorf("record terms assent: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {

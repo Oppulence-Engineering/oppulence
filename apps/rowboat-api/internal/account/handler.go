@@ -27,6 +27,14 @@ import (
 // replayed request from deleting an account.
 const confirmation = "DELETE"
 
+// identityCleanupAttempts is how many times deletion tries to revoke sessions
+// and delete the WorkOS user before it returns. The privacy policy deletes or
+// de-identifies personal information within 30 days. One logged failure is not
+// that deletion. The attempts are immediate so a slow identity provider cannot
+// hold the request open; a receipt with identityDeleted false is the honest
+// result when every attempt fails.
+const identityCleanupAttempts = 3
+
 var errNoSuccessor = errors.New("account: shared workspace has no eligible successor")
 
 // IdentityDeleter removes the identity-provider user and answers the questions
@@ -90,9 +98,12 @@ type Receipt struct {
 //     can still charge is never deleted.
 //  5. Revoke every connector grant (durable jobs keep retrying).
 //  6. Delete the account in one database transaction (db.DeleteAccount).
+//     That transaction copies the tax and dispute facts into a retention row
+//     the cascade does not reach.
 //  7. Revoke identity-provider sessions, then delete the WorkOS identity, so
-//     the next sign-in cannot recreate the user. The data is already gone, so
-//     a failure here is logged for a retry.
+//     the next sign-in cannot recreate the user. Each call is retried
+//     immediately. The data is already gone, so an exhausted retry is logged
+//     and the receipt says the identity was not deleted.
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	u, ok := auth.UserFromCtx(r.Context())
 	if !ok {
@@ -137,7 +148,8 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Kept for the dispute and tax trail: the cascade deletes the billing rows.
+	// Loaded for the audit line. The tax trail itself is the retention row
+	// DeleteAccount writes before the cascade removes this subscription.
 	sub, err := h.database.Client.Subscription.Query().
 		Where(subscription.HasUserWith(user.IDEQ(u.ID))).
 		Only(auth.WithInternal(ctx))
@@ -176,16 +188,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	receipt.WorkspacesTransferred = len(transfers)
 	receipt.WorkspacesDeleted = workspacesDeleted
 
-	if err := h.identity.RevokeSessions(work, u.WorkosUserID); err != nil {
-		log.Error("account deletion: data deleted but identity sessions were not revoked",
-			zap.String("workos_user_id", u.WorkosUserID), zap.Error(err))
-	}
-	if err := h.identity.DeleteUser(work, u.WorkosUserID); err != nil {
-		log.Error("account deletion: data deleted but the WorkOS identity remains; delete it manually",
-			zap.String("workos_user_id", u.WorkosUserID), zap.Error(err))
-	} else {
-		receipt.IdentityDeleted = true
-	}
+	receipt.IdentityDeleted = h.deleteIdentity(work, log, u.WorkosUserID)
 
 	receipt.CompletedAt = h.now().Format(time.RFC3339)
 	fields := []zap.Field{
@@ -200,6 +203,41 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Info("account deleted", fields...)
 	httpx.WriteJSON(w, http.StatusOK, receipt)
+}
+
+// deleteIdentity revokes live sessions and then deletes the identity-provider
+// user. Sessions are revoked even when the user delete keeps failing, because
+// a stolen session must not outlive the account data. The bool is true only
+// when DeleteUser succeeds, which is what the receipt reports.
+func (h *Handler) deleteIdentity(ctx context.Context, log *zap.Logger, workosUserID string) bool {
+	if err := retryIdentityCall(ctx, func() error {
+		return h.identity.RevokeSessions(ctx, workosUserID)
+	}); err != nil {
+		log.Error("account deletion: data deleted but identity sessions were not revoked",
+			zap.String("workos_user_id", workosUserID), zap.Error(err))
+	}
+	if err := retryIdentityCall(ctx, func() error {
+		return h.identity.DeleteUser(ctx, workosUserID)
+	}); err != nil {
+		log.Error("account deletion: data deleted but the WorkOS identity remains; delete it manually",
+			zap.String("workos_user_id", workosUserID), zap.Error(err))
+		return false
+	}
+	return true
+}
+
+func retryIdentityCall(ctx context.Context, call func() error) error {
+	var err error
+	for attempt := 1; attempt <= identityCleanupAttempts; attempt++ {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		err = call()
+		if err == nil {
+			return nil
+		}
+	}
+	return err
 }
 
 func writeNoSuccessor(w http.ResponseWriter) {

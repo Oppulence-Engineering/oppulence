@@ -83,6 +83,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/termsassent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
@@ -1306,6 +1307,21 @@ func (_u *UserUpdate) AddAccountDeletionChallenges(v ...*AccountDeletionChalleng
 		ids[i] = v[i].ID
 	}
 	return _u.AddAccountDeletionChallengeIDs(ids...)
+}
+
+// AddTermsAssentIDs adds the "terms_assents" edge to the TermsAssent entity by IDs.
+func (_u *UserUpdate) AddTermsAssentIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddTermsAssentIDs(ids...)
+	return _u
+}
+
+// AddTermsAssents adds the "terms_assents" edges to the TermsAssent entity.
+func (_u *UserUpdate) AddTermsAssents(v ...*TermsAssent) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddTermsAssentIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -2892,6 +2908,27 @@ func (_u *UserUpdate) RemoveAccountDeletionChallenges(v ...*AccountDeletionChall
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAccountDeletionChallengeIDs(ids...)
+}
+
+// ClearTermsAssents clears all "terms_assents" edges to the TermsAssent entity.
+func (_u *UserUpdate) ClearTermsAssents() *UserUpdate {
+	_u.mutation.ClearTermsAssents()
+	return _u
+}
+
+// RemoveTermsAssentIDs removes the "terms_assents" edge to TermsAssent entities by IDs.
+func (_u *UserUpdate) RemoveTermsAssentIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveTermsAssentIDs(ids...)
+	return _u
+}
+
+// RemoveTermsAssents removes "terms_assents" edges to TermsAssent entities.
+func (_u *UserUpdate) RemoveTermsAssents(v ...*TermsAssent) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveTermsAssentIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -6374,6 +6411,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.TermsAssentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.TermsAssentsTable,
+			Columns: []string{user.TermsAssentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(termsassent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedTermsAssentsIDs(); len(nodes) > 0 && !_u.mutation.TermsAssentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.TermsAssentsTable,
+			Columns: []string{user.TermsAssentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(termsassent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TermsAssentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.TermsAssentsTable,
+			Columns: []string{user.TermsAssentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(termsassent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -7596,6 +7678,21 @@ func (_u *UserUpdateOne) AddAccountDeletionChallenges(v ...*AccountDeletionChall
 		ids[i] = v[i].ID
 	}
 	return _u.AddAccountDeletionChallengeIDs(ids...)
+}
+
+// AddTermsAssentIDs adds the "terms_assents" edge to the TermsAssent entity by IDs.
+func (_u *UserUpdateOne) AddTermsAssentIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddTermsAssentIDs(ids...)
+	return _u
+}
+
+// AddTermsAssents adds the "terms_assents" edges to the TermsAssent entity.
+func (_u *UserUpdateOne) AddTermsAssents(v ...*TermsAssent) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddTermsAssentIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -9182,6 +9279,27 @@ func (_u *UserUpdateOne) RemoveAccountDeletionChallenges(v ...*AccountDeletionCh
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAccountDeletionChallengeIDs(ids...)
+}
+
+// ClearTermsAssents clears all "terms_assents" edges to the TermsAssent entity.
+func (_u *UserUpdateOne) ClearTermsAssents() *UserUpdateOne {
+	_u.mutation.ClearTermsAssents()
+	return _u
+}
+
+// RemoveTermsAssentIDs removes the "terms_assents" edge to TermsAssent entities by IDs.
+func (_u *UserUpdateOne) RemoveTermsAssentIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveTermsAssentIDs(ids...)
+	return _u
+}
+
+// RemoveTermsAssents removes "terms_assents" edges to TermsAssent entities.
+func (_u *UserUpdateOne) RemoveTermsAssents(v ...*TermsAssent) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveTermsAssentIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -12687,6 +12805,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(accountdeletionchallenge.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.TermsAssentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.TermsAssentsTable,
+			Columns: []string{user.TermsAssentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(termsassent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedTermsAssentsIDs(); len(nodes) > 0 && !_u.mutation.TermsAssentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.TermsAssentsTable,
+			Columns: []string{user.TermsAssentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(termsassent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TermsAssentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.TermsAssentsTable,
+			Columns: []string{user.TermsAssentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(termsassent.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

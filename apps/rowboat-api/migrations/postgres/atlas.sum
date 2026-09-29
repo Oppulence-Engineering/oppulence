@@ -1,4 +1,4 @@
-h1:1rh6XWxSysoQ5xUJuQEGqTQ6zh6Aev4Tr60wlMswrQ0=
+h1:9gfv0CgkMTZ/Vrw+d4PSdmM58QsOV6cwWvaqV4tTA/0=
 20260821000000_baseline.sql h1:ZTvCxMIes/Jroxm9juxg6wPrT5n6uaFh7AqXnStxjAo=
 20260821010000_ent_hardening.sql h1:ovo6NSYCx4KpCbDWpMw4L/k7TPjiOm6CbVgvQJaFX2w=
 20260821020000_identifier_normalization.sql h1:1xx4DAQ5Bzb/PjveAqpp7YKM3Zq5Ihs49nQCrbC+NaM=
@@ -26,3 +26,4 @@ h1:1rh6XWxSysoQ5xUJuQEGqTQ6zh6Aev4Tr60wlMswrQ0=
 20260917210500_console_state.sql h1:d8k+OWcJKfROMWl388v6EeA0poihheBFXlcM4vLHcvw=
 20260917223000_communication_intelligence.sql h1:lEJLPlSlUyPN5/E+klBENQrmLAtUFWjz204hj/cNZag=
 20260929120000_account_deletion_step_up.sql h1:sw4qclFL6iCLpNOUzxqgtiu2Y1UGmKDIccqUV5ijNdU=
+20260929210000_billing_retention_and_terms_assent.sql h1:RgJIcp0Q7qT1/E6iOpTBX0kt/F3stAh4f8QkiKXEV78=

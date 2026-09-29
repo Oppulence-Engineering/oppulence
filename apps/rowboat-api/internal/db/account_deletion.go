@@ -15,6 +15,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/billingretention"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
@@ -154,9 +155,11 @@ var historyTables = []struct {
 //  2. In every workspace that survives, the user's authored rows move to the
 //     workspace owner, so the cascade does not delete shared data.
 //  3. History rows go while their source rows still identify the user.
-//  4. The user row goes, and the database cascades the delete.
-//  5. The user's own history rows go (they hold the email).
-//  6. A tombstone records the deleted identity, so a token issued before the
+//  4. Subscription facts the privacy policy keeps for tax and disputes are
+//     copied into billing_retentions. That table has no user foreign key.
+//  5. The user row goes, and the database cascades the delete.
+//  6. The user's own history rows go (they hold the email).
+//  7. A tombstone records the deleted identity, so a token issued before the
 //     deletion cannot create the account again.
 func (d *DB) DeleteAccount(ctx context.Context, userID uuid.UUID, transfers []WorkspaceTransfer) error {
 	tx, err := d.sqlDB.BeginTx(ctx, nil)
@@ -228,6 +231,11 @@ func (d *DB) DeleteAccount(ctx context.Context, userID uuid.UUID, transfers []Wo
 		}
 	}
 
+	now := time.Now().UTC()
+	if err := retainBillingFacts(exec, userID, now); err != nil {
+		return err
+	}
+
 	var workosUserID string
 	err = tx.QueryRowContext(ctx, d.rebind(fmt.Sprintf(`DELETE FROM "%s" WHERE "%s" = ? RETURNING "%s"`,
 		user.Table, user.FieldID, user.FieldWorkosUserID)), userID).Scan(&workosUserID) // #nosec G201
@@ -240,7 +248,6 @@ func (d *DB) DeleteAccount(ctx context.Context, userID uuid.UUID, transfers []Wo
 	if _, err := exec(fmt.Sprintf(`DELETE FROM "%s" WHERE "%s" = ?`, userhistory.Table, userhistory.FieldRef), userID); err != nil { // #nosec G201
 		return fmt.Errorf("purge %s: %w", userhistory.Table, err)
 	}
-	now := time.Now().UTC()
 	if _, err := exec(fmt.Sprintf(`INSERT INTO "%s" ("%s", "%s", "%s", "%s") VALUES (?, ?, ?, ?) ON CONFLICT ("%s") DO NOTHING`,
 		deletedidentity.Table, deletedidentity.FieldID, deletedidentity.FieldKeyHash, deletedidentity.FieldCreatedAt,
 		deletedidentity.FieldUpdatedAt, deletedidentity.FieldKeyHash),
@@ -248,6 +255,37 @@ func (d *DB) DeleteAccount(ctx context.Context, userID uuid.UUID, transfers []Wo
 		return fmt.Errorf("record deleted identity: %w", err)
 	}
 	return tx.Commit()
+}
+
+// retainBillingFacts copies the live subscription row into billing_retentions
+// before the user delete cascades it away. A user with no subscription inserts
+// nothing. The copy has no email and no payment-method data.
+func retainBillingFacts(exec func(string, ...any) (int64, error), userID uuid.UUID, now time.Time) error {
+	query := fmt.Sprintf(`INSERT INTO "%s" ("%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s")
+SELECT ?, ?, ?, "%s", "%s", "%s", "%s", "%s", ?
+FROM "%s" WHERE "%s" = ?`,
+		billingretention.Table,
+		billingretention.FieldID,
+		billingretention.FieldCreatedAt,
+		billingretention.FieldUpdatedAt,
+		billingretention.FieldPlan,
+		billingretention.FieldStatus,
+		billingretention.FieldStripeCustomerID,
+		billingretention.FieldStripeSubscriptionID,
+		billingretention.FieldTrialExpiresAt,
+		billingretention.FieldRetainedAt,
+		subscription.FieldPlan,
+		subscription.FieldStatus,
+		subscription.FieldStripeCustomerID,
+		subscription.FieldStripeSubscriptionID,
+		subscription.FieldTrialExpiresAt,
+		subscription.Table,
+		subscription.UserColumn,
+	) // #nosec G201 -- identifiers are generated constants
+	if _, err := exec(query, uuid.New(), now, now, now, userID); err != nil {
+		return fmt.Errorf("retain billing facts: %w", err)
+	}
+	return nil
 }
 
 // rebind turns "?" placeholders into "$n" for PostgreSQL.

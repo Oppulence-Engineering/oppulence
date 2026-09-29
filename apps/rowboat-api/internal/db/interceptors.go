@@ -83,6 +83,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/termsassent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
@@ -99,6 +100,7 @@ import (
 // into every update/delete predicate.
 var tenantUserColumns = map[string]string{
 	ent.TypeAccountDeletionChallenge:          accountdeletionchallenge.UserColumn,
+	ent.TypeTermsAssent:                       termsassent.UserColumn,
 	ent.TypeActionOutcome:                     actionoutcome.UserColumn,
 	ent.TypeActionProposal:                    actionproposal.UserColumn,
 	ent.TypeApprovalToken:                     approvaltoken.UserColumn,
@@ -322,6 +324,13 @@ func registerInterceptors(client *ent.Client, log *zap.Logger) {
 		func(ctx context.Context, q *ent.AccountDeletionChallengeQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(accountdeletionchallenge.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.TermsAssent.Intercept(intercept.TraverseTermsAssent(
+		func(ctx context.Context, q *ent.TermsAssentQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(termsassent.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 

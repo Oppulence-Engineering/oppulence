@@ -57,6 +57,9 @@ type BackgroundTaskRunEvent func(*sql.Selector)
 // BackgroundTaskScheduleState is the predicate function for backgroundtaskschedulestate builders.
 type BackgroundTaskScheduleState func(*sql.Selector)
 
+// BillingRetention is the predicate function for billingretention builders.
+type BillingRetention func(*sql.Selector)
+
 // CaptureArtifact is the predicate function for captureartifact builders.
 type CaptureArtifact func(*sql.Selector)
 
@@ -257,6 +260,9 @@ type SubscriptionHistory func(*sql.Selector)
 
 // TenantEvidenceKey is the predicate function for tenantevidencekey builders.
 type TenantEvidenceKey func(*sql.Selector)
+
+// TermsAssent is the predicate function for termsassent builders.
+type TermsAssent func(*sql.Selector)
 
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

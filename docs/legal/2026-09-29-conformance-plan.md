@@ -1,7 +1,7 @@
 # Plan: make the product match the published legal documents
 
 **Date:** 29 September 2026
-**Status:** Items 1, 2, and 3 are implemented in this branch. Items 4, 5, and 6 are not. Item 7 stays out of scope.
+**Status:** Items 1 through 6 are implemented in this branch. Item 7 stays out of scope.
 **Source of truth:** the Privacy Policy, Terms of Service, and Responsible Disclosure page (effective 8 September 2026), plus the security page where it states how the product behaves. The audit those sentences were checked against is `docs/legal/2026-09-29-codebase-legal-audit.md`.
 
 This plan does not ask a lawyer to bless new promises. It makes the running code do what those pages already say, and it changes a published sentence only when the sentence cannot be made true in code without inventing a fact (a street address, an executed contract, a relicensing of Apache code).
@@ -64,6 +64,8 @@ This plan does not ask a lawyer to bless new promises. It makes the running code
 4. Add an authenticated export of the account’s own content the product already stores (notes and relationship records the user can see), separate from single-commitment export. The privacy email channel remains for anything the export does not cover. The in-product sentence says “much of,” not “all.”
 
 **Done when.** Tests show: WorkOS delete is retried; a billing retention row survives `DeleteAccount`; disconnect of one connection removes that connection’s synced content and leaves another user’s rows; export returns only the caller’s content.
+
+The Terms used to say that after termination we would keep data for a reasonable period so the person could export it. Deletion runs in the same request, which is what the privacy policy’s “when you delete your account” sentence describes. Holding the data after that confirmation would keep personal information the person just asked us to delete. The Terms sentence now says export is available while the account is open, and deletion follows the privacy policy. That is the one Terms sentence this item rewrote, because the two published sentences could not both be true.
 
 ### 5. Terms assent, age, and the Apache boundary
 
