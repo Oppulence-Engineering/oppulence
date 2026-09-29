@@ -17,6 +17,7 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/accountdeletionchallenge"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
@@ -113,6 +114,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// AccountDeletionChallenge is the client for interacting with the AccountDeletionChallenge builders.
+	AccountDeletionChallenge *AccountDeletionChallengeClient
 	// ActionOutcome is the client for interacting with the ActionOutcome builders.
 	ActionOutcome *ActionOutcomeClient
 	// ActionProposal is the client for interacting with the ActionProposal builders.
@@ -307,6 +310,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.AccountDeletionChallenge = NewAccountDeletionChallengeClient(c.config)
 	c.ActionOutcome = NewActionOutcomeClient(c.config)
 	c.ActionProposal = NewActionProposalClient(c.config)
 	c.AgentApproval = NewAgentApprovalClient(c.config)
@@ -516,6 +520,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:                               ctx,
 		config:                            cfg,
+		AccountDeletionChallenge:          NewAccountDeletionChallengeClient(cfg),
 		ActionOutcome:                     NewActionOutcomeClient(cfg),
 		ActionProposal:                    NewActionProposalClient(cfg),
 		AgentApproval:                     NewAgentApprovalClient(cfg),
@@ -624,6 +629,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:                               ctx,
 		config:                            cfg,
+		AccountDeletionChallenge:          NewAccountDeletionChallengeClient(cfg),
 		ActionOutcome:                     NewActionOutcomeClient(cfg),
 		ActionProposal:                    NewActionProposalClient(cfg),
 		AgentApproval:                     NewAgentApprovalClient(cfg),
@@ -719,7 +725,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		ActionOutcome.
+//		AccountDeletionChallenge.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -742,15 +748,16 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.ActionOutcome, c.ActionProposal, c.AgentApproval, c.AgentDefinition,
-		c.AgentDefinitionHistory, c.AgentSession, c.AgentSessionEvent, c.AgentToolCall,
-		c.AgentToolResultBlob, c.AgentTurn, c.ApprovalToken, c.BackgroundTask,
-		c.BackgroundTaskArtifact, c.BackgroundTaskRun, c.BackgroundTaskRunEvent,
-		c.BackgroundTaskScheduleState, c.CaptureArtifact, c.CloudEvent, c.Commitment,
-		c.CommitmentDependency, c.CommitmentEvent, c.CommunicationAttachment,
-		c.CommunicationInteraction, c.CommunicationParticipant,
-		c.CommunicationPrivacyPolicy, c.CommunicationPrivacyRule,
-		c.CommunicationShareGrant, c.CommunicationSyncCursor, c.ConnectorAuditEvent,
+		c.AccountDeletionChallenge, c.ActionOutcome, c.ActionProposal, c.AgentApproval,
+		c.AgentDefinition, c.AgentDefinitionHistory, c.AgentSession,
+		c.AgentSessionEvent, c.AgentToolCall, c.AgentToolResultBlob, c.AgentTurn,
+		c.ApprovalToken, c.BackgroundTask, c.BackgroundTaskArtifact,
+		c.BackgroundTaskRun, c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState,
+		c.CaptureArtifact, c.CloudEvent, c.Commitment, c.CommitmentDependency,
+		c.CommitmentEvent, c.CommunicationAttachment, c.CommunicationInteraction,
+		c.CommunicationParticipant, c.CommunicationPrivacyPolicy,
+		c.CommunicationPrivacyRule, c.CommunicationShareGrant,
+		c.CommunicationSyncCursor, c.ConnectorAuditEvent,
 		c.ConnectorCredentialCleanupJob, c.ConnectorCredentialRecovery,
 		c.ConnectorRevocationJob, c.ConsoleResource,
 		c.ConversationIntelligenceArtifact, c.CreditLedger, c.DeletedIdentity,
@@ -780,15 +787,16 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.ActionOutcome, c.ActionProposal, c.AgentApproval, c.AgentDefinition,
-		c.AgentDefinitionHistory, c.AgentSession, c.AgentSessionEvent, c.AgentToolCall,
-		c.AgentToolResultBlob, c.AgentTurn, c.ApprovalToken, c.BackgroundTask,
-		c.BackgroundTaskArtifact, c.BackgroundTaskRun, c.BackgroundTaskRunEvent,
-		c.BackgroundTaskScheduleState, c.CaptureArtifact, c.CloudEvent, c.Commitment,
-		c.CommitmentDependency, c.CommitmentEvent, c.CommunicationAttachment,
-		c.CommunicationInteraction, c.CommunicationParticipant,
-		c.CommunicationPrivacyPolicy, c.CommunicationPrivacyRule,
-		c.CommunicationShareGrant, c.CommunicationSyncCursor, c.ConnectorAuditEvent,
+		c.AccountDeletionChallenge, c.ActionOutcome, c.ActionProposal, c.AgentApproval,
+		c.AgentDefinition, c.AgentDefinitionHistory, c.AgentSession,
+		c.AgentSessionEvent, c.AgentToolCall, c.AgentToolResultBlob, c.AgentTurn,
+		c.ApprovalToken, c.BackgroundTask, c.BackgroundTaskArtifact,
+		c.BackgroundTaskRun, c.BackgroundTaskRunEvent, c.BackgroundTaskScheduleState,
+		c.CaptureArtifact, c.CloudEvent, c.Commitment, c.CommitmentDependency,
+		c.CommitmentEvent, c.CommunicationAttachment, c.CommunicationInteraction,
+		c.CommunicationParticipant, c.CommunicationPrivacyPolicy,
+		c.CommunicationPrivacyRule, c.CommunicationShareGrant,
+		c.CommunicationSyncCursor, c.ConnectorAuditEvent,
 		c.ConnectorCredentialCleanupJob, c.ConnectorCredentialRecovery,
 		c.ConnectorRevocationJob, c.ConsoleResource,
 		c.ConversationIntelligenceArtifact, c.CreditLedger, c.DeletedIdentity,
@@ -817,6 +825,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *AccountDeletionChallengeMutation:
+		return c.AccountDeletionChallenge.mutate(ctx, m)
 	case *ActionOutcomeMutation:
 		return c.ActionOutcome.mutate(ctx, m)
 	case *ActionProposalMutation:
@@ -997,6 +1007,156 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.WorkspaceFeatureControl.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// AccountDeletionChallengeClient is a client for the AccountDeletionChallenge schema.
+type AccountDeletionChallengeClient struct {
+	config
+}
+
+// NewAccountDeletionChallengeClient returns a client for the AccountDeletionChallenge from the given config.
+func NewAccountDeletionChallengeClient(c config) *AccountDeletionChallengeClient {
+	return &AccountDeletionChallengeClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `accountdeletionchallenge.Hooks(f(g(h())))`.
+func (c *AccountDeletionChallengeClient) Use(hooks ...Hook) {
+	c.hooks.AccountDeletionChallenge = append(c.hooks.AccountDeletionChallenge, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `accountdeletionchallenge.Intercept(f(g(h())))`.
+func (c *AccountDeletionChallengeClient) Intercept(interceptors ...Interceptor) {
+	c.inters.AccountDeletionChallenge = append(c.inters.AccountDeletionChallenge, interceptors...)
+}
+
+// Create returns a builder for creating a AccountDeletionChallenge entity.
+func (c *AccountDeletionChallengeClient) Create() *AccountDeletionChallengeCreate {
+	mutation := newAccountDeletionChallengeMutation(c.config, OpCreate)
+	return &AccountDeletionChallengeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of AccountDeletionChallenge entities.
+func (c *AccountDeletionChallengeClient) CreateBulk(builders ...*AccountDeletionChallengeCreate) *AccountDeletionChallengeCreateBulk {
+	return &AccountDeletionChallengeCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *AccountDeletionChallengeClient) MapCreateBulk(slice any, setFunc func(*AccountDeletionChallengeCreate, int)) *AccountDeletionChallengeCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &AccountDeletionChallengeCreateBulk{err: fmt.Errorf("calling to AccountDeletionChallengeClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*AccountDeletionChallengeCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &AccountDeletionChallengeCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for AccountDeletionChallenge.
+func (c *AccountDeletionChallengeClient) Update() *AccountDeletionChallengeUpdate {
+	mutation := newAccountDeletionChallengeMutation(c.config, OpUpdate)
+	return &AccountDeletionChallengeUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *AccountDeletionChallengeClient) UpdateOne(_m *AccountDeletionChallenge) *AccountDeletionChallengeUpdateOne {
+	mutation := newAccountDeletionChallengeMutation(c.config, OpUpdateOne, withAccountDeletionChallenge(_m))
+	return &AccountDeletionChallengeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *AccountDeletionChallengeClient) UpdateOneID(id uuid.UUID) *AccountDeletionChallengeUpdateOne {
+	mutation := newAccountDeletionChallengeMutation(c.config, OpUpdateOne, withAccountDeletionChallengeID(id))
+	return &AccountDeletionChallengeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for AccountDeletionChallenge.
+func (c *AccountDeletionChallengeClient) Delete() *AccountDeletionChallengeDelete {
+	mutation := newAccountDeletionChallengeMutation(c.config, OpDelete)
+	return &AccountDeletionChallengeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *AccountDeletionChallengeClient) DeleteOne(_m *AccountDeletionChallenge) *AccountDeletionChallengeDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *AccountDeletionChallengeClient) DeleteOneID(id uuid.UUID) *AccountDeletionChallengeDeleteOne {
+	builder := c.Delete().Where(accountdeletionchallenge.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &AccountDeletionChallengeDeleteOne{builder}
+}
+
+// Query returns a query builder for AccountDeletionChallenge.
+func (c *AccountDeletionChallengeClient) Query() *AccountDeletionChallengeQuery {
+	return &AccountDeletionChallengeQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAccountDeletionChallenge},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a AccountDeletionChallenge entity by its id.
+func (c *AccountDeletionChallengeClient) Get(ctx context.Context, id uuid.UUID) (*AccountDeletionChallenge, error) {
+	return c.Query().Where(accountdeletionchallenge.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *AccountDeletionChallengeClient) GetX(ctx context.Context, id uuid.UUID) *AccountDeletionChallenge {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a AccountDeletionChallenge.
+func (c *AccountDeletionChallengeClient) QueryUser(_m *AccountDeletionChallenge) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(accountdeletionchallenge.Table, accountdeletionchallenge.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, accountdeletionchallenge.UserTable, accountdeletionchallenge.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *AccountDeletionChallengeClient) Hooks() []Hook {
+	hooks := c.hooks.AccountDeletionChallenge
+	return append(hooks[:len(hooks):len(hooks)], accountdeletionchallenge.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *AccountDeletionChallengeClient) Interceptors() []Interceptor {
+	return c.inters.AccountDeletionChallenge
+}
+
+func (c *AccountDeletionChallengeClient) mutate(ctx context.Context, m *AccountDeletionChallengeMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&AccountDeletionChallengeCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&AccountDeletionChallengeUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&AccountDeletionChallengeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&AccountDeletionChallengeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown AccountDeletionChallenge mutation op: %q", m.Op())
 	}
 }
 
@@ -17745,6 +17905,22 @@ func (c *UserClient) QueryConsoleResources(_m *User) *ConsoleResourceQuery {
 	return query
 }
 
+// QueryAccountDeletionChallenges queries the account_deletion_challenges edge of a User.
+func (c *UserClient) QueryAccountDeletionChallenges(_m *User) *AccountDeletionChallengeQuery {
+	query := (&AccountDeletionChallengeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(accountdeletionchallenge.Table, accountdeletionchallenge.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.AccountDeletionChallengesTable, user.AccountDeletionChallengesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -18522,9 +18698,9 @@ func (c *WorkspaceFeatureControlClient) mutate(ctx context.Context, m *Workspace
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		ActionOutcome, ActionProposal, AgentApproval, AgentDefinition,
-		AgentDefinitionHistory, AgentSession, AgentSessionEvent, AgentToolCall,
-		AgentToolResultBlob, AgentTurn, ApprovalToken, BackgroundTask,
+		AccountDeletionChallenge, ActionOutcome, ActionProposal, AgentApproval,
+		AgentDefinition, AgentDefinitionHistory, AgentSession, AgentSessionEvent,
+		AgentToolCall, AgentToolResultBlob, AgentTurn, ApprovalToken, BackgroundTask,
 		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
 		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
 		CommitmentDependency, CommitmentEvent, CommunicationAttachment,
@@ -18550,9 +18726,9 @@ type (
 		VoiceSyncItem, WorkspaceFeatureControl []ent.Hook
 	}
 	inters struct {
-		ActionOutcome, ActionProposal, AgentApproval, AgentDefinition,
-		AgentDefinitionHistory, AgentSession, AgentSessionEvent, AgentToolCall,
-		AgentToolResultBlob, AgentTurn, ApprovalToken, BackgroundTask,
+		AccountDeletionChallenge, ActionOutcome, ActionProposal, AgentApproval,
+		AgentDefinition, AgentDefinitionHistory, AgentSession, AgentSessionEvent,
+		AgentToolCall, AgentToolResultBlob, AgentTurn, ApprovalToken, BackgroundTask,
 		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
 		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
 		CommitmentDependency, CommitmentEvent, CommunicationAttachment,

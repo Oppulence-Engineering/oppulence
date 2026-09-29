@@ -37,6 +37,12 @@ func (f *failingIdentity) DeleteUser(context.Context, string) error {
 	return errors.New("workos: user delete returned 503")
 }
 
+func (f *failingIdentity) RevokeSessions(context.Context, string) error { return nil }
+
+func (f *failingIdentity) ListAuthFactorTypes(context.Context, string) ([]string, error) {
+	return nil, nil
+}
+
 func deleteRequest(ctx context.Context, body string) *http.Request {
 	req := httptest.NewRequestWithContext(ctx, http.MethodDelete, "/v1/me", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -133,7 +139,7 @@ func TestDeleteReceiptHasOnlyReviewedFieldsAndNoPersonalData(t *testing.T) {
 	u := newUser(h.client, "receipt")
 	before := time.Now().UTC().Truncate(time.Second)
 
-	rec := serveDelete(t, h.handler, deleteRequest(auth.WithUser(context.Background(), u), `{"confirm":"DELETE"}`))
+	rec := serveDelete(t, h.handler, deleteRequest(auth.WithUser(context.Background(), u), confirmedDeleteBody(t, h.handler, u, "DELETE")))
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d: %s", rec.Code, rec.Body.String())
 	}
@@ -194,7 +200,7 @@ func TestDeleteStillSucceedsWhenTheIdentityProviderFails(t *testing.T) {
 	u := newUser(h.client, "idp_down")
 	newWorkspace(h.client, u)
 
-	rec := serveDelete(t, handler, deleteRequest(auth.WithUser(context.Background(), u), `{"confirm":"DELETE"}`))
+	rec := serveDelete(t, handler, deleteRequest(auth.WithUser(context.Background(), u), confirmedDeleteBody(t, handler, u, "DELETE")))
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d: %s", rec.Code, rec.Body.String())
 	}
@@ -217,7 +223,7 @@ func TestDeleteRefusesABilledUserWhenStripeIsNotConfigured(t *testing.T) {
 	u := newUser(h.client, "billed_unconfigured")
 	h.client.Subscription.Create().SetUser(u).SetPlan("pro").SetSanctionedCredits(10000).SetStripeCustomerID("cus_1").SaveX(internal)
 
-	rec := serveDelete(t, handler, deleteRequest(auth.WithUser(context.Background(), u), `{"confirm":"DELETE"}`))
+	rec := serveDelete(t, handler, deleteRequest(auth.WithUser(context.Background(), u), confirmedDeleteBody(t, handler, u, "DELETE")))
 	if rec.Code != http.StatusBadGateway || problemCode(rec) != "billing_cancellation_failed" {
 		t.Fatalf("status = %d code = %q, want 502 billing_cancellation_failed", rec.Code, problemCode(rec))
 	}
@@ -233,7 +239,7 @@ func TestDeleteSucceedsForAnUnbilledUserWhenStripeIsNotConfigured(t *testing.T) 
 	u := newUser(h.client, "free_unconfigured")
 	h.client.Subscription.Create().SetUser(u).SetSanctionedCredits(10000).SaveX(internal)
 
-	rec := serveDelete(t, handler, deleteRequest(auth.WithUser(context.Background(), u), `{"confirm":"DELETE"}`))
+	rec := serveDelete(t, handler, deleteRequest(auth.WithUser(context.Background(), u), confirmedDeleteBody(t, handler, u, "DELETE")))
 	if rec.Code != http.StatusOK || h.exists(u) {
 		t.Fatalf("status = %d exists = %v, want 200 and deleted", rec.Code, h.exists(u))
 	}
@@ -402,7 +408,7 @@ func TestDeleteWritesAnAuditLineWithoutPersonalData(t *testing.T) {
 	h.stripe.status["sub_live"] = "active"
 	h.client.Subscription.Create().SetUser(u).SetPlan("pro").SetSanctionedCredits(10000).SetStripeCustomerID("cus_1").SaveX(internal)
 
-	rec := serveDelete(t, handler, deleteRequest(auth.WithUser(context.Background(), u), `{"confirm":"DELETE"}`))
+	rec := serveDelete(t, handler, deleteRequest(auth.WithUser(context.Background(), u), confirmedDeleteBody(t, handler, u, "DELETE")))
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d: %s", rec.Code, rec.Body.String())
 	}
@@ -440,7 +446,7 @@ func TestDeleteLogsTheIdentityFailureForAManualRetry(t *testing.T) {
 	handler := account.New(h.database, h.billing, h.connectors, &failingIdentity{}, zap.New(core))
 	u := newUser(h.client, "manual_retry")
 
-	if rec := serveDelete(t, handler, deleteRequest(auth.WithUser(context.Background(), u), `{"confirm":"DELETE"}`)); rec.Code != http.StatusOK {
+	if rec := serveDelete(t, handler, deleteRequest(auth.WithUser(context.Background(), u), confirmedDeleteBody(t, handler, u, "DELETE"))); rec.Code != http.StatusOK {
 		t.Fatalf("status = %d", rec.Code)
 	}
 	var found bool

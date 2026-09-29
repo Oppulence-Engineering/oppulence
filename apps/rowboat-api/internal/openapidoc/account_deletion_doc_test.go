@@ -88,7 +88,7 @@ func assertAccountDeletionContract(t *testing.T, spec obj) {
 	}
 
 	responses := asObj(op["responses"])
-	if codes := sortedKeys(responses); !slices.Equal(codes, []string{"200", "400", "401", "409", "500", "502"}) {
+	if codes := sortedKeys(responses); !slices.Equal(codes, []string{"200", "400", "401", "403", "409", "500", "502"}) {
 		t.Errorf("response codes = %v", codes)
 	}
 	ok := asObj(asObj(asObj(responses["200"])["content"])["application/json"])
@@ -117,8 +117,18 @@ func assertAccountDeletionContract(t *testing.T, spec obj) {
 
 	schemas := asObj(asObj(spec["components"])["schemas"])
 	request := asObj(schemas["AccountDeletionRequest"])
-	if required := docStrings(request["required"]); !slices.Equal(required, []string{"confirm"}) {
+	if required := docStrings(request["required"]); !slices.Equal(required, []string{"confirm", "stepUpToken"}) {
 		t.Errorf("AccountDeletionRequest required = %v", required)
+	}
+	challenge := asObj(schemas["AccountDeletionChallenge"])
+	if props := asObj(challenge["properties"]); props["code_hash"] != nil || props["token_hash"] != nil {
+		t.Error("the public challenge schema exposes a secret hash")
+	}
+	if asObj(asObj(spec["paths"])["/v1/me/deletion-challenges"])["post"] == nil {
+		t.Error("POST /v1/me/deletion-challenges is not documented")
+	}
+	if asObj(asObj(spec["paths"])["/v1/me/deletion-challenges/{id}/verify"])["post"] == nil {
+		t.Error("POST /v1/me/deletion-challenges/{id}/verify is not documented")
 	}
 	confirm := asObj(asObj(request["properties"])["confirm"])
 	if confirm["type"] != "string" || !slices.Equal(docStrings(confirm["enum"]), []string{"DELETE"}) {

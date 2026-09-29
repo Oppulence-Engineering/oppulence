@@ -172,3 +172,71 @@ func TestWorkOSEmailReportsANonOKResponse(t *testing.T) {
 		t.Fatalf("Email error = %v, want a 403 error", err)
 	}
 }
+
+func TestWorkOSListAuthFactorsPaginatesAndDedupesTypes(t *testing.T) {
+	e := workosTestEnricher(t, "", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/user_management/users/user_1/auth_factors" {
+			t.Errorf("request = %s %s", r.Method, r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer sk_test_workos" {
+			t.Errorf("Authorization = %q", r.Header.Get("Authorization"))
+		}
+		if r.URL.Query().Get("after") == "" {
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"data":          []map[string]string{{"type": "totp"}, {"type": "totp"}},
+				"list_metadata": map[string]string{"after": "cursor_1"},
+			})
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"data":          []map[string]string{{"type": "sms"}},
+			"list_metadata": map[string]any{"after": nil},
+		})
+	})
+	got, err := e.ListAuthFactorTypes(context.Background(), "user_1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(got, ",") != "totp,sms" {
+		t.Fatalf("factors = %v, want totp then sms", got)
+	}
+}
+
+func TestWorkOSListAuthFactorsFailsClosedOnANonOKResponse(t *testing.T) {
+	e := workosTestEnricher(t, "", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+		_, _ = fmt.Fprint(w, `{"message":"secret"}`)
+	})
+	if _, err := e.ListAuthFactorTypes(context.Background(), "user_1"); err == nil || strings.Contains(err.Error(), "secret") {
+		t.Fatalf("error = %v, want a status error without the body", err)
+	}
+}
+
+func TestWorkOSRevokeSessionsRevokesEveryListedSession(t *testing.T) {
+	var revoked []string
+	e := workosTestEnricher(t, "", func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/user_management/users/user_1/sessions":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"data":          []map[string]string{{"id": "session_a"}, {"id": "session_b"}},
+				"list_metadata": map[string]any{"after": nil},
+			})
+		case r.Method == http.MethodPost && r.URL.Path == "/user_management/sessions/revoke":
+			var body struct {
+				SessionID string `json:"session_id"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			revoked = append(revoked, body.SessionID)
+			w.WriteHeader(http.StatusOK)
+		default:
+			t.Errorf("unexpected %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+	if err := e.RevokeSessions(context.Background(), "user_1"); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(revoked, ",") != "session_a,session_b" {
+		t.Fatalf("revoked = %v", revoked)
+	}
+}

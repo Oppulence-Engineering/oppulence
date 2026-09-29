@@ -6,6 +6,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/accountdeletionchallenge"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
@@ -106,6 +107,54 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	accountdeletionchallengeMixin := schema.AccountDeletionChallenge{}.Mixin()
+	accountdeletionchallenge.Policy = privacy.NewPolicies(accountdeletionchallengeMixin[0], schema.AccountDeletionChallenge{})
+	accountdeletionchallenge.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := accountdeletionchallenge.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	accountdeletionchallengeMixinFields0 := accountdeletionchallengeMixin[0].Fields()
+	_ = accountdeletionchallengeMixinFields0
+	accountdeletionchallengeFields := schema.AccountDeletionChallenge{}.Fields()
+	_ = accountdeletionchallengeFields
+	// accountdeletionchallengeDescCreatedAt is the schema descriptor for created_at field.
+	accountdeletionchallengeDescCreatedAt := accountdeletionchallengeMixinFields0[1].Descriptor()
+	// accountdeletionchallenge.DefaultCreatedAt holds the default value on creation for the created_at field.
+	accountdeletionchallenge.DefaultCreatedAt = accountdeletionchallengeDescCreatedAt.Default.(func() time.Time)
+	// accountdeletionchallengeDescUpdatedAt is the schema descriptor for updated_at field.
+	accountdeletionchallengeDescUpdatedAt := accountdeletionchallengeMixinFields0[2].Descriptor()
+	// accountdeletionchallenge.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	accountdeletionchallenge.DefaultUpdatedAt = accountdeletionchallengeDescUpdatedAt.Default.(func() time.Time)
+	// accountdeletionchallenge.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	accountdeletionchallenge.UpdateDefaultUpdatedAt = accountdeletionchallengeDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// accountdeletionchallengeDescMethod is the schema descriptor for method field.
+	accountdeletionchallengeDescMethod := accountdeletionchallengeFields[0].Descriptor()
+	// accountdeletionchallenge.MethodValidator is a validator for the "method" field. It is called by the builders before save.
+	accountdeletionchallenge.MethodValidator = accountdeletionchallengeDescMethod.Validators[0].(func(string) error)
+	// accountdeletionchallengeDescBaselineAuthTime is the schema descriptor for baseline_auth_time field.
+	accountdeletionchallengeDescBaselineAuthTime := accountdeletionchallengeFields[1].Descriptor()
+	// accountdeletionchallenge.DefaultBaselineAuthTime holds the default value on creation for the baseline_auth_time field.
+	accountdeletionchallenge.DefaultBaselineAuthTime = accountdeletionchallengeDescBaselineAuthTime.Default.(int64)
+	// accountdeletionchallenge.BaselineAuthTimeValidator is a validator for the "baseline_auth_time" field. It is called by the builders before save.
+	accountdeletionchallenge.BaselineAuthTimeValidator = accountdeletionchallengeDescBaselineAuthTime.Validators[0].(func(int64) error)
+	// accountdeletionchallengeDescMfaRequired is the schema descriptor for mfa_required field.
+	accountdeletionchallengeDescMfaRequired := accountdeletionchallengeFields[2].Descriptor()
+	// accountdeletionchallenge.DefaultMfaRequired holds the default value on creation for the mfa_required field.
+	accountdeletionchallenge.DefaultMfaRequired = accountdeletionchallengeDescMfaRequired.Default.(bool)
+	// accountdeletionchallengeDescAttempts is the schema descriptor for attempts field.
+	accountdeletionchallengeDescAttempts := accountdeletionchallengeFields[5].Descriptor()
+	// accountdeletionchallenge.DefaultAttempts holds the default value on creation for the attempts field.
+	accountdeletionchallenge.DefaultAttempts = accountdeletionchallengeDescAttempts.Default.(int)
+	// accountdeletionchallenge.AttemptsValidator is a validator for the "attempts" field. It is called by the builders before save.
+	accountdeletionchallenge.AttemptsValidator = accountdeletionchallengeDescAttempts.Validators[0].(func(int) error)
+	// accountdeletionchallengeDescID is the schema descriptor for id field.
+	accountdeletionchallengeDescID := accountdeletionchallengeMixinFields0[0].Descriptor()
+	// accountdeletionchallenge.DefaultID holds the default value on creation for the id field.
+	accountdeletionchallenge.DefaultID = accountdeletionchallengeDescID.Default.(func() uuid.UUID)
 	actionoutcomeMixin := schema.ActionOutcome{}.Mixin()
 	actionoutcome.Policy = privacy.NewPolicies(actionoutcomeMixin[0], schema.ActionOutcome{})
 	actionoutcome.Hooks[0] = func(next ent.Mutator) ent.Mutator {

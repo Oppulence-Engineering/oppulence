@@ -12,7 +12,7 @@ vi.mock("@/components/auth/auth-gate", () => ({
   useAuthSession: () => ({ user: { email: "morgan@acme.com" } }),
 }));
 vi.mock("@/hooks/dashboard/use-product-route-state", () => ({
-  useProductRouteState: () => ({ openSettings: vi.fn() }),
+  useProductRouteState: () => ({ openSettings: vi.fn(), settingsSection: "overview" }),
 }));
 
 import { SettingsDashboardRoute } from "./settings-dashboard-route";

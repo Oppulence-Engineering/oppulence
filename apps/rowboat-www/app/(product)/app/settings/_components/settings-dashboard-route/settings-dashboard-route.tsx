@@ -22,18 +22,22 @@ export type SettingsDashboardRouteProps = ComponentPropsWithoutRef<"section"> & 
 
 export function SettingsDashboardRoute({
   className,
-  section,
+  section: _serverSection,
   ...props
 }: SettingsDashboardRouteProps) {
   const session = useAuthSession();
-  const { openSettings } = useProductRouteState();
+  const { openSettings, settingsSection } = useProductRouteState();
+  // nuqs writes `?settings=` with history.replace and an optimistic search
+  // param. Cache Components does not refetch this route on that update, so the
+  // server `section` prop stays on the first paint. The hook is the live
+  // section; it matches the prop on the initial document load.
   return (
     <section
       className={cn("flex min-h-0 min-w-0 flex-1 flex-col", className)}
       data-slot="settings-dashboard-route"
       {...props}
     >
-      <SettingsView onNavigate={openSettings} section={section} session={session} />
+      <SettingsView onNavigate={openSettings} section={settingsSection} session={session} />
     </section>
   );
 }

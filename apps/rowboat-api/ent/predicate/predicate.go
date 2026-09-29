@@ -6,6 +6,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// AccountDeletionChallenge is the predicate function for accountdeletionchallenge builders.
+type AccountDeletionChallenge func(*sql.Selector)
+
 // ActionOutcome is the predicate function for actionoutcome builders.
 type ActionOutcome func(*sql.Selector)
 

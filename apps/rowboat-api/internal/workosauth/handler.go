@@ -154,7 +154,20 @@ func (h *Handler) LoginURL(w http.ResponseWriter, r *http.Request) {
 	// hosted picker; a specific value like "GoogleOAuth" jumps straight to that
 	// identity provider. Callers opt in via ?provider=; unknown values fall back
 	// to the hosted picker so a bad param can never wedge sign-in.
-	v.Set("provider", resolveProvider(q.Get("provider")))
+	// max_age=0 forces an interactive AuthKit sign-in. WorkOS ignores it for a
+	// direct social provider, so a step-up request always uses the hosted
+	// picker, which then sends Google users through Google and prompts MFA
+	// when a factor is enrolled. prompt=login is the same intent for the
+	// local devstack, which does not implement max_age on the token.
+	provider := resolveProvider(q.Get("provider"))
+	if q.Get("max_age") == "0" {
+		provider = "authkit"
+		v.Set("max_age", "0")
+	}
+	v.Set("provider", provider)
+	if q.Get("prompt") == "login" {
+		v.Set("prompt", "login")
+	}
 	if cc := q.Get("code_challenge"); cc != "" {
 		v.Set("code_challenge", cc)
 		v.Set("code_challenge_method", "S256")

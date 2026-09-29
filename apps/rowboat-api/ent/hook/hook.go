@@ -9,6 +9,18 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 )
 
+// The AccountDeletionChallengeFunc type is an adapter to allow the use of ordinary
+// function as AccountDeletionChallenge mutator.
+type AccountDeletionChallengeFunc func(context.Context, *ent.AccountDeletionChallengeMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AccountDeletionChallengeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AccountDeletionChallengeMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AccountDeletionChallengeMutation", m)
+}
+
 // The ActionOutcomeFunc type is an adapter to allow the use of ordinary
 // function as ActionOutcome mutator.
 type ActionOutcomeFunc func(context.Context, *ent.ActionOutcomeMutation) (ent.Value, error)

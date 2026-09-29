@@ -175,6 +175,8 @@ const (
 	EdgeUserPreferences = "user_preferences"
 	// EdgeConsoleResources holds the string denoting the console_resources edge name in mutations.
 	EdgeConsoleResources = "console_resources"
+	// EdgeAccountDeletionChallenges holds the string denoting the account_deletion_challenges edge name in mutations.
+	EdgeAccountDeletionChallenges = "account_deletion_challenges"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
@@ -702,6 +704,13 @@ const (
 	ConsoleResourcesInverseTable = "console_resources"
 	// ConsoleResourcesColumn is the table column denoting the console_resources relation/edge.
 	ConsoleResourcesColumn = "user_console_resources"
+	// AccountDeletionChallengesTable is the table that holds the account_deletion_challenges relation/edge.
+	AccountDeletionChallengesTable = "account_deletion_challenges"
+	// AccountDeletionChallengesInverseTable is the table name for the AccountDeletionChallenge entity.
+	// It exists in this package in order to avoid circular dependency with the "accountdeletionchallenge" package.
+	AccountDeletionChallengesInverseTable = "account_deletion_challenges"
+	// AccountDeletionChallengesColumn is the table column denoting the account_deletion_challenges relation/edge.
+	AccountDeletionChallengesColumn = "user_account_deletion_challenges"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -1812,6 +1821,20 @@ func ByConsoleResources(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption 
 		sqlgraph.OrderByNeighborTerms(s, newConsoleResourcesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByAccountDeletionChallengesCount orders the results by account_deletion_challenges count.
+func ByAccountDeletionChallengesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAccountDeletionChallengesStep(), opts...)
+	}
+}
+
+// ByAccountDeletionChallenges orders the results by account_deletion_challenges terms.
+func ByAccountDeletionChallenges(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAccountDeletionChallengesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -2335,5 +2358,12 @@ func newConsoleResourcesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ConsoleResourcesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ConsoleResourcesTable, ConsoleResourcesColumn),
+	)
+}
+func newAccountDeletionChallengesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AccountDeletionChallengesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AccountDeletionChallengesTable, AccountDeletionChallengesColumn),
 	)
 }
