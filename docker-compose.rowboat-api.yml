@@ -1,16 +1,75 @@
-# Local end-to-end stack for the rowboat-api backend on real Postgres + Redis.
+# Local end-to-end stack for the rowboat-api backend.
 # Ports are offset to avoid clashing with the legacy docker-compose.yml.
 #
-#   # WORKOS_API_KEY is read from the gitignored root .env (auto-loaded by
-#   # compose). Sign in from the desktop to get a real token; then:
+#   # Keys are read from the gitignored root .env (compose auto-loads it):
+#   #   WORKOS_API_KEY, OPENROUTER_API_KEY, OPENAI_API_KEY,
+#   #   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 #   docker compose -f docker-compose.rowboat-api.yml up --build -d
 #   curl localhost:18080/v1/config
 #
-# AUTH always uses REAL WorkOS (no Ory Hydra, no auth mock) — see
-# apps/rowboat-api/AUTH.md. devstack remains only as a DEV mock for the LLM
-# gateway and the Google OAuth broker (no real vendor keys needed for those).
+# Assistant chat is a Temporal workflow. The API only accepts the session;
+# the worker runs the model call. Without the temporal and worker services
+# the API returns 503 temporal_unavailable and the composer never replies.
+#
+# Chat calls live OpenRouter (https://openrouter.ai/api/v1). An empty
+# OPENROUTER_BASE_URL is what selects that default. Set
+# ROWBOAT_COMPOSE_MOCK_LLM=1 only for an offline plumbing check — devstack
+# then answers every turn with "Hello from the mock LLM."
+#
+# AUTH uses real WorkOS. See apps/rowboat-api/AUTH.md.
 
 name: rowboat-api-stack
+
+# Shared by the API and the worker. The worker is the process that actually
+# calls OpenRouter, so a key set only on the API still produces silent turns.
+x-rowboat-runtime-env: &rowboat-runtime-env
+  ENVIRONMENT: development
+  LOG_LEVEL: info
+  DATABASE_URL: "postgres://rowboat:rowboat@postgres:5432/rowboat?sslmode=disable"
+  REDIS_URL: "redis://redis:6379/0"
+  # Postgres rejects AUTO_MIGRATE. The migrate service applies the Atlas files.
+  AUTO_MIGRATE: "false"
+  DB_ENCRYPTION_KEY: "dev-encryption-key-32-bytes-min!!"
+  APP_URL: "http://localhost:18080"
+  # Auth = real WorkOS AuthKit (iss=https://api.workos.com, no aud, user id in sub).
+  OIDC_ISSUER_URL: "https://api.workos.com"
+  TOKEN_ISSUER: "https://api.workos.com"
+  TOKEN_AUDIENCE: ""
+  JWKS_URL: "https://api.workos.com/sso/jwks/client_01JS1THN6FR45322P2CAV2WWB0"
+  # Embeddings still use the OpenAI key. Chat does not: every chat model is
+  # routed through OpenRouter regardless of the openai/ or anthropic/ prefix.
+  OPENAI_API_KEY: "${OPENAI_API_KEY:?set OPENAI_API_KEY in the root .env}"
+  PARALLEL_API_KEY: "${PARALLEL_API_KEY:-}"
+  OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:?set OPENROUTER_API_KEY in the root .env so chat calls OpenRouter}"
+  # Empty unless ROWBOAT_COMPOSE_MOCK_LLM is non-empty. Empty keeps the
+  # gateway default, https://openrouter.ai/api/v1.
+  OPENROUTER_BASE_URL: "${ROWBOAT_COMPOSE_MOCK_LLM:+http://devstack:8090/v1}"
+  # One knob for the assistant, cloud runtime, and event router. gpt-4.1 is
+  # priced in the gateway table and cheaper than the Anthropic default, which
+  # matters because the gateway reserves the whole max_tokens up front.
+  LLM_MODEL: "openai/gpt-4.1"
+  HOOK_HMAC_SECRET: "dev-hook-secret"
+  INTERNAL_API_SECRET: "dev-internal-secret"
+  SLACK_SIGNING_SECRET: "dev-slack-signing-secret"
+  GOOGLE_WEBHOOK_TOKEN: "dev-google-webhook-token"
+  WEBHOOK_SIGNING_SECRET: "dev-webhook-secret"
+  # Canvas and the other product connectors fail closed without an entitlement
+  # URL. Local compose has no product signer, so the worker (and the API) must
+  # opt into the development-only bypass or the worker exits at boot.
+  CONNECTOR_ALLOW_LOCAL_ENTITLEMENT_DEVELOPMENT: "true"
+  FREE_TIER_CREDITS: "10000"
+  GOOGLE_OAUTH_CLIENT_ID: "${GOOGLE_CLIENT_ID:?set GOOGLE_CLIENT_ID in root .env}"
+  GOOGLE_OAUTH_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:?set GOOGLE_CLIENT_SECRET in root .env}"
+  GOOGLE_REDIRECT_URI: "http://localhost:18080/oauth/google/callback"
+  GOOGLE_WEB_RETURN_URL: "http://localhost:3000/app/settings?settings=connections"
+  WORKOS_CLIENT_ID: "client_01JS1THN6FR45322P2CAV2WWB0"
+  WORKOS_API_KEY: "${WORKOS_API_KEY:?set WORKOS_API_KEY in the root .env (see apps/rowboat-api/AUTH.md)}"
+  WORKOS_BASE_URL: "https://api.workos.com"
+  WORKOS_AUTHORIZE_BASE_URL: "https://api.workos.com"
+  TEMPORAL_ENABLED: "true"
+  TEMPORAL_ADDRESS: "temporal:7233"
+  TEMPORAL_NAMESPACE: "default"
+  TEMPORAL_TASK_QUEUE: "rowboat-api-background-tasks"
 
 services:
   postgres:
@@ -50,20 +109,50 @@ services:
       postgres:
         condition: service_healthy
 
+  # devstack is not on the chat path. It remains so ROWBOAT_COMPOSE_MOCK_LLM=1
+  # can point OpenRouter at a canned completion, and so a test can still hit
+  # the mock Google token endpoint on purpose.
   devstack:
     image: rowboat-api:local
     entrypoint: ["/devstack"]
     environment:
       ADDR: ":8090"
-      # Issuer MUST be the host-reachable URL: it's the `iss` in minted tokens
-      # AND the issuer the desktop's openid-client discovers + validates. The
-      # api reaches the same service internally via JWKS_URL (devstack:8090).
       ISSUER: "http://localhost:8090"
       AUDIENCE: "rowboat-api"
     ports:
       - "8090:8090"
-    # Independent of the api: the api's JWKS verifier tolerates devstack coming
-    # up late (keyfunc refreshes on first unknown-kid token).
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # Temporal owns its own databases (temporal, temporal_visibility) on this
+  # Postgres. Sharing the instance is the same layout as the kind manifest.
+  temporal:
+    image: temporalio/auto-setup:1.27.2
+    environment:
+      DB: postgres12
+      DB_PORT: "5432"
+      POSTGRES_SEEDS: postgres
+      POSTGRES_USER: rowboat
+      POSTGRES_PWD: rowboat
+      ENABLE_ES: "false"
+    ports:
+      - "7233:7233"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # 127.0.0.1 avoids a compose interpolation of $(hostname). The auto-setup
+    # frontend listens on every interface, including loopback.
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "tctl --address 127.0.0.1:7233 cluster health | grep -q SERVING",
+        ]
+      interval: 10s
+      timeout: 20s
+      retries: 30
+      start_period: 180s
 
   api:
     build:
@@ -77,53 +166,7 @@ services:
       - "18081:8081" # gRPC
       - "19090:9090" # metrics
     environment:
-      ENVIRONMENT: development
-      LOG_LEVEL: info
-      DATABASE_URL: "postgres://rowboat:rowboat@postgres:5432/rowboat?sslmode=disable"
-      REDIS_URL: "redis://redis:6379/0"
-      AUTO_MIGRATE: "false"
-      DB_ENCRYPTION_KEY: "dev-encryption-key-32-bytes-min!!"
-      APP_URL: "http://localhost:18080"
-      # Auth = REAL WorkOS AuthKit (verified token shape: iss=https://api.workos.com,
-      # no `aud`, user id in `sub`). The desktop signs in via the rowboat-api
-      # WorkOS broker (/v1/auth/workos/*); see apps/rowboat-api/AUTH.md.
-      OIDC_ISSUER_URL: "https://api.workos.com"
-      TOKEN_ISSUER: "https://api.workos.com"
-      TOKEN_AUDIENCE: "" # WorkOS access tokens carry no aud → skip the check
-      JWKS_URL: "https://api.workos.com/sso/jwks/client_01JS1THN6FR45322P2CAV2WWB0"
-      # LLM gateway. REAL OpenAI for openai/* models (key from the gitignored
-      # root .env; OPENAI_BASE_URL unset → api.openai.com). anthropic/* + google/*
-      # still route to the devstack mock (no OpenRouter key), so those don't error.
-      OPENAI_API_KEY: "${OPENAI_API_KEY:?set OPENAI_API_KEY in the root .env}"
-      PARALLEL_API_KEY: "${PARALLEL_API_KEY:-}"
-      OPENROUTER_BASE_URL: "http://devstack:8090"
-      OPENROUTER_API_KEY: "dev-dummy"
-      # Webhook / internal shared secrets.
-      HOOK_HMAC_SECRET: "dev-hook-secret"
-      INTERNAL_API_SECRET: "dev-internal-secret"
-      SLACK_SIGNING_SECRET: "dev-slack-signing-secret"
-      GOOGLE_WEBHOOK_TOKEN: "dev-google-webhook-token"
-      WEBHOOK_SIGNING_SECRET: "dev-webhook-secret"
-      CONNECTOR_ALLOW_LOCAL_ENTITLEMENT_DEVELOPMENT: "true"
-      FREE_TIER_CREDITS: "10000"
-      # Google OAuth broker → mock token endpoint on devstack. Dummy client
-      # credentials satisfy the "configured" check so /v1/google-oauth/refresh
-      # returns a (fake) access token instead of 502.
-      # REAL Google OAuth. client_id/secret come from the gitignored root .env
-      # (user named them GOOGLE_CLIENT_ID/SECRET → mapped to the api's vars).
-      # AUTHORIZE_URL + TOKEN_URL omitted → real accounts.google.com +
-      # oauth2.googleapis.com. REDIRECT_URI must match the Google Cloud entry.
-      GOOGLE_OAUTH_CLIENT_ID: "${GOOGLE_CLIENT_ID:?set GOOGLE_CLIENT_ID in root .env}"
-      GOOGLE_OAUTH_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:?set GOOGLE_CLIENT_SECRET in root .env}"
-      GOOGLE_REDIRECT_URI: "http://localhost:18080/oauth/google/callback"
-      GOOGLE_WEB_RETURN_URL: "http://localhost:3000/app/settings?settings=connections"
-      # WorkOS sign-in broker → REAL WorkOS. client_id is public (literal); the
-      # secret API key comes from the gitignored root .env (compose auto-loads
-      # it for ${...} substitution). Both base URLs are api.workos.com in prod.
-      WORKOS_CLIENT_ID: "client_01JS1THN6FR45322P2CAV2WWB0"
-      WORKOS_API_KEY: "${WORKOS_API_KEY:?set WORKOS_API_KEY in the root .env (see apps/rowboat-api/AUTH.md)}"
-      WORKOS_BASE_URL: "https://api.workos.com"
-      WORKOS_AUTHORIZE_BASE_URL: "https://api.workos.com"
+      <<: *rowboat-runtime-env
     depends_on:
       postgres:
         condition: service_healthy
@@ -131,3 +174,23 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      temporal:
+        condition: service_healthy
+
+  worker:
+    image: rowboat-api:local
+    entrypoint: ["/rowboat-api-worker"]
+    ports:
+      - "19091:9090" # worker metrics + /readyz
+    environment:
+      <<: *rowboat-runtime-env
+      SERVICE_NAME: rowboat-api-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      temporal:
+        condition: service_healthy

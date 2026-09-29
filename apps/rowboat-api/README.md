@@ -61,20 +61,27 @@ curl localhost:9090/metrics    # prometheus
 All configuration has dev defaults; see `internal/appconfig/config.go` for the
 full env-var surface and `.env.example` for a starting point.
 
-## Local end-to-end with the desktop (`devstack`)
+## Local end-to-end with the desktop
 
 Sign-in uses **real WorkOS AuthKit**, brokered by rowboat-api (WorkOS is a
 confidential client, so the code→token exchange runs server-side; no Ory Hydra —
-see [`AUTH.md`](./AUTH.md)). The WorkOS API key is read from the **gitignored
-root `.env`**, which docker compose auto-loads — no manual sourcing.
-`docker-compose.rowboat-api.yml` brings up Postgres, Redis, the api, and
-`devstack`, which now serves **only** the dev vendor mocks:
+see [`AUTH.md`](./AUTH.md)). Vendor keys are read from the **gitignored root
+`.env`**, which docker compose auto-loads — no manual sourcing.
 
-- a mock OpenAI-compatible LLM (`/v1/chat/completions`, SSE + usage);
-- a mock Google token endpoint (`/v1/google-oauth-mock/token`).
+`docker-compose.rowboat-api.yml` brings up Postgres, Redis, Temporal, the API,
+and the Temporal worker. Assistant chat is a workflow on that worker. Without
+both, `POST /v1/agent-sessions` returns `503 temporal_unavailable` and the
+composer never replies.
+
+Chat calls **live OpenRouter** (`https://openrouter.ai/api/v1`). Put
+`OPENROUTER_API_KEY` in the root `.env` and leave `OPENROUTER_BASE_URL` unset.
+`devstack` is not on that path. Set `ROWBOAT_COMPOSE_MOCK_LLM=1` only for an
+offline plumbing check; devstack then answers every turn with
+`Hello from the mock LLM.`
 
 ```bash
-# root .env holds WORKOS_API_KEY (see AUTH.md)
+# root .env holds WORKOS_API_KEY, OPENROUTER_API_KEY, OPENAI_API_KEY,
+# GOOGLE_CLIENT_ID, and GOOGLE_CLIENT_SECRET
 docker compose -f docker-compose.rowboat-api.yml up --build -d
 cd apps/x && API_URL=http://localhost:18080 npm run dev   # point the desktop at the local api
 ```
@@ -86,13 +93,14 @@ AuthKit login), and on callback hands the code to rowboat-api’s
 key and returns tokens. rowboat-api verifies the returned WorkOS token on every
 call (`TOKEN_ISSUER=https://api.workos.com`, WorkOS JWKS). No tokens are injected.
 
-**Google OAuth.** `/v1/google-oauth/refresh` needs a client id/secret or it
-returns `502 provider_unconfigured`. In dev, the compose file sets dummy
-`GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET` and points
-`GOOGLE_TOKEN_URL` at devstack’s mock, so refresh returns a (fake) token. For a
-**real** Google connection, create an OAuth 2.0 Client in Google Cloud Console,
-set those two secrets to the real values, and leave `GOOGLE_TOKEN_URL` unset
-(defaults to `https://oauth2.googleapis.com/token`).
+**Google OAuth.** Compose maps `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` from
+the root `.env` onto `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` and
+leaves the token URL unset, so refresh uses `https://oauth2.googleapis.com/token`.
+The redirect URI registered on the Google client must be
+`http://localhost:18080/oauth/google/callback`.
+
+Host ports: API `18080`, gRPC `18081`, API metrics `19090`, worker metrics
+`19091`, Temporal `7233`, devstack `8090`, Postgres `5433`.
 
 ## Local kind cluster with the Helm chart
 
