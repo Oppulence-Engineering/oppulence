@@ -51,9 +51,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/ratelimit"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/retention"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/revenue"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/search"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/securitytxt"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/server"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slack"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
@@ -612,7 +614,10 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	googleH.SetOnDisconnect(func(ctx context.Context, u *ent.User) error {
 		_, purgeErr := revenueSvc.PurgeMailIndex(ctx, u)
 		_, statusErr := revenueSvc.MarkSourceAccountsDisconnected(ctx, u, "google")
-		return errors.Join(purgeErr, statusErr)
+		// Mail-index purge drops threads and bodies. Observations and cloud
+		// events still hold the synced gist and the sealed provider payload.
+		redactErr := retention.RedactSources(ctx, client, u, retention.GoogleSources()...)
+		return errors.Join(purgeErr, statusErr, redactErr)
 	})
 	googleH.SetOnConnect(func(ctx context.Context, u *ent.User, accountEmail string, scopes []string) error {
 		if _, err := revenueSvc.ReportSourceAuthorization(ctx, u, "google", revenue.SourceAuthorizationInput{
@@ -695,6 +700,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// Product resource servers verify short-lived, audience-bound connector
 	// tokens against this public key set. It contains public key material only.
 	r.Get("/.well-known/connector-jwks.json", connectorsH.BrokerJWKS)
+	r.Get("/.well-known/security.txt", securitytxt.Serve)
 
 	// Provider callbacks are browser-facing and carry state minted by the
 	// authenticated /v1/*-oauth/start endpoints below.
@@ -808,6 +814,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		consoleH.Mount(r)
 
 		r.Get("/v1/me", billingH.Me)
+		r.Get("/v1/me/export", accountH.Export)
 		// Account deletion is irreversible and calls Stripe and WorkOS: a tight
 		// per-user bucket stops a loop or a replay from hammering either vendor.
 		r.With(rl.PerUserWindow(ratelimit.GroupDefault+":account_delete", 5, time.Hour)).Delete("/v1/me", accountH.Delete)

@@ -213,6 +213,18 @@ func (f BackgroundTaskScheduleStateFunc) Mutate(ctx context.Context, m ent.Mutat
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BackgroundTaskScheduleStateMutation", m)
 }
 
+// The BillingRetentionFunc type is an adapter to allow the use of ordinary
+// function as BillingRetention mutator.
+type BillingRetentionFunc func(context.Context, *ent.BillingRetentionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f BillingRetentionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.BillingRetentionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BillingRetentionMutation", m)
+}
+
 // The CaptureArtifactFunc type is an adapter to allow the use of ordinary
 // function as CaptureArtifact mutator.
 type CaptureArtifactFunc func(context.Context, *ent.CaptureArtifactMutation) (ent.Value, error)
@@ -1015,6 +1027,18 @@ func (f TenantEvidenceKeyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TenantEvidenceKeyMutation", m)
+}
+
+// The TermsAssentFunc type is an adapter to allow the use of ordinary
+// function as TermsAssent mutator.
+type TermsAssentFunc func(context.Context, *ent.TermsAssentMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TermsAssentFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TermsAssentMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TermsAssentMutation", m)
 }
 
 // The UserFunc type is an adapter to allow the use of ordinary

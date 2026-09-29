@@ -42,6 +42,38 @@ func setup(t *testing.T, sanctioned int) (*ent.Client, context.Context, *llm.Han
 	return d.Client, userCtx, h
 }
 
+func TestChatCompletionsDeniesProviderDataCollection(t *testing.T) {
+	_, ctx, h := setup(t, 100000)
+	var gotBody map[string]any
+	var gotHeader http.Header
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotHeader = r.Header.Clone()
+		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+			t.Errorf("decode upstream body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"choices":[{"message":{"content":"ok"}}],"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}`)
+	}))
+	defer upstream.Close()
+	h.SetUpstream(upstream.URL)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/llm/chat/completions", strings.NewReader(`{"model":"anthropic/claude-sonnet-4-5","messages":[{"role":"user","content":"hi"}],"provider":{"data_collection":"allow"}}`)).WithContext(ctx)
+	req.Header.Set("Idempotency-Key", "llm-deny-data-collection")
+	rec := httptest.NewRecorder()
+	h.ChatCompletions(rec, req)
+	if rec.Code >= 500 {
+		t.Fatalf("status = %d, body %s", rec.Code, rec.Body.String())
+	}
+
+	provider, _ := gotBody["provider"].(map[string]any)
+	if provider["data_collection"] != "deny" {
+		t.Fatalf("provider = %#v, want data_collection deny", gotBody["provider"])
+	}
+	if gotHeader.Get("X-Title") != "Oppulence" || gotHeader.Get("HTTP-Referer") != "https://oppulence.io" {
+		t.Fatalf("attribution title=%q referer=%q", gotHeader.Get("X-Title"), gotHeader.Get("HTTP-Referer"))
+	}
+}
+
 func TestChatCompletionsDoesNotExposeUpstreamErrorBody(t *testing.T) {
 	_, ctx, h := setup(t, 100000)
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

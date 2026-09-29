@@ -11,13 +11,13 @@ import { z } from "zod";
  */
 export const PrivacyConfigSchema = z.object({
   /**
-   * Send anonymous product analytics.
+   * Send product analytics to PostHog.
    *
-   * Defaults true to match the behaviour this replaced — every existing install
-   * has analytics on, and flipping that silently under people would be its own
-   * kind of dishonesty. What changes is that turning it off now works.
+   * Defaults false. The public security page says analytics is fail-closed
+   * until the user enables it. A missing privacy.json is not consent. A file
+   * that already sets true stays on.
    */
-  shareUsageData: z.boolean().default(true),
+  shareUsageData: z.boolean().default(false),
 });
 
 export type PrivacyConfig = z.infer<typeof PrivacyConfigSchema>;

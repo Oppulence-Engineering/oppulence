@@ -201,6 +201,8 @@ const ipcSchemas = {
       installationId: z.string(),
       apiUrl: z.string(),
       appVersion: z.string(),
+      /** False until the user opts in. The renderer must not init PostHog otherwise. */
+      shareUsageData: z.boolean(),
     }),
   },
   "workspace:getRoot": {

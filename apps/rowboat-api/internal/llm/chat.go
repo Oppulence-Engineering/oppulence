@@ -120,6 +120,11 @@ func (h *Handler) ChatComplete(ctx context.Context, req ChatRequest) (ChatResult
 	if err != nil {
 		return ChatResult{}, err
 	}
+	privacyHeader := make(http.Header)
+	outBody, err = stampOpenRouterPrivacyBody(up.provider, outBody, privacyHeader)
+	if err != nil {
+		return ChatResult{}, err
+	}
 	// Wire names are sanitized (see sanitizeToolName); translate the model's
 	// choice back to the runtime's real tool name before returning, or the
 	// dispatcher would look up a tool that does not exist.
@@ -145,9 +150,10 @@ func (h *Handler) ChatComplete(ctx context.Context, req ChatRequest) (ChatResult
 	upReq.Header.Set("Content-Type", "application/json")
 	upReq.Header.Set("Authorization", "Bearer "+up.apiKey)
 	upReq.Header.Set("Idempotency-Key", req.RequestID.String())
-	if up.provider == "openrouter" {
-		upReq.Header.Set("HTTP-Referer", "https://app.solomon-ai.co")
-		upReq.Header.Set("X-Title", "Solomon AI")
+	for key, values := range privacyHeader {
+		for _, value := range values {
+			upReq.Header.Add(key, value)
+		}
 	}
 
 	resp, err := h.http.Do(upReq)

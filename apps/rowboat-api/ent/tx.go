@@ -46,6 +46,8 @@ type Tx struct {
 	BackgroundTaskRunEvent *BackgroundTaskRunEventClient
 	// BackgroundTaskScheduleState is the client for interacting with the BackgroundTaskScheduleState builders.
 	BackgroundTaskScheduleState *BackgroundTaskScheduleStateClient
+	// BillingRetention is the client for interacting with the BillingRetention builders.
+	BillingRetention *BillingRetentionClient
 	// CaptureArtifact is the client for interacting with the CaptureArtifact builders.
 	CaptureArtifact *CaptureArtifactClient
 	// CloudEvent is the client for interacting with the CloudEvent builders.
@@ -180,6 +182,8 @@ type Tx struct {
 	SubscriptionHistory *SubscriptionHistoryClient
 	// TenantEvidenceKey is the client for interacting with the TenantEvidenceKey builders.
 	TenantEvidenceKey *TenantEvidenceKeyClient
+	// TermsAssent is the client for interacting with the TermsAssent builders.
+	TermsAssent *TermsAssentClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 	// UserHistory is the client for interacting with the UserHistory builders.
@@ -340,6 +344,7 @@ func (tx *Tx) init() {
 	tx.BackgroundTaskRun = NewBackgroundTaskRunClient(tx.config)
 	tx.BackgroundTaskRunEvent = NewBackgroundTaskRunEventClient(tx.config)
 	tx.BackgroundTaskScheduleState = NewBackgroundTaskScheduleStateClient(tx.config)
+	tx.BillingRetention = NewBillingRetentionClient(tx.config)
 	tx.CaptureArtifact = NewCaptureArtifactClient(tx.config)
 	tx.CloudEvent = NewCloudEventClient(tx.config)
 	tx.Commitment = NewCommitmentClient(tx.config)
@@ -407,6 +412,7 @@ func (tx *Tx) init() {
 	tx.Subscription = NewSubscriptionClient(tx.config)
 	tx.SubscriptionHistory = NewSubscriptionHistoryClient(tx.config)
 	tx.TenantEvidenceKey = NewTenantEvidenceKeyClient(tx.config)
+	tx.TermsAssent = NewTermsAssentClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 	tx.UserHistory = NewUserHistoryClient(tx.config)
 	tx.UserPreference = NewUserPreferenceClient(tx.config)

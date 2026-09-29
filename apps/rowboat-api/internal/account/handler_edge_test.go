@@ -208,8 +208,8 @@ func TestDeleteStillSucceedsWhenTheIdentityProviderFails(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &receipt); err != nil {
 		t.Fatal(err)
 	}
-	if receipt.IdentityDeleted || identity.calls != 1 {
-		t.Fatalf("identityDeleted = %v after %d calls; want false after 1", receipt.IdentityDeleted, identity.calls)
+	if receipt.IdentityDeleted || identity.calls != 3 {
+		t.Fatalf("identityDeleted = %v after %d calls; want false after 3", receipt.IdentityDeleted, identity.calls)
 	}
 	if h.exists(u) {
 		t.Fatal("the data must be deleted even when WorkOS is down")
@@ -438,6 +438,48 @@ func TestDeleteWritesAnAuditLineWithoutPersonalData(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestDeleteRetriesAFlakyIdentityProvider(t *testing.T) {
+	h := newHarness(t)
+	identity := &flakyIdentity{deleteFails: 2}
+	handler := account.New(h.database, h.billing, h.connectors, identity, zap.NewNop())
+	u := newUser(h.client, "idp_flaky")
+
+	rec := serveDelete(t, handler, deleteRequest(auth.WithUser(context.Background(), u), confirmedDeleteBody(t, handler, u, "DELETE")))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d: %s", rec.Code, rec.Body.String())
+	}
+	var receipt account.Receipt
+	if err := json.Unmarshal(rec.Body.Bytes(), &receipt); err != nil {
+		t.Fatal(err)
+	}
+	if !receipt.IdentityDeleted || identity.deletes != 3 || identity.revokes != 1 {
+		t.Fatalf("identityDeleted = %v deletes = %d revokes = %d; want true, 3, 1", receipt.IdentityDeleted, identity.deletes, identity.revokes)
+	}
+}
+
+type flakyIdentity struct {
+	deleteFails int
+	deletes     int
+	revokes     int
+}
+
+func (f *flakyIdentity) DeleteUser(context.Context, string) error {
+	f.deletes++
+	if f.deletes <= f.deleteFails {
+		return errors.New("workos: temporary")
+	}
+	return nil
+}
+
+func (f *flakyIdentity) RevokeSessions(context.Context, string) error {
+	f.revokes++
+	return nil
+}
+
+func (f *flakyIdentity) ListAuthFactorTypes(context.Context, string) ([]string, error) {
+	return nil, nil
 }
 
 func TestDeleteLogsTheIdentityFailureForAManualRetry(t *testing.T) {

@@ -186,7 +186,12 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright [2024] [RowBoat Labs]
+   Copyright 2026 Playbook Media, Inc.
+
+   This product includes software developed by Rowboat Labs
+   (https://github.com/rowboatlabs/rowboat) and licensed under the
+   Apache License, Version 2.0. That upstream work remains under the
+   Apache License. This notice does not relicense it.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.

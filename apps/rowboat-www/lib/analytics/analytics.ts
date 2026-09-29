@@ -32,7 +32,20 @@ function safeProperties(
   ) as Record<string, string | number | boolean>;
 }
 
+/**
+ * Global Privacy Control is an opt-out the privacy policy says we honor.
+ * It closes analytics even when the account preference is on. Session cookies
+ * stay; they are the strictly necessary cookies the policy describes.
+ */
+function globalPrivacyControlOptOut(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return (
+    (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl === true
+  );
+}
+
 async function hasConsent(): Promise<boolean> {
+  if (globalPrivacyControlOptOut()) return false;
   if (consent !== undefined) return consent;
   consentRequest ??= getConsolePreferences()
     .then((preferences) => {
@@ -45,6 +58,7 @@ async function hasConsent(): Promise<boolean> {
 
 /** Keeps capture gating current immediately after the preference is patched. */
 export function setAnalyticsConsent(next: boolean): void {
+  if (globalPrivacyControlOptOut()) next = false;
   consent = next;
   consentRequest = Promise.resolve(next);
   if (initialized) {

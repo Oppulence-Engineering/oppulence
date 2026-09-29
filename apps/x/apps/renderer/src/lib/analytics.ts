@@ -1,7 +1,97 @@
 import posthog from "posthog-js";
+import type { CaptureResult } from "posthog-js";
+
+import {
+  isRendererAnalyticsEnabled,
+  markRendererAnalyticsReady,
+  setRendererAnalyticsEnabled,
+} from "@/lib/analytics-consent";
 
 let appVersion: string | undefined;
 let apiUrl: string | undefined;
+let started = false;
+
+/**
+ * The live client, or null when analytics is off.
+ *
+ * Null until both the stored preference is on and init has finished. That
+ * ordering is what keeps posthog-js from flushing events captured earlier
+ * in the session, including exception capture wired up by init itself.
+ */
+function client(): typeof posthog | null {
+  if (!isRendererAnalyticsEnabled()) return null;
+  return posthog;
+}
+
+type RendererAnalyticsStart = {
+  installationId?: string;
+  apiUrl?: string;
+  appVersion?: string;
+};
+
+/**
+ * Starts the renderer PostHog client. No-op without a key. Safe to call again
+ * when the user turns the setting on after launch.
+ */
+export function startRendererAnalytics(props: RendererAnalyticsStart): void {
+  // Store version context before init. Capture stays closed until ready is set
+  // below, so this call only remembers the values.
+  appVersion = props.appVersion?.trim() || undefined;
+  apiUrl = props.apiUrl?.trim() || undefined;
+  setRendererAnalyticsEnabled(true);
+  const key = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
+  if (!key) {
+    markRendererAnalyticsReady(false);
+    return;
+  }
+  if (!started) {
+    // Call posthog.init directly. client() is still null here on purpose:
+    // ready is false until init returns, so a queued pre-consent event cannot
+    // flush through the gated helpers.
+    posthog.init(key, {
+      api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
+      defaults: "2025-11-30",
+      capture_exceptions: true,
+      autocapture: false,
+      capture_pageview: false,
+      ...(props.installationId ? { bootstrap: { distinctID: props.installationId } } : {}),
+      before_send: (event: CaptureResult | null) => {
+        if (!event || !isRendererAnalyticsEnabled()) return null;
+        if (appVersion) {
+          event.properties = { ...event.properties, app_version: appVersion };
+        }
+        return event;
+      },
+      loaded: () => {
+        configureAnalyticsContext({ apiUrl, appVersion });
+      },
+    });
+    started = true;
+  }
+  posthog.opt_in_capturing();
+  markRendererAnalyticsReady(true);
+  configureAnalyticsContext({ apiUrl, appVersion });
+}
+
+/** Stops capture immediately. The next event must not leave the machine. */
+export function stopRendererAnalytics(): void {
+  if (started) {
+    posthog.opt_out_capturing();
+  }
+  setRendererAnalyticsEnabled(false);
+}
+
+export function setPersonProperties(props: Record<string, string | number | boolean>): void {
+  client()?.people.set(props);
+}
+
+export function setPersonPropertiesOnce(props: Record<string, string | number | boolean>): void {
+  client()?.people.set_once(props);
+}
+
+export function captureEvent(event: string, props?: Record<string, unknown>): void {
+  client()?.capture(event, props);
+}
 
 function appVersionProperties(): Record<string, string> {
   return appVersion ? { app_version: appVersion } : {};
@@ -13,7 +103,7 @@ export function configureAnalyticsContext(props: { appVersion?: string; apiUrl?:
 
   const eventProperties = appVersionProperties();
   if (Object.keys(eventProperties).length > 0) {
-    posthog.register(eventProperties);
+    client()?.register(eventProperties);
   }
 
   const personProperties = {
@@ -21,24 +111,24 @@ export function configureAnalyticsContext(props: { appVersion?: string; apiUrl?:
     ...eventProperties,
   };
   if (Object.keys(personProperties).length > 0) {
-    posthog.people.set(personProperties);
+    client()?.people.set(personProperties);
   }
 }
 
 export function identifyUser(userId: string, properties?: Record<string, unknown>) {
-  posthog.identify(userId, {
+  client()?.identify(userId, {
     ...properties,
     ...appVersionProperties(),
   });
 }
 
 export function resetAnalyticsIdentity() {
-  posthog.reset();
+  client()?.reset();
   configureAnalyticsContext({ appVersion, apiUrl });
 }
 
 export function chatSessionCreated(runId: string) {
-  posthog.capture("chat_session_created", { run_id: runId });
+  client()?.capture("chat_session_created", { run_id: runId });
 }
 
 export function chatMessageSent(props: {
@@ -47,7 +137,7 @@ export function chatMessageSent(props: {
   searchEnabled?: boolean;
   voiceInputProvider?: string;
 }) {
-  posthog.capture("chat_message_sent", {
+  client()?.capture("chat_message_sent", {
     voice_input: props.voiceInput ?? false,
     voice_output: props.voiceOutput ?? false,
     search_enabled: props.searchEnabled ?? false,
@@ -56,15 +146,15 @@ export function chatMessageSent(props: {
 }
 
 export function oauthConnected(provider: string) {
-  posthog.capture("oauth_connected", { provider });
+  client()?.capture("oauth_connected", { provider });
 }
 
 export function oauthDisconnected(provider: string) {
-  posthog.capture("oauth_disconnected", { provider });
+  client()?.capture("oauth_disconnected", { provider });
 }
 
 export function voiceInputStarted() {
-  posthog.capture("voice_input_started");
+  client()?.capture("voice_input_started");
 }
 
 // ---- Transcription (RFC 009 §19) — durations/metadata only, never audio or text ----
@@ -81,7 +171,7 @@ export function transcriptionStarted(props: {
    *  distinguishable from a quiet meeting in aggregate. */
   systemAudioCaptured?: boolean;
 }) {
-  posthog.capture("transcription_started", {
+  client()?.capture("transcription_started", {
     provider: props.provider,
     mode: props.mode,
     ...(props.model ? { model: props.model } : {}),
@@ -102,7 +192,7 @@ export function transcriptionCompleted(props: {
   accel?: string;
   fallback?: boolean;
 }) {
-  posthog.capture("transcription_completed", {
+  client()?.capture("transcription_completed", {
     provider: props.provider,
     mode: props.mode,
     ...(props.model ? { model: props.model } : {}),
@@ -120,7 +210,7 @@ export function transcriptionFailed(props: {
   code: string;
   captureEngine?: string;
 }) {
-  posthog.capture("transcription_failed", {
+  client()?.capture("transcription_failed", {
     provider: props.provider,
     mode: props.mode,
     code: props.code,
@@ -133,7 +223,7 @@ export function whisperModelDownloaded(props: {
   sizeMb?: number;
   durationMs?: number;
 }) {
-  posthog.capture("whisper_model_downloaded", {
+  client()?.capture("whisper_model_downloaded", {
     id: props.id,
     ...(props.sizeMb != null ? { size_mb: props.sizeMb } : {}),
     ...(props.durationMs != null ? { duration_ms: Math.round(props.durationMs) } : {}),
@@ -146,49 +236,49 @@ export function transcriptionProviderChanged(props: {
   to: string;
   reason: "user" | "quota" | "capability" | "remote" | "fallback";
 }) {
-  posthog.capture("transcription_provider_changed", props);
+  client()?.capture("transcription_provider_changed", props);
   // Person property: the user's preferred engine for the voice feature.
   if (props.feature === "voice") {
-    posthog.people.set({ transcription_engine_pref: props.to });
+    client()?.people.set({ transcription_engine_pref: props.to });
   }
 }
 
 export function searchExecuted(types: string[]) {
-  posthog.capture("search_executed", { types });
+  client()?.capture("search_executed", { types });
 }
 
 export function noteExported(format: string) {
-  posthog.capture("note_exported", { format });
+  client()?.capture("note_exported", { format });
 }
 
 export function feedbackSubmitted(category: string) {
-  posthog.capture("feedback_submitted", { category });
+  client()?.capture("feedback_submitted", { category });
 }
 
 export type ProductTourVariant = "main" | "relationships" | "meetings" | "actions";
 
 export function productTourStarted(variant: ProductTourVariant) {
-  posthog.capture("product_tour_started", { variant });
+  client()?.capture("product_tour_started", { variant });
 }
 
 export function productTourStepViewed(variant: ProductTourVariant, step: number, target: string) {
-  posthog.capture("product_tour_step_viewed", { variant, step: step + 1, target });
+  client()?.capture("product_tour_step_viewed", { variant, step: step + 1, target });
 }
 
 export function productTourSkipped(variant: ProductTourVariant, step: number) {
-  posthog.capture("product_tour_skipped", { variant, step: step + 1 });
+  client()?.capture("product_tour_skipped", { variant, step: step + 1 });
 }
 
 export function productTourDismissed(variant: ProductTourVariant, step: number) {
-  posthog.capture("product_tour_dismissed", { variant, step: step + 1 });
+  client()?.capture("product_tour_dismissed", { variant, step: step + 1 });
 }
 
 export function productTourAbandoned(variant: ProductTourVariant, step: number) {
-  posthog.capture("product_tour_abandoned", { variant, step: step + 1 });
+  client()?.capture("product_tour_abandoned", { variant, step: step + 1 });
 }
 
 export function productTourCompleted(variant: ProductTourVariant, stepCount: number) {
-  posthog.capture("product_tour_completed", { variant, step_count: stepCount });
+  client()?.capture("product_tour_completed", { variant, step_count: stepCount });
 }
 
 export function productTourTargetMissing(
@@ -196,5 +286,5 @@ export function productTourTargetMissing(
   step: number,
   target: string,
 ) {
-  posthog.capture("product_tour_target_missing", { variant, step: step + 1, target });
+  client()?.capture("product_tour_target_missing", { variant, step: step + 1, target });
 }

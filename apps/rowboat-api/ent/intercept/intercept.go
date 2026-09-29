@@ -25,6 +25,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/billingretention"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/captureartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
@@ -93,6 +94,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscriptionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/termsassent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
@@ -614,6 +616,33 @@ func (f TraverseBackgroundTaskScheduleState) Traverse(ctx context.Context, q ent
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.BackgroundTaskScheduleStateQuery", q)
+}
+
+// The BillingRetentionFunc type is an adapter to allow the use of ordinary function as a Querier.
+type BillingRetentionFunc func(context.Context, *ent.BillingRetentionQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f BillingRetentionFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.BillingRetentionQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.BillingRetentionQuery", q)
+}
+
+// The TraverseBillingRetention type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseBillingRetention func(context.Context, *ent.BillingRetentionQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseBillingRetention) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseBillingRetention) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.BillingRetentionQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.BillingRetentionQuery", q)
 }
 
 // The CaptureArtifactFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -2425,6 +2454,33 @@ func (f TraverseTenantEvidenceKey) Traverse(ctx context.Context, q ent.Query) er
 	return fmt.Errorf("unexpected query type %T. expect *ent.TenantEvidenceKeyQuery", q)
 }
 
+// The TermsAssentFunc type is an adapter to allow the use of ordinary function as a Querier.
+type TermsAssentFunc func(context.Context, *ent.TermsAssentQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f TermsAssentFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.TermsAssentQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.TermsAssentQuery", q)
+}
+
+// The TraverseTermsAssent type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseTermsAssent func(context.Context, *ent.TermsAssentQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseTermsAssent) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseTermsAssent) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.TermsAssentQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.TermsAssentQuery", q)
+}
+
 // The UserFunc type is an adapter to allow the use of ordinary function as a Querier.
 type UserFunc func(context.Context, *ent.UserQuery) (ent.Value, error)
 
@@ -2624,6 +2680,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.BackgroundTaskRunEventQuery, predicate.BackgroundTaskRunEvent, backgroundtaskrunevent.OrderOption]{typ: ent.TypeBackgroundTaskRunEvent, tq: q}, nil
 	case *ent.BackgroundTaskScheduleStateQuery:
 		return &query[*ent.BackgroundTaskScheduleStateQuery, predicate.BackgroundTaskScheduleState, backgroundtaskschedulestate.OrderOption]{typ: ent.TypeBackgroundTaskScheduleState, tq: q}, nil
+	case *ent.BillingRetentionQuery:
+		return &query[*ent.BillingRetentionQuery, predicate.BillingRetention, billingretention.OrderOption]{typ: ent.TypeBillingRetention, tq: q}, nil
 	case *ent.CaptureArtifactQuery:
 		return &query[*ent.CaptureArtifactQuery, predicate.CaptureArtifact, captureartifact.OrderOption]{typ: ent.TypeCaptureArtifact, tq: q}, nil
 	case *ent.CloudEventQuery:
@@ -2758,6 +2816,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.SubscriptionHistoryQuery, predicate.SubscriptionHistory, subscriptionhistory.OrderOption]{typ: ent.TypeSubscriptionHistory, tq: q}, nil
 	case *ent.TenantEvidenceKeyQuery:
 		return &query[*ent.TenantEvidenceKeyQuery, predicate.TenantEvidenceKey, tenantevidencekey.OrderOption]{typ: ent.TypeTenantEvidenceKey, tq: q}, nil
+	case *ent.TermsAssentQuery:
+		return &query[*ent.TermsAssentQuery, predicate.TermsAssent, termsassent.OrderOption]{typ: ent.TypeTermsAssent, tq: q}, nil
 	case *ent.UserQuery:
 		return &query[*ent.UserQuery, predicate.User, user.OrderOption]{typ: ent.TypeUser, tq: q}, nil
 	case *ent.UserHistoryQuery:

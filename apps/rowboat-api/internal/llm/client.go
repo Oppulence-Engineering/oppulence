@@ -86,6 +86,8 @@ func (h *Handler) Complete(ctx context.Context, req CompleteRequest) (CompleteRe
 	if req.JSONObject {
 		body["response_format"] = map[string]any{"type": "json_object"}
 	}
+	privacyHeader := make(http.Header)
+	stampOpenRouterPrivacy(up.provider, body, privacyHeader)
 	outBody, err := json.Marshal(body)
 	if err != nil {
 		return CompleteResult{}, err
@@ -113,9 +115,10 @@ func (h *Handler) Complete(ctx context.Context, req CompleteRequest) (CompleteRe
 	upReq.Header.Set("Content-Type", "application/json")
 	upReq.Header.Set("Authorization", "Bearer "+up.apiKey)
 	upReq.Header.Set("Idempotency-Key", req.RequestID.String())
-	if up.provider == "openrouter" {
-		upReq.Header.Set("HTTP-Referer", "https://app.solomon-ai.co")
-		upReq.Header.Set("X-Title", "Solomon AI")
+	for key, values := range privacyHeader {
+		for _, value := range values {
+			upReq.Header.Add(key, value)
+		}
 	}
 
 	resp, err := h.http.Do(upReq)

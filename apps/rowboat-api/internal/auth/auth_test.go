@@ -52,6 +52,44 @@ func TestResolveUserCreatesUserAndFreeTierSubscription(t *testing.T) {
 	if sub.Plan != "free" {
 		t.Errorf("plan = %q, want free", sub.Plan)
 	}
+	assent := client.TermsAssent.Query().OnlyX(auth.WithInternal(ctx))
+	if assent.TermsVersion != auth.CurrentTermsVersion || assent.AcceptedAt.IsZero() {
+		t.Fatalf("terms assent = version %q at %v", assent.TermsVersion, assent.AcceptedAt)
+	}
+}
+
+func TestResolveUserRecordsAssentOnce(t *testing.T) {
+	client := testClient(t)
+	m := auth.NewMiddleware(nil, client, nil, 10000, zap.NewNop())
+	ctx := context.Background()
+	internal := auth.WithInternal(ctx)
+
+	if _, err := m.ResolveUser(ctx, &oauthrs.Claims{WorkOSUserID: "user_terms", Email: "a@x.co"}); err != nil {
+		t.Fatal(err)
+	}
+	first := client.TermsAssent.Query().OnlyX(internal)
+	if _, err := m.ResolveUser(ctx, &oauthrs.Claims{WorkOSUserID: "user_terms", Email: "a@x.co"}); err != nil {
+		t.Fatal(err)
+	}
+	second := client.TermsAssent.Query().OnlyX(internal)
+	if second.ID != first.ID || !second.AcceptedAt.Equal(first.AcceptedAt) || second.TermsVersion != auth.CurrentTermsVersion {
+		t.Fatalf("assent rewritten: %+v then %+v", first, second)
+	}
+}
+
+func TestResolveUserBackfillsAssentForAnExistingAccount(t *testing.T) {
+	client := testClient(t)
+	ctx := context.Background()
+	internal := auth.WithInternal(ctx)
+	client.User.Create().SetWorkosUserID("user_old").SetEmail("old@x.co").SaveX(internal)
+	m := auth.NewMiddleware(nil, client, nil, 10000, zap.NewNop())
+	if _, err := m.ResolveUser(ctx, &oauthrs.Claims{WorkOSUserID: "user_old", Email: "old@x.co"}); err != nil {
+		t.Fatal(err)
+	}
+	assent := client.TermsAssent.Query().OnlyX(internal)
+	if assent.TermsVersion != auth.CurrentTermsVersion || assent.AcceptedAt.IsZero() {
+		t.Fatalf("assent = %+v", assent)
+	}
 }
 
 func TestResolveUserIsIdempotent(t *testing.T) {

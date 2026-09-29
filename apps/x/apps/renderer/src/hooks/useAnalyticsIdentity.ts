@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
-import posthog from 'posthog-js'
-import { identifyUser, resetAnalyticsIdentity } from '@/lib/analytics'
+import { captureEvent, identifyUser, resetAnalyticsIdentity, setPersonProperties } from '@/lib/analytics'
 import { LEGACY_PRODUCT_PROVIDER_ID, PRODUCT_PROVIDER_ID, getProductProviderState, isProductProvider } from '@x/shared/branding'
 
 const MAX_NOTE_COUNT_DIRECTORY_READS = 50
@@ -45,7 +44,7 @@ export function useAnalyticsIdentity() {
           props[`${p}_connected`] = !!config[p]?.connected
         }
         props[`${LEGACY_PRODUCT_PROVIDER_ID}_connected`] = !!solomon?.connected
-        posthog.people.set(props)
+        setPersonProperties(props)
 
       } catch {
         // oauth state unavailable
@@ -78,7 +77,7 @@ export function useAnalyticsIdentity() {
           }
 
           if (!cancelled) {
-            posthog.people.set({ total_notes: totalNotes })
+            setPersonProperties({ total_notes: totalNotes })
           }
         } catch {
           // workspace may not be available
@@ -100,7 +99,7 @@ export function useAnalyticsIdentity() {
       if (!isProductProvider(event.provider)) {
         // Other providers: just toggle the connection flag
         if (event.success) {
-          posthog.people.set({ [`${event.provider}_connected`]: true })
+          setPersonProperties({ [`${event.provider}_connected`]: true })
         }
         return
       }
@@ -110,15 +109,15 @@ export function useAnalyticsIdentity() {
         if (event.userId) {
           identifyUser(event.userId)
         }
-        posthog.people.set({ signed_in: true, solomon_connected: true, rowboat_connected: true })
-        posthog.capture('user_signed_in')
+        setPersonProperties({ signed_in: true, solomon_connected: true, rowboat_connected: true })
+        captureEvent('user_signed_in')
         return
       }
 
       // Solomon AI sign-out — flip flags, capture, and reset distinct_id so
       // future events on this device don't get attributed to the prior user.
-      posthog.people.set({ signed_in: false, solomon_connected: false, rowboat_connected: false })
-      posthog.capture('user_signed_out')
+      setPersonProperties({ signed_in: false, solomon_connected: false, rowboat_connected: false })
+      captureEvent('user_signed_out')
       resetAnalyticsIdentity()
     })
 

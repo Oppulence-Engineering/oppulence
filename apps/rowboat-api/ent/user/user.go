@@ -177,6 +177,8 @@ const (
 	EdgeConsoleResources = "console_resources"
 	// EdgeAccountDeletionChallenges holds the string denoting the account_deletion_challenges edge name in mutations.
 	EdgeAccountDeletionChallenges = "account_deletion_challenges"
+	// EdgeTermsAssents holds the string denoting the terms_assents edge name in mutations.
+	EdgeTermsAssents = "terms_assents"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
@@ -711,6 +713,13 @@ const (
 	AccountDeletionChallengesInverseTable = "account_deletion_challenges"
 	// AccountDeletionChallengesColumn is the table column denoting the account_deletion_challenges relation/edge.
 	AccountDeletionChallengesColumn = "user_account_deletion_challenges"
+	// TermsAssentsTable is the table that holds the terms_assents relation/edge.
+	TermsAssentsTable = "terms_assents"
+	// TermsAssentsInverseTable is the table name for the TermsAssent entity.
+	// It exists in this package in order to avoid circular dependency with the "termsassent" package.
+	TermsAssentsInverseTable = "terms_assents"
+	// TermsAssentsColumn is the table column denoting the terms_assents relation/edge.
+	TermsAssentsColumn = "user_terms_assents"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -1835,6 +1844,20 @@ func ByAccountDeletionChallenges(term sql.OrderTerm, terms ...sql.OrderTerm) Ord
 		sqlgraph.OrderByNeighborTerms(s, newAccountDeletionChallengesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByTermsAssentsCount orders the results by terms_assents count.
+func ByTermsAssentsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newTermsAssentsStep(), opts...)
+	}
+}
+
+// ByTermsAssents orders the results by terms_assents terms.
+func ByTermsAssents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTermsAssentsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -2365,5 +2388,12 @@ func newAccountDeletionChallengesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(AccountDeletionChallengesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, AccountDeletionChallengesTable, AccountDeletionChallengesColumn),
+	)
+}
+func newTermsAssentsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TermsAssentsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, TermsAssentsTable, TermsAssentsColumn),
 	)
 }

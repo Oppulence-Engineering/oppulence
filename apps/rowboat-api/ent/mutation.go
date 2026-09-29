@@ -28,6 +28,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/billingretention"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/captureartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
@@ -96,6 +97,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscriptionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/termsassent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
@@ -132,6 +134,7 @@ const (
 	TypeBackgroundTaskRun                 = "BackgroundTaskRun"
 	TypeBackgroundTaskRunEvent            = "BackgroundTaskRunEvent"
 	TypeBackgroundTaskScheduleState       = "BackgroundTaskScheduleState"
+	TypeBillingRetention                  = "BillingRetention"
 	TypeCaptureArtifact                   = "CaptureArtifact"
 	TypeCloudEvent                        = "CloudEvent"
 	TypeCommitment                        = "Commitment"
@@ -199,6 +202,7 @@ const (
 	TypeSubscription                      = "Subscription"
 	TypeSubscriptionHistory               = "SubscriptionHistory"
 	TypeTenantEvidenceKey                 = "TenantEvidenceKey"
+	TypeTermsAssent                       = "TermsAssent"
 	TypeUser                              = "User"
 	TypeUserHistory                       = "UserHistory"
 	TypeUserPreference                    = "UserPreference"
@@ -24300,6 +24304,776 @@ func (m *BackgroundTaskScheduleStateMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown BackgroundTaskScheduleState edge %s", name)
+}
+
+// BillingRetentionMutation represents an operation that mutates the BillingRetention nodes in the graph.
+type BillingRetentionMutation struct {
+	config
+	op                     Op
+	typ                    string
+	id                     *uuid.UUID
+	created_at             *time.Time
+	updated_at             *time.Time
+	plan                   *string
+	status                 *string
+	stripe_customer_id     *string
+	stripe_subscription_id *string
+	trial_expires_at       *time.Time
+	retained_at            *time.Time
+	clearedFields          map[string]struct{}
+	done                   bool
+	oldValue               func(context.Context) (*BillingRetention, error)
+	predicates             []predicate.BillingRetention
+}
+
+var _ ent.Mutation = (*BillingRetentionMutation)(nil)
+
+// billingretentionOption allows management of the mutation configuration using functional options.
+type billingretentionOption func(*BillingRetentionMutation)
+
+// newBillingRetentionMutation creates new mutation for the BillingRetention entity.
+func newBillingRetentionMutation(c config, op Op, opts ...billingretentionOption) *BillingRetentionMutation {
+	m := &BillingRetentionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeBillingRetention,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withBillingRetentionID sets the ID field of the mutation.
+func withBillingRetentionID(id uuid.UUID) billingretentionOption {
+	return func(m *BillingRetentionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *BillingRetention
+		)
+		m.oldValue = func(ctx context.Context) (*BillingRetention, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().BillingRetention.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withBillingRetention sets the old BillingRetention of the mutation.
+func withBillingRetention(node *BillingRetention) billingretentionOption {
+	return func(m *BillingRetentionMutation) {
+		m.oldValue = func(context.Context) (*BillingRetention, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m BillingRetentionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m BillingRetentionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of BillingRetention entities.
+func (m *BillingRetentionMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *BillingRetentionMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *BillingRetentionMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().BillingRetention.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *BillingRetentionMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *BillingRetentionMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the BillingRetention entity.
+// If the BillingRetention object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BillingRetentionMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *BillingRetentionMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *BillingRetentionMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *BillingRetentionMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the BillingRetention entity.
+// If the BillingRetention object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BillingRetentionMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *BillingRetentionMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetPlan sets the "plan" field.
+func (m *BillingRetentionMutation) SetPlan(s string) {
+	m.plan = &s
+}
+
+// Plan returns the value of the "plan" field in the mutation.
+func (m *BillingRetentionMutation) Plan() (r string, exists bool) {
+	v := m.plan
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPlan returns the old "plan" field's value of the BillingRetention entity.
+// If the BillingRetention object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BillingRetentionMutation) OldPlan(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPlan is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPlan requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlan: %w", err)
+	}
+	return oldValue.Plan, nil
+}
+
+// ResetPlan resets all changes to the "plan" field.
+func (m *BillingRetentionMutation) ResetPlan() {
+	m.plan = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *BillingRetentionMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *BillingRetentionMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the BillingRetention entity.
+// If the BillingRetention object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BillingRetentionMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *BillingRetentionMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetStripeCustomerID sets the "stripe_customer_id" field.
+func (m *BillingRetentionMutation) SetStripeCustomerID(s string) {
+	m.stripe_customer_id = &s
+}
+
+// StripeCustomerID returns the value of the "stripe_customer_id" field in the mutation.
+func (m *BillingRetentionMutation) StripeCustomerID() (r string, exists bool) {
+	v := m.stripe_customer_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStripeCustomerID returns the old "stripe_customer_id" field's value of the BillingRetention entity.
+// If the BillingRetention object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BillingRetentionMutation) OldStripeCustomerID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStripeCustomerID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStripeCustomerID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStripeCustomerID: %w", err)
+	}
+	return oldValue.StripeCustomerID, nil
+}
+
+// ClearStripeCustomerID clears the value of the "stripe_customer_id" field.
+func (m *BillingRetentionMutation) ClearStripeCustomerID() {
+	m.stripe_customer_id = nil
+	m.clearedFields[billingretention.FieldStripeCustomerID] = struct{}{}
+}
+
+// StripeCustomerIDCleared returns if the "stripe_customer_id" field was cleared in this mutation.
+func (m *BillingRetentionMutation) StripeCustomerIDCleared() bool {
+	_, ok := m.clearedFields[billingretention.FieldStripeCustomerID]
+	return ok
+}
+
+// ResetStripeCustomerID resets all changes to the "stripe_customer_id" field.
+func (m *BillingRetentionMutation) ResetStripeCustomerID() {
+	m.stripe_customer_id = nil
+	delete(m.clearedFields, billingretention.FieldStripeCustomerID)
+}
+
+// SetStripeSubscriptionID sets the "stripe_subscription_id" field.
+func (m *BillingRetentionMutation) SetStripeSubscriptionID(s string) {
+	m.stripe_subscription_id = &s
+}
+
+// StripeSubscriptionID returns the value of the "stripe_subscription_id" field in the mutation.
+func (m *BillingRetentionMutation) StripeSubscriptionID() (r string, exists bool) {
+	v := m.stripe_subscription_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStripeSubscriptionID returns the old "stripe_subscription_id" field's value of the BillingRetention entity.
+// If the BillingRetention object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BillingRetentionMutation) OldStripeSubscriptionID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStripeSubscriptionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStripeSubscriptionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStripeSubscriptionID: %w", err)
+	}
+	return oldValue.StripeSubscriptionID, nil
+}
+
+// ClearStripeSubscriptionID clears the value of the "stripe_subscription_id" field.
+func (m *BillingRetentionMutation) ClearStripeSubscriptionID() {
+	m.stripe_subscription_id = nil
+	m.clearedFields[billingretention.FieldStripeSubscriptionID] = struct{}{}
+}
+
+// StripeSubscriptionIDCleared returns if the "stripe_subscription_id" field was cleared in this mutation.
+func (m *BillingRetentionMutation) StripeSubscriptionIDCleared() bool {
+	_, ok := m.clearedFields[billingretention.FieldStripeSubscriptionID]
+	return ok
+}
+
+// ResetStripeSubscriptionID resets all changes to the "stripe_subscription_id" field.
+func (m *BillingRetentionMutation) ResetStripeSubscriptionID() {
+	m.stripe_subscription_id = nil
+	delete(m.clearedFields, billingretention.FieldStripeSubscriptionID)
+}
+
+// SetTrialExpiresAt sets the "trial_expires_at" field.
+func (m *BillingRetentionMutation) SetTrialExpiresAt(t time.Time) {
+	m.trial_expires_at = &t
+}
+
+// TrialExpiresAt returns the value of the "trial_expires_at" field in the mutation.
+func (m *BillingRetentionMutation) TrialExpiresAt() (r time.Time, exists bool) {
+	v := m.trial_expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTrialExpiresAt returns the old "trial_expires_at" field's value of the BillingRetention entity.
+// If the BillingRetention object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BillingRetentionMutation) OldTrialExpiresAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTrialExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTrialExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTrialExpiresAt: %w", err)
+	}
+	return oldValue.TrialExpiresAt, nil
+}
+
+// ClearTrialExpiresAt clears the value of the "trial_expires_at" field.
+func (m *BillingRetentionMutation) ClearTrialExpiresAt() {
+	m.trial_expires_at = nil
+	m.clearedFields[billingretention.FieldTrialExpiresAt] = struct{}{}
+}
+
+// TrialExpiresAtCleared returns if the "trial_expires_at" field was cleared in this mutation.
+func (m *BillingRetentionMutation) TrialExpiresAtCleared() bool {
+	_, ok := m.clearedFields[billingretention.FieldTrialExpiresAt]
+	return ok
+}
+
+// ResetTrialExpiresAt resets all changes to the "trial_expires_at" field.
+func (m *BillingRetentionMutation) ResetTrialExpiresAt() {
+	m.trial_expires_at = nil
+	delete(m.clearedFields, billingretention.FieldTrialExpiresAt)
+}
+
+// SetRetainedAt sets the "retained_at" field.
+func (m *BillingRetentionMutation) SetRetainedAt(t time.Time) {
+	m.retained_at = &t
+}
+
+// RetainedAt returns the value of the "retained_at" field in the mutation.
+func (m *BillingRetentionMutation) RetainedAt() (r time.Time, exists bool) {
+	v := m.retained_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRetainedAt returns the old "retained_at" field's value of the BillingRetention entity.
+// If the BillingRetention object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BillingRetentionMutation) OldRetainedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRetainedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRetainedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRetainedAt: %w", err)
+	}
+	return oldValue.RetainedAt, nil
+}
+
+// ResetRetainedAt resets all changes to the "retained_at" field.
+func (m *BillingRetentionMutation) ResetRetainedAt() {
+	m.retained_at = nil
+}
+
+// Where appends a list predicates to the BillingRetentionMutation builder.
+func (m *BillingRetentionMutation) Where(ps ...predicate.BillingRetention) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the BillingRetentionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *BillingRetentionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.BillingRetention, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *BillingRetentionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *BillingRetentionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (BillingRetention).
+func (m *BillingRetentionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *BillingRetentionMutation) Fields() []string {
+	fields := make([]string, 0, 8)
+	if m.created_at != nil {
+		fields = append(fields, billingretention.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, billingretention.FieldUpdatedAt)
+	}
+	if m.plan != nil {
+		fields = append(fields, billingretention.FieldPlan)
+	}
+	if m.status != nil {
+		fields = append(fields, billingretention.FieldStatus)
+	}
+	if m.stripe_customer_id != nil {
+		fields = append(fields, billingretention.FieldStripeCustomerID)
+	}
+	if m.stripe_subscription_id != nil {
+		fields = append(fields, billingretention.FieldStripeSubscriptionID)
+	}
+	if m.trial_expires_at != nil {
+		fields = append(fields, billingretention.FieldTrialExpiresAt)
+	}
+	if m.retained_at != nil {
+		fields = append(fields, billingretention.FieldRetainedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *BillingRetentionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case billingretention.FieldCreatedAt:
+		return m.CreatedAt()
+	case billingretention.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case billingretention.FieldPlan:
+		return m.Plan()
+	case billingretention.FieldStatus:
+		return m.Status()
+	case billingretention.FieldStripeCustomerID:
+		return m.StripeCustomerID()
+	case billingretention.FieldStripeSubscriptionID:
+		return m.StripeSubscriptionID()
+	case billingretention.FieldTrialExpiresAt:
+		return m.TrialExpiresAt()
+	case billingretention.FieldRetainedAt:
+		return m.RetainedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *BillingRetentionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case billingretention.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case billingretention.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case billingretention.FieldPlan:
+		return m.OldPlan(ctx)
+	case billingretention.FieldStatus:
+		return m.OldStatus(ctx)
+	case billingretention.FieldStripeCustomerID:
+		return m.OldStripeCustomerID(ctx)
+	case billingretention.FieldStripeSubscriptionID:
+		return m.OldStripeSubscriptionID(ctx)
+	case billingretention.FieldTrialExpiresAt:
+		return m.OldTrialExpiresAt(ctx)
+	case billingretention.FieldRetainedAt:
+		return m.OldRetainedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown BillingRetention field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BillingRetentionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case billingretention.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case billingretention.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case billingretention.FieldPlan:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPlan(v)
+		return nil
+	case billingretention.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case billingretention.FieldStripeCustomerID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStripeCustomerID(v)
+		return nil
+	case billingretention.FieldStripeSubscriptionID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStripeSubscriptionID(v)
+		return nil
+	case billingretention.FieldTrialExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTrialExpiresAt(v)
+		return nil
+	case billingretention.FieldRetainedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRetainedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown BillingRetention field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *BillingRetentionMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *BillingRetentionMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *BillingRetentionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown BillingRetention numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *BillingRetentionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(billingretention.FieldStripeCustomerID) {
+		fields = append(fields, billingretention.FieldStripeCustomerID)
+	}
+	if m.FieldCleared(billingretention.FieldStripeSubscriptionID) {
+		fields = append(fields, billingretention.FieldStripeSubscriptionID)
+	}
+	if m.FieldCleared(billingretention.FieldTrialExpiresAt) {
+		fields = append(fields, billingretention.FieldTrialExpiresAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *BillingRetentionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *BillingRetentionMutation) ClearField(name string) error {
+	switch name {
+	case billingretention.FieldStripeCustomerID:
+		m.ClearStripeCustomerID()
+		return nil
+	case billingretention.FieldStripeSubscriptionID:
+		m.ClearStripeSubscriptionID()
+		return nil
+	case billingretention.FieldTrialExpiresAt:
+		m.ClearTrialExpiresAt()
+		return nil
+	}
+	return fmt.Errorf("unknown BillingRetention nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *BillingRetentionMutation) ResetField(name string) error {
+	switch name {
+	case billingretention.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case billingretention.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case billingretention.FieldPlan:
+		m.ResetPlan()
+		return nil
+	case billingretention.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case billingretention.FieldStripeCustomerID:
+		m.ResetStripeCustomerID()
+		return nil
+	case billingretention.FieldStripeSubscriptionID:
+		m.ResetStripeSubscriptionID()
+		return nil
+	case billingretention.FieldTrialExpiresAt:
+		m.ResetTrialExpiresAt()
+		return nil
+	case billingretention.FieldRetainedAt:
+		m.ResetRetainedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown BillingRetention field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *BillingRetentionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *BillingRetentionMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *BillingRetentionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *BillingRetentionMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *BillingRetentionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *BillingRetentionMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *BillingRetentionMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown BillingRetention unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *BillingRetentionMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown BillingRetention edge %s", name)
 }
 
 // CaptureArtifactMutation represents an operation that mutates the CaptureArtifact nodes in the graph.
@@ -117240,6 +118014,567 @@ func (m *TenantEvidenceKeyMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown TenantEvidenceKey edge %s", name)
 }
 
+// TermsAssentMutation represents an operation that mutates the TermsAssent nodes in the graph.
+type TermsAssentMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *uuid.UUID
+	created_at    *time.Time
+	updated_at    *time.Time
+	terms_version *string
+	accepted_at   *time.Time
+	clearedFields map[string]struct{}
+	user          *uuid.UUID
+	cleareduser   bool
+	done          bool
+	oldValue      func(context.Context) (*TermsAssent, error)
+	predicates    []predicate.TermsAssent
+}
+
+var _ ent.Mutation = (*TermsAssentMutation)(nil)
+
+// termsassentOption allows management of the mutation configuration using functional options.
+type termsassentOption func(*TermsAssentMutation)
+
+// newTermsAssentMutation creates new mutation for the TermsAssent entity.
+func newTermsAssentMutation(c config, op Op, opts ...termsassentOption) *TermsAssentMutation {
+	m := &TermsAssentMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeTermsAssent,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withTermsAssentID sets the ID field of the mutation.
+func withTermsAssentID(id uuid.UUID) termsassentOption {
+	return func(m *TermsAssentMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *TermsAssent
+		)
+		m.oldValue = func(ctx context.Context) (*TermsAssent, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().TermsAssent.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withTermsAssent sets the old TermsAssent of the mutation.
+func withTermsAssent(node *TermsAssent) termsassentOption {
+	return func(m *TermsAssentMutation) {
+		m.oldValue = func(context.Context) (*TermsAssent, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m TermsAssentMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m TermsAssentMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of TermsAssent entities.
+func (m *TermsAssentMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *TermsAssentMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *TermsAssentMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().TermsAssent.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *TermsAssentMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *TermsAssentMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the TermsAssent entity.
+// If the TermsAssent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TermsAssentMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *TermsAssentMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *TermsAssentMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *TermsAssentMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the TermsAssent entity.
+// If the TermsAssent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TermsAssentMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *TermsAssentMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetTermsVersion sets the "terms_version" field.
+func (m *TermsAssentMutation) SetTermsVersion(s string) {
+	m.terms_version = &s
+}
+
+// TermsVersion returns the value of the "terms_version" field in the mutation.
+func (m *TermsAssentMutation) TermsVersion() (r string, exists bool) {
+	v := m.terms_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTermsVersion returns the old "terms_version" field's value of the TermsAssent entity.
+// If the TermsAssent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TermsAssentMutation) OldTermsVersion(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTermsVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTermsVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTermsVersion: %w", err)
+	}
+	return oldValue.TermsVersion, nil
+}
+
+// ResetTermsVersion resets all changes to the "terms_version" field.
+func (m *TermsAssentMutation) ResetTermsVersion() {
+	m.terms_version = nil
+}
+
+// SetAcceptedAt sets the "accepted_at" field.
+func (m *TermsAssentMutation) SetAcceptedAt(t time.Time) {
+	m.accepted_at = &t
+}
+
+// AcceptedAt returns the value of the "accepted_at" field in the mutation.
+func (m *TermsAssentMutation) AcceptedAt() (r time.Time, exists bool) {
+	v := m.accepted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAcceptedAt returns the old "accepted_at" field's value of the TermsAssent entity.
+// If the TermsAssent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TermsAssentMutation) OldAcceptedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAcceptedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAcceptedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAcceptedAt: %w", err)
+	}
+	return oldValue.AcceptedAt, nil
+}
+
+// ResetAcceptedAt resets all changes to the "accepted_at" field.
+func (m *TermsAssentMutation) ResetAcceptedAt() {
+	m.accepted_at = nil
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *TermsAssentMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *TermsAssentMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *TermsAssentMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *TermsAssentMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *TermsAssentMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *TermsAssentMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the TermsAssentMutation builder.
+func (m *TermsAssentMutation) Where(ps ...predicate.TermsAssent) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the TermsAssentMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *TermsAssentMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.TermsAssent, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *TermsAssentMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *TermsAssentMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (TermsAssent).
+func (m *TermsAssentMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *TermsAssentMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.created_at != nil {
+		fields = append(fields, termsassent.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, termsassent.FieldUpdatedAt)
+	}
+	if m.terms_version != nil {
+		fields = append(fields, termsassent.FieldTermsVersion)
+	}
+	if m.accepted_at != nil {
+		fields = append(fields, termsassent.FieldAcceptedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *TermsAssentMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case termsassent.FieldCreatedAt:
+		return m.CreatedAt()
+	case termsassent.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case termsassent.FieldTermsVersion:
+		return m.TermsVersion()
+	case termsassent.FieldAcceptedAt:
+		return m.AcceptedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *TermsAssentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case termsassent.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case termsassent.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case termsassent.FieldTermsVersion:
+		return m.OldTermsVersion(ctx)
+	case termsassent.FieldAcceptedAt:
+		return m.OldAcceptedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown TermsAssent field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TermsAssentMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case termsassent.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case termsassent.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case termsassent.FieldTermsVersion:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTermsVersion(v)
+		return nil
+	case termsassent.FieldAcceptedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAcceptedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown TermsAssent field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *TermsAssentMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *TermsAssentMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TermsAssentMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown TermsAssent numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *TermsAssentMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *TermsAssentMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *TermsAssentMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown TermsAssent nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *TermsAssentMutation) ResetField(name string) error {
+	switch name {
+	case termsassent.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case termsassent.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case termsassent.FieldTermsVersion:
+		m.ResetTermsVersion()
+		return nil
+	case termsassent.FieldAcceptedAt:
+		m.ResetAcceptedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown TermsAssent field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *TermsAssentMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, termsassent.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *TermsAssentMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case termsassent.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *TermsAssentMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *TermsAssentMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *TermsAssentMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, termsassent.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *TermsAssentMutation) EdgeCleared(name string) bool {
+	switch name {
+	case termsassent.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *TermsAssentMutation) ClearEdge(name string) error {
+	switch name {
+	case termsassent.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown TermsAssent unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *TermsAssentMutation) ResetEdge(name string) error {
+	switch name {
+	case termsassent.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown TermsAssent edge %s", name)
+}
+
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
@@ -117479,6 +118814,9 @@ type UserMutation struct {
 	account_deletion_challenges                 map[uuid.UUID]struct{}
 	removedaccount_deletion_challenges          map[uuid.UUID]struct{}
 	clearedaccount_deletion_challenges          bool
+	terms_assents                               map[uuid.UUID]struct{}
+	removedterms_assents                        map[uuid.UUID]struct{}
+	clearedterms_assents                        bool
 	done                                        bool
 	oldValue                                    func(context.Context) (*User, error)
 	predicates                                  []predicate.User
@@ -121883,6 +123221,60 @@ func (m *UserMutation) ResetAccountDeletionChallenges() {
 	m.removedaccount_deletion_challenges = nil
 }
 
+// AddTermsAssentIDs adds the "terms_assents" edge to the TermsAssent entity by ids.
+func (m *UserMutation) AddTermsAssentIDs(ids ...uuid.UUID) {
+	if m.terms_assents == nil {
+		m.terms_assents = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.terms_assents[ids[i]] = struct{}{}
+	}
+}
+
+// ClearTermsAssents clears the "terms_assents" edge to the TermsAssent entity.
+func (m *UserMutation) ClearTermsAssents() {
+	m.clearedterms_assents = true
+}
+
+// TermsAssentsCleared reports if the "terms_assents" edge to the TermsAssent entity was cleared.
+func (m *UserMutation) TermsAssentsCleared() bool {
+	return m.clearedterms_assents
+}
+
+// RemoveTermsAssentIDs removes the "terms_assents" edge to the TermsAssent entity by IDs.
+func (m *UserMutation) RemoveTermsAssentIDs(ids ...uuid.UUID) {
+	if m.removedterms_assents == nil {
+		m.removedterms_assents = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.terms_assents, ids[i])
+		m.removedterms_assents[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedTermsAssents returns the removed IDs of the "terms_assents" edge to the TermsAssent entity.
+func (m *UserMutation) RemovedTermsAssentsIDs() (ids []uuid.UUID) {
+	for id := range m.removedterms_assents {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// TermsAssentsIDs returns the "terms_assents" edge IDs in the mutation.
+func (m *UserMutation) TermsAssentsIDs() (ids []uuid.UUID) {
+	for id := range m.terms_assents {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetTermsAssents resets all changes to the "terms_assents" edge.
+func (m *UserMutation) ResetTermsAssents() {
+	m.terms_assents = nil
+	m.clearedterms_assents = false
+	m.removedterms_assents = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -122099,7 +123491,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 76)
+	edges := make([]string, 0, 77)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -122327,6 +123719,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.account_deletion_challenges != nil {
 		edges = append(edges, user.EdgeAccountDeletionChallenges)
+	}
+	if m.terms_assents != nil {
+		edges = append(edges, user.EdgeTermsAssents)
 	}
 	return edges
 }
@@ -122789,13 +124184,19 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeTermsAssents:
+		ids := make([]ent.Value, 0, len(m.terms_assents))
+		for id := range m.terms_assents {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 76)
+	edges := make([]string, 0, 77)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -123020,6 +124421,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedaccount_deletion_challenges != nil {
 		edges = append(edges, user.EdgeAccountDeletionChallenges)
+	}
+	if m.removedterms_assents != nil {
+		edges = append(edges, user.EdgeTermsAssents)
 	}
 	return edges
 }
@@ -123478,13 +124882,19 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeTermsAssents:
+		ids := make([]ent.Value, 0, len(m.removedterms_assents))
+		for id := range m.removedterms_assents {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 76)
+	edges := make([]string, 0, 77)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -123713,6 +125123,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedaccount_deletion_challenges {
 		edges = append(edges, user.EdgeAccountDeletionChallenges)
 	}
+	if m.clearedterms_assents {
+		edges = append(edges, user.EdgeTermsAssents)
+	}
 	return edges
 }
 
@@ -123872,6 +125285,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedconsole_resources
 	case user.EdgeAccountDeletionChallenges:
 		return m.clearedaccount_deletion_challenges
+	case user.EdgeTermsAssents:
+		return m.clearedterms_assents
 	}
 	return false
 }
@@ -124118,6 +125533,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeAccountDeletionChallenges:
 		m.ResetAccountDeletionChallenges()
+		return nil
+	case user.EdgeTermsAssents:
+		m.ResetTermsAssents()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

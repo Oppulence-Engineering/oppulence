@@ -189,9 +189,11 @@ type UserEdges struct {
 	ConsoleResources []*ConsoleResource `json:"console_resources,omitempty"`
 	// AccountDeletionChallenges holds the value of the account_deletion_challenges edge.
 	AccountDeletionChallenges []*AccountDeletionChallenge `json:"account_deletion_challenges,omitempty"`
+	// TermsAssents holds the value of the terms_assents edge.
+	TermsAssents []*TermsAssent `json:"terms_assents,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [76]bool
+	loadedTypes [77]bool
 	// totalCount holds the count of the edges above.
 	totalCount [66]map[string]int
 
@@ -270,6 +272,7 @@ type UserEdges struct {
 	namedUserPreferences                    map[string][]*UserPreference
 	namedConsoleResources                   map[string][]*ConsoleResource
 	namedAccountDeletionChallenges          map[string][]*AccountDeletionChallenge
+	namedTermsAssents                       map[string][]*TermsAssent
 }
 
 // SubscriptionOrErr returns the Subscription value or an error if the edge
@@ -958,6 +961,15 @@ func (e UserEdges) AccountDeletionChallengesOrErr() ([]*AccountDeletionChallenge
 	return nil, &NotLoadedError{edge: "account_deletion_challenges"}
 }
 
+// TermsAssentsOrErr returns the TermsAssents value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) TermsAssentsOrErr() ([]*TermsAssent, error) {
+	if e.loadedTypes[76] {
+		return e.TermsAssents, nil
+	}
+	return nil, &NotLoadedError{edge: "terms_assents"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -1411,6 +1423,11 @@ func (_m *User) QueryConsoleResources() *ConsoleResourceQuery {
 // QueryAccountDeletionChallenges queries the "account_deletion_challenges" edge of the User entity.
 func (_m *User) QueryAccountDeletionChallenges() *AccountDeletionChallengeQuery {
 	return NewUserClient(_m.config).QueryAccountDeletionChallenges(_m)
+}
+
+// QueryTermsAssents queries the "terms_assents" edge of the User entity.
+func (_m *User) QueryTermsAssents() *TermsAssentQuery {
+	return NewUserClient(_m.config).QueryTermsAssents(_m)
 }
 
 // Update returns a builder for updating this User.
@@ -3251,6 +3268,30 @@ func (_m *User) appendNamedAccountDeletionChallenges(name string, edges ...*Acco
 		_m.Edges.namedAccountDeletionChallenges[name] = []*AccountDeletionChallenge{}
 	} else {
 		_m.Edges.namedAccountDeletionChallenges[name] = append(_m.Edges.namedAccountDeletionChallenges[name], edges...)
+	}
+}
+
+// NamedTermsAssents returns the TermsAssents named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedTermsAssents(name string) ([]*TermsAssent, error) {
+	if _m.Edges.namedTermsAssents == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedTermsAssents[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedTermsAssents(name string, edges ...*TermsAssent) {
+	if _m.Edges.namedTermsAssents == nil {
+		_m.Edges.namedTermsAssents = make(map[string][]*TermsAssent)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedTermsAssents[name] = []*TermsAssent{}
+	} else {
+		_m.Edges.namedTermsAssents[name] = append(_m.Edges.namedTermsAssents[name], edges...)
 	}
 }
 
