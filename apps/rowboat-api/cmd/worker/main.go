@@ -440,11 +440,26 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 				Enabled: true,
 				Log:     log,
 			})
+			// Empty OpenRouterBaseURL means the gateway default
+			// (https://openrouter.ai/api/v1). Log the host the worker will
+			// actually call so a mock base URL is visible at boot instead of
+			// showing up later as a canned reply.
+			llmUpstream := cfg.OpenRouterBaseURL
+			if llmUpstream == "" {
+				llmUpstream = "https://openrouter.ai/api/v1"
+			}
 			log.Info("durable agent runtime registered",
 				zap.String("model", cfg.AgentRuntimeModel),
+				zap.String("llm_upstream", llmUpstream),
+				zap.Bool("openrouter_key_set", cfg.OpenRouterAPIKey != ""),
 				zap.Bool("hitl", cfg.AgentHITLEnabled),
 				zap.Bool("subagents", cfg.AgentSubagentsEnabled),
 				zap.Bool("streaming", cfg.AgentStreamingEnabled))
+			if cfg.OpenRouterBaseURL == "" && !strings.HasPrefix(cfg.OpenRouterAPIKey, "sk-or-") {
+				// Info, not Warn: the development logger attaches a stack to
+				// every warning, and this is a configuration note, not a fault.
+				log.Info("chat is aimed at live OpenRouter but OPENROUTER_API_KEY is missing or not an sk-or- key")
+			}
 		}
 
 		if err := w.Start(); err != nil {
