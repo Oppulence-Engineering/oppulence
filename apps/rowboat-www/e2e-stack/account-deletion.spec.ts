@@ -139,6 +139,10 @@ test.beforeAll(async ({ browser }, testInfo) => {
   const me = await proxiedMe();
   expect(me.status, "GET /v1/me through the web proxy").toBe(200);
   userID = MeSchema.parse(me.body).user.id;
+  // Sign-in spends two auth-broker requests (login URL and code exchange).
+  // Each deletion re-auth spends two more, and the broker allows five per
+  // ten seconds. Let this sign-in age out so the two re-auths below fit.
+  await page.waitForTimeout(10_000);
 });
 
 test.afterAll(async () => {
