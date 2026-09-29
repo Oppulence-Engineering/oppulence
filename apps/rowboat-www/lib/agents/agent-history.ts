@@ -26,6 +26,12 @@ export function friendlyAgentError(message: string): string {
   ) {
     return "This workspace is out of AI credits. Ask an administrator to add credits, then try again.";
   }
+  // A bad or missing provider key comes back wrapped in a Temporal activity
+  // error. Match it before the generic activity rewrite, or dogfooding looks
+  // like a random agent failure instead of a credential problem.
+  if (/status 401|missing authentication header|invalid api key|invalid_api_key/i.test(message)) {
+    return "The AI provider rejected the API key for this workspace. Nothing was charged.";
+  }
   if (/activity error|scheduledEventID|startedEventID/i.test(message)) {
     return "The agent could not complete this request. Please try again.";
   }

@@ -34,8 +34,10 @@ export const viewport: Viewport = {
  * - React Scan highlights slow or unnecessary re-renders in the component tree.
  * - React Grab copies selected component source context into coding agents.
  *
- * Both load from unpkg in development only. React Scan must run before React
- * hydrates, so its script tag comes first among third-party bundles.
+ * Both load from unpkg over https in development only. A protocol-relative
+ * URL becomes http on a local http origin, and the development CSP allows
+ * only https://unpkg.com, so the scripts never run. React Scan must run
+ * before React hydrates, so its script tag comes first among third-party bundles.
  */
 const reactGrabOptions = {
   activationKey: " ",
@@ -71,7 +73,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: themeColorScript }} />
         {devToolsEnabled ? (
           <Script
-            src="//unpkg.com/react-scan@0.5.7/dist/auto.global.js"
+            src="https://unpkg.com/react-scan@0.5.7/dist/auto.global.js"
             crossOrigin="anonymous"
             strategy="beforeInteractive"
           />
@@ -79,12 +81,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {devToolsEnabled ? (
           <>
             <Script
-              src="//unpkg.com/react-grab/dist/index.global.js"
+              src="https://unpkg.com/react-grab/dist/index.global.js"
               crossOrigin="anonymous"
               strategy="beforeInteractive"
               data-options={JSON.stringify(reactGrabOptions)}
             />
-            <Script src="//unpkg.com/@react-grab/mcp/dist/client.global.js" strategy="lazyOnload" />
+            <Script
+              src="https://unpkg.com/@react-grab/mcp/dist/client.global.js"
+              strategy="lazyOnload"
+            />
           </>
         ) : null}
       </head>
