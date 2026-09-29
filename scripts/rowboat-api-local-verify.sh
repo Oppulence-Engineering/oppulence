@@ -159,7 +159,9 @@ up() {
 
   export DATABASE_URL="postgres://rowboat:rowboat@localhost:${PGPORT}/rowboat?sslmode=disable"
   echo "### schema (cmd/migrate apply; AUTO_MIGRATE stays false)"
-  DATABASE_URL="$DATABASE_URL" "$BIN/migrate" apply || { echo "MIGRATE FAILED"; return 1; }
+  # The migrate binary reads migrations/postgres relative to the working
+  # directory, the same way the container image does from WORKDIR /.
+  ( cd "$API_DIR" && DATABASE_URL="$DATABASE_URL" "$BIN/migrate" apply ) || { echo "MIGRATE FAILED"; return 1; }
 
   export APP_URL="http://localhost:${APIPORT}"
   export OIDC_ISSUER_URL="http://localhost:${DEVPORT}" TOKEN_ISSUER="http://localhost:${DEVPORT}"
