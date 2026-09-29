@@ -83,6 +83,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/termsassent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
@@ -1317,6 +1318,21 @@ func (_c *UserCreate) AddAccountDeletionChallenges(v ...*AccountDeletionChalleng
 		ids[i] = v[i].ID
 	}
 	return _c.AddAccountDeletionChallengeIDs(ids...)
+}
+
+// AddTermsAssentIDs adds the "terms_assents" edge to the TermsAssent entity by IDs.
+func (_c *UserCreate) AddTermsAssentIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddTermsAssentIDs(ids...)
+	return _c
+}
+
+// AddTermsAssents adds the "terms_assents" edges to the TermsAssent entity.
+func (_c *UserCreate) AddTermsAssents(v ...*TermsAssent) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddTermsAssentIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -2649,6 +2665,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(accountdeletionchallenge.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.TermsAssentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.TermsAssentsTable,
+			Columns: []string{user.TermsAssentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(termsassent.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

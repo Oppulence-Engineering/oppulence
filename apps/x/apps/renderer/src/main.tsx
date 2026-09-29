@@ -2,63 +2,38 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import { PostHogProvider } from 'posthog-js/react'
-import type { CaptureResult } from 'posthog-js'
 import { ThemeProvider } from '@/contexts/theme-context'
-import { configureAnalyticsContext } from './lib/analytics'
+import { startRendererAnalytics } from './lib/analytics'
 
 // Fetch the stable installation ID from main so renderer + main share one
-// PostHog distinct_id. Falls back to PostHog's auto-generated anonymous ID
-// if the IPC call fails (rare — main is always up before renderer).
+// PostHog distinct_id. Analytics stays uninitialized unless privacy.json says
+// the user turned it on. A missing file is not consent.
 async function bootstrap() {
   let installationId: string | undefined
   let apiUrl: string | undefined
   let appVersion: string | undefined
+  let shareUsageData = false
   try {
     const result = await window.ipc.invoke('analytics:bootstrap', null)
     installationId = result.installationId
     apiUrl = result.apiUrl
     appVersion = result.appVersion
+    shareUsageData = result.shareUsageData
   } catch (err) {
     console.error('[Analytics] Failed to bootstrap from main:', err)
   }
 
-  configureAnalyticsContext({ apiUrl, appVersion })
-
-  const options = {
-    api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
-    defaults: '2025-11-30' as const,
-    // Autocapture uncaught exceptions and unhandled promise rejections in the
-    // renderer process. PostHog wires up window.onerror + 'unhandledrejection'
-    // listeners and emits $exception events with stack traces.
-    capture_exceptions: true,
-    ...(installationId ? { bootstrap: { distinctID: installationId } } : {}),
-    before_send: (event: CaptureResult | null) => {
-      if (!event) return event
-      if (appVersion) {
-        event.properties = {
-          ...event.properties,
-          app_version: appVersion,
-        }
-      }
-      return event
-    },
-    loaded: () => {
-      configureAnalyticsContext({ apiUrl, appVersion })
-    },
+  if (shareUsageData) {
+    startRendererAnalytics({ installationId, apiUrl, appVersion })
   }
 
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      <PostHogProvider apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY} options={options}>
-        <ThemeProvider defaultTheme="system">
-          <App />
-        </ThemeProvider>
-      </PostHogProvider>
+      <ThemeProvider defaultTheme="system">
+        <App />
+      </ThemeProvider>
     </StrictMode>,
   )
-
-  // The loaded callback applies api_url/app_version once PostHog has initialized.
 }
 
 bootstrap()

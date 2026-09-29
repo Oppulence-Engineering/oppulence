@@ -109,7 +109,7 @@ export function AuthShell({
             >
               Privacy Policy
             </Link>
-            .
+            , and you confirm that you are at least 18 years old.
           </p>
         </div>
 

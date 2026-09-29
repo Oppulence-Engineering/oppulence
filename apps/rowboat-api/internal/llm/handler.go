@@ -297,6 +297,8 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 	if isCompletionPath(path) && requestedMaxOutput(body) == 0 {
 		body["max_tokens"] = h.defaultMaxOutput
 	}
+	privacyHeader := make(http.Header)
+	stampOpenRouterPrivacy(up.provider, body, privacyHeader)
 	outBody, _ := json.Marshal(body)
 
 	upReq, err := http.NewRequestWithContext(r.Context(), http.MethodPost, up.baseURL+path, bytes.NewReader(outBody))
@@ -308,9 +310,10 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 	upReq.Header.Set("Content-Type", "application/json")
 	upReq.Header.Set("Authorization", "Bearer "+up.apiKey)
 	upReq.Header.Set("Idempotency-Key", r.Header.Get("Idempotency-Key"))
-	if up.provider == "openrouter" {
-		upReq.Header.Set("HTTP-Referer", "https://app.solomon-ai.co")
-		upReq.Header.Set("X-Title", "Solomon AI")
+	for key, values := range privacyHeader {
+		for _, value := range values {
+			upReq.Header.Add(key, value)
+		}
 	}
 
 	resp, err := h.http.Do(upReq)

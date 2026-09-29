@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { onRendererEvent } from "@/lib/renderer-events";
 import { buildDeepgramListenUrl } from "@/lib/deepgram-listen-url";
 import { useSolomonAccount } from "@/hooks/useSolomonAccount";
-import posthog from "posthog-js";
 import * as analytics from "@/lib/analytics";
 import {
   rankedAvailableMicrophoneIds,
@@ -386,7 +385,7 @@ export function useVoiceMode(options: { surface?: VoiceSurface } = {}) {
       const captureGeneration = ++captureGenerationRef.current;
 
       analytics.voiceInputStarted();
-      posthog.people.set_once({ has_used_voice: true });
+      analytics.setPersonPropertiesOnce({ has_used_voice: true });
 
       console.log("[voice] starting microphone acquisition");
       const { provider, stream, cloudTransportPromise } = await prepareVoiceCapture({

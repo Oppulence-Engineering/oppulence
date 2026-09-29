@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { emitRendererEvent } from "@/lib/renderer-events";
+import { startRendererAnalytics, stopRendererAnalytics } from "@/lib/analytics";
 import {
   Server,
   Key,
@@ -1394,6 +1395,12 @@ function DesktopPreferenceToggles() {
     try {
       const saved = await window.ipc.invoke("privacy:setConfig", { shareUsageData: next });
       setShareUsageData(saved.shareUsageData);
+      if (saved.shareUsageData) {
+        const boot = await window.ipc.invoke("analytics:bootstrap", null);
+        startRendererAnalytics(boot);
+      } else {
+        stopRendererAnalytics();
+      }
     } catch {
       setShareUsageData(!next);
       toast.error("Could not save that preference.");
@@ -1406,16 +1413,16 @@ function DesktopPreferenceToggles() {
     <div className="settings-panel">
       <div className="settings-row">
         <div className="settings-row-copy">
-          <p className="settings-row-label">Share anonymous usage data</p>
+          <p className="settings-row-label">Share product usage data</p>
           <p className="settings-row-description">
             {shareUsageData === null
               ? "Loading…"
-              : "Product analytics only — never note, email, meeting or relationship content. Takes effect immediately."}
+              : "Off until you turn it on. Product analytics only — never note, email, meeting, or relationship content. Takes effect immediately."}
           </p>
         </div>
         <button
           aria-checked={shareUsageData ?? false}
-          aria-label="Share anonymous usage data"
+          aria-label="Share product usage data"
           className="settings-switch shrink-0"
           disabled={shareUsageData === null || saving}
           onClick={() => void toggle()}

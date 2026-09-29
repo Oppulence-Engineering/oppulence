@@ -23,6 +23,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/billingretention"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/captureartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
@@ -91,6 +92,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscriptionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/termsassent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
@@ -1085,6 +1087,33 @@ func init() {
 	backgroundtaskschedulestateDescID := backgroundtaskschedulestateMixinFields0[0].Descriptor()
 	// backgroundtaskschedulestate.DefaultID holds the default value on creation for the id field.
 	backgroundtaskschedulestate.DefaultID = backgroundtaskschedulestateDescID.Default.(func() uuid.UUID)
+	billingretentionMixin := schema.BillingRetention{}.Mixin()
+	billingretentionMixinFields0 := billingretentionMixin[0].Fields()
+	_ = billingretentionMixinFields0
+	billingretentionFields := schema.BillingRetention{}.Fields()
+	_ = billingretentionFields
+	// billingretentionDescCreatedAt is the schema descriptor for created_at field.
+	billingretentionDescCreatedAt := billingretentionMixinFields0[1].Descriptor()
+	// billingretention.DefaultCreatedAt holds the default value on creation for the created_at field.
+	billingretention.DefaultCreatedAt = billingretentionDescCreatedAt.Default.(func() time.Time)
+	// billingretentionDescUpdatedAt is the schema descriptor for updated_at field.
+	billingretentionDescUpdatedAt := billingretentionMixinFields0[2].Descriptor()
+	// billingretention.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	billingretention.DefaultUpdatedAt = billingretentionDescUpdatedAt.Default.(func() time.Time)
+	// billingretention.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	billingretention.UpdateDefaultUpdatedAt = billingretentionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// billingretentionDescPlan is the schema descriptor for plan field.
+	billingretentionDescPlan := billingretentionFields[0].Descriptor()
+	// billingretention.PlanValidator is a validator for the "plan" field. It is called by the builders before save.
+	billingretention.PlanValidator = billingretentionDescPlan.Validators[0].(func(string) error)
+	// billingretentionDescStatus is the schema descriptor for status field.
+	billingretentionDescStatus := billingretentionFields[1].Descriptor()
+	// billingretention.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	billingretention.StatusValidator = billingretentionDescStatus.Validators[0].(func(string) error)
+	// billingretentionDescID is the schema descriptor for id field.
+	billingretentionDescID := billingretentionMixinFields0[0].Descriptor()
+	// billingretention.DefaultID holds the default value on creation for the id field.
+	billingretention.DefaultID = billingretentionDescID.Default.(func() uuid.UUID)
 	captureartifactMixin := schema.CaptureArtifact{}.Mixin()
 	captureartifact.Policy = privacy.NewPolicies(captureartifactMixin[0], schema.CaptureArtifact{})
 	captureartifact.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -4862,6 +4891,38 @@ func init() {
 	tenantevidencekeyDescID := tenantevidencekeyMixinFields0[0].Descriptor()
 	// tenantevidencekey.DefaultID holds the default value on creation for the id field.
 	tenantevidencekey.DefaultID = tenantevidencekeyDescID.Default.(func() uuid.UUID)
+	termsassentMixin := schema.TermsAssent{}.Mixin()
+	termsassent.Policy = privacy.NewPolicies(termsassentMixin[0], schema.TermsAssent{})
+	termsassent.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := termsassent.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	termsassentMixinFields0 := termsassentMixin[0].Fields()
+	_ = termsassentMixinFields0
+	termsassentFields := schema.TermsAssent{}.Fields()
+	_ = termsassentFields
+	// termsassentDescCreatedAt is the schema descriptor for created_at field.
+	termsassentDescCreatedAt := termsassentMixinFields0[1].Descriptor()
+	// termsassent.DefaultCreatedAt holds the default value on creation for the created_at field.
+	termsassent.DefaultCreatedAt = termsassentDescCreatedAt.Default.(func() time.Time)
+	// termsassentDescUpdatedAt is the schema descriptor for updated_at field.
+	termsassentDescUpdatedAt := termsassentMixinFields0[2].Descriptor()
+	// termsassent.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	termsassent.DefaultUpdatedAt = termsassentDescUpdatedAt.Default.(func() time.Time)
+	// termsassent.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	termsassent.UpdateDefaultUpdatedAt = termsassentDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// termsassentDescTermsVersion is the schema descriptor for terms_version field.
+	termsassentDescTermsVersion := termsassentFields[0].Descriptor()
+	// termsassent.TermsVersionValidator is a validator for the "terms_version" field. It is called by the builders before save.
+	termsassent.TermsVersionValidator = termsassentDescTermsVersion.Validators[0].(func(string) error)
+	// termsassentDescID is the schema descriptor for id field.
+	termsassentDescID := termsassentMixinFields0[0].Descriptor()
+	// termsassent.DefaultID holds the default value on creation for the id field.
+	termsassent.DefaultID = termsassentDescID.Default.(func() uuid.UUID)
 	userMixin := schema.User{}.Mixin()
 	userMixinFields0 := userMixin[0].Fields()
 	_ = userMixinFields0

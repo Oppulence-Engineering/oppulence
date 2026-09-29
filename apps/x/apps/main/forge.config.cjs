@@ -38,6 +38,11 @@ const packagerConfig = {
     path.join(__dirname, ".package", "whisper"),
     path.join(__dirname, ".package", "audiocap"),
     path.join(__dirname, ".package", "embeddings"),
+    // Apache 2.0 section 4 requires NOTICE to travel with a redistribution.
+    // THIRD_PARTY_NOTICES names the MIT whisper binary and the LGPL libvips
+    // build pulled in by sharp. It is not a full transitive scan.
+    path.join(__dirname, "..", "..", "..", "NOTICE"),
+    path.join(__dirname, "..", "..", "..", "THIRD_PARTY_NOTICES"),
   ],
   // Since we bundle everything with esbuild, we don't need node_modules at all.
   // These settings prevent Forge's dependency walker (flora-colossus) from trying

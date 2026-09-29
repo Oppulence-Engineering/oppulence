@@ -29,6 +29,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/billingretention"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/captureartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
@@ -96,6 +97,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscriptionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/termsassent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
@@ -179,6 +181,7 @@ func checkColumn(t, c string) error {
 			backgroundtaskrun.Table:                 backgroundtaskrun.ValidColumn,
 			backgroundtaskrunevent.Table:            backgroundtaskrunevent.ValidColumn,
 			backgroundtaskschedulestate.Table:       backgroundtaskschedulestate.ValidColumn,
+			billingretention.Table:                  billingretention.ValidColumn,
 			captureartifact.Table:                   captureartifact.ValidColumn,
 			cloudevent.Table:                        cloudevent.ValidColumn,
 			commitment.Table:                        commitment.ValidColumn,
@@ -246,6 +249,7 @@ func checkColumn(t, c string) error {
 			subscription.Table:                      subscription.ValidColumn,
 			subscriptionhistory.Table:               subscriptionhistory.ValidColumn,
 			tenantevidencekey.Table:                 tenantevidencekey.ValidColumn,
+			termsassent.Table:                       termsassent.ValidColumn,
 			user.Table:                              user.ValidColumn,
 			userhistory.Table:                       userhistory.ValidColumn,
 			userpreference.Table:                    userpreference.ValidColumn,

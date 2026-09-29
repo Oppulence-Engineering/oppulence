@@ -1,12 +1,15 @@
-Rowboat (Oppulence Engineering fork)
-Copyright 2026 Oppulence Engineering
+Rowboat (Oppulence fork)
+Copyright 2026 Playbook Media, Inc.
 
 This product is a fork of Rowboat, originally developed by Rowboat Labs
 (https://github.com/rowboatlabs/rowboat), licensed under the Apache License,
-Version 2.0.
+Version 2.0. That upstream work remains under the Apache License. This NOTICE
+does not relicense it.
 
-This fork contains modifications by Oppulence Engineering, including but not
-limited to:
+This fork contains modifications by Playbook Media, Inc. (d/b/a Oppulence),
+including but not limited to:
+  - The hosted API in apps/rowboat-api.
+  - The marketing site and web console in apps/rowboat-www.
   - An additional desktop application packaged with Electron (apps/x).
   - Continuous integration and release automation changes under .github/.
   - Build and packaging configuration changes.

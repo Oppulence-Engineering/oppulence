@@ -12,8 +12,9 @@ export async function identifyIfSignedIn(): Promise<void> {
     if (!(await isSignedIn())) return;
     const billing = await getBillingInfo();
     if (!billing.userId) return;
+    // Email is account data in the privacy policy, not usage data. The distinct
+    // id is the account id. Do not attach the address.
     identify(billing.userId, {
-      ...(billing.userEmail ? { email: billing.userEmail } : {}),
       plan: billing.subscriptionPlan,
       status: billing.subscriptionStatus,
     });

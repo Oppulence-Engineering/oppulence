@@ -143,5 +143,9 @@ func (User) Edges() []ent.Edge {
 		// Short-lived proof that the account owner re-authenticated before deletion.
 		edge.To("account_deletion_challenges", AccountDeletionChallenge.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip(), entgql.Skip(), entoas.Skip(true)),
+		// One row per published Terms version the user has continued under.
+		// Cascade deletes it with the account; it is not a tax record.
+		edge.To("terms_assents", TermsAssent.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip(), entgql.Skip(), entoas.Skip(true)),
 	}
 }

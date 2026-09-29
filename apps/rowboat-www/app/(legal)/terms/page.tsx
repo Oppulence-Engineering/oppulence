@@ -45,6 +45,7 @@ const SECTIONS: LegalSection[] = [
     heading: "License and restrictions",
     body: [
       "Subject to these Terms, we grant you a limited, non-exclusive, non-transferable, revocable license to access and use the Service for your internal business purposes. All rights not expressly granted are reserved.",
+      "Source code obtained under the Apache License, Version 2.0, including the Rowboat upstream this product is built from, remains governed by that license. These Terms govern your account and your use of the hosted Service. They do not replace the Apache License for source you received under it.",
       "You may not:",
       [
         "License, sell, rent, lease, transfer, assign, or commercially exploit the Service or its content, except as expressly permitted.",
@@ -138,7 +139,7 @@ const SECTIONS: LegalSection[] = [
     body: [
       "These Terms remain in effect while you use the Service. You may stop using the Service and delete your account at any time.",
       "We may suspend or terminate your access, including deleting your account, if you breach these Terms, if your use creates risk or legal exposure for us or others, for non-payment, or as required by law. Where practical, we will provide notice.",
-      "Upon termination, your right to use the Service ends. We will make Your Data available for a reasonable period so you can export it, after which it may be deleted in accordance with our Privacy Policy and retention practices. Sections covering restrictions, ownership, feedback, your data, indemnification, disclaimers, limitation of liability, dispute resolution, and general provisions survive termination.",
+      "Upon termination, your right to use the Service ends. You can export Your Data while your account is open. When you delete your account, we delete it as described in the Privacy Policy, including the tax, security, and dispute records that policy says we keep. Sections covering restrictions, ownership, feedback, your data, indemnification, disclaimers, limitation of liability, dispute resolution, and general provisions survive termination.",
     ],
   },
   {

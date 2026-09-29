@@ -347,7 +347,6 @@ async function connectSolomonViaBroker(): Promise<{ success: boolean; error?: st
         if (billing.userId) {
           signedInUserId = billing.userId;
           analyticsIdentify(billing.userId, {
-            ...(billing.userEmail ? { email: billing.userEmail } : {}),
             plan: billing.subscriptionPlan,
             status: billing.subscriptionStatus,
           });
@@ -595,7 +594,6 @@ export async function connectProvider(
               if (billing.userId) {
                 signedInUserId = billing.userId;
                 analyticsIdentify(billing.userId, {
-                  ...(billing.userEmail ? { email: billing.userEmail } : {}),
                   plan: billing.subscriptionPlan,
                   status: billing.subscriptionStatus,
                 });

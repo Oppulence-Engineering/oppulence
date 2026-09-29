@@ -27,6 +27,7 @@ describe("analytics consent", () => {
     vi.resetModules();
     vi.clearAllMocks();
     process.env.NEXT_PUBLIC_POSTHOG_KEY = "ph_test";
+    delete (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl;
   });
 
   it("does not initialize or capture without synced consent", async () => {
@@ -69,5 +70,27 @@ describe("analytics consent", () => {
       surface: "report",
       count: 2,
     });
+  });
+
+  it("treats Global Privacy Control as an analytics opt-out", async () => {
+    Object.defineProperty(navigator, "globalPrivacyControl", {
+      configurable: true,
+      value: true,
+    });
+    mocks.getConsolePreferences.mockResolvedValue({
+      defaultAgentSlug: "",
+      displayName: "",
+      shareUsageData: true,
+    });
+    const { capture, setAnalyticsConsent } = await import("@/lib/analytics/analytics");
+
+    capture("viewed", { surface: "report" });
+    setAnalyticsConsent(true);
+    await Promise.resolve();
+
+    expect(mocks.getConsolePreferences).not.toHaveBeenCalled();
+    expect(mocks.capture).not.toHaveBeenCalled();
+    expect(mocks.init).not.toHaveBeenCalled();
+    expect(mocks.optIn).not.toHaveBeenCalled();
   });
 });
