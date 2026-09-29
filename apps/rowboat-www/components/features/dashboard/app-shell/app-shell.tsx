@@ -486,7 +486,9 @@ const SOURCE_TONE_CARD: Record<SourceHealth["tone"], string> = {
   ok: "border-border text-primary",
   syncing: "border-oppulence-blue/60 text-oppulence-blue",
   attention: "border-oppulence-orange/60 text-oppulence-orange",
-  idle: "border-oppulence-orange/60 text-oppulence-orange",
+  // An empty workspace has not failed. Orange is reserved for a source that
+  // was connected and then stopped, so a new account does not look broken.
+  idle: "border-border text-muted-foreground",
 };
 
 // Preserve the public helper seam while source-health policy lives with the

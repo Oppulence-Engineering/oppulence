@@ -21,6 +21,11 @@ it("hides provider and workflow details from agent failures", () => {
   expect(friendlyAgentError("insufficient_credits")).toBe(
     "This workspace is out of AI credits. Ask an administrator to add credits, then try again.",
   );
+  expect(
+    friendlyAgentError(
+      'activity error (type: rowboat.agent.llm_complete.v1): llm upstream returned status 401: {"error":{"message":"Missing Authentication header","code":401}}',
+    ),
+  ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
   expect(friendlyAgentError("activity error: scheduledEventID=1 startedEventID=2")).toBe(
     "The agent could not complete this request. Please try again.",
   );
