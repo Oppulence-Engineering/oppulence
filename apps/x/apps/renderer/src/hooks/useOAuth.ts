@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/lib/toast';
-import posthog from 'posthog-js';
 import * as analytics from '@/lib/analytics';
 
 /**
@@ -43,7 +42,7 @@ export function useOAuth(provider: string) {
   
         if (event.success) {
           analytics.oauthConnected(provider);
-          posthog.people.set({ [`${provider}_connected`]: true });
+          analytics.setPersonProperties({ [`${provider}_connected`]: true });
           toast(`Successfully connected to ${provider}`, 'success');
           // Refresh connection status to ensure consistency
           checkConnection();
@@ -80,7 +79,7 @@ export function useOAuth(provider: string) {
       const result = await window.ipc.invoke('oauth:disconnect', { provider });
       if (result.success) {
         analytics.oauthDisconnected(provider);
-        posthog.people.set({ [`${provider}_connected`]: false });
+        analytics.setPersonProperties({ [`${provider}_connected`]: false });
         toast(`Disconnected from ${provider}`, 'success');
         setIsConnected(false);
       } else {

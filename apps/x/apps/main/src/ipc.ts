@@ -1068,10 +1068,14 @@ export function setupIpcHandlers() {
     "app:checkForUpdates": async () => checkForUpdates(),
     "app:installUpdate": async () => installUpdate(),
     "analytics:bootstrap": async () => {
+      // The renderer PostHog client cannot see privacy.json. It has to be told
+      // the stored choice here, or it initializes whenever a key is present.
+      const privacy = await getPrivacyConfig();
       return {
         installationId: getInstallationId(),
         apiUrl: API_URL,
         appVersion: app.getVersion(),
+        shareUsageData: privacy.shareUsageData,
       };
     },
     "research:status": async () => getResearchStatus(),

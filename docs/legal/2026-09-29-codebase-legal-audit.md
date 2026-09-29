@@ -7,6 +7,8 @@
 
 This is an engineering compliance review. It is not a legal opinion, not attorney work product, and not a certification under the GDPR, UK GDPR, CCPA/CPRA, or any other law. A lawyer should decide which items to change in the public documents, the product, or both. Contracts with vendors (DPAs, SCCs, Stripe tax settings, OpenRouter account privacy settings, WorkOS configuration) are outside the repository and are marked unverified.
 
+Remediation is tracked in `docs/legal/2026-09-29-conformance-plan.md`. The first code changes make desktop analytics fail-closed, stop sending account email to PostHog, honor Global Privacy Control on the web by suppressing analytics, and set OpenRouter `provider.data_collection` to `deny` on hosted model calls. The privacy policy’s analytics sentence now names PostHog and says capture is off until the user turns it on. Deletion, export, assent records, Apache boundary text, and `security.txt` are still open in that plan.
+
 ## What is published
 
 | Surface | Path | Effective date |

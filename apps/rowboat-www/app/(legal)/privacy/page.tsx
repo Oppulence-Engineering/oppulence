@@ -92,7 +92,7 @@ const SECTIONS: LegalSection[] = [
     heading: "Cookies and similar technologies",
     body: [
       "We use strictly necessary cookies to keep you signed in, maintain your session, and protect against fraud and abuse. These cannot be disabled without breaking the Service.",
-      "We also use first-party product analytics to understand how the Service is used and to improve it. We do not use advertising cookies, and we do not permit third-party advertising networks to track you across sites through the Service.",
+      "We also use product analytics, provided by PostHog as our service provider, to understand how the Service is used and to improve it. Analytics is off until you turn it on, and you can turn it off at any time. We do not use advertising cookies, and we do not permit third-party advertising networks to track you across sites through the Service.",
       "Most browsers let you block or delete cookies through their settings. Blocking strictly necessary cookies will prevent you from signing in.",
     ],
   },

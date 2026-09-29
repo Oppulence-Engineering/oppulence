@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import posthog from "posthog-js";
 import * as analytics from "@/lib/analytics";
 import { FileTextIcon, MessageSquareIcon } from "@/lib/icons";
 import {
@@ -146,7 +145,7 @@ export function CommandPalette({
         if (!cancelled) {
           setResults(res.results);
           analytics.searchExecuted(types);
-          posthog.people.set_once({ has_used_search: true });
+          analytics.setPersonPropertiesOnce({ has_used_search: true });
         }
       })
       .catch((err) => {

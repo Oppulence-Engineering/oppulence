@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { PrivacyConfigSchema } from "@x/shared/privacy";
 
 /**
  * The usage-data setting has to actually stop analytics.
@@ -22,6 +23,18 @@ const posthogSource = fs.readFileSync(path.join(here, "posthog.ts"), "utf8");
 describe("analytics consent gate", () => {
   beforeEach(() => vi.resetModules());
   afterEach(() => vi.restoreAllMocks());
+
+  it("treats a missing privacy file as opted out", () => {
+    // The security page says analytics is fail-closed until the user enables
+    // it. A missing privacy.json used to parse to true.
+    expect(PrivacyConfigSchema.parse({}).shareUsageData).toBe(false);
+  });
+
+  it("does not send account email with the analytics identify call", () => {
+    const identifySource = fs.readFileSync(path.join(here, "identify.ts"), "utf8");
+    expect(identifySource).not.toContain("userEmail");
+    expect(identifySource).not.toContain("email:");
+  });
 
   it("is off until the stored preference is applied", async () => {
     // Fail-closed. A wiring path that forgets to apply consent should send
