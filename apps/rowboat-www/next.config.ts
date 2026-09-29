@@ -10,20 +10,10 @@ const repoRoot = path.join(__dirname, "../..");
 type Bundler = "webpack" | "turbopack";
 
 /**
- * Normalize alias targets for Turbopack: repo-root-relative, forward slashes,
- * and a leading `./` so the target is a path rather than a package name.
- */
-function toTurbopackAliasTarget(...segments: string[]): string {
-  const joined = path.join(...segments).split(path.sep).join("/");
-  if (joined.startsWith("./") || joined.startsWith("../")) return joined;
-  return `./${joined}`;
-}
-
-/**
  * @oppulence/ui is file:-linked; pin its runtime deps to this app's node_modules.
- * Webpack accepts absolute paths. Turbopack resolves alias targets from
- * turbopack.root and treats a target without `./` or `../` as a package name,
- * so a repo-root-relative path must start with `./`.
+ * Webpack accepts absolute paths. Turbopack alias targets are resolved from the
+ * app directory: a bare specifier is a package name, and a `./` path is relative
+ * to apps/rowboat-www (not turbopack.root).
  */
 function uiPackageResolveAlias(bundler: Bundler): Record<string, string> {
   const appNodeModulesAbs = path.join(__dirname, "node_modules");
@@ -31,14 +21,10 @@ function uiPackageResolveAlias(bundler: Bundler): Record<string, string> {
   const runtimeDeps = Object.keys(uiPackage.dependencies ?? {});
 
   const depPath = (dep: string) =>
-    bundler === "turbopack"
-      ? toTurbopackAliasTarget("apps/rowboat-www/node_modules", dep)
-      : path.join(appNodeModulesAbs, dep);
+    bundler === "turbopack" ? `./node_modules/${dep}` : path.join(appNodeModulesAbs, dep);
 
   const uiInternal = (suffix: string) =>
-    bundler === "turbopack"
-      ? toTurbopackAliasTarget("packages/ui/src", suffix)
-      : path.join(uiSrcAbs, suffix);
+    bundler === "turbopack" ? `../../packages/ui/src/${suffix}` : path.join(uiSrcAbs, suffix);
 
   const aliases = Object.fromEntries(runtimeDeps.map((dep) => [dep, depPath(dep)]));
 
