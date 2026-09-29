@@ -9,9 +9,9 @@ import { z } from "zod";
  * Account sheet, rowboat-api DELETE /v1/me, PostgreSQL, and the devstack
  * Stripe and WorkOS mocks. Run by scripts/account-deletion-e2e.sh.
  *
- * The suite signs in once and keeps one page, like a user who cancels, meets a
- * refusal, and then deletes the account. One sign-in also keeps the suite under
- * the API's per-client sign-in rate limit.
+ * The suite onboards once through Sign up and keeps one page, like a user who
+ * cancels, meets a refusal, and then deletes the account. One sign-in also
+ * keeps the suite under the API's per-client sign-in rate limit.
  */
 
 const devstackURL = process.env.STACK_DEVSTACK_URL ?? "http://127.0.0.1:8090";
@@ -134,11 +134,13 @@ test.beforeAll(async ({ browser }, testInfo) => {
   expect(fixtureSecret, "DEVSTACK_FIXTURE_SECRET is required").not.toBe("");
   expect(databaseURL, "DATABASE_URL is required").not.toBe("");
   page = await browser.newPage({ baseURL: testInfo.project.use.baseURL });
-  await page.goto(`/api/auth/workos/login?return_to=${encodeURIComponent("/app/settings")}`);
-  await expect(page).toHaveURL(/\/app\/settings/);
+  await page.goto("/sign-up");
+  await page.getByRole("link", { name: "Continue with Google" }).click();
+  await expect(page).toHaveURL(/\/app\/?$/);
   const me = await proxiedMe();
   expect(me.status, "GET /v1/me through the web proxy").toBe(200);
   userID = MeSchema.parse(me.body).user.id;
+  expect(userCount(userID), "the first sign-in creates the account").toBe(1);
   // Sign-in spends two auth-broker requests (login URL and code exchange).
   // Each deletion re-auth spends two more, and the broker allows five per
   // ten seconds. Let this sign-in age out so the two re-auths below fit.
@@ -149,9 +151,23 @@ test.afterAll(async () => {
   await page?.close();
 });
 
-test("closing the confirmation sends nothing and keeps the account", async ({ request }) => {
+test("typing DELETE does not delete until a fresh sign-in", async ({ request }) => {
   await openDeleteSheet();
   await page.getByLabel("Type DELETE to confirm").fill("DELETE");
+  await expect(page.getByRole("button", { name: "Permanently delete account" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Continue with Google" })).toBeEnabled();
+
+  const rejected = await page.evaluate(async () => {
+    const response = await fetch("/api/rowboat/v1/me", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirm: "DELETE" }),
+    });
+    return { status: response.status, body: await response.json() };
+  });
+  expect(rejected.status, "a live session plus the word DELETE is not enough").toBe(403);
+  expect(rejected.body).toMatchObject({ code: "step_up_required" });
+
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toBeHidden();
 
