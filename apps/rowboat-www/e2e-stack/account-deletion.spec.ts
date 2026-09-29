@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 
-import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { expect, test, type APIRequestContext, type BrowserContext, type Page } from "@playwright/test";
 import { z } from "zod";
 
 /**
@@ -32,6 +32,7 @@ const MeSchema = z.object({
 
 test.describe.configure({ mode: "serial" });
 
+let context: BrowserContext;
 let page: Page;
 let userID: string;
 
@@ -143,7 +144,11 @@ async function confirmDeletion() {
 test.beforeAll(async ({ browser }, testInfo) => {
   expect(fixtureSecret, "DEVSTACK_FIXTURE_SECRET is required").not.toBe("");
   expect(databaseURL, "DATABASE_URL is required").not.toBe("");
-  page = await browser.newPage({ baseURL: testInfo.project.use.baseURL });
+  context = await browser.newContext({
+    baseURL: testInfo.project.use.baseURL,
+    recordVideo: { dir: testInfo.outputDir, size: { width: 1280, height: 720 } },
+  });
+  page = await context.newPage();
   await page.goto("/sign-up");
   await page.getByRole("link", { name: "Continue with Google" }).click();
   await expect(page).toHaveURL(/\/app\/?$/);
@@ -158,7 +163,7 @@ test.beforeAll(async ({ browser }, testInfo) => {
 });
 
 test.afterAll(async () => {
-  await page?.close();
+  await context?.close();
 });
 
 test("typing DELETE does not delete until a fresh sign-in", async ({ request }) => {
