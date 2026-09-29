@@ -66,6 +66,15 @@ var (
 	refreshDB   sync.Map // refresh_token -> session
 	hydraDB     sync.Map // consent challenge -> hydraConsent
 	oauthFaults = newOAuthFaultController()
+
+	// reauthClock keeps prompt=login / max_age=0 auth_time strictly increasing
+	// per subject. Two interactive re-auths in the same unix second would
+	// otherwise both stamp now+1, and the second would not be newer than the
+	// deletion-challenge baseline captured from the first.
+	reauthClock = struct {
+		sync.Mutex
+		last map[string]int64
+	}{last: map[string]int64{}}
 )
 
 var routeTaskIDRe = regexp.MustCompile(`(?m)^\d+\.\s+id:\s+([^\n]+)`)
@@ -328,7 +337,7 @@ func handleAuthorize(w http.ResponseWriter, r *http.Request) {
 		nonce:       q.Get("nonce"),
 		amr:         workOSAMR(q),
 		acr:         q.Get("acr_values"),
-		authTime:    workOSAuthTime(q),
+		authTime:    workOSAuthTime(q, getenv("FIXTURE_SUBJECT", "user_dev_1")),
 		expires:     time.Now().Add(5 * time.Minute),
 	})
 
@@ -355,15 +364,24 @@ func workOSAMR(q url.Values) []string {
 }
 
 // workOSAuthTime is the interactive authentication instant. A re-authentication
-// (prompt=login or max_age=0) is stamped one second ahead so it stays strictly
-// newer than a login issued in the same second. Refresh must reuse this value
-// instead of minting a new one.
-func workOSAuthTime(q url.Values) int64 {
+// (prompt=login or max_age=0) is stamped strictly later than the previous
+// re-authentication for that subject, and at least one second ahead of the
+// wall clock, so it stays newer than a login or an earlier re-auth issued in
+// the same second. Refresh must reuse the stored value instead of calling this
+// again.
+func workOSAuthTime(q url.Values, subject string) int64 {
 	now := time.Now().Unix()
-	if q.Get("prompt") == "login" || q.Get("max_age") == "0" {
-		return now + 1
+	if q.Get("prompt") != "login" && q.Get("max_age") != "0" {
+		return now
 	}
-	return now
+	reauthClock.Lock()
+	defer reauthClock.Unlock()
+	issued := now + 1
+	if prev := reauthClock.last[subject]; issued <= prev {
+		issued = prev + 1
+	}
+	reauthClock.last[subject] = issued
+	return issued
 }
 
 func handleHydraConsentRequest(w http.ResponseWriter, r *http.Request) {

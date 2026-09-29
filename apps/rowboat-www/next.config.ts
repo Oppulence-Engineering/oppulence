@@ -9,18 +9,21 @@ const repoRoot = path.join(__dirname, "../..");
 
 type Bundler = "webpack" | "turbopack";
 
-/** Normalize alias targets for Turbopack (repo-root-relative, forward slashes). */
+/**
+ * Normalize alias targets for Turbopack: repo-root-relative, forward slashes,
+ * and a leading `./` so the target is a path rather than a package name.
+ */
 function toTurbopackAliasTarget(...segments: string[]): string {
-  return path
-    .join(...segments)
-    .split(path.sep)
-    .join("/");
+  const joined = path.join(...segments).split(path.sep).join("/");
+  if (joined.startsWith("./") || joined.startsWith("../")) return joined;
+  return `./${joined}`;
 }
 
 /**
  * @oppulence/ui is file:-linked; pin its runtime deps to this app's node_modules.
- * Webpack accepts absolute paths; Turbopack prepends `./` to alias targets, so absolute
- * paths become invalid server-relative imports — use repo-root-relative paths instead.
+ * Webpack accepts absolute paths. Turbopack resolves alias targets from
+ * turbopack.root and treats a target without `./` or `../` as a package name,
+ * so a repo-root-relative path must start with `./`.
  */
 function uiPackageResolveAlias(bundler: Bundler): Record<string, string> {
   const appNodeModulesAbs = path.join(__dirname, "node_modules");
