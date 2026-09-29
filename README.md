@@ -418,7 +418,8 @@ and
 Local API development uses
 [`docker-compose.rowboat-api.yml`](./docker-compose.rowboat-api.yml). This is
 the relationship-state and execution plane shared by the web and desktop
-clients.
+clients. That file starts Temporal and the worker; assistant chat calls
+OpenRouter, so the root `.env` needs `OPENROUTER_API_KEY`.
 
 **Platform (`apps/rowboat`)** is source-distributed rather than pushed to a
 registry. Users run `./start.sh` locally or in their own infrastructure, which

@@ -80,8 +80,9 @@ difference is where the secret API key comes from.
 
 `docker-compose.rowboat-api.yml` uses **real WorkOS** for sign-in — no overlay,
 no manual sourcing. The API key is read from the **gitignored root `.env`**,
-which docker compose auto-loads. devstack remains only as a dev mock for the LLM
-gateway and the Google OAuth broker. Click **"Sign in to Rowboat"** in the
+which docker compose auto-loads. Chat calls live OpenRouter
+(`OPENROUTER_API_KEY` in that same file); devstack is only the opt-in mock
+(`ROWBOAT_COMPOSE_MOCK_LLM=1`). Click **"Sign in to Rowboat"** in the
 desktop and it opens the real AuthKit login. See `README.md` → *Local end-to-end
 with the desktop*.
 

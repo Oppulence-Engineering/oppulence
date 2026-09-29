@@ -17,6 +17,7 @@ echo "    WWW:  $ROWBOAT_WWW_PUBLIC_APP_URL"
 echo ""
 echo "    Start API if missing:"
 echo "      cd $ROOT && docker compose -f docker-compose.rowboat-api.yml up -d"
+echo "      (Temporal + worker come up with the API; chat calls OpenRouter)"
 echo "      — or — make api-up"
 echo ""
 
