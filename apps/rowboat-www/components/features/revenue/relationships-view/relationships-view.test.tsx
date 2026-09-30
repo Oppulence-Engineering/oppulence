@@ -105,6 +105,11 @@ describe("RelationshipsView", () => {
     expect(source).toContain('aria-label="Company domain"');
     expect(source).toContain('placeholder="Company domain (optional)"');
     expect(source).toContain("Mail and meetings can fill in its people and activity later.");
+    expect(source).toContain('onClick={() => openSection("history")}');
+    expect(source).toContain('onClick={() => openSection("emails")}');
+    expect(source).toContain("id={`${id}:history`}");
+    expect(source).toContain("id={`${id}:emails`}");
+    expect(source).not.toContain('onClick={() => openSection("activity")}');
     expect(source).toContain("<Plus /> New company");
     expect(source).not.toContain("<Plus /> Add company");
     expect(source).not.toContain("synced conversations");

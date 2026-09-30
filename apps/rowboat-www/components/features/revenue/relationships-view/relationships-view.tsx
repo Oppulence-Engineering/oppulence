@@ -2152,6 +2152,8 @@ export function RelationshipSheet({
 
             <div className="min-w-0 overflow-y-auto">
               <nav className="sticky top-0 z-10 flex h-12 items-center gap-1 border-b border-border bg-background px-4 text-xs">
+                {/* Activity is the history log. Emails is the thread list.
+                    They used to scroll to the same place. */}
                 <Button
                   type="button"
                   onClick={() => openSection("overview")}
@@ -2162,7 +2164,7 @@ export function RelationshipSheet({
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => openSection("activity")}
+                  onClick={() => openSection("history")}
                   className="h-auto rounded-none px-3 py-1.5 text-primary/50 hover:text-primary"
                   variant="ghost"
                 >
@@ -2170,7 +2172,7 @@ export function RelationshipSheet({
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => openSection("activity")}
+                  onClick={() => openSection("emails")}
                   className="h-auto rounded-none px-3 py-1.5 text-primary/50 hover:text-primary"
                   variant="ghost"
                 >
@@ -2232,7 +2234,7 @@ export function RelationshipSheet({
                   ))}
                 </div>
 
-                <section id={`${id}:activity`} className="scroll-mt-16">
+                <section id={`${id}:emails`} className="scroll-mt-16">
                   <SectionTitle title={`Email activity (${data.emailThreads.length})`} />
                   {data.emailThreads.length === 0 ? (
                     <EmptyText>No Gmail threads linked yet.</EmptyText>
@@ -2987,7 +2989,7 @@ export function RelationshipSheet({
                   )}
                 </section>
 
-                <section>
+                <section id={`${id}:history`} className="scroll-mt-16">
                   <SectionTitle title={`Activity history (${timeline.length})`} />
                   {timeline.length === 0 ? (
                     <EmptyText>Nothing recorded yet.</EmptyText>
