@@ -597,7 +597,7 @@ function Inspector({
       ) : null}
       <div className="mt-4 border border-border bg-background px-2 py-2">
         <p className="font-mono text-[9px] uppercase tracking-wide text-primary/35">
-          Explore this node
+          How far to look
         </p>
         <ToggleGroup
           type="single"
@@ -606,7 +606,7 @@ function Inspector({
           variant="outline"
           size="sm"
           className="mt-2 grid w-full grid-cols-3"
-          aria-label="Graph neighborhood focus"
+          aria-label="How far to look"
         >
           {([1, 2] as const).map((depth) => (
             <ToggleGroupItem
@@ -614,7 +614,7 @@ function Inspector({
               value={String(depth)}
               className="w-full text-xs data-[state=on]:border-oppulence-orange data-[state=on]:bg-oppulence-orange/10"
             >
-              {depth} hop{depth === 1 ? "" : "s"}
+              {depth === 1 ? "Nearby" : "Wider"}
             </ToggleGroupItem>
           ))}
           <ToggleGroupItem
@@ -625,7 +625,7 @@ function Inspector({
           </ToggleGroupItem>
         </ToggleGroup>
         <p className="mt-1.5 text-[9px] leading-4 text-primary/35">
-          Focus follows your selection, so you can walk this graph one node at a time.
+          This follows what you select, one step at a time.
         </p>
       </div>
       <dl className="mt-4 grid grid-cols-2 gap-2 text-xs">
@@ -898,7 +898,7 @@ export function graphCanvasEmptyState(totalNodes: number) {
   if (totalNodes === 0) {
     return { message: "No companies are in this graph yet.", offerReset: false };
   }
-  return { message: "No nodes match this view.", offerReset: true };
+  return { message: "Nothing matches this view.", offerReset: true };
 }
 
 function GraphCanvasEmpty({ totalNodes, onReset }: { totalNodes: number; onReset: () => void }) {
@@ -1553,8 +1553,8 @@ export function RelationshipGraphWorkspace({
           ) : null}
           {graph && viewState.focusDepth && viewState.selectedNodeId ? (
             <div className="absolute bottom-3 right-3 border border-oppulence-orange/25 bg-background/90 px-2 py-1 text-[10px] text-primary/55 backdrop-blur">
-              Focused · {viewState.focusDepth} hop{viewState.focusDepth === 1 ? "" : "s"} ·{" "}
-              {visible.nodes.length} nodes
+              Focused · {viewState.focusDepth === 1 ? "Nearby" : "Wider"} ·{" "}
+              {graphCountLabel(visible.nodes.length, "item", "items")}
               <Button
                 variant="link"
                 size="xs"
@@ -1566,7 +1566,7 @@ export function RelationshipGraphWorkspace({
             </div>
           ) : graph && graph.nodes.length > visible.nodes.length ? (
             <div className="absolute bottom-3 right-3 border border-border bg-background/90 px-2 py-1 text-[10px] text-primary/45">
-              Showing {visible.nodes.length} of {graph.nodes.length} nodes · raise density for more
+              Showing {visible.nodes.length} of {graph.nodes.length} · raise how many to show for more
             </div>
           ) : null}
         </div>

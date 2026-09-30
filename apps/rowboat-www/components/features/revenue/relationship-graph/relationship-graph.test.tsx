@@ -24,7 +24,13 @@ describe("RelationshipGraphWorkspace", () => {
       message: "No companies are in this graph yet.",
       offerReset: false,
     });
-    expect(graphCanvasEmptyState(4).offerReset).toBe(true);
+    expect(graphCanvasEmptyState(4)).toEqual({
+      message: "Nothing matches this view.",
+      offerReset: true,
+    });
+    expect(source).toContain("raise how many to show for more");
+    expect(source).not.toContain("raise density");
+    expect(source).not.toContain("No nodes match");
     expect(source).toContain("Could not load the company graph.");
     expect(source).not.toContain("Could not load the relationship graph.");
     expect(source).toContain(">Company graph</h2>");
@@ -49,7 +55,13 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain("Companies, people, and the promises between them");
     expect(source).not.toContain("the evidence between them");
     expect(source).toContain("All companies");
-    expect(source).toContain("walk this graph one node at a time");
+    expect(source).toContain("How far to look");
+    expect(source).toContain("Nearby");
+    expect(source).toContain("Wider");
+    expect(source).toContain("one step at a time");
+    expect(source).not.toContain("Explore this node");
+    expect(source).not.toContain("one node at a time");
+    expect(source).not.toContain("hop");
     expect(source).not.toContain("Portfolio graph");
     expect(source).not.toContain("walk the relationship");
     expect(source).not.toContain("evidence refs");
