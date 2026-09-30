@@ -130,7 +130,7 @@ export function WorkspaceView({
         ) : sourcesQuery.isError || !sources?.length ? (
           <div className="flex flex-col gap-3 px-4 py-6 text-sm text-[var(--text-secondary)]">
             <p>
-              Nothing is connected yet. Connect Gmail, Calendar, Slack, or HubSpot below.
+              Nothing is connected yet. Connect Gmail and Calendar, or another tool below.
             </p>
             <Button onClick={scrollToConnectors} size="sm" type="button">
               <Plugs /> Connect sources

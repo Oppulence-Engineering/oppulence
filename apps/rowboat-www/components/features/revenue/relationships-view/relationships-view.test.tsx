@@ -19,6 +19,7 @@ import {
   detailSourceLabel,
   enrichmentAvailabilityCopy,
   identityMatchDetail,
+  sourceListedOnConnectionsPage,
   identityMatchLabel,
   identitySupportLabel,
   liveCueCopy,
@@ -122,6 +123,12 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("Account domain");
     expect(source).not.toContain("One model per account");
     expect(source).toContain("Reading builds company history.");
+    expect(source).toContain("Connect Gmail or HubSpot.");
+    expect(source).not.toContain("Connect Gmail, Slack, or HubSpot.");
+    expect(source).toContain("can&apos;t be connected from this page yet.");
+    expect(sourceListedOnConnectionsPage("google")).toBe(true);
+    expect(sourceListedOnConnectionsPage("hubspot")).toBe(true);
+    expect(sourceListedOnConnectionsPage("slack")).toBe(false);
     expect(source).toContain("Sources to connect");
     expect(source).not.toContain("Evidence sources");
     expect(source).toContain("Could not update this source.");

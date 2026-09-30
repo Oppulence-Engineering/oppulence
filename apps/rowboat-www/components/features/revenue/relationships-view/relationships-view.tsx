@@ -1156,6 +1156,15 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
   );
 }
 
+/**
+ * The connections page can start Google and HubSpot. Slack is still a source
+ * in this menu, but that page has no Slack connection, so Connect would
+ * leave the person on a list that cannot finish the job.
+ */
+export function sourceListedOnConnectionsPage(source: string): boolean {
+  return source === "google" || source === "hubspot";
+}
+
 function SourceConnectionCards({
   inventory,
   onOpenConnectors,
@@ -1200,7 +1209,7 @@ function SourceConnectionCards({
           Sources to connect
         </h3>
         <p className="mt-0.5 text-xs text-primary/55">
-          Connect Gmail, Slack, or HubSpot. Reading builds company history. Anything that writes
+          Connect Gmail or HubSpot. Reading builds company history. Anything that writes
           waits for your approval.
         </p>
       </div>
@@ -1256,14 +1265,20 @@ function SourceConnectionCards({
                 {!account ||
                 account.status === "disconnected" ||
                 account.status === "reconnect_required" ? (
-                  <Button
-                    aria-label={`Connect ${item.displayName}`}
-                    onClick={onOpenConnectors}
-                    size="sm"
-                    type="button"
-                  >
-                    Connect
-                  </Button>
+                  sourceListedOnConnectionsPage(item.source) ? (
+                    <Button
+                      aria-label={`Connect ${item.displayName}`}
+                      onClick={onOpenConnectors}
+                      size="sm"
+                      type="button"
+                    >
+                      Connect
+                    </Button>
+                  ) : (
+                    <p className="text-xs text-primary/55">
+                      {item.displayName} can&apos;t be connected from this page yet.
+                    </p>
+                  )
                 ) : null}
                 {account && item.supportsResync ? (
                   <Button

@@ -191,7 +191,12 @@ describe("WorkspaceView", () => {
     expect(screen.getByPlaceholderText("Organization id")).toBeVisible();
     expect(screen.queryByPlaceholderText("ws_…")).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText("org_…")).not.toBeInTheDocument();
-    expect(await screen.findByText(/Nothing is connected yet/)).toBeVisible();
+    const emptySources = await screen.findByText(/Nothing is connected yet/);
+    expect(emptySources).toBeVisible();
+    expect(emptySources).toHaveTextContent(
+      "Nothing is connected yet. Connect Gmail and Calendar, or another tool below.",
+    );
+    expect(emptySources).not.toHaveTextContent(/Slack/);
     expect(screen.queryByText(/OutboundConsole/)).not.toBeInTheDocument();
     expect(screen.queryByText(/\bCRM\b/)).not.toBeInTheDocument();
   });
