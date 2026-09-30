@@ -1296,7 +1296,8 @@ function NoteDialog({
               )}
             >
               <Note className="size-3.5" />
-              {selectedRelationship?.displayName || "Link a company"}
+              {selectedRelationship?.displayName ||
+                (relationships.length === 0 ? "No companies yet" : "Link a company")}
             </Label>
             <Button
               type="button"
