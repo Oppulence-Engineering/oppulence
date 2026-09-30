@@ -832,6 +832,33 @@ function GraphTable({
   );
 }
 
+/**
+ * An empty canvas means two different things. Zero nodes in the payload means
+ * the workspace has nothing to draw. Nodes that exist but are hidden were
+ * removed by density, isolation, or a graph query, and Reset is the way back.
+ */
+export function graphCanvasEmptyState(totalNodes: number) {
+  if (totalNodes === 0) {
+    return { message: "No companies are in this graph yet.", offerReset: false };
+  }
+  return { message: "No nodes match this view.", offerReset: true };
+}
+
+function GraphCanvasEmpty({ totalNodes, onReset }: { totalNodes: number; onReset: () => void }) {
+  const state = graphCanvasEmptyState(totalNodes);
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+      <Graph className="size-7 text-primary/25" />
+      <p className="mt-2 text-sm text-primary/55">{state.message}</p>
+      {state.offerReset ? (
+        <Button type="button" variant="link" size="sm" onClick={onReset} className="mt-2">
+          Reset filters
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
 export function RelationshipGraphWorkspace({
   relationships,
   onOpenRelationship,
@@ -1427,13 +1454,7 @@ export function RelationshipGraphWorkspace({
               Choose an account to build its graph.
             </div>
           ) : !visible.nodes.length ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <Graph className="size-7 text-primary/25" />
-              <p className="mt-2 text-sm text-primary/55">No nodes match this view.</p>
-              <Button type="button" variant="link" size="sm" onClick={reset} className="mt-2">
-                Reset filters
-              </Button>
-            </div>
+            <GraphCanvasEmpty onReset={reset} totalNodes={graph.nodes.length} />
           ) : mode === "table" ? (
             <GraphTable
               nodes={visible.nodes}
