@@ -19,8 +19,7 @@ import {
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "cloud-workflows-view.tsx"), "utf8");
 
-const task = (name: string, updatedAt: string): CloudTask =>
-  ({ name, updatedAt }) as CloudTask;
+const task = (name: string, updatedAt: string): CloudTask => ({ name, updatedAt }) as CloudTask;
 
 describe("CloudWorkflowsView", () => {
   it("shows run status and trigger tokens as words", () => {
@@ -29,8 +28,8 @@ describe("CloudWorkflowsView", () => {
     expect(readableEnum("")).toBe("");
     expect(runRowDetail("failed", "cron")).toBe("Failed · Cron");
     expect(source).toContain("runRowDetail(run.status, run.trigger)");
-    expect(source).toContain("workflowName={task.name}");
-    expect(source).toContain("friendlyAgentError(message, \"run\")");
+    expect(source).toContain("workflowName={taskTitle(task)}");
+    expect(source).toContain('friendlyAgentError(message, "run")');
   });
 
   it("names schedule health and transcript events", () => {
@@ -60,6 +59,41 @@ describe("CloudWorkflowsView", () => {
     expect(workflowListSummary({ name: "Untitled", triggers: {} } as CloudTask)).toBe(
       "Recurring company follow-up",
     );
+    expect(
+      workflowListSummary(
+        {
+          slug: "oppulence-relationship-refresh",
+          name: "Relationship Refresh",
+          triggers: {},
+        } as CloudTask,
+        [
+          {
+            slug: "relationship-refresh",
+            taskSlug: "oppulence-relationship-refresh",
+            description:
+              "Continuously summarize relationship state, evidence freshness, commitments, and material changes.",
+          },
+        ],
+      ),
+    ).toBe(
+      "Summarize each company's latest state, evidence freshness, commitments, and material changes.",
+    );
+    expect(
+      workflowListSummary(
+        {
+          slug: "oppulence-attention-monitor",
+          name: "Attention Monitor",
+          triggers: {},
+        } as CloudTask,
+        [
+          {
+            slug: "attention-monitor",
+            taskSlug: "oppulence-attention-monitor",
+            description: "Explain which relationships need attention now and why.",
+          },
+        ],
+      ),
+    ).toBe("Explain which companies need attention now and why.");
     expect(source).toContain("automate recurring company follow-up");
     expect(source).not.toContain("recurring relationship work");
   });

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { isOptionalRequestFailure, requestJson, type RequestJsonFn } from "@/lib/api/request-json";
 import { loadAgentSlugs } from "@/hooks/queries/utils/fetch-agents";
+import { workflowProductName } from "@/lib/workflows/workflow-product-copy";
 
 const SidebarTaskSchema = z
   .object({
@@ -51,7 +52,8 @@ export function sidebarRunLabel(
   tasks: readonly SidebarNavItem[] = [],
 ): string {
   const slug = run.value.split("/")[0] ?? "";
-  const workflow = tasks.find((task) => task.value === slug)?.label || slug;
+  const stored = tasks.find((task) => task.value === slug)?.label || slug;
+  const workflow = workflowProductName(slug, stored);
   const marker = " · ";
   const splitAt = run.label.indexOf(marker);
   const status = splitAt >= 0 ? run.label.slice(splitAt + marker.length).trim() : "";
@@ -77,7 +79,7 @@ export async function loadSidebarTasks(
       .filter((task) => typeof task.slug === "string")
       .map((task) => ({
         value: task.slug,
-        label: task.name || task.slug,
+        label: workflowProductName(task.slug, task.name || task.slug),
       }));
   } catch (error) {
     if (isOptionalRequestFailure(error)) return [];

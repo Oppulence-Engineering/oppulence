@@ -10,6 +10,7 @@ import {
   fetchWorkflowTemplates,
 } from "@/hooks/queries/utils/fetch-workflows";
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
+import { workflowProductDescription } from "@/lib/workflows/workflow-product-copy";
 
 export const CloudTaskSchema = z.object({
   id: z.string(),
@@ -202,9 +203,10 @@ export function runEventLabel(type: string): string {
 }
 
 /**
- * The library subtitle. A saved canvas objective wins. Otherwise the template
- * description does: first-party workflows have no canvas object, and showing
- * one shared fallback made every row read the same.
+ * The library subtitle. A saved canvas objective wins. Otherwise a known
+ * first-party description wins over the sentence stored with the template,
+ * which still says "relationship" for company workflows. One shared fallback
+ * is last, so an unknown row is not blank.
  */
 export function workflowListSummary(
   task: CloudTask,
@@ -217,7 +219,7 @@ export function workflowListSummary(
       (task.templateSlug !== "" && item.slug === task.templateSlug) ||
       (item.taskSlug !== "" && item.taskSlug === task.slug),
   );
-  const description = template?.description.trim();
+  const description = workflowProductDescription(task.slug, template?.description);
   if (description) return description;
   return "Recurring company follow-up";
 }

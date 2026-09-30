@@ -24,5 +24,14 @@ describe("sidebar labels", () => {
     expect(
       sidebarRunLabel({ value: "meeting-pre-brief/run-1", label: "meeting-pre-brief · queued" }),
     ).toBe("meeting-pre-brief · Queued");
+    expect(
+      sidebarRunLabel(
+        {
+          value: "oppulence-relationship-refresh/run-1",
+          label: "oppulence-relationship-refresh · failed",
+        },
+        [{ value: "oppulence-relationship-refresh", label: "Relationship Refresh" }],
+      ),
+    ).toBe("Company refresh · Failed");
   });
 });

@@ -93,6 +93,7 @@ import {
   type VisualWorkflowDefinition,
   type WorkflowActionKind,
 } from "@/lib/workflows/cloud-workflows";
+import { workflowProductName } from "@/lib/workflows/workflow-product-copy";
 import { cn } from "@/lib/utils";
 
 type FilterValue<T extends string> = T | "all";
@@ -373,10 +374,19 @@ function CreateWorkflowDialog({
 export type WorkflowLibrarySort = "published" | "name";
 
 /** Last published follows the task's own update time, which is what the library label claims. */
+function taskTitle(task: Pick<CloudTask, "slug" | "name">): string {
+  return workflowProductName(task.slug, task.name);
+}
+
+function runTitle(run: Pick<CloudRun, "slug">, tasks: readonly CloudTask[]): string {
+  const task = tasks.find((item) => item.slug === run.slug);
+  return taskTitle(task ?? { slug: run.slug, name: run.slug });
+}
+
 export function sortWorkflowTasks(tasks: CloudTask[], sort: WorkflowLibrarySort): CloudTask[] {
   return [...tasks].sort((left, right) =>
     sort === "name"
-      ? left.name.localeCompare(right.name)
+      ? taskTitle(left).localeCompare(taskTitle(right))
       : right.updatedAt.localeCompare(left.updatedAt),
   );
 }
@@ -402,7 +412,7 @@ function WorkflowLibrary({
   const [sort, setSort] = React.useState<WorkflowLibrarySort>("published");
   const filtered = sortWorkflowTasks(
     tasks.filter((task) =>
-      `${task.name} ${scheduleLabel(task)} ${workflowListSummary(task, templates)}`
+      `${taskTitle(task)} ${scheduleLabel(task)} ${workflowListSummary(task, templates)}`
         .toLowerCase()
         .includes(query.trim().toLowerCase()),
     ),
@@ -498,7 +508,9 @@ function WorkflowLibrary({
                             )}
                             variant="default"
                           />
-                          <Label className="truncate text-[13px] font-medium">{task.name}</Label>
+                          <Label className="truncate text-[13px] font-medium">
+                            {taskTitle(task)}
+                          </Label>
                           {task.systemManaged ? (
                             <Badge className="rounded-none text-[9px]" variant="secondary">
                               Oppulence
@@ -792,7 +804,7 @@ function WorkflowRuns({
                 <StatusIcon status={run.status} />
                 <div className="min-w-0 flex-1">
                   <Label className="block truncate text-[12px] font-medium">
-                    {tasks.find((task) => task.slug === run.slug)?.name || run.slug}
+                    {runTitle(run, tasks)}
                   </Label>
                   <CardDescription className="mt-0.5 block text-[11px]">
                     {runRowDetail(run.status, run.trigger)} · {formatDate(run.createdAt)}
@@ -827,7 +839,7 @@ function WorkflowRuns({
           onRetry={onRetry}
           run={selectedRun}
           taskExecutionTarget={selectedTask?.executionTarget}
-          workflowName={selectedTask?.name || selectedRun?.slug}
+          workflowName={selectedRun ? runTitle(selectedRun, tasks) : undefined}
         />
       </ScrollArea>
     </div>
@@ -874,11 +886,11 @@ function WorkflowEditor({
   // revision after it selects the new run, which was throwing the user back
   // onto the canvas. A selected run means this mount should open on Runs.
   const [tab, setTab] = React.useState<EditorTab>(selectedRun ? "runs" : "editor");
-  const [name, setName] = React.useState(task.name);
+  const [name, setName] = React.useState(taskTitle(task));
   const [workflow, setWorkflow] = React.useState(original);
   const dirty =
     editable &&
-    (name.trim() !== task.name || JSON.stringify(workflow) !== JSON.stringify(original));
+    (name.trim() !== taskTitle(task) || JSON.stringify(workflow) !== JSON.stringify(original));
   const taskRuns = runs.filter((run) => run.slug === task.slug);
 
   const save = async () => {
@@ -898,7 +910,7 @@ function WorkflowEditor({
             Workflows
           </Button>
           <CaretRight className="size-3 text-muted-foreground" />
-          <Label className="truncate font-medium">{task.name}</Label>
+          <Label className="truncate font-medium">{taskTitle(task)}</Label>
           {task.systemManaged ? <Robot className="size-3.5 text-muted-foreground" /> : null}
         </div>
         <div className="flex items-center gap-2">
@@ -978,7 +990,7 @@ function WorkflowEditor({
             </p>
           ) : null}
           <VisualWorkflowBuilder
-            aria-label={`${task.name} workflow editor`}
+            aria-label={`${taskTitle(task)} workflow editor`}
             disabled={!editable}
             onChange={setWorkflow}
             value={workflow}
@@ -1022,7 +1034,7 @@ function WorkflowEditor({
                 onRetry={onRetry}
                 run={selectedRun}
                 taskExecutionTarget={task.executionTarget}
-                workflowName={task.name}
+                workflowName={taskTitle(task)}
               />
             </ScrollArea>
           </div>
