@@ -25,6 +25,11 @@ describe("AppShellSidebar", () => {
     expect(source).not.toContain("window preferences");
   });
 
+  it("shows the current workspace without a click that does nothing", () => {
+    expect(source).toContain("data-current-workspace");
+    expect(source).not.toContain("onSelect={(event) => event.preventDefault()}");
+  });
+
   it("opens security from the account menu instead of promising session management", () => {
     expect(source).toContain('onOpenSettings?.("security")');
     expect(source).not.toContain("Manage sessions");

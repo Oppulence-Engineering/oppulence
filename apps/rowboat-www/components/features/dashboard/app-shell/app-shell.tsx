@@ -1154,7 +1154,9 @@ export function AppShellSidebar({
                 <DropdownMenuLabel className="text-xs uppercase tracking-wider text-primary/50">
                   Workspaces
                 </DropdownMenuLabel>
-                <DropdownMenuItem className="gap-2" onSelect={(event) => event.preventDefault()}>
+                {/* This session has one workspace. A menu item here accepted the
+                    click and left the menu open. */}
+                <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-primary" data-current-workspace>
                   <Avatar aria-hidden="true" className="size-4 rounded-none" size="sm">
                     <AvatarImage
                       alt=""
@@ -1176,7 +1178,7 @@ export function AppShellSidebar({
                       {planLabel}
                     </Badge>
                   ) : null}
-                </DropdownMenuItem>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

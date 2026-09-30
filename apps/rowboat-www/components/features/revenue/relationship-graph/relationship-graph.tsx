@@ -1489,25 +1489,28 @@ export function RelationshipGraphWorkspace({
             <ListBullets /> Table
           </ToggleGroupItem>
         </ToggleGroup>
-        <Select
-          value={viewState.layout}
-          onValueChange={(layout: RelationshipGraphSavedViewState["layout"]) =>
-            updateState({ layout })
-          }
-        >
-          <SelectTrigger
-            aria-label={comboboxFilterName("Layout", graphLayoutLabel(viewState.layout))}
-            size="sm"
-            className="w-32"
+        {/* Grouped, Circle, and By time place the diagram. The table uses the same rows. */}
+        {mode === "canvas" ? (
+          <Select
+            value={viewState.layout}
+            onValueChange={(layout: RelationshipGraphSavedViewState["layout"]) =>
+              updateState({ layout })
+            }
           >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="app-shell rounded-[2px]">
-            <SelectItem value="force">{graphLayoutLabel("force")}</SelectItem>
-            <SelectItem value="radial">{graphLayoutLabel("radial")}</SelectItem>
-            <SelectItem value="timeline">{graphLayoutLabel("timeline")}</SelectItem>
-          </SelectContent>
-        </Select>
+            <SelectTrigger
+              aria-label={comboboxFilterName("Layout", graphLayoutLabel(viewState.layout))}
+              size="sm"
+              className="w-32"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="app-shell rounded-[2px]">
+              <SelectItem value="force">{graphLayoutLabel("force")}</SelectItem>
+              <SelectItem value="radial">{graphLayoutLabel("radial")}</SelectItem>
+              <SelectItem value="timeline">{graphLayoutLabel("timeline")}</SelectItem>
+            </SelectContent>
+          </Select>
+        ) : null}
         <label className="flex items-center gap-2 text-xs text-primary/50">
           How many to show
           <Slider
