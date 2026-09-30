@@ -15,6 +15,7 @@ import {
   workflowForTask,
   workflowOpeningScreen,
   workflowLastRunAt,
+  workflowLastRunMark,
   workflowStepLabel,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
@@ -317,6 +318,33 @@ describe("CloudWorkflowsView", () => {
     ).toBe("2026-09-30T18:15:00.558Z");
     expect(source).toContain("workflowLastRunAt(");
     expect(source).not.toContain("const lastRun = runs.find((run) => run.slug === task.slug)");
+    expect(workflowLastRunMark({ lastRunAt: "2026-09-30T09:00:00Z" }, null)).toBeNull();
+    expect(
+      workflowLastRunMark(
+        { lastRunAt: "2026-09-30T09:00:00Z", lastRunError: "activity error" },
+        null,
+      ),
+    ).toBe("Failed");
+    expect(
+      workflowLastRunMark(
+        { lastRunAt: "2026-09-30T09:00:00Z", lastRunError: "stale" },
+        { createdAt: "2026-09-30T18:30:00Z", status: "succeeded" },
+      ),
+    ).toBeNull();
+    expect(
+      workflowLastRunMark(
+        { lastRunAt: "2026-09-30T18:30:00.539Z", lastRunError: "" },
+        { createdAt: "2026-09-30T18:30:00.548Z", status: "failed" },
+      ),
+    ).toBe("Failed");
+    expect(
+      workflowLastRunMark(
+        { lastRunAt: "2026-09-30T18:30:00Z" },
+        { createdAt: "2026-09-30T18:30:00Z", status: "stopped" },
+      ),
+    ).toBe("Stopped");
+    expect(source).toContain("workflowLastRunMark(");
+    expect(source).not.toContain("lastRunError}");
   });
 
   it("sorts the library by the label on the sort control", () => {

@@ -183,6 +183,34 @@ export function workflowLastRunAt(
   return pagedTime > storedTime ? paged : stored;
 }
 
+/**
+ * The library row used to show only the clock next to Live. A run can fail
+ * and still leave that clock looking successful. The mark belongs to the
+ * moment on the row: the newest page hit when it is at least as new as the
+ * stored time, otherwise the error kept on the task. That error is empty
+ * when the latest recorded run did not fail. The raw error stays off the
+ * row, because it names the scheduler.
+ */
+export function workflowLastRunMark(
+  task: { lastRunAt?: string | null; lastRunError?: string | null },
+  pageRun?: { createdAt?: string | null; status?: string | null } | null,
+): string | null {
+  const shown = workflowLastRunAt(task, pageRun?.createdAt);
+  if (!shown) return null;
+  const pageTime = Date.parse(pageRun?.createdAt?.trim() ?? "");
+  const storedTime = Date.parse(task.lastRunAt?.trim() ?? "");
+  const pageIsShown =
+    Boolean(pageRun) &&
+    !Number.isNaN(pageTime) &&
+    (Number.isNaN(storedTime) || pageTime >= storedTime);
+  if (pageIsShown) {
+    if (pageRun?.status === "failed") return "Failed";
+    if (pageRun?.status === "stopped") return "Stopped";
+    return null;
+  }
+  return task.lastRunError?.trim() ? "Failed" : null;
+}
+
 /** Status and trigger as words. The runs list used to show only an icon, so
  * every row looked the same until you opened it. */
 export function runRowDetail(status: string, trigger: string): string {
@@ -559,10 +587,9 @@ function WorkflowLibrary({
             </TableHeader>
             <TableBody>
               {filtered.map((task) => {
-                const lastRunAt = workflowLastRunAt(
-                  task,
-                  runs.find((run) => run.slug === task.slug)?.createdAt,
-                );
+                const pageRun = runs.find((run) => run.slug === task.slug);
+                const lastRunAt = workflowLastRunAt(task, pageRun?.createdAt);
+                const lastRunMark = workflowLastRunMark(task, pageRun);
                 return (
                   <TableRow
                     className="cursor-pointer border-b hover:bg-muted/35"
@@ -616,7 +643,9 @@ function WorkflowLibrary({
                       </Badge>
                     </TableCell>
                     <TableCell className="px-4 text-[12px] text-muted-foreground">
-                      {lastRunAt ? scheduleMomentLabel(lastRunAt) : "Never"}
+                      {lastRunAt
+                        ? `${scheduleMomentLabel(lastRunAt)}${lastRunMark ? ` · ${lastRunMark}` : ""}`
+                        : "Never"}
                     </TableCell>
                     <TableCell className="px-4">
                       <CaretRight className="size-4 text-muted-foreground" />
