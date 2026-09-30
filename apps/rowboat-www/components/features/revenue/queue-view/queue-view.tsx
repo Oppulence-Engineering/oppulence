@@ -42,7 +42,6 @@ import {
 } from "@oppulence/ui/components/select";
 import { Textarea } from "@oppulence/ui/components/textarea";
 import { Badge as SimBadge, Chip } from "@sim/emcn";
-import { ListFilter } from "@sim/emcn/icons";
 import { cn } from "@/lib/utils";
 import {
   SimProductHeader,
@@ -128,7 +127,11 @@ export function QueueView({
         <SimProductHeader actions={`${actions.length} shown`} title="Recovery queue" />
         <SimProductToolbar>
           <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="h-7 w-36 border-0 bg-transparent px-0 shadow-none" size="sm">
+            <SelectTrigger
+              aria-label="Filter recovery actions"
+              className="h-7 w-36 border-0 bg-transparent px-0 shadow-none"
+              size="sm"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="app-shell rounded-[2px]">
@@ -139,7 +142,6 @@ export function QueueView({
               ))}
             </SelectContent>
           </Select>
-          <Chip leftIcon={ListFilter}>Filter</Chip>
           <Button className="ml-auto" onClick={() => setCreating(true)} size="sm" variant="outline">
             <Plus /> New action
           </Button>

@@ -49,8 +49,6 @@ import {
 import { cn } from "@oppulence/ui/lib/utils";
 import { Badge as SimBadge, Chip } from "@sim/emcn";
 import {
-  Columns3,
-  ListFilter,
   Plus,
   Table as TableIcon,
   TagIcon,
@@ -523,10 +521,6 @@ export function CommitmentQueue({
               <SelectItem value="all">All</SelectItem>
             </SelectContent>
           </Select>
-          <Chip leftIcon={ListFilter}>Filter</Chip>
-          <span className="ml-auto hidden items-center gap-1 2xl:inline-flex">
-            <Chip leftIcon={Columns3}>Columns</Chip>
-          </span>
           <Button
             className="hidden 2xl:inline-flex"
             onClick={onOpenRecoveryQueue}

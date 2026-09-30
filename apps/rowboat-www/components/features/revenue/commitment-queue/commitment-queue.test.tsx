@@ -394,3 +394,10 @@ it("reports what the audit examined, not everything it swept", () => {
   expect(screen.getByText("Not a conversation")).toBeInTheDocument();
   expect(screen.getByText("80")).toBeInTheDocument();
 });
+
+it("keeps the commitment filter and drops the chips that did nothing", () => {
+  render(<CommitmentQueue {...props()} />);
+  expect(screen.queryByRole("button", { name: "Filter" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Columns" })).not.toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: "Filter commitments" })).toBeInTheDocument();
+});
