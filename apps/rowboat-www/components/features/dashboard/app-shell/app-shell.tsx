@@ -177,7 +177,7 @@ export const SETTINGS_SECTIONS: {
     label: "Help",
     icon: Question,
     group: "support",
-    description: "Get help, report a problem, or read the documentation.",
+    description: "Get help, report a problem, or review the API reference.",
   },
 ];
 
@@ -1004,21 +1004,17 @@ export function AppShellSidebar({
             data-sidebar-footer
           >
             <SidebarStatusCard billing={billing} onOpen={() => onNavigateRevenue?.("workspace")} />
-            {/* Help used to open the OpenAPI reference: an operator who clicked
-                it because a promise was missed landed on a route table. */}
-            <Link
+            {/* Help stays in the product. The marketing blog is not where a
+                signed-in person reports a problem. */}
+            <button
               className={SIDEBAR_FOOTER_LINK}
-              href="/blog"
-              rel="noopener noreferrer"
-              target="_blank"
+              onClick={() => onOpenSettings?.("help")}
+              type="button"
             >
               Need help?
-            </Link>
-            {/* A plain anchor, not Link: the route only redirects to the API's
-                docs, and Link's RSC prefetch of it failed with a 503 on every
-                page load. This is the OpenAPI spec, not product documentation;
-                calling it "Docs" sent operators looking for help into a route
-                table. */}
+            </button>
+            {/* Plain anchor so the shell does not prefetch the reference
+                document. The page is the OpenAPI spec rendered by this app. */}
             <a
               className={SIDEBAR_FOOTER_LINK}
               href="/api/reference"

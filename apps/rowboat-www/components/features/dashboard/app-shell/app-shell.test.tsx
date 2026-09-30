@@ -9,4 +9,9 @@ describe("AppShellSidebar", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function AppShellSidebar");
   });
+
+  it("opens product help instead of the marketing blog", () => {
+    expect(source).toContain('onOpenSettings?.("help")');
+    expect(source).not.toContain('href="/blog"');
+  });
 });
