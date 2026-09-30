@@ -41,7 +41,12 @@ vi.mock("@oppulence/ui/components/dialog", () => ({
   DialogTitle: ({ children }: React.PropsWithChildren) => <h2>{children}</h2>,
 }));
 
-import { NotesView, sortTasksByDue } from "@/components/features/revenue/workspace-records/workspace-records-view";
+import {
+  NotesView,
+  personDirectoryTitle,
+  personEnrichmentLabel,
+  sortTasksByDue,
+} from "@/components/features/revenue/workspace-records/workspace-records-view";
 
 const timestamps = {
   createdAt: "2026-09-17T12:00:00Z",
@@ -255,6 +260,20 @@ describe("durable note templates and favorites", () => {
   });
 });
 import { describe, expect, it } from "vitest";
+
+describe("people directory labels", () => {
+  it("names the full list and a search", () => {
+    expect(personDirectoryTitle("")).toEqual({ label: "All people", filtered: false });
+    expect(personDirectoryTitle("   ")).toEqual({ label: "All people", filtered: false });
+    expect(personDirectoryTitle("ada")).toEqual({ label: "Filtered", filtered: true });
+  });
+
+  it("reports verified fields without copying location", () => {
+    expect(personEnrichmentLabel({ attributesVersion: 0 })).toBe("Not enriched");
+    expect(personEnrichmentLabel({ attributesVersion: 1 })).toBe("1 verified field");
+    expect(personEnrichmentLabel({ attributesVersion: 3 })).toBe("3 verified fields");
+  });
+});
 
 import { collapseWorkspaceNotes, groupWorkspaceNotes, plateText } from "@/lib/revenue/revenue-records";
 import type { RelationshipObservation, RevenueRelationship } from "@/lib/revenue/types";

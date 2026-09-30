@@ -187,26 +187,72 @@ function RecordHeader({
   label,
   count,
   action,
+  filtered = false,
+  onClear,
 }: {
   icon: React.ReactNode;
   label: string;
   count: number;
   action: React.ReactNode;
+  filtered?: boolean;
+  onClear?: () => void;
 }) {
+  const summary = (
+    <>
+      {icon} {label}{" "}
+      <Badge className="font-normal text-primary/40" variant="secondary">
+        {count}
+      </Badge>
+    </>
+  );
   return (
     <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-3">
-      <Badge
-        className="h-8 gap-2 border border-border bg-background px-3 text-[13px] font-medium text-primary"
-        variant="outline"
-      >
-        {icon} {label}{" "}
-        <Badge className="font-normal text-primary/40" variant="secondary">
-          {count}
+      {filtered && onClear ? (
+        <Button
+          aria-label="Clear people filters"
+          className="h-8 gap-2 rounded-none border border-border bg-background px-3 text-[13px] font-medium text-primary hover:bg-background-100"
+          onClick={onClear}
+          type="button"
+          variant="ghost"
+        >
+          {summary}
+        </Button>
+      ) : (
+        <Badge
+          className="h-8 gap-2 border border-border bg-background px-3 text-[13px] font-medium text-primary"
+          variant="outline"
+        >
+          {summary}
         </Badge>
-      </Badge>
+      )}
       {action}
     </div>
   );
+}
+
+/**
+ * The people list is every active person, newest interaction first, including
+ * people who have never been contacted. "Recently contacted" described a
+ * filter the API does not apply. A search should say the list is filtered,
+ * and that control clears the query.
+ */
+export function personDirectoryTitle(query: string): { label: string; filtered: boolean } {
+  const filtered = query.trim().length > 0;
+  return { label: filtered ? "Filtered" : "All people", filtered };
+}
+
+/**
+ * Enrichment is the count of verified profile fields. Location already has
+ * its own column; using it as a fallback made a known city look enriched.
+ */
+export function personEnrichmentLabel(
+  person: Pick<RelationshipPerson, "attributesVersion">,
+): string {
+  const verified = person.attributesVersion;
+  if (verified > 0) {
+    return `${verified} verified ${verified === 1 ? "field" : "fields"}`;
+  }
+  return "Not enriched";
 }
 
 export function PeopleView({ onError, onNotice }: ViewProps) {
@@ -245,12 +291,18 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
     }
   };
 
+  const directoryTitle = personDirectoryTitle(query);
   return (
     <div className="flex min-h-full flex-col" data-slot="people-view">
       <RecordHeader
         icon={<User />}
-        label="Recently contacted people"
+        label={directoryTitle.label}
         count={people.length}
+        filtered={directoryTitle.filtered}
+        onClear={() => {
+          setQuery("");
+          setDebouncedQuery("");
+        }}
         action={
           <Button
             className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
@@ -378,10 +430,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                     )}
                   </TableCell>
                   <TableCell className="truncate px-3 text-[12px] text-primary/50">
-                    {person.location ||
-                      (person.attributesVersion
-                        ? `${person.attributesVersion} verified fields`
-                        : "Not enriched")}
+                    {personEnrichmentLabel(person)}
                   </TableCell>
                 </TableRow>
               ))}
