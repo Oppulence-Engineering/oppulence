@@ -160,6 +160,10 @@ describe("CommandPalette semantic mail search", () => {
     expect(screen.getByRole("button", { name: "Settings", exact: true })).toBeVisible();
     expect(screen.getByRole("button", { name: "Settings · Preferences" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Settings · Settings" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Use light theme" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Use dark theme" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Use system theme" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Theme: light" })).toBeNull();
   });
 
   it("fills the search box with the company a surface asked about", async () => {

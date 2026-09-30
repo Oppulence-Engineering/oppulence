@@ -234,15 +234,15 @@ export function CommandPalette({
           </CommandItem>
           <CommandItem onSelect={runAnd(() => setTheme("light"))}>
             <Sun />
-            Theme: light
+            Use light theme
           </CommandItem>
           <CommandItem onSelect={runAnd(() => setTheme("dark"))}>
             <Moon />
-            Theme: dark
+            Use dark theme
           </CommandItem>
           <CommandItem onSelect={runAnd(() => setTheme("system"))}>
             <Monitor />
-            Theme: system
+            Use system theme
           </CommandItem>
           <CommandItem onSelect={runAnd(() => window.location.assign("/api/auth/logout"))}>
             <SignOut />
