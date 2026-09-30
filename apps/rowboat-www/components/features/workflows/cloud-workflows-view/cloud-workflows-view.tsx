@@ -121,6 +121,12 @@ function formatDate(value?: string | null): string {
   }).format(parsed);
 }
 
+/** Status and trigger as words. The runs list used to show only an icon, so
+ * every row looked the same until you opened it. */
+export function runRowDetail(status: string, trigger: string): string {
+  return `${readableEnum(status)} · ${readableEnum(trigger)}`;
+}
+
 function statusTone(status: string): string {
   switch (status) {
     case "succeeded":
@@ -544,6 +550,7 @@ function RunInspector({
   run,
   events,
   busy,
+  workflowName,
   taskExecutionTarget,
   onCancel,
   onRetry,
@@ -551,6 +558,7 @@ function RunInspector({
   run: CloudRun | null;
   events: CloudRunEvent[];
   busy: boolean;
+  workflowName?: string;
   taskExecutionTarget?: "api" | "desktop";
   onCancel: () => void;
   onRetry: () => void;
@@ -569,7 +577,13 @@ function RunInspector({
             <Badge className={cn("rounded-none", statusTone(run.status))} variant="outline">
               <StatusIcon status={run.status} /> {readableEnum(run.status)}
             </Badge>
-            <p className="mt-2 truncate font-mono text-xs text-muted-foreground" title={run.runId}>
+            {workflowName ? (
+              <p className="mt-2 truncate text-sm font-medium">{workflowName}</p>
+            ) : null}
+            <p
+              className="mt-1 truncate font-mono text-[10px] text-muted-foreground"
+              title={run.runId}
+            >
               {run.runId}
             </p>
           </div>
@@ -772,7 +786,7 @@ function WorkflowRuns({
                     {tasks.find((task) => task.slug === run.slug)?.name || run.slug}
                   </Label>
                   <CardDescription className="mt-0.5 block text-[11px]">
-                    {readableEnum(run.trigger)} · {formatDate(run.createdAt)}
+                    {runRowDetail(run.status, run.trigger)} · {formatDate(run.createdAt)}
                   </CardDescription>
                 </div>
                 <CaretRight className="size-4 text-muted-foreground" />
@@ -804,6 +818,7 @@ function WorkflowRuns({
           onRetry={onRetry}
           run={selectedRun}
           taskExecutionTarget={selectedTask?.executionTarget}
+          workflowName={selectedTask?.name || selectedRun?.slug}
         />
       </ScrollArea>
     </div>
@@ -998,6 +1013,7 @@ function WorkflowEditor({
                 onRetry={onRetry}
                 run={selectedRun}
                 taskExecutionTarget={task.executionTarget}
+                workflowName={task.name}
               />
             </ScrollArea>
           </div>

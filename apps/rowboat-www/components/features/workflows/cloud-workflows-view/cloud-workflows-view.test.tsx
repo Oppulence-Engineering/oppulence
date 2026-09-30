@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  runRowDetail,
   scheduleLabel,
   sortWorkflowTasks,
   workflowForTask,
@@ -26,6 +27,9 @@ describe("CloudWorkflowsView", () => {
     expect(readableEnum("succeeded")).toBe("Succeeded");
     expect(readableEnum("cron")).toBe("Cron");
     expect(readableEnum("")).toBe("");
+    expect(runRowDetail("failed", "cron")).toBe("Failed · Cron");
+    expect(source).toContain("runRowDetail(run.status, run.trigger)");
+    expect(source).toContain("workflowName={task.name}");
   });
 
   it("names schedule health and transcript events", () => {
