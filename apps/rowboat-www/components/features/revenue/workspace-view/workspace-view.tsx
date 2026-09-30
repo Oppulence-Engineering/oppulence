@@ -100,11 +100,11 @@ export function WorkspaceView({
       });
       onLinked(ws);
       capture(RevenueEvents.WorkspaceLinked);
-      onNotice("Workspace linked — governed sending is now enabled.");
+      onNotice("Workspace linked. Checked sending is on.");
     } catch (error) {
       onError(
         error instanceof RevenueAPIError && error.code === "facade_unavailable"
-          ? "Policy preflight isn't configured on the server yet, so linking can't be completed. Drafting still works in local mode."
+          ? "Checked sending isn't configured on the server yet, so linking can't be completed. Drafts still work."
           : errMessage(error, "Could not link the workspace."),
       );
     } finally {
@@ -130,7 +130,7 @@ export function WorkspaceView({
         ) : sourcesQuery.isError || !sources?.length ? (
           <div className="flex flex-col gap-3 px-4 py-6 text-sm text-[var(--text-secondary)]">
             <p>
-              No evidence sources are connected yet. Connect Gmail, Calendar, Slack, or CRM below.
+              Nothing is connected yet. Connect Gmail, Calendar, Slack, or HubSpot below.
             </p>
             <Button onClick={scrollToConnectors} size="sm" type="button">
               <Plugs /> Connect sources
@@ -166,7 +166,7 @@ export function WorkspaceView({
               </button>
             ) : null
           }
-          title="Connectors"
+          title="Connections"
         />
         <div className="sources-connectors px-1 py-2">
           <ConnectorSettings showHeading={false} />
@@ -186,7 +186,7 @@ export function WorkspaceView({
           <MetadataRow label="Mode" value={workspaceMetadataValue(workspace.mode)} />
           <MetadataRow label="Status" value={workspaceMetadataValue(workspace.status)} />
           <MetadataRow
-            label="Preflight"
+            label="Sending check"
             value={workspace.preflightAvailable ? "Available" : "Unavailable (drafts only)"}
           />
           {workspace.outboundOrganizationId ? (
@@ -194,7 +194,7 @@ export function WorkspaceView({
           ) : null}
           {workspace.outboundWorkspaceId ? (
             <MetadataRow
-              label="OutboundConsole workspace"
+              label="Sending workspace"
               mono
               value={workspace.outboundWorkspaceId}
             />
@@ -208,10 +208,9 @@ export function WorkspaceView({
       {linked ? (
         <Alert>
           <ShieldCheck weight="fill" />
-          <AlertTitle>Governed sending is on</AlertTitle>
+          <AlertTitle>Checked sending is on</AlertTitle>
           <AlertDescription>
-            Sends run through OutboundConsole policy preflight — suppression, verification, and
-            ownership are checked before anything leaves.
+            Each send is checked for blocks, identity, and ownership before it leaves.
           </AlertDescription>
         </Alert>
       ) : (
@@ -220,19 +219,19 @@ export function WorkspaceView({
             <Plugs weight="fill" />
             <AlertTitle>Local mode</AlertTitle>
             <AlertDescription>
-              Observation, scans, and draft-first execution all work. Sending is disabled until you
-              link a governed OutboundConsole workspace — drafts land in your own Gmail so you can
-              send them yourself.
+              Audits and drafts work here. Sending stays off until this workspace is linked. Drafts
+              still land in your Gmail so you can send them yourself.
             </AlertDescription>
           </Alert>
 
           <SimProductPanel>
-            <SimProductHeader title="Link a governed workspace" />
+            <SimProductHeader title="Turn on checked sending" />
             <div className="flex flex-col gap-3 px-4 py-4">
               <p className="text-sm text-[var(--text-secondary)]">
-                Connect an OutboundConsole workspace to turn on policy-checked sending.
+                Link a sending workspace to check each message before it goes out.
               </p>
-              <Field label="OutboundConsole workspace ID">
+              {/* The stored id belongs to the sending service. The label does not name that service. */}
+              <Field label="Sending workspace ID">
                 <Input
                   onChange={(event) => setWsId(event.target.value)}
                   placeholder="ws_…"

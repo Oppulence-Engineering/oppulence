@@ -552,7 +552,7 @@ export function ConnectorSettings({ showHeading = true }: { showHeading?: boolea
       {showHeading ? (
         <div className="settings-section-heading">
           <div>
-            <h2 className="settings-section-title">Connectors</h2>
+            <h2 className="settings-section-title">Connections</h2>
             <p className="settings-section-description">
               Connections your agents can use. Sign-in stays with Oppulence, and provider passwords
               are not stored in this browser.
@@ -562,7 +562,7 @@ export function ConnectorSettings({ showHeading = true }: { showHeading?: boolea
       ) : null}
       {notice ? (
         <div className="settings-inline-notice" role="status">
-          <strong className="capitalize">{notice.connector || "Connector"}:</strong>{" "}
+          <strong className="capitalize">{notice.connector || "Connection"}:</strong>{" "}
           {OUTCOME_MESSAGES[notice.outcome]}
         </div>
       ) : null}
@@ -570,11 +570,11 @@ export function ConnectorSettings({ showHeading = true }: { showHeading?: boolea
       <ComposioConnections onToolkits={setComposioSlugs} />
       <div className="settings-panel flex flex-col">
         {state === "loading" ? (
-          <p className="p-4 text-sm text-muted-foreground">Loading connectors…</p>
+          <p className="p-4 text-sm text-muted-foreground">Loading connections…</p>
         ) : state === "error" ? (
-          <p className="p-4 text-sm text-muted-foreground">Could not load connectors.</p>
+          <p className="p-4 text-sm text-muted-foreground">Could not load connections.</p>
         ) : visibleConnectors.length === 0 ? (
-          <p className="p-4 text-sm text-muted-foreground">No connectors are available yet.</p>
+          <p className="p-4 text-sm text-muted-foreground">No connections are available yet.</p>
         ) : (
           <div className="flex flex-col divide-y divide-primary/10">
             {visibleConnectors.map((connector) => (

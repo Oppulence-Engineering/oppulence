@@ -419,13 +419,13 @@ export function ReviewSheet({
           {isSend ? (
             <div className="flex flex-col gap-2 rounded-[2px] border border-border p-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm text-primary">Policy preflight</CardTitle>
+                <CardTitle className="text-sm text-primary">Sending check</CardTitle>
                 <PolicyBadge status={action.policyStatus} />
               </div>
               {!linked ? (
                 <p className="text-xs text-primary/55">
-                  This workspace is in local mode. Sending is disabled until it&apos;s linked to a
-                  governed OutboundConsole workspace — you can still create a draft in Gmail.
+                  This workspace is in local mode. Sending stays off until it is linked. You can
+                  still create a Gmail draft.
                 </p>
               ) : (
                 <div className="flex items-center gap-2">

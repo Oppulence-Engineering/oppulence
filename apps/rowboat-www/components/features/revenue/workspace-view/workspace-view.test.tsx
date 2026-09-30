@@ -177,5 +177,11 @@ describe("WorkspaceView", () => {
     const preflight = await screen.findByText("Unavailable (drafts only)");
     expect(preflight).toBeVisible();
     expect(preflight).not.toHaveClass("capitalize");
+    expect(screen.getByText("Sending check")).toBeVisible();
+    expect(screen.getByText("Turn on checked sending")).toBeVisible();
+    expect(screen.getByText("Sending workspace ID")).toBeVisible();
+    expect(await screen.findByText(/Nothing is connected yet/)).toBeVisible();
+    expect(screen.queryByText(/OutboundConsole/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\bCRM\b/)).not.toBeInTheDocument();
   });
 });
