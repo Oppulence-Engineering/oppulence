@@ -13,6 +13,7 @@ import {
   companySheetPositionLabel,
   companyReviewCopy,
   companyStateAnswer,
+  missionControlStateAnswer,
   recordDetailBadge,
   completenessExplanationCopy,
   privacyDecisionCopy,
@@ -209,6 +210,20 @@ describe("RelationshipsView", () => {
     expect(companyStateAnswer("prospect", "unknown")).toBe(
       "Lifecycle: Prospect · Health: Unknown",
     );
+    expect(
+      missionControlStateAnswer({
+        lifecycle: { supported: false, value: "prospect" },
+        health: { supported: false, value: "unknown" },
+      }),
+    ).toBe("No supported answer yet.");
+    expect(
+      missionControlStateAnswer({
+        lifecycle: { supported: true, value: "prospect" },
+        health: { supported: false, value: "unknown" },
+      }),
+    ).toBe("Lifecycle: Prospect · Health: Unknown");
+    expect(source).toContain("missionControlStateAnswer(model.evidence)");
+    expect(source).not.toContain("String(model.evidence.lifecycle?.value ?? \"unknown\")");
     expect(recordDetailBadge("Sentiment", "unknown")).toBe("Sentiment · Unknown");
     expect(source).toContain("companyReviewCopy(model)");
     expect(source).toContain("reviewCopy.footer !== reviewCopy.change");

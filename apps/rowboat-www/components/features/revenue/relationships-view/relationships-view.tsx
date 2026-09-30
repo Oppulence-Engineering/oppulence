@@ -1516,6 +1516,24 @@ export function companyStateAnswer(lifecycle: string, health: string): string {
   return `Lifecycle: ${relationshipLabel(lifecycle)} · Health: ${relationshipLabel(health)}`;
 }
 
+/**
+ * A new company stores lifecycle as "prospect" before any source exists.
+ * That default is not what is true now. Only a supported value is an answer.
+ */
+export function missionControlStateAnswer(evidence: {
+  lifecycle?: { supported?: boolean; value?: unknown };
+  health?: { supported?: boolean; value?: unknown };
+}): string {
+  const shown = (item: { supported?: boolean; value?: unknown } | undefined) => {
+    if (!item?.supported || item.value == null) return "";
+    return String(item.value).trim();
+  };
+  const lifecycle = shown(evidence.lifecycle);
+  const health = shown(evidence.health);
+  if (!lifecycle && !health) return "No supported answer yet.";
+  return companyStateAnswer(lifecycle || "unknown", health || "unknown");
+}
+
 /** Record badges sit together. The dimension has to travel with the value. */
 export function recordDetailBadge(label: string, value: string): string {
   return `${label} · ${relationshipLabel(value)}`;
@@ -1687,10 +1705,7 @@ function MissionControlOverview({
         {MISSION_CONTROL_QUESTIONS.map((question) => {
           let answer = "No supported answer yet.";
           if (question.key === "state") {
-            answer = companyStateAnswer(
-              String(model.evidence.lifecycle?.value ?? "unknown"),
-              String(model.evidence.health?.value ?? "unknown"),
-            );
+            answer = missionControlStateAnswer(model.evidence);
           } else if (question.key === "change") {
             answer = model.changedSinceReview
               ? model.changes
