@@ -18,6 +18,10 @@ describe("AppShellSidebar", () => {
   it("describes preferences as the controls that page actually has", () => {
     expect(source).toContain("Default agent and anonymous usage data.");
     expect(source).not.toContain("reasoning, notifications, privacy, and memory");
+    expect(source).toContain("This workspace does not send browser or email notifications.");
+    expect(source).not.toContain("Configure browser and workspace notification preferences.");
+    expect(source).toContain("Theme and language are in Appearance.");
+    expect(source).not.toContain("Tune product branding, navigation, and workspace layout.");
   });
 
   it("describes appearance as the controls that page actually has", () => {

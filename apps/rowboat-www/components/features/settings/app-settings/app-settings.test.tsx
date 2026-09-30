@@ -13,6 +13,10 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "app-settings.tsx"
 describe("SettingsView", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function SettingsView");
+    expect(source).toContain("<NotificationsSection onNavigate={onNavigate} />");
+    expect(source).toContain("<CustomizationSection onNavigate={onNavigate} />");
+    expect(source).not.toContain('section === "customization" ? <AppearanceSection />');
+    expect(source).not.toContain("return <PreferencesSection />");
     expect(source).toContain('aria-label="Theme"');
     expect(source).toContain('comboboxFilterName("Interface language", "English")');
   });

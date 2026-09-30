@@ -118,6 +118,43 @@ describe("synced console preferences", () => {
     });
   });
 
+  it("does not present preferences as notification settings", async () => {
+    const onNavigate = vi.fn();
+    const user = userEvent.setup();
+    renderWithQuery(
+      <SettingsView
+        onNavigate={onNavigate}
+        section="notifications"
+        session={{ user: { permissions: [] } }}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "Notifications" })).toBeVisible();
+    expect(
+      screen.getByText("This workspace does not send browser or email notifications."),
+    ).toBeVisible();
+    expect(screen.queryByText("Default agent")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Open preferences" }));
+    expect(onNavigate).toHaveBeenCalledWith("preferences");
+  });
+
+  it("does not present appearance as branding settings", async () => {
+    const onNavigate = vi.fn();
+    const user = userEvent.setup();
+    renderWithQuery(
+      <SettingsView
+        onNavigate={onNavigate}
+        section="customization"
+        session={{ user: { permissions: [] } }}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "Customization" })).toBeVisible();
+    expect(screen.queryByRole("group", { name: "Theme" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Open appearance" }));
+    expect(onNavigate).toHaveBeenCalledWith("appearance");
+  });
+
   it("patches analytics consent and updates the capture gate", async () => {
     const user = userEvent.setup();
     renderPreferences();

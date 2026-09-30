@@ -118,7 +118,7 @@ export const SETTINGS_SECTIONS: {
     label: "Notifications",
     icon: Bell,
     group: "workspace",
-    description: "Configure browser and workspace notification preferences.",
+    description: "This workspace does not send browser or email notifications.",
   },
   {
     key: "permissions",
@@ -153,7 +153,7 @@ export const SETTINGS_SECTIONS: {
     label: "Customization",
     icon: Folder,
     group: "global",
-    description: "Tune product branding, navigation, and workspace layout.",
+    description: "Branding and layout are not separate settings. Theme and language are in Appearance.",
   },
   {
     key: "appearance",

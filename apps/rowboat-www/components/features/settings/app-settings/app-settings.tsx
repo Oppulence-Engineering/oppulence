@@ -891,8 +891,40 @@ function PreferencesSection() {
   );
 }
 
-function NotificationsSection() {
-  return <PreferencesSection />;
+function NotificationsSection({
+  onNavigate,
+}: {
+  onNavigate: (section: SettingsSection) => void;
+}) {
+  return (
+    <>
+      <PageIntro
+        description="This workspace does not send browser or email notifications."
+        title="Notifications"
+      />
+      <Button onClick={() => onNavigate("preferences")} type="button" variant="outline">
+        Open preferences
+      </Button>
+    </>
+  );
+}
+
+function CustomizationSection({
+  onNavigate,
+}: {
+  onNavigate: (section: SettingsSection) => void;
+}) {
+  return (
+    <>
+      <PageIntro
+        description="Branding and layout are not separate settings. Theme and language are in Appearance."
+        title="Customization"
+      />
+      <Button onClick={() => onNavigate("appearance")} type="button" variant="outline">
+        Open appearance
+      </Button>
+    </>
+  );
 }
 
 function SecuritySection({ session }: { session: SessionShape }) {
@@ -1122,7 +1154,9 @@ export function SettingsView({
       <div className={cn("settings-page", section === "overview" && "settings-page--wide")}>
         {section === "overview" ? <OverviewSection onNavigate={onNavigate} /> : null}
         {section === "preferences" ? <PreferencesSection /> : null}
-        {section === "notifications" ? <NotificationsSection /> : null}
+        {section === "notifications" ? (
+          <NotificationsSection onNavigate={onNavigate} />
+        ) : null}
         {section === "permissions" ? <PermissionsSection session={session} /> : null}
         {section === "security" ? <SecuritySection session={session} /> : null}
         {section === "connections" ? (
@@ -1144,7 +1178,9 @@ export function SettingsView({
             <WorkspaceConnection organizationId={session.user.organizationId} />
           </>
         ) : null}
-        {section === "customization" ? <AppearanceSection /> : null}
+        {section === "customization" ? (
+          <CustomizationSection onNavigate={onNavigate} />
+        ) : null}
         {section === "appearance" ? <AppearanceSection /> : null}
         {section === "account" ? <AccountSection session={session} /> : null}
         {section === "connect" ? (
