@@ -3,7 +3,7 @@
 import "client-only";
 
 import * as React from "react";
-import { EnvelopeSimple, WarningDiamond } from "@/lib/icons";
+import { EnvelopeSimple, MagnifyingGlass, Plugs, WarningDiamond } from "@/lib/icons";
 import { useImpactBundle } from "@/hooks/queries/use-impact";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
@@ -17,6 +17,7 @@ import {
   CardTitle,
 } from "@oppulence/ui/components/card";
 import { Label } from "@oppulence/ui/components/label";
+import { Spinner } from "@oppulence/ui/components/spinner";
 import { Progress } from "@oppulence/ui/components/progress";
 import {
   Table,
@@ -31,7 +32,19 @@ import { DETECTOR_LABELS } from "@/lib/revenue/revenue";
 import { EmptyBlock, errMessage, ListSkeleton } from "@/components/features/revenue/shared/shared";
 import { cn } from "@/lib/utils";
 
-export function ImpactView({ onError }: { onError: (m: string) => void }) {
+export function ImpactView({
+  onError,
+  onScan,
+  scanning = false,
+  needsReconnect = false,
+}: {
+  onError: (m: string) => void;
+  /** Same audit the Audits and Recovery empty states start. Omitted in tests that only retry a failed load. */
+  onScan?: () => void;
+  scanning?: boolean;
+  /** The audit can only fail until Google is reconnected; `onScan` opens the fix. */
+  needsReconnect?: boolean;
+}) {
   const impactQuery = useImpactBundle();
 
   React.useEffect(() => {
@@ -64,7 +77,27 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
         image="impact"
         learnMore={[{ label: "Track recovery outcomes" }, { label: "Measure company risk" }]}
         title="Impact"
-      />
+      >
+        {onScan ? (
+          <Button
+            className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+            disabled={scanning}
+            onClick={onScan}
+            size="sm"
+            type="button"
+          >
+            {needsReconnect ? (
+              <>
+                <Plugs /> Reconnect Google
+              </>
+            ) : (
+              <>
+                {scanning ? <Spinner /> : <MagnifyingGlass />} Run Promise Leak Audit
+              </>
+            )}
+          </Button>
+        ) : null}
+      </EmptyBlock>
     );
   }
 

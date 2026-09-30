@@ -9,6 +9,8 @@ describe("ImpactView", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function ImpactView");
     expect(source).toContain("Measure company risk");
+    expect(source).toContain("Run Promise Leak Audit");
+    expect(source).toContain("Reconnect Google");
     expect(source).toContain("Company exposure");
     expect(source).toContain("No active company risks.");
     expect(source).toContain("Your companies and people were not changed.");

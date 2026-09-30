@@ -337,7 +337,12 @@ export function RevenuePanel({
         ) : tab === "people" ? (
           <PeopleView onError={setBanner} onNotice={setNoticeMsg} />
         ) : tab === "impact" ? (
-          <ImpactView onError={setBanner} />
+          <ImpactView
+            needsReconnect={reconnectBeforeAudit}
+            onError={setBanner}
+            onScan={runScan}
+            scanning={scanning}
+          />
         ) : tab === "relationships" ? (
           <RelationshipsView
             onError={setBanner}
