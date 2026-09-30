@@ -1132,11 +1132,19 @@ function NoteDialog({
   const [meetingLinked, setMeetingLinked] = React.useState(Boolean(note?.meetingLinked));
   const [maximized, setMaximized] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const [insertOpen, setInsertOpen] = React.useState(false);
   const [saveState, setSaveState] = React.useState<"saved" | "saving" | "error">("saved");
   const lastSaved = React.useRef(
     note ? JSON.stringify([title, relationshipId, content, meetingLinked]) : "",
   );
   const editor = usePlateEditor({ plugins: notePlugins, value: content });
+  const insertBlock = (type: "p" | "h2" | "blockquote") => {
+    // The formatting bar toggles the current block. This control adds a new
+    // one, which is what "Insert content" claims to do.
+    const node = type === "p" ? editor.api.create.block() : { type, children: [{ text: "" }] };
+    editor.tf.insertNodes(node, { select: true });
+    setInsertOpen(false);
+  };
   const snapshot = JSON.stringify([title, relationshipId, content, meetingLinked]);
 
   const publish = React.useCallback(
@@ -1427,15 +1435,40 @@ function NoteDialog({
             </Label>
           ) : null}
         </div>
-        <Button
-          aria-label="Insert content"
-          type="button"
-          className="absolute bottom-3 left-4 size-5 rounded-none border border-border p-0 text-primary/55 hover:bg-background-100 hover:text-primary"
-          size="icon-xs"
-          variant="ghost"
-        >
-          <Plus className="size-3" />
-        </Button>
+        <div className="absolute bottom-3 left-4">
+          {insertOpen ? (
+            <div className="absolute bottom-7 left-0 z-10 w-36 border border-border bg-background p-1 shadow-xl">
+              {(
+                [
+                  ["p", "Insert paragraph"],
+                  ["h2", "Insert heading"],
+                  ["blockquote", "Insert quote"],
+                ] as const
+              ).map(([type, label]) => (
+                <Button
+                  className="h-8 w-full justify-start rounded-none px-2 text-[12px]"
+                  key={type}
+                  onClick={() => insertBlock(type)}
+                  type="button"
+                  variant="ghost"
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          ) : null}
+          <Button
+            aria-expanded={insertOpen}
+            aria-label="Insert content"
+            className="size-5 rounded-none border border-border p-0 text-primary/55 hover:bg-background-100 hover:text-primary"
+            onClick={() => setInsertOpen((open) => !open)}
+            size="icon-xs"
+            type="button"
+            variant="ghost"
+          >
+            <Plus className="size-3" />
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

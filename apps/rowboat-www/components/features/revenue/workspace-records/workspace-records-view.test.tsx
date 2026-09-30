@@ -162,6 +162,17 @@ describe("durable note templates and favorites", () => {
     expect(screen.getByText("Wins and risks")).toBeInTheDocument();
   });
 
+  it("inserts a heading from the note content control", async () => {
+    const user = userEvent.setup();
+    renderNotes();
+
+    await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
+    await user.click(await screen.findByRole("button", { name: "Insert content" }));
+    await user.click(await screen.findByRole("button", { name: "Insert heading" }));
+
+    expect(document.querySelector("h2")).toBeTruthy();
+  });
+
   it("opens the note a copied link points at", async () => {
     window.history.replaceState(null, "", "/app/revenue?tab=commitments#note=note-1");
     renderNotes();
