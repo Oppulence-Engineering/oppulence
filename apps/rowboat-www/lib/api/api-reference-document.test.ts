@@ -26,7 +26,7 @@ describe("API reference document", () => {
 
     expect(presented.info.title).toBe("Oppulence API");
     expect(presented.info.description).toBe(
-      "Oppulence API for sign-in, billing, workflows, companies, people, and evidence.",
+      "Oppulence API for sign-in, billing, workflows, companies, people, and promises.",
     );
     expect(presented.info.version).toBe("0.1.0");
     expect(presented.servers[0]?.description).toBe("Current Oppulence API origin");

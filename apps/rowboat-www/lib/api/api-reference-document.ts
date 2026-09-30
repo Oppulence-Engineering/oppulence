@@ -7,7 +7,7 @@
 export const API_REFERENCE_TITLE = "Oppulence API";
 
 export const API_REFERENCE_DESCRIPTION =
-  "Oppulence API for sign-in, billing, workflows, companies, people, and evidence.";
+  "Oppulence API for sign-in, billing, workflows, companies, people, and promises.";
 
 type ApiReferenceDocument = {
   info?: { title?: string; description?: string };
