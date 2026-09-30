@@ -1437,6 +1437,13 @@ function NoteDialog({
               className="h-auto rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
               variant="ghost"
               onClick={async () => {
+                // The id exists before the first save, but the notes list only
+                // knows a note after it is stored. Copying earlier opens a link
+                // that says the note is gone.
+                if (!lastSaved.current) {
+                  onNotice("This note has not been saved, so there is no link to copy.");
+                  return;
+                }
                 try {
                   await navigator.clipboard.writeText(workspaceNoteHref(window.location, noteId));
                   onNotice("Note link copied.");
@@ -1465,6 +1472,10 @@ function NoteDialog({
                     className="h-auto w-full justify-start rounded-none px-3 py-2 text-[12px] text-destructive hover:bg-background-100"
                     variant="ghost"
                     onClick={async () => {
+                      if (!lastSaved.current) {
+                        onClose();
+                        return;
+                      }
                       if (await publish("note_deleted")) onClose();
                     }}
                   >

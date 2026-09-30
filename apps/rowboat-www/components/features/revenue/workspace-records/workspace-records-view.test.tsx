@@ -144,6 +144,18 @@ describe("durable note templates and favorites", () => {
 
     await user.click(screen.getByRole("button", { name: "Close note" }));
     expect(onNotice).toHaveBeenCalledWith("Link a company before this note can be saved.");
+
+    await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    await user.click(screen.getByRole("button", { name: "Copy link" }));
+    expect(onNotice).toHaveBeenCalledWith(
+      "This note has not been saved, so there is no link to copy.",
+    );
+    expect(writeText).not.toHaveBeenCalled();
   });
 
   it("opens the template library from the empty note", async () => {
