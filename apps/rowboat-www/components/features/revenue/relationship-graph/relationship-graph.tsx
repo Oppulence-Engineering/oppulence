@@ -1582,7 +1582,6 @@ export function RelationshipGraphWorkspace({
             <Input
               id="graph-view-name"
               value={viewName}
-              autoFocus
               onChange={(event) => setViewName(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {

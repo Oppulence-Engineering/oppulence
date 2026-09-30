@@ -293,7 +293,6 @@ export function TiptapMarkdownEditor({
             <Input
               id="markdown-link-url"
               value={linkDraft}
-              autoFocus
               placeholder="https://"
               onChange={(event) => setLinkDraft(event.target.value)}
               onKeyDown={(event) => {
