@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   accountGraphPrompt,
   graphCanvasEmptyState,
+  graphInspectorPrompt,
   graphAsOfLabel,
   graphCountLabel,
   graphLayoutLabel,
@@ -106,6 +107,14 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryFilterLabel("overdue commitments")).toBe("overdue commitments");
     expect(source).toContain("Building the company graph");
     expect(source).not.toContain("Building authorized graph");
+    expect(graphInspectorPrompt(0)).toEqual({
+      title: "Nothing to inspect",
+      body: "No companies are in this graph yet.",
+    });
+    expect(graphInspectorPrompt(2).body).toBe(
+      "Select a company or a person to see how it connects.",
+    );
+    expect(source).toContain("graphInspectorPrompt(graph.nodes.length)");
     expect(source).toContain("Select a company or a person to see how it connects.");
     expect(source).not.toContain("or evidence item");
     expect(source).not.toContain("evidence item");

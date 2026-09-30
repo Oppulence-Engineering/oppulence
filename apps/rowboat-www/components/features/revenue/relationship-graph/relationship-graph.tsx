@@ -563,13 +563,12 @@ function Inspector({
   onFocusDepth: (depth: RelationshipGraphSavedViewState["focusDepth"]) => void;
 }) {
   if (!node) {
+    const prompt = graphInspectorPrompt(graph.nodes.length);
     return (
       <aside className="flex min-h-56 flex-col items-center justify-center border-l border-border p-6 text-center">
         <Graph className="size-7 text-primary/25" />
-        <p className="mt-3 text-sm font-medium text-primary">Inspect the graph</p>
-        <p className="mt-1 max-w-56 text-xs text-primary/45">
-          Select a company or a person to see how it connects.
-        </p>
+        <p className="mt-3 text-sm font-medium text-primary">{prompt.title}</p>
+        <p className="mt-1 max-w-56 text-xs text-primary/45">{prompt.body}</p>
       </aside>
     );
   }
@@ -935,6 +934,20 @@ export function graphCanvasEmptyState(totalNodes: number) {
     return { message: "No companies are in this graph yet.", offerReset: false };
   }
   return { message: "Nothing matches this view.", offerReset: true };
+}
+
+/** Nothing is selected. An empty graph has nothing to select. */
+export function graphInspectorPrompt(nodeCount: number): { title: string; body: string } {
+  if (nodeCount === 0) {
+    return {
+      title: "Nothing to inspect",
+      body: "No companies are in this graph yet.",
+    };
+  }
+  return {
+    title: "Inspect the graph",
+    body: "Select a company or a person to see how it connects.",
+  };
 }
 
 function GraphCanvasEmpty({ totalNodes, onReset }: { totalNodes: number; onReset: () => void }) {

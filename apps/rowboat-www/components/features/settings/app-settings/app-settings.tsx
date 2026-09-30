@@ -906,6 +906,14 @@ function SecuritySection({ session }: { session: SessionShape }) {
       <SettingsRow description={copy.security} title="Session access">
         <div className="settings-row">
           <div className="settings-row-copy">
+            <p className="settings-row-label">Signed in</p>
+            <p className="settings-row-description">
+              {session.user.email?.trim() || "No email is attached to this session."}
+            </p>
+          </div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy">
             <p className="settings-row-label">Organization</p>
             <p className="settings-row-description">
               {session.user.organizationId || "No organization is attached to this session."}
