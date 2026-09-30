@@ -917,6 +917,31 @@ export function graphAsOfLabel(asOf: string): string {
  * The query engine still says "relationship", and a typed question comes back
  * as `text: …`. The graph is a company graph, so the answer should read that way.
  */
+/**
+ * Reset returns the graph to the first view. A saved view, a typed question,
+ * or any changed filter is something to return from.
+ */
+export function graphCanReset(
+  state: RelationshipGraphSavedViewState,
+  queryDraft: string,
+  activeSavedViewId?: string,
+): boolean {
+  if (activeSavedViewId) return true;
+  if (queryDraft.trim() !== state.query) return true;
+  return (
+    state.scope !== DEFAULT_STATE.scope ||
+    state.query !== DEFAULT_STATE.query ||
+    state.layout !== DEFAULT_STATE.layout ||
+    state.density !== DEFAULT_STATE.density ||
+    state.hideIsolated !== DEFAULT_STATE.hideIsolated ||
+    state.focusDepth !== DEFAULT_STATE.focusDepth ||
+    state.changedSinceReview !== DEFAULT_STATE.changedSinceReview ||
+    Boolean(state.asOf) ||
+    Boolean(state.relationshipId) ||
+    Boolean(state.selectedNodeId)
+  );
+}
+
 /** Ask rewrites the question and clears the selected company. Skip a click that would do neither. */
 export function graphAskChanges(
   draft: string,
@@ -1305,6 +1330,7 @@ export function RelationshipGraphWorkspace({
     const next = { ...DEFAULT_STATE, relationshipId: undefined };
     setViewState(next);
     setQueryDraft("");
+    setActiveSavedViewId(undefined);
     setResetSignal((value) => value + 1);
   };
 
@@ -1351,10 +1377,11 @@ export function RelationshipGraphWorkspace({
             aria-label="Graph scope"
           >
             {(["portfolio", "relationship"] as const).map((scope) => (
+              // The words are already sentence case. capitalize showed All Companies.
               <ToggleGroupItem
                 key={scope}
                 value={scope}
-                className="capitalize data-[state=on]:bg-primary data-[state=on]:text-background"
+                className="data-[state=on]:bg-primary data-[state=on]:text-background"
               >
                 {scope === "relationship" ? "Account graph" : "All companies"}
               </ToggleGroupItem>
@@ -1621,7 +1648,13 @@ export function RelationshipGraphWorkspace({
           <Button type="button" size="sm" variant="ghost" onClick={() => void shareView()}>
             <Link /> Share
           </Button>
-          <Button type="button" size="sm" variant="ghost" onClick={reset}>
+          <Button
+            disabled={!graphCanReset(viewState, queryDraft, activeSavedViewId)}
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={reset}
+          >
             <ArrowCounterClockwise /> Reset
           </Button>
         </div>

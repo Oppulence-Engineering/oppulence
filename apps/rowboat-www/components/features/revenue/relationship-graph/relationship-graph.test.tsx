@@ -13,6 +13,7 @@ import {
   graphAccountChoice,
   graphSavedViewChoice,
   graphAskChanges,
+  graphCanReset,
   graphQueryAnswer,
   graphQueryFilterLabel,
 } from "@/components/features/revenue/relationship-graph/relationship-graph";
@@ -94,6 +95,24 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain("Companies, people, and the promises between them");
     expect(source).not.toContain("the evidence between them");
     expect(source).toContain("All companies");
+    expect(source).not.toContain(
+      'className="capitalize data-[state=on]:bg-primary data-[state=on]:text-background"',
+    );
+    const fresh = {
+      scope: "portfolio" as const,
+      query: "",
+      layout: "force" as const,
+      density: 0.72,
+      hideIsolated: false,
+      focusDepth: 0 as const,
+      changedSinceReview: false,
+    };
+    expect(graphCanReset(fresh, "")).toBe(false);
+    expect(graphCanReset({ ...fresh, layout: "radial" }, "")).toBe(true);
+    expect(graphCanReset(fresh, "overdue promises")).toBe(true);
+    expect(graphCanReset(fresh, "", "saved-view")).toBe(true);
+    expect(source).toContain("disabled={!graphCanReset(viewState, queryDraft, activeSavedViewId)}");
+    expect(source).toContain("setActiveSavedViewId(undefined);");
     expect(source).toContain("How far to look");
     expect(source).toContain("Nearby");
     expect(source).toContain("Wider");
