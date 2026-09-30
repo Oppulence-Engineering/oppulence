@@ -168,9 +168,10 @@ describe("durable note templates and favorites", () => {
 
     await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
     await user.click(await screen.findByRole("button", { name: "Insert content" }));
+    const before = document.querySelectorAll("h2").length;
     await user.click(await screen.findByRole("button", { name: "Insert heading" }));
 
-    expect(document.querySelector("h2")).toBeTruthy();
+    expect(document.querySelectorAll("h2").length).toBe(before + 1);
   });
 
   it("opens the note a copied link points at", async () => {
