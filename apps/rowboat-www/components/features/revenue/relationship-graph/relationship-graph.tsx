@@ -832,6 +832,12 @@ function GraphTable({
   );
 }
 
+/** Account scope with nothing to pick is not a prompt. The select would be empty. */
+export function accountGraphPrompt(companyCount: number): string {
+  if (companyCount === 0) return "Add a company before this graph can be built.";
+  return "Choose an account to build its graph.";
+}
+
 /**
  * An empty canvas means two different things. Zero nodes in the payload means
  * the workspace has nothing to draw. Nodes that exist but are hidden were
@@ -1218,7 +1224,7 @@ export function RelationshipGraphWorkspace({
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
-          {viewState.scope === "relationship" ? (
+          {viewState.scope === "relationship" && relationships.length > 0 ? (
             <Select
               value={viewState.relationshipId}
               onValueChange={(relationshipId) =>
@@ -1452,8 +1458,8 @@ export function RelationshipGraphWorkspace({
               </Button>
             </div>
           ) : !graph ? (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-primary/45">
-              Choose an account to build its graph.
+            <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-primary/45">
+              {accountGraphPrompt(relationships.length)}
             </div>
           ) : !visible.nodes.length ? (
             <GraphCanvasEmpty onReset={reset} totalNodes={graph.nodes.length} />
