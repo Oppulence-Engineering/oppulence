@@ -7,6 +7,8 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "relationships-vie
 
 import {
   companyDirectoryTitle,
+  completenessProductLabel,
+  detailSourceLabel,
   enrichmentAvailabilityCopy,
 } from "@/components/features/revenue/relationships-view/relationships-view";
 
@@ -111,6 +113,38 @@ describe("RelationshipsView", () => {
     expect(enrichmentAvailabilityCopy({ available: true, reason: "capability_disabled" })).toBe(
       "Cloud research is disabled for this workspace.",
     );
+  });
+
+  it("describes a company record without model jargon", () => {
+    expect(completenessProductLabel("partial")).toBe("Some details are still missing");
+    expect(completenessProductLabel("complete")).toBe("Details are current");
+    expect(completenessProductLabel("custom_status")).toBe("Custom Status");
+    expect(detailSourceLabel("ai_inference", true)).toBe("Suggested");
+    expect(detailSourceLabel("source_fact", false)).toBe("Not filled in yet");
+    expect(source).toContain("Some details are still missing");
+    expect(source).toContain("details have a source");
+    expect(source).toContain("details come from a source you can open");
+    expect(source).toContain("See where each detail came from");
+    expect(source).toContain("Not filled in");
+    expect(source).toContain("No description yet");
+    expect(source).toContain("Not on a list");
+    expect(source).toContain("Correct a detail");
+    expect(source).toContain('placeholder="Why is this wrong?"');
+    expect(source).toContain("Save this transcript");
+    expect(source).toContain("No mail or meetings yet.");
+    expect(source).toContain("Activity history");
+    expect(source).not.toContain("Not enriched");
+    expect(source).not.toContain("winning assertion");
+    expect(source).not.toContain("state dimensions sourced");
+    expect(source).not.toContain("Inspect dimension evidence");
+    expect(source).not.toContain("Correct the model");
+    expect(source).not.toContain("Why is the model wrong?");
+    expect(source).not.toContain("Built from synced email activity");
+    expect(source).not.toContain("Synced companies · Gmail");
+    expect(source).not.toContain("Publish reviewed evidence");
+    expect(source).not.toContain("authority rank");
+    expect(source).not.toContain("Evidence timeline");
+    expect(source).not.toContain("No synced communication metadata yet");
   });
 
   it("asks Oppulence from the company sheet instead of showing a dead badge", () => {

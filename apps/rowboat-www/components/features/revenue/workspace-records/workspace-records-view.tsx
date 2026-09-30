@@ -268,8 +268,8 @@ export function personEnrichmentLabel(
   const verified =
     ENRICHMENT_FIELDS.filter((field) => person[field]?.trim()).length +
     (person.employmentStatus && person.employmentStatus !== "unknown" ? 1 : 0);
-  if (verified === 0) return "Not enriched";
-  return `${verified} verified ${verified === 1 ? "field" : "fields"}`;
+  if (verified === 0) return "Not filled in";
+  return `${verified} ${verified === 1 ? "detail" : "details"} filled in`;
 }
 
 /** The directory already says "No email" when the address is missing. */
@@ -438,7 +438,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                 <TableHead className="h-10 w-36 border-r px-3">Last interaction</TableHead>
                 <TableHead className="h-10 w-28 border-r px-3 text-center">Companies</TableHead>
                 <TableHead className="h-10 w-28 border-r px-3">LinkedIn</TableHead>
-                <TableHead className="h-10 px-3">Enrichment</TableHead>
+                <TableHead className="h-10 px-3">Details</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -648,10 +648,10 @@ function PersonSheet({
             ))}
           </dl>
           <h3 className="mt-8 border-b border-border pb-2 text-xs font-medium uppercase tracking-wide text-primary/45">
-            Enrichment evidence
+            Where details came from
           </h3>
           {evidence.length === 0 ? (
-            <p className="py-4 text-sm text-primary/45">No enriched fields yet.</p>
+            <p className="py-4 text-sm text-primary/45">No extra details yet.</p>
           ) : (
             <ul className="divide-y divide-border">
               {evidence.map((attribute) => (

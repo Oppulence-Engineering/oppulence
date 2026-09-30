@@ -289,13 +289,13 @@ describe("people directory labels", () => {
   });
 
   it("counts profile facts and ignores the projection counter", () => {
-    expect(personEnrichmentLabel({})).toBe("Not enriched");
-    expect(personEnrichmentLabel({ employmentStatus: "unknown" })).toBe("Not enriched");
-    expect(personEnrichmentLabel({ location: "Lisbon" })).toBe("1 verified field");
+    expect(personEnrichmentLabel({})).toBe("Not filled in");
+    expect(personEnrichmentLabel({ employmentStatus: "unknown" })).toBe("Not filled in");
+    expect(personEnrichmentLabel({ location: "Lisbon" })).toBe("1 detail filled in");
     expect(personEnrichmentLabel({ location: "Lisbon", title: "VP", department: "Sales" })).toBe(
-      "3 verified fields",
+      "3 details filled in",
     );
-    expect(personEnrichmentLabel({ employmentStatus: "departed" })).toBe("1 verified field");
+    expect(personEnrichmentLabel({ employmentStatus: "departed" })).toBe("1 detail filled in");
   });
 
   it("does not present a typed name as enrichment", () => {

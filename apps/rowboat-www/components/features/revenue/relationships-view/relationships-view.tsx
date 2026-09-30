@@ -4,9 +4,7 @@ import "client-only";
 
 import * as React from "react";
 import {
-  AUTHORITY_LABELS,
   buildImportedTranscriptObservation,
-  COMPLETENESS_LABELS,
   MISSION_CONTROL_QUESTIONS,
   RELATIONSHIP_DIMENSION_LABELS,
   completenessTone,
@@ -1353,6 +1351,36 @@ function IdentityReviewInbox({
   );
 }
 
+/** Stored completeness statuses are not labels. The company sheet names what is missing. */
+export function completenessProductLabel(status: string): string {
+  const labels: Record<string, string> = {
+    complete: "Details are current",
+    partial: "Some details are still missing",
+    stale: "Details need a refresh",
+    rebuilding: "Updating from connected sources",
+    ambiguous: "Needs a review before you act",
+    disconnected: "A source needs to be reconnected",
+  };
+  return labels[status] ?? relationshipLabel(status);
+}
+
+/** Authority codes stay in the model. The sheet says who the detail came from. */
+export function detailSourceLabel(authority: string | undefined, supported: boolean): string {
+  if (!supported) return "Not filled in yet";
+  switch (authority) {
+    case "user_correction":
+      return "Confirmed by a person";
+    case "source_fact":
+      return "From a connected source";
+    case "deterministic":
+      return "From a workspace rule";
+    case "ai_inference":
+      return "Suggested";
+    default:
+      return authority ? relationshipLabel(authority) : "Not filled in yet";
+  }
+}
+
 function MissionControlOverview({
   model,
   emailThreadCount,
@@ -1387,17 +1415,16 @@ function MissionControlOverview({
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <h3 id="mission-control-heading" className="text-sm font-medium text-primary">
-              {COMPLETENESS_LABELS[model.completeness.status] ??
-                relationshipLabel(model.completeness.status)}
+              {completenessProductLabel(model.completeness.status)}
             </h3>
             <p className="mt-1 text-xs text-primary/60">
               {emailThreadCount > 0 && supported === 0
-                ? `${emailThreadCount} Gmail ${emailThreadCount === 1 ? "thread is" : "threads are"} linked. Health and lifecycle still need stronger evidence.`
+                ? `${emailThreadCount} Gmail ${emailThreadCount === 1 ? "thread is" : "threads are"} linked. Health and status still need a clearer source.`
                 : model.completeness.explanation}
             </p>
           </div>
           <Badge variant="outline" className="rounded-none font-normal">
-            {supported}/{total} state dimensions sourced
+            {supported} of {total} details have a source
           </Badge>
         </div>
         {model.completeness.unresolvedIdentityCount > 0 ? (
@@ -1424,7 +1451,7 @@ function MissionControlOverview({
                   .join(", ") || "State changed"
               : "Nothing changed since your last review.";
           } else if (question.key === "evidence") {
-            answer = `${supported} of ${total} dimensions have an accessible winning assertion.`;
+            answer = `${supported} of ${total} details come from a source you can open.`;
           } else if (question.key === "action") {
             answer = model.activeRecommendation?.reason || "No action is currently recommended.";
           }
@@ -1441,7 +1468,7 @@ function MissionControlOverview({
 
       <details className="border border-border p-3 text-xs">
         <summary className="cursor-pointer font-medium text-primary">
-          Inspect dimension evidence
+          See where each detail came from
         </summary>
         <ul className="mt-3 space-y-2">
           {Object.values(model.evidence).map((item) => (
@@ -1452,24 +1479,15 @@ function MissionControlOverview({
                     relationshipLabel(item.dimension)}
                 </Label>
                 <Badge variant="outline" className="rounded-none font-normal">
-                  {item.supported
-                    ? (AUTHORITY_LABELS[item.authority ?? ""] ?? relationshipLabel(item.authority))
-                    : "Explicitly incomplete"}
+                  {detailSourceLabel(item.authority, item.supported)}
                 </Badge>
                 {!item.fresh ? (
                   <Badge className="font-normal text-amber-600" variant="outline">
-                    stale
+                    Needs refresh
                   </Badge>
                 ) : null}
               </div>
               <p className="mt-1 text-primary/55">{item.reason || item.missingReason}</p>
-              {item.supported && item.authorityRank ? (
-                <p className="mt-1 text-primary/40">
-                  {relationshipLabel(item.status)} · authority rank {item.authorityRank} · value
-                  schema v{item.valueSchemaVersion ?? 1} ·{" "}
-                  {item.extractorVersion || "unknown extractor"}
-                </p>
-              ) : null}
               {item.evidence.length ? (
                 <p className="mt-1 text-primary/40">
                   {item.evidence
@@ -1493,12 +1511,11 @@ function MissionControlOverview({
 
       {model.changedSinceReview ? (
         <Button type="button" size="sm" variant="outline" disabled={busy} onClick={onAcknowledge}>
-          <Check /> Mark state v{model.stateVersion} reviewed
+          <Check /> Mark as reviewed
         </Button>
       ) : (
         <p className="text-[11px] text-primary/40">
-          Reviewed through state v{model.previousReviewedStateVersion} · as of{" "}
-          {new Date(model.asOf).toLocaleString()}
+          Reviewed {new Date(model.asOf).toLocaleString()}
         </p>
       )}
     </section>
@@ -1588,7 +1605,7 @@ function ImportedTranscriptPublisher({
       <SectionTitle title="Publish an imported transcript" />
       <p className="text-xs text-primary/55">
         Paste reviewed transcript text. Prefix lines with a speaker name and colon when known.
-        Imported text is preserved as evidence and does not become a trusted claim automatically.
+        The text stays with this company. It is not treated as a confirmed detail until you review it.
       </p>
       <Input
         value={title}
@@ -1640,7 +1657,7 @@ function ImportedTranscriptPublisher({
             setDisclosureConfirmed(false);
           }}
         >
-          Publish reviewed evidence
+          Save this transcript
         </Button>
         <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
           Cancel
@@ -1888,14 +1905,14 @@ export function RelationshipSheet({
                   <dd className="capitalize text-primary/75">{companyName(data.relationship)}</dd>
                   <dt className="text-primary/40">Category</dt>
                   <dd className="text-primary/75">
-                    {data.relationship.categories?.join(", ") || "Not enriched"}
+                    {data.relationship.categories?.join(", ") || "Not filled in"}
                   </dd>
                   <dt className="text-primary/40">Description</dt>
                   <dd className="text-primary/75">
                     {data.relationship.companyDescription ||
                       data.relationship.summary ||
                       data.relationship.stateReason ||
-                      "Built from synced email activity"}
+                      "No description yet"}
                   </dd>
                   <dt className="text-primary/40">LinkedIn</dt>
                   <dd className="text-primary/75">
@@ -1909,7 +1926,7 @@ export function RelationshipSheet({
                         View company
                       </a>
                     ) : (
-                      "Not enriched"
+                      "Not filled in"
                     )}
                   </dd>
                   {companySource ? (
@@ -1922,7 +1939,7 @@ export function RelationshipSheet({
                           rel="noreferrer"
                           target="_blank"
                         >
-                          Verify enrichment
+                          Check the source
                         </a>
                       </dd>
                     </>
@@ -1985,7 +2002,7 @@ export function RelationshipSheet({
               </section>
               <section className="mt-6 border-t border-border pt-4">
                 <p className="text-xs font-medium text-primary/55">Lists</p>
-                <p className="mt-2 text-xs text-primary/40">Synced companies · Gmail</p>
+                <p className="mt-2 text-xs text-primary/40">Not on a list</p>
               </section>
             </aside>
 
@@ -2210,7 +2227,7 @@ export function RelationshipSheet({
                   >
                     <details>
                       <summary className="cursor-pointer font-medium text-primary">
-                        Privacy policy · {humanize(data.intelligence.effectivePolicy.modelRoute)}
+                        Privacy
                       </summary>
                       <div className="mt-2 grid gap-1 sm:grid-cols-2">
                         <Badge className="justify-start font-normal" variant="secondary">
@@ -2220,10 +2237,8 @@ export function RelationshipSheet({
                           Retention: {data.intelligence.effectivePolicy.retentionDays} days
                         </Badge>
                         <Badge className="justify-start font-normal" variant="secondary">
-                          Evidence:{" "}
-                          {data.intelligence.effectivePolicy.publishEvidence
-                            ? "allowed"
-                            : "blocked"}
+                          Saving details:{" "}
+                          {data.intelligence.effectivePolicy.publishEvidence ? "on" : "off"}
                         </Badge>
                         <Badge className="justify-start font-normal" variant="secondary">
                           External share:{" "}
@@ -2294,7 +2309,7 @@ export function RelationshipSheet({
                       ))}
                     </ul>
                   ) : (
-                    <EmptyText>No due commitment has been reconciled yet.</EmptyText>
+                    <EmptyText>No promises are due for a follow-up.</EmptyText>
                   )}
                   {data.intelligence?.recommendationEvaluations.length ? (
                     <details className="mt-2 text-xs text-primary/55">
@@ -2441,7 +2456,7 @@ export function RelationshipSheet({
                                 <p className="mt-1 text-primary/60">
                                   {profile.length
                                     ? profile.join(" · ")
-                                    : "Profile details not enriched yet"}
+                                    : "No profile details yet"}
                                 </p>
                                 <p className="mt-1 text-[10px] uppercase tracking-wide text-primary/40">
                                   {profile.length}/4 profile fields
@@ -2449,8 +2464,8 @@ export function RelationshipSheet({
                                 {cited.length ? (
                                   <details className="mt-2">
                                     <summary className="cursor-pointer text-primary/60">
-                                      Cited enrichment · {cited.length}{" "}
-                                      {cited.length === 1 ? "fact" : "facts"}
+                                      Public research · {cited.length}{" "}
+                                      {cited.length === 1 ? "detail" : "details"}
                                     </summary>
                                     <ul className="mt-1 space-y-1 border-l border-border pl-2">
                                       {cited.map((attribute) => (
@@ -2657,7 +2672,7 @@ export function RelationshipSheet({
                     </ul>
                   ) : (
                     <EmptyText>
-                      Accept a commitment to build an evidence-backed shared plan.
+                      Accept a promise to build a shared plan.
                     </EmptyText>
                   )}
                 </section>
@@ -2693,7 +2708,7 @@ export function RelationshipSheet({
                             {humanize(item.dimension)}:
                           </Label>{" "}
                           {item.status === "open"
-                            ? `Choose the current value from ${item.sides.length} evidence-backed options.`
+                            ? `Choose the current value from ${item.sides.length} sources.`
                             : item.reason}
                           <Badge className="ml-1 font-normal text-primary/40" variant="secondary">
                             ({item.sides.map((side) => side.source).join(" vs ")})
@@ -2744,7 +2759,7 @@ export function RelationshipSheet({
                     </p>
                   ) : null}
                   {changes.length === 0 ? (
-                    <EmptyText>No projected state changes yet.</EmptyText>
+                    <EmptyText>Nothing has changed yet.</EmptyText>
                   ) : (
                     <ul className="flex flex-col gap-2">
                       {changes.map((snapshot) => (
@@ -2782,7 +2797,7 @@ export function RelationshipSheet({
                             {humanize(receipt.deletionOutcome)}
                           </p>
                           <p className="mt-1 text-[11px] text-primary/40">
-                            legal hold {receipt.legalHold ? "active" : "off"} · evidence clip{" "}
+                            Legal hold {receipt.legalHold ? "on" : "off"} · saved excerpt{" "}
                             {humanize(receipt.evidenceClip)}
                           </p>
                         </li>
@@ -2796,7 +2811,7 @@ export function RelationshipSheet({
                     title={`Email & meeting timeline (${communicationTimeline.length})`}
                   />
                   {communicationTimeline.length === 0 ? (
-                    <EmptyText>No synced communication metadata yet.</EmptyText>
+                    <EmptyText>No mail or meetings yet.</EmptyText>
                   ) : (
                     <ul className="flex flex-col divide-y divide-primary/10 rounded-none border border-border">
                       {communicationTimeline.map((item) => (
@@ -2813,7 +2828,7 @@ export function RelationshipSheet({
                             </Badge>
                           </div>
                           <p className="mt-1 text-xs text-primary/55">
-                            {item.subject || "Metadata only"}
+                            {item.subject || "No message preview"}
                           </p>
                           <p className="mt-1 text-[11px] text-primary/40">
                             {relativeTime(item.occurredAt)} · {humanize(item.access.reason)}
@@ -2825,9 +2840,9 @@ export function RelationshipSheet({
                 </section>
 
                 <section>
-                  <SectionTitle title={`Evidence timeline (${timeline.length})`} />
+                  <SectionTitle title={`Activity history (${timeline.length})`} />
                   {timeline.length === 0 ? (
-                    <EmptyText>No observations yet.</EmptyText>
+                    <EmptyText>Nothing recorded yet.</EmptyText>
                   ) : (
                     <ul className="flex flex-col divide-y divide-primary/10 rounded-none border border-border">
                       {timeline.map((observation) => (
@@ -2850,7 +2865,7 @@ export function RelationshipSheet({
                               </Badge>
                             </div>
                             <p className="mt-1 text-xs text-primary/55">
-                              {observation.summary || "Open the source evidence"}
+                              {observation.summary || "Open the source"}
                             </p>
                           </Button>
                           {observation.id in evidence ? (
@@ -3010,7 +3025,7 @@ function StateCorrection({
       className="rounded-none border border-dashed border-border p-3"
       data-capability="state-correction"
     >
-      <SectionTitle title="Correct the model" />
+      <SectionTitle title="Correct a detail" />
       <div className="grid gap-2 sm:grid-cols-[130px_150px_1fr_auto]">
         <Select
           value={dimension}
@@ -3046,7 +3061,7 @@ function StateCorrection({
         <Input
           value={reason}
           onChange={(event) => setReason(event.target.value)}
-          placeholder="Why is the model wrong?"
+          placeholder="Why is this wrong?"
         />
         <Button
           variant="outline"
