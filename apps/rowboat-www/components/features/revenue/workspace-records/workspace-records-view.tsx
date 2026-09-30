@@ -420,7 +420,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
             onClick={() => setCreating(true)}
             size="sm"
           >
-            <Plus /> Add person
+            <Plus /> New person
           </Button>
         </EmptyBlock>
       ) : (

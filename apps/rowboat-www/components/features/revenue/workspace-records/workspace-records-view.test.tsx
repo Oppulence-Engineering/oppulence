@@ -488,6 +488,8 @@ describe("people directory copy", () => {
 
   it("talks about companies on the empty directory and the account count", () => {
     expect(source).toContain("keep a contact for each company.");
+    expect(source).toContain("<Plus /> New person");
+    expect(source).not.toContain("Add person");
     expect(source).toContain("Mail and meetings can fill in the rest later.");
     expect(source).not.toContain("synced activity and enrichment");
     expect(source).toContain("Fill in their role and company");
