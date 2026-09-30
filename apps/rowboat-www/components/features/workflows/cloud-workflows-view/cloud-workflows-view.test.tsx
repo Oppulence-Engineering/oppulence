@@ -14,6 +14,7 @@ import {
   readableEnum,
   runEventBody,
   runEventLabel,
+  runReference,
   scheduleHealthLabel,
   workflowListSummary,
   type CloudTask,
@@ -84,6 +85,14 @@ describe("CloudWorkflowsView", () => {
     expect(runEventBody({ event: "Agent step 1." })).toBe("Agent step 1.");
     expect(source).toContain("runEventBody(event)");
     expect(source).not.toContain("JSON.stringify(event.event");
+    expect(runReference("sched-temporal-c9522e0b-4fc9-47a3-9fbf-434c9faf2262")).toBe(
+      "c9522e0b-4fc9-47a3-9fbf-434c9faf2262",
+    );
+    expect(runReference("api-trigger-9f")).toBe("9f");
+    expect(runReference("retry-1")).toBe("1");
+    expect(runReference("manual-run")).toBe("manual-run");
+    expect(source).toContain("runReference(run.runId)");
+    expect(source).toContain("title={run.runId}");
   });
 
   it("names weekday crons that the first-party templates use", () => {

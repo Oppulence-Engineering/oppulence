@@ -79,6 +79,7 @@ import {
   readableEnum,
   runEventBody,
   runEventLabel,
+  runReference,
   scheduleHealthLabel,
   workflowListSummary,
   triggerCloudRun,
@@ -588,7 +589,7 @@ function RunInspector({
               className="mt-1 truncate font-mono text-[10px] text-muted-foreground"
               title={run.runId}
             >
-              {run.runId}
+              {runReference(run.runId)}
             </p>
           </div>
           <div className="flex gap-2">

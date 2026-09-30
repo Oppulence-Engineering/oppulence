@@ -156,6 +156,30 @@ export function taskVisualWorkflow(task: CloudTask): VisualWorkflowDefinition | 
   return parsed.success ? parsed.data : null;
 }
 
+const RUN_ID_PREFIXES = [
+  "sched-temporal-",
+  "sched-window-",
+  "sched-cron-",
+  "api-trigger-",
+  "retry-",
+  "event-",
+] as const;
+
+/**
+ * A run id starts with the scheduler that created it. The inspector already
+ * names the trigger, so the reference people see is the id without that prefix.
+ * The full id stays on the title for support.
+ */
+export function runReference(runId: string): string {
+  const trimmed = runId.trim();
+  for (const prefix of RUN_ID_PREFIXES) {
+    if (trimmed.startsWith(prefix) && trimmed.length > prefix.length) {
+      return trimmed.slice(prefix.length);
+    }
+  }
+  return trimmed;
+}
+
 /**
  * Run status and trigger values are API tokens such as "succeeded" and "cron".
  * The product shows them as words. The stored value stays the token.
