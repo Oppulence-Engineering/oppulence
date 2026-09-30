@@ -15,7 +15,7 @@ describe("SettingsView", () => {
     expect(source).toContain("shared companies, people, and evidence");
     expect(source).toContain("from entering this workspace.");
     expect(source).toContain("where the product should go next.");
-    expect(source).toContain("Review the product guides and API reference.");
+    expect(source).toContain("Review the Oppulence API reference.");
     expect(source).not.toContain("Standard relationship access");
     expect(source).not.toContain("relationship model");
     expect(source).not.toContain("relationship intelligence");

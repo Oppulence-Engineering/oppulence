@@ -472,7 +472,10 @@ function DefaultsCard() {
       ) : (
         <div className="space-y-6 px-4 py-6">
           <div>
-            <FieldLabel hint="The agent preselected for new conversations." htmlFor="settings-default-agent">
+            <FieldLabel
+              hint="The agent preselected for new conversations."
+              htmlFor="settings-default-agent"
+            >
               Default agent
             </FieldLabel>
             <Select
@@ -837,8 +840,8 @@ function HelpSection() {
       href: "mailto:hello@oppulence.io?subject=Oppulence%20feedback",
     },
     {
-      title: "Read the documentation",
-      description: "Review the product guides and API reference.",
+      title: "API reference",
+      description: "Review the Oppulence API reference.",
       icon: BookOpen,
       href: "/api/reference",
     },
