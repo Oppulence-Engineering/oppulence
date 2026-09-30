@@ -42,6 +42,7 @@ import {
 } from "@oppulence/ui/components/select";
 import { Textarea } from "@oppulence/ui/components/textarea";
 import { cn } from "@oppulence/ui/lib/utils";
+import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import type {
   VisualWorkflowDefinition,
   WorkflowActionKind,
@@ -235,6 +236,16 @@ const actionFor = (kind: WorkflowActionKind) =>
   actions.find((action) => action.value === kind) ?? actions[0];
 const triggerFor = (kind: WorkflowTriggerKind) =>
   triggers.find((trigger) => trigger.value === kind) ?? triggers[0];
+
+/** The closed menu shows the choice. Its name has to say which menu and which choice. */
+function workflowChoiceName(category: string, choice: string): string {
+  return comboboxFilterName(category, choice);
+}
+
+function scheduleChoiceLabel(cronExpr: string | undefined): string {
+  const value = cronExpr || "0 9 * * 1-5";
+  return scheduleOptions.find((option) => option.value === value)?.label ?? "Weekdays at 9:00 AM";
+}
 
 function NodeLabel({
   eyebrow,
@@ -535,7 +546,11 @@ export function VisualWorkflowBuilder({
                   }}
                   value={selectedAction}
                 >
-                  <SelectTrigger className="rounded-none text-[12px]" id={`${fieldID}-action`}>
+                  <SelectTrigger
+                    aria-label={workflowChoiceName("Action", actionFor(selectedAction).label)}
+                    className="rounded-none text-[12px]"
+                    id={`${fieldID}-action`}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-none">
@@ -565,6 +580,11 @@ export function VisualWorkflowBuilder({
                         value={current}
                       >
                         <SelectTrigger
+                          aria-label={workflowChoiceName(
+                            field.label,
+                            field.options.find((option) => option.value === current)?.label ??
+                              current,
+                          )}
                           className="rounded-none text-[12px]"
                           id={`${fieldID}-${field.key}`}
                         >
@@ -665,7 +685,11 @@ export function VisualWorkflowBuilder({
                   }
                   value={value.trigger.kind}
                 >
-                  <SelectTrigger className="rounded-none text-[12px]" id={`${fieldID}-trigger`}>
+                  <SelectTrigger
+                    aria-label={workflowChoiceName("Start when", triggerFor(value.trigger.kind).label)}
+                    className="rounded-none text-[12px]"
+                    id={`${fieldID}-trigger`}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-none">
@@ -697,7 +721,16 @@ export function VisualWorkflowBuilder({
                     }
                     value={value.trigger.cronExpr || "0 9 * * 1-5"}
                   >
-                    <SelectTrigger className="rounded-none text-[12px]" id={`${fieldID}-schedule`}>
+                    <SelectTrigger
+                      aria-label={workflowChoiceName(
+                        "How often",
+                        scheduleChoiceLabel(
+                          value.trigger.kind === "schedule" ? value.trigger.cronExpr : undefined,
+                        ),
+                      )}
+                      className="rounded-none text-[12px]"
+                      id={`${fieldID}-schedule`}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="rounded-none">

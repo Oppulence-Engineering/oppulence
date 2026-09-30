@@ -95,6 +95,8 @@ describe("VisualWorkflowBuilder", () => {
       />,
     );
 
+    expect(screen.getByRole("combobox", { name: "Start when, Scheduled time" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "How often, Every 15 minutes" })).toBeInTheDocument();
     expect(screen.getByText("How often")).toBeInTheDocument();
     expect(screen.getAllByText("Run on a repeating schedule.")).toHaveLength(2);
     expect(screen.queryByText(/cadence/i)).not.toBeInTheDocument();
@@ -110,6 +112,10 @@ describe("VisualWorkflowBuilder", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Select action:0" }));
+    expect(screen.getByRole("combobox", { name: "Action, Review company" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: "Which companies, Matching company and people" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Which companies")).toBeInTheDocument();
     expect(screen.queryByText("Company scope")).not.toBeInTheDocument();
 
