@@ -168,6 +168,10 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain("Create workflow");
     expect(source).not.toContain("Create draft");
     expect(source).not.toContain("configure the trigger and actions on the canvas");
+    expect(source).toContain("All statuses");
+    expect(source).toContain("Cloud or desktop");
+    expect(source).not.toContain(">All status<");
+    expect(source).not.toContain("All runtimes");
   });
 
   it("keeps the named product export at the generator path", () => {

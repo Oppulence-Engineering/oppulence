@@ -734,7 +734,7 @@ function WorkflowRuns({
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-none">
-              <SelectItem value="all">All status</SelectItem>
+              <SelectItem value="all">All statuses</SelectItem>
               {(["queued", "running", "succeeded", "failed", "stopped"] as const).map((value) => (
                 <SelectItem className="rounded-none" key={value} value={value}>
                   {readableEnum(value)}
@@ -766,7 +766,7 @@ function WorkflowRuns({
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-none">
-              <SelectItem value="all">All runtimes</SelectItem>
+              <SelectItem value="all">Cloud or desktop</SelectItem>
               <SelectItem value="api">Cloud</SelectItem>
               <SelectItem value="desktop">Desktop</SelectItem>
             </SelectContent>
