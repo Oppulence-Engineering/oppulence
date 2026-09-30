@@ -81,9 +81,9 @@ const TOOL_CATALOG = [
   },
   {
     name: "relationship.read",
-    label: "Read relationship memory",
+    label: "Read workspace memory",
     description:
-      "Read accounts, people, conversations, notes, tasks, commitments, risks, and source health.",
+      "Read companies, people, conversations, notes, tasks, commitments, risks, and source health.",
   },
   {
     name: "source.retry_sync",
@@ -92,37 +92,37 @@ const TOOL_CATALOG = [
   },
   {
     name: "task.create",
-    label: "Create internal task",
+    label: "Create task",
     description: "Create an Oppulence task; never send a message or calendar invite.",
   },
   {
     name: "task.update",
-    label: "Edit internal task",
+    label: "Edit task",
     description: "Edit an Oppulence task title, due time, or priority; never send anything.",
   },
   {
     name: "task.complete",
-    label: "Complete internal task",
+    label: "Complete task",
     description: "Complete an Oppulence task; cannot dismiss other actions or send anything.",
   },
   {
     name: "task.snooze",
-    label: "Snooze internal task",
+    label: "Snooze task",
     description: "Snooze an Oppulence task until a future time; never send anything.",
   },
   {
     name: "note.create",
-    label: "Create internal note",
+    label: "Create note",
     description: "Create an Oppulence note; never send a message or external event.",
   },
   {
     name: "note.update",
-    label: "Edit internal note",
+    label: "Edit note",
     description: "Edit an Oppulence note while keeping its append-only history.",
   },
   {
     name: "note.delete",
-    label: "Delete internal note",
+    label: "Delete note",
     description: "Delete an Oppulence note while keeping a tombstone in its history.",
   },
   {
@@ -207,6 +207,24 @@ const TOOL_CATALOG = [
     description: "Exercise approval flows without moving real funds.",
   },
 ] as const;
+
+/**
+ * Echo, the payment demo, Conduit, and Eigen are developer surfaces. They stay
+ * in the catalog so a saved grant can still be shown, and stay out of the
+ * picker until this agent already has them.
+ */
+const DEVELOPER_TOOLS = new Set<string>([
+  "echo",
+  "demo.payment",
+  "conduit.read",
+  "eigen.simulate",
+]);
+
+function visibleTools(selected: readonly string[]) {
+  return TOOL_CATALOG.filter(
+    (tool) => selected.includes(tool.name) || !DEVELOPER_TOOLS.has(tool.name),
+  );
+}
 
 function parseDocument(content: string): AgentDocument | null {
   try {
@@ -515,7 +533,7 @@ export function AgentConfigurationForm({
         </div>
 
         <div className="grid gap-2 sm:grid-cols-2">
-          {TOOL_CATALOG.map((tool) => {
+          {visibleTools(selectedTools).map((tool) => {
             const checked = selectedTools.includes(tool.name);
             return (
               <label
