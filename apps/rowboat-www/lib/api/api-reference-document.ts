@@ -98,6 +98,69 @@ const API_REFERENCE_SUMMARIES: Record<string, string> = {
   "Get evidence timeline": "Get the activity history",
   "Request policy preflight": "Check before sending",
   "Link the OutboundConsole workspace": "Link the sending workspace",
+  "List account background task runs": "List background runs",
+  "List background task templates": "List workflow templates",
+  "List task run logs": "List run events",
+  "Append task run logs": "Add run events",
+  "Stream task run progress": "Follow a run",
+  "Poll task run status": "Check a run",
+  "Get background task template": "Get a workflow template",
+  "Instantiate background task template": "Create a workflow from a template",
+  "List background tasks": "List background work",
+  "Ensure first-party workflows": "Install maintained workflows",
+  "Get task artifact": "Get the workflow note",
+  "Put task artifact": "Save the workflow note",
+  "List task runs": "List runs for a workflow",
+  "Get task run": "Get a run",
+  "Cancel API-worker run": "Cancel a cloud run",
+  "Retry API-worker run": "Retry a cloud run",
+  "Signal API-worker run": "Pause or resume a cloud run",
+  "Queue or start task trigger": "Start a workflow run",
+};
+
+/**
+ * The stored description is the route's implementation note. These are the
+ * sentences a person reads under the title.
+ */
+const API_REFERENCE_DESCRIPTIONS: Record<string, string> = {
+  "List account background task runs":
+    "Lists background runs for this account, including queued, running, and failed cloud runs.",
+  "List background task templates":
+    "Lists built-in workflow templates. Each one includes instructions and a start time you can use as-is.",
+  "List task run logs":
+    "Returns the events for a run, in order. Pass the last event you have seen to fetch only newer ones.",
+  "Append task run logs": "Adds events to a run. Sending the same event again does not create a duplicate.",
+  "Stream task run progress": "Streams events for a run until it finishes or you disconnect.",
+  "Poll task run status": "Returns a short status for one run.",
+  "Get background task template":
+    "Gets one built-in workflow template, including its instructions and when it starts.",
+  "Instantiate background task template":
+    "Creates a workflow from a built-in template. It belongs to the signed-in person and runs the same way as a workflow they created.",
+  "List background tasks": "Lists background work for the signed-in person.",
+  "Create background task mirror":
+    "Saves a background task. If no name is given, Oppulence API makes one from the title. Names are unique for each person.",
+  "Ensure first-party workflows":
+    "Installs or updates the maintained workflows for the signed-in person. Paused workflows stay paused.",
+  "Delete background task mirror":
+    "Deletes the background task and its note, runs, and run events after checking the current revision.",
+  "Get background task mirror": "Gets one background task for the signed-in person.",
+  "Patch background task mirror":
+    "Updates part of a background task. Send the revision from the last read. A stale write returns the current revision so you can retry.",
+  "Get task artifact":
+    "Returns the note for this workflow. If there is no note yet, the response is empty so you can create one.",
+  "Put task artifact": "Saves the note for this workflow. Updates need the current revision.",
+  "List task runs": "Lists runs for one workflow.",
+  "Create task run mirror":
+    "Records a run that started on the desktop. Start a workflow run when someone queues a new one from Oppulence.",
+  "Get task run": "Gets one workflow run, including its progress.",
+  "Patch task run mirror":
+    "Updates a run. The desktop should mark queued runs as running, succeeded, or failed as it finishes them.",
+  "Cancel API-worker run":
+    "Cancels a cloud run and records that it stopped. A run that stays on the desktop is left unchanged.",
+  "Retry API-worker run": "Starts a new cloud run from the previous one.",
+  "Signal API-worker run": "Pauses, resumes, or updates a cloud run between steps.",
+  "Queue or start task trigger":
+    "Queues a desktop run, or starts a cloud run. Check the run until it finishes.",
 };
 
 type ApiReferenceOperation = { tags?: string[]; summary?: string; description?: string };
@@ -131,6 +194,16 @@ function presentReferenceProse(value: string): string {
     .replaceAll("Temporal close timestamp", "When the run finished")
     .replaceAll("Temporal start timestamp", "When the run started")
     .replaceAll("rather than Temporal directly", "rather than the scheduler directly")
+    .replaceAll("Task mirror payload.", "Background task.")
+    .replaceAll("Created task mirror.", "Saved background task.")
+    .replaceAll("Updated task mirror.", "Updated background task.")
+    .replaceAll("Task mirror and child rows deleted.", "Background task deleted.")
+    .replaceAll("Task mirror.", "Background task.")
+    .replaceAll("Run mirror payload.", "Run.")
+    .replaceAll("Created run mirror.", "Recorded run.")
+    .replaceAll("Updated run mirror.", "Updated run.")
+    .replaceAll("Queued or started run mirror.", "Queued or started run.")
+    .replaceAll("Run mirror.", "Run.")
     .replaceAll("Solomon AI API", "Oppulence API")
     .replaceAll("Solomon AI", "Oppulence")
     .replaceAll("authenticated Rowboat user", "signed-in person")
@@ -209,12 +282,15 @@ export function presentApiReferenceDocument<T>(spec: T): T {
     for (const [method, operation] of Object.entries(path)) {
       if (!HTTP_METHODS.has(method) || !operation) continue;
       if (operation.tags) operation.tags = operation.tags.map(presentedTagName);
+      const storedSummary = operation.summary;
       if (operation.summary) {
         operation.summary =
           API_REFERENCE_SUMMARIES[operation.summary] ?? presentReferenceProse(operation.summary);
       }
       if (operation.description) {
-        operation.description = presentReferenceProse(operation.description);
+        operation.description =
+          (storedSummary && API_REFERENCE_DESCRIPTIONS[storedSummary]) ||
+          presentReferenceProse(operation.description);
       }
     }
   }

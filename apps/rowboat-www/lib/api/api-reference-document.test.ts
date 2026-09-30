@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import spec from "../../../rowboat-api/api/openapi.json";
 import {
   presentApiReferenceDocument,
   renderApiReferencePage,
@@ -234,6 +235,24 @@ describe("API reference document", () => {
     expect(properties.created_at.description).toBe("When this was created.");
     expect(properties.updated_at.description).toBe("When this was last updated.");
     expect(properties.run_id.description).toBe("Run id.");
+  });
+
+  it("names background work without the scheduler's words", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const lines: string[] = [];
+    for (const [path, item] of Object.entries(presented.paths ?? {})) {
+      if (!path.includes("background-task")) continue;
+      for (const [method, operation] of Object.entries(item)) {
+        if (!operation || typeof operation !== "object" || !("summary" in operation)) continue;
+        if (method === "parameters") continue;
+        lines.push(`${operation.summary ?? ""}\n${operation.description ?? ""}`);
+      }
+    }
+    const text = lines.join("\n");
+    expect(text).toContain("Install maintained workflows");
+    expect(text).toContain("Installs or updates the maintained workflows for the signed-in person.");
+    expect(text).toContain("Cancel a cloud run");
+    expect(text).not.toMatch(/Temporal|task\.yaml|API-worker|API-target|\bmirror\b|Instantiate|ndjson/);
   });
 
   it("says the reference could not be loaded when the spec is missing", () => {
