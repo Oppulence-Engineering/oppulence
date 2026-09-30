@@ -347,7 +347,8 @@ export function sessionWorkspaceCopy(organizationId: string | undefined): {
         "The signed-in organization controls access to shared companies, people, and their details.",
       cloud: "Oppulence Cloud serves companies, people, and promises for this organization.",
       cloudDetail: "Companies, people, and promises for the signed-in organization.",
-      connect: "Use organization-approved connections across this workspace.",
+      connect:
+        "Shared connections for the organization are not a separate list yet. Account connections are in Connections.",
     };
   }
   return {
@@ -356,7 +357,8 @@ export function sessionWorkspaceCopy(organizationId: string | undefined): {
       "This session has no organization. Companies, people, and their details stay with the signed-in account.",
     cloud: "Oppulence Cloud serves companies, people, and promises for this signed-in account.",
     cloudDetail: "Companies, people, and promises for this signed-in account.",
-    connect: "Connections you add here stay with this signed-in account.",
+    connect:
+      "This session has no organization, so there is no shared connection list. Account connections are in Connections.",
   };
 }
 
@@ -909,6 +911,31 @@ function NotificationsSection({
   );
 }
 
+function ConnectSection({
+  onNavigate,
+  organizationId,
+}: {
+  onNavigate: (section: SettingsSection) => void;
+  organizationId?: string;
+}) {
+  return (
+    <>
+      <PageIntro
+        description={sessionWorkspaceCopy(organizationId).connect}
+        title="Oppulence Connect"
+      />
+      <div className="settings-inline-notice">
+        {organizationId
+          ? `Connected to ${organizationId}.`
+          : "No organization is attached to this session."}
+      </div>
+      <Button onClick={() => onNavigate("connections")} type="button" variant="outline">
+        Open connections
+      </Button>
+    </>
+  );
+}
+
 function CustomizationSection({
   onNavigate,
 }: {
@@ -1184,18 +1211,10 @@ export function SettingsView({
         {section === "appearance" ? <AppearanceSection /> : null}
         {section === "account" ? <AccountSection session={session} /> : null}
         {section === "connect" ? (
-          <>
-            <PageIntro
-              description={sessionWorkspaceCopy(session.user.organizationId).connect}
-              title="Oppulence Connect"
-            />
-            <div className="settings-inline-notice">
-              {session.user.organizationId
-                ? `Connected to ${session.user.organizationId}.`
-                : "No organization is attached to this session."}
-            </div>
-            <ConnectorSettings />
-          </>
+          <ConnectSection
+            onNavigate={onNavigate}
+            organizationId={session.user.organizationId}
+          />
         ) : null}
         {section === "help" ? <HelpSection /> : null}
       </div>

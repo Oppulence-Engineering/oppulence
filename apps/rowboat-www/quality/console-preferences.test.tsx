@@ -155,6 +155,23 @@ describe("synced console preferences", () => {
     expect(onNavigate).toHaveBeenCalledWith("appearance");
   });
 
+  it("does not repeat the personal connection list as shared connections", async () => {
+    const onNavigate = vi.fn();
+    const user = userEvent.setup();
+    renderWithQuery(
+      <SettingsView
+        onNavigate={onNavigate}
+        section="connect"
+        session={{ user: { permissions: [] } }}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "Oppulence Connect" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Connect Google" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Open connections" }));
+    expect(onNavigate).toHaveBeenCalledWith("connections");
+  });
+
   it("patches analytics consent and updates the capture gate", async () => {
     const user = userEvent.setup();
     renderPreferences();

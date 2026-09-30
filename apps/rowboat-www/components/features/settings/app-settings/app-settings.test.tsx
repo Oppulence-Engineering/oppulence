@@ -80,7 +80,11 @@ describe("SettingsView", () => {
     expect(source).toContain("Where this Oppulence tab is open.");
     expect(source).not.toContain("Signed-in address");
     expect(source).toContain("This session has no organization. Access stays with the signed-in account.");
-    expect(source).toContain("Connections you add here stay with this signed-in account.");
+    expect(source).toContain(
+      "This session has no organization, so there is no shared connection list. Account connections are in Connections.",
+    );
+    expect(source).toContain("<ConnectSection");
+    expect(source.match(/<ConnectorSettings \/>/g)).toHaveLength(1);
     expect(source).toContain("useSyncExternalStore");
     expect(source).not.toContain("Organization server");
     expect(source).not.toContain(">Default</SettingsStatus>");
@@ -113,7 +117,9 @@ describe("SettingsView", () => {
     expect(attached.cloudDetail).toBe(
       "Companies, people, and promises for the signed-in organization.",
     );
-    expect(attached.connect).toBe("Use organization-approved connections across this workspace.");
+    expect(attached.connect).toBe(
+      "Shared connections for the organization are not a separate list yet. Account connections are in Connections.",
+    );
 
     const personal = sessionWorkspaceCopy(undefined);
     expect(personal.security).toBe(
@@ -124,7 +130,9 @@ describe("SettingsView", () => {
     expect(personal.cloudDetail).toBe(
       "Companies, people, and promises for this signed-in account.",
     );
-    expect(personal.connect).toBe("Connections you add here stay with this signed-in account.");
+    expect(personal.connect).toBe(
+      "This session has no organization, so there is no shared connection list. Account connections are in Connections.",
+    );
     expect(sessionWorkspaceCopy("  ").security).toBe(personal.security);
   });
 });

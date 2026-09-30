@@ -174,7 +174,7 @@ export const SETTINGS_SECTIONS: {
     label: "Oppulence Connect",
     icon: Plus,
     group: "cloud",
-    description: "Manage organization-approved, shared cloud connections.",
+    description: "Shared organization connections are not a separate list yet.",
     beta: true,
   },
   {

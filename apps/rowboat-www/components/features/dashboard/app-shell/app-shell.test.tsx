@@ -22,6 +22,8 @@ describe("AppShellSidebar", () => {
     expect(source).not.toContain("Configure browser and workspace notification preferences.");
     expect(source).toContain("Theme and language are in Appearance.");
     expect(source).not.toContain("Tune product branding, navigation, and workspace layout.");
+    expect(source).toContain("Shared organization connections are not a separate list yet.");
+    expect(source).not.toContain("Manage organization-approved, shared cloud connections.");
   });
 
   it("describes appearance as the controls that page actually has", () => {
