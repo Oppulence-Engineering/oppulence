@@ -20,6 +20,7 @@ import {
   workflowSettingsLastRun,
   workflowRunsForEditor,
   maintainedWorkflowNotice,
+  workflowSettingsIntro,
   workflowStepLabel,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
@@ -278,7 +279,9 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain("When a promise needs a follow-up");
     expect(source).not.toContain("When a commitment needs recovery");
     expect(source).toContain("When mail or a message arrives");
-    expect(source).toContain("Oppulence Cloud keeps the schedule.");
+    expect(source).toContain("Oppulence keeps the name and the schedule.");
+    expect(source).toContain("Oppulence Cloud keeps it running.");
+    expect(source).not.toContain("Oppulence Cloud keeps the schedule.");
     expect(source).not.toContain("cloud runtime");
     expect(source).not.toContain("View settings");
     expect(source).toContain(
@@ -495,6 +498,14 @@ describe("CloudWorkflowsView", () => {
     expect(maintainedWorkflowNotice()).toBe(
       "Oppulence maintains the steps for this workflow. You can pause it and run it on demand.",
     );
+    expect(workflowSettingsIntro(false)).toBe(
+      "Oppulence keeps the name and the schedule. This page shows when the workflow runs.",
+    );
+    expect(workflowSettingsIntro(true)).toBe(
+      "Change the name. The schedule is set on the workflow, and Oppulence Cloud keeps it running.",
+    );
+    expect(source).toContain("{workflowSettingsIntro(editable)}");
+    expect(source).not.toContain("Name, schedule, and where the workflow runs.");
     expect(source).toContain("maintainedWorkflowNotice()");
     expect(source).not.toContain("You can pause it, inspect it, and run it");
   });

@@ -388,6 +388,17 @@ export function maintainedWorkflowNotice(): string {
   return "Oppulence maintains the steps for this workflow. You can pause it and run it on demand.";
 }
 
+/**
+ * Settings can rename a workspace workflow. A maintained workflow locks the
+ * name, and the schedule is never edited on this page.
+ */
+export function workflowSettingsIntro(editable: boolean): string {
+  if (editable) {
+    return "Change the name. The schedule is set on the workflow, and Oppulence Cloud keeps it running.";
+  }
+  return "Oppulence keeps the name and the schedule. This page shows when the workflow runs.";
+}
+
 export function workflowStepLabel(task: CloudTask): string {
   const visual = taskVisualWorkflow(task);
   if (!visual) return "Maintained";
@@ -1268,7 +1279,7 @@ function WorkflowEditor({
               <div>
                 <h2 className="text-[15px] font-medium">Workflow settings</h2>
                 <p className="mt-1 text-[12px] text-muted-foreground">
-                  Name, schedule, and where the workflow runs. Oppulence Cloud keeps the schedule.
+                  {workflowSettingsIntro(editable)}
                 </p>
               </div>
               <div className="space-y-1.5">

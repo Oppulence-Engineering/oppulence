@@ -972,12 +972,9 @@ export function NotesView({
               ))}
             </div>
           ) : (
+            // The section header already opens a new template. A second button
+            // in the empty state only repeated that click.
             <WorkspaceEmptyState
-              action={
-                <Button size="sm" onClick={() => setEditingTemplate("new")}>
-                  <Plus /> New template
-                </Button>
-              }
               description="Create a reusable starting point for notes."
               image="notes"
               learnMore={[]}

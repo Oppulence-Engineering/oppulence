@@ -223,6 +223,33 @@ describe("durable note templates and favorites", () => {
     expect(screen.getByRole("button", { name: "New template" })).toBeVisible();
   });
 
+  it("keeps a single new-template button when none exist yet", async () => {
+    mocks.fetchConsoleResources.mockImplementation(async (kind: string) => {
+      if (kind === "note_template") return [];
+      return [
+        {
+          id: "favorite-1",
+          kind: "note_favorite",
+          name: "Account review",
+          payload: { externalId: "note-1" },
+          ...timestamps,
+        },
+      ];
+    });
+    mocks.fetchWorkspaceNotes.mockResolvedValue({
+      notes: [],
+      relationships: [],
+      failedTimelineCount: 0,
+    });
+    const user = userEvent.setup();
+    renderNotes();
+
+    await user.click(await screen.findByRole("tab", { name: /Templates/ }));
+
+    expect(await screen.findByText("No templates yet")).toBeVisible();
+    expect(screen.getAllByRole("button", { name: "New template" })).toHaveLength(1);
+  });
+
   it("applies a durable template to a new note", async () => {
     const user = userEvent.setup();
     renderNotes();
