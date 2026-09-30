@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   accountGraphPrompt,
   graphCanvasEmptyState,
+  graphLayoutLabel,
   graphQueryAnswer,
   graphQueryFilterLabel,
 } from "@/components/features/revenue/relationship-graph/relationship-graph";
@@ -29,6 +30,12 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain("<Graph /> Diagram");
     expect(source).toContain("How many to show");
     expect(source).toContain("Hide unconnected");
+    expect(graphLayoutLabel("force")).toBe("Grouped");
+    expect(graphLayoutLabel("radial")).toBe("Circle");
+    expect(graphLayoutLabel("timeline")).toBe("By time");
+    expect(source).toContain('graphLayoutLabel("force")');
+    expect(source).not.toContain("Cluster layout");
+    expect(source).not.toContain("Radial layout");
     expect(source).not.toContain("<Graph /> Canvas");
     expect(source).not.toContain("Hide isolated");
     expect(source).not.toContain('aria-label="Graph density"');

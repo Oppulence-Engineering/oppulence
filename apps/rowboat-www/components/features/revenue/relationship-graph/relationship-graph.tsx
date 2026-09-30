@@ -303,6 +303,17 @@ function timestampForNode(node: RelationshipGraphNode): number {
   return Number.isFinite(value) ? value : 0;
 }
 
+/**
+ * Saved views and the URL still store `force`, `radial`, and `timeline`.
+ * `force` draws one column per kind, so the menu says Grouped rather than
+ * the physics name the value still uses.
+ */
+export function graphLayoutLabel(layout: RelationshipGraphSavedViewState["layout"]): string {
+  if (layout === "radial") return "Circle";
+  if (layout === "timeline") return "By time";
+  return "Grouped";
+}
+
 function layoutNodes(
   nodes: RelationshipGraphNode[],
   layout: RelationshipGraphSavedViewState["layout"],
@@ -1376,9 +1387,9 @@ export function RelationshipGraphWorkspace({
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="app-shell rounded-[2px]">
-            <SelectItem value="force">Cluster layout</SelectItem>
-            <SelectItem value="radial">Radial layout</SelectItem>
-            <SelectItem value="timeline">Timeline layout</SelectItem>
+            <SelectItem value="force">{graphLayoutLabel("force")}</SelectItem>
+            <SelectItem value="radial">{graphLayoutLabel("radial")}</SelectItem>
+            <SelectItem value="timeline">{graphLayoutLabel("timeline")}</SelectItem>
           </SelectContent>
         </Select>
         <label className="flex items-center gap-2 text-xs text-primary/50">
