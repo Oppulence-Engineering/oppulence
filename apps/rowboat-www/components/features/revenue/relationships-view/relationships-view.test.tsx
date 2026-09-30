@@ -10,6 +10,7 @@ import {
   completenessProductLabel,
   detailSourceLabel,
   enrichmentAvailabilityCopy,
+  liveCueCopy,
 } from "@/components/features/revenue/relationships-view/relationships-view";
 
 describe("RelationshipsView", () => {
@@ -121,6 +122,13 @@ describe("RelationshipsView", () => {
     expect(completenessProductLabel("custom_status")).toBe("Custom Status");
     expect(detailSourceLabel("ai_inference", true)).toBe("Suggested");
     expect(detailSourceLabel("source_fact", false)).toBe("Not filled in yet");
+    expect(liveCueCopy({ kind: "missing_next_step", title: "No next step", detail: "Agree on an owner and a dated next step before the meeting ends." })).toEqual({
+      title: "No next step",
+      detail: "Add an owner and a date for what happens next.",
+    });
+    expect(source).toContain("Suggestions (");
+    expect(source).not.toContain("Live cue cards");
+    expect(source).not.toContain("before the meeting ends");
     expect(source).toContain("Some details are still missing");
     expect(source).toContain("details have a source");
     expect(source).toContain("details come from a source you can open");

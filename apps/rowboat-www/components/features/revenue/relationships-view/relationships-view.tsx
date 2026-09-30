@@ -1364,6 +1364,29 @@ export function completenessProductLabel(status: string): string {
   return labels[status] ?? relationshipLabel(status);
 }
 
+/**
+ * Cue text is stored with the company. A missing next step is not a meeting,
+ * so the sheet does not tell you to finish one.
+ */
+export function liveCueCopy(cue: { kind: string; title: string; detail: string }): {
+  title: string;
+  detail: string;
+} {
+  if (cue.kind === "missing_next_step") {
+    return {
+      title: "No next step",
+      detail: "Add an owner and a date for what happens next.",
+    };
+  }
+  if (cue.kind === "contradiction") {
+    return {
+      title: "Two details disagree",
+      detail: cue.detail.replace(/value should be current\?$/, "should be the current one?"),
+    };
+  }
+  return { title: cue.title, detail: cue.detail };
+}
+
 /** Authority codes stay in the model. The sheet says who the detail came from. */
 export function detailSourceLabel(authority: string | undefined, supported: boolean): string {
   if (!supported) return "Not filled in yet";
@@ -2198,17 +2221,20 @@ export function RelationshipSheet({
 
                 {data.intelligence?.liveCues.length ? (
                   <section>
-                    <SectionTitle title={`Live cue cards (${data.intelligence.liveCues.length})`} />
+                    <SectionTitle title={`Suggestions (${data.intelligence.liveCues.length})`} />
                     <ul className="grid gap-2 sm:grid-cols-2">
-                      {data.intelligence.liveCues.map((cue) => (
-                        <li
-                          key={cue.id}
-                          className="rounded-none border border-amber-500/30 bg-amber-500/5 p-3"
-                        >
-                          <p className="text-xs font-medium text-primary">{cue.title}</p>
-                          <p className="mt-1 text-xs text-primary/60">{cue.detail}</p>
-                        </li>
-                      ))}
+                      {data.intelligence.liveCues.map((cue) => {
+                        const copy = liveCueCopy(cue);
+                        return (
+                          <li
+                            key={cue.id}
+                            className="rounded-none border border-amber-500/30 bg-amber-500/5 p-3"
+                          >
+                            <p className="text-xs font-medium text-primary">{copy.title}</p>
+                            <p className="mt-1 text-xs text-primary/60">{copy.detail}</p>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </section>
                 ) : null}
