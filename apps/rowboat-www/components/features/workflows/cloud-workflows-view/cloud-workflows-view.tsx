@@ -203,12 +203,9 @@ export function scheduleLabel(task: CloudTask): string {
   }
 }
 
-function inferredManagedActions(task: CloudTask): WorkflowActionKind[] {
-  if (task.slug.includes("post-meeting"))
-    return ["review-account", "update-crm-note", "create-crm-task"];
-  if (task.slug.includes("pre-brief")) return ["review-account", "write-brief"];
-  if (task.slug.includes("recommendation")) return ["review-account", "create-crm-task"];
-  if (task.slug.includes("connector")) return ["review-account", "write-brief"];
+function inferredManagedActions(): WorkflowActionKind[] {
+  // These rows store instructions, not a canvas. Guessing HubSpot writes from
+  // the slug showed Meeting follow-up as if it updated a CRM it never touches.
   return ["review-account", "write-brief"];
 }
 
@@ -221,7 +218,7 @@ export function workflowForTask(
   return {
     version: 1,
     trigger: taskCron(task) ? { kind: "schedule", cronExpr: taskCron(task) } : { kind: "manual" },
-    actions: inferredManagedActions(task),
+    actions: inferredManagedActions(),
     objective: workflowListSummary(task, templates),
   };
 }

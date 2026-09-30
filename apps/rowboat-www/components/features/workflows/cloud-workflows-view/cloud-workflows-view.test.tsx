@@ -180,4 +180,15 @@ describe("CloudWorkflowsView", () => {
       ]).objective,
     ).toBe("Prepare evidence-linked context for upcoming customer meetings.");
   });
+
+  it("does not invent HubSpot writes for a system workflow without a canvas", () => {
+    const meeting = {
+      name: "Post-Meeting Processor",
+      slug: "oppulence-post-meeting-processor",
+      templateSlug: "post-meeting-processor",
+      triggers: { cronExpr: "*/15 * * * *" },
+    } as CloudTask;
+    expect(workflowForTask(meeting).actions).toEqual(["review-account", "write-brief"]);
+    expect(source).not.toContain("update-crm-note");
+  });
 });
