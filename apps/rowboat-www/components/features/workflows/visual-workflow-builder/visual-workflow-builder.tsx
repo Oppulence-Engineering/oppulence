@@ -101,7 +101,7 @@ const actions: Array<{
     fields: [
       {
         key: "scope",
-        label: "Company scope",
+        label: "Which companies",
         defaultValue: "matching-record",
         options: [
           { value: "matching-record", label: "Matching company and people" },
@@ -488,7 +488,7 @@ export function VisualWorkflowBuilder({
 
       <aside className="min-h-0 border-t border-border bg-background md:overflow-y-auto md:border-l md:border-t-0">
         <div className="sticky top-0 z-10 flex h-11 items-center justify-between border-b border-border bg-background px-4">
-          <p className="text-[12px] font-medium">Step configuration</p>
+          <p className="text-[12px] font-medium">Workflow</p>
           <Badge className="rounded-none text-[10px]" variant="outline">
             {selectedAction ? `Step ${selectedActionIndex + 1}` : "Trigger"}
           </Badge>

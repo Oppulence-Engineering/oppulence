@@ -61,6 +61,7 @@ describe("VisualWorkflowBuilder", () => {
     expect(component).not.toHaveTextContent("evidence");
     expect(component).toHaveTextContent("Review company");
     expect(component).not.toHaveTextContent("Review account");
+    expect(component).not.toHaveTextContent("Step configuration");
     expect(component).toHaveTextContent("Draft a follow-up");
     expect(component).not.toHaveTextContent("Draft recovery email");
     expect(component).not.toHaveTextContent("Read relationships");
@@ -74,6 +75,10 @@ describe("VisualWorkflowBuilder", () => {
         value={{ ...workflow, actions: [...workflow.actions] }}
       />,
     );
+
+    fireEvent.click(screen.getByRole("button", { name: "Select action:0" }));
+    expect(screen.getByText("Which companies")).toBeInTheDocument();
+    expect(screen.queryByText("Company scope")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Select action:1" }));
     fireEvent.click(screen.getByRole("button", { name: "Remove Draft a follow-up" }));
