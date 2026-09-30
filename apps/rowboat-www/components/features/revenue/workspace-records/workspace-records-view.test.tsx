@@ -452,6 +452,8 @@ describe("people directory copy", () => {
 
   it("talks about companies on the empty directory and the account count", () => {
     expect(source).toContain("keep a contact for each company.");
+    expect(source).toContain("Fill in their role and company");
+    expect(source).not.toContain("Enrich profiles with evidence");
     expect(source).toContain(">Companies</TableHead>");
     expect(source).toContain("company timeline");
     expect(source).not.toContain("relationship-aware");

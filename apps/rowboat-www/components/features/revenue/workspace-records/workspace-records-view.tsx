@@ -410,7 +410,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
           image="people"
           learnMore={[
             { label: "See who you are talking to" },
-            { label: "Enrich profiles with evidence" },
+            { label: "Fill in their role and company" },
           ]}
           title="People"
         >

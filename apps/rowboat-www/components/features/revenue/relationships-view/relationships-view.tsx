@@ -793,8 +793,8 @@ export function RelationshipsView({
               }
               image="companies"
               learnMore={[
-                { label: "One model per company" },
-                { label: "People roll up to companies" },
+                { label: "One place for each company" },
+                { label: "People stay with their company" },
               ]}
               title="Companies"
             >
