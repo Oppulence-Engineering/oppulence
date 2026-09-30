@@ -79,6 +79,23 @@ export function recoveryShownLabel(count: number): string | null {
   return count === 1 ? "1 shown" : `${count} shown`;
 }
 
+/**
+ * A filtered recovery list is empty. The sentence uses the filter's name.
+ * The stored value "all" is not a name, so it must not be interpolated.
+ */
+export function recoveryEmptyDescription(filter: string): string {
+  switch (filter) {
+    case "snoozed":
+      return "Nothing is snoozed right now.";
+    case "handled":
+      return "Nothing has been handled yet.";
+    case "dismissed":
+      return "Nothing has been dismissed.";
+    default:
+      return "No recovery drafts right now.";
+  }
+}
+
 export function QueueView({
   workspace,
   onError,
@@ -191,7 +208,7 @@ export function QueueView({
                       <Plugs /> Reconnect Google
                     </>
                   ) : (
-                    <>{scanning ? <Spinner /> : <MagnifyingGlass />} Run audit</>
+                    <>{scanning ? <Spinner /> : <MagnifyingGlass />} Run Promise Leak Audit</>
                   )}
                 </Button>
               }
@@ -211,7 +228,7 @@ export function QueueView({
             />
           ) : (
             <WorkspaceEmptyState
-              description={`Nothing in the ${filter} queue right now.`}
+              description={recoveryEmptyDescription(filter)}
               image="recovery"
               learnMore={[]}
               title="Recovery"

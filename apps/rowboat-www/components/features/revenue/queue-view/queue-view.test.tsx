@@ -3,7 +3,10 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { recoveryShownLabel } from "@/components/features/revenue/queue-view/queue-view";
+import {
+  recoveryEmptyDescription,
+  recoveryShownLabel,
+} from "@/components/features/revenue/queue-view/queue-view";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "queue-view.tsx"), "utf8");
 
@@ -30,6 +33,14 @@ describe("QueueView", () => {
     expect(recoveryShownLabel(0)).toBeNull();
     expect(recoveryShownLabel(1)).toBe("1 shown");
     expect(recoveryShownLabel(4)).toBe("4 shown");
+    expect(recoveryEmptyDescription("all")).toBe("No recovery drafts right now.");
+    expect(recoveryEmptyDescription("snoozed")).toBe("Nothing is snoozed right now.");
+    expect(recoveryEmptyDescription("handled")).toBe("Nothing has been handled yet.");
+    expect(recoveryEmptyDescription("dismissed")).toBe("Nothing has been dismissed.");
+    expect(source).toContain("recoveryEmptyDescription(filter)");
+    expect(source).not.toContain("Nothing in the ${filter}");
+    expect(source).toContain("Run Promise Leak Audit");
+    expect(source).not.toContain("Run audit</>");
     expect(source).toContain("or draft recovery from a promise.");
     expect(source).toContain('{ label: "Draft from a confirmed promise" }');
     expect(source).not.toContain("from a commitment");
