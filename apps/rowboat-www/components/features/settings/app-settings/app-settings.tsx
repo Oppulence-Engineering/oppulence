@@ -18,6 +18,8 @@ import {
 } from "@/lib/icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAgentSummaries } from "@/hooks/queries/use-agents";
+import { shownDefaultAgent } from "@/hooks/dashboard/use-agent-catalog";
+import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { visibleAgentLabel } from "@/lib/agents/agent-schemas";
 import { useConsolePreferences as useConsolePreferencesQuery } from "@/hooks/queries/use-console";
 import { consoleKeys } from "@/hooks/queries/utils/console-keys";
@@ -505,8 +507,10 @@ function DefaultsCard() {
 
   React.useEffect(() => {
     if (!query.data) return;
-    setAgent(query.data.defaultAgentSlug);
-    setInitial(query.data.defaultAgentSlug);
+    // Empty means Assistant, which is also what a new chat starts with.
+    const effective = shownDefaultAgent(query.data.defaultAgentSlug);
+    setAgent(effective);
+    setInitial(effective);
   }, [query.data]);
 
   const dirty = agent !== initial;
@@ -554,7 +558,14 @@ function DefaultsCard() {
               onValueChange={setAgent}
               value={agent || undefined}
             >
-              <SelectTrigger className="w-full max-w-xs" id="settings-default-agent">
+              <SelectTrigger
+                aria-label={comboboxFilterName(
+                  "Default agent",
+                  agent ? visibleAgentLabel(agents, agent) : "Choose an agent",
+                )}
+                className="w-full max-w-xs"
+                id="settings-default-agent"
+              >
                 {/* Same reason as the composer: the closed trigger does not
                     keep the item label, so a saved default would look unset. */}
                 <SelectValue

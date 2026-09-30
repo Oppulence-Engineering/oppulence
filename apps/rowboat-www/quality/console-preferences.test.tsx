@@ -40,6 +40,8 @@ vi.mock("@/components/features/account/delete-account-row/delete-account-row", (
   DeleteAccountRow: () => null,
 }));
 
+import { fetchAgentSummaries } from "@/hooks/queries/utils/fetch-agents";
+
 import { SettingsView } from "@/components/features/settings/app-settings/app-settings";
 
 const preferences = {
@@ -67,6 +69,9 @@ describe("synced console preferences", () => {
     mocks.dashboardFetch.mockResolvedValue(
       new Response(JSON.stringify({ agents: [{ slug: "reviewer" }] })),
     );
+    vi.mocked(fetchAgentSummaries).mockResolvedValue([
+      { slug: "reviewer", name: "Reviewer" },
+    ] as Awaited<ReturnType<typeof fetchAgentSummaries>>);
   });
   afterEach(() => {
     cleanup();
@@ -77,11 +82,26 @@ describe("synced console preferences", () => {
     renderPreferences();
 
     expect(await screen.findByLabelText("Share anonymous usage data")).not.toBeChecked();
-    expect(screen.getByLabelText("Default agent")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("combobox", { name: "Default agent, Reviewer" }),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Memory Bank (preview)")).not.toBeInTheDocument();
     expect(screen.queryByText("Show model reasoning")).not.toBeInTheDocument();
     expect(screen.queryByText("Auto context compaction")).not.toBeInTheDocument();
     expect(screen.queryByText("Desktop notifications")).not.toBeInTheDocument();
+  });
+
+  it("shows Assistant when no default agent has been saved", async () => {
+    mocks.getPreferences.mockResolvedValue({ ...preferences, defaultAgentSlug: "" });
+    vi.mocked(fetchAgentSummaries).mockResolvedValue([
+      { slug: "assistant", name: "Assistant" },
+    ] as Awaited<ReturnType<typeof fetchAgentSummaries>>);
+
+    renderPreferences();
+
+    expect(await screen.findByRole("combobox", { name: "Default agent, Assistant" })).toHaveTextContent(
+      "Assistant",
+    );
   });
 
   it("associates the display name field with its label", async () => {
