@@ -444,6 +444,20 @@ describe("task due order", () => {
   });
 });
 
+describe("empty note template heading", () => {
+  const source = fs.readFileSync(
+    path.join(import.meta.dirname, "workspace-records-view.tsx"),
+    "utf8",
+  );
+
+  it("names the template links instead of a generic actions heading", () => {
+    expect(source).toContain("uppercase tracking-wide text-primary/45\">\n                Templates");
+    expect(source).not.toContain(
+      "uppercase tracking-wide text-primary/45\">\n                Actions",
+    );
+  });
+});
+
 describe("people directory copy", () => {
   const source = fs.readFileSync(
     path.join(import.meta.dirname, "workspace-records-view.tsx"),

@@ -1552,9 +1552,9 @@ function NoteDialog({
           </Plate>
           {bodyEmpty ? (
             <div className="mt-6 space-y-3 text-[13px] text-primary/55">
-              {/* Templates cannot be favorited. Offer only actions that exist. */}
+              {/* Templates cannot be favorited. The heading names the two links below. */}
               <p className="text-[10px] font-medium uppercase tracking-wide text-primary/45">
-                Actions
+                Templates
               </p>
               <Button
                 type="button"
