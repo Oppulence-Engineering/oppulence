@@ -14,6 +14,7 @@ import {
   workflowEditorTabName,
   workflowForTask,
   workflowOpeningScreen,
+  workflowStepLabel,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
   calledModelLabel,
@@ -48,6 +49,32 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain("aria-label={workflowEditorTabName(value, taskRuns.length)}");
     expect(source).toContain('aria-label="Workflow"');
     expect(source).toContain('subscribeWorkflowLibrary(() => setScreen("library"))');
+  });
+
+  it("counts canvas actions as steps and not the trigger", () => {
+    const twoSteps = {
+      triggers: {
+        workflow: {
+          version: 1,
+          trigger: { kind: "schedule", cronExpr: "*/15 * * * *" },
+          actions: ["review-account", "write-brief"],
+        },
+      },
+    } as CloudTask;
+    const oneStep = {
+      triggers: {
+        workflow: {
+          version: 1,
+          trigger: { kind: "manual" },
+          actions: ["review-account"],
+        },
+      },
+    } as CloudTask;
+    expect(workflowStepLabel(twoSteps)).toBe("2 steps");
+    expect(workflowStepLabel(oneStep)).toBe("1 step");
+    expect(source).toContain("{workflowStepLabel(task)}");
+    expect(source).not.toContain("actions.length + 1");
+    expect(source).toContain('aria-label="How to start"');
   });
 
   it("opens a sidebar run on the runs list instead of the canvas", () => {

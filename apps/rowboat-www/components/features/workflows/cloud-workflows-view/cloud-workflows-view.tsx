@@ -279,8 +279,13 @@ export function workflowForTask(
   };
 }
 
-function workflowStepCount(task: CloudTask): number {
-  return workflowForTask(task).actions.length + 1;
+/**
+ * The library column counts canvas actions. The trigger already has its own
+ * Starts column, so adding it here made a two-step workflow read as three.
+ */
+export function workflowStepLabel(task: CloudTask): string {
+  const steps = workflowForTask(task).actions.length;
+  return steps === 1 ? "1 step" : `${steps} steps`;
 }
 
 function CreateWorkflowDialog({
@@ -348,7 +353,7 @@ function CreateWorkflowDialog({
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="custom">
-          <TabsList className="w-full rounded-none" variant="line">
+          <TabsList aria-label="How to start" className="w-full rounded-none" variant="line">
             <TabsTrigger value="custom">Start from scratch</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
           </TabsList>
@@ -579,7 +584,7 @@ function WorkflowLibrary({
                       {scheduleLabel(task)}
                     </TableCell>
                     <TableCell className="px-4 text-[12px] text-muted-foreground">
-                      {workflowStepCount(task)} steps
+                      {workflowStepLabel(task)}
                     </TableCell>
                     <TableCell className="px-4 text-[12px]">
                       <Badge
