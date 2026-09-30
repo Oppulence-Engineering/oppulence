@@ -41,6 +41,8 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).not.toContain("Could not load the relationship graph.");
     expect(source).toContain(">Company graph</h2>");
     expect(source).toContain("<Graph /> Diagram");
+    expect(source).toContain('mode === "table" ? (');
+    expect(source).toContain("empty={graphCanvasEmptyState(graph.nodes.length)}");
     expect(source).toContain("How many to show");
     expect(source).toContain("Hide unconnected");
     expect(source).toContain("Changed since you last looked");

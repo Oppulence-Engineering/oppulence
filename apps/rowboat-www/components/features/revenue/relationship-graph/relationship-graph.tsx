@@ -809,11 +809,16 @@ function GraphTable({
   edges,
   selectedNodeId,
   onSelectNode,
+  empty,
+  onReset,
 }: {
   nodes: RelationshipGraphNode[];
   edges: RelationshipGraphEdge[];
   selectedNodeId?: string;
   onSelectNode: (id: string) => void;
+  /** Shown in the table when the current view has no rows. */
+  empty?: { message: string; offerReset: boolean };
+  onReset?: () => void;
 }) {
   return (
     <div
@@ -833,6 +838,26 @@ function GraphTable({
           </TableRow>
         </TableHeader>
         <TableBody>
+          {nodes.length === 0 && empty ? (
+            <TableRow>
+              <TableCell className="px-3 py-16 text-center text-sm text-primary/55" colSpan={5}>
+                {empty.message}
+                {empty.offerReset && onReset ? (
+                  <div>
+                    <Button
+                      className="mt-2"
+                      onClick={onReset}
+                      size="sm"
+                      type="button"
+                      variant="link"
+                    >
+                      Reset filters
+                    </Button>
+                  </div>
+                ) : null}
+              </TableCell>
+            </TableRow>
+          ) : null}
           {nodes.map((node) => (
             <TableRow
               key={node.id}
@@ -1591,15 +1616,17 @@ export function RelationshipGraphWorkspace({
             <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-primary/45">
               {accountGraphPrompt(relationships.length)}
             </div>
-          ) : !visible.nodes.length ? (
-            <GraphCanvasEmpty onReset={reset} totalNodes={graph.nodes.length} />
           ) : mode === "table" ? (
             <GraphTable
-              nodes={visible.nodes}
               edges={visible.edges}
-              selectedNodeId={viewState.selectedNodeId}
+              empty={graphCanvasEmptyState(graph.nodes.length)}
+              nodes={visible.nodes}
+              onReset={reset}
               onSelectNode={selectNode}
+              selectedNodeId={viewState.selectedNodeId}
             />
+          ) : !visible.nodes.length ? (
+            <GraphCanvasEmpty onReset={reset} totalNodes={graph.nodes.length} />
           ) : (
             <ReactFlowProvider>
               <GraphCanvas
