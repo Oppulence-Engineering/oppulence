@@ -51,6 +51,7 @@ describe("ChatDashboardRoute", () => {
     const source = fs.readFileSync(path.join(import.meta.dirname, "chat-dashboard-route.tsx"), "utf8");
     expect(source).toContain('label: "overdue"');
     expect(source).toContain("impact.overdueCommitments");
+    expect(source).toContain('if (stat.tab === "commitments") requestDueCommitments();');
     expect(source).not.toContain('label: "commitments"');
     expect(source).toContain("agentToolLabel(item.name)");
     expect(source).not.toContain("title={item.name}");

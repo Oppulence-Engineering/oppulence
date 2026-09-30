@@ -4,6 +4,7 @@ import "client-only";
 
 import * as React from "react";
 import { openCompanyCreate } from "@/lib/dashboard/company-create-request";
+import { subscribeDueCommitments } from "@/lib/dashboard/commitment-due-request";
 import {
   ArrowClockwise,
   Check,
@@ -387,6 +388,8 @@ export function CommitmentQueue({
   const [editing, setEditing] = React.useState<CommitmentQueueItem | null>(null);
   const [correctedText, setCorrectedText] = React.useState("");
   const [correctedDueAt, setCorrectedDueAt] = React.useState("");
+  // Home can ask for past-due promises before this register mounts.
+  React.useEffect(() => subscribeDueCommitments(() => setFilter("due")), []);
   const items = React.useMemo(() => toQueueItems(entries), [entries]);
   // An empty select cannot be "chosen". That case is a missing company, not a
   // prompt to pick one.

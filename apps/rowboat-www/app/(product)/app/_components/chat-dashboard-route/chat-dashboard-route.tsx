@@ -37,6 +37,7 @@ import {
 } from "@/components/ai-elements/tool";
 import type { AgentHistoryItem } from "@/lib/agents/agent-history";
 import { agentToolLabel } from "@/lib/agents/agent-tools";
+import { requestDueCommitments } from "@/lib/dashboard/commitment-due-request";
 import type { RevenueTab } from "@/lib/dashboard/product-navigation";
 import type { RevenueImpact } from "@/lib/revenue/types";
 
@@ -133,6 +134,8 @@ function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
           <button
             className="inline-flex items-baseline gap-1.5 font-normal transition-colors hover:text-[var(--text-secondary)]"
             onClick={() => {
+              // The count is past-due promises, so the register opens on that filter.
+              if (stat.tab === "commitments") requestDueCommitments();
               onOpenTab(stat.tab);
             }}
             type="button"

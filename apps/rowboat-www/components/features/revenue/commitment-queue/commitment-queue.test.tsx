@@ -454,4 +454,5 @@ it("does not offer a meeting import that opens the company directory", () => {
   expect(source).not.toContain("import reviewed meeting evidence");
   expect(source).toContain("Add a company");
   expect(source).toContain("openCompanyCreate(onOpenAccounts)");
+  expect(source).toContain('subscribeDueCommitments(() => setFilter("due"))');
 });

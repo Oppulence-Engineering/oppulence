@@ -70,7 +70,7 @@ export function ScansView({
                   <Plugs /> Reconnect Google
                 </>
               ) : (
-                <>{scanning ? <Spinner /> : <MagnifyingGlass />} Run audit</>
+                <>{scanning ? <Spinner /> : <MagnifyingGlass />} Run Promise Leak Audit</>
               )}
             </Button>
           }

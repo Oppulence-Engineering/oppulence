@@ -12,6 +12,8 @@ describe("ScansView", () => {
     expect(source).not.toContain(">Relationships</TableHead>");
     expect(source).toContain("follow-ups that have gone quiet");
     expect(source).toContain("to find promises in your mail.");
+    expect(source).toContain("Run Promise Leak Audit");
+    expect(source).not.toContain("> Run audit");
     expect(source).not.toContain("stalled client");
     expect(source).not.toContain("commitment register");
     expect(source).toContain("Reads the mail you connect");
