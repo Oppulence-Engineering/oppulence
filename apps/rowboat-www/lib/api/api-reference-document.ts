@@ -254,6 +254,24 @@ function presentReferenceProse(value: string): string {
     )
     .replaceAll("Run error mirrored from the desktop.", "Error from the desktop run.")
     .replaceAll("Run summary mirrored from the desktop.", "Summary from the desktop run.")
+    .replaceAll(
+      "Where this task executes. desktop preserves the local-first path; api dispatches to the Temporal-backed API worker.",
+      "Where this task runs. Desktop keeps it on this computer. Cloud runs it in Oppulence.",
+    )
+    .replaceAll(
+      "Server-owned Temporal schedule reconciliation state.",
+      "Whether the schedule is in sync.",
+    )
+    .replaceAll("Timestamp when Temporal execution closed.", "When the run finished.")
+    .replaceAll("Timestamp when Temporal execution started.", "When the run started.")
+    .replaceAll(
+      "Control signal sent to a Temporal-backed API-worker run.",
+      "Pause, resume, or update sent to a cloud run.",
+    )
+    .replaceAll("Background task artifact mirrors owned by the user.", "Workflow notes for this person.")
+    .replaceAll("Background task run event mirrors owned by the user.", "Run events for this person.")
+    .replaceAll("Background task run mirrors owned by the user.", "Runs for this person.")
+    .replaceAll("Background task mirrors owned by the user.", "Background tasks for this person.")
     .replaceAll("Mirrored JSONL event from a background task run log.", "One event from a background run.")
     .replaceAll(
       "Zero-based sequence number for a mirrored JSONL run event.",

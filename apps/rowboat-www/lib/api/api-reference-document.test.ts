@@ -259,7 +259,19 @@ describe("API reference document", () => {
     expect(presented.components.schemas.User.description).toBe(
       "The signed-in person, saved when they first sign in.",
     );
-    expect(JSON.stringify(presented)).not.toMatch(/mirrored|task\.yaml/i);
+    const descriptions: string[] = [];
+    const collect = (node: unknown) => {
+      if (!node || typeof node !== "object") return;
+      if (Array.isArray(node)) {
+        node.forEach(collect);
+        return;
+      }
+      const record = node as { description?: unknown };
+      if (typeof record.description === "string") descriptions.push(record.description);
+      Object.values(record).forEach(collect);
+    };
+    collect(presented);
+    expect(descriptions.join("\n")).not.toMatch(/mirror|Temporal|task\.yaml/i);
   });
 
   it("says the reference could not be loaded when the spec is missing", () => {
