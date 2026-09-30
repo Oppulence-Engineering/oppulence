@@ -270,7 +270,7 @@ function TypedGraphEdge(props: EdgeProps<FlowEdge>) {
         className="cursor-pointer"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        aria-label={`${props.data?.graphEdge.label || "relationship"} edge`}
+        aria-label={`${props.data?.graphEdge.label || "connection"} edge`}
       />
       {showLabel ? (
         <EdgeLabelRenderer>
@@ -605,7 +605,7 @@ function Inspector({
           </ToggleGroupItem>
         </ToggleGroup>
         <p className="mt-1.5 text-[9px] leading-4 text-primary/35">
-          Focus follows your selection, so you can walk the relationship one node at a time.
+          Focus follows your selection, so you can walk this graph one node at a time.
         </p>
       </div>
       <dl className="mt-4 grid grid-cols-2 gap-2 text-xs">
@@ -1214,7 +1214,7 @@ export function RelationshipGraphWorkspace({
                 value={scope}
                 className="capitalize data-[state=on]:bg-primary data-[state=on]:text-background"
               >
-                {scope === "relationship" ? "Account graph" : "Portfolio graph"}
+                {scope === "relationship" ? "Account graph" : "All companies"}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -1290,7 +1290,9 @@ export function RelationshipGraphWorkspace({
               className="rounded-none font-mono text-[10px] font-normal text-primary/45"
               variant="outline"
             >
-              {queryResult.evidenceRefs.length} evidence refs
+              {queryResult.evidenceRefs.length === 1
+                ? "1 evidence item"
+                : `${queryResult.evidenceRefs.length} evidence items`}
             </Badge>
           </div>
         ) : null}

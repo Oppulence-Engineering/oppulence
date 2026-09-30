@@ -112,7 +112,7 @@ describe("getRelationshipGraph", () => {
     }
 
     await expect(getRelationshipGraph({ scope: "portfolio", depth: 1 })).rejects.toThrow(
-      "1 of 5 relationship requests failed",
+      "1 of 5 company graphs failed",
     );
   });
 });

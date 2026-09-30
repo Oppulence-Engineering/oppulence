@@ -120,7 +120,7 @@ export async function loadRelationshipGraph(
     );
     if (failures.length > 0) {
       throw new DashboardRequestError(
-        `Could not build a complete portfolio graph: ${failures.length} of ${relationships.length} relationship requests failed.`,
+        `Could not build the full company graph: ${failures.length} of ${relationships.length} company graphs failed.`,
         502,
         "partial_relationship_graph",
       );

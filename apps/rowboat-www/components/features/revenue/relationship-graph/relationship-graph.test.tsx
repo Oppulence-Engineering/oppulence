@@ -22,6 +22,11 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).not.toContain("Could not load the relationship graph.");
     expect(source).toContain(">Company graph</h2>");
     expect(source).toContain("Companies, people, and the evidence between them");
+    expect(source).toContain("All companies");
+    expect(source).toContain("walk this graph one node at a time");
+    expect(source).not.toContain("Portfolio graph");
+    expect(source).not.toContain("walk the relationship");
+    expect(source).not.toContain("evidence refs");
     expect(source).not.toContain(">Relationship graph</h2>");
     expect(source).not.toContain("Versioned state, evidence, and governed action");
   });
