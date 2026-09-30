@@ -60,6 +60,10 @@ describe("SettingsView", () => {
     expect(source).not.toContain('title="Chat Defaults"');
     expect(source).not.toContain('title="Current Plan"');
     expect(source).toContain("How Oppulence looks on this device.");
+    expect(source).toContain(
+      "Choose what from mail and calendar can be shared, and which addresses stay private.",
+    );
+    expect(source).not.toContain("mailbox metadata defaults");
     expect(source).not.toContain("this console");
     expect(source).not.toContain("the console");
   });

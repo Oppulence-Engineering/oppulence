@@ -1050,7 +1050,7 @@ export function SettingsView({
             <PageIntro description={current.description} title={current.label} />
             <ConnectorSettings />
             <SettingsRow
-              description="Control mailbox metadata defaults, protected recipients, and attachment sharing."
+              description="Choose what from mail and calendar can be shared, and which addresses stay private."
               title="Email & Calendar privacy"
             >
               <CommunicationPrivacySettings />

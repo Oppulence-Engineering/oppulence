@@ -40,6 +40,7 @@ import {
   safeAuthorizationURL,
   type HostedOAuthOutcome,
 } from "@/lib/connectors/hosted-oauth";
+import { connectorProductDescription } from "@/lib/connectors/connector-product-copy";
 
 const OUTCOME_MESSAGES: Record<HostedOAuthOutcome, string> = {
   active: "Connected.",
@@ -377,7 +378,9 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
               </Badge>
             ) : null}
           </div>
-          <CardDescription className="mt-1 block text-xs">{connector.description}</CardDescription>
+          <CardDescription className="mt-1 block text-xs">
+            {connectorProductDescription(connector.name, connector.description)}
+          </CardDescription>
           {activity ? (
             <Badge
               className="mt-1 block font-mono text-[11px] font-normal text-primary/45"
