@@ -15,6 +15,16 @@ const ATTENTION_MONITOR = {
 
 const MEETING_FOLLOW_UP = {
   name: "Meeting follow-up",
+  description:
+    "Turn a finished meeting into promises, risks, and a follow-up that waits for your approval.",
+};
+
+const MEETING_PRE_BRIEF = {
+  description: "Get the promises, risks, and goals ready before a meeting.",
+};
+
+const RECOMMENDATION_REVIEW = {
+  description: "Collect recommendations that are waiting so you can approve them together.",
 };
 
 const SOURCE_HEALTH = {
@@ -30,6 +40,10 @@ const FIRST_PARTY_WORKFLOW_COPY: Record<string, { name?: string; description?: s
   "attention-monitor": ATTENTION_MONITOR,
   "oppulence-post-meeting-processor": MEETING_FOLLOW_UP,
   "post-meeting-processor": MEETING_FOLLOW_UP,
+  "oppulence-meeting-pre-brief": MEETING_PRE_BRIEF,
+  "meeting-pre-brief": MEETING_PRE_BRIEF,
+  "oppulence-recommendation-review": RECOMMENDATION_REVIEW,
+  "recommendation-review": RECOMMENDATION_REVIEW,
   "oppulence-connector-health-repair": SOURCE_HEALTH,
   "connector-health-repair": SOURCE_HEALTH,
 };

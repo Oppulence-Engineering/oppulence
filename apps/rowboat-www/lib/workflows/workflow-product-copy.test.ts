@@ -23,13 +23,30 @@ describe("workflow product copy", () => {
     expect(workflowProductName(undefined, "Renewal check")).toBe("Renewal check");
   });
 
-  it("keeps a stored description when the system name is the only rewrite", () => {
+  it("describes meeting and recommendation workflows without internal wording", () => {
     expect(
       workflowProductDescription(
         "oppulence-post-meeting-processor",
-        "Turn completed meetings into follow-ups.",
+        "Turn completed meetings and transcripts into evidence-linked commitments, risks, and approval-ready follow-ups.",
       ),
-    ).toBe("Turn completed meetings into follow-ups.");
+    ).toBe(
+      "Turn a finished meeting into promises, risks, and a follow-up that waits for your approval.",
+    );
+    expect(
+      workflowProductDescription(
+        "oppulence-meeting-pre-brief",
+        "Prepare evidence-linked context, commitments, risks, and goals for upcoming customer meetings.",
+      ),
+    ).toBe("Get the promises, risks, and goals ready before a meeting.");
+    expect(
+      workflowProductDescription(
+        "oppulence-recommendation-review",
+        "Assemble pending recommendations into a transparent, approval-ready review queue.",
+      ),
+    ).toBe("Collect recommendations that are waiting so you can approve them together.");
+    expect(workflowProductDescription("my-renewal-check", "Watch the renewal date.")).toBe(
+      "Watch the renewal date.",
+    );
     expect(
       workflowProductDescription("oppulence-attention-monitor", "which relationships need attention"),
     ).toBe("Explain which companies need attention now and why.");

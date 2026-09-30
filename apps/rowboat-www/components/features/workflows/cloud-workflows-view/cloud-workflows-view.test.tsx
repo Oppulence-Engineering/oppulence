@@ -200,6 +200,8 @@ describe("CloudWorkflowsView", () => {
       "Bravo",
       "Charlie",
     ]);
+    expect(source).toContain("Last updated");
+    expect(source).not.toContain("Last published");
   });
 
   it("uses the template description when a workflow has no canvas objective", () => {
@@ -218,7 +220,7 @@ describe("CloudWorkflowsView", () => {
           description: "Prepare evidence-linked context for upcoming customer meetings.",
         },
       ]),
-    ).toBe("Prepare evidence-linked context for upcoming customer meetings.");
+    ).toBe("Get the promises, risks, and goals ready before a meeting.");
     expect(
       workflowListSummary({
         ...meeting,
@@ -248,8 +250,8 @@ describe("CloudWorkflowsView", () => {
           taskSlug: "oppulence-meeting-pre-brief",
           description: "Prepare evidence-linked context for upcoming customer meetings.",
         },
-      ]).objective,
-    ).toBe("Prepare evidence-linked context for upcoming customer meetings.");
+      ]    ).objective,
+    ).toBe("Get the promises, risks, and goals ready before a meeting.");
   });
 
   it("does not invent HubSpot writes for a system workflow without a canvas", () => {
