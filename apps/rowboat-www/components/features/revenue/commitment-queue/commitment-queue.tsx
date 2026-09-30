@@ -910,10 +910,6 @@ export function CommitmentQueue({
                 })}
               </tbody>
             </table>
-            <div className="flex h-9 items-center gap-2 px-3 text-[var(--text-muted)]">
-              <Plus className="size-[14px]" />
-              <span>New row</span>
-            </div>
           </div>
         )}
       </SimProductPanel>

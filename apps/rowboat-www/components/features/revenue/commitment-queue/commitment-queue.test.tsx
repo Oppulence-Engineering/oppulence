@@ -471,6 +471,12 @@ it("reports what the audit examined, not everything it swept", () => {
   expect(screen.getByText("80")).toBeInTheDocument();
 });
 
+it("does not offer a new row that cannot be added", () => {
+  render(<CommitmentQueue {...props()} />);
+  expect(screen.getByText("Send the signed security packet")).toBeInTheDocument();
+  expect(screen.queryByText("New row")).not.toBeInTheDocument();
+});
+
 it("keeps the commitment filter and drops the chips that did nothing", () => {
   render(<CommitmentQueue {...props()} />);
   expect(screen.queryByRole("button", { name: "Filter" })).not.toBeInTheDocument();
