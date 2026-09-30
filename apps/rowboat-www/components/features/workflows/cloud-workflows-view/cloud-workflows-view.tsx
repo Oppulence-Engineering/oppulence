@@ -113,6 +113,22 @@ export function workflowEditorTabName(value: EditorTab, runCount: number): strin
   return "Editor";
 }
 
+/**
+ * Where a workflows link opens.
+ * A sidebar run carries both a workflow slug and a run id. The slug used to
+ * win, so the click opened the canvas and the failure stayed hidden.
+ */
+export function workflowOpeningScreen(
+  focus: "scheduled" | "runs",
+  initialSlug?: string,
+  initialRunId?: string,
+): "library" | "editor" | "runs" {
+  if (initialRunId) return "runs";
+  if (initialSlug) return "editor";
+  if (focus === "runs") return "runs";
+  return "library";
+}
+
 const EDITOR_TAB_LABEL: Record<EditorTab, string> = {
   editor: "Editor",
   runs: "Runs",
@@ -1017,7 +1033,10 @@ function WorkflowEditor({
         onValueChange={(value) => setTab(value as EditorTab)}
         value={tab}
       >
-        <TabsList className="h-10 shrink-0 justify-start gap-5 rounded-none border-b border-border bg-transparent px-3">
+        <TabsList
+          aria-label="Workflow"
+          className="h-10 shrink-0 justify-start gap-5 rounded-none border-b border-border bg-transparent px-3"
+        >
           {(["editor", "runs", "settings"] as const).map((value) => (
             <TabsTrigger
               aria-label={workflowEditorTabName(value, taskRuns.length)}
@@ -1193,7 +1212,7 @@ export function CloudWorkflowsView({
   const [events, setEvents] = React.useState<CloudRunEvent[]>([]);
   const [schedule, setSchedule] = React.useState<CloudSchedule | null>(null);
   const [screen, setScreen] = React.useState<"library" | "editor" | "runs">(
-    initialSlug ? "editor" : focus === "runs" ? "runs" : "library",
+    workflowOpeningScreen(focus, initialSlug, initialRunId),
   );
   const [statusFilter, setStatusFilter] = React.useState<FilterValue<CloudRunStatus>>("all");
   const [triggerFilter, setTriggerFilter] = React.useState<FilterValue<CloudRunTrigger>>("all");

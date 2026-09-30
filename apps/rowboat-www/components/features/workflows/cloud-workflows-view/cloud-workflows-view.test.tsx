@@ -13,6 +13,7 @@ import {
   sortWorkflowTasks,
   workflowEditorTabName,
   workflowForTask,
+  workflowOpeningScreen,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
   calledModelLabel,
@@ -45,7 +46,17 @@ describe("CloudWorkflowsView", () => {
     expect(workflowEditorTabName("runs", 16)).toBe("Runs, 16");
     expect(workflowEditorTabName("runs", 1)).toBe("Runs, 1");
     expect(source).toContain("aria-label={workflowEditorTabName(value, taskRuns.length)}");
+    expect(source).toContain('aria-label="Workflow"');
     expect(source).toContain('subscribeWorkflowLibrary(() => setScreen("library"))');
+  });
+
+  it("opens a sidebar run on the runs list instead of the canvas", () => {
+    expect(workflowOpeningScreen("runs", "company-refresh", "run-1")).toBe("runs");
+    expect(workflowOpeningScreen("scheduled", "company-refresh", "run-1")).toBe("runs");
+    expect(workflowOpeningScreen("scheduled", "company-refresh")).toBe("editor");
+    expect(workflowOpeningScreen("runs")).toBe("runs");
+    expect(workflowOpeningScreen("scheduled")).toBe("library");
+    expect(source).toContain("workflowOpeningScreen(focus, initialSlug, initialRunId)");
   });
   it("shows run status and trigger tokens as words", () => {
     expect(readableEnum("succeeded")).toBe("Succeeded");
