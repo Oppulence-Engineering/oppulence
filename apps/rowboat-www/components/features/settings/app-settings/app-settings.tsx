@@ -342,7 +342,10 @@ function ProfileCard() {
       ) : (
         <div className="space-y-6 py-2">
           <div>
-            <FieldLabel hint="Shown in the sidebar instead of your email." htmlFor="settings-display-name">
+            <FieldLabel
+              hint="Shown in the sidebar and the home greeting instead of your email."
+              htmlFor="settings-display-name"
+            >
               Display name
             </FieldLabel>
             <Input
