@@ -19,7 +19,11 @@ vi.mock("@/lib/revenue/revenue", () => ({
   startCheckout: billing.startCheckout,
 }));
 
-import { PlanSection, usageMeterLabel } from "@/components/features/settings/app-settings/app-settings";
+import {
+  PlanSection,
+  usageMeterLabel,
+  usageMeterValue,
+} from "@/components/features/settings/app-settings/app-settings";
 
 const session = (plan: string) => ({
   billing: { plan, status: "active", usage: {} },
@@ -55,6 +59,9 @@ describe("settings billing upgrade", () => {
     expect(usageMeterLabel("usedCredits")).toBe("Credits used");
     expect(usageMeterLabel("availableCredits")).toBe("Credits remaining");
     expect(usageMeterLabel("usageDay")).toBe("Usage day");
+    expect(usageMeterValue("sanctionedCredits", 10000)).toBe("10,000");
+    expect(usageMeterValue("usedCredits", 0)).toBe("0");
+    expect(usageMeterValue("usageDay", 20260930)).toBe("20260930");
     render(
       <PlanSection
         session={{
@@ -68,7 +75,8 @@ describe("settings billing upgrade", () => {
       />,
     );
     expect(screen.getByText("Included credits")).toBeVisible();
-    expect(screen.getAllByText("10000").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("10,000").length).toBeGreaterThan(0);
+    expect(screen.queryByText("10000")).not.toBeInTheDocument();
     expect(screen.queryByText("sanctionedCredits")).not.toBeInTheDocument();
     expect(screen.queryByText("SanctionedCredits")).not.toBeInTheDocument();
   });

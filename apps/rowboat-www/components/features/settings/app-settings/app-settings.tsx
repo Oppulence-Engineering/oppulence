@@ -650,6 +650,16 @@ export function usageMeterLabel(key: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+const GROUPED_USAGE_KEYS = new Set(["sanctionedCredits", "usedCredits", "availableCredits"]);
+
+/** Credit totals are counts a person scans. Group them; leave dates and day indexes alone. */
+export function usageMeterValue(key: string, value: string | number): string {
+  if (typeof value === "number" && Number.isFinite(value) && GROUPED_USAGE_KEYS.has(key)) {
+    return value.toLocaleString("en-US");
+  }
+  return String(value);
+}
+
 export function PlanSection({ session }: { session: SessionShape }) {
   const billing = session.billing;
   const [upgrading, setUpgrading] = React.useState(false);
@@ -714,7 +724,7 @@ export function PlanSection({ session }: { session: SessionShape }) {
         ) : (
           <div className="flex flex-col gap-0.5 py-2">
             {usage.map(([key, value]) => (
-              <ValueRow key={key} label={usageMeterLabel(key)} value={String(value)} />
+              <ValueRow key={key} label={usageMeterLabel(key)} value={usageMeterValue(key, value)} />
             ))}
           </div>
         )}
@@ -960,14 +970,14 @@ function PermissionsSection({ session }: { session: SessionShape }) {
       </SettingsRow>
       <SettingsRow
         description="Oppulence only uses what connected services return."
-        title="Evidence access"
+        title="Service access"
       >
         <div className="settings-row">
           <div className="settings-row-copy">
             <p className="settings-row-label">Connected services</p>
             <p className="settings-row-description">
-              Manage service-level access from Connections. Removing a connection stops new evidence
-              from entering this workspace.
+              Manage service-level access from Connections. Removing a connection stops new mail and
+              calendar updates from entering this workspace.
             </p>
           </div>
           <Plugs className="size-4 text-primary/40" />

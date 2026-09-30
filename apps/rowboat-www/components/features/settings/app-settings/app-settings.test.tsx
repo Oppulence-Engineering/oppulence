@@ -20,6 +20,12 @@ describe("SettingsView", () => {
     expect(source).not.toContain("and evidence for this organization");
     expect(source).not.toContain("and evidence for the signed-in organization");
     expect(source).toContain("from entering this workspace.");
+    expect(source).toContain('title="Service access"');
+    expect(source.replace(/\s+/g, " ")).toContain(
+      "stops new mail and calendar updates from entering this workspace.",
+    );
+    expect(source).not.toContain('title="Evidence access"');
+    expect(source).not.toContain("stops new evidence");
     expect(source).toContain("where the product should go next.");
     expect(source).toContain("Review the Oppulence API reference.");
     expect(source).toContain("or review the API reference.");
