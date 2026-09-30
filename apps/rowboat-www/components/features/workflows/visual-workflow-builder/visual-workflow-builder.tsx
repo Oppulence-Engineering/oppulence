@@ -311,7 +311,7 @@ function graph(
           label: (
             <NodeLabel
               detail={action.detail}
-              eyebrow={`Then · ${index + 1}`}
+              eyebrow={`Step ${index + 1}`}
               icon={action.icon}
               title={action.label}
             />

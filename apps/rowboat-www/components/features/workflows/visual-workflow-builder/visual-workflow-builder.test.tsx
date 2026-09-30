@@ -59,6 +59,9 @@ describe("VisualWorkflowBuilder", () => {
     expect(component).toHaveTextContent("Mail or message received");
     expect(component).toHaveTextContent("Read the company, the people on it, and its open promises.");
     expect(component).not.toHaveTextContent("evidence");
+    expect(component).toHaveTextContent("Step 1");
+    expect(component).toHaveTextContent("Step 2");
+    expect(component).not.toHaveTextContent("Then ·");
     expect(component).toHaveTextContent("Review company");
     expect(component).not.toHaveTextContent("Review account");
     expect(component).not.toHaveTextContent("Step configuration");
