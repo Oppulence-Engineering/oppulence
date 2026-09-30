@@ -11,6 +11,8 @@ describe("SettingsView", () => {
   });
 
   it("uses workspace words for access and help", () => {
+    expect(source).toContain("Review who you are and what this session can do.");
+    expect(source).not.toContain("what this session can reach");
     expect(source).toContain("Standard workspace access");
     expect(source).toContain("shared companies, people, and evidence");
     expect(source).toContain("from entering this workspace.");

@@ -920,7 +920,7 @@ function PermissionsSection({ session }: { session: SessionShape }) {
   return (
     <>
       <PageIntro
-        description="Review who you are, what this session can reach, and which permissions are active."
+        description="Review who you are and what this session can do."
         title="Permissions"
       />
       <SettingsRow
