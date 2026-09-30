@@ -60,7 +60,7 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
   if (data.surfaced === 0 && data.atRiskRelationships === 0 && data.overdueCommitments === 0) {
     return (
       <EmptyBlock
-        body="Run a scan and start reviewing actions — replies, meetings, and wins show up here as they come in."
+        body="Run an audit and start reviewing actions — replies, meetings, and wins show up here as they come in."
         image="impact"
         learnMore={[{ label: "Track recovery outcomes" }, { label: "Measure portfolio risk" }]}
         title="Impact"

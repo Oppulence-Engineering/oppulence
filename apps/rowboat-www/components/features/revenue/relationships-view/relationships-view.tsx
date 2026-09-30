@@ -3148,10 +3148,10 @@ function CreateRelationshipDialog({
             placeholder="Primary email (optional)"
           />
           <Input
-            aria-label="Relationship context"
+            aria-label="Company notes"
             value={summary}
             onChange={(event) => setSummary(event.target.value)}
-            placeholder="Relationship context (optional)"
+            placeholder="Notes about this company (optional)"
           />
         </div>
         <DialogFooter>
