@@ -145,11 +145,15 @@ describe("hosted connector settings", () => {
     renderWithQuery(<ConnectorSettings />);
 
     const changeAccess = await screen.findByRole("button", { name: "Change Google access" });
-    expect(screen.getByText(/Source data is delayed; reauthorizing is not required/)).toBeVisible();
+    expect(screen.getByText("Out of date")).toBeVisible();
+    expect(screen.queryByText("Stale")).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Mail and calendar are behind. Connecting again will not catch them up/),
+    ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Reconnect Google" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Reauthorize Google" })).not.toBeInTheDocument();
     await userEvent.click(changeAccess);
-    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("does not refresh delayed data"));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("does not catch mail up"));
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
   });
 

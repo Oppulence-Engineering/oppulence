@@ -74,10 +74,10 @@ const GOOGLE_HEALTH: Record<string, { label: string; tone: "ok" | "warn" | "bad"
   live: { label: "Active", tone: "ok" },
   connected: { label: "Active", tone: "ok" },
   backfilling: { label: "Syncing", tone: "warn" },
-  rebuilding: { label: "Rebuilding", tone: "warn" },
-  authorizing: { label: "Authorizing", tone: "warn" },
-  degraded: { label: "Degraded", tone: "warn" },
-  stale: { label: "Stale", tone: "warn" },
+  rebuilding: { label: "Updating", tone: "warn" },
+  authorizing: { label: "Waiting for Google", tone: "warn" },
+  degraded: { label: "Limited", tone: "warn" },
+  stale: { label: "Out of date", tone: "warn" },
   reconnect_required: { label: "Reconnect required", tone: "bad" },
   disconnected: { label: "Disconnected", tone: "bad" },
   // Never linked is not a failed grant. Red "Required" looked like Google had broken.
@@ -212,7 +212,7 @@ function GoogleConnectionSettings() {
       !window.confirm(
         health.tone === "bad"
           ? "This starts Google authorization to restore access. Continue?"
-          : "This opens Google authorization only to switch accounts or update permissions. It does not refresh delayed data. Continue?",
+          : "This opens Google only to switch accounts or update permissions. It does not catch mail up. Continue?",
       )
     ) {
       return;
@@ -247,8 +247,8 @@ function GoogleConnectionSettings() {
         ) : null}
         {sourceStatus === "stale" && status?.connected ? (
           <p className="mt-1 text-xs text-muted-foreground">
-            Google authorization is still connected. Source data is delayed; reauthorizing is not
-            required.
+            Google is still connected. Mail and calendar are behind. Connecting again will not
+            catch them up.
           </p>
         ) : null}
         {status?.accounts.map((account) => (
@@ -302,7 +302,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
       await fn();
       onChanged();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Request failed");
+      setError(caught instanceof Error ? caught.message : "That connection change did not go through.");
     } finally {
       setBusy(false);
     }
@@ -320,7 +320,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
         throw new Error(
           typeof problem?.detail === "string"
             ? problem.detail
-            : `Connection failed (${response.status})`,
+            : "Could not save that connection.",
         );
       }
       setApiKey("");
@@ -332,7 +332,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
       const response = await dashboardFetch(proxyPath(getDeleteConnectionUrl(connector.name)), {
         method: "DELETE",
       });
-      if (!response.ok) throw new Error(`Disconnect failed (${response.status})`);
+      if (!response.ok) throw new Error("Could not disconnect.");
       setConfirming(false);
     });
 
