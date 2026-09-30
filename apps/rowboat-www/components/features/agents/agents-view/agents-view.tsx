@@ -38,7 +38,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAgentSummaries } from "@/hooks/queries/use-agents";
 import { agentKeys } from "@/hooks/queries/utils/agent-keys";
 import { dashboardFetch } from "@/lib/auth/client";
-import { type AgentSummary, agentSourceLabel } from "@/lib/agents/agent-schemas";
+import { type AgentSummary, agentDisplayName, agentSourceLabel } from "@/lib/agents/agent-schemas";
+import { agentToolLabel } from "@/lib/agents/agent-tools";
 import { cn } from "@/lib/utils";
 
 function slugify(value: string): string {
@@ -430,8 +431,8 @@ export function AgentsView({
                   <div className="mt-2 flex flex-wrap gap-2">
                     {selected.enabledTools?.length ? (
                       selected.enabledTools.map((tool) => (
-                        <Badge className="font-mono" key={tool} variant="secondary">
-                          {tool}
+                        <Badge key={tool} title={tool} variant="secondary">
+                          {agentToolLabel(tool)}
                         </Badge>
                       ))
                     ) : (
@@ -444,7 +445,13 @@ export function AgentsView({
                   <section className="grid gap-4 border-t pt-4 sm:grid-cols-2">
                     <div>
                       <p className="text-xs text-muted-foreground">Subagents</p>
-                      <p className="mt-1 text-sm">{selected.subagentRefs?.join(", ") || "None"}</p>
+                      <p className="mt-1 text-sm">
+                        {selected.subagentRefs?.length
+                          ? selected.subagentRefs
+                              .map((ref) => agentDisplayName(agents, ref))
+                              .join(", ")
+                          : "None"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Required connections</p>
