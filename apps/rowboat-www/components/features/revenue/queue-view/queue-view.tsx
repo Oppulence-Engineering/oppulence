@@ -90,6 +90,17 @@ export function recoveryFilterName(value: string): string {
   return comboboxFilterName("Recovery", label);
 }
 
+/** The company menu shows a name. The accessible name has to include it. */
+export function recoveryCompanyName(label: string): string {
+  return comboboxFilterName("Company", label);
+}
+
+/** Follow-up kinds are stored as snake case. The menu names the readable kind. */
+export function recoveryFollowUpName(actionType: string): string {
+  const label = ACTION_TYPE_LABELS[actionType as keyof typeof ACTION_TYPE_LABELS];
+  return comboboxFilterName("Follow-up", label ?? actionType.replaceAll("_", " "));
+}
+
 export function recoveryEmptyDescription(filter: string): string {
   switch (filter) {
     case "snoozed":
@@ -507,7 +518,13 @@ function CreateActionDialog({
         ) : (
           <div className="flex flex-col gap-3">
             <Select value={relationshipId} onValueChange={setRelationshipId}>
-              <SelectTrigger size="sm">
+              <SelectTrigger
+                aria-label={recoveryCompanyName(
+                  relationships.find((item) => item.id === relationshipId)?.displayName ||
+                    "Choose a company",
+                )}
+                size="sm"
+              >
                 <SelectValue placeholder="Company" />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-[2px]">
@@ -526,7 +543,7 @@ function CreateActionDialog({
                 if (next) setActionType(next);
               }}
             >
-              <SelectTrigger size="sm">
+              <SelectTrigger aria-label={recoveryFollowUpName(actionType)} size="sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-[2px]">

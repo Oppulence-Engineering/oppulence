@@ -6,6 +6,8 @@ import { describe, expect, it } from "vitest";
 import {
   recoveryEmptyDescription,
   recoveryFilterName,
+  recoveryFollowUpName,
+  recoveryCompanyName,
   recoveryShownLabel,
 } from "@/components/features/revenue/queue-view/queue-view";
 
@@ -18,6 +20,11 @@ describe("QueueView", () => {
     expect(recoveryFilterName("open")).toBe("Recovery, Open");
     expect(recoveryFilterName("snoozed")).toBe("Recovery, Snoozed");
     expect(source).toContain("aria-label={recoveryFilterName(filter)}");
+    expect(source).toContain("aria-label={recoveryCompanyName(");
+    expect(source).toContain("aria-label={recoveryFollowUpName(actionType)}");
+    expect(recoveryCompanyName("Dogfood Harbor")).toBe("Company, Dogfood Harbor");
+    expect(recoveryCompanyName("Choose a company")).toBe("Company, Choose a company");
+    expect(recoveryFollowUpName("warm_follow_up")).toBe("Follow-up, Warm follow-up");
     expect(source).not.toContain('aria-label="Filter recovery actions"');
   });
 
