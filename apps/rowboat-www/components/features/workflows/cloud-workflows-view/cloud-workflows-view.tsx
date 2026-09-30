@@ -345,6 +345,17 @@ function CreateWorkflowDialog({
   );
 }
 
+export type WorkflowLibrarySort = "published" | "name";
+
+/** Last published follows the task's own update time, which is what the library label claims. */
+export function sortWorkflowTasks(tasks: CloudTask[], sort: WorkflowLibrarySort): CloudTask[] {
+  return [...tasks].sort((left, right) =>
+    sort === "name"
+      ? left.name.localeCompare(right.name)
+      : right.updatedAt.localeCompare(left.updatedAt),
+  );
+}
+
 function WorkflowLibrary({
   tasks,
   runs,
@@ -363,15 +374,25 @@ function WorkflowLibrary({
   onSelect: (task: CloudTask) => void;
 }) {
   const [query, setQuery] = React.useState("");
-  const filtered = tasks.filter((task) =>
-    `${task.name} ${scheduleLabel(task)}`.toLowerCase().includes(query.trim().toLowerCase()),
+  const [sort, setSort] = React.useState<WorkflowLibrarySort>("published");
+  const filtered = sortWorkflowTasks(
+    tasks.filter((task) =>
+      `${task.name} ${scheduleLabel(task)}`.toLowerCase().includes(query.trim().toLowerCase()),
+    ),
+    sort,
   );
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3">
-        <Button className="rounded-none" size="sm" variant="outline">
-          Sorted by Last published
+        <Button
+          className="rounded-none"
+          onClick={() => setSort((current) => (current === "published" ? "name" : "published"))}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          Sorted by {sort === "published" ? "Last published" : "Name"}
         </Button>
         <div className="flex items-center gap-2">
           <Button
