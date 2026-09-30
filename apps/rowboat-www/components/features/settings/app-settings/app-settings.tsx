@@ -271,10 +271,20 @@ function ThemePreviewSkeleton({ dark }: { dark: boolean }) {
   );
 }
 
-function FieldLabel({ children, hint }: { children: React.ReactNode; hint?: string }) {
+function FieldLabel({
+  children,
+  hint,
+  htmlFor,
+}: {
+  children: React.ReactNode;
+  hint?: string;
+  htmlFor?: string;
+}) {
   return (
     <div className="mb-1.5">
-      <Label className="block text-sm text-primary">{children}</Label>
+      <Label className="block text-sm text-primary" htmlFor={htmlFor}>
+        {children}
+      </Label>
       {hint ? (
         <CardDescription className="block text-xs text-muted-foreground">{hint}</CardDescription>
       ) : null}
@@ -332,9 +342,12 @@ function ProfileCard() {
       ) : (
         <div className="space-y-6 py-2">
           <div>
-            <FieldLabel hint="Shown in the sidebar instead of your email.">Display name</FieldLabel>
+            <FieldLabel hint="Shown in the sidebar instead of your email." htmlFor="settings-display-name">
+              Display name
+            </FieldLabel>
             <Input
               disabled={query.isLoading}
+              id="settings-display-name"
               onChange={(event) => setName(event.target.value)}
               placeholder={query.isLoading ? "Loading…" : "Ada Lovelace"}
               value={name}
@@ -402,7 +415,7 @@ function DefaultsCard() {
       ) : (
         <div className="space-y-6 px-4 py-6">
           <div>
-            <FieldLabel hint="The agent preselected for new conversations.">
+            <FieldLabel hint="The agent preselected for new conversations." htmlFor="settings-default-agent">
               Default agent
             </FieldLabel>
             <Select
@@ -410,7 +423,7 @@ function DefaultsCard() {
               onValueChange={setAgent}
               value={agent || undefined}
             >
-              <SelectTrigger className="w-full max-w-xs">
+              <SelectTrigger className="w-full max-w-xs" id="settings-default-agent">
                 <SelectValue
                   placeholder={state === "loading" ? "Loading agents…" : "Choose an agent"}
                 />

@@ -77,10 +77,25 @@ describe("synced console preferences", () => {
     renderPreferences();
 
     expect(await screen.findByLabelText("Share anonymous usage data")).not.toBeChecked();
+    expect(screen.getByLabelText("Default agent")).toBeInTheDocument();
     expect(screen.queryByText("Memory Bank (preview)")).not.toBeInTheDocument();
     expect(screen.queryByText("Show model reasoning")).not.toBeInTheDocument();
     expect(screen.queryByText("Auto context compaction")).not.toBeInTheDocument();
     expect(screen.queryByText("Desktop notifications")).not.toBeInTheDocument();
+  });
+
+  it("associates the display name field with its label", async () => {
+    renderWithQuery(
+      <SettingsView
+        onNavigate={vi.fn()}
+        section="account"
+        session={{ user: { email: "ada@example.com", permissions: [] } }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Display name")).toHaveValue("Ada");
+    });
   });
 
   it("patches analytics consent and updates the capture gate", async () => {

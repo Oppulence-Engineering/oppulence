@@ -3,6 +3,7 @@
 import "client-only";
 
 import * as React from "react";
+import { useTheme } from "next-themes";
 import { useRelationshipSourceStatuses } from "@/hooks/queries/use-relationship-sources";
 import {
   useSidebarAgents,
@@ -187,43 +188,23 @@ const SETTINGS_GROUP_LABELS: Record<SettingsGroup, string> = {
 
 export type ThemePreference = "light" | "dark" | "system";
 
+/**
+ * The sidebar, command palette, and Appearance settings all change the theme.
+ * next-themes (AppProviders) is the only writer of the `light` / `dark` class
+ * on `<html>`. A second writer that only toggled `dark` left both classes on
+ * the document, so light tokens kept winning after the user chose Dark.
+ */
 export function useThemePreference() {
-  const [theme, setTheme] = React.useState<ThemePreference>("system");
-
-  const applyTheme = React.useCallback((value: ThemePreference) => {
-    const resolved =
-      value === "system"
-        ? window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light"
-        : value;
-    document.documentElement.classList.toggle("dark", resolved === "dark");
-    localStorage.setItem("theme", value);
-  }, []);
-
-  React.useEffect(() => {
-    const saved = (localStorage.getItem("theme") as ThemePreference) || "system";
-    setTheme(saved);
-    applyTheme(saved);
-  }, [applyTheme]);
-
-  React.useEffect(() => {
-    if (theme !== "system") return;
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const listener = () => applyTheme("system");
-    media.addEventListener("change", listener);
-    return () => media.removeEventListener("change", listener);
-  }, [theme, applyTheme]);
-
-  const handleTheme = React.useCallback(
+  const { theme, setTheme } = useTheme();
+  const preference: ThemePreference =
+    theme === "light" || theme === "dark" || theme === "system" ? theme : "system";
+  const selectTheme = React.useCallback(
     (value: ThemePreference) => {
       setTheme(value);
-      applyTheme(value);
     },
-    [applyTheme],
+    [setTheme],
   );
-
-  return { theme, setTheme: handleTheme };
+  return { theme: preference, setTheme: selectTheme };
 }
 
 type SidebarSelect = (item: { kind: ResourceKind; name: string }) => void;
