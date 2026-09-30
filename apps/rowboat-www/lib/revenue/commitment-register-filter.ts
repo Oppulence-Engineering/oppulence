@@ -46,3 +46,41 @@ export function registerFilterFor(
         : null;
   }
 }
+
+type RegisterAccountSource = {
+  id?: string;
+  kind?: string;
+  displayName?: string;
+};
+
+type RegisterGraphAccountSource = {
+  kind?: string;
+  relationshipId?: string;
+  label?: string;
+};
+
+/**
+ * By account used to read companies off the graph. A company that exists on
+ * the Companies page is not a graph node until it has been projected, so the
+ * register said "No companies yet" beside a company the teammate had just added.
+ * The company list is the list. The graph is only a fallback when that list
+ * cannot be loaded.
+ */
+export function registerAccountChoices(
+  relationships: readonly RegisterAccountSource[],
+  graphNodes: readonly RegisterGraphAccountSource[] = [],
+): { id: string; label: string }[] {
+  const listed = relationships.flatMap((item) => {
+    const id = item.id?.trim() ?? "";
+    const label = item.displayName?.trim() ?? "";
+    if (!id || !label || item.kind === "person") return [];
+    return [{ id, label }];
+  });
+  if (listed.length) return listed;
+  return graphNodes.flatMap((node) => {
+    const id = node.relationshipId?.trim() ?? "";
+    const label = node.label?.trim() ?? "";
+    if (node.kind !== "relationship" || !id || !label) return [];
+    return [{ id, label }];
+  });
+}

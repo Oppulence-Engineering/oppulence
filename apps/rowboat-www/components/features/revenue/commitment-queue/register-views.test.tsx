@@ -1,6 +1,10 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
-import { REGISTER_VIEWS, registerFilterFor } from "./commitment-queue";
+import { registerAccountChoices, registerFilterFor } from "@/lib/revenue/commitment-register-filter";
+import { REGISTER_VIEWS } from "./commitment-queue";
 
 // One-pager §3: the register has five views. Each must be one query against
 // GET /v1/commitments, not a separate screen with its own data path. Keeping
@@ -70,5 +74,26 @@ describe("the five register views", () => {
     ]) {
       expect(filter?.limit).toBeGreaterThan(0);
     }
+  });
+
+  it("lists a saved company even when the graph has not projected it", () => {
+    expect(
+      registerAccountChoices(
+        [
+          { id: "company-1", kind: "company", displayName: "Dogfood Harbor" },
+          { id: "person-1", kind: "person", displayName: "Ada" },
+        ],
+        [],
+      ),
+    ).toEqual([{ id: "company-1", label: "Dogfood Harbor" }]);
+    expect(
+      registerAccountChoices([], [{ kind: "relationship", relationshipId: "graph-1", label: "Acme" }]),
+    ).toEqual([{ id: "graph-1", label: "Acme" }]);
+    const hook = fs.readFileSync(
+      path.join(import.meta.dirname, "../../../../hooks/queries/use-commitments.ts"),
+      "utf8",
+    );
+    expect(hook).toContain("registerAccountChoices(");
+    expect(hook).toContain("fetchRelationships({}, signal)");
   });
 });
