@@ -40,7 +40,10 @@ import {
   accountAttentionFromHealth,
   mapCommitmentsToAccountTimeline,
 } from "@/components/features/revenue/account-mission-control-surface/account-mission-control-surface";
-import { RelationshipGraphWorkspace } from "@/components/features/revenue/relationship-graph/relationship-graph";
+import {
+  clearCompanyGraphURL,
+  RelationshipGraphWorkspace,
+} from "@/components/features/revenue/relationship-graph/relationship-graph";
 import { REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue/revenue";
 import { Avatar, AvatarFallback } from "@oppulence/ui/components/avatar";
 import { Badge } from "@oppulence/ui/components/badge";
@@ -650,7 +653,11 @@ export function RelationshipsView({
             type="single"
             value={surface}
             onValueChange={(value) => {
-              if (value === "list" || value === "graph") setSurface(value);
+              if (value !== "list" && value !== "graph") return;
+              setSurface(value);
+              // List is the directory. A leftover graph=1 would reopen the graph
+              // on refresh even though this control is sitting on List.
+              if (value === "list") clearCompanyGraphURL();
             }}
             variant="outline"
             size="sm"

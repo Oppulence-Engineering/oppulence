@@ -89,6 +89,7 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("Could not enrich relationship profiles.");
     expect(source).toContain('aria-label="Show company graph"');
     expect(source).toContain('aria-label="Show company list"');
+    expect(source).toContain("clearCompanyGraphURL()");
     expect(source).not.toContain('aria-label="Show accounts"');
     expect(source).not.toContain('aria-label="Show relationship graph"');
     expect(source).toContain("Public research");

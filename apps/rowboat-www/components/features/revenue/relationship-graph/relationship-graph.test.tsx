@@ -16,6 +16,7 @@ import {
   graphCanReset,
   graphQueryAnswer,
   graphQueryFilterLabel,
+  searchWithoutCompanyGraph,
 } from "@/components/features/revenue/relationship-graph/relationship-graph";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "relationship-graph.tsx"), "utf8");
@@ -184,5 +185,15 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain("Name this graph view");
     expect(source).toContain('htmlFor="graph-view-name"');
     expect(source).toContain("Save view");
+  });
+
+  it("drops graph parameters when the company list is the current view", () => {
+    expect(
+      searchWithoutCompanyGraph(
+        "?tab=relationships&graph=1&graphScope=portfolio&graphLayout=force&graphDensity=0.72&graphQuery=overdue",
+      ),
+    ).toBe("tab=relationships");
+    expect(searchWithoutCompanyGraph("?tab=relationships")).toBe("tab=relationships");
+    expect(source).toContain("searchWithoutCompanyGraph(url.search)");
   });
 });

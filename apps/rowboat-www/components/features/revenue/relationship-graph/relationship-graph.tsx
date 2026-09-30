@@ -407,6 +407,40 @@ function readURLState(): RelationshipGraphSavedViewState {
   return parsed.success ? parsed.data : DEFAULT_STATE;
 }
 
+const COMPANY_GRAPH_PARAMS = [
+  "graph",
+  "graphScope",
+  "graphRelationship",
+  "graphQuery",
+  "graphLayout",
+  "graphDensity",
+  "graphHideIsolated",
+  "graphNode",
+  "graphFocusDepth",
+  "graphAsOf",
+  "graphChanged",
+] as const;
+
+/**
+ * The list and the graph share one address. The graph writes these params
+ * while it is open. Leaving them in place after List is chosen makes a
+ * refresh, or the next visit to Companies, open the graph again.
+ */
+export function searchWithoutCompanyGraph(search: string): string {
+  const params = new URLSearchParams(search);
+  for (const key of COMPANY_GRAPH_PARAMS) params.delete(key);
+  return params.toString();
+}
+
+export function clearCompanyGraphURL() {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  const next = searchWithoutCompanyGraph(url.search);
+  if (next === url.searchParams.toString()) return;
+  url.search = next;
+  window.history.replaceState(null, "", url);
+}
+
 function writeURLState(state: RelationshipGraphSavedViewState) {
   const url = new URL(window.location.href);
   url.searchParams.set("graph", "1");
