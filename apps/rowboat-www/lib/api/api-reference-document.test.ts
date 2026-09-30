@@ -272,6 +272,29 @@ describe("API reference document", () => {
     };
     collect(presented);
     expect(descriptions.join("\n")).not.toMatch(/mirror|Temporal|task\.yaml/i);
+    const readable: string[] = [];
+    const collectReadable = (node: unknown, key?: string) => {
+      if (!node || typeof node !== "object") return;
+      if (Array.isArray(node)) {
+        node.forEach((item) => collectReadable(item));
+        return;
+      }
+      const record = node as Record<string, unknown>;
+      if (key !== "parameters" && typeof record.description === "string") {
+        readable.push(record.description);
+      }
+      if (key !== "parameters" && typeof record.summary === "string") {
+        readable.push(record.summary);
+      }
+      for (const [childKey, child] of Object.entries(record)) {
+        if (childKey === "parameters") continue;
+        collectReadable(child, childKey);
+      }
+    };
+    collectReadable(presented);
+    expect(readable.join("\n")).not.toMatch(
+      /rowboat-api|\bslug\b|artifact|API-worker|bg-tasks|JSONL|\bpreflight\b|\bfacade\b|solomon-ai:|x-solomon/i,
+    );
   });
 
   it("says the reference could not be loaded when the spec is missing", () => {

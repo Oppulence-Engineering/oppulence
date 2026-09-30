@@ -37,7 +37,7 @@ const API_REFERENCE_TAGS: Record<string, { name: string; description: string }> 
   },
   "Oppulence Voice": {
     name: "Oppulence Voice",
-    description: "API keys, capture sync, and saved artifacts for this workspace.",
+    description: "API keys, capture sync, and saved recordings for this workspace.",
   },
   Search: {
     name: "Search",
@@ -183,8 +183,216 @@ function presentedTagName(name: string): string {
  * Four-digit RFC numbers are public standards (dates, keys, problem details)
  * and stay. Three-digit numbers are internal design notes and come out.
  */
+/**
+ * Field notes that stay after the phrase pass. Each one is a full sentence
+ * from the published spec, matched after the older product names are gone.
+ */
+const API_REFERENCE_FIELD_NOTES: ReadonlyArray<readonly [string, string]> = [
+  [
+    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+    "Status. Plans use billing states. Background runs use queued, running, succeeded, failed, or stopped.",
+  ],
+  [
+    "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
+    "Which service this uses. That can be a sign-in service, a model provider, or where the work runs.",
+  ],
+  ["Stable connector slug.", "Connection name."],
+  ["Bound connector slug.", "Connection this applies to."],
+  ["Connector slug.", "Connection name."],
+  ["Workflow id for API-worker runs.", "Workflow id for cloud runs."],
+  ["Run id for API-worker runs.", "Run id for cloud runs."],
+  [
+    "Stable per-user background task slug matching bg-tasks/<slug> locally.",
+    "Short name for this background task. It stays the same for this person.",
+  ],
+  ["Billing plan slug.", "Billing plan."],
+  ["Artifact acknowledgement.", "Confirmation that this was saved."],
+  ["Default agent slug; empty clears the selection.", "Default agent. Empty clears the selection."],
+  [
+    "Optional x-solomon-agent-name header captured for cost allocation.",
+    "Optional agent name, kept for usage tracking.",
+  ],
+  [
+    "Optional x-solomon-sub-use-case header captured for cost allocation.",
+    "Optional detail for usage tracking.",
+  ],
+  [
+    "Optional x-solomon-use-case header captured for cost allocation.",
+    "Optional usage category, kept for usage tracking.",
+  ],
+  [
+    "A task with this slug already exists for the user.",
+    "A task with this name already exists for this person.",
+  ],
+  [
+    "Redirect to solomon-ai://connection-complete with connector and status.",
+    "Redirects back to the desktop app with the connection and status.",
+  ],
+  [
+    "Validates an active non-revoked connection, exact audience, granted scope subset, current catalog availability, and current entitlement. OAuth credentials are refreshed and rotated server-side, then rowboat-api returns an RS256 product token carrying bounded actor claims. Provider tokens and API keys are never returned.",
+    "Checks that the connection is still allowed, then returns a short-lived token for this person. Passwords and provider keys are not returned.",
+  ],
+  ["Payload exceeds the configured size cap.", "This is larger than the size limit."],
+  ["Markdown artifact body for a background task.", "Note for this background task."],
+  ["Server timestamp for the last artifact update.", "When this note was last updated."],
+  [
+    "Current artifact revision. Required for updates to an existing artifact.",
+    "Current note revision. Required when updating a note that already exists.",
+  ],
+  [
+    "Optional stable slug. If omitted, rowboat-api slugifies name.",
+    "Optional short name. If omitted, Oppulence makes one from the name.",
+  ],
+  [
+    "Task list for the authenticated user, ordered by slug.",
+    "Background tasks for the signed-in person, in name order.",
+  ],
+  [
+    "Optional event type. If omitted, rowboat-api reads event.type when present.",
+    "Optional event type. If omitted, Oppulence uses event.type when it is present.",
+  ],
+  [
+    "Batch append for JSONL run events. Existing seq values are skipped to make retries idempotent.",
+    "Adds a batch of run events. An event number that already exists is skipped, so retrying is safe.",
+  ],
+  ["Task slug.", "Task name."],
+  [
+    "Optional signal payload. update_context can carry context/text/requestedContext for the next runtime checkpoint.",
+    "Optional details for a pause, resume, or update.",
+  ],
+  ["Stable template slug.", "Template name."],
+  [
+    "Default task slug used when instantiating this template.",
+    "Default name used when creating a workflow from this template.",
+  ],
+  ["Task slug override. Defaults to template.taskSlug.", "Name override. Uses the template name when empty."],
+  ["Stable logical artifact id.", "Id for this capture."],
+  ["Artifact kind.", "Capture type."],
+  ["Artifact schema version.", "Capture version."],
+  [
+    "Stored cloud event. payload and routing appear only on the detail endpoint.",
+    "Stored event. The contents appear only when you open the event.",
+  ],
+  [
+    "Decrypted normalized provider payload. Detail endpoint only.",
+    "Event contents. Only included when you open the event.",
+  ],
+  [
+    "Events in this page (payload omitted).",
+    "Events on this page. Contents are left out until you open one.",
+  ],
+  ["Slug of the task the run executed.", "Name of the task this run used."],
+  ["Saved graph view payload.", "Saved graph view."],
+  [
+    "One caller-owned console artifact in the asserted workspace.",
+    "One saved preference for this workspace.",
+  ],
+  ["Create a typed console artifact.", "Create a saved preference."],
+  ["Durable console artifact kind.", "Kind of saved preference."],
+  [
+    "Update mutable artifact fields. Kind and ownership are immutable.",
+    "Updates a saved preference. Its kind and owner stay the same.",
+  ],
+  ["Event payload.", "Event details."],
+  ["Pinned agent slug.", "Agent used for this session."],
+  [
+    "Human-readable gist used in routing prompts. Defaults to a compact payload summary when omitted.",
+    "Short text used to decide where this event goes. Oppulence writes a short summary when this is left empty.",
+  ],
+  [
+    "OpenAI-compatible chat completions request. rowboat-api requires model, gates credits, rewrites routable model ids, and passes through other fields.",
+    "Chat request. Oppulence requires a model, checks credits, and passes the other fields through.",
+  ],
+  [
+    "When true, rowboat-api streams server-sent events and asks the upstream to include usage.",
+    "When true, Oppulence streams the reply and includes how many credits it used.",
+  ],
+  [
+    "Text, multimodal content array, or provider-specific content payload.",
+    "Text, or other content the model accepts.",
+  ],
+  [
+    "Ephemeral one-time OAuth handoff ticket with sealed payload and expiry.",
+    "A one-time sign-in handoff that expires.",
+  ],
+  [
+    "AES-GCM sealed OAuth handoff payload. Internal storage field.",
+    "Stored sign-in handoff. This field is internal.",
+  ],
+  ["Hash of summary, facts, and sealed payload.", "Hash of the summary and the stored facts."],
+  [
+    "Preflight state. Facade unavailability keeps pending (fail closed).",
+    "Sending check. If the check is unavailable, the action stays pending.",
+  ],
+  [
+    "Mapping between the Oppulence workspace and the canonical sending workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.",
+    "Mapping between the Oppulence workspace and the sending workspace. Without a link, drafts still work and sending stays off.",
+  ],
+  [
+    "Revision conflict returned when the caller edits a stale task, artifact, or run revision. Clients should refetch, merge, and retry with currentRevision.",
+    "The note or run changed since it was read. Read it again, then retry with the current revision.",
+  ],
+  [
+    "State ticket from the solomon-ai://oauth/slack/done deep link.",
+    "State ticket from the Slack sign-in return.",
+  ],
+  [
+    "HTML page that redirects to solomon-ai://oauth/google/done.",
+    "Page that returns to the desktop app after Google sign-in.",
+  ],
+  [
+    "HTML page that redirects to solomon-ai://oauth/slack/done.",
+    "Page that returns to the desktop app after Slack sign-in.",
+  ],
+  ["Google refresh token payload.", "Stored Google refresh token."],
+  ["Refresh token payload.", "Stored refresh token."],
+  ["Saved task artifact.", "Saved workflow note."],
+  ["Task artifact.", "Workflow note."],
+  ["Artifact body and optional revision.", "Note text and an optional revision."],
+  ["Signal payload.", "Details for a pause, resume, or update."],
+  ["Capture artifact.", "Capture."],
+  ["Ingest consented capture artifact", "Save a capture the person allowed"],
+  ["Artifact status.", "Capture status."],
+  [
+    "Creates a typed artifact. Replaying a note favorite returns the existing resource.",
+    "Saves a preference. Saving the same note favorite again returns the one that already exists.",
+  ],
+  [
+    "Validates the complete resulting kind-specific payload before updating.",
+    "Checks the full preference before saving the update.",
+  ],
+  [
+    "Lists the authenticated user's ingested events ordered by receivedAt descending. Payload is omitted from list responses; fetch the detail endpoint for it.",
+    "Lists this person's events, newest first. Open an event to read its contents.",
+  ],
+  [
+    "Returns one event including the decrypted payload and the routing decision summary.",
+    "Returns one event, including its contents and where it was sent.",
+  ],
+  ["Raw provider payload, sealed at rest.", "Original event, stored privately."],
+  [
+    "Returns one observation plus its decrypted raw payload. Tenant ownership is enforced before decryption.",
+    "Returns one observation, including its original contents, after checking it belongs to this workspace.",
+  ],
+  ["Decrypted provider payload.", "Original event contents."],
+  [
+    "Requests or retries the sending check for the current revision and stores the immutable decision snapshot. A fresh unexpired decision for the same revision is returned without provider cost. Facade unavailability keeps the action pending (fail closed).",
+    "Runs the sending check again for this revision and keeps the decision. A recent decision for the same revision is reused. If the check is unavailable, the action stays pending.",
+  ],
+  ["Policy facade unavailable; the action stays pending.", "The sending check is unavailable, so the action stays pending."],
+  [
+    "Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.",
+    "Returns this workspace's sending setup, and creates a local workspace the first time.",
+  ],
+  ["Policy facade unavailable; the link fails closed.", "The sending check is unavailable, so the link is not saved."],
+  [
+    "Receives arbitrary normalized webhook events, verified via X-Webhook-Signature HMAC over X-Webhook-Timestamp plus the raw body using WEBHOOK_SIGNING_SECRET. The Unix timestamp must be within five minutes of the server clock to prevent replay. The request names the owning userId; source defaults to webhook and may be mcp, github, linear, or stripe for connector/provider gateways. Payload is sealed, and routing uses the same cloud event router as provider webhooks.",
+    "Receives a signed event from a connected service. The signature and time are checked, and the contents are stored.",
+  ],
+];
+
 function presentReferenceProse(value: string): string {
-  return value
+  let prose = value
     .replaceAll("Stable UUID primary key.", "Id.")
     .replaceAll("Row creation timestamp.", "When this was created.")
     .replaceAll("Last row update timestamp.", "When this was last updated.")
@@ -300,7 +508,14 @@ function presentReferenceProse(value: string): string {
     .replaceAll("OutboundConsole preflight", "sending check")
     .replaceAll("OutboundConsole", "checked sending")
     .replaceAll("policy preflight", "sending check")
-    .replaceAll("policy facade", "sending check")
+    .replaceAll("policy facade", "sending check");
+  // These sentences survive the phrase pass above. They are the field notes a
+  // person still reads, so they are replaced whole rather than word by word.
+  for (const [from, to] of API_REFERENCE_FIELD_NOTES) {
+    prose = prose.replaceAll(from, to);
+  }
+  return prose
+    .replaceAll("rowboat-api", "Oppulence")
     .replace(/RFC \d{1,3}\b/g, "")
     .replace(/\( /g, "(")
     .replace(/\(\)/g, "")
