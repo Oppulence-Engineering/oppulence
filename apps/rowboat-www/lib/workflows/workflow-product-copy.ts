@@ -5,8 +5,7 @@
  */
 const COMPANY_REFRESH = {
   name: "Company refresh",
-  description:
-    "Summarize each company's latest state, evidence freshness, commitments, and material changes.",
+  description: "Summarize what is new for each company, including open promises.",
 };
 
 const ATTENTION_MONITOR = {

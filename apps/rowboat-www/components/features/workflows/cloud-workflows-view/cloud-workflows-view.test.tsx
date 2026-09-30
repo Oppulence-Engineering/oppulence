@@ -150,7 +150,7 @@ describe("CloudWorkflowsView", () => {
         ],
       ),
     ).toBe(
-      "Summarize each company's latest state, evidence freshness, commitments, and material changes.",
+      "Summarize what is new for each company, including open promises.",
     );
     expect(
       workflowListSummary(
