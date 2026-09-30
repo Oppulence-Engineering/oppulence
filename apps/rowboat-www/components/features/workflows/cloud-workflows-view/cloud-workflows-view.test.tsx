@@ -96,6 +96,8 @@ describe("CloudWorkflowsView", () => {
     ).toBe("Explain which companies need attention now and why.");
     expect(source).toContain("automate recurring company follow-up");
     expect(source).not.toContain("recurring relationship work");
+    expect(source).toContain("review the company and draft a concise recovery email");
+    expect(source).not.toContain("review the account");
   });
 
   it("keeps the named product export at the generator path", () => {

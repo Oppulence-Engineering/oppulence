@@ -205,7 +205,7 @@ function nextAction(
 function toQueueItems(entries: RegisterEntry[], now = new Date()): CommitmentQueueItem[] {
   return entries
     .map((entry): CommitmentQueueItem => {
-      const relationshipName = entry.relationshipName || "Unknown account";
+      const relationshipName = entry.relationshipName || "Unknown company";
       const owner =
         entry.ownerParticipantRef ||
         (entry.direction === "promised_by_me" ? "You" : relationshipName);

@@ -61,7 +61,7 @@ export function CommandPalette({
   sessions: SessionMeta[];
   onNewChat: () => void;
   onNavigateChat: () => void;
-  /** Opens one account record. Optional so the palette still renders in
+  /** Opens one company record. Optional so the palette still renders in
    *  contexts that have no relationship surface to jump to. */
   onNavigateRelationship?: (relationshipId: string) => void;
   /** Opens the source thread when the host has a mail/thread route available. */
@@ -126,7 +126,7 @@ export function CommandPalette({
         placeholder={
           searchMode === "mail"
             ? "Describe the mail evidence to find…"
-            : "Search accounts, or type a command…"
+            : "Search companies, or type a command…"
         }
         value={query}
       />
@@ -138,7 +138,7 @@ export function CommandPalette({
           type="button"
           variant={searchMode === "accounts" ? "secondary" : "ghost"}
         >
-          Accounts
+          Companies
         </Button>
         <Button
           aria-pressed={searchMode === "mail"}
@@ -198,7 +198,7 @@ export function CommandPalette({
         ) : null}
         {accounts.length > 0 ? (
           <>
-            <CommandGroup heading="Accounts">
+            <CommandGroup heading="Companies">
               {accounts.map((account) => (
                 <CommandItem
                   key={account.id}

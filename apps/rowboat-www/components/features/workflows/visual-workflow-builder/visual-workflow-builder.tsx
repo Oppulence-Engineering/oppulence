@@ -95,13 +95,13 @@ const actions: Array<{
 }> = [
   {
     value: "review-account",
-    label: "Review account",
+    label: "Review company",
     detail: "Read companies, people, promises, and evidence",
     icon: <MagnifyingGlass />,
     fields: [
       {
         key: "scope",
-        label: "Account scope",
+        label: "Company scope",
         defaultValue: "matching-record",
         options: [
           { value: "matching-record", label: "Matching company and people" },
@@ -177,7 +177,7 @@ const actions: Array<{
         defaultValue: "timeline",
         options: [
           { value: "timeline", label: "Timeline entry" },
-          { value: "summary", label: "Account summary" },
+          { value: "summary", label: "Company summary" },
         ],
       },
     ],
@@ -212,7 +212,7 @@ const actions: Array<{
         label: "Audience",
         defaultValue: "account-team",
         options: [
-          { value: "account-team", label: "Account team" },
+          { value: "account-team", label: "Company team" },
           { value: "leadership", label: "Leadership" },
           { value: "customer", label: "Customer-ready" },
         ],

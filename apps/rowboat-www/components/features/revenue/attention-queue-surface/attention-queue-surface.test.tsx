@@ -68,7 +68,25 @@ describe("AttentionQueueSurface", () => {
 
     expect(screen.getByText("Renewal in 30 days")).toBeInTheDocument();
     expect(screen.queryByText("No reply in 14 days")).not.toBeInTheDocument();
-    expect(screen.getByText("1 account")).toBeInTheDocument();
+    expect(screen.getByText("1 company")).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Company" })).toBeInTheDocument();
+  });
+
+  it("says there are no companies when a band is empty", async () => {
+    const user = userEvent.setup();
+    render(
+      <AttentionQueueSurface
+        items={[item("attn-risk", "Acme", "high", "No reply in 14 days")]}
+        onActionError={vi.fn()}
+        onChanged={vi.fn()}
+        onOpenRelationship={vi.fn()}
+      />,
+    );
+
+    await user.selectOptions(screen.getByRole("combobox", { name: "Attention band" }), "stable");
+
+    expect(screen.getByText("No companies in this band.")).toBeInTheDocument();
+    expect(screen.getByText("0 companies")).toBeInTheDocument();
   });
 });
 

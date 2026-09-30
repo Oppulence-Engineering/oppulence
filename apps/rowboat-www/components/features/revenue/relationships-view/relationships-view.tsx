@@ -595,7 +595,7 @@ export function RelationshipsView({
             size="sm"
             aria-label="Company view"
           >
-            <ToggleGroupItem value="list" aria-label="Show accounts">
+            <ToggleGroupItem value="list" aria-label="Show company list">
               <ListBullets /> List
             </ToggleGroupItem>
             <ToggleGroupItem
@@ -770,7 +770,7 @@ export function RelationshipsView({
               }
               image="companies"
               learnMore={[
-                { label: "One model per account" },
+                { label: "One model per company" },
                 { label: "People roll up to companies" },
               ]}
               title="Companies"
@@ -3136,10 +3136,10 @@ function CreateRelationshipDialog({
             placeholder="Company name"
           />
           <Input
-            aria-label="Account domain"
+            aria-label="Company domain"
             value={accountDomain}
             onChange={(event) => setAccountDomain(event.target.value)}
-            placeholder="Account domain (optional)"
+            placeholder="Company domain (optional)"
           />
           <Input
             aria-label="Primary email"

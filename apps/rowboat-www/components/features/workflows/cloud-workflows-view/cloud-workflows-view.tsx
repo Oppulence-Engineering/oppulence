@@ -317,7 +317,7 @@ function CreateWorkflowDialog({
                 className="min-h-28 rounded-none"
                 id="workflow-objective"
                 onChange={(event) => setObjective(event.target.value)}
-                placeholder="When a customer promise is at risk, review the account and draft a concise recovery email for approval."
+                placeholder="When a customer promise is at risk, review the company and draft a concise recovery email for approval."
                 value={objective}
               />
             </div>

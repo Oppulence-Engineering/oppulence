@@ -20,7 +20,7 @@ import { decideRelationshipAttention } from "@/lib/revenue/revenue";
 import type { RelationshipAttentionItem } from "@/lib/revenue/types";
 
 const COLUMNS = [
-  { name: "Account", icon: TypeText },
+  { name: "Company", icon: TypeText },
   { name: "Health", icon: TagIcon },
   { name: "Score", icon: TypeNumber },
   { name: "Why now", icon: TypeText },
@@ -40,6 +40,11 @@ export function attentionBand(item: RelationshipAttentionItem): Exclude<Attentio
   if (item.urgencyBand === "critical" || item.urgencyBand === "high") return "at_risk";
   if (item.urgencyBand === "normal") return "watch";
   return "stable";
+}
+
+/** The queue counts companies. One row is one company, not a user account. */
+export function companyCountLabel(count: number): string {
+  return count === 1 ? "1 company" : `${count} companies`;
 }
 
 export function filterAttentionItems(
@@ -139,7 +144,7 @@ export function AttentionQueueSurface({
               Attention queue
             </h2>
           }
-          actions={loading ? "Loading…" : `${visible.length} account${visible.length === 1 ? "" : "s"}`}
+          actions={loading ? "Loading…" : companyCountLabel(visible.length)}
         />
         <SimProductToolbar>
           <select
@@ -192,7 +197,7 @@ export function AttentionQueueSurface({
               ) : visible.length === 0 ? (
                 <tr className="h-[37px] border-[var(--border)] border-b">
                   <td className="px-2.5 text-[var(--text-secondary)]" colSpan={4}>
-                    No accounts in this band.
+                    No companies in this band.
                   </td>
                 </tr>
               ) : (

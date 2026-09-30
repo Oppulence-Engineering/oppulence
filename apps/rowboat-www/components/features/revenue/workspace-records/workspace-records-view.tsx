@@ -1186,7 +1186,7 @@ function TemplateDialog({
             aria-label="Template title"
             maxLength={200}
             onChange={(event) => setTitle(event.target.value)}
-            placeholder="Quarterly account review"
+            placeholder="Quarterly company review"
             value={title}
           />
           <Textarea

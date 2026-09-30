@@ -58,6 +58,8 @@ describe("VisualWorkflowBuilder", () => {
     expect(component).toHaveAttribute("data-slot", "visual-workflow-builder");
     expect(component).toHaveTextContent("Communication received");
     expect(component).toHaveTextContent("Read companies, people, promises, and evidence");
+    expect(component).toHaveTextContent("Review company");
+    expect(component).not.toHaveTextContent("Review account");
     expect(component).toHaveTextContent("Draft recovery email");
     expect(component).not.toHaveTextContent("Read relationships");
   });

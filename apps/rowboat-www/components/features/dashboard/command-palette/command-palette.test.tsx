@@ -146,6 +146,16 @@ describe("CommandPalette semantic mail search", () => {
     ).toBeVisible();
   });
 
+  it("names the company search instead of accounts", () => {
+    renderPalette(requiredProps);
+    expect(screen.getByRole("button", { name: "Companies" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Accounts" })).toBeNull();
+    expect(screen.getByRole("textbox", { name: "Command search" })).toHaveAttribute(
+      "placeholder",
+      "Search companies, or type a command…",
+    );
+  });
+
   it("fills the search box with the company a surface asked about", async () => {
     renderPalette({ ...requiredProps, querySeed: "Acme", seedNonce: 1 });
     expect(await screen.findByDisplayValue("Acme")).toBeVisible();
