@@ -48,9 +48,11 @@ describe("Composio connections", () => {
 
     expect(await screen.findByText("Jira")).toBeInTheDocument();
     expect(screen.getByText(/not treated as promises/)).toBeInTheDocument();
-    expect(
-      screen.getByText(/Promises come from Gmail, Google Calendar, Slack, and HubSpot/),
-    ).toBeInTheDocument();
+    const promiseSources = screen.getByText(
+      /Promises come from Gmail, Google Calendar, and HubSpot/,
+    );
+    expect(promiseSources).toBeInTheDocument();
+    expect(promiseSources).not.toHaveTextContent(/Slack/);
     expect(screen.queryByText(/so those are/)).toBeNull();
     expect(screen.getAllByText("Not connected")).toHaveLength(2);
     expect(screen.queryByText(/company evidence/)).toBeNull();

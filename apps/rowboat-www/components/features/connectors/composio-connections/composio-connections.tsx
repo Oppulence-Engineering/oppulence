@@ -153,7 +153,7 @@ export function ComposioConnections({
         <h3 className="text-sm font-medium text-primary">More products</h3>
         <p className="mt-1 text-sm text-muted-foreground">
           Connect other tools, such as Jira or Asana. Agents can use them, but they are not treated
-          as promises. Promises come from Gmail, Google Calendar, Slack, and HubSpot.
+          as promises. Promises come from Gmail, Google Calendar, and HubSpot.
         </p>
       </div>
       {state === "loading" ? (
