@@ -203,6 +203,39 @@ describe("API reference document", () => {
     );
   });
 
+  it("drops the local cluster link and names common fields", () => {
+    const presented = presentApiReferenceDocument({
+      externalDocs: {
+        description: "Local kind deployment workflow",
+        url: "https://github.com/Oppulence-Engineering/rowboat/blob/main/docs/LOCAL_KIND_ROWBOAT_API.md",
+      },
+      servers: [
+        { url: "/", description: "Current Solomon AI API origin" },
+        { url: "http://localhost:18080", description: "Local kind API" },
+      ],
+      components: {
+        schemas: {
+          User: {
+            properties: {
+              id: { description: "Stable UUID primary key." },
+              created_at: { description: "Row creation timestamp." },
+              updated_at: { description: "Last row update timestamp." },
+              run_id: { description: "Temporal run id." },
+            },
+          },
+        },
+      },
+    });
+
+    expect(presented.externalDocs).toBeUndefined();
+    expect(presented.servers).toEqual([{ url: "/", description: "Current Oppulence API origin" }]);
+    const properties = presented.components.schemas.User.properties;
+    expect(properties.id.description).toBe("Id.");
+    expect(properties.created_at.description).toBe("When this was created.");
+    expect(properties.updated_at.description).toBe("When this was last updated.");
+    expect(properties.run_id.description).toBe("Run id.");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

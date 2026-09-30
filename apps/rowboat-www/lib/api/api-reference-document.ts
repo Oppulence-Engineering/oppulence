@@ -104,7 +104,8 @@ type ApiReferenceOperation = { tags?: string[]; summary?: string; description?: 
 
 type ApiReferenceDocument = {
   info?: { title?: string; description?: string };
-  servers?: Array<{ description?: string }>;
+  externalDocs?: { description?: string; url?: string };
+  servers?: Array<{ url?: string; description?: string }>;
   tags?: Array<{ name?: string; description?: string }>;
   paths?: Record<string, Record<string, ApiReferenceOperation | undefined>>;
 };
@@ -121,6 +122,15 @@ function presentedTagName(name: string): string {
  */
 function presentReferenceProse(value: string): string {
   return value
+    .replaceAll("Stable UUID primary key.", "Id.")
+    .replaceAll("Row creation timestamp.", "When this was created.")
+    .replaceAll("Last row update timestamp.", "When this was last updated.")
+    .replaceAll("Temporal workflow id", "Workflow id")
+    .replaceAll("Temporal run id", "Run id")
+    .replaceAll("Last mirrored Temporal status", "Last scheduler status")
+    .replaceAll("Temporal close timestamp", "When the run finished")
+    .replaceAll("Temporal start timestamp", "When the run started")
+    .replaceAll("rather than Temporal directly", "rather than the scheduler directly")
     .replaceAll("Solomon AI API", "Oppulence API")
     .replaceAll("Solomon AI", "Oppulence")
     .replaceAll("authenticated Rowboat user", "signed-in person")
@@ -179,11 +189,17 @@ export function presentApiReferenceDocument<T>(spec: T): T {
     title: API_REFERENCE_TITLE,
     description: API_REFERENCE_DESCRIPTION,
   };
-  for (const server of document.servers ?? []) {
+  // The published spec also offers a local cluster address and a link to the
+  // kind workflow. Neither belongs on the reference a person opens from the app.
+  document.servers = (document.servers ?? []).filter(
+    (server) => server.description !== "Local kind API",
+  );
+  for (const server of document.servers) {
     if (server.description === "Current Solomon AI API origin") {
       server.description = "Current Oppulence API origin";
     }
   }
+  delete document.externalDocs;
   document.tags = document.tags?.map((tag) => {
     const copy = tag.name ? API_REFERENCE_TAGS[tag.name] : undefined;
     return copy ? { ...tag, name: copy.name, description: copy.description } : tag;
