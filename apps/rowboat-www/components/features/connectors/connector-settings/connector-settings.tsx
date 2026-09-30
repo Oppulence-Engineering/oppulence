@@ -82,9 +82,14 @@ function googleHealth(connected: boolean, sourceStatus?: string) {
   return connected ? GOOGLE_HEALTH.connected : GOOGLE_HEALTH.not_connected;
 }
 
-function healthLabel(connector: Connector): string {
+function healthLabel(connector: Connector): string | null {
+  // A connector that was never linked already says "Not connected". Repeating
+  // the catalog health "disconnected" makes it look like a link that broke.
+  if (!connector.connected && connector.connectionHealth === "disconnected") return null;
   if (connector.connected && connector.connectionHealth === "healthy") return "Healthy";
-  return connector.connectionHealth.charAt(0).toUpperCase() + connector.connectionHealth.slice(1);
+  const raw = connector.connectionHealth.replaceAll("_", " ").trim();
+  if (!raw) return null;
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
 function OptionalConnectorScope({ scope }: { scope: ConnectorScope }) {
@@ -257,6 +262,16 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
   const unsupportedReason = hostedOAuthUnsupportedReason(connector);
   const connectedAt = displayDate(connector.connectedAt);
   const lastUsedAt = displayDate(connector.lastUsedAt);
+  const health = healthLabel(connector);
+  // `status` is whether the catalog offers this connector ("enabled"), not
+  // whether this workspace linked it. Printing "Lifecycle: enabled" beside
+  // "Not connected" reads as two opposite answers.
+  const activity = [
+    connectedAt ? `Connected ${connectedAt}` : "",
+    lastUsedAt ? `Last used ${lastUsedAt}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const isHubSpot = connector.name === "hubspot";
   const credentialLabel = isHubSpot
     ? "HubSpot private app token"
@@ -354,19 +369,21 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
                 Not connected
               </Badge>
             )}
-            <Badge className="shrink-0 rounded-[2px] capitalize" variant="outline">
-              {healthLabel(connector)}
-            </Badge>
+            {health ? (
+              <Badge className="shrink-0 rounded-[2px] capitalize" variant="outline">
+                {health}
+              </Badge>
+            ) : null}
           </div>
           <CardDescription className="mt-1 block text-xs">{connector.description}</CardDescription>
-          <Badge
-            className="mt-1 block font-mono text-[11px] font-normal text-primary/45"
-            variant="secondary"
-          >
-            Lifecycle: {connector.status}
-            {connectedAt ? ` · Connected ${connectedAt}` : ""}
-            {lastUsedAt ? ` · Last used ${lastUsedAt}` : ""}
-          </Badge>
+          {activity ? (
+            <Badge
+              className="mt-1 block font-mono text-[11px] font-normal text-primary/45"
+              variant="secondary"
+            >
+              {activity}
+            </Badge>
+          ) : null}
           {connector.connectionReason ? (
             <Badge
               className="mt-1 block font-mono text-[11px] font-normal text-oppulence-orange"

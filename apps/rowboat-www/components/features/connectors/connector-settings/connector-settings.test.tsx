@@ -157,6 +157,9 @@ describe("hosted connector settings", () => {
     renderWithQuery(<ConnectorSettings />);
 
     const row = await screen.findByTestId("connector-google");
+    expect(within(row).getByText("Not connected")).toBeVisible();
+    expect(within(row).queryByText(/Lifecycle/)).not.toBeInTheDocument();
+    expect(within(row).queryByText("Disconnected")).not.toBeInTheDocument();
     const connect = within(row).getByRole("button", { name: "Connect Google" });
     const form = connect.closest("form");
     expect(form).toHaveAttribute("action", "/api/connectors/google/start");
