@@ -51,6 +51,7 @@ const OUTCOME_MESSAGES: Record<HostedOAuthOutcome, string> = {
   entitlement: "This workspace plan does not include this connection.",
   error: "The connection could not be completed. Nothing was saved.",
   expired: "That connection link expired. Start again.",
+  redirect: "This address isn't allowed to finish the connection. Nothing was saved.",
   replay: "That connection link was already used. The existing connection was not changed.",
   restart: "The connection needs to start over. Nothing was saved.",
   retry: "The connection service is busy. Wait a moment, then try again.",

@@ -8,7 +8,15 @@ export const HOSTED_CONNECTOR_CALLBACK_PATH = "/api/connectors/oauth/callback";
 const CONNECTOR_SETTINGS_PATH = "/app/settings?settings=connections";
 
 export type HostedOAuthOutcome =
-  "active" | "entitlement" | "error" | "expired" | "replay" | "restart" | "retry" | "scope";
+  | "active"
+  | "entitlement"
+  | "error"
+  | "expired"
+  | "redirect"
+  | "replay"
+  | "restart"
+  | "retry"
+  | "scope";
 
 export function isConnectorSlug(value: string): boolean {
   return /^[a-z0-9][a-z0-9_-]{0,63}$/.test(value);
@@ -85,6 +93,7 @@ export function startOutcome(
   if (response.status === 400 && (code === "invalid_scope" || code === "scope_escalation")) {
     return "scope";
   }
+  if (response.status === 400 && code === "invalid_redirect_target") return "redirect";
   if (response.status === 403) return "entitlement";
   if (response.status === 409) return "restart";
   if (response.status === 429) return "retry";

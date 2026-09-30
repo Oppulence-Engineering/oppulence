@@ -218,6 +218,54 @@ describe("hosted connector settings", () => {
     ]);
   });
 
+  it("says when this address cannot finish the connection", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
+      void _init;
+      const url = String(input);
+      if (url.includes("/api/connectors/")) {
+        return new Response(JSON.stringify({ outcome: "redirect" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (url.includes("/api/rowboat/v1/google-oauth")) {
+        return new Response(JSON.stringify({ connected: false, accounts: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (url.includes("/relationship-sources/status") || url.includes("/composio/")) {
+        return new Response(
+          JSON.stringify(
+            url.includes("/composio/") ? { toolkits: [], connections: [] } : { sources: [] },
+          ),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+      return new Response(JSON.stringify({ connectors: [connector()] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderWithQuery(<ConnectorSettings />);
+
+    const row = await screen.findByTestId("connector-google");
+    await userEvent.click(within(row).getByRole("button", { name: "Connect Google" }));
+
+    expect(
+      await within(row).findByText(
+        "This address isn't allowed to finish the connection. Nothing was saved.",
+      ),
+    ).toBeVisible();
+    expect(
+      within(row).queryByText("The connection could not be completed. Nothing was saved."),
+    ).not.toBeInTheDocument();
+  });
+
   it("safely disables hosted OAuth when the connector cannot support it", async () => {
     mockConnectors(
       connector({

@@ -75,6 +75,7 @@ describe("hosted connector OAuth outcomes", () => {
 
   it("maps generated start failures and provider callback restart states", () => {
     expect(startOutcome(start(400, "invalid_scope"))).toBe("scope");
+    expect(startOutcome(start(400, "invalid_redirect_target"))).toBe("redirect");
     expect(startOutcome(start(403, "plan_required"))).toBe("entitlement");
     expect(startOutcome(start(409, "authorization_restart_required"))).toBe("restart");
     expect(startOutcome(start(429, "rate_limited"))).toBe("retry");
