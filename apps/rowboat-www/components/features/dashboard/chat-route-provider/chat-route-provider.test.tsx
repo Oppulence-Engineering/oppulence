@@ -121,7 +121,7 @@ describe("ChatRouteProvider", () => {
     expect(component).toHaveTextContent("Acme");
     expect(screen.getByRole("textbox", { name: "Prompt" })).toHaveAttribute(
       "placeholder",
-      "Name the loose end…",
+      "Ask about a company, a promise, or the next step.",
     );
     expect(screen.getByRole("button", { name: "Assistant" })).toBeVisible();
 

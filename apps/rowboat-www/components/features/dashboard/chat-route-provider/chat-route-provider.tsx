@@ -179,7 +179,9 @@ function ChatPromptInput({
             className={empty ? "min-h-12 max-h-[200px]" : "min-h-[46px] max-h-[200px]"}
             onChange={(event) => setText(event.target.value)}
             placeholder={
-              empty ? "Name the loose end…" : "Ask about a client, commitment, or next step"
+              empty
+                ? "Ask about a company, a promise, or the next step."
+                : "Ask about a client, commitment, or next step"
             }
             value={text}
           />
