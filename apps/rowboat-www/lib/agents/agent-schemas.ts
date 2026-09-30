@@ -117,6 +117,23 @@ export function agentInstructionsCopy(input: {
 }
 
 /**
+ * The customize dialog shows the same purpose as the agent page. Leaving that
+ * text unchanged keeps the maintained runtime prompt on the copy. Editing it
+ * saves what the person wrote.
+ */
+export function duplicateAgentInstructions(
+  source: { slug: string; source?: string; instructions?: string } | undefined,
+  drafted: string,
+): string {
+  const draft = drafted.trim();
+  if (!source) return draft;
+  const shown = agentInstructionsCopy(source).trim();
+  const stored = source.instructions?.trim() || "";
+  if (draft === shown && stored) return stored;
+  return draft;
+}
+
+/**
  * Delegation buttons only have the slug. Known agents use their product name;
  * any other slug is shown as words.
  */

@@ -9,6 +9,9 @@ describe("AgentsView", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function AgentsView");
     expect(source).toContain("agentInstructionsCopy(selected)");
+    expect(source).toContain("agentInstructionsCopy(source)");
+    expect(source).toContain("duplicateAgentInstructions(source, instructions)");
+    expect(source).not.toContain("source?.instructions");
     expect(source).not.toContain("{selected.instructions");
     expect(source).toContain("adjust its model, tools, and limits.");
     expect(source).not.toContain("safeguards");

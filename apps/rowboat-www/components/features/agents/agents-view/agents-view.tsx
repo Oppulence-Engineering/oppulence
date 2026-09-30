@@ -43,6 +43,7 @@ import {
   agentDisplayName,
   agentInstructionsCopy,
   agentSourceLabel,
+  duplicateAgentInstructions,
 } from "@/lib/agents/agent-schemas";
 import { agentToolLabel } from "@/lib/agents/agent-tools";
 import { cn } from "@/lib/utils";
@@ -75,7 +76,7 @@ function CreateAgentDialog({
     const initialName = source ? `${source.name} copy` : "";
     setName(initialName);
     setSlug(source ? `${source.slug}-copy` : "");
-    setInstructions(source?.instructions || "");
+    setInstructions(source ? agentInstructionsCopy(source) : "");
     setSlugEdited(false);
     setError(null);
   }, [source]);
@@ -95,7 +96,7 @@ function CreateAgentDialog({
         body: JSON.stringify({
           slug: slug.trim(),
           name: name.trim(),
-          instructions: instructions.trim(),
+          instructions: duplicateAgentInstructions(source, instructions),
           model: source?.model || "",
           provider: source?.provider || "",
           enabledTools: source?.enabledTools || [],

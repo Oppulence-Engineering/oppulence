@@ -5,6 +5,7 @@ import {
   agentInstructionsCopy,
   agentSlugTitle,
   agentSourceLabel,
+  duplicateAgentInstructions,
   parseAgentDocument,
   parseAgentsResponse,
   visibleAgentLabel,
@@ -72,6 +73,21 @@ describe("agent schemas", () => {
       }),
     ).toBe("Watch renewals and draft the next note.");
     expect(runtime).toContain("Rowboat");
+    const shown = agentInstructionsCopy({
+      slug: "assistant",
+      source: "builtin",
+      instructions: runtime,
+    });
+    expect(duplicateAgentInstructions({ slug: "assistant", source: "builtin", instructions: runtime }, shown)).toBe(
+      runtime,
+    );
+    expect(
+      duplicateAgentInstructions(
+        { slug: "assistant", source: "builtin", instructions: runtime },
+        "Answer in one sentence.",
+      ),
+    ).toBe("Answer in one sentence.");
+    expect(duplicateAgentInstructions(undefined, "  Draft a follow-up.  ")).toBe("Draft a follow-up.");
   });
 
   it("names an agent source the way the product talks", () => {
