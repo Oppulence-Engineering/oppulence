@@ -423,7 +423,7 @@ export function AgentsView({
 
                 <section>
                   <h3 className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                    Instructions
+                    Purpose
                   </h3>
                   <p className="mt-2 whitespace-pre-wrap rounded-none border bg-muted/15 p-4 text-sm leading-6">
                     {agentInstructionsCopy(selected)}

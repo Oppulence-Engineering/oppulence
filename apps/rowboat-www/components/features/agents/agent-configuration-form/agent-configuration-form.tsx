@@ -303,7 +303,7 @@ export function AgentConfigurationForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="agent-instructions">Instructions</Label>
+          <Label htmlFor="agent-instructions">Purpose</Label>
           {readOnly ? (
             <p className="text-sm leading-6" id="agent-instructions">
               {agentInstructionsCopy({

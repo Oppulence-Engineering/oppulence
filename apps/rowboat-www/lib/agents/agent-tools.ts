@@ -165,13 +165,13 @@ export const DEVELOPER_TOOL_NAMES = new Set<string>([
 const GRANTED_TOOL_LABELS: Record<string, string> = {
   "run_history.read": "Past runs",
   "workflow.read": "Workflows",
-  "workspace.read": "Workspaces",
+  "workspace.read": "This workspace",
   "relationship.create": "Add a company",
   "relationship.correct": "Correct a company",
-  "relationship.assertion.retract": "Remove a recorded fact",
+  "relationship.assertion.retract": "Remove a saved detail",
   "relationship.review.acknowledge": "Acknowledge a review",
   "relationship.identity.decide": "Review a possible duplicate",
-  "relationship.attention.decide": "Update an attention item",
+  "relationship.attention.decide": "Update what needs attention",
   "conversation.delete": "Delete a conversation",
   "recommendation.create": "Create a recommendation",
   "recommendation.dismiss": "Dismiss a recommendation",
@@ -194,9 +194,9 @@ const GRANTED_TOOL_LABELS: Record<string, string> = {
   "person.delete": "Remove a person",
   "action_proposal.read": "Read proposed actions",
   "subagent.delegate": "Delegate to an agent",
-  "connector.read.composio_tool_search": "Find a connected action",
-  "connector.read.composio_tool_describe": "Read a connected action",
-  "connector.write.composio_tool_execute": "Run a connected action",
+  "connector.read.composio_tool_search": "Find another tool",
+  "connector.read.composio_tool_describe": "See what another tool does",
+  "connector.write.composio_tool_execute": "Run another tool after you approve it",
 };
 
 export function agentToolLabel(name: string): string {

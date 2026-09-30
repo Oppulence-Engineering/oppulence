@@ -14,10 +14,14 @@ describe("agent tool labels", () => {
     );
     expect(agentToolLabel("tool_result.read")).toBe("Earlier results");
     expect(agentToolLabel("relationship.create")).toBe("Add a company");
-    expect(agentToolLabel("connector.read.composio_tool_search")).toBe("Find a connected action");
-    expect(agentToolLabel("connector.read.composio_tool_describe")).toBe("Read a connected action");
-    expect(agentToolLabel("connector.write.composio_tool_execute")).toBe("Run a connected action");
-    expect(agentToolLabel("relationship.assertion.retract")).toBe("Remove a recorded fact");
+    expect(agentToolLabel("connector.read.composio_tool_search")).toBe("Find another tool");
+    expect(agentToolLabel("connector.read.composio_tool_describe")).toBe("See what another tool does");
+    expect(agentToolLabel("connector.write.composio_tool_execute")).toBe(
+      "Run another tool after you approve it",
+    );
+    expect(agentToolLabel("relationship.assertion.retract")).toBe("Remove a saved detail");
+    expect(agentToolLabel("relationship.attention.decide")).toBe("Update what needs attention");
+    expect(agentToolLabel("workspace.read")).toBe("This workspace");
     expect(agentToolLabel("demo.payment")).toBe("Payment demo");
     expect(agentToolLabel("subagent.delegate")).toBe("Delegate to an agent");
   });
