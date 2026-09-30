@@ -98,6 +98,9 @@ describe("CloudWorkflowsView", () => {
     expect(source).not.toContain("recurring relationship work");
     expect(source).toContain("review the company and draft a concise recovery email");
     expect(source).not.toContain("review the account");
+    expect(source).toContain("Oppulence Cloud keeps the schedule.");
+    expect(source).not.toContain("cloud runtime");
+    expect(source).not.toContain("View settings");
   });
 
   it("keeps the named product export at the generator path", () => {

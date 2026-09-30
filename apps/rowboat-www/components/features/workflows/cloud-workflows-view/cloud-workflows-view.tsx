@@ -15,7 +15,6 @@ import {
   Play,
   Plus,
   Robot,
-  SlidersHorizontal,
   Warning,
   XCircle,
 } from "@/lib/icons";
@@ -441,9 +440,6 @@ function WorkflowLibrary({
             variant="ghost"
           >
             <ArrowClockwise className={cn(busy && "animate-spin")} />
-          </Button>
-          <Button className="rounded-none" disabled size="sm" variant="outline">
-            <SlidersHorizontal /> View settings
           </Button>
           <CreateWorkflowDialog onCreated={onCreated} templates={templates} />
         </div>
@@ -1045,8 +1041,7 @@ function WorkflowEditor({
               <div>
                 <h2 className="text-[15px] font-medium">Workflow settings</h2>
                 <p className="mt-1 text-[12px] text-muted-foreground">
-                  Keep the operational details simple. The cloud runtime handles scheduling and
-                  execution.
+                  Name, schedule, and where the workflow runs. Oppulence Cloud keeps the schedule.
                 </p>
               </div>
               <div className="space-y-1.5">
