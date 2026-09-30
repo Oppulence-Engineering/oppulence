@@ -17,6 +17,7 @@ import {
 import { Link, ListChecks, Loader, User } from "@sim/emcn/icons";
 
 import { errMessage } from "@/components/features/revenue/shared/shared";
+import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { createAction } from "@/lib/revenue/revenue";
 import type { RevenueRelationship } from "@/lib/revenue/types";
 
@@ -72,6 +73,11 @@ export function TaskCreateDialog({
     [relationships],
   );
   const noCompanies = relationships.length === 0;
+  const dueLabel = dueDate === todayDefault ? "Today" : formatShortDate(dueDate);
+  const selectedCompany = relationshipOptions.find((option) => option.value === relationshipId);
+  const companyChoice = noCompanies
+    ? "No companies yet"
+    : selectedCompany?.label || (recordError ? "Link a company to save" : "Link a company");
 
   const close = React.useCallback(() => onOpenChange(false), [onOpenChange]);
 
@@ -180,7 +186,8 @@ export function TaskCreateDialog({
           {
             custom: (
               <ChipDatePicker
-                label={dueDate === todayDefault ? "Today" : formatShortDate(dueDate)}
+                aria-label={comboboxFilterName("Due date", dueLabel)}
+                label={dueLabel}
                 today={todayDefault}
                 value={dueDate}
                 variant="ghost"
@@ -199,17 +206,12 @@ export function TaskCreateDialog({
           {
             custom: (
               <ChipDropdown
+                aria-label={comboboxFilterName("Company", companyChoice)}
                 className={recordError ? "text-[var(--text-error)]" : undefined}
                 disabled={noCompanies}
                 leftIcon={Link}
                 options={relationshipOptions}
-                placeholder={
-                  noCompanies
-                    ? "No companies yet"
-                    : recordError
-                      ? "Link a company to save"
-                      : "Link a company"
-                }
+                placeholder={companyChoice}
                 value={relationshipId || undefined}
                 onChange={(value) => {
                   setRelationshipId(value);

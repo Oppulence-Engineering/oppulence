@@ -36,6 +36,7 @@ describe("TaskCreateDialog", () => {
     );
 
     await user.type(screen.getByLabelText("Task title"), "Follow up on renewal");
+    expect(screen.getByRole("button", { name: "Company, Link a company" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Add a company before saving.");
@@ -57,7 +58,8 @@ describe("TaskCreateDialog", () => {
 
     await user.type(screen.getByLabelText("Task title"), "Follow up on renewal");
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "No companies yet" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Company, No companies yet" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Due date, Today" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Add a company" })).toBeNull();
     expect(screen.getByLabelText("Task title")).toHaveAttribute(
       "placeholder",
