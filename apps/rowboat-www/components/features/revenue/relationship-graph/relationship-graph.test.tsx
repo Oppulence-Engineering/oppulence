@@ -82,6 +82,10 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).not.toContain("Building authorized graph");
     expect(source).toContain("Select a company or a person to see how it connects.");
     expect(source).not.toContain("or evidence item");
+    expect(source).not.toContain("evidence item");
+    expect(source).toContain(
+      'graphCountLabel(queryResult.evidenceRefs.length, "detail", "details")',
+    );
     expect(source).not.toContain("governed next actions");
     expect(source).toContain('relationship: "Company"');
     expect(source).not.toContain('relationship: "Account"');

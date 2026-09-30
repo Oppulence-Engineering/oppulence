@@ -1358,9 +1358,7 @@ export function RelationshipGraphWorkspace({
                 className="rounded-none font-mono text-[10px] font-normal text-primary/45"
                 variant="outline"
               >
-                {queryResult.evidenceRefs.length === 1
-                  ? "1 evidence item"
-                  : `${queryResult.evidenceRefs.length} evidence items`}
+                {graphCountLabel(queryResult.evidenceRefs.length, "detail", "details")}
               </Badge>
             )}
           </div>
