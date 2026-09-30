@@ -290,7 +290,7 @@ export function WorkspaceEmptyState({
       {learnMore.length > 0 ? (
         <div className={cn("w-full", illustrated ? "mb-4 mt-auto max-w-[640px] text-left" : "")}>
           <p className={cn("text-[12px] text-primary/45", illustrated ? "mb-2" : "mb-3")}>
-            Learn more
+            What to expect
           </p>
           <div className={cn("grid gap-2 sm:grid-cols-2", !illustrated && "grid-cols-2 gap-3")}>
             {learnMore.map((item) => (

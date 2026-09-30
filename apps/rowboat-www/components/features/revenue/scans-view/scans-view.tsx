@@ -83,8 +83,8 @@ export function ScansView({
           }
           image="audits"
           learnMore={[
-            { label: "Promise Leak Audit explained" },
-            { label: "How evidence becomes commitments" },
+            { label: "Reads the mail you connect" },
+            { label: "Nothing is sent without approval" },
           ]}
           title="Audits"
         />

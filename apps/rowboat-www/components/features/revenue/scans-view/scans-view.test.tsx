@@ -10,5 +10,9 @@ describe("ScansView", () => {
     expect(source).toContain("export function ScansView");
     expect(source).toContain(">Companies</TableHead>");
     expect(source).not.toContain(">Relationships</TableHead>");
+    expect(source).toContain("Reads the mail you connect");
+    expect(source).toContain("Nothing is sent without approval");
+    expect(source).not.toContain("Promise Leak Audit explained");
+    expect(source).not.toContain("How evidence becomes commitments");
   });
 });

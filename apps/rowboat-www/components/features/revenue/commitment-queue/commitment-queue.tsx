@@ -748,7 +748,7 @@ export function CommitmentQueue({
             <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
               {items.length === 0
                 ? googleConnected
-                  ? "No explicit promises were found. Run another audit after new conversations or import reviewed meeting evidence."
+                  ? "No explicit promises were found. Run another audit after new conversations."
                   : googleNeedsReconnect
                     ? "Reconnect Google to resume finding who promised what, when it is due, and the exact evidence behind it."
                     : "Connect Gmail and Calendar to find who promised what, when it is due, and the exact evidence behind it."
@@ -777,9 +777,6 @@ export function CommitmentQueue({
                     <MagnifyingGlass /> Run 6-month audit
                   </Button>
                 )}
-                <Button type="button" size="sm" variant="outline" onClick={onOpenAccounts}>
-                  Import meeting evidence
-                </Button>
               </div>
             ) : null}
             {items.length === 0 ? (
@@ -797,7 +794,7 @@ export function CommitmentQueue({
                         <Check className="size-4" />
                       </AvatarFallback>
                     </Avatar>
-                    Confirm promises with exact evidence
+                    Add a company
                   </Button>
                   <Button
                     className="flex h-[72px] items-center justify-start gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] font-normal text-primary/80 hover:bg-background-100"

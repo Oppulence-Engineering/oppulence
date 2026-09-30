@@ -14,5 +14,7 @@ describe("WorkspaceEmptyState", () => {
     expect(source).toContain("learnMore = []");
     expect(source).not.toContain("Introduction to tasks");
     expect(source).not.toContain("Notes, Tasks, and Email sending");
+    expect(source).toContain("What to expect");
+    expect(source).not.toContain("Learn more");
   });
 });

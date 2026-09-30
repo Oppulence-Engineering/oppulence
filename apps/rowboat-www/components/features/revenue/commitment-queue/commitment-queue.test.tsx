@@ -2,6 +2,9 @@
 
 import "@testing-library/jest-dom/vitest";
 
+import fs from "node:fs";
+import path from "node:path";
+
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -435,4 +438,11 @@ it("keeps the commitment filter and drops the chips that did nothing", () => {
   expect(screen.queryByRole("button", { name: "Filter" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Columns" })).not.toBeInTheDocument();
   expect(screen.getByRole("combobox", { name: "Filter commitments" })).toBeInTheDocument();
+});
+
+it("does not offer a meeting import that opens the company directory", () => {
+  const source = fs.readFileSync(path.join(import.meta.dirname, "commitment-queue.tsx"), "utf8");
+  expect(source).not.toContain("Import meeting evidence");
+  expect(source).not.toContain("import reviewed meeting evidence");
+  expect(source).toContain("Add a company");
 });
