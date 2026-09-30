@@ -14,6 +14,8 @@ describe("QueueView", () => {
 
   it("points an empty workspace at Companies and names the action", () => {
     expect(source).toContain("No companies yet. Add one in Companies, or run an audit to find them.");
+    expect(source).toContain("Add a company");
+    expect(source).toContain("onOpenCompanies");
     expect(source).not.toContain("Relationships tab");
     expect(source).toContain("ACTION_TYPE_LABELS[t]");
     expect(source).toContain('errMessage(relationshipsQuery.error, "Could not load companies.")');

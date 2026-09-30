@@ -76,6 +76,7 @@ export function QueueView({
   onScan,
   scanning,
   needsReconnect = false,
+  onOpenCompanies,
 }: {
   workspace: RevenueWorkspace | null;
   onError: (m: string) => void;
@@ -84,6 +85,8 @@ export function QueueView({
   scanning: boolean;
   /** The audit can only fail until Google is reconnected; `onScan` opens the fix. */
   needsReconnect?: boolean;
+  /** Opens the company directory when a new action has nothing to attach to. */
+  onOpenCompanies?: () => void;
 }) {
   const [filter, setFilter] = React.useState("open");
   const [selected, setSelected] = React.useState<RevenueAction | null>(null);
@@ -258,6 +261,7 @@ export function QueueView({
             }
           }}
           onError={onError}
+          onOpenCompanies={onOpenCompanies}
         />
       ) : null}
     </div>
@@ -379,10 +383,12 @@ function CreateActionDialog({
   onClose,
   onCreated,
   onError,
+  onOpenCompanies,
 }: {
   onClose: () => void;
   onCreated: (a: RevenueAction) => void;
   onError: (m: string) => void;
+  onOpenCompanies?: () => void;
 }) {
   const relationshipsQuery = useRelationships();
   const relationships = relationshipsQuery.data ?? [];
@@ -451,6 +457,18 @@ function CreateActionDialog({
                 No companies yet. Add one in Companies, or run an audit to find them.
               </EmptyDescription>
             </EmptyHeader>
+            {onOpenCompanies ? (
+              <Button
+                onClick={() => {
+                  onClose();
+                  onOpenCompanies();
+                }}
+                size="sm"
+                type="button"
+              >
+                <Plus /> Add a company
+              </Button>
+            ) : null}
           </Empty>
         ) : (
           <div className="flex flex-col gap-3">
@@ -507,9 +525,11 @@ function CreateActionDialog({
           <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel
           </Button>
-          <Button size="sm" onClick={submit} disabled={busy || !relationshipId || !reason.trim()}>
-            {busy ? <Spinner /> : <Plus />} Create
-          </Button>
+          {relationships.length > 0 ? (
+            <Button size="sm" onClick={submit} disabled={busy || !relationshipId || !reason.trim()}>
+              {busy ? <Spinner /> : <Plus />} Create
+            </Button>
+          ) : null}
         </DialogFooter>
       </DialogContent>
     </Dialog>

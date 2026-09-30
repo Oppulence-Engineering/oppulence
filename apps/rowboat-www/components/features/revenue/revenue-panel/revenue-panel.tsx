@@ -315,6 +315,7 @@ export function RevenuePanel({
             workspace={workspace}
             onError={setBanner}
             onNotice={setNoticeMsg}
+            onOpenCompanies={() => onTabChange("relationships")}
             onScan={runScan}
             scanning={scanning}
             needsReconnect={reconnectBeforeAudit}

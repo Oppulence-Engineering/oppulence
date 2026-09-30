@@ -526,7 +526,7 @@ function Inspector({
         <Graph className="size-7 text-primary/25" />
         <p className="mt-3 text-sm font-medium text-primary">Inspect the graph</p>
         <p className="mt-1 max-w-56 text-xs text-primary/45">
-          Select a node to see state, evidence, connections, and governed next actions.
+          Select a company, person, or evidence item to see its state and connections.
         </p>
       </aside>
     );
@@ -832,7 +832,33 @@ function GraphTable({
   );
 }
 
-/** Account scope with nothing to pick is not a prompt. The select would be empty. */
+/** The query engine still says "relationship". The graph is a company graph. */
+export function graphQueryAnswer(answer: string, companyCount: number): string {
+  if (companyCount === 0) return "No companies are in this graph yet.";
+  return answer
+    .replace(/\b1 relationship matches\b/g, "1 company matches")
+    .replace(/\b(\d+) relationships match\b/g, (_, count: string) => `${count} companies match`);
+}
+
+/** Parsed filters are query tokens such as "lifecycle: renewal". Show the value. */
+export function graphQueryFilterLabel(filter: string): string {
+  const named = /^([^:]+): (.+)$/.exec(filter);
+  if (!named) return filter;
+  const kind = named[1] ?? "";
+  const value = (named[2] ?? "").replaceAll("_", " ");
+  if (kind === "lifecycle" || kind === "health") {
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  }
+  const titles: Record<string, string> = {
+    nodes: "Included",
+    approval: "Approval",
+    sources: "Sources",
+    edges: "Connections",
+    text: "Text",
+  };
+  const title = titles[kind];
+  return title ? `${title}: ${value}` : filter;
+}
 export function accountGraphPrompt(companyCount: number): string {
   if (companyCount === 0) return "Add a company before this graph can be built.";
   return "Choose an account to build its graph.";
@@ -1286,20 +1312,26 @@ export function RelationshipGraphWorkspace({
             aria-live="polite"
           >
             <Sparkle className="size-4 shrink-0 text-oppulence-orange" />
-            <Label className="mr-auto font-normal">{queryResult.answer}</Label>
-            {queryResult.parsed.applied.map((filter) => (
-              <Badge key={filter} variant="outline" className="rounded-full font-normal">
-                {filter}
+            <Label className="mr-auto font-normal">
+              {graphQueryAnswer(queryResult.answer, relationships.length)}
+            </Label>
+            {relationships.length === 0
+              ? null
+              : queryResult.parsed.applied.map((filter) => (
+                  <Badge key={filter} variant="outline" className="rounded-full font-normal">
+                    {graphQueryFilterLabel(filter)}
+                  </Badge>
+                ))}
+            {relationships.length === 0 ? null : (
+              <Badge
+                className="rounded-none font-mono text-[10px] font-normal text-primary/45"
+                variant="outline"
+              >
+                {queryResult.evidenceRefs.length === 1
+                  ? "1 evidence item"
+                  : `${queryResult.evidenceRefs.length} evidence items`}
               </Badge>
-            ))}
-            <Badge
-              className="rounded-none font-mono text-[10px] font-normal text-primary/45"
-              variant="outline"
-            >
-              {queryResult.evidenceRefs.length === 1
-                ? "1 evidence item"
-                : `${queryResult.evidenceRefs.length} evidence items`}
-            </Badge>
+            )}
           </div>
         ) : null}
       </div>
@@ -1441,7 +1473,7 @@ export function RelationshipGraphWorkspace({
         <div className="relative min-h-[500px] bg-background">
           {loading ? (
             <div className="absolute inset-0 flex items-center justify-center text-sm text-primary/45">
-              <CircleNotch className="mr-2 size-4 animate-spin" /> Building authorized graph…
+              <CircleNotch className="mr-2 size-4 animate-spin" /> Building the company graph…
             </div>
           ) : loadError ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
