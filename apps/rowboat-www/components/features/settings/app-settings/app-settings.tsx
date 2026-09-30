@@ -268,7 +268,7 @@ function WorkspaceConnection() {
 
   return (
     <SettingsRow
-      description="Oppulence Cloud serves companies, people, and evidence for this organization."
+      description="Oppulence Cloud serves companies, people, and promises for this organization."
       title="Workspace connection"
     >
       <div className="settings-row">
@@ -277,7 +277,7 @@ function WorkspaceConnection() {
           <p className="settings-row-description">
             {state === "unavailable"
               ? "The workspace could not be reached. Check again in a moment."
-              : "Companies, people, and evidence for the signed-in organization."}
+              : "Companies, people, and promises for the signed-in organization."}
           </p>
         </div>
         {state === "unavailable" ? (

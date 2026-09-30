@@ -15,6 +15,10 @@ describe("SettingsView", () => {
     expect(source).not.toContain("what this session can reach");
     expect(source).toContain("Standard workspace access");
     expect(source).toContain("shared companies, people, and evidence");
+    expect(source).toContain("Oppulence Cloud serves companies, people, and promises for this organization.");
+    expect(source).toContain("Companies, people, and promises for the signed-in organization.");
+    expect(source).not.toContain("and evidence for this organization");
+    expect(source).not.toContain("and evidence for the signed-in organization");
     expect(source).toContain("from entering this workspace.");
     expect(source).toContain("where the product should go next.");
     expect(source).toContain("Review the Oppulence API reference.");
