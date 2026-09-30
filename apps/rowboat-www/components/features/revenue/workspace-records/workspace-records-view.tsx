@@ -698,7 +698,9 @@ export function NotesView({ onError, onNotice }: ViewProps) {
           onClick={() => setNewestFirst((value) => !value)}
         >
           <List className="size-4" /> Sorted by{" "}
-          <Label className="font-normal text-primary">Creation date</Label>
+          <Label className="font-normal text-primary">
+            {newestFirst ? "Newest first" : "Oldest first"}
+          </Label>
           <CaretDown className={cn("size-3 transition-transform", !newestFirst && "rotate-180")} />
         </Button>
         <div className="flex items-center gap-2">
