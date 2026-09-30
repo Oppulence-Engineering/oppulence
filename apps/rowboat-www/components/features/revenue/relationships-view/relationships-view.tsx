@@ -35,6 +35,7 @@ import {
   ModeChip,
 } from "@/components/features/revenue/shared/shared";
 import { AttentionQueueSurface } from "@/components/features/revenue/attention-queue-surface/attention-queue-surface";
+import { useAskOppulence } from "@/components/features/dashboard/dashboard-shell/dashboard-shell";
 import {
   AccountMissionControlSurface,
   accountAttentionFromHealth,
@@ -1668,6 +1669,8 @@ export function RelationshipSheet({
   >({});
   const [loading, setLoading] = React.useState(true);
   const [loadError, setLoadError] = React.useState<string | null>(null);
+  const askOppulence = useAskOppulence();
+  const askedCompany = data?.relationship ?? seed;
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -1773,9 +1776,15 @@ export function RelationshipSheet({
             {data?.relationship.primaryEmail}
             {data?.relationship.accountDomain ? ` · ${data.relationship.accountDomain}` : ""}
           </SheetDescription>
-          <Badge className="ml-auto text-xs font-normal text-primary" variant="outline">
+          <Button
+            className="ml-auto h-7 px-2 text-xs font-normal"
+            onClick={() => askOppulence(askedCompany ? companyName(askedCompany) : undefined)}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
             Ask Oppulence
-          </Badge>
+          </Button>
         </SheetHeader>
         {!data ? (
           <div className="flex flex-col gap-3 px-4 py-6">

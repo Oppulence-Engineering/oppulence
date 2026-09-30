@@ -52,6 +52,8 @@ export function CommandPalette({
   onOpenAgent,
   onOpenSession,
   onToggleSidebar,
+  querySeed = "",
+  seedNonce = 0,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -68,6 +70,10 @@ export function CommandPalette({
   onOpenAgent: (name: string) => void;
   onOpenSession: (runId: string) => void;
   onToggleSidebar: () => void;
+  /** Text to place in the search box when a surface asks about something specific. */
+  querySeed?: string;
+  /** Bumps whenever a surface asks, including when the palette is already open. */
+  seedNonce?: number;
 }) {
   const [query, setQuery] = React.useState("");
   const [debouncedQuery, setDebouncedQuery] = React.useState("");
@@ -93,13 +99,18 @@ export function CommandPalette({
     onOpenChange(false);
   };
 
+  const appliedSeed = React.useRef(0);
   React.useEffect(() => {
     if (!open) {
       setQuery("");
       setDebouncedQuery("");
       setSearchMode("accounts");
+      return;
     }
-  }, [open]);
+    if (seedNonce === appliedSeed.current) return;
+    appliedSeed.current = seedNonce;
+    setQuery(querySeed);
+  }, [open, querySeed, seedNonce]);
 
   return (
     <CommandDialog

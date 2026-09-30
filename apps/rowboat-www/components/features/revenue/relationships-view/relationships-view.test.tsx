@@ -21,8 +21,14 @@ describe("RelationshipsView", () => {
       label: "Filtered",
       filtered: true,
     });
-    expect(companyDirectoryTitle({ query: " ", health: "at_risk", lifecycle: "all" }).filtered).toBe(
-      true,
-    );
+    expect(
+      companyDirectoryTitle({ query: " ", health: "at_risk", lifecycle: "all" }).filtered,
+    ).toBe(true);
+  });
+
+  it("asks Oppulence from the company sheet instead of showing a dead badge", () => {
+    expect(source).toContain("useAskOppulence");
+    expect(source).toContain("askOppulence(askedCompany ? companyName(askedCompany) : undefined)");
+    expect(source).not.toContain(">Ask Oppulence</Badge>");
   });
 });

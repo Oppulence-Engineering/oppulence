@@ -29,8 +29,8 @@ vi.mock("@/components/auth/auth-gate", () => ({
   }),
 }));
 vi.mock("@/components/features/dashboard/command-palette/command-palette", () => ({
-  CommandPalette: ({ open }: { open: boolean }) => (
-    <div aria-label="Command palette" data-open={String(open)} />
+  CommandPalette: ({ open, querySeed }: { open: boolean; querySeed?: string }) => (
+    <div aria-label="Command palette" data-open={String(open)} data-seed={querySeed ?? ""} />
   ),
 }));
 vi.mock("@/components/features/dashboard/chat-route-provider/chat-route-provider", () => ({
@@ -66,7 +66,16 @@ vi.mock("@/lib/console/console-prefs", () => ({
 }));
 vi.mock("@/lib/icons", () => ({ SidebarSimple: () => <span aria-hidden /> }));
 
-import { DashboardShell } from "./dashboard-shell";
+import { DashboardShell, useAskOppulence } from "./dashboard-shell";
+
+function AskAboutAcme() {
+  const ask = useAskOppulence();
+  return (
+    <button onClick={() => ask("Acme")} type="button">
+      Ask about Acme
+    </button>
+  );
+}
 
 describe("DashboardShell", () => {
   beforeEach(() => {
@@ -87,6 +96,7 @@ describe("DashboardShell", () => {
 
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     expect(screen.getByLabelText("Command palette")).toHaveAttribute("data-open", "true");
+    expect(screen.getByLabelText("Command palette")).toHaveAttribute("data-seed", "");
 
     fireEvent.keyDown(window, { key: "[" });
     expect(mocks.setSidebarOpen).toHaveBeenCalledWith(false);
@@ -96,5 +106,21 @@ describe("DashboardShell", () => {
     fireEvent.keyDown(input, { key: "[" });
     expect(mocks.setSidebarOpen).toHaveBeenCalledTimes(1);
     input.remove();
+  });
+
+  it("opens the palette seeded with the company a surface asks about", () => {
+    render(
+      <DashboardShell aria-label="Dashboard">
+        <AskAboutAcme />
+      </DashboardShell>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Ask about Acme" }));
+    const palette = screen.getByLabelText("Command palette");
+    expect(palette).toHaveAttribute("data-open", "true");
+    expect(palette).toHaveAttribute("data-seed", "Acme");
+
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    expect(screen.getByLabelText("Command palette")).toHaveAttribute("data-seed", "");
   });
 });

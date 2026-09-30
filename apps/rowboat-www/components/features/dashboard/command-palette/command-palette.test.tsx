@@ -130,4 +130,9 @@ describe("CommandPalette semantic mail search", () => {
       await screen.findByText("Semantic mail search is not enabled for this workspace."),
     ).toBeVisible();
   });
+
+  it("fills the search box with the company a surface asked about", async () => {
+    renderPalette({ ...requiredProps, querySeed: "Acme", seedNonce: 1 });
+    expect(await screen.findByDisplayValue("Acme")).toBeVisible();
+  });
 });
