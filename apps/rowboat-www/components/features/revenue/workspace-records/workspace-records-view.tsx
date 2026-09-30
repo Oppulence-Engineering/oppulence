@@ -272,6 +272,61 @@ export function personEnrichmentLabel(
   return `${verified} verified ${verified === 1 ? "field" : "fields"}`;
 }
 
+/** The directory already says "No email" when the address is missing. */
+export function personSheetSubtitle(person: Pick<RelationshipPerson, "primaryEmail">): string {
+  return person.primaryEmail?.trim() || "No email";
+}
+
+/**
+ * Creating a person writes display_name and alias so the directory can find
+ * them. Those rows are the name the user typed, not enrichment evidence.
+ */
+const IDENTITY_ATTRIBUTE_DIMENSIONS = new Set(["display_name", "alias"]);
+
+export function enrichmentEvidence<T extends { dimension: string; status: string }>(
+  attributes: readonly T[],
+): T[] {
+  return attributes.filter(
+    (attribute) =>
+      attribute.status === "active" && !IDENTITY_ATTRIBUTE_DIMENSIONS.has(attribute.dimension),
+  );
+}
+
+const EVIDENCE_EXTRACTOR_LABELS: Record<string, string> = {
+  email_signature: "From their email signature",
+  email_header: "From an email header",
+  calendar_invite: "From a calendar invite",
+  transcript_intro: "From a transcript",
+  crm_field: "From the CRM",
+  user_entry: "Added by you",
+  display_name_header: "From the name on the record",
+  mail_delivery_report: "Their mail server reported this",
+  parallel: "From public web research",
+};
+
+const EVIDENCE_SOURCE_LABELS: Record<string, string> = {
+  gmail: "Gmail",
+  calendar: "Calendar",
+  slack: "Slack",
+  hubspot: "HubSpot",
+  meeting: "A meeting",
+  desktop_note: "A note",
+  voice_note: "A voice note",
+  browser: "The browser",
+  crm: "The CRM",
+  user: "Added by you",
+  web: "The web",
+};
+
+/** Prefer the extractor phrase. The raw source token is only a fallback. */
+export function personEvidenceProvenance(
+  attribute: Pick<RelationshipPersonAttribute, "extractor" | "source">,
+): string {
+  const extractor = EVIDENCE_EXTRACTOR_LABELS[attribute.extractor];
+  if (extractor) return extractor;
+  return EVIDENCE_SOURCE_LABELS[attribute.source] ?? "Recorded in this workspace";
+}
+
 export function PeopleView({ onError, onNotice }: ViewProps) {
   const queryClient = useQueryClient();
   const [query, setQuery] = React.useState("");
@@ -563,12 +618,13 @@ function PersonSheet({
   attributes: RelationshipPersonAttribute[];
   onClose: () => void;
 }) {
+  const evidence = enrichmentEvidence(attributes);
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-lg">
         <SheetHeader className="border-b border-border p-4">
           <SheetTitle>{person.displayName}</SheetTitle>
-          <SheetDescription>{person.primaryEmail || "Relationship profile"}</SheetDescription>
+          <SheetDescription>{personSheetSubtitle(person)}</SheetDescription>
         </SheetHeader>
         <div className="overflow-y-auto p-4">
           <dl className="grid grid-cols-[120px_minmax(0,1fr)] gap-x-3 gap-y-3 text-sm">
@@ -594,11 +650,11 @@ function PersonSheet({
           <h3 className="mt-8 border-b border-border pb-2 text-xs font-medium uppercase tracking-wide text-primary/45">
             Enrichment evidence
           </h3>
-          {attributes.length === 0 ? (
+          {evidence.length === 0 ? (
             <p className="py-4 text-sm text-primary/45">No enriched fields yet.</p>
           ) : (
             <ul className="divide-y divide-border">
-              {attributes.map((attribute) => (
+              {evidence.map((attribute) => (
                 <li className="py-3" key={attribute.id}>
                   <div className="flex items-center justify-between gap-3">
                     <Label className="text-sm font-medium capitalize text-primary">
@@ -610,7 +666,7 @@ function PersonSheet({
                   </div>
                   <p className="mt-1 text-sm text-primary/65">{attribute.value}</p>
                   <p className="mt-1 text-[11px] text-primary/40">
-                    {attribute.source} · {relativeTime(attribute.observedAt)}
+                    {personEvidenceProvenance(attribute)} · {relativeTime(attribute.observedAt)}
                   </p>
                   {(attribute.citations ?? [])
                     .map((citation) => safeResearchCitationURL(citation.url))

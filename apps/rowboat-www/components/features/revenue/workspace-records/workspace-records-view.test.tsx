@@ -44,7 +44,10 @@ vi.mock("@oppulence/ui/components/dialog", () => ({
 import {
   NotesView,
   personDirectoryTitle,
+  enrichmentEvidence,
   personEnrichmentLabel,
+  personEvidenceProvenance,
+  personSheetSubtitle,
   sortTasksByDue,
 } from "@/components/features/revenue/workspace-records/workspace-records-view";
 
@@ -278,6 +281,26 @@ describe("people directory labels", () => {
       personEnrichmentLabel({ location: "Lisbon", title: "VP", department: "Sales" }),
     ).toBe("3 verified fields");
     expect(personEnrichmentLabel({ employmentStatus: "departed" })).toBe("1 verified field");
+  });
+
+  it("does not present a typed name as enrichment", () => {
+    expect(personSheetSubtitle({})).toBe("No email");
+    expect(personSheetSubtitle({ primaryEmail: "ada@acme.com" })).toBe("ada@acme.com");
+    expect(
+      enrichmentEvidence([
+        { dimension: "display_name", status: "active" },
+        { dimension: "alias", status: "active" },
+        { dimension: "title", status: "retracted" },
+        { dimension: "location", status: "active" },
+      ]).map((attribute) => attribute.dimension),
+    ).toEqual(["location"]);
+    expect(
+      personEvidenceProvenance({ extractor: "email_signature", source: "gmail" }),
+    ).toBe("From their email signature");
+    expect(personEvidenceProvenance({ extractor: "unknown", source: "gmail" })).toBe("Gmail");
+    expect(personEvidenceProvenance({ extractor: "unknown", source: "user" })).toBe(
+      "Added by you",
+    );
   });
 });
 
