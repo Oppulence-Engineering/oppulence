@@ -344,6 +344,14 @@ export function workflowForTask(
  * Starts column, so adding it here made a two-step workflow read as three.
  * A maintained workflow has no canvas, so a step count would be invented.
  */
+/**
+ * System workflows have no canvas. Pause and run-on-demand are the actions a
+ * teammate can take; "inspect the steps" would describe a surface that is not there.
+ */
+export function maintainedWorkflowNotice(): string {
+  return "Oppulence maintains the steps for this workflow. You can pause it and run it on demand.";
+}
+
 export function workflowStepLabel(task: CloudTask): string {
   const visual = taskVisualWorkflow(task);
   if (!visual) return "Maintained";
@@ -1146,8 +1154,7 @@ function WorkflowEditor({
         >
           {task.systemManaged ? (
             <p className="shrink-0 border-b border-border px-4 py-2 text-[12px] text-muted-foreground">
-              Oppulence maintains the steps for this workflow. You can pause it and run it on
-              demand.
+              {maintainedWorkflowNotice()}
             </p>
           ) : null}
           <VisualWorkflowBuilder
@@ -1255,10 +1262,7 @@ function WorkflowEditor({
                 </Badge>
               </div>
               {task.systemManaged ? (
-                <p className="text-[11px] text-muted-foreground">
-                  This workflow is maintained by Oppulence. You can pause it, inspect it, and run it
-                  on demand.
-                </p>
+                <p className="text-[11px] text-muted-foreground">{maintainedWorkflowNotice()}</p>
               ) : null}
               {editable ? (
                 <div className="flex justify-end">

@@ -179,6 +179,16 @@ function TagEditor({
   );
 }
 
+/**
+ * The identity section is an editor for a workspace copy and a description for a
+ * maintained agent. A read-only form must not ask the teammate to rename it.
+ */
+export function agentIdentityHint(readOnly: boolean): string {
+  return readOnly
+    ? "Oppulence maintains this name and how the agent works."
+    : "Give the agent a clear name and tell it how to work.";
+}
+
 export function AgentConfigurationForm({
   agentSlugs,
   content,
@@ -276,7 +286,7 @@ export function AgentConfigurationForm({
           </div>
           <div>
             <h3 className="text-sm font-medium">Identity and behavior</h3>
-            <FieldHint>Give the agent a clear name and tell it how to work.</FieldHint>
+            <FieldHint>{agentIdentityHint(readOnly)}</FieldHint>
           </div>
         </div>
 

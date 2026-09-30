@@ -17,6 +17,7 @@ import {
   workflowLastRunAt,
   workflowLastRunMark,
   workflowRunsForEditor,
+  maintainedWorkflowNotice,
   workflowStepLabel,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
@@ -457,5 +458,10 @@ describe("CloudWorkflowsView", () => {
     );
     expect(source).not.toContain("update-crm-note");
     expect(source).not.toContain('return ["review-account", "write-brief"]');
+    expect(maintainedWorkflowNotice()).toBe(
+      "Oppulence maintains the steps for this workflow. You can pause it and run it on demand.",
+    );
+    expect(source).toContain("maintainedWorkflowNotice()");
+    expect(source).not.toContain("You can pause it, inspect it, and run it");
   });
 });

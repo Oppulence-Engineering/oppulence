@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { agentIdentityHint } from "@/components/features/agents/agent-configuration-form/agent-configuration-form";
+
 const source = fs.readFileSync(
   path.join(import.meta.dirname, "agent-configuration-form.tsx"),
   "utf8",
@@ -35,6 +37,11 @@ describe("AgentConfigurationForm", () => {
     expect(source).not.toContain("connector.custom.action");
     expect(source).not.toContain("slack:messages.read");
     expect(source).not.toContain("Required connection scopes");
+    expect(agentIdentityHint(true)).toBe(
+      "Oppulence maintains this name and how the agent works.",
+    );
+    expect(agentIdentityHint(false)).toBe("Give the agent a clear name and tell it how to work.");
+    expect(source).toContain("agentIdentityHint(readOnly)");
     expect(source).toContain(">Short name</Label>");
     expect(source).toContain("The short name is fixed after an agent is created.");
     expect(source).not.toContain(">Agent ID</Label>");
