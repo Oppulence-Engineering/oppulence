@@ -512,7 +512,8 @@ function GraphCanvas({
         position="top-right"
         className="rounded-[2px] border border-border bg-background/90 px-2 py-1 text-[10px] text-primary/50 backdrop-blur"
       >
-        {graphNodes.length} items · {graphEdges.length} connections
+        {graphCountLabel(graphNodes.length, "item", "items")} ·{" "}
+        {graphCountLabel(graphEdges.length, "connection", "connections")}
       </Panel>
     </ReactFlow>
   );
@@ -849,6 +850,11 @@ function GraphTable({
       </Table>
     </div>
   );
+}
+
+/** One item reads differently from many. The canvas count is the only place this is shown. */
+export function graphCountLabel(count: number, singular: string, plural: string): string {
+  return `${count} ${count === 1 ? singular : plural}`;
 }
 
 /** The query engine still says "relationship". The graph is a company graph. */

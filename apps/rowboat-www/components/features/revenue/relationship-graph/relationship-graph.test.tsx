@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   accountGraphPrompt,
   graphCanvasEmptyState,
+  graphCountLabel,
   graphLayoutLabel,
   graphQueryAnswer,
   graphQueryFilterLabel,
@@ -79,7 +80,9 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).not.toContain(">Evidence</TableHead>");
     expect(source).toContain("Details kept on this record.");
     expect(source).not.toContain("Evidence references retained");
-    expect(source).toContain("items · {graphEdges.length} connections");
+    expect(graphCountLabel(1, "item", "items")).toBe("1 item");
+    expect(graphCountLabel(0, "connection", "connections")).toBe("0 connections");
+    expect(source).toContain('graphCountLabel(graphNodes.length, "item", "items")');
     expect(source).not.toContain("directed links");
   });
 
