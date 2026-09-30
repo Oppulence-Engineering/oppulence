@@ -354,11 +354,11 @@ function RelationshipEnrichment({
           </p>
           <h3 className="mt-1 text-sm font-semibold text-primary">Know who is behind the inbox</h3>
           <p className="mt-1 max-w-3xl text-xs text-primary/55">
-            Parallel Web builds cited dossiers across company ownership, size, funding, revenue,
-            products, buyers, technology, executives, news, and growth signals—plus each person’s
-            role, department, bio, work history, expertise, activity, and verified LinkedIn. Every
-            stored fact keeps its source link; message content, notes, and full email addresses
-            never leave Oppulence.
+            Cited public-web research builds dossiers across company ownership, size, funding,
+            revenue, products, buyers, technology, executives, news, and growth signals—plus each
+            person’s role, department, bio, work history, expertise, activity, and verified LinkedIn.
+            Every stored fact keeps its source link; message content, notes, and full email
+            addresses never leave Oppulence.
           </p>
         </div>
         {status?.consent.consented ? (
@@ -411,17 +411,49 @@ function RelationshipEnrichment({
         </div>
       ) : (
         <p className="mt-3 border-t border-border pt-3 text-xs text-primary/55">
-          {!status.available
-            ? `Unavailable until a workspace administrator configures Parallel Web${status.reason === "plan_required" ? ` and enables the ${status.requiredPlan} plan` : ""}.`
-            : status.reason === "plan_required"
-              ? `Available on the ${status.requiredPlan} plan.`
-              : status.reason === "capability_disabled"
-                ? "Cloud research is disabled for this workspace."
-                : "Enrichment is off until you explicitly allow it."}
+          {enrichmentAvailabilityCopy(status)}
         </p>
       )}
     </section>
   );
+}
+
+const ENRICHMENT_PLAN_LABELS: Record<string, string> = {
+  intelligence: "Intelligence",
+  pro: "Pro",
+  free: "Free",
+};
+
+function enrichmentPlanLabel(plan?: string): string {
+  const trimmed = plan?.trim() ?? "";
+  if (!trimmed) return "";
+  return (
+    ENRICHMENT_PLAN_LABELS[trimmed] ?? trimmed.charAt(0).toUpperCase() + trimmed.slice(1)
+  );
+}
+
+/**
+ * Research status mixes a vendor setup step with the stored plan slug. The
+ * panel says whether this workspace includes cited enrichment.
+ */
+export function enrichmentAvailabilityCopy(status: {
+  available: boolean;
+  reason?: string;
+  requiredPlan?: string;
+}): string {
+  const plan = enrichmentPlanLabel(status.requiredPlan);
+  if (!status.available) {
+    return plan && status.reason === "plan_required"
+      ? `Cited profile enrichment is part of the ${plan} plan. This workspace does not include it.`
+      : "Cited profile enrichment is not available in this workspace.";
+  }
+  if (status.reason === "plan_required") {
+    return plan
+      ? `Available on the ${plan} plan.`
+      : "This workspace plan does not include cited profile enrichment.";
+  }
+  if (status.reason === "capability_disabled") return "Cloud research is disabled for this workspace.";
+  return "Enrichment is off until you explicitly allow it.";
 }
 
 /**
@@ -1045,7 +1077,7 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
   if (statuses.length === 0) {
     return (
       <Badge variant="outline" className="w-fit rounded-none font-normal text-primary/45">
-        No evidence sources yet
+        None connected
       </Badge>
     );
   }

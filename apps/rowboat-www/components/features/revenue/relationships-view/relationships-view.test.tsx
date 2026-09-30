@@ -5,7 +5,10 @@ import { describe, expect, it } from "vitest";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "relationships-view.tsx"), "utf8");
 
-import { companyDirectoryTitle } from "@/components/features/revenue/relationships-view/relationships-view";
+import {
+  companyDirectoryTitle,
+  enrichmentAvailabilityCopy,
+} from "@/components/features/revenue/relationships-view/relationships-view";
 
 describe("RelationshipsView", () => {
   it("keeps the named product export at the generator path", () => {
@@ -66,6 +69,30 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("backfill ${progress}%");
     expect(source).not.toContain("ambiguous relationship");
     expect(source).toContain("possible {candidates.length === 1 ? \"duplicate\" : \"duplicates\"}");
+    expect(source).not.toContain("Parallel Web");
+    expect(source).toContain("None connected");
+    expect(source).not.toContain("No evidence sources yet");
+  });
+
+  it("names the enrichment plan instead of the research vendor", () => {
+    expect(
+      enrichmentAvailabilityCopy({
+        available: false,
+        reason: "plan_required",
+        requiredPlan: "intelligence",
+      }),
+    ).toBe(
+      "Cited profile enrichment is part of the Intelligence plan. This workspace does not include it.",
+    );
+    expect(enrichmentAvailabilityCopy({ available: false, reason: "unconfigured" })).toBe(
+      "Cited profile enrichment is not available in this workspace.",
+    );
+    expect(
+      enrichmentAvailabilityCopy({ available: true, reason: "plan_required", requiredPlan: "pro" }),
+    ).toBe("Available on the Pro plan.");
+    expect(enrichmentAvailabilityCopy({ available: true, reason: "capability_disabled" })).toBe(
+      "Cloud research is disabled for this workspace.",
+    );
   });
 
   it("asks Oppulence from the company sheet instead of showing a dead badge", () => {
