@@ -198,13 +198,13 @@ export function QueueView({
                 <>
                   No recovery drafts yet! Run an audit
                   <br />
-                  or draft recovery from a commitment.
+                  or draft recovery from a promise.
                 </>
               }
               image="recovery"
               learnMore={[
                 { label: "Approve recovery before sending" },
-                { label: "Draft from confirmed commitments" },
+                { label: "Draft from a confirmed promise" },
               ]}
               title="Recovery"
             />

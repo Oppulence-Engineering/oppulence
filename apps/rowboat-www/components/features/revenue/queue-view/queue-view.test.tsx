@@ -29,6 +29,10 @@ describe("QueueView", () => {
     expect(recoveryShownLabel(0)).toBeNull();
     expect(recoveryShownLabel(1)).toBe("1 shown");
     expect(recoveryShownLabel(4)).toBe("4 shown");
+    expect(source).toContain("or draft recovery from a promise.");
+    expect(source).toContain('{ label: "Draft from a confirmed promise" }');
+    expect(source).not.toContain("from a commitment");
+    expect(source).not.toContain("confirmed commitments");
     expect(source).toContain('placeholder="Why this follow-up is needed"');
     expect(source).not.toContain("Why now? (reason)");
   });

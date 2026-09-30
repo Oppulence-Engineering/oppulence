@@ -29,6 +29,9 @@ describe("agent tool labels", () => {
   it("turns an unknown tool id into words", () => {
     expect(agentToolLabel("relationship.identity.decide")).toBe("Review a possible duplicate");
     expect(agentToolLabel("person.attribute.retract")).toBe("Remove a profile field");
+    expect(agentToolLabel("commitment.accept")).toBe("Accept a promise");
+    expect(agentToolLabel("commitment.export")).toBe("Export promises");
+    expect(agentToolLabel("commitment.unblock")).toBe("Unblock a promise");
     expect(agentToolLabel("partner.custom_action")).toBe("Partner custom action");
   });
 });
