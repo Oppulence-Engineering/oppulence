@@ -603,7 +603,9 @@ export function ConnectorSettings({ showHeading = true }: { showHeading?: boolea
         </div>
       ) : null}
       <GoogleConnectionSettings />
-      <ComposioConnections onToolkits={setComposioSlugs} />
+      {/* Workspace connections stay above the extra catalog. A failure there
+          used to sit on top of this list and read as if these products had
+          failed to load. */}
       <div className="settings-panel flex flex-col">
         {state === "loading" ? (
           <p className="p-4 text-sm text-muted-foreground">Loading connections…</p>
@@ -623,6 +625,7 @@ export function ConnectorSettings({ showHeading = true }: { showHeading?: boolea
           </div>
         )}
       </div>
+      <ComposioConnections onToolkits={setComposioSlugs} />
     </section>
   );
 }

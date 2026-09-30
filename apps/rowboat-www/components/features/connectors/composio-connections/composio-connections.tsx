@@ -159,7 +159,9 @@ export function ComposioConnections({
       {state === "loading" ? (
         <p className="p-4 text-sm text-muted-foreground">Loading products…</p>
       ) : state === "error" ? (
-        <p className="p-4 text-sm text-muted-foreground">Could not load products.</p>
+        <p className="p-4 text-sm text-muted-foreground">
+          Additional products are temporarily unavailable.
+        </p>
       ) : toolkits.length === 0 && orphans.length === 0 ? (
         <p className="p-4 text-sm text-muted-foreground">No products are available to connect.</p>
       ) : (

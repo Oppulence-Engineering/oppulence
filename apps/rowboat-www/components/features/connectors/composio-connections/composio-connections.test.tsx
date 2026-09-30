@@ -177,7 +177,9 @@ describe("Composio connections", () => {
     mocks.listComposioToolkits.mockRejectedValue(new Error("upstream"));
     renderWithQuery(<ComposioConnections />);
 
-    expect(await screen.findByText("Could not load products.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Additional products are temporarily unavailable."),
+    ).toBeInTheDocument();
   });
 });
 

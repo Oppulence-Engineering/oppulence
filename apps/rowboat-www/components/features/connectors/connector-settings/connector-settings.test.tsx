@@ -263,7 +263,9 @@ describe("hosted connector settings", () => {
 });
 
 describe("Google grant claimed in the web app", () => {
-  function mockDashboard(options: { connectors?: Connector[]; toolkits?: unknown[] } = {}) {
+  function mockDashboard(
+    options: { connectors?: Connector[]; toolkits?: unknown[]; composioStatus?: number } = {},
+  ) {
     const calls: string[] = [];
     const json = (body: unknown) =>
       new Response(JSON.stringify(body), {
@@ -297,8 +299,24 @@ describe("Google grant claimed in the web app", () => {
           return json({ source: "google", status: "connected" });
         }
         if (url.includes("/relationship-sources/status")) return json({ sources: [] });
-        if (url.includes("/composio/toolkits")) return json({ toolkits: options.toolkits ?? [] });
-        if (url.includes("/composio/connections")) return json({ connections: [] });
+        if (url.includes("/composio/toolkits") || url.includes("/composio/connections")) {
+          if (options.composioStatus && options.composioStatus !== 200) {
+            return new Response(
+              JSON.stringify({
+                code: "rate_limited",
+                detail: "Too many requests",
+                status: options.composioStatus,
+                title: "Too Many Requests",
+              }),
+              {
+                status: options.composioStatus,
+                headers: { "Content-Type": "application/json" },
+              },
+            );
+          }
+          if (url.includes("/composio/toolkits")) return json({ toolkits: options.toolkits ?? [] });
+          return json({ connections: [] });
+        }
         return json({ connectors: options.connectors ?? [] });
       }),
     );
@@ -362,5 +380,17 @@ describe("Google grant claimed in the web app", () => {
     expect(await screen.findByText("GitHub via Composio")).toBeInTheDocument();
     expect(await screen.findByText("Stripe")).toBeInTheDocument();
     expect(screen.queryByText("GitHub")).not.toBeInTheDocument();
+  });
+
+  it("keeps a loaded connection above a rate-limited extra catalog", async () => {
+    mockDashboard({
+      connectors: [connector({ name: "stripe", displayName: "Stripe", status: "enabled" })],
+      composioStatus: 429,
+    });
+    renderWithQuery(<ConnectorSettings />);
+
+    const stripe = await screen.findByText("Stripe");
+    const extra = await screen.findByText("Additional products are temporarily unavailable.");
+    expect(stripe.compareDocumentPosition(extra) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
