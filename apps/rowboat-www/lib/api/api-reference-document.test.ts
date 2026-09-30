@@ -67,7 +67,7 @@ describe("API reference document", () => {
 
     expect(presented.tags.map((tag) => tag.name)).toEqual([
       "Promises",
-      "Models",
+      "Model calls",
       "Companies and people",
       "System",
     ]);
@@ -79,7 +79,7 @@ describe("API reference document", () => {
     expect(presented.tags[3]?.description).toBe(
       "Health, readiness, and generated documentation endpoints.",
     );
-    expect(presented.paths["/v1/chat"]?.post?.tags).toEqual(["Models", "System"]);
+    expect(presented.paths["/v1/chat"]?.post?.tags).toEqual(["Model calls", "System"]);
   });
 
   it("says the reference could not be loaded when the spec is missing", () => {

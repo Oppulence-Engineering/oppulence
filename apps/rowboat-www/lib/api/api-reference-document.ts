@@ -25,7 +25,8 @@ const API_REFERENCE_TAGS: Record<string, { name: string; description: string }> 
     description: "Work that keeps running in Oppulence Cloud, including its files and run state.",
   },
   LLM: {
-    name: "Models",
+    // "Models" is already the schema list in the reference sidebar.
+    name: "Model calls",
     description: "Text, chat, embeddings, and the model list. Each call uses workspace credits.",
   },
   Voice: {
