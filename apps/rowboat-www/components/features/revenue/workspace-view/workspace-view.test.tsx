@@ -138,9 +138,9 @@ describe("WorkspaceView", () => {
 
     renderWorkspace();
 
-    expect(await screen.findByText("stale")).toBeInTheDocument();
+    expect(await screen.findByText("Out of date")).toBeInTheDocument();
     expect(
-      screen.getByText(/no successful update arrived within the expected cadence/i),
+      screen.getByText(/no successful update arrived on schedule/i),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Refresh now" })).toBeEnabled();
     expect(screen.queryByText("sync incomplete")).not.toBeInTheDocument();

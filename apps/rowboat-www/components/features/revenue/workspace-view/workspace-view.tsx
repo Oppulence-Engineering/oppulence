@@ -293,7 +293,7 @@ function SourceRow({
     : syncing
       ? "syncing"
       : stale
-        ? "stale"
+        ? "Out of date"
         : incomplete
           ? "sync incomplete"
           : source.status.replaceAll("_", " ");
@@ -341,7 +341,7 @@ function SourceRow({
                   ? "Automatic refresh is paused because this workspace is out of AI credits. The source is still connected; reconnecting will not fix it."
                   : autoRefreshBlocker === "upstream_credits_exhausted"
                     ? "Automatic refresh is paused because Oppulence's AI provider is temporarily unavailable. The source is still connected; reconnecting will not fix it."
-                    : "No successful update arrived within the expected cadence. Refresh to catch up."
+                    : "No successful update arrived on schedule. Refresh to catch up."
                 : "The connection works, but its history is not fully synced."}
           </p>
         ) : null}
