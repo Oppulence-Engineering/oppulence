@@ -624,6 +624,7 @@ function AppearanceSection() {
         title="Theme"
       >
         <ToggleGroup
+          aria-label="Theme"
           className="settings-choice-grid p-3"
           onValueChange={(value) => value && setTheme(value as ThemePreference)}
           type="single"
@@ -655,7 +656,10 @@ function AppearanceSection() {
             <p className="settings-row-description">English is currently available.</p>
           </div>
           <Select defaultValue="en" disabled>
-            <SelectTrigger aria-label="Interface language" className="settings-select w-40">
+            <SelectTrigger
+              aria-label={comboboxFilterName("Interface language", "English")}
+              className="settings-select w-40"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

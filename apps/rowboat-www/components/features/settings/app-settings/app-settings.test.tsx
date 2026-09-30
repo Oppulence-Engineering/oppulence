@@ -10,6 +10,8 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "app-settings.tsx"
 describe("SettingsView", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function SettingsView");
+    expect(source).toContain('aria-label="Theme"');
+    expect(source).toContain('comboboxFilterName("Interface language", "English")');
   });
 
   it("uses workspace words for access and help", () => {
