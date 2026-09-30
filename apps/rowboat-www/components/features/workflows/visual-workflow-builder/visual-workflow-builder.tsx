@@ -43,10 +43,11 @@ import {
 import { Textarea } from "@oppulence/ui/components/textarea";
 import { cn } from "@oppulence/ui/lib/utils";
 import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
-import type {
-  VisualWorkflowDefinition,
-  WorkflowActionKind,
-  WorkflowTriggerKind,
+import {
+  cronClockLabel,
+  type VisualWorkflowDefinition,
+  type WorkflowActionKind,
+  type WorkflowTriggerKind,
 } from "@/lib/workflows/cloud-workflows";
 
 type Option = { value: string; label: string };
@@ -226,10 +227,10 @@ const actions: Array<{
 const scheduleOptions: Option[] = [
   { value: "*/15 * * * *", label: "Every 15 minutes" },
   { value: "*/30 * * * *", label: "Every 30 minutes" },
-  { value: "0 8 * * *", label: "Every day at 8:00 AM" },
-  { value: "0 9 * * *", label: "Every day at 9:00 AM" },
-  { value: "0 9 * * 1-5", label: "Weekdays at 9:00 AM" },
-  { value: "0 8 * * 1", label: "Every Monday at 8:00 AM" },
+  { value: "0 8 * * *", label: cronClockLabel("0 8 * * *") },
+  { value: "0 9 * * *", label: cronClockLabel("0 9 * * *") },
+  { value: "0 9 * * 1-5", label: cronClockLabel("0 9 * * 1-5") },
+  { value: "0 8 * * 1", label: cronClockLabel("0 8 * * 1") },
 ];
 
 const actionFor = (kind: WorkflowActionKind) =>
@@ -244,7 +245,7 @@ function workflowChoiceName(category: string, choice: string): string {
 
 function scheduleChoiceLabel(cronExpr: string | undefined): string {
   const value = cronExpr || "0 9 * * 1-5";
-  return scheduleOptions.find((option) => option.value === value)?.label ?? "Weekdays at 9:00 AM";
+  return scheduleOptions.find((option) => option.value === value)?.label ?? cronClockLabel(value);
 }
 
 function NodeLabel({

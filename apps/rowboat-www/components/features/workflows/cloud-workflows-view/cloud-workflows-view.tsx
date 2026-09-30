@@ -68,6 +68,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   cancelCloudRun,
   compileVisualWorkflow,
+  cronClockLabel,
   createCloudTask,
   ensureFirstPartyWorkflows,
   getCloudRun,
@@ -255,17 +256,11 @@ function runFailureCopy(run: CloudRun): string {
 
 export function scheduleLabel(task: CloudTask): string {
   const cron = taskCron(task);
-  const labels: Record<string, string> = {
+  const intervals: Record<string, string> = {
     "*/15 * * * *": "Every 15 minutes",
     "*/30 * * * *": "Every 30 minutes",
-    "0 9 * * *": "Every day at 9:00 AM",
-    "0 9 * * 1-5": "Weekdays at 9:00 AM",
-    "0 8 * * *": "Every day at 8:00 AM",
-    "0 8 * * 1": "Every Monday at 8:00 AM",
-    "0 8 * * 1-5": "Weekdays at 8:00 AM",
-    "0 17 * * 1-5": "Weekdays at 5:00 PM",
   };
-  if (cron) return labels[cron] ?? "Recurring schedule";
+  if (cron) return intervals[cron] ?? cronClockLabel(cron);
   const visual = taskVisualWorkflow(task);
   switch (visual?.trigger.kind) {
     case "communication":

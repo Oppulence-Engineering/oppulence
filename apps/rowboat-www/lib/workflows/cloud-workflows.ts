@@ -615,3 +615,23 @@ export function taskCron(task: CloudTask): string {
     return "";
   return typeof task.triggers.cronExpr === "string" ? task.triggers.cronExpr : "";
 }
+
+/**
+ * Cloud schedules fire in UTC. Some tasks also store a timezone, and that
+ * zone is not applied yet, so a bare "8:00 AM" sounds like the viewer's
+ * morning while the run happens at 08:00 UTC. The clock in these labels is
+ * that UTC hour. Interval schedules have no clock hour, so they stay here
+ * out of this map.
+ */
+const CRON_CLOCK_LABELS: Record<string, string> = {
+  "0 9 * * *": "Every day at 9:00 AM UTC",
+  "0 9 * * 1-5": "Weekdays at 9:00 AM UTC",
+  "0 8 * * *": "Every day at 8:00 AM UTC",
+  "0 8 * * 1": "Every Monday at 8:00 AM UTC",
+  "0 8 * * 1-5": "Weekdays at 8:00 AM UTC",
+  "0 17 * * 1-5": "Weekdays at 5:00 PM UTC",
+};
+
+export function cronClockLabel(cron: string): string {
+  return CRON_CLOCK_LABELS[cron] ?? "Recurring schedule";
+}

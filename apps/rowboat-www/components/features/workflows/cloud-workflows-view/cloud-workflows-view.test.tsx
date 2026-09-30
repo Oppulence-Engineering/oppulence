@@ -176,8 +176,14 @@ describe("CloudWorkflowsView", () => {
   it("names weekday crons that the first-party templates use", () => {
     const digest = { triggers: { cronExpr: "0 8 * * 1-5" } } as CloudTask;
     const followups = { triggers: { cronExpr: "0 17 * * 1-5" } } as CloudTask;
-    expect(scheduleLabel(digest)).toBe("Weekdays at 8:00 AM");
-    expect(scheduleLabel(followups)).toBe("Weekdays at 5:00 PM");
+    expect(scheduleLabel(digest)).toBe("Weekdays at 8:00 AM UTC");
+    expect(scheduleLabel(followups)).toBe("Weekdays at 5:00 PM UTC");
+    expect(scheduleLabel({ triggers: { cronExpr: "0 8 * * *" } } as CloudTask)).toBe(
+      "Every day at 8:00 AM UTC",
+    );
+    expect(scheduleLabel({ triggers: { cronExpr: "*/15 * * * *" } } as CloudTask)).toBe(
+      "Every 15 minutes",
+    );
     expect(
       scheduleLabel({
         triggers: {
