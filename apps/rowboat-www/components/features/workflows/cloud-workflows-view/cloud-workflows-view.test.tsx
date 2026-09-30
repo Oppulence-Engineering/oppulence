@@ -14,6 +14,7 @@ import {
   workflowEditorTabName,
   workflowForTask,
   workflowOpeningScreen,
+  workflowLastRunAt,
   workflowStepLabel,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
@@ -283,6 +284,25 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain('setTab("runs")');
     expect(source).toContain('useState<EditorTab>(selectedRun ? "runs" : "editor")');
     expect(source).toContain("onRun();");
+  });
+
+  it("shows a workflow's own last run when that run is off the first page", () => {
+    expect(workflowLastRunAt({ lastRunAt: "2026-09-30T09:00:00.063Z" }, undefined)).toBe(
+      "2026-09-30T09:00:00.063Z",
+    );
+    expect(workflowLastRunAt({ lastRunAt: null }, undefined)).toBeNull();
+    expect(workflowLastRunAt({}, "2026-09-30T18:15:00Z")).toBe("2026-09-30T18:15:00Z");
+    expect(
+      workflowLastRunAt(
+        { lastRunAt: "2026-09-30T09:00:00Z" },
+        "2026-09-30T18:15:00.252Z",
+      ),
+    ).toBe("2026-09-30T18:15:00.252Z");
+    expect(
+      workflowLastRunAt({ lastRunAt: "2026-09-30T18:15:00.558Z" }, "2026-09-30T18:00:00Z"),
+    ).toBe("2026-09-30T18:15:00.558Z");
+    expect(source).toContain("workflowLastRunAt(");
+    expect(source).not.toContain("const lastRun = runs.find((run) => run.slug === task.slug)");
   });
 
   it("sorts the library by the label on the sort control", () => {

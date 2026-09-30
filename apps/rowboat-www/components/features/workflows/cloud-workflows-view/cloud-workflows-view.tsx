@@ -159,6 +159,28 @@ function formatDate(value?: string | null): string {
   }).format(parsed);
 }
 
+/**
+ * Last run on the library row. The runs query is one page of the newest runs,
+ * so a workflow that runs once a day falls off that page. Looking the slug up
+ * there then says Never, even though the task record still has lastRunAt.
+ * A run that is already on the page can be newer than that stored moment, so
+ * the later of the two is the one shown.
+ */
+export function workflowLastRunAt(
+  task: { lastRunAt?: string | null },
+  pageRunAt?: string | null,
+): string | null {
+  const stored = task.lastRunAt?.trim() ?? "";
+  const paged = pageRunAt?.trim() ?? "";
+  if (!stored) return paged || null;
+  if (!paged) return stored;
+  const storedTime = Date.parse(stored);
+  const pagedTime = Date.parse(paged);
+  if (Number.isNaN(storedTime)) return paged;
+  if (Number.isNaN(pagedTime)) return stored;
+  return pagedTime > storedTime ? paged : stored;
+}
+
 /** Status and trigger as words. The runs list used to show only an icon, so
  * every row looked the same until you opened it. */
 export function runRowDetail(status: string, trigger: string): string {
@@ -541,7 +563,10 @@ function WorkflowLibrary({
             </TableHeader>
             <TableBody>
               {filtered.map((task) => {
-                const lastRun = runs.find((run) => run.slug === task.slug);
+                const lastRunAt = workflowLastRunAt(
+                  task,
+                  runs.find((run) => run.slug === task.slug)?.createdAt,
+                );
                 return (
                   <TableRow
                     className="cursor-pointer border-b hover:bg-muted/35"
@@ -595,7 +620,7 @@ function WorkflowLibrary({
                       </Badge>
                     </TableCell>
                     <TableCell className="px-4 text-[12px] text-muted-foreground">
-                      {lastRun ? formatDate(lastRun.createdAt) : "Never"}
+                      {lastRunAt ? formatDate(lastRunAt) : "Never"}
                     </TableCell>
                     <TableCell className="px-4">
                       <CaretRight className="size-4 text-muted-foreground" />
