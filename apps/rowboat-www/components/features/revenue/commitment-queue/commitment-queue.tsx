@@ -1049,13 +1049,13 @@ export function CommitmentQueue({
                 className="h-12 w-full justify-start rounded-none border-b border-border bg-transparent px-4"
               >
                 <TabsTrigger
-                  className="rounded-none bg-background-200 px-3 py-1.5 text-[13px] data-[state=active]:bg-background-200"
+                  className="flex-none rounded-none px-3 py-1.5 text-[13px] text-primary/45 data-[state=active]:bg-background-200 data-[state=active]:text-primary"
                   value="overview"
                 >
                   Overview
                 </TabsTrigger>
                 <TabsTrigger
-                  className="rounded-none px-2 text-[13px] text-primary/45"
+                  className="flex-none rounded-none px-3 py-1.5 text-[13px] text-primary/45 data-[state=active]:bg-background-200 data-[state=active]:text-primary"
                   value="evidence"
                 >
                   Evidence

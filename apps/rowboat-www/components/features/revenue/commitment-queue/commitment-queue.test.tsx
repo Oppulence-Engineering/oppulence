@@ -279,6 +279,8 @@ describe("CommitmentQueue", () => {
 
     await user.click(screen.getByRole("tab", { name: "Evidence" }));
 
+    expect(screen.getByRole("tab", { name: "Evidence" })).toHaveAttribute("data-state", "active");
+    expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute("data-state", "inactive");
     expect(screen.getByText(/signed security packet by Friday/)).toBeVisible();
     expect(screen.queryByRole("button", { name: "Confirm promise" })).not.toBeInTheDocument();
   });
@@ -509,4 +511,10 @@ it("does not offer a meeting import that opens the company directory", () => {
   expect(source).toContain("Add a company");
   expect(source).toContain("openCompanyCreate(onOpenAccounts)");
   expect(source).toContain('subscribeDueCommitments(() => setFilter("due"))');
+  expect(source).toContain(
+    "data-[state=active]:bg-background-200 data-[state=active]:text-primary",
+  );
+  expect(source).not.toContain(
+    'className="rounded-none bg-background-200 px-3 py-1.5 text-[13px] data-[state=active]:bg-background-200"',
+  );
 });
