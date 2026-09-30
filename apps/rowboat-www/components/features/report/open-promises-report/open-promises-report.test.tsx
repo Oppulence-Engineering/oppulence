@@ -9,4 +9,11 @@ describe("OpenPromisesReportClient", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function OpenPromisesReportClient");
   });
+
+  it("waits for a settled source list before painting the connect step", () => {
+    expect(source).toContain(
+      "sourcesQuery.isPending || (!scanId && scansQuery.isPending)",
+    );
+    expect(source).not.toContain("sourcesQuery.isLoading || (!scanId && scansQuery.isLoading)");
+  });
 });

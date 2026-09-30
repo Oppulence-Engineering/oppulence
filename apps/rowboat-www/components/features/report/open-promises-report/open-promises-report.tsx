@@ -240,7 +240,13 @@ function ReportBody() {
 
       <GoogleEvidenceSyncState claiming={googleClaimState === "claiming"} source={googleSource} />
 
-      {sourcesQuery.isLoading || (!scanId && scansQuery.isLoading) ? (
+      {/*
+        isLoading is true only after a fetch has started. SSR starts that
+        fetch; the browser's first paint has not. isPending stays true on
+        both until the source list is in the cache, so the connect step is
+        not hydrated over this loading line.
+      */}
+      {sourcesQuery.isPending || (!scanId && scansQuery.isPending) ? (
         <p className="flex items-center gap-2 text-[13px] text-primary/55">
           <CircleNotchIcon className="size-4 animate-spin" /> Loading your report.
         </p>
