@@ -72,9 +72,13 @@ describe("RelationshipGraphWorkspace", () => {
       "No companies are in this graph yet.",
     );
     expect(graphQueryAnswer("1 relationship matches the query.", 2)).toBe("1 company matches the query.");
+    expect(graphQueryAnswer("1 relationship matches text: dogfood.", 2)).toBe(
+      "1 company matches dogfood.",
+    );
     expect(graphQueryAnswer("2 relationships match overdue commitments.", 2)).toBe(
       "2 companies match overdue commitments.",
     );
+    expect(graphQueryFilterLabel("text: dogfood")).toBe("Dogfood");
     expect(graphQueryFilterLabel("lifecycle: renewal")).toBe("Renewal");
     expect(graphQueryFilterLabel("health: at_risk")).toBe("At risk");
     expect(graphQueryFilterLabel("overdue commitments")).toBe("overdue commitments");

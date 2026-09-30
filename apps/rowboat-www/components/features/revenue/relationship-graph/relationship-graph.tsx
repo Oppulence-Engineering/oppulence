@@ -857,12 +857,16 @@ export function graphCountLabel(count: number, singular: string, plural: string)
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
-/** The query engine still says "relationship". The graph is a company graph. */
+/**
+ * The query engine still says "relationship", and a typed question comes back
+ * as `text: …`. The graph is a company graph, so the answer should read that way.
+ */
 export function graphQueryAnswer(answer: string, companyCount: number): string {
   if (companyCount === 0) return "No companies are in this graph yet.";
   return answer
     .replace(/\b1 relationship matches\b/g, "1 company matches")
-    .replace(/\b(\d+) relationships match\b/g, (_, count: string) => `${count} companies match`);
+    .replace(/\b(\d+) relationships match\b/g, (_, count: string) => `${count} companies match`)
+    .replace(/\btext: /g, "");
 }
 
 /** Parsed filters are query tokens such as "lifecycle: renewal". Show the value. */
@@ -871,7 +875,7 @@ export function graphQueryFilterLabel(filter: string): string {
   if (!named) return filter;
   const kind = named[1] ?? "";
   const value = (named[2] ?? "").replaceAll("_", " ");
-  if (kind === "lifecycle" || kind === "health") {
+  if (kind === "lifecycle" || kind === "health" || kind === "text") {
     return value.charAt(0).toUpperCase() + value.slice(1);
   }
   const titles: Record<string, string> = {
