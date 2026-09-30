@@ -71,13 +71,13 @@ const triggers: Array<{
   },
   {
     value: "profile-change",
-    label: "Profile enriched",
-    detail: "A cited company or person field changes",
+    label: "Company or person updated",
+    detail: "A company or person field changes.",
   },
   {
     value: "relationship-risk",
     label: "Company risk changed",
-    detail: "A new or materially changed attention signal",
+    detail: "A company needs attention for a new reason.",
   },
   {
     value: "commitment-risk",
@@ -105,7 +105,7 @@ const actions: Array<{
         defaultValue: "matching-record",
         options: [
           { value: "matching-record", label: "Matching company and people" },
-          { value: "relationship-portfolio", label: "Entire company portfolio" },
+          { value: "relationship-portfolio", label: "Every company" },
         ],
       },
     ],
@@ -140,8 +140,8 @@ const actions: Array<{
   },
   {
     value: "create-crm-task",
-    label: "Create CRM task",
-    detail: "Create an owned, dated HubSpot task",
+    label: "Create a HubSpot task",
+    detail: "Create a HubSpot task with an owner and a due date.",
     icon: <Lightning />,
     fields: [
       {
@@ -167,8 +167,8 @@ const actions: Array<{
   },
   {
     value: "update-crm-note",
-    label: "Update CRM note",
-    detail: "Append an evidence-linked HubSpot note",
+    label: "Add a HubSpot note",
+    detail: "Add a HubSpot note from this workflow.",
     icon: <NotePencil />,
     fields: [
       {
@@ -185,7 +185,7 @@ const actions: Array<{
   {
     value: "schedule-meeting",
     label: "Schedule meeting",
-    detail: "Propose an approval-gated calendar event",
+    detail: "Propose a meeting that waits for your approval.",
     icon: <CalendarBlank />,
     fields: [
       {
@@ -203,8 +203,9 @@ const actions: Array<{
   },
   {
     value: "write-brief",
-    label: "Publish live brief",
-    detail: "Save a durable, evidence-backed workflow brief",
+    // Every maintained workflow draws this step. The label names the brief, not a publish pipeline.
+    label: "Save a brief",
+    detail: "Keep a brief this workflow can update.",
     icon: <UserFocus />,
     fields: [
       {

@@ -83,6 +83,24 @@ describe("VisualWorkflowBuilder", () => {
     });
   });
 
+  it("names the brief step for what it saves", () => {
+    render(
+      <VisualWorkflowBuilder
+        onChange={vi.fn()}
+        value={{
+          version: 1,
+          trigger: { kind: "schedule", cronExpr: "*/15 * * * *" },
+          actions: ["write-brief"],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Save a brief")).toBeInTheDocument();
+    expect(screen.getByText("Keep a brief this workflow can update.")).toBeInTheDocument();
+    expect(screen.queryByText("Publish live brief")).not.toBeInTheDocument();
+    expect(screen.queryByText(/evidence-backed/i)).not.toBeInTheDocument();
+  });
+
   it("compiles communication triggers and approval-gated actions for the real runtime", () => {
     const compiled = compileVisualWorkflow({
       ...workflow,
