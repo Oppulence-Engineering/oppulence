@@ -284,7 +284,7 @@ function RelationshipEnrichment({
         setCompanyEstimate(null);
       }
     } catch (error) {
-      onError(errMessage(error, "Could not load profile enrichment."));
+      onError(errMessage(error, "Could not load public research."));
     }
   }, [onError]);
 
@@ -299,11 +299,11 @@ function RelationshipEnrichment({
       await setResearchConsent(consented);
       setResult(null);
       onNotice(
-        consented ? "Cited public-web enrichment enabled." : "Public-web enrichment disabled.",
+        consented ? "Public research is on." : "Public research is off.",
       );
       await load();
     } catch (error) {
-      onError(errMessage(error, "Could not update enrichment consent."));
+      onError(errMessage(error, "Could not update public research."));
     } finally {
       setBusy(false);
     }
@@ -332,12 +332,12 @@ function RelationshipEnrichment({
         0,
       );
       setResult(
-        `${companyMatches} of ${companyEnrichment.requested} companies and ${personMatches} of ${personEnrichment.requested} people matched · ${written} cited facts added`,
+        `${companyMatches} of ${companyEnrichment.requested} companies and ${personMatches} of ${personEnrichment.requested} people matched · ${written} details added`,
       );
       onChanged();
       await load();
     } catch (error) {
-      onError(errMessage(error, "Could not enrich companies and people."));
+      onError(errMessage(error, "Could not fill in companies and people."));
     } finally {
       setBusy(false);
     }
@@ -351,11 +351,11 @@ function RelationshipEnrichment({
       <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
-            Profile enrichment
+            Public research
           </p>
           <h3 className="mt-1 text-sm font-semibold text-primary">Know who is behind the inbox</h3>
           <p className="mt-1 max-w-3xl text-xs text-primary/55">
-            Public research can fill in a company and the people who work there, and each fact
+            Public research can fill in a company and the people who work there, and each detail
             keeps its source link. Message content, notes, and full email addresses stay in
             Oppulence.
           </p>
@@ -385,8 +385,7 @@ function RelationshipEnrichment({
           <div className="text-xs text-primary/65">
             {(personEstimate?.people ?? 0) + (companyEstimate?.companies ?? 0) === 0 ? (
               <p>
-                Profiles are current. New eligible contacts and material company events are checked
-                daily.
+                Profiles are current. New contacts and company changes are checked daily.
               </p>
             ) : personEstimate && companyEstimate ? (
               <p>
@@ -662,7 +661,7 @@ export function RelationshipsView({
                 <SelectValue placeholder="Health" />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-none">
-                <SelectItem value="all">All health</SelectItem>
+                <SelectItem value="all">Any health</SelectItem>
                 {HEALTH_OPTIONS.map((value) => (
                   <SelectItem key={value} value={value}>
                     {humanize(value)}

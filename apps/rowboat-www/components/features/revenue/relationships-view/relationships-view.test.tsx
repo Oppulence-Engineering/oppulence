@@ -41,7 +41,7 @@ describe("RelationshipsView", () => {
     expect(source).toContain('errMessage(error, "Could not load this company.")');
     expect(source).toContain('errMessage(error, "Could not update this company.")');
     expect(source).toContain('errMessage(error, "Could not load companies.")');
-    expect(source).toContain('errMessage(error, "Could not enrich companies and people.")');
+    expect(source).toContain('errMessage(error, "Could not fill in companies and people.")');
     expect(source).not.toContain("Relationship added.");
     expect(source).not.toContain("Relationship state updated.");
     expect(source).not.toContain("Could not create the relationship.");
@@ -53,7 +53,10 @@ describe("RelationshipsView", () => {
     expect(source).toContain('aria-label="Show company list"');
     expect(source).not.toContain('aria-label="Show accounts"');
     expect(source).not.toContain('aria-label="Show relationship graph"');
-    expect(source).toContain("Profile enrichment");
+    expect(source).toContain("Public research");
+    expect(source).not.toContain("Profile enrichment");
+    expect(source).toContain(">Any health</SelectItem>");
+    expect(source).not.toContain(">All health</SelectItem>");
     expect(source).toContain(">All stages</SelectItem>");
     expect(source).toContain("<Sparkle /> Sources");
     expect(source).toContain("Sources and company details");
