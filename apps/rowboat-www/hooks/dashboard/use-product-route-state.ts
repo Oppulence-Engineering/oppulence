@@ -13,7 +13,9 @@ import { workflowParsers, workflowUrlKeys } from "@/app/(product)/app/workflows/
 import { requestWorkflowLibrary } from "@/lib/dashboard/workflow-library-request";
 import {
   PRODUCT_VIEW_PATHS,
+  companyRecordSearch,
   productViewForPathname,
+  revenueSelection,
   revenueTabSearch,
   type ProductView,
   type RevenueTab,
@@ -28,6 +30,8 @@ export type ProductRouteState = {
   workflowFocus: WorkflowFocus;
   navigateTo: (view: ProductView) => void;
   openRevenueTab: (tab: RevenueTab) => void;
+  /** Opens one company record. Tab navigation clears this and shows the list. */
+  openCompany: (companyId: string) => void;
   openSettings: (section: SettingsSection) => void;
   openWorkflows: (focus: WorkflowFocus) => void;
 };
@@ -64,10 +68,25 @@ export function useProductRouteState(): ProductRouteState {
   const openRevenueTab = useCallback(
     (tab: RevenueTab) => {
       if (view === "revenue") {
-        void setRevenue({ tab });
+        void setRevenue(revenueSelection(tab));
         return;
       }
       router.push(`${PRODUCT_VIEW_PATHS.revenue}${revenueTabSearch(tab)}`, { scroll: false });
+    },
+    [router, setRevenue, view],
+  );
+
+  const openCompany = useCallback(
+    (companyId: string) => {
+      const next = revenueSelection("relationships", companyId);
+      if (!next.company) return;
+      if (view === "revenue") {
+        void setRevenue(next);
+        return;
+      }
+      router.push(`${PRODUCT_VIEW_PATHS.revenue}${companyRecordSearch(next.company)}`, {
+        scroll: false,
+      });
     },
     [router, setRevenue, view],
   );
@@ -104,6 +123,7 @@ export function useProductRouteState(): ProductRouteState {
     workflowFocus: workflows.focus,
     navigateTo,
     openRevenueTab,
+    openCompany,
     openSettings,
     openWorkflows,
   };

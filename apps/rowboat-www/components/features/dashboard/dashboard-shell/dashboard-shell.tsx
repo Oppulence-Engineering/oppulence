@@ -58,6 +58,7 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
     workflowFocus,
     navigateTo,
     openRevenueTab,
+    openCompany,
     openSettings,
     openWorkflows,
   } = useProductRouteState();
@@ -148,7 +149,7 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
               name: agentDisplayName(chat.agentCatalog ?? [], slug),
             }))}
             onNavigateChat={() => navigateWithoutResource(() => navigateTo("chat"))}
-            onNavigateRelationship={() => openRevenueTab("relationships")}
+            onNavigateRelationship={openCompany}
             onNewChat={chat.onNewChat}
             onOpenAgent={chat.onOpenAgent}
             onOpenSession={chat.onOpenSession}

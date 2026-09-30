@@ -2,6 +2,9 @@
 
 import "@testing-library/jest-dom/vitest";
 
+import fs from "node:fs";
+import path from "node:path";
+
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -58,6 +61,7 @@ vi.mock("@/hooks/dashboard/use-product-route-state", () => ({
     workflowFocus: "scheduled",
     navigateTo: vi.fn(),
     openRevenueTab: vi.fn(),
+    openCompany: vi.fn(),
     openSettings: vi.fn(),
     openWorkflows: vi.fn(),
   }),
@@ -83,6 +87,12 @@ describe("DashboardShell", () => {
     vi.clearAllMocks();
   });
   afterEach(cleanup);
+
+  it("opens the company a palette result names", () => {
+    const source = fs.readFileSync(path.join(import.meta.dirname, "dashboard-shell.tsx"), "utf8");
+    expect(source).toContain("onNavigateRelationship={openCompany}");
+    expect(source).not.toContain('onNavigateRelationship={() => openRevenueTab("relationships")}');
+  });
 
   it("forwards accessible section props and renders its content", () => {
     render(<DashboardShell aria-label="Example dashboard-shell">Content</DashboardShell>);

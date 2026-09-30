@@ -3,6 +3,7 @@
 import "client-only";
 
 import * as React from "react";
+import { useQueryStates } from "nuqs";
 import {
   buildImportedTranscriptObservation,
   MISSION_CONTROL_QUESTIONS,
@@ -34,6 +35,7 @@ import {
 } from "@/components/features/revenue/shared/shared";
 import { AttentionQueueSurface } from "@/components/features/revenue/attention-queue-surface/attention-queue-surface";
 import { useAskOppulence } from "@/components/features/dashboard/dashboard-shell/dashboard-shell";
+import { revenueParsers, revenueUrlKeys } from "@/app/(product)/app/revenue/search-params";
 import { subscribeCompanyCreate } from "@/lib/dashboard/company-create-request";
 import {
   AccountMissionControlSurface,
@@ -506,7 +508,16 @@ export function RelationshipsView({
   onOpenConnectors?: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [detail, setDetail] = React.useState<string | null>(null);
+  // The address owns the open company. A palette result and a list click write
+  // the same param, and closing the sheet returns to the list.
+  const [revenueParams, setRevenueParams] = useQueryStates(revenueParsers, revenueUrlKeys);
+  const detail = revenueParams.company;
+  const openDetail = (id: string) => {
+    void setRevenueParams({ company: id });
+  };
+  const closeDetail = () => {
+    void setRevenueParams({ company: null });
+  };
   const [creating, setCreating] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const [debouncedQuery, setDebouncedQuery] = React.useState("");
@@ -687,7 +698,7 @@ export function RelationshipsView({
       {surface === "graph" ? (
         <RelationshipGraphWorkspace
           relationships={companies}
-          onOpenRelationship={setDetail}
+          onOpenRelationship={openDetail}
           onError={onError}
           onNotice={onNotice}
         />
@@ -828,7 +839,7 @@ export function RelationshipsView({
                 loading={loading}
                 onActionError={onError}
                 onChanged={() => void load()}
-                onOpenRelationship={setDetail}
+                onOpenRelationship={openDetail}
               />
             </div>
           ) : null}
@@ -957,7 +968,7 @@ export function RelationshipsView({
                       <TableCell className="sticky left-0 z-[5] border-r bg-background px-3 group-hover:bg-background-100">
                         <Button
                           className="flex h-auto w-full items-center justify-start gap-2 truncate px-0 py-0 text-left text-sm font-medium text-primary hover:bg-transparent"
-                          onClick={() => setDetail(relationship.id)}
+                          onClick={() => openDetail(relationship.id)}
                           type="button"
                           variant="ghost"
                         >
@@ -1101,7 +1112,7 @@ export function RelationshipsView({
           )}
           filtered={directoryTitle.filtered}
           total={companies.length}
-          onClose={() => setDetail(null)}
+          onClose={closeDetail}
           onError={onError}
           onChanged={() => {
             onNotice("Company updated.");

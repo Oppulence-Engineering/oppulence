@@ -293,6 +293,13 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("No synced communication metadata yet");
   });
 
+  it("opens the company named in the address and clears it when the sheet closes", () => {
+    expect(source).toContain("const detail = revenueParams.company");
+    expect(source).toContain("void setRevenueParams({ company: id })");
+    expect(source).toContain("void setRevenueParams({ company: null })");
+    expect(source).toContain("onClose={closeDetail}");
+  });
+
   it("asks Oppulence from the company sheet instead of showing a dead badge", () => {
     expect(source).toContain("useAskOppulence");
     expect(source).toContain("askOppulence(askedCompany ? companyName(askedCompany) : undefined)");
