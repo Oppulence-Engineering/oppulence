@@ -154,6 +154,27 @@ export function taskVisualWorkflow(task: CloudTask): VisualWorkflowDefinition | 
   return parsed.success ? parsed.data : null;
 }
 
+/**
+ * The library subtitle. A saved canvas objective wins. Otherwise the template
+ * description does: first-party workflows have no canvas object, and showing
+ * one shared fallback made every row read the same.
+ */
+export function workflowListSummary(
+  task: CloudTask,
+  templates: readonly Pick<CloudTaskTemplate, "slug" | "taskSlug" | "description">[] = [],
+): string {
+  const objective = taskVisualWorkflow(task)?.objective?.trim();
+  if (objective) return objective;
+  const template = templates.find(
+    (item) =>
+      (task.templateSlug !== "" && item.slug === task.templateSlug) ||
+      (item.taskSlug !== "" && item.taskSlug === task.slug),
+  );
+  const description = template?.description.trim();
+  if (description) return description;
+  return "Always-on relationship intelligence";
+}
+
 export const CloudTaskTemplateSchema = z.object({
   slug: z.string(),
   taskSlug: z.string(),

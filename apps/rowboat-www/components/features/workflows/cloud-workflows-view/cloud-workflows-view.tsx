@@ -76,6 +76,7 @@ import {
   retryCloudRun,
   taskCron,
   taskVisualWorkflow,
+  workflowListSummary,
   triggerCloudRun,
   updateCloudTask,
   type CloudRun,
@@ -377,7 +378,9 @@ function WorkflowLibrary({
   const [sort, setSort] = React.useState<WorkflowLibrarySort>("published");
   const filtered = sortWorkflowTasks(
     tasks.filter((task) =>
-      `${task.name} ${scheduleLabel(task)}`.toLowerCase().includes(query.trim().toLowerCase()),
+      `${task.name} ${scheduleLabel(task)} ${workflowListSummary(task, templates)}`
+        .toLowerCase()
+        .includes(query.trim().toLowerCase()),
     ),
     sort,
   );
@@ -479,8 +482,7 @@ function WorkflowLibrary({
                           ) : null}
                         </div>
                         <CardDescription className="ml-4.5 mt-0.5 truncate text-[11px]">
-                          {taskVisualWorkflow(task)?.objective ||
-                            "Always-on relationship intelligence"}
+                          {workflowListSummary(task, templates)}
                         </CardDescription>
                       </div>
                     </TableCell>
