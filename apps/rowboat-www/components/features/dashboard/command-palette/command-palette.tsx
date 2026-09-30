@@ -167,7 +167,7 @@ export function CommandPalette({
           ) : searchError ? (
             "Search is temporarily unavailable."
           ) : searchMode === "mail" && semanticAvailable === false ? (
-            "Semantic mail search is not enabled for this workspace."
+            "Searching mail is not included for this workspace."
           ) : (
             "No results found."
           )}
