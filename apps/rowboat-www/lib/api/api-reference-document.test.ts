@@ -45,8 +45,41 @@ describe("API reference document", () => {
     expect(page).toContain("\\u003c/script>");
     expect(page).toContain('src="/api/reference/viewer"');
     expect(page).toContain("withDefaultFonts: false");
+    expect(page).toContain('showDeveloperTools: "never"');
+    expect(page).toContain("agent: { disabled: true }");
+    expect(page).toContain("mcp: { disabled: true }");
     expect(page).not.toContain("unpkg.com");
     expect(page).not.toContain("fonts.scalar.com");
+  });
+
+  it("names reference sections in product language and keeps operations attached", () => {
+    const presented = presentApiReferenceDocument({
+      tags: [
+        { name: "Revenue", description: "OutboundConsole policy preflight" },
+        { name: "LLM", description: "Credit-gated OpenAI-compatible text" },
+        { name: "Relationship Intelligence", description: "append-only evidence" },
+        { name: "System", description: "Health, readiness, and generated documentation endpoints." },
+      ],
+      paths: {
+        "/v1/chat": { post: { tags: ["LLM", "System"] } },
+      },
+    });
+
+    expect(presented.tags.map((tag) => tag.name)).toEqual([
+      "Promises",
+      "Models",
+      "Companies and people",
+      "System",
+    ]);
+    expect(presented.tags[0]?.description).toBe(
+      "Promises, approvals, and the check before a message is sent.",
+    );
+    expect(presented.tags[0]?.description).not.toMatch(/OutboundConsole|evidence/);
+    expect(presented.tags[2]?.description).not.toMatch(/evidence|RFC/);
+    expect(presented.tags[3]?.description).toBe(
+      "Health, readiness, and generated documentation endpoints.",
+    );
+    expect(presented.paths["/v1/chat"]?.post?.tags).toEqual(["Models", "System"]);
   });
 
   it("says the reference could not be loaded when the spec is missing", () => {
