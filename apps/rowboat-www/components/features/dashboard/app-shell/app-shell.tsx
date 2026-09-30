@@ -1108,11 +1108,11 @@ export function AppShellSidebar({
                     </div>
                   </div>
                 </DropdownMenuLabel>
-                {/* Sessions are reviewed in Settings > Security; this is the same
-                  surface the account menu in the screenshot opens. */}
+                {/* Security reviews this signed-in session. It does not list or
+                    revoke other sessions, so the menu uses that page's name. */}
                 <DropdownMenuItem onSelect={() => onOpenSettings?.("security")}>
                   <Stack />
-                  Manage sessions
+                  Security
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={(event) => {

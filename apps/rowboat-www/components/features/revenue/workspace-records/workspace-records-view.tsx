@@ -842,6 +842,9 @@ export function NotesView({
           </TabsTrigger>
         </TabsList>
       </Tabs>
+      {/* Sort, layout, and favorites change the note list. On Templates they
+          only restyled themselves. */}
+      {tab === "notes" ? (
       <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-3">
         <Button
           type="button"
@@ -912,6 +915,7 @@ export function NotesView({
           </Button>
         </div>
       </div>
+      ) : null}
       {tab === "templates" && templatesQuery.isError ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
           <p className="text-sm text-destructive">Could not load note templates.</p>

@@ -25,6 +25,11 @@ describe("AppShellSidebar", () => {
     expect(source).not.toContain("window preferences");
   });
 
+  it("opens security from the account menu instead of promising session management", () => {
+    expect(source).toContain('onOpenSettings?.("security")');
+    expect(source).not.toContain("Manage sessions");
+  });
+
   it("describes permissions and security without authorization jargon", () => {
     expect(source).toContain("Who you are and what this session can do.");
     expect(source).toContain("Review this session and what it can open.");

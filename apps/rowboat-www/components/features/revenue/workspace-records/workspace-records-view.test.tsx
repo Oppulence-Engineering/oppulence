@@ -209,6 +209,20 @@ describe("durable note templates and favorites", () => {
     expect(await screen.findByRole("heading", { name: "New note template" })).toBeInTheDocument();
   });
 
+  it("hides note list controls while templates are open", async () => {
+    const user = userEvent.setup();
+    renderNotes();
+
+    expect(await screen.findByRole("button", { name: /Sorted by/ })).toBeVisible();
+    await user.click(await screen.findByRole("tab", { name: /Templates/ }));
+
+    expect(screen.queryByRole("button", { name: /Sorted by/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "List view" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Grid view" })).not.toBeInTheDocument();
+    expect(screen.queryByText("View settings")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New template" })).toBeVisible();
+  });
+
   it("applies a durable template to a new note", async () => {
     const user = userEvent.setup();
     renderNotes();
@@ -250,7 +264,7 @@ describe("durable note templates and favorites", () => {
     await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
     await user.click(await screen.findByRole("button", { name: "Insert content" }));
     const before = document.querySelectorAll("h2").length;
-    await user.click(await screen.findByRole("button", { name: "Insert heading" }));
+    await user.click(await screen.findByRole("button", { name: "Insert heading 2" }));
 
     expect(document.querySelectorAll("h2").length).toBe(before + 1);
   });
