@@ -347,7 +347,7 @@ function RelationshipEnrichment({
       <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
-            Relationship enrichment
+            Profile enrichment
           </p>
           <h3 className="mt-1 text-sm font-semibold text-primary">Know who is behind the inbox</h3>
           <p className="mt-1 max-w-3xl text-xs text-primary/55">
@@ -694,8 +694,8 @@ export function RelationshipsView({
                 </div>
                 {companyAttention.length > 0 ? (
                   <p className="text-[12px] text-primary/55">
-                    {companyAttention.length} relationship
-                    {companyAttention.length === 1 ? "" : "s"} in the{" "}
+                    {companyAttention.length}{" "}
+                    {companyAttention.length === 1 ? "company" : "companies"} in the{" "}
                     <button
                       className="underline hover:text-primary"
                       onClick={() =>
@@ -2226,7 +2226,7 @@ export function RelationshipSheet({
                       onClick={() => {
                         if (
                           !window.confirm(
-                            "Delete shared conversation evidence for this relationship? Device and provider copies will remain pending until separately confirmed.",
+                            "Delete shared conversation evidence for this company? Device and provider copies will remain pending until separately confirmed.",
                           )
                         )
                           return;

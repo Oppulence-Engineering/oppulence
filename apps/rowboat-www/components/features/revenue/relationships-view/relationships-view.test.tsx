@@ -48,6 +48,11 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("Could not enrich relationship profiles.");
     expect(source).toContain('aria-label="Show company graph"');
     expect(source).not.toContain('aria-label="Show relationship graph"');
+    expect(source).toContain("Profile enrichment");
+    expect(source).not.toContain("Relationship enrichment");
+    expect(source).toContain("Delete shared conversation evidence for this company?");
+    expect(source).not.toContain("for this relationship?");
+    expect(source).toContain('companyAttention.length === 1 ? "company" : "companies"');
   });
 
   it("asks Oppulence from the company sheet instead of showing a dead badge", () => {

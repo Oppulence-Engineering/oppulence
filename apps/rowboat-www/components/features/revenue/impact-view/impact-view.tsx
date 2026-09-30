@@ -44,7 +44,7 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
   if (!impactQuery.data) {
     return (
       <EmptyBlock
-        body="Impact data is temporarily unavailable. Your underlying relationship records were not changed."
+        body="Impact data is temporarily unavailable. Your companies and people were not changed."
         image="impact"
         learnMore={[]}
         title="Impact could not load"
@@ -62,7 +62,7 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
       <EmptyBlock
         body="Run an audit and start reviewing actions — replies, meetings, and wins show up here as they come in."
         image="impact"
-        learnMore={[{ label: "Track recovery outcomes" }, { label: "Measure portfolio risk" }]}
+        learnMore={[{ label: "Track recovery outcomes" }, { label: "Measure company risk" }]}
         title="Impact"
       />
     );
@@ -91,7 +91,7 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
         <CardHeader className="flex flex-wrap items-start justify-between gap-3 border-b p-4">
           <div>
             <Badge className="font-mono text-[10px] uppercase tracking-wider" variant="outline">
-              Relationship exposure
+              Company exposure
             </Badge>
             <CardTitle className="mt-1 text-base text-primary">
               What missed communication is putting at risk now
@@ -156,7 +156,7 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-primary/40">No active relationship risks.</p>
+              <p className="text-sm text-primary/40">No active company risks.</p>
             )}
           </div>
         </div>
