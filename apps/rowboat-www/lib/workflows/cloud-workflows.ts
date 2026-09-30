@@ -194,13 +194,36 @@ export function scheduleHealthLabel(value: string): string {
  * person needs in the heading.
  */
 export function runEventLabel(type: string): string {
-  const body = type
-    .trim()
-    .replace(/^(temporal|runtime|desktop)\./, "")
-    .replaceAll("_", " ");
+  const stripped = type.trim().replace(/^(temporal|runtime|desktop)\./, "");
+  if (stripped === "llm_call_started") return "Model call started";
+  const body = stripped.replaceAll("_", " ");
   if (!body) return type;
   const withAcronyms = body.replace(/\bllm\b/g, "LLM");
   return withAcronyms.charAt(0).toUpperCase() + withAcronyms.slice(1);
+}
+
+/** Provider paths such as openai/gpt-4.1 are runtime ids. The transcript names the model. */
+export function calledModelLabel(model: string): string {
+  const trimmed = model.trim();
+  const slash = trimmed.lastIndexOf("/");
+  const bare = slash >= 0 ? trimmed.slice(slash + 1).trim() : trimmed;
+  if (!bare) return trimmed;
+  if (/^gpt-/i.test(bare)) return `GPT-${bare.slice(4).replace(/-/g, " ")}`;
+  if (/^claude-/i.test(bare)) return `Claude ${titledModelRest(bare.slice("claude-".length))}`;
+  if (/^gemini-/i.test(bare)) return `Gemini ${titledModelRest(bare.slice("gemini-".length))}`;
+  return bare;
+}
+
+function titledModelRest(rest: string): string {
+  return rest
+    .replace(/-/g, " ")
+    .replace(/\b(\d) (\d)\b/g, "$1.$2")
+    .split(" ")
+    .filter(Boolean)
+    .map((word) =>
+      /^\d/.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1),
+    )
+    .join(" ");
 }
 
 const INFRASTRUCTURE_EVENT_COPY: Record<string, string> = {
@@ -228,7 +251,7 @@ export function runEventBody(event: { type?: string; event: unknown }): string {
   const record = event.event as Record<string, unknown>;
   const type = event.type || eventStringField(record, "type");
   if (type === "runtime.llm_call_started") {
-    const model = eventStringField(record, "model");
+    const model = calledModelLabel(eventStringField(record, "model"));
     return model ? `Calling ${model}.` : "Calling the model.";
   }
   const message = ["message", "summary", "content"]

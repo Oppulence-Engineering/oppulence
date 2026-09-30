@@ -10,6 +10,7 @@ import {
   workflowForTask,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
+  calledModelLabel,
   readableEnum,
   runEventBody,
   runEventLabel,
@@ -38,6 +39,7 @@ describe("CloudWorkflowsView", () => {
     expect(scheduleHealthLabel("failed")).toBe("Needs repair");
     expect(runEventLabel("temporal.failed")).toBe("Failed");
     expect(runEventLabel("runtime.tool_call_started")).toBe("Tool call started");
+    expect(runEventLabel("runtime.llm_call_started")).toBe("Model call started");
     expect(runEventLabel("desktop.llm_stream_event")).toBe("LLM stream event");
   });
 
@@ -62,7 +64,10 @@ describe("CloudWorkflowsView", () => {
           prompt_version: "cloud-runtime-v1",
         },
       }),
-    ).toBe("Calling openai/gpt-4.1.");
+    ).toBe("Calling GPT-4.1.");
+    expect(calledModelLabel("openai/gpt-4o-mini")).toBe("GPT-4o mini");
+    expect(calledModelLabel("anthropic/claude-3-5-sonnet")).toBe("Claude 3.5 Sonnet");
+    expect(calledModelLabel("workspace-default")).toBe("workspace-default");
     expect(
       runEventBody({
         type: "temporal.failed",
