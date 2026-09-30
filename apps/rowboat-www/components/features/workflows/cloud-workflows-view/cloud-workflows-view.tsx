@@ -195,7 +195,7 @@ export function scheduleLabel(task: CloudTask): string {
     case "profile-change":
       return "When a profile is enriched";
     case "relationship-risk":
-      return "When relationship risk changes";
+      return "When company risk changes";
     case "commitment-risk":
       return "When a commitment needs recovery";
     default:
@@ -540,7 +540,7 @@ function WorkflowLibrary({
               description={
                 query
                   ? "No workflows match this search. Try another phrase."
-                  : "Create a workflow to automate recurring relationship work."
+                  : "Create a workflow to automate recurring company follow-up."
               }
               image="workflows"
               learnMore={[

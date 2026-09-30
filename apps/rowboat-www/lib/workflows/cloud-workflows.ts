@@ -219,7 +219,7 @@ export function workflowListSummary(
   );
   const description = template?.description.trim();
   if (description) return description;
-  return "Always-on relationship intelligence";
+  return "Recurring company follow-up";
 }
 
 export const CloudTaskTemplateSchema = z.object({

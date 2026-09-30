@@ -76,7 +76,7 @@ const triggers: Array<{
   },
   {
     value: "relationship-risk",
-    label: "Relationship risk changed",
+    label: "Company risk changed",
     detail: "A new or materially changed attention signal",
   },
   {
@@ -96,7 +96,7 @@ const actions: Array<{
   {
     value: "review-account",
     label: "Review account",
-    detail: "Read relationships, people, promises, and evidence",
+    detail: "Read companies, people, promises, and evidence",
     icon: <MagnifyingGlass />,
     fields: [
       {
@@ -105,7 +105,7 @@ const actions: Array<{
         defaultValue: "matching-record",
         options: [
           { value: "matching-record", label: "Matching company and people" },
-          { value: "relationship-portfolio", label: "Entire relationship portfolio" },
+          { value: "relationship-portfolio", label: "Entire company portfolio" },
         ],
       },
     ],
@@ -123,7 +123,7 @@ const actions: Array<{
         options: [
           { value: "promise-recipient", label: "Promise recipient" },
           { value: "primary-contact", label: "Primary contact" },
-          { value: "relationship-owner", label: "Relationship owner" },
+          { value: "relationship-owner", label: "Company owner" },
         ],
       },
       {
@@ -149,7 +149,7 @@ const actions: Array<{
         label: "Assign to",
         defaultValue: "relationship-owner",
         options: [
-          { value: "relationship-owner", label: "Relationship owner" },
+          { value: "relationship-owner", label: "Company owner" },
           { value: "commitment-owner", label: "Commitment owner" },
         ],
       },

@@ -57,7 +57,9 @@ describe("VisualWorkflowBuilder", () => {
     const component = screen.getByRole("region", { name: "Example visual-workflow-builder" });
     expect(component).toHaveAttribute("data-slot", "visual-workflow-builder");
     expect(component).toHaveTextContent("Communication received");
+    expect(component).toHaveTextContent("Read companies, people, promises, and evidence");
     expect(component).toHaveTextContent("Draft recovery email");
+    expect(component).not.toHaveTextContent("Read relationships");
   });
 
   it("removes a selected action from the persisted definition", () => {

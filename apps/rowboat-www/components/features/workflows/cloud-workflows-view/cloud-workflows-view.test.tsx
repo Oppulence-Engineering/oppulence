@@ -46,6 +46,22 @@ describe("CloudWorkflowsView", () => {
     const followups = { triggers: { cronExpr: "0 17 * * 1-5" } } as CloudTask;
     expect(scheduleLabel(digest)).toBe("Weekdays at 8:00 AM");
     expect(scheduleLabel(followups)).toBe("Weekdays at 5:00 PM");
+    expect(
+      scheduleLabel({
+        triggers: {
+          workflow: {
+            version: 1,
+            trigger: { kind: "relationship-risk" },
+            actions: ["review-account"],
+          },
+        },
+      } as CloudTask),
+    ).toBe("When company risk changes");
+    expect(workflowListSummary({ name: "Untitled", triggers: {} } as CloudTask)).toBe(
+      "Recurring company follow-up",
+    );
+    expect(source).toContain("automate recurring company follow-up");
+    expect(source).not.toContain("recurring relationship work");
   });
 
   it("keeps the named product export at the generator path", () => {
