@@ -115,7 +115,7 @@ export function compileVisualWorkflow(definition: VisualWorkflowDefinition): {
     case "communication":
       triggers.eventMatchCriteria =
         workflow.trigger.criteria?.trim() ||
-        "A Gmail, Calendar, Slack, or HubSpot event materially changes a customer relationship, commitment, objection, decision, or next step.";
+        "A Gmail, Calendar, or HubSpot event materially changes a customer relationship, commitment, objection, decision, or next step.";
       break;
     case "schedule":
       triggers.cronExpr = workflow.trigger.cronExpr?.trim() || "0 9 * * 1-5";

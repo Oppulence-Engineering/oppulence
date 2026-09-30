@@ -350,6 +350,15 @@ export function commitmentFilterName(value: string): string {
   return comboboxFilterName("Commitments", COMMITMENT_FILTER_LABEL[value] ?? "Active");
 }
 
+/**
+ * The By account menu's accessible name replaced its value, so a selected
+ * company was still announced as "Choose account".
+ */
+export function registerAccountName(label: string | null | undefined): string {
+  const choice = label?.trim() || "Choose an account";
+  return comboboxFilterName("Account", choice);
+}
+
 const REGISTER_COLUMNS = [
   { name: "Company", icon: TypeText },
   { name: "Score", icon: TypeNumber },
@@ -497,7 +506,12 @@ export function CommitmentQueue({
           </div>
           {view === "by_account" && accounts.length > 0 ? (
             <Select onValueChange={onAccountChange} value={accountId}>
-              <SelectTrigger aria-label="Choose account" className="h-8 w-44">
+              <SelectTrigger
+                aria-label={registerAccountName(
+                  accounts.find((account) => account.id === accountId)?.label,
+                )}
+                className="h-8 w-44"
+              >
                 <SelectValue placeholder="Choose an account" />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-none">

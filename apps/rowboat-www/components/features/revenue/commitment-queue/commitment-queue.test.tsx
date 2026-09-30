@@ -127,8 +127,21 @@ describe("CommitmentQueue", () => {
     expect(
       screen.getByText("Select one account to see its two-sided promise history."),
     ).toBeVisible();
-    expect(screen.getByRole("combobox", { name: "Choose account" })).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Account, Choose an account" })).toBeVisible();
     expect(screen.queryByText(/one relationship/)).toBeNull();
+  });
+
+  it("names the company chosen on the by-account menu", () => {
+    render(
+      <CommitmentQueue
+        {...props({
+          view: "by_account",
+          accountId: "acct-1",
+          accounts: [{ id: "acct-1", label: "Acme" }],
+        })}
+      />,
+    );
+    expect(screen.getByRole("combobox", { name: "Account, Acme" })).toBeVisible();
   });
 
   it("opens the recovery queue from the empty register without claiming an approval", async () => {
@@ -157,7 +170,7 @@ describe("CommitmentQueue", () => {
     expect(
       screen.queryByText("Select one account to see its two-sided promise history."),
     ).toBeNull();
-    expect(screen.queryByRole("combobox", { name: "Choose account" })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Account, Choose an account" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Add a company" }));
     expect(onOpenAccounts).toHaveBeenCalledOnce();
   });

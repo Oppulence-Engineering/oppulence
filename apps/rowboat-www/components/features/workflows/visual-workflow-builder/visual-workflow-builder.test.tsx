@@ -57,6 +57,14 @@ describe("VisualWorkflowBuilder", () => {
     const component = screen.getByRole("region", { name: "Example visual-workflow-builder" });
     expect(component).toHaveAttribute("data-slot", "visual-workflow-builder");
     expect(component).toHaveTextContent("Mail or message received");
+    expect(component).toHaveTextContent("Gmail, Calendar, or HubSpot");
+    expect(component).not.toHaveTextContent("Slack");
+    expect(
+      compileVisualWorkflow({ ...workflow, actions: [...workflow.actions] }).triggers
+        .eventMatchCriteria,
+    ).toBe(
+      "A Gmail, Calendar, or HubSpot event materially changes a customer relationship, commitment, objection, decision, or next step.",
+    );
     expect(component).toHaveTextContent("Read the company, the people on it, and its open promises.");
     expect(component).not.toHaveTextContent("evidence");
     expect(component).toHaveTextContent("Step 1");

@@ -69,7 +69,7 @@ const triggers: Array<{
   {
     value: "communication",
     label: "Mail or message received",
-    detail: "Gmail, Calendar, Slack, or HubSpot",
+    detail: "Gmail, Calendar, or HubSpot",
   },
   {
     value: "profile-change",
