@@ -36,13 +36,24 @@ export type HomeAgentSurfaceProps = ComponentPropsWithoutRef<"section"> & {
   onSelectPrompt: (prompt: string) => void;
 };
 
-function resolveGreetingName(userName?: string) {
-  if (!userName?.trim()) return "there";
-  if (!userName.includes("@")) return userName.trim();
-  const local = userName.split("@")[0] ?? userName;
-  const token = local.split(/[.+_-]/)[0] ?? local;
-  if (!token) return "there";
-  return token.charAt(0).toUpperCase() + token.slice(1);
+/**
+ * The greeting receives the same account label as the sidebar. A saved display
+ * name is used whole. An email, or the bare local part left when no name is
+ * saved, becomes a short given name.
+ */
+export function resolveGreetingName(userName?: string) {
+  const trimmed = userName?.trim() ?? "";
+  if (!trimmed) return "there";
+  if (trimmed.includes("@")) {
+    const local = trimmed.split("@")[0] ?? trimmed;
+    const token = local.split(/[.+_-]/)[0] ?? local;
+    if (!token) return "there";
+    return token.charAt(0).toUpperCase() + token.slice(1);
+  }
+  if (trimmed === trimmed.toLowerCase()) {
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  }
+  return trimmed;
 }
 
 /**

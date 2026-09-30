@@ -15,7 +15,6 @@ import { CardDescription } from "@oppulence/ui/components/card";
 import { Skeleton } from "@oppulence/ui/components/skeleton";
 import { Spinner } from "@oppulence/ui/components/spinner";
 import { cn } from "@oppulence/ui/lib/utils";
-import { useAuthSession } from "@/components/auth/auth-gate";
 import {
   Artifact,
   ArtifactAction,
@@ -159,8 +158,6 @@ function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
  */
 export function ChatDashboardRoute({ className, ...props }: ChatDashboardRouteProps) {
   const chat = useChatRouteState();
-  const session = useAuthSession();
-  const homeUserName = session.user.email || session.user.workosUserId || undefined;
   return (
     <section
       className={cn("flex flex-1 flex-col gap-4 overflow-hidden px-4 pb-0 md:flex-row", className)}
@@ -285,7 +282,7 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
               onSelectPrompt={chat.onSelectPrompt}
               promptInput={chat.promptInput}
               signalPanel={<HomeOverview onOpenTab={chat.onOpenRevenueTab} />}
-              userName={homeUserName}
+              userName={chat.workspace}
               workspace={chat.workspace}
             />
           </div>

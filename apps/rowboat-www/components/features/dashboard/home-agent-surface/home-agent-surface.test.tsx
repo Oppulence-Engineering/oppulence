@@ -6,7 +6,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { HomeAgentSurface } from "./home-agent-surface";
+import { HomeAgentSurface, resolveGreetingName } from "./home-agent-surface";
 
 const onSelectPrompt = vi.fn();
 
@@ -44,6 +44,9 @@ describe("HomeAgentSurface", () => {
     const component = screen.getByRole("region", { name: "Home agent" });
     expect(component).toHaveAttribute("data-slot", "home-agent-surface");
     expect(screen.getByText("What should we get done, Morgan?")).toBeVisible();
+    expect(resolveGreetingName("Ada Lovelace")).toBe("Ada Lovelace");
+    expect(resolveGreetingName("dev")).toBe("Dev");
+    expect(resolveGreetingName("")).toBe("there");
     expect(component).toHaveTextContent("Acme · Revenue operator");
     expect(screen.getByText("3 promises at risk")).toBeVisible();
   });
