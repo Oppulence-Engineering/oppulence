@@ -16,7 +16,7 @@ const STARTING_POINTS = [
   {
     title: "Review an at-risk company",
     prompt:
-      "Which company needs attention right now? Trace the signals that indicate risk and recommend the next conversation to have.",
+      "Which company needs attention right now? Show what makes it risky, and name the next conversation to have.",
   },
   {
     title: "Prioritize what we owe",

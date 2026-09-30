@@ -65,7 +65,10 @@ describe("HomeAgentSurface", () => {
 
     await user.click(screen.getAllByRole("button", { name: "Review an at-risk company" })[0]!);
 
-    expect(onSelectPrompt).toHaveBeenCalledWith(expect.stringContaining("Which company needs attention"));
+    expect(onSelectPrompt).toHaveBeenCalledWith(
+      "Which company needs attention right now? Show what makes it risky, and name the next conversation to have.",
+    );
+    expect(onSelectPrompt).not.toHaveBeenCalledWith(expect.stringContaining("Trace the signals"));
     expect(screen.queryByRole("button", { name: "Review an at-risk relationship" })).toBeNull();
     expect(screen.getAllByRole("button", { name: "Prioritize what we owe" }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "Sequence open obligations" })).toBeNull();
