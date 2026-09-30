@@ -28,6 +28,13 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "cloud-workflows-v
 const task = (name: string, updatedAt: string): CloudTask => ({ name, updatedAt }) as CloudTask;
 
 describe("CloudWorkflowsView", () => {
+  it("treats a workflow search miss as a filter, not an empty library", () => {
+    expect(source).toContain("No workflows match this search. Try another phrase.");
+    expect(source).toContain("Clear search");
+    expect(source).toContain("query.trim()\n                  ? []");
+    expect(source).toContain("Start from a trigger or schedule");
+  });
+
   it("names editor tabs without gluing the run count onto the id", () => {
     expect(workflowEditorTabName("editor", 16)).toBe("Editor");
     expect(workflowEditorTabName("settings", 16)).toBe("Settings");

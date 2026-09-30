@@ -568,16 +568,27 @@ function WorkflowLibrary({
           </table>
           {filtered.length === 0 ? (
             <WorkspaceEmptyState
+              action={
+                query.trim() ? (
+                  <Button onClick={() => setQuery("")} size="sm" type="button" variant="outline">
+                    Clear search
+                  </Button>
+                ) : undefined
+              }
               description={
-                query
+                query.trim()
                   ? "No workflows match this search. Try another phrase."
                   : "Create a workflow to automate recurring company follow-up."
               }
               image="workflows"
-              learnMore={[
-                { label: "Start from a trigger or schedule" },
-                { label: "Review every workflow run" },
-              ]}
+              learnMore={
+                query.trim()
+                  ? []
+                  : [
+                      { label: "Start from a trigger or schedule" },
+                      { label: "Review every workflow run" },
+                    ]
+              }
               title="Workflows"
             />
           ) : null}
