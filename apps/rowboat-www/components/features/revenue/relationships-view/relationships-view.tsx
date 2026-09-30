@@ -2233,10 +2233,6 @@ export function RelationshipSheet({
                   </dd>
                 </dl>
               </section>
-              <section className="mt-6 border-t border-border pt-4">
-                <p className="text-xs font-medium text-primary/55">Lists</p>
-                <p className="mt-2 text-xs text-primary/40">Not on a list</p>
-              </section>
             </aside>
 
             <div className="min-w-0 overflow-y-auto">

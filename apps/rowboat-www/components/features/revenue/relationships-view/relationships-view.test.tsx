@@ -263,7 +263,8 @@ describe("RelationshipsView", () => {
     expect(source).toContain("See where each detail came from");
     expect(source).toContain("Not filled in");
     expect(source).toContain("No description yet");
-    expect(source).toContain("Not on a list");
+    expect(source).not.toContain("Not on a list");
+    expect(source).not.toContain(">Lists<");
     expect(source).toContain("Correct a detail");
     expect(source).toContain('placeholder="Why is this wrong?"');
     expect(source).toContain("Save this transcript");
