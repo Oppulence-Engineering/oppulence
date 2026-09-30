@@ -7,14 +7,14 @@ export const AGENT_TOOL_CATALOG = [
   {
     name: "current_time",
     label: "Current time",
-    description: "Read the current UTC date and time.",
+    description: "Read the current date and time.",
   },
   {
     name: "web.search",
     label: "Web search",
     description: "Search the web for current information.",
   },
-  { name: "echo", label: "Echo", description: "Test that tool calls are wired correctly." },
+  { name: "echo", label: "Echo", description: "Send a short message back, to confirm this agent can use a tool." },
   {
     name: "tool_result.read",
     label: "Tool results",
@@ -29,7 +29,7 @@ export const AGENT_TOOL_CATALOG = [
   {
     name: "source.retry_sync",
     label: "Retry source sync",
-    description: "Retry an existing source sync without reconnecting or starting OAuth.",
+    description: "Try syncing a source again. This does not reconnect the account.",
   },
   {
     name: "task.create",
@@ -59,17 +59,17 @@ export const AGENT_TOOL_CATALOG = [
   {
     name: "note.update",
     label: "Edit note",
-    description: "Edit an Oppulence note while keeping its append-only history.",
+    description: "Edit a note. Earlier versions stay in its history.",
   },
   {
     name: "note.delete",
     label: "Delete note",
-    description: "Delete an Oppulence note while keeping a tombstone in its history.",
+    description: "Delete a note. The history keeps a record that it was removed.",
   },
   {
     name: "action.propose",
     label: "Propose finance action",
-    description: "Create a pending action for human review; never execute it automatically.",
+    description: "Ask for approval before a finance action runs.",
   },
   {
     name: "slack.read_thread",
@@ -145,7 +145,7 @@ export const AGENT_TOOL_CATALOG = [
   {
     name: "demo.payment",
     label: "Payment demo",
-    description: "Exercise approval flows without moving real funds.",
+    description: "Practice an approval. No money moves.",
   },
 ] as const;
 
@@ -168,10 +168,10 @@ const GRANTED_TOOL_LABELS: Record<string, string> = {
   "workspace.read": "Workspaces",
   "relationship.create": "Add a company",
   "relationship.correct": "Correct a company",
-  "relationship.assertion.retract": "Retract a statement",
+  "relationship.assertion.retract": "Withdraw a statement",
   "relationship.review.acknowledge": "Acknowledge a review",
-  "relationship.identity.decide": "Decide an identity match",
-  "relationship.attention.decide": "Decide an attention item",
+  "relationship.identity.decide": "Review a possible duplicate",
+  "relationship.attention.decide": "Update an attention item",
   "conversation.delete": "Delete a conversation",
   "recommendation.create": "Create a recommendation",
   "recommendation.dismiss": "Dismiss a recommendation",
@@ -189,8 +189,8 @@ const GRANTED_TOOL_LABELS: Record<string, string> = {
   "commitment.unblock": "Unblock a commitment",
   "person.create": "Add a person",
   "person.correct": "Correct a person",
-  "person.attribute.retract": "Retract a profile field",
-  "person.identity.decide": "Decide a person match",
+  "person.attribute.retract": "Remove a profile field",
+  "person.identity.decide": "Review a possible duplicate person",
   "person.delete": "Remove a person",
   "action_proposal.read": "Read proposed actions",
   "subagent.delegate": "Delegate to an agent",

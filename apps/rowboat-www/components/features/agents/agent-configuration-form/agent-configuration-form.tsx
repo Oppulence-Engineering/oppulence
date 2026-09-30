@@ -27,8 +27,8 @@ import { Switch } from "@oppulence/ui/components/switch";
 import { Textarea } from "@oppulence/ui/components/textarea";
 
 import { dashboardFetch } from "@/lib/auth/client";
-import { agentInstructionsCopy } from "@/lib/agents/agent-schemas";
-import { AGENT_TOOL_CATALOG, DEVELOPER_TOOL_NAMES } from "@/lib/agents/agent-tools";
+import { agentInstructionsCopy, agentSlugTitle } from "@/lib/agents/agent-schemas";
+import { AGENT_TOOL_CATALOG, DEVELOPER_TOOL_NAMES, agentToolLabel } from "@/lib/agents/agent-tools";
 import { cn } from "@/lib/utils";
 
 type AgentTool =
@@ -99,6 +99,7 @@ function TagEditor({
   addLabel,
   disabled,
   emptyLabel,
+  format,
   onChange,
   placeholder,
   values,
@@ -106,6 +107,7 @@ function TagEditor({
   addLabel: string;
   disabled: boolean;
   emptyLabel: string;
+  format?: (value: string) => string;
   onChange: (values: string[]) => void;
   placeholder: string;
   values: string[];
@@ -123,13 +125,16 @@ function TagEditor({
     <div className="space-y-2">
       {values.length ? (
         <div className="flex flex-wrap gap-2">
-          {values.map((value) => (
+          {values.map((value) => {
+            const label = format ? format(value) : value;
+            return (
             <Badge
-              className="gap-1.5 py-1 pl-2.5 pr-1 font-mono font-normal"
+              className="gap-1.5 py-1 pl-2.5 pr-1 font-normal"
               key={value}
+              title={label === value ? undefined : value}
               variant="secondary"
             >
-              {value}
+              {label}
               {!disabled ? (
                 <Button
                   aria-label={`Remove ${value}`}
@@ -143,7 +148,8 @@ function TagEditor({
                 </Button>
               ) : null}
             </Badge>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <p className="text-xs text-muted-foreground">{emptyLabel}</p>
@@ -422,19 +428,24 @@ export function AgentConfigurationForm({
         </div>
 
         <div className="space-y-2 rounded-none border border-dashed p-4">
-          <Label>Custom tools</Label>
-          <FieldHint>Add an approved tool by its registered name.</FieldHint>
+          <Label>More tools</Label>
+          <FieldHint>
+            {readOnly
+              ? "These are included with this agent."
+              : "Add another tool Oppulence has approved for this workspace."}
+          </FieldHint>
           <TagEditor
-            addLabel="Custom tool name"
+            addLabel="Tool name"
             disabled={readOnly}
-            emptyLabel="No custom tools added."
+            emptyLabel="No other tools."
+            format={agentToolLabel}
             onChange={(nextCustomTools) =>
               setTools([
                 ...selectedTools.filter((name) => !customTools.includes(name)),
                 ...nextCustomTools,
               ])
             }
-            placeholder="connector.custom.action"
+            placeholder="Tool name"
             values={customTools}
           />
         </div>
@@ -444,7 +455,9 @@ export function AgentConfigurationForm({
         <div>
           <h3 className="text-sm font-medium">Team and connections</h3>
           <FieldHint>
-            Allow delegation to another agent or declare connected-service access.
+            {readOnly
+              ? "Other agents this one can ask for help, and services it may use."
+              : "Choose who this agent can ask for help, and which services it may use."}
           </FieldHint>
         </div>
 
@@ -472,7 +485,7 @@ export function AgentConfigurationForm({
                     type="button"
                     variant="outline"
                   >
-                    <Robot className="size-4" /> {slug}
+                    <Robot className="size-4" /> {agentSlugTitle(slug)}
                   </Button>
                 );
               })}
@@ -483,20 +496,23 @@ export function AgentConfigurationForm({
         </div>
 
         <div className="space-y-2">
-          <Label>Required connection scopes</Label>
-          <FieldHint>
-            Scopes describe what a connected service may do; they never contain credentials.
-          </FieldHint>
+          <Label>Connected services</Label>
+          <FieldHint>Services this agent may use. Sign-in stays with the provider.</FieldHint>
           <TagEditor
-            addLabel="Connection scope"
+            addLabel="Connected service"
             disabled={readOnly}
-            emptyLabel="This agent does not require a connected service."
+            emptyLabel="No extra services are required."
+            format={(scope) => {
+              const words = scope.replace(/[:._-]+/g, " ").trim();
+              if (!words) return scope;
+              return words.charAt(0).toUpperCase() + words.slice(1);
+            }}
             onChange={(scopes) =>
               update((next) => {
                 next.spec.connections = scopes.map((scope) => ({ scope }));
               })
             }
-            placeholder="slack:messages.read"
+            placeholder="Service name"
             values={connectionScopes}
           />
         </div>

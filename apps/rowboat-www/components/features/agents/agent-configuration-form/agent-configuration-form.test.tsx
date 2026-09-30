@@ -22,7 +22,14 @@ describe("AgentConfigurationForm", () => {
     expect(tools).toContain('label: "Create task"');
     expect(source).toContain("visibleTools(selectedTools)");
     expect(source).toContain("agentInstructionsCopy(");
-    expect(source).toContain("Oppulence maintains these instructions.");
+    expect(source).toContain("agentToolLabel");
+    expect(source).toContain("agentSlugTitle(slug)");
+    expect(source).toContain("More tools");
+    expect(source).toContain("Connected services");
+    expect(source).not.toContain("registered name");
+    expect(source).not.toContain("connector.custom.action");
+    expect(source).not.toContain("slack:messages.read");
+    expect(source).not.toContain("Required connection scopes");
     expect(tools).toContain('"echo"');
     expect(tools).toContain('"conduit.read"');
     expect(source).not.toContain("Read relationship memory");

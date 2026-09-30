@@ -116,6 +116,23 @@ export function agentInstructionsCopy(input: {
   return stored || "No additional instructions.";
 }
 
+/**
+ * Delegation buttons only have the slug. Known agents use their product name;
+ * any other slug is shown as words.
+ */
+export function agentSlugTitle(slug: string): string {
+  const known: Record<string, string> = {
+    assistant: "Assistant",
+    concierge: "Concierge",
+    "concierge-slack": "Slack Concierge",
+  };
+  const match = known[slug.trim()];
+  if (match) return match;
+  const words = slug.replace(/[._-]+/g, " ").trim();
+  if (!words) return slug;
+  return words.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 /** The API stores a source enum. The agents page badge is a product label. */
 export function agentSourceLabel(source: string): string {
   const known = AGENT_SOURCE_LABELS[source];

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   agentDisplayName,
   agentInstructionsCopy,
+  agentSlugTitle,
   agentSourceLabel,
   parseAgentDocument,
   parseAgentsResponse,
@@ -80,6 +81,9 @@ describe("agent schemas", () => {
     expect(agentSourceLabel("unknown")).toBe("Custom");
     expect(agentSourceLabel("")).toBe("Custom");
     expect(agentSourceLabel("partner_pack")).toBe("Partner pack");
+    expect(agentSlugTitle("assistant")).toBe("Assistant");
+    expect(agentSlugTitle("concierge-slack")).toBe("Slack Concierge");
+    expect(agentSlugTitle("renewal-reviewer")).toBe("Renewal Reviewer");
   });
 
   it("rejects malformed projection fields before creating an editor document", () => {
