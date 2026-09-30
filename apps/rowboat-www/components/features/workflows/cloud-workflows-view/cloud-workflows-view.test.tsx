@@ -395,6 +395,10 @@ describe("CloudWorkflowsView", () => {
     ).toEqual(account);
     expect(source).toContain("useWorkflowRuns({ slug: task.slug })");
     expect(source).toContain('taskRunsSettled ? "No runs yet." : "Loading runs…"');
+    const runsAt = source.indexOf('value="runs"');
+    const runsPane = source.slice(runsAt - 80, runsAt + 500);
+    expect(runsPane).toContain("EDITOR_PANE_CLASS");
+    expect(runsPane).toContain('className="h-full min-h-0 border-r border-border"');
   });
 
   it("sorts the library by the label on the sort control", () => {

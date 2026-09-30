@@ -155,6 +155,10 @@ const EDITOR_TAB_LABEL: Record<EditorTab, string> = {
   settings: "Settings",
 };
 
+/** Active panes fill the editor and clip, so a long run list can scroll to Load more. */
+const EDITOR_PANE_CLASS =
+  "min-h-0 flex-1 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col";
+
 const terminalStatuses = new Set<CloudRunStatus>(["succeeded", "failed", "stopped"]);
 const defaultVisualWorkflow = (): VisualWorkflowDefinition => ({
   version: 1,
@@ -1187,10 +1191,7 @@ function WorkflowEditor({
           ))}
         </TabsList>
 
-        <TabsContent
-          className="min-h-0 flex-1 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col"
-          value="editor"
-        >
+        <TabsContent className={EDITOR_PANE_CLASS} value="editor">
           {task.systemManaged ? (
             <p className="shrink-0 border-b border-border px-4 py-2 text-[12px] text-muted-foreground">
               {maintainedWorkflowNotice()}
@@ -1203,9 +1204,9 @@ function WorkflowEditor({
             value={workflow}
           />
         </TabsContent>
-        <TabsContent className="min-h-0 flex-1" value="runs">
-          <div className="grid min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)]">
-            <ScrollArea className="min-h-0 border-r border-border">
+        <TabsContent className={EDITOR_PANE_CLASS} value="runs">
+          <div className="grid h-full min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)]">
+            <ScrollArea className="h-full min-h-0 border-r border-border">
               {taskRuns.map((run) => (
                 <Button
                   className={cn(
@@ -1248,7 +1249,7 @@ function WorkflowEditor({
                 </Button>
               ) : null}
             </ScrollArea>
-            <ScrollArea className="min-h-0">
+            <ScrollArea className="h-full min-h-0">
               <RunInspector
                 busy={busy}
                 events={events}
@@ -1261,8 +1262,8 @@ function WorkflowEditor({
             </ScrollArea>
           </div>
         </TabsContent>
-        <TabsContent className="min-h-0 flex-1" value="settings">
-          <ScrollArea className="min-h-0 flex-1">
+        <TabsContent className={EDITOR_PANE_CLASS} value="settings">
+          <ScrollArea className="h-full min-h-0 flex-1">
             <div className="mx-auto max-w-2xl space-y-7 px-6 py-7">
               <div>
                 <h2 className="text-[15px] font-medium">Workflow settings</h2>
