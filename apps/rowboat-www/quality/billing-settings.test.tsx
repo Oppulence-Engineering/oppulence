@@ -19,7 +19,7 @@ vi.mock("@/lib/revenue/revenue", () => ({
   startCheckout: billing.startCheckout,
 }));
 
-import { PlanSection } from "@/components/features/settings/app-settings/app-settings";
+import { PlanSection, usageMeterLabel } from "@/components/features/settings/app-settings/app-settings";
 
 const session = (plan: string) => ({
   billing: { plan, status: "active", usage: {} },
@@ -48,6 +48,29 @@ describe("settings billing upgrade", () => {
       "Checkout is temporarily unavailable",
     );
     expect(upgrade).toBeEnabled();
+  });
+
+  it("names credit meters instead of API field names", () => {
+    expect(usageMeterLabel("sanctionedCredits")).toBe("Included credits");
+    expect(usageMeterLabel("usedCredits")).toBe("Credits used");
+    expect(usageMeterLabel("availableCredits")).toBe("Credits remaining");
+    expect(usageMeterLabel("usageDay")).toBe("Usage day");
+    render(
+      <PlanSection
+        session={{
+          billing: {
+            plan: "free",
+            status: "active",
+            usage: { sanctionedCredits: 10000, usedCredits: 0, availableCredits: 10000 },
+          },
+          user: { permissions: [] },
+        }}
+      />,
+    );
+    expect(screen.getByText("Included credits")).toBeVisible();
+    expect(screen.getAllByText("10000").length).toBeGreaterThan(0);
+    expect(screen.queryByText("sanctionedCredits")).not.toBeInTheDocument();
+    expect(screen.queryByText("SanctionedCredits")).not.toBeInTheDocument();
   });
 
   it("does not upsell a workspace that is already on Pro", () => {

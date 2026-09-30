@@ -525,6 +525,28 @@ function AppearanceSection() {
   );
 }
 
+/**
+ * Billing usage arrives as API field names. The row style capitalizes the
+ * first letter only, so sanctionedCredits renders as SanctionedCredits.
+ */
+const USAGE_METER_LABELS: Record<string, string> = {
+  sanctionedCredits: "Included credits",
+  usedCredits: "Credits used",
+  availableCredits: "Credits remaining",
+  usageDay: "Usage day",
+};
+
+export function usageMeterLabel(key: string): string {
+  const known = USAGE_METER_LABELS[key];
+  if (known) return known;
+  const words = key
+    .replace(/[_-]+/g, " ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .trim();
+  if (!words) return key;
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 export function PlanSection({ session }: { session: SessionShape }) {
   const billing = session.billing;
   const [upgrading, setUpgrading] = React.useState(false);
@@ -589,7 +611,7 @@ export function PlanSection({ session }: { session: SessionShape }) {
         ) : (
           <div className="flex flex-col gap-0.5 py-2">
             {usage.map(([key, value]) => (
-              <ValueRow key={key} label={key} value={String(value)} />
+              <ValueRow key={key} label={usageMeterLabel(key)} value={String(value)} />
             ))}
           </div>
         )}
