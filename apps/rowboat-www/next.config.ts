@@ -68,9 +68,12 @@ const plainChat = {
 // react-grab and react-scan load from unpkg in dev. Both ping
 // https://www.react-grab.com/api/version, and the grab MCP client probes its
 // default health port (4723) plus the agent ports (Cursor 5567, Claude 4567,
-// Gemini 5568, OpenCode 6567). Keep these origins dev-only.
+// Gemini 5568, OpenCode 6567). React Scan draws its overlay from a blob:
+// Worker; without worker-src that falls back to script-src and is blocked.
+// Keep these origins dev-only.
 const reactGrabDev = {
   script: "https://unpkg.com",
+  worker: "blob:",
   connect: [
     "https://www.react-grab.com",
     "http://localhost:4723",
@@ -90,6 +93,8 @@ const contentSecurityPolicy = [
   `img-src 'self' data: blob: ${plainChat.img.join(" ")}`,
   `font-src 'self' data: ${plainChat.style} ${plainChat.script}`,
   `connect-src 'self' https://api.workos.com https://us.i.posthog.com ${plainChat.connect.join(" ")}${developmentBuild ? ` ${reactGrabDev.connect.join(" ")}` : ""}`,
+  // worker-src is omitted in production so it keeps falling back to script-src.
+  ...(developmentBuild ? [`worker-src 'self' ${reactGrabDev.worker}`] : []),
   "frame-src 'self' https://api.oppulence.io https://api.x.staging.oppulence.io",
   "frame-ancestors 'self'",
   "base-uri 'self'",

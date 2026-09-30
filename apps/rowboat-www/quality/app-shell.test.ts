@@ -126,5 +126,6 @@ describe("Better Auth–style app shell", () => {
     expect(config).toContain("https://www.react-grab.com");
     expect(config).toContain("http://localhost:4723");
     expect(config).toContain("http://localhost:5567");
+    expect(config).toContain("worker-src 'self' ${reactGrabDev.worker}");
   });
 });
