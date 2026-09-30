@@ -485,7 +485,7 @@ function DefaultsCard() {
 
   return (
     <SettingsRow
-      description="What new chats start with. Applies the next time you open Oppulence."
+      description="The agent a new chat starts with. It applies the next time you start a chat."
       footer={
         <SaveFooter
           dirty={dirty}
@@ -495,7 +495,7 @@ function DefaultsCard() {
           saving={mutation.isPending}
         />
       }
-      title="Chat Defaults"
+      title="Chat defaults"
     >
       {query.isError ? (
         <PreferenceLoadState
@@ -669,7 +669,7 @@ export function PlanSection({ session }: { session: SessionShape }) {
 
   return (
     <>
-      <SettingsRow description="The plan this workspace is currently on." title="Current Plan">
+      <SettingsRow description="The plan this workspace is currently on." title="Current plan">
         <div className="flex items-center justify-between gap-6 p-4">
           <div>
             <p className="text-lg font-medium capitalize text-primary">{billing?.plan || "Free"}</p>
@@ -699,7 +699,7 @@ export function PlanSection({ session }: { session: SessionShape }) {
           </p>
         ) : null}
       </SettingsRow>
-      <SettingsRow description="Metered activity for the current billing period." title="Usage">
+      <SettingsRow description="Activity counted in the current billing period." title="Usage">
         {usage.length === 0 ? (
           <EmptyCardState>No usage recorded yet.</EmptyCardState>
         ) : (

@@ -41,7 +41,14 @@ describe("SettingsView", () => {
     expect(source).toContain("readBrowserOrigin");
     expect(source).toContain("return window.location.origin");
     expect(source).toContain("How you appear in Oppulence across signed-in devices.");
-    expect(source).toContain("the next time you open Oppulence.");
+    expect(source).toContain("the next time you start a chat.");
+    expect(source).toContain('title="Chat defaults"');
+    expect(source).toContain('title="Current plan"');
+    expect(source).toContain("Activity counted in the current billing period.");
+    expect(source).not.toContain("the next time you open Oppulence.");
+    expect(source).not.toContain("Metered activity");
+    expect(source).not.toContain('title="Chat Defaults"');
+    expect(source).not.toContain('title="Current Plan"');
     expect(source).toContain("How Oppulence looks on this device.");
     expect(source).not.toContain("this console");
     expect(source).not.toContain("the console");
