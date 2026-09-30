@@ -211,6 +211,24 @@ export function workflowLastRunMark(
   return task.lastRunError?.trim() ? "Failed" : null;
 }
 
+/**
+ * The account run list is the newest page across every workflow. A workflow
+ * that runs once a day falls off that page, so its Runs tab said there were
+ * no runs while the library still showed the failed last run. The workflow's
+ * own page is the list. Until that page arrives, the account page is only a
+ * preview and must not be described as empty.
+ */
+export function workflowRunsForEditor<T extends { slug: string }>(
+  slug: string,
+  accountRuns: readonly T[],
+  workflowRuns: readonly T[] | null,
+): { runs: T[]; settled: boolean } {
+  if (workflowRuns) {
+    return { runs: workflowRuns.filter((run) => run.slug === slug), settled: true };
+  }
+  return { runs: accountRuns.filter((run) => run.slug === slug), settled: false };
+}
+
 /** Status and trigger as words. The runs list used to show only an icon, so
  * every row looked the same until you opened it. */
 export function runRowDetail(status: string, trigger: string): string {
@@ -1022,7 +1040,15 @@ function WorkflowEditor({
   const dirty =
     editable &&
     (name.trim() !== taskTitle(task) || JSON.stringify(workflow) !== JSON.stringify(original));
-  const taskRuns = runs.filter((run) => run.slug === task.slug);
+  const scopedRunsQuery = useWorkflowRuns({ slug: task.slug });
+  const scopedRuns = scopedRunsQuery.isSuccess
+    ? (scopedRunsQuery.data.pages.flatMap((page) => page.runs) as CloudRun[])
+    : null;
+  const { runs: taskRuns, settled: taskRunsSettled } = workflowRunsForEditor(
+    task.slug,
+    runs,
+    scopedRuns,
+  );
 
   const save = async () => {
     const compiled = compileVisualWorkflow(workflow);
@@ -1159,7 +1185,9 @@ function WorkflowEditor({
                 </Button>
               ))}
               {taskRuns.length === 0 ? (
-                <p className="p-8 text-center text-xs text-muted-foreground">No runs yet.</p>
+                <p className="p-8 text-center text-xs text-muted-foreground">
+                  {taskRunsSettled ? "No runs yet." : "Loading runs…"}
+                </p>
               ) : null}
             </ScrollArea>
             <ScrollArea className="min-h-0">

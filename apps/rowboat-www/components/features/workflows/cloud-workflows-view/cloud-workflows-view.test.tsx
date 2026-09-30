@@ -16,6 +16,7 @@ import {
   workflowOpeningScreen,
   workflowLastRunAt,
   workflowLastRunMark,
+  workflowRunsForEditor,
   workflowStepLabel,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
@@ -345,6 +346,24 @@ describe("CloudWorkflowsView", () => {
     ).toBe("Stopped");
     expect(source).toContain("workflowLastRunMark(");
     expect(source).not.toContain("lastRunError}");
+  });
+
+  it("loads a workflow's own runs when they are off the account page", () => {
+    const account = [{ slug: "oppulence-post-meeting-processor", runId: "recent" }];
+    const daily = { slug: "oppulence-attention-monitor", runId: "morning" };
+    expect(workflowRunsForEditor("oppulence-attention-monitor", account, null)).toEqual({
+      runs: [],
+      settled: false,
+    });
+    expect(workflowRunsForEditor("oppulence-attention-monitor", account, [daily])).toEqual({
+      runs: [daily],
+      settled: true,
+    });
+    expect(
+      workflowRunsForEditor("oppulence-post-meeting-processor", account, null).runs,
+    ).toEqual(account);
+    expect(source).toContain("useWorkflowRuns({ slug: task.slug })");
+    expect(source).toContain('taskRunsSettled ? "No runs yet." : "Loading runs…"');
   });
 
   it("sorts the library by the label on the sort control", () => {
