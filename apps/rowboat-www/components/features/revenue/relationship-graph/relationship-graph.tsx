@@ -58,6 +58,14 @@ import "@xyflow/react/dist/style.css";
 import { errMessage } from "@/components/features/revenue/shared/shared";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@oppulence/ui/components/dialog";
 import { ItemMedia } from "@oppulence/ui/components/item";
 import { Label } from "@oppulence/ui/components/label";
 import { Checkbox } from "@oppulence/ui/components/checkbox";
@@ -908,6 +916,8 @@ export function RelationshipGraphWorkspace({
   const [mode, setMode] = React.useState<"canvas" | "table">("canvas");
   const [queryDraft, setQueryDraft] = React.useState(() => readURLState().query);
   const [activeSavedViewId, setActiveSavedViewId] = React.useState<string>();
+  const [namingView, setNamingView] = React.useState(false);
+  const [viewName, setViewName] = React.useState("");
   const [resetSignal, setResetSignal] = React.useState(0);
   const migrationStartedRef = React.useRef(false);
   const graphEnabled = !(viewState.scope === "relationship" && !viewState.relationshipId);
@@ -948,6 +958,7 @@ export function RelationshipGraphWorkspace({
       }),
     onSuccess: (resource) => {
       setActiveSavedViewId(resource.id);
+      setNamingView(false);
       void queryClient.invalidateQueries({
         queryKey: consoleKeys.resourceKind("graph_saved_view"),
       });
@@ -1121,12 +1132,15 @@ export function RelationshipGraphWorkspace({
     [updateState, viewState.focusDepth],
   );
 
-  const saveView = () => {
+  const openSaveDialog = () => {
     if (!graph?.permissions.canSaveViews) return;
-    const label = window
-      .prompt("Name this graph view", `Graph view ${savedViews.length + 1}`)
-      ?.trim();
-    if (!label) return;
+    setViewName(`Graph view ${savedViews.length + 1}`);
+    setNamingView(true);
+  };
+
+  const confirmSaveView = () => {
+    const label = viewName.trim();
+    if (!label || !graph?.permissions.canSaveViews) return;
     saveViewMutation.mutate({ label, state: viewState });
   };
 
@@ -1440,7 +1454,7 @@ export function RelationshipGraphWorkspace({
             type="button"
             size="sm"
             variant="ghost"
-            onClick={saveView}
+            onClick={openSaveDialog}
             disabled={
               !graph?.permissions.canSaveViews ||
               savedViewsQuery.isError ||
@@ -1555,6 +1569,43 @@ export function RelationshipGraphWorkspace({
           <aside className="border-l border-border" />
         )}
       </div>
+      <Dialog open={namingView} onOpenChange={setNamingView}>
+        <DialogContent className="rounded-none sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Name this graph view</DialogTitle>
+            <DialogDescription>
+              Saved views keep the current filters, focus, and layout for this workspace.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="graph-view-name">View name</Label>
+            <Input
+              id="graph-view-name"
+              value={viewName}
+              autoFocus
+              onChange={(event) => setViewName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  confirmSaveView();
+                }
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setNamingView(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={!viewName.trim() || saveViewMutation.isPending}
+              onClick={confirmSaveView}
+            >
+              Save view
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

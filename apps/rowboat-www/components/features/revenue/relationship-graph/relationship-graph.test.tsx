@@ -52,4 +52,11 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain('relationship: "Company"');
     expect(source).not.toContain('relationship: "Account"');
   });
+
+  it("names a saved view in the product dialog", () => {
+    expect(source).not.toContain("window.prompt");
+    expect(source).toContain("Name this graph view");
+    expect(source).toContain('htmlFor="graph-view-name"');
+    expect(source).toContain("Save view");
+  });
 });
