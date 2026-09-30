@@ -6,6 +6,9 @@ import { describe, expect, it } from "vitest";
 import {
   runFailureLine,
   runRowDetail,
+  runStatusFilterName,
+  runTriggerFilterName,
+  runWhereFilterName,
   scheduleLabel,
   sortWorkflowTasks,
   workflowEditorTabName,
@@ -221,6 +224,15 @@ describe("CloudWorkflowsView", () => {
     expect(source).not.toContain("configure the trigger and actions on the canvas");
     expect(source).toContain("All statuses");
     expect(source).toContain("Cloud or desktop");
+    expect(runStatusFilterName("all")).toBe("Status, All statuses");
+    expect(runStatusFilterName("failed")).toBe("Status, Failed");
+    expect(runTriggerFilterName("all")).toBe("Trigger, All triggers");
+    expect(runTriggerFilterName("cron")).toBe("Trigger, Scheduled");
+    expect(runWhereFilterName("all")).toBe("Where it runs, Cloud or desktop");
+    expect(runWhereFilterName("api")).toBe("Where it runs, Cloud");
+    expect(source).toContain("aria-label={runStatusFilterName(statusFilter)}");
+    expect(source).toContain("aria-label={runTriggerFilterName(triggerFilter)}");
+    expect(source).toContain("aria-label={runWhereFilterName(executorFilter)}");
     expect(source).not.toContain(">All status<");
     expect(source).not.toContain("All runtimes");
   });

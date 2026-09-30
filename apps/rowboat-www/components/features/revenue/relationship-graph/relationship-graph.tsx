@@ -88,6 +88,7 @@ import {
   TableRow,
 } from "@oppulence/ui/components/table";
 import { ToggleGroup, ToggleGroupItem } from "@oppulence/ui/components/toggle-group";
+import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import {
   approveAction,
   createAction,
@@ -1404,7 +1405,11 @@ export function RelationshipGraphWorkspace({
             updateState({ layout })
           }
         >
-          <SelectTrigger size="sm" className="w-32">
+          <SelectTrigger
+            aria-label={comboboxFilterName("Layout", graphLayoutLabel(viewState.layout))}
+            size="sm"
+            className="w-32"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="app-shell rounded-[2px]">

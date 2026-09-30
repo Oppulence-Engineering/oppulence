@@ -7,7 +7,9 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "relationships-vie
 
 import {
   companyDirectoryTitle,
+  companyHealthFilterName,
   companyListEmptyCopy,
+  companyStageFilterName,
   companySheetPositionLabel,
   companyReviewCopy,
   completenessExplanationCopy,
@@ -83,6 +85,12 @@ describe("RelationshipsView", () => {
     expect(source).toContain("Public research");
     expect(source).not.toContain("Profile enrichment");
     expect(source).toContain(">Any health</SelectItem>");
+    expect(companyHealthFilterName("all")).toBe("Health, Any health");
+    expect(companyHealthFilterName("needs_attention")).toBe("Health, Needs Attention");
+    expect(companyStageFilterName("all")).toBe("Stage, All stages");
+    expect(companyStageFilterName("evaluation")).toBe("Stage, Evaluation");
+    expect(source).toContain("aria-label={companyHealthFilterName(health)}");
+    expect(source).toContain("aria-label={companyStageFilterName(lifecycle)}");
     expect(source).not.toContain(">All health</SelectItem>");
     expect(source).toContain(">All stages</SelectItem>");
     expect(source).toContain("<Sparkle /> Sources");

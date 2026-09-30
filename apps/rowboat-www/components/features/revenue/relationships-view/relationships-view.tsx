@@ -160,6 +160,7 @@ import {
 import { relationshipKeys } from "@/hooks/queries/utils/relationship-keys";
 import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-source-keys";
 import { useQueryClient } from "@tanstack/react-query";
+import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { planLabel } from "@/lib/product/plan-label";
 import {
   enumLabel as humanize,
@@ -483,6 +484,15 @@ export function companyListEmptyCopy(input: {
   return "Connect Gmail to discover companies from real conversations, or add one by hand.";
 }
 
+/** Health and stage are comboboxes. The visible word is the choice, not the name. */
+export function companyHealthFilterName(value: string): string {
+  return comboboxFilterName("Health", value === "all" ? "Any health" : humanize(value));
+}
+
+export function companyStageFilterName(value: string): string {
+  return comboboxFilterName("Stage", value === "all" ? "All stages" : humanize(value));
+}
+
 export function RelationshipsView({
   onError,
   onNotice,
@@ -688,7 +698,11 @@ export function RelationshipsView({
               />
             </div>
             <Select value={health} onValueChange={setHealth}>
-              <SelectTrigger className="h-8 w-36" size="sm">
+              <SelectTrigger
+                aria-label={companyHealthFilterName(health)}
+                className="h-8 w-36"
+                size="sm"
+              >
                 <SelectValue placeholder="Health" />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-none">
@@ -701,7 +715,11 @@ export function RelationshipsView({
               </SelectContent>
             </Select>
             <Select value={lifecycle} onValueChange={setLifecycle}>
-              <SelectTrigger className="h-8 w-40" size="sm">
+              <SelectTrigger
+                aria-label={companyStageFilterName(lifecycle)}
+                className="h-8 w-40"
+                size="sm"
+              >
                 <SelectValue placeholder="Stage" />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-none">

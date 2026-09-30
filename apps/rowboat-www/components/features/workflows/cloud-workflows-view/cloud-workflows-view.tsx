@@ -100,6 +100,7 @@ import {
   workflowProductDescription,
   workflowProductName,
 } from "@/lib/workflows/workflow-product-copy";
+import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { cn } from "@/lib/utils";
 
 type FilterValue<T extends string> = T | "all";
@@ -146,6 +147,21 @@ function formatDate(value?: string | null): string {
  * every row looked the same until you opened it. */
 export function runRowDetail(status: string, trigger: string): string {
   return `${readableEnum(status)} · ${triggerLabel(trigger)}`;
+}
+
+/** The visible label is the current choice. The accessible name also says
+ * which filter it is, because a combobox does not name itself from that text. */
+export function runStatusFilterName(value: string): string {
+  return comboboxFilterName("Status", value === "all" ? "All statuses" : readableEnum(value));
+}
+
+export function runTriggerFilterName(value: string): string {
+  return comboboxFilterName("Trigger", value === "all" ? "All triggers" : triggerLabel(value));
+}
+
+export function runWhereFilterName(value: string): string {
+  const current = value === "api" ? "Cloud" : value === "desktop" ? "Desktop" : "Cloud or desktop";
+  return comboboxFilterName("Where it runs", current);
 }
 
 /** A failed run should say why in the list. Opening it is not required to learn that. */
@@ -778,7 +794,11 @@ function WorkflowRuns({
             onValueChange={(value) => onStatusFilter(value as FilterValue<CloudRunStatus>)}
             value={statusFilter}
           >
-            <SelectTrigger className="rounded-none" size="sm">
+            <SelectTrigger
+              aria-label={runStatusFilterName(statusFilter)}
+              className="rounded-none"
+              size="sm"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-none">
@@ -794,7 +814,11 @@ function WorkflowRuns({
             onValueChange={(value) => onTriggerFilter(value as FilterValue<CloudRunTrigger>)}
             value={triggerFilter}
           >
-            <SelectTrigger className="rounded-none" size="sm">
+            <SelectTrigger
+              aria-label={runTriggerFilterName(triggerFilter)}
+              className="rounded-none"
+              size="sm"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-none">
@@ -810,7 +834,11 @@ function WorkflowRuns({
             onValueChange={(value) => onExecutorFilter(value as "api" | "desktop" | "all")}
             value={executorFilter}
           >
-            <SelectTrigger className="rounded-none" size="sm">
+            <SelectTrigger
+              aria-label={runWhereFilterName(executorFilter)}
+              className="rounded-none"
+              size="sm"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-none">

@@ -58,6 +58,9 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphLayoutLabel("radial")).toBe("Circle");
     expect(graphLayoutLabel("timeline")).toBe("By time");
     expect(source).toContain('graphLayoutLabel("force")');
+    expect(source).toContain(
+      'aria-label={comboboxFilterName("Layout", graphLayoutLabel(viewState.layout))}',
+    );
     expect(source).not.toContain("Cluster layout");
     expect(source).not.toContain("Radial layout");
     expect(source).not.toContain("<Graph /> Canvas");
