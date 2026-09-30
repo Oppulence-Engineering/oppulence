@@ -1223,7 +1223,12 @@ function SourceConnectionCards({
                 {!account ||
                 account.status === "disconnected" ||
                 account.status === "reconnect_required" ? (
-                  <Button type="button" size="sm" onClick={onOpenConnectors}>
+                  <Button
+                    aria-label={`Connect ${item.displayName}`}
+                    onClick={onOpenConnectors}
+                    size="sm"
+                    type="button"
+                  >
                     Connect
                   </Button>
                 ) : null}

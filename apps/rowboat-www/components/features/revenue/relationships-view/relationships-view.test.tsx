@@ -21,6 +21,7 @@ describe("RelationshipsView", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function RelationshipsView");
     expect(source).toContain("subscribeCompanyCreate(() => setCreating(true))");
+    expect(source).toContain("aria-label={`Connect ${item.displayName}`}");
   });
 
   it("names a filtered company list and offers to clear it", () => {

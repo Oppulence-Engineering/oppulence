@@ -33,6 +33,7 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain("Clear search");
     expect(source).toContain("query.trim()\n                  ? []");
     expect(source).toContain("Start from a trigger or schedule");
+    expect(source).toContain("aria-label={`Use ${name}`}");
   });
 
   it("names editor tabs without gluing the run count onto the id", () => {

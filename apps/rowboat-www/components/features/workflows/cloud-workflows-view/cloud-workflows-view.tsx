@@ -357,27 +357,29 @@ function CreateWorkflowDialog({
               <div className="divide-y divide-border border border-border">
                 {templates
                   .filter((template) => !template.firstParty)
-                  .map((template) => (
-                    <div className="flex items-start justify-between gap-4 p-3" key={template.slug}>
-                      <div>
-                        <p className="text-[13px] font-medium">
-                          {workflowProductName(template.slug, template.name)}
-                        </p>
-                        <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
-                          {workflowProductDescription(template.slug, template.description)}
-                        </p>
+                  .map((template) => {
+                    const name = workflowProductName(template.slug, template.name);
+                    return (
+                      <div className="flex items-start justify-between gap-4 p-3" key={template.slug}>
+                        <div>
+                          <p className="text-[13px] font-medium">{name}</p>
+                          <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
+                            {workflowProductDescription(template.slug, template.description)}
+                          </p>
+                        </div>
+                        <Button
+                          aria-label={`Use ${name}`}
+                          className="rounded-none"
+                          disabled={busy}
+                          onClick={() => void instantiate(template)}
+                          size="sm"
+                          variant="outline"
+                        >
+                          Use
+                        </Button>
                       </div>
-                      <Button
-                        className="rounded-none"
-                        disabled={busy}
-                        onClick={() => void instantiate(template)}
-                        size="sm"
-                        variant="outline"
-                      >
-                        Use
-                      </Button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 {templates.filter((template) => !template.firstParty).length === 0 ? (
                   <p className="p-6 text-center text-xs text-muted-foreground">
                     No custom templates are available yet.
