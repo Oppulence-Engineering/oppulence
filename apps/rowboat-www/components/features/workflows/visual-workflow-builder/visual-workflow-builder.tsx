@@ -63,7 +63,7 @@ const triggers: Array<{
   detail: string;
 }> = [
   { value: "manual", label: "Manually started", detail: "Run only when someone starts it" },
-  { value: "schedule", label: "Scheduled time", detail: "Run on a simple recurring cadence" },
+  { value: "schedule", label: "Scheduled time", detail: "Run on a repeating schedule." },
   {
     value: "communication",
     label: "Mail or message received",
@@ -687,7 +687,7 @@ export function VisualWorkflowBuilder({
               {value.trigger.kind === "schedule" ? (
                 <div className="space-y-1.5">
                   <Label className="text-[11px]" htmlFor={`${fieldID}-schedule`}>
-                    Cadence
+                    How often
                   </Label>
                   <Select
                     disabled={disabled}

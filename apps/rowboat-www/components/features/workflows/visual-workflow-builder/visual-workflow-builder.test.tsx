@@ -70,6 +70,23 @@ describe("VisualWorkflowBuilder", () => {
     expect(component).not.toHaveTextContent("Read relationships");
   });
 
+  it("names a repeating schedule without calling it a cadence", () => {
+    render(
+      <VisualWorkflowBuilder
+        onChange={vi.fn()}
+        value={{
+          version: 1,
+          trigger: { kind: "schedule", cronExpr: "*/15 * * * *" },
+          actions: ["review-account"],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("How often")).toBeInTheDocument();
+    expect(screen.getAllByText("Run on a repeating schedule.")).toHaveLength(2);
+    expect(screen.queryByText(/cadence/i)).not.toBeInTheDocument();
+  });
+
   it("removes a selected action from the persisted definition", () => {
     const onChange = vi.fn();
     render(
