@@ -19,5 +19,11 @@ describe("SettingsView", () => {
     expect(source).not.toContain("Standard relationship access");
     expect(source).not.toContain("relationship model");
     expect(source).not.toContain("relationship intelligence");
+    expect(source).not.toContain("Relationship API");
+    expect(source).not.toContain("Cloud relationship engine");
+    expect(source).not.toContain("/api/rowboat/v1/relationships");
+    expect(source).not.toContain("window.location.reload()");
+    expect(source).toContain('fetch("/readyz"');
+    expect(source).toContain("Check again");
   });
 });

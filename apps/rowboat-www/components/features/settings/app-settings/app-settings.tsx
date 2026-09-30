@@ -231,6 +231,60 @@ function useSavedFlash(): [boolean, () => void] {
   return [saved, flash];
 }
 
+function WorkspaceConnection() {
+  const [state, setState] = React.useState<"checking" | "ready" | "unavailable">("checking");
+
+  const check = React.useCallback(async () => {
+    setState("checking");
+    try {
+      const response = await fetch("/readyz", { cache: "no-store" });
+      setState(response.ok ? "ready" : "unavailable");
+    } catch {
+      setState("unavailable");
+    }
+  }, []);
+
+  React.useEffect(() => {
+    void check();
+  }, [check]);
+
+  const label = state === "ready" ? "Ready" : state === "checking" ? "Checking" : "Unavailable";
+
+  return (
+    <SettingsRow
+      description="Oppulence Cloud serves companies, people, and evidence for this organization."
+      title="Workspace connection"
+    >
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <p className="settings-row-label">Oppulence Cloud</p>
+          <p className="settings-row-description">
+            {state === "unavailable"
+              ? "The workspace could not be reached. Check again in a moment."
+              : "Companies, people, and evidence for the signed-in organization."}
+          </p>
+        </div>
+        {state === "unavailable" ? (
+          <Badge className="rounded-none font-normal text-destructive" variant="outline">
+            {label}
+          </Badge>
+        ) : (
+          <SettingsStatus>{label}</SettingsStatus>
+        )}
+        <Button
+          className="settings-button"
+          disabled={state === "checking"}
+          onClick={() => void check()}
+          type="button"
+          variant="outline"
+        >
+          Check again
+        </Button>
+      </div>
+    </SettingsRow>
+  );
+}
+
 function SettingsStatus({ children }: { children: React.ReactNode }) {
   return (
     <Badge
@@ -646,7 +700,7 @@ function UsageDataCard() {
           <div className="settings-row-copy">
             <p className="settings-row-label">Share anonymous usage data</p>
             <p className="settings-row-description">
-              Allow product events without note, relationship, prompt, or identity data.
+              Allow product events without notes, companies, prompts, or identity data.
             </p>
             {mutation.isError ? (
               <p className="mt-1 text-xs text-destructive" role="alert">
@@ -953,7 +1007,7 @@ export function SettingsView({
           <>
             <PageIntro description={current.description} title={current.label} />
             <SettingsRow
-              description="Advanced endpoints used by the current organization."
+              description="Where this browser is signed in."
               title="Server configuration"
             >
               <div className="settings-row">
@@ -965,37 +1019,8 @@ export function SettingsView({
                 </div>
                 <SettingsStatus>Default</SettingsStatus>
               </div>
-              <div className="settings-row">
-                <div className="settings-row-copy">
-                  <p className="settings-row-label">Relationship API</p>
-                  <p className="settings-row-description font-mono">
-                    /api/rowboat/v1/relationships
-                  </p>
-                </div>
-                <SettingsStatus>Available</SettingsStatus>
-              </div>
             </SettingsRow>
-            <SettingsRow
-              description="The web console uses cloud execution while the desktop adds local agent diagnostics."
-              title="Agent access diagnostics"
-            >
-              <div className="settings-row">
-                <div className="settings-row-copy">
-                  <p className="settings-row-label">Cloud relationship engine</p>
-                  <p className="settings-row-description">
-                    Evidence queries and governed actions use the signed-in organization.
-                  </p>
-                </div>
-                <Button
-                  className="settings-button"
-                  onClick={() => window.location.reload()}
-                  type="button"
-                  variant="outline"
-                >
-                  Refresh
-                </Button>
-              </div>
-            </SettingsRow>
+            <WorkspaceConnection />
           </>
         ) : null}
         {section === "customization" ? <AppearanceSection /> : null}
@@ -1004,7 +1029,7 @@ export function SettingsView({
         {section === "connect" ? (
           <>
             <PageIntro
-              description="Use organization-approved connections across every relationship workflow."
+              description="Use organization-approved connections across this workspace."
               title="Oppulence Connect"
             />
             <div className="settings-inline-notice">

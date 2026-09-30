@@ -141,7 +141,7 @@ export const SETTINGS_SECTIONS: {
     label: "Advanced",
     icon: Rocket,
     group: "workspace",
-    description: "Inspect endpoints, diagnostics, and advanced workspace controls.",
+    description: "Check this browser and whether Oppulence Cloud is reachable.",
   },
   {
     key: "customization",
