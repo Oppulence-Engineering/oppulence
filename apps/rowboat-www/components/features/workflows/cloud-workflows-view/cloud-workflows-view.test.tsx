@@ -21,6 +21,7 @@ import {
   workflowRunsForEditor,
   maintainedWorkflowNotice,
   workflowSettingsIntro,
+  createWorkflowIntro,
   workflowStepLabel,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
@@ -284,9 +285,11 @@ describe("CloudWorkflowsView", () => {
     expect(source).not.toContain("Oppulence Cloud keeps the schedule.");
     expect(source).not.toContain("cloud runtime");
     expect(source).not.toContain("View settings");
-    expect(source).toContain(
-      "Name what this workflow should do. You can choose when it starts and what it does next.",
+    expect(source).toContain("{createWorkflowIntro()}");
+    expect(createWorkflowIntro()).toBe(
+      "Name the workflow and what it should accomplish. The schedule and the steps come next.",
     );
+    expect(source).not.toContain("You can choose when it starts and what it does next.");
     expect(source).toContain("Create workflow");
     expect(source).not.toContain("Create draft");
     expect(source).not.toContain("configure the trigger and actions on the canvas");

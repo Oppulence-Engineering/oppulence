@@ -115,6 +115,13 @@ export function recoveryEmptyDescription(filter: string): string {
   }
 }
 
+/** A follow-up is stored on a company. The empty workspace has nothing to attach it to. */
+export function newActionIntro(hasCompany: boolean): string {
+  return hasCompany
+    ? "Add a follow-up for a company already in this workspace."
+    : "Add a company before a follow-up can be created.";
+}
+
 export function QueueView({
   workspace,
   onError,
@@ -512,9 +519,7 @@ function CreateActionDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>New action</DialogTitle>
-          <DialogDescription>
-            Add a follow-up for a company already in this workspace.
-          </DialogDescription>
+          <DialogDescription>{newActionIntro(relationships.length > 0)}</DialogDescription>
         </DialogHeader>
         {relationships.length === 0 ? (
           <Empty className="gap-3 py-4">

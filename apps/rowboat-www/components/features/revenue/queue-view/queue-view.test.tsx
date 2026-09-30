@@ -9,6 +9,7 @@ import {
   recoveryFollowUpName,
   recoveryCompanyName,
   recoveryShownLabel,
+  newActionIntro,
 } from "@/components/features/revenue/queue-view/queue-view";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "queue-view.tsx"), "utf8");
@@ -29,7 +30,11 @@ describe("QueueView", () => {
   });
 
   it("points an empty workspace at Companies and names the action", () => {
-    expect(source).toContain("Add a follow-up for a company already in this workspace.");
+    expect(source).toContain("{newActionIntro(relationships.length > 0)}");
+    expect(newActionIntro(true)).toBe(
+      "Add a follow-up for a company already in this workspace.",
+    );
+    expect(newActionIntro(false)).toBe("Add a company before a follow-up can be created.");
     expect(source).not.toContain("manual follow-up");
     expect(source).toContain("No companies yet. Add one in Companies, or run an audit to find them.");
     expect(source).toContain("Add a company");

@@ -399,6 +399,11 @@ export function workflowSettingsIntro(editable: boolean): string {
   return "Oppulence keeps the name and the schedule. This page shows when the workflow runs.";
 }
 
+/** This dialog only asks for a name and an objective. The schedule and steps are on the next screen. */
+export function createWorkflowIntro(): string {
+  return "Name the workflow and what it should accomplish. The schedule and the steps come next.";
+}
+
 export function workflowStepLabel(task: CloudTask): string {
   const visual = taskVisualWorkflow(task);
   if (!visual) return "Maintained";
@@ -466,9 +471,7 @@ function CreateWorkflowDialog({
       <DialogContent className="rounded-none sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Create workflow</DialogTitle>
-          <DialogDescription>
-            Name what this workflow should do. You can choose when it starts and what it does next.
-          </DialogDescription>
+          <DialogDescription>{createWorkflowIntro()}</DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="custom">
           <TabsList aria-label="How to start" className="w-full rounded-none" variant="line">
