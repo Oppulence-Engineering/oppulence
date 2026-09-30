@@ -36,6 +36,7 @@ import {
   ToolOutput,
 } from "@/components/ai-elements/tool";
 import type { AgentHistoryItem } from "@/lib/agents/agent-history";
+import { agentToolLabel } from "@/lib/agents/agent-tools";
 import type { RevenueTab } from "@/lib/dashboard/product-navigation";
 import type { RevenueImpact } from "@/lib/revenue/types";
 
@@ -210,7 +211,7 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                       <Tool>
                         <ToolHeader
                           state={states[item.status]}
-                          title={item.name}
+                          title={agentToolLabel(item.name)}
                           type="tool-call"
                         />
                         <ToolContent>
@@ -239,7 +240,7 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                 return (
                   <Alert className="border-amber-500/30 bg-amber-500/5" key={item.id}>
                     <AlertTitle className="text-sm text-primary">
-                      Approval required: {item.name}
+                      Approval required: {agentToolLabel(item.name)}
                     </AlertTitle>
                     <AlertDescription className="text-xs text-primary/55">
                       Trust tier: {item.trustTier.replaceAll("_", " ")}

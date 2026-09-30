@@ -2,6 +2,8 @@
 
 import "@testing-library/jest-dom/vitest";
 
+import fs from "node:fs";
+import path from "node:path";
 import { createElement } from "react";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -43,5 +45,12 @@ describe("ChatDashboardRoute", () => {
 
     const route = screen.getByRole("region", { name: "Chat home" });
     expect(route).toHaveAttribute("data-slot", "chat-dashboard-route");
+  });
+
+  it("names a tool call with the product label", () => {
+    const source = fs.readFileSync(path.join(import.meta.dirname, "chat-dashboard-route.tsx"), "utf8");
+    expect(source).toContain("agentToolLabel(item.name)");
+    expect(source).not.toContain("title={item.name}");
+    expect(source).not.toContain("Approval required: {item.name}");
   });
 });

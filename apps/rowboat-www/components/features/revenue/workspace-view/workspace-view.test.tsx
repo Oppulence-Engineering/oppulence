@@ -168,5 +168,14 @@ describe("WorkspaceView", () => {
     expect(workspaceMetadataValue("repair_required")).toBe("Needs repair");
     expect(workspaceMetadataValue("local")).toBe("Local");
     expect(workspaceMetadataValue("disconnected")).toBe("Disconnected");
+    expect(workspaceMetadataValue("needs_review")).toBe("Needs Review");
+  });
+
+  it("keeps the preflight sentence as written", async () => {
+    vi.mocked(fetchRelationshipSourceStatuses).mockResolvedValue([]);
+    renderWorkspace();
+    const preflight = await screen.findByText("Unavailable (drafts only)");
+    expect(preflight).toBeVisible();
+    expect(preflight).not.toHaveClass("capitalize");
   });
 });

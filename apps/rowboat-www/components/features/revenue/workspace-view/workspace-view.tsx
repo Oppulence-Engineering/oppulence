@@ -379,16 +379,21 @@ export function workspaceMetadataValue(value: string): string {
     disconnected: "Disconnected",
     repair_required: "Needs repair",
   };
-  return labels[value] ?? value.replaceAll("_", " ");
+  const known = labels[value];
+  if (known) return known;
+  return value
+    .replaceAll("_", " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 function MetadataRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-4 px-4 py-2.5">
       <Label className="font-normal text-[var(--text-secondary)]">{label}</Label>
-      <span className={cn("text-[var(--text-primary)]", mono ? "font-mono text-xs" : "capitalize")}>
-        {value}
-      </span>
+      <span className={cn("text-[var(--text-primary)]", mono && "font-mono text-xs")}>{value}</span>
     </div>
   );
 }
