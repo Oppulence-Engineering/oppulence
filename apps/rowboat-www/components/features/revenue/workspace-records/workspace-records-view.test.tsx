@@ -145,6 +145,8 @@ describe("durable note templates and favorites", () => {
     renderNotes();
 
     await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
+    expect(screen.queryByText("Favorite templates")).not.toBeInTheDocument();
+    expect(screen.queryByText(/you favorite/)).not.toBeInTheDocument();
     await user.click(await screen.findByRole("button", { name: "View all templates" }));
 
     expect(await screen.findByText("Reusable note templates")).toBeInTheDocument();

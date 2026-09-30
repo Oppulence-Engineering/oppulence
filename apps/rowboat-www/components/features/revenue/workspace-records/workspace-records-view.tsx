@@ -1467,34 +1467,27 @@ function NoteDialog({
             />
           </Plate>
           {bodyEmpty ? (
-            <div className="mt-6 space-y-7 text-[13px] text-primary/55">
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-wide text-primary/45">
-                  Favorite templates
-                </p>
-                <p className="mt-2">Templates that you favorite will appear here</p>
-              </div>
-              <div className="space-y-3">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-primary/45">
-                  Actions
-                </p>
-                <Button
-                  type="button"
-                  className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
-                  variant="ghost"
-                  onClick={() => void leaveFor(onViewTemplates)}
-                >
-                  <Note className="size-4" /> View all templates
-                </Button>
-                <Button
-                  type="button"
-                  className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
-                  variant="ghost"
-                  onClick={() => void leaveFor(onCreateTemplate)}
-                >
-                  <Note className="size-4" /> Create new template
-                </Button>
-              </div>
+            <div className="mt-6 space-y-3 text-[13px] text-primary/55">
+              {/* Templates cannot be favorited. Offer only actions that exist. */}
+              <p className="text-[10px] font-medium uppercase tracking-wide text-primary/45">
+                Actions
+              </p>
+              <Button
+                type="button"
+                className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
+                variant="ghost"
+                onClick={() => void leaveFor(onViewTemplates)}
+              >
+                <Note className="size-4" /> View all templates
+              </Button>
+              <Button
+                type="button"
+                className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
+                variant="ghost"
+                onClick={() => void leaveFor(onCreateTemplate)}
+              >
+                <Note className="size-4" /> Create new template
+              </Button>
             </div>
           ) : null}
           {noteHasDraftContent && !relationshipId ? (
