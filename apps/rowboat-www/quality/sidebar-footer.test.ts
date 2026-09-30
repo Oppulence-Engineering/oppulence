@@ -7,10 +7,26 @@ import {
   revenueTabSearch,
   sourceHealth,
   trialDaysRemaining,
+  workspaceLabel,
 } from "@/components/features/dashboard/app-shell/app-shell";
 import type { RelationshipSourceStatus } from "@/lib/revenue/types";
 
 const inDays = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString();
+
+describe("workspace label", () => {
+  it("shows the saved profile name ahead of the account name", () => {
+    expect(
+      workspaceLabel({ preferenceName: "Ada Lovelace", deviceName: "Local", userName: "Dev" }),
+    ).toBe("Ada Lovelace");
+  });
+
+  it("falls back to the account name when the profile name is blank", () => {
+    expect(
+      workspaceLabel({ preferenceName: "  ", deviceName: null, userName: "dev@solomon-ai.co" }),
+    ).toBe("dev");
+    expect(workspaceLabel({ preferenceName: "", userName: "" })).toBe("Workspace");
+  });
+});
 
 describe("sidebar trial banner", () => {
   it("counts the whole days left on a trial", () => {

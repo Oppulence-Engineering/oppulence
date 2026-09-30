@@ -4,6 +4,7 @@ import "client-only";
 
 import * as React from "react";
 import { useTheme } from "next-themes";
+import { useConsolePreferences } from "@/hooks/queries/use-console";
 import { useRelationshipSourceStatuses } from "@/hooks/queries/use-relationship-sources";
 import {
   useSidebarAgents,
@@ -222,14 +223,30 @@ export type ShellBilling = {
 };
 
 /**
- * The single workspace is the account itself. We do not model named
- * organizations, so the switcher is labelled with the person rather than an
- * invented org name; an email is trimmed to its local part to read as a name.
+ * Label for the account menu. Settings saves a cross-device display name and
+ * tells the user it replaces the email in the sidebar. That value lives on
+ * the console preferences document. The device-local `display-name` pref is
+ * only a fallback: the profile form no longer writes it, so reading it first
+ * would hide the name that was just saved.
  */
-export function useWorkspaceLabel(user: { name: string; email: string }) {
-  const displayName = usePref("display-name") || user.name;
+export function workspaceLabel(input: {
+  preferenceName?: string | null;
+  deviceName?: string | null;
+  userName: string;
+}) {
+  const displayName = input.preferenceName?.trim() || input.deviceName?.trim() || input.userName;
   const label = displayName.includes("@") ? displayName.split("@")[0] : displayName;
   return label || "Workspace";
+}
+
+export function useWorkspaceLabel(user: { name: string; email: string }) {
+  const preferences = useConsolePreferences();
+  const deviceName = usePref("display-name");
+  return workspaceLabel({
+    preferenceName: preferences.data?.displayName,
+    deviceName,
+    userName: user.name,
+  });
 }
 
 /** Whole days left on a trial, or null when the account is not trialing. */
