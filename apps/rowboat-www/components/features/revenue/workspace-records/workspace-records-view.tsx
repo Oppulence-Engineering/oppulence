@@ -968,7 +968,7 @@ export function NotesView({ onError, onNotice }: ViewProps) {
           }
           image="notes"
           learnMore={[
-            { label: "Link notes to accounts" },
+            { label: "Link notes to companies" },
             { label: "Turn notes into commitments" },
           ]}
           title="Notes"
@@ -1692,15 +1692,20 @@ export function TasksView({ onError, onNotice }: ViewProps) {
     <div className="flex min-h-full flex-col bg-background" data-slot="tasks-view">
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3">
         <div className="flex items-center gap-2">
-          <Badge
-            className="h-8 gap-2 border border-border bg-background px-3 text-[13px] font-normal text-primary/60"
-            variant="outline"
+          <Button
+            className="h-8 rounded-none border border-border bg-background px-3 text-[13px] text-primary/60 hover:bg-background-100"
+            onClick={() => setSoonestFirst((value) => !value)}
+            type="button"
+            variant="ghost"
           >
             <List className="size-4" /> Sorted by{" "}
             <Label className="font-normal text-primary">
               {soonestFirst ? "Soonest due" : "Latest due"}
             </Label>
-          </Badge>
+            <CaretDown
+              className={cn("size-3 transition-transform", !soonestFirst && "rotate-180")}
+            />
+          </Button>
           <Select value={filter} onValueChange={(value) => setFilter(value as typeof filter)}>
             <SelectTrigger
               id="task-filter"
@@ -1770,6 +1775,10 @@ export function TasksView({ onError, onNotice }: ViewProps) {
             </>
           }
           image="tasks"
+          learnMore={[
+            { label: "Link a task to a company" },
+            { label: "Complete a task from the list" },
+          ]}
           title="Tasks"
         />
       ) : (

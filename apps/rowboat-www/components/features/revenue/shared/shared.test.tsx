@@ -9,4 +9,10 @@ describe("WorkspaceEmptyState", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function WorkspaceEmptyState");
   });
+
+  it("does not invent help articles when a surface forgets a learn-more list", () => {
+    expect(source).toContain("learnMore = []");
+    expect(source).not.toContain("Introduction to tasks");
+    expect(source).not.toContain("Notes, Tasks, and Email sending");
+  });
 });

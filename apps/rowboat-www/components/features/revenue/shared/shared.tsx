@@ -161,11 +161,6 @@ export type WorkspaceLearnMoreItem = {
   label: string;
 };
 
-const DEFAULT_LEARN_MORE: WorkspaceLearnMoreItem[] = [
-  { label: "Notes, Tasks, and Email sending" },
-  { label: "Introduction to tasks" },
-];
-
 type WorkspaceEmptyImageSet = {
   light: string;
   dark: string;
@@ -234,13 +229,17 @@ export function WorkspaceEmptyState({
   title,
   description,
   action,
-  learnMore = DEFAULT_LEARN_MORE,
+  learnMore = [],
 }: {
   image?: WorkspaceEmptyImageKey;
   icon?: React.ReactNode;
   title: string;
   description: React.ReactNode;
   action?: React.ReactNode;
+  /**
+   * Empty unless the surface names its own cards. A shared fallback used to
+   * advertise help articles this app does not publish.
+   */
   learnMore?: WorkspaceLearnMoreItem[];
 }) {
   const illustrated = Boolean(image);
