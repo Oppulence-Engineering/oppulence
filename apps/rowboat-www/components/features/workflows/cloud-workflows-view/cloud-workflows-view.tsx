@@ -84,6 +84,7 @@ import {
   runEventLabel,
   runReference,
   scheduleHealthLabel,
+  scheduleMomentLabel,
   workflowListSummary,
   triggerCloudRun,
   updateCloudTask,
@@ -615,7 +616,7 @@ function WorkflowLibrary({
                       </Badge>
                     </TableCell>
                     <TableCell className="px-4 text-[12px] text-muted-foreground">
-                      {lastRunAt ? formatDate(lastRunAt) : "Never"}
+                      {lastRunAt ? scheduleMomentLabel(lastRunAt) : "Never"}
                     </TableCell>
                     <TableCell className="px-4">
                       <CaretRight className="size-4 text-muted-foreground" />
@@ -1176,7 +1177,7 @@ function WorkflowEditor({
                   <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
                     Next run
                   </p>
-                  <p className="mt-2 text-[13px]">{formatDate(schedule?.nextDueAt)}</p>
+                  <p className="mt-2 text-[13px]">{scheduleMomentLabel(schedule?.nextDueAt)}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between border-y border-border py-4">

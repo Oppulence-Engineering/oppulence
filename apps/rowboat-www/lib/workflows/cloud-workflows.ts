@@ -635,3 +635,30 @@ const CRON_CLOCK_LABELS: Record<string, string> = {
 export function cronClockLabel(cron: string): string {
   return CRON_CLOCK_LABELS[cron] ?? "Recurring schedule";
 }
+
+function formatClock(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone,
+  }).format(date);
+}
+
+/**
+ * A schedule row already says the clock hour is UTC. The moment beside it is
+ * the viewer's local time, so outside UTC "8:00 AM UTC" sat next to "4:00 AM"
+ * with nothing tying them together. When those clocks differ, show both.
+ */
+export function scheduleMomentLabel(value: string | null | undefined, timeZone?: string): string {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) return "—";
+  const date = new Date(trimmed);
+  if (Number.isNaN(date.getTime())) return trimmed;
+  const zone = timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const local = formatClock(date, zone);
+  const utc = formatClock(date, "UTC");
+  if (local === utc) return local;
+  return `${local} (${utc} UTC)`;
+}

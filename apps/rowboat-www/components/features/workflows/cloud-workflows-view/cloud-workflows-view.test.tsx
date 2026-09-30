@@ -25,6 +25,7 @@ import {
   runEventLabel,
   runReference,
   scheduleHealthLabel,
+  scheduleMomentLabel,
   workflowListSummary,
   type CloudTask,
 } from "@/lib/workflows/cloud-workflows";
@@ -184,6 +185,13 @@ describe("CloudWorkflowsView", () => {
     expect(scheduleLabel({ triggers: { cronExpr: "*/15 * * * *" } } as CloudTask)).toBe(
       "Every 15 minutes",
     );
+    expect(scheduleMomentLabel("2026-10-01T08:00:00Z", "UTC")).toBe("Oct 1, 8:00 AM");
+    expect(scheduleMomentLabel("2026-10-01T08:00:00Z", "America/New_York")).toBe(
+      "Oct 1, 4:00 AM (Oct 1, 8:00 AM UTC)",
+    );
+    expect(scheduleMomentLabel(null, "America/New_York")).toBe("—");
+    expect(source).toContain("scheduleMomentLabel(lastRunAt)");
+    expect(source).toContain("scheduleMomentLabel(schedule?.nextDueAt)");
     expect(
       scheduleLabel({
         triggers: {
