@@ -727,7 +727,7 @@ export function CommitmentQueue({
             </h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
               {view === "by_account"
-                ? "Select one account to see its two-sided promise history."
+                ? "Select one account to see every promise for it."
                 : "Use a name or email to see what that person has promised."}
             </p>
           </div>

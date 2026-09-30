@@ -125,7 +125,7 @@ describe("CommitmentQueue", () => {
       />,
     );
     expect(
-      screen.getByText("Select one account to see its two-sided promise history."),
+      screen.getByText("Select one account to see every promise for it."),
     ).toBeVisible();
     expect(screen.getByRole("combobox", { name: "Account, Choose an account" })).toBeVisible();
     expect(screen.queryByText(/one relationship/)).toBeNull();
@@ -170,6 +170,7 @@ describe("CommitmentQueue", () => {
     expect(
       screen.queryByText("Select one account to see its two-sided promise history."),
     ).toBeNull();
+    expect(screen.queryByText("Select one account to see every promise for it.")).toBeNull();
     expect(screen.queryByRole("combobox", { name: "Account, Choose an account" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Add a company" }));
     expect(onOpenAccounts).toHaveBeenCalledOnce();
@@ -508,6 +509,7 @@ it("does not offer a meeting import that opens the company directory", () => {
   expect(source).not.toContain("exact evidence behind it");
   expect(source).not.toContain("Import meeting evidence");
   expect(source).not.toContain("import reviewed meeting evidence");
+  expect(source).not.toContain("two-sided");
   expect(source).toContain("Add a company");
   expect(source).toContain("openCompanyCreate(onOpenAccounts)");
   expect(source).toContain('subscribeDueCommitments(() => setFilter("due"))');
