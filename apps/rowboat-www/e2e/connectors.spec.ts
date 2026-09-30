@@ -55,7 +55,7 @@ test("Open Promises returns from Google, syncs evidence, and starts one audit", 
 
   await expect(page).toHaveURL(/\/app\/report\?scan=/);
   await expect(page.locator("body")).toContainText("Send the revised proposal");
-  await expect(page.getByText(/Syncing Google evidence|Google evidence is live/)).toBeVisible();
+  await expect(page.getByText(/Reading Google|Google is up to date/)).toBeVisible();
   await expect(page).not.toHaveURL(/settings/);
   const state = await (await request.get(`${fakeAPIOrigin}/__test/state`)).json();
   expect(state.lastScanLookbackDays).toBe(180);

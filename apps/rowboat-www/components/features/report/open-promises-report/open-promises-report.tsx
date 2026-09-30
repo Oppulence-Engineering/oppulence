@@ -348,12 +348,12 @@ function GoogleEvidenceSyncState({
   const title = failed
     ? source.status === "reconnect_required"
       ? "Google needs to be reconnected"
-      : "Google evidence sync failed"
+      : "Google could not finish reading"
     : active
-      ? "Syncing Google evidence"
+      ? "Reading Google"
       : source.status === "live"
-        ? "Google evidence is live"
-        : "Google connected; sync is waiting to start";
+        ? "Google is up to date"
+        : "Google is connected";
 
   return (
     <section
@@ -370,18 +370,18 @@ function GoogleEvidenceSyncState({
       </p>
       <p className="mt-1 text-[12px] text-primary/55">
         {failed
-          ? source.lastError || "The source could not advance. Reconnect or retry the sync."
+          ? source.lastError || "Reading stopped. Reconnect Google or try again."
           : active && total > 0
-            ? `${String(completed)} of ${String(total)} evidence records processed.`
+            ? `${String(completed)} of ${String(total)} conversations read.`
             : active
-              ? `Reading relevant external customer and contact activity from the last ${REVENUE_EVIDENCE_LOOKBACK_LABEL}.`
+              ? `Reading mail and meetings from the last ${REVENUE_EVIDENCE_LOOKBACK_LABEL}.`
               : source.status === "live"
-                ? "Gmail and primary Calendar evidence finished its initial backfill."
-                : "The authorization is valid, but the initial evidence backfill is not active yet."}
+                ? "Gmail and Calendar finished their first read."
+                : "The first read has not started yet."}
       </p>
       {active && total > 0 ? (
         <div
-          aria-label="Google evidence sync progress"
+          aria-label="Google reading progress"
           aria-valuemax={100}
           aria-valuemin={0}
           aria-valuenow={progress}

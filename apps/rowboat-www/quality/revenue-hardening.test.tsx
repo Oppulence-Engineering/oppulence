@@ -265,8 +265,8 @@ describe("Open Promises report hardening", () => {
 
     const view = renderWithQuery(<OpenPromisesReportClient />);
 
-    expect(await screen.findByText("Syncing Google evidence")).toBeInTheDocument();
-    expect(screen.getByText("25 of 100 evidence records processed.")).toBeInTheDocument();
+    expect(await screen.findByText("Reading Google")).toBeInTheDocument();
+    expect(screen.getByText("25 of 100 conversations read.")).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "25");
     await waitFor(() => {
       expect(mocks.startScan).toHaveBeenCalledOnce();
@@ -277,6 +277,17 @@ describe("Open Promises report hardening", () => {
     await waitFor(() => {
       expect(navigation.params.get("scan")).toBe("scan-first");
     });
+  });
+
+  it("names a connected Google account whose first read has not started", async () => {
+    mocks.listRelationshipSourceStatuses.mockResolvedValue([sourceStatus("stale")]);
+
+    renderWithQuery(<OpenPromisesReportClient />);
+
+    expect(await screen.findByText("Google is connected")).toBeInTheDocument();
+    expect(screen.getByText("The first read has not started yet.")).toBeInTheDocument();
+    expect(screen.queryByText(/evidence|backfill/i)).not.toBeInTheDocument();
+    expect(mocks.startScan).not.toHaveBeenCalled();
   });
 
   it("loads a deep-linked scan, refreshes terminal health, and selects another scan in the URL", async () => {

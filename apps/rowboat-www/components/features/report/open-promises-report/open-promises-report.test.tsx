@@ -22,6 +22,11 @@ describe("OpenPromisesReportClient", () => {
     expect(source).not.toContain("Open the register");
     expect(source).not.toContain("complete ledger");
     expect(source).not.toContain("no evidence of fulfillment");
+    expect(source).toContain("The first read has not started yet.");
+    expect(source).toContain("conversations read.");
+    expect(source).not.toContain("evidence records");
+    expect(source).not.toContain("evidence backfill");
+    expect(source).not.toContain("Syncing Google evidence");
     expect(source).not.toContain("fulfilment");
   });
 });
