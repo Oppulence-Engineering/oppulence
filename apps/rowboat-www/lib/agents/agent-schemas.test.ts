@@ -9,6 +9,7 @@ import {
   duplicateAgentInstructions,
   parseAgentDocument,
   parseAgentsResponse,
+  agentSelectName,
   visibleAgentLabel,
 } from "@/lib/agents/agent-schemas";
 
@@ -51,7 +52,9 @@ describe("agent schemas", () => {
     expect(agentDisplayName(agents, "concierge-slack")).toBe("Slack Concierge");
     expect(agentDisplayName(agents, "missing")).toBe("missing");
     expect(visibleAgentLabel([], "assistant")).toBe("Agent");
+    expect(agentSelectName([], "assistant")).toBe("Agent");
     expect(visibleAgentLabel(agents, "concierge-slack")).toBe("Slack Concierge");
+    expect(agentSelectName(agents, "concierge-slack")).toBe("Agent, Slack Concierge");
   });
 
   it("describes a maintained agent without its runtime prompt", () => {

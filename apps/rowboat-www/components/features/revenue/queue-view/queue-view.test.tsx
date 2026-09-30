@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   recoveryEmptyDescription,
+  recoveryFilterName,
   recoveryShownLabel,
 } from "@/components/features/revenue/queue-view/queue-view";
 
@@ -14,7 +15,10 @@ describe("QueueView", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function QueueView");
     expect(source).not.toContain("ListFilter");
-    expect(source).toContain('aria-label="Filter recovery actions"');
+    expect(recoveryFilterName("open")).toBe("Recovery, Open");
+    expect(recoveryFilterName("snoozed")).toBe("Recovery, Snoozed");
+    expect(source).toContain("aria-label={recoveryFilterName(filter)}");
+    expect(source).not.toContain('aria-label="Filter recovery actions"');
   });
 
   it("points an empty workspace at Companies and names the action", () => {

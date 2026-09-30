@@ -65,6 +65,7 @@ import {
   PolicyBadge,
   priorityTone,
 } from "@/components/features/revenue/shared/shared";
+import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
 import { ReviewSheet } from "@/components/features/revenue/review-sheet/review-sheet";
 import { AuditSheet } from "@/components/features/revenue/audit-sheet/audit-sheet";
@@ -83,6 +84,12 @@ export function recoveryShownLabel(count: number): string | null {
  * A filtered recovery list is empty. The sentence uses the filter's name.
  * The stored value "all" is not a name, so it must not be interpolated.
  */
+/** The visible word is the current recovery filter, not the menu's name. */
+export function recoveryFilterName(value: string): string {
+  const label = QUEUE_FILTERS.find((filter) => filter.value === value)?.label ?? "Open";
+  return comboboxFilterName("Recovery", label);
+}
+
 export function recoveryEmptyDescription(filter: string): string {
   switch (filter) {
     case "snoozed":
@@ -159,7 +166,7 @@ export function QueueView({
         <SimProductToolbar>
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger
-              aria-label="Filter recovery actions"
+              aria-label={recoveryFilterName(filter)}
               className="h-7 w-36 border-0 bg-transparent px-0 shadow-none"
               size="sm"
             >

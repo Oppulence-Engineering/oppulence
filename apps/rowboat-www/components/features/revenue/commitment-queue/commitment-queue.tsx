@@ -31,6 +31,7 @@ import { Label } from "@oppulence/ui/components/label";
 import { Spinner } from "@oppulence/ui/components/spinner";
 import { Tabs, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
 import type { AppendCommitmentTransitionInput } from "@/hooks/queries/utils/mutate-append-commitment-transition";
+import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue/revenue";
 import {
   Dialog,
@@ -336,6 +337,19 @@ function localDateTime(iso?: string) {
   return local.toISOString().slice(0, 16);
 }
 
+const COMMITMENT_FILTER_LABEL: Record<string, string> = {
+  active: "Active",
+  review: "Needs review",
+  due: "Due soon or overdue",
+  closed: "Closed",
+  all: "All",
+};
+
+/** The visible word is the current commitment filter, not the menu's name. */
+export function commitmentFilterName(value: string): string {
+  return comboboxFilterName("Commitments", COMMITMENT_FILTER_LABEL[value] ?? "Active");
+}
+
 const REGISTER_COLUMNS = [
   { name: "Company", icon: TypeText },
   { name: "Score", icon: TypeNumber },
@@ -511,7 +525,7 @@ export function CommitmentQueue({
             }}
             value={filter}
           >
-            <SelectTrigger aria-label="Filter commitments" className="h-8 w-36">
+            <SelectTrigger aria-label={commitmentFilterName(filter)} className="h-8 w-36">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="app-shell rounded-none">

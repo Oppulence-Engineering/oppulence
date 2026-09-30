@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
+
 const NonEmptyStringSchema = z.string().trim().min(1);
 
 export const AgentViewSchema = z
@@ -65,6 +67,20 @@ export function visibleAgentLabel(
 ): string {
   if (agents.length === 0) return "Agent";
   return agentDisplayName(agents, slug);
+}
+
+/**
+ * The composer select's visible word is the agent. A combobox does not use
+ * that word as its name, so "Agent" alone never says which one is selected.
+ * Before the catalog loads there is no choice to add.
+ */
+export function agentSelectName(
+  agents: readonly Pick<AgentSummary, "slug" | "name">[],
+  slug: string,
+): string {
+  const label = visibleAgentLabel(agents, slug);
+  if (agents.length === 0) return label;
+  return comboboxFilterName("Agent", label);
 }
 
 const AGENT_SOURCE_LABELS: Record<string, string> = {

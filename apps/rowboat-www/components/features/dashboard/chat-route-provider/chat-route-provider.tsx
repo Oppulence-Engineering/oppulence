@@ -33,7 +33,7 @@ import {
 import { useAuthSession } from "@/components/auth/auth-gate";
 import { useWorkspaceLabel } from "@/components/features/dashboard/app-shell/app-shell";
 import { useAgentCatalog } from "@/hooks/dashboard/use-agent-catalog";
-import { agentDisplayName, visibleAgentLabel } from "@/lib/agents/agent-schemas";
+import { agentDisplayName, agentSelectName, visibleAgentLabel } from "@/lib/agents/agent-schemas";
 import { useAgentRun } from "@/hooks/dashboard/use-agent-run";
 import { useChatSessions } from "@/hooks/dashboard/use-chat-sessions";
 import { useDashboardArtifact } from "@/hooks/dashboard/use-dashboard-artifact";
@@ -198,7 +198,10 @@ function ChatPromptInput({
               textareaRef={textareaRef}
             />
             <Select onValueChange={onSelectAgent} value={selectedAgent}>
-              <SelectTrigger aria-label="Agent" className="w-auto max-w-52">
+              <SelectTrigger
+                aria-label={agentSelectName(agents, selectedAgent)}
+                className="w-auto max-w-52"
+              >
                 {/* Radix copies the item label into the trigger only while the
                     menu is mounted. Closed, that left the composer showing a
                     blank control, so the name is rendered from the catalog. */}

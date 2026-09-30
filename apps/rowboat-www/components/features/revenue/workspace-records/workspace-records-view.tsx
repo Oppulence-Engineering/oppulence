@@ -96,6 +96,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@oppulence/ui/components/sheet";
+import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { noteIdFromHash, workspaceNoteHref } from "@/lib/revenue/note-link";
 import { groupWorkspaceNotes, plateText, type WorkspaceNote } from "@/lib/revenue/revenue-records";
 import {
@@ -1409,7 +1410,10 @@ function NoteDialog({
             >
               <SelectTrigger
                 id="note-relationship"
-                aria-label="Linked company"
+                aria-label={linkedCompanyName(
+                  selectedRelationship?.displayName ||
+                    (relationships.length === 0 ? "No companies yet" : "Link a company"),
+                )}
                 className="h-auto max-w-56 border-0 bg-transparent p-0 text-[12px] text-primary underline shadow-none focus:ring-0"
               >
                 <SelectValue
@@ -1708,6 +1712,22 @@ export function taskListEmptyCopy(filter: "all" | "today" | "overdue"): string |
   return null;
 }
 
+const TASK_FILTER_LABEL = {
+  all: "All tasks",
+  today: "Due today",
+  overdue: "Overdue",
+} as const;
+
+/** The visible word is the current task filter, not the menu's name. */
+export function taskFilterName(filter: "all" | "today" | "overdue"): string {
+  return comboboxFilterName("Tasks", TASK_FILTER_LABEL[filter]);
+}
+
+/** The note's company menu shows the choice inside the control. The name has to repeat it. */
+export function linkedCompanyName(label: string): string {
+  return comboboxFilterName("Linked company", label);
+}
+
 export function TasksView({
   onError,
   onNotice,
@@ -1784,7 +1804,7 @@ export function TasksView({
           <Select value={filter} onValueChange={(value) => setFilter(value as typeof filter)}>
             <SelectTrigger
               id="task-filter"
-              aria-label="Filter tasks"
+              aria-label={taskFilterName(filter)}
               className="h-8 w-auto gap-2 rounded-none border border-border bg-background px-3 text-[13px] text-primary/55 shadow-none hover:bg-background-100"
               size="sm"
             >

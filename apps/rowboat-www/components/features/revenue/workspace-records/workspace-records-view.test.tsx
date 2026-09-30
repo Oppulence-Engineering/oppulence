@@ -53,6 +53,8 @@ import {
   personEvidenceProvenance,
   personSheetSubtitle,
   sortTasksByDue,
+  linkedCompanyName,
+  taskFilterName,
   taskListEmptyCopy,
 } from "@/components/features/revenue/workspace-records/workspace-records-view";
 
@@ -142,7 +144,9 @@ describe("durable note templates and favorites", () => {
     await user.type(screen.getByLabelText("Note title"), "Call notes");
 
     expect(screen.getByText("Link a company to save this note.")).toBeInTheDocument();
-    expect(screen.getByLabelText("Linked company")).toHaveTextContent("No companies yet");
+    expect(screen.getByLabelText("Linked company, No companies yet")).toHaveTextContent(
+      "No companies yet",
+    );
 
     await user.click(screen.getByRole("button", { name: "Close note" }));
     expect(onNotice).toHaveBeenCalledWith("Link a company before this note can be saved.");
@@ -477,6 +481,10 @@ describe("task due order", () => {
     expect(taskListEmptyCopy("today")).toBe("Nothing is due today.");
     expect(taskListEmptyCopy("overdue")).toBe("Nothing is overdue.");
     expect(taskListEmptyCopy("all")).toBeNull();
+    expect(taskFilterName("all")).toBe("Tasks, All tasks");
+    expect(taskFilterName("overdue")).toBe("Tasks, Overdue");
+    expect(linkedCompanyName("No companies yet")).toBe("Linked company, No companies yet");
+    expect(source).toContain("aria-label={taskFilterName(filter)}");
     expect(source).toContain("taskListEmptyCopy(filter)");
     expect(source).toContain("Show all tasks");
     expect(source).toContain("No tasks yet! Create your first");

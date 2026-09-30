@@ -443,7 +443,7 @@ it("keeps the commitment filter and drops the chips that did nothing", () => {
   render(<CommitmentQueue {...props()} />);
   expect(screen.queryByRole("button", { name: "Filter" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Columns" })).not.toBeInTheDocument();
-  expect(screen.getByRole("combobox", { name: "Filter commitments" })).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: "Commitments, Active" })).toBeInTheDocument();
 });
 
 it("does not offer a meeting import that opens the company directory", () => {
