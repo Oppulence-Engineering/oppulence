@@ -24,7 +24,7 @@ import {
   Quotes,
   SlidersHorizontal,
   TextB,
-  TextHOne,
+  TextHTwo,
   TextItalic,
   TextUnderline,
   Trash,
@@ -1581,7 +1581,7 @@ function NoteDialog({
                 icon: TextUnderline,
                 run: () => editor.tf.toggleMark("underline"),
               },
-              { label: "Heading", icon: TextHOne, run: () => editor.tf.toggleBlock("h2") },
+              { label: "Heading 2", icon: TextHTwo, run: () => editor.tf.toggleBlock("h2") },
               { label: "Quote", icon: Quotes, run: () => editor.tf.toggleBlock("blockquote") },
             ].map(({ label, icon: Icon, run }) => (
               <Button
@@ -1652,7 +1652,7 @@ function NoteDialog({
               {(
                 [
                   ["p", "Insert paragraph"],
-                  ["h2", "Insert heading"],
+                  ["h2", "Insert heading 2"],
                   ["blockquote", "Insert quote"],
                 ] as const
               ).map(([type, label]) => (

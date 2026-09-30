@@ -505,6 +505,11 @@ describe("empty note template heading", () => {
     expect(source).not.toContain(
       "uppercase tracking-wide text-primary/45\">\n                Actions",
     );
+    expect(source).toContain(
+      '{ label: "Heading 2", icon: TextHTwo, run: () => editor.tf.toggleBlock("h2") }',
+    );
+    expect(source).toContain('["h2", "Insert heading 2"]');
+    expect(source).not.toContain("TextHOne");
   });
 });
 
