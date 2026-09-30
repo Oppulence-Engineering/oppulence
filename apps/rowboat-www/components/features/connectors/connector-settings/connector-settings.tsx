@@ -577,8 +577,8 @@ export function ConnectorSettings({ showHeading = true }: { showHeading?: boolea
           <div>
             <h2 className="settings-section-title">Connections</h2>
             <p className="settings-section-description">
-              Connections your agents can use. Sign-in stays with Oppulence, and provider passwords
-              are not stored in this browser.
+              Connections your agents can use. Sign-in stays with Oppulence, and passwords for those
+              services are not stored in this browser.
             </p>
           </div>
         </div>

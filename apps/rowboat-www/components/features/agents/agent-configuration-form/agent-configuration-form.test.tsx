@@ -51,5 +51,11 @@ describe("AgentConfigurationForm", () => {
     expect(tools).not.toContain("Read relationship memory");
     expect(source).not.toContain("Create internal task");
     expect(tools).not.toContain("Create internal task");
+    expect(tools).toContain('description: "Add a task in this workspace."');
+    expect(tools).toContain('description: "Add a note in this workspace."');
+    expect(tools).toContain('description: "Repeat a short message."');
+    expect(tools).not.toContain("never send");
+    expect(source).toContain("Sign-in stays with Oppulence.");
+    expect(source).not.toContain("Sign-in stays with the provider.");
   });
 });

@@ -14,7 +14,7 @@ export const AGENT_TOOL_CATALOG = [
     label: "Web search",
     description: "Search the web for current information.",
   },
-  { name: "echo", label: "Echo", description: "Send a short message back, to confirm this agent can use a tool." },
+  { name: "echo", label: "Echo", description: "Repeat a short message." },
   {
     name: "tool_result.read",
     label: "Earlier results",
@@ -34,27 +34,27 @@ export const AGENT_TOOL_CATALOG = [
   {
     name: "task.create",
     label: "Create task",
-    description: "Create an Oppulence task; never send a message or calendar invite.",
+    description: "Add a task in this workspace.",
   },
   {
     name: "task.update",
     label: "Edit task",
-    description: "Edit an Oppulence task title, due time, or priority; never send anything.",
+    description: "Change a task's title, due time, or priority.",
   },
   {
     name: "task.complete",
     label: "Complete task",
-    description: "Complete an Oppulence task; cannot dismiss other actions or send anything.",
+    description: "Mark a task done.",
   },
   {
     name: "task.snooze",
     label: "Snooze task",
-    description: "Snooze an Oppulence task until a future time; never send anything.",
+    description: "Put a task off until a later time.",
   },
   {
     name: "note.create",
     label: "Create note",
-    description: "Create an Oppulence note; never send a message or external event.",
+    description: "Add a note in this workspace.",
   },
   {
     name: "note.update",

@@ -498,7 +498,7 @@ export function AgentConfigurationForm({
 
         <div className="space-y-2">
           <Label>Connected services</Label>
-          <FieldHint>Services this agent may use. Sign-in stays with the provider.</FieldHint>
+          <FieldHint>Services this agent may use. Sign-in stays with Oppulence.</FieldHint>
           <TagEditor
             addLabel="Connected service"
             disabled={readOnly}
