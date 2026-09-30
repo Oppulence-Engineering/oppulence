@@ -192,7 +192,8 @@ export function ActionsView() {
     <div className="flex min-h-full w-full min-w-0 flex-col" data-slot="actions-view">
       <header className="flex min-h-12 items-center justify-between gap-4 border-b border-border px-3 py-2">
         <p className="min-w-0 flex-1 truncate text-[13px] text-primary/55">
-          Finance actions an agent proposes wait here. Nothing happens until you approve one.
+          {/* Finance proposals are badged on the row. This queue holds every proposal. */}
+          Actions an agent proposes wait here. Nothing happens until you approve one.
         </p>
         <Button
           variant="outline"
@@ -215,7 +216,7 @@ export function ActionsView() {
         <ListSkeleton rows={3} />
       ) : disabled ? (
         <ActionsEmpty
-          description="Agent approvals are not switched on for this workspace yet. When they are, every finance action an agent proposes will wait here before anything happens."
+          description="Agent approvals are not switched on for this workspace yet. When they are, every action an agent proposes will wait here before anything happens."
           title="Agent approvals"
         />
       ) : proposals.length === 0 ? (
