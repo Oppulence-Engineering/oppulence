@@ -160,7 +160,8 @@ function CreateAgentDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="new-agent-slug">Agent ID</Label>
+            {/* The value is a slug. The label names the stable short name, not an internal id. */}
+            <Label htmlFor="new-agent-slug">Short name</Label>
             <Input
               className="font-mono"
               id="new-agent-slug"

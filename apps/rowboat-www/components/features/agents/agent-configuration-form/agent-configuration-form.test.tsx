@@ -30,6 +30,10 @@ describe("AgentConfigurationForm", () => {
     expect(source).not.toContain("connector.custom.action");
     expect(source).not.toContain("slack:messages.read");
     expect(source).not.toContain("Required connection scopes");
+    expect(source).toContain(">Short name</Label>");
+    expect(source).toContain("The short name is fixed after an agent is created.");
+    expect(source).not.toContain(">Agent ID</Label>");
+    expect(source).not.toContain("The ID is fixed");
     expect(source).toContain("Safety limits");
     expect(source).toContain("Reply limit");
     expect(source).toContain("Model call limit");

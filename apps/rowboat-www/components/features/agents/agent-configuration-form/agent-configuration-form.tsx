@@ -295,9 +295,10 @@ export function AgentConfigurationForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="agent-slug">Agent ID</Label>
+            {/* Same short name as creation. It stays fixed, so the field is read-only here. */}
+            <Label htmlFor="agent-slug">Short name</Label>
             <Input disabled id="agent-slug" value={document.metadata.slug} />
-            <FieldHint>The ID is fixed after an agent is created.</FieldHint>
+            <FieldHint>The short name is fixed after an agent is created.</FieldHint>
           </div>
         </div>
 

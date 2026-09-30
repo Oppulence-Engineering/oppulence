@@ -12,5 +12,7 @@ describe("AgentsView", () => {
     expect(source).not.toContain("{selected.instructions");
     expect(source).toContain("adjust its model, tools, and limits.");
     expect(source).not.toContain("safeguards");
+    expect(source).toContain(">Short name</Label>");
+    expect(source).not.toContain(">Agent ID</Label>");
   });
 });
