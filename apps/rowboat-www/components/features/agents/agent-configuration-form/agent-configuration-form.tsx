@@ -579,7 +579,8 @@ export function AgentConfigurationForm({
                       id={`agent-${field}`}
                       min="0"
                       onChange={(event) => setLimit(field, event.target.value)}
-                      placeholder={placeholder}
+                      // Example numbers read as the real limit once the field is locked.
+                      placeholder={readOnly ? "" : placeholder}
                       step={field === "spendCeilingUsd" ? "0.01" : "1"}
                       type="number"
                       value={limits[field] ?? ""}

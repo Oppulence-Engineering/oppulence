@@ -64,6 +64,7 @@ describe("AgentConfigurationForm", () => {
     expect(source).not.toContain(">Agent ID</Label>");
     expect(source).not.toContain("The ID is fixed");
     expect(source).toContain("Safety limits");
+    expect(source).toContain('placeholder={readOnly ? "" : placeholder}');
     expect(source).toContain("Reply limit");
     expect(source).toContain("Model call limit");
     expect(source).toContain("Tool use limit");
