@@ -6,7 +6,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import TurndownService from "turndown";
 import { marked } from "marked";
 import {
@@ -28,6 +28,15 @@ import {
 import type { Icon as PhosphorIcon } from "@/lib/icons";
 import { Button } from "@oppulence/ui/components/button";
 import { CardDescription } from "@oppulence/ui/components/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@oppulence/ui/components/dialog";
+import { Input } from "@oppulence/ui/components/input";
 import { Label } from "@oppulence/ui/components/label";
 import { cn } from "@/lib/utils";
 import "./tiptap-markdown-editor.css";
@@ -129,21 +138,27 @@ export function TiptapMarkdownEditor({
     editor.commands.setContent(content ? (marked.parse(content) as string) : "");
   }, [editor, content]);
 
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkDraft, setLinkDraft] = useState("");
+
   if (!editor) {
     return null;
   }
 
-  const handleLink = () => {
+  const openLinkDialog = () => {
     const previousUrl = editor.getAttributes("link").href as string | undefined;
-    const url = window.prompt("Paste or type a link", previousUrl ?? "");
+    setLinkDraft(previousUrl ?? "");
+    setLinkOpen(true);
+  };
 
-    if (url === null) return;
-    if (url === "") {
+  const applyLink = () => {
+    const url = linkDraft.trim();
+    if (!url) {
       editor.chain().focus().unsetLink().run();
-      return;
+    } else {
+      editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
     }
-
-    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+    setLinkOpen(false);
   };
 
   return (
@@ -250,7 +265,7 @@ export function TiptapMarkdownEditor({
               icon={LinkSimple}
               label="Link"
               active={editor.isActive("link")}
-              onClick={handleLink}
+              onClick={openLinkDialog}
             />
           </div>
           <div className="tiptap-toolbar-pill">Markdown</div>
@@ -265,6 +280,40 @@ export function TiptapMarkdownEditor({
           <EditorContent editor={editor} />
         </div>
       </div>
+      <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
+        <DialogContent className="rounded-none sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Paste or type a link</DialogTitle>
+            <DialogDescription>
+              Leave the address empty to remove the link from the selection.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="markdown-link-url">Link address</Label>
+            <Input
+              id="markdown-link-url"
+              value={linkDraft}
+              autoFocus
+              placeholder="https://"
+              onChange={(event) => setLinkDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  applyLink();
+                }
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setLinkOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={applyLink}>
+              Apply link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
