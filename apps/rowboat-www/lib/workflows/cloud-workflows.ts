@@ -191,12 +191,25 @@ export function readableEnum(value: string): string {
 }
 
 /**
- * A window trigger only runs inside a time range. Title-casing the stored
- * token leaves "Window", which does not say what started the run.
+ * Trigger tokens are stored as cron, window, event, manual, and retry.
+ * Title-casing leaves "Cron" on every scheduled run. The list says what
+ * started the run, and the stored token stays unchanged.
  */
 export function triggerLabel(value: string): string {
-  if (value === "window") return "Time window";
-  return readableEnum(value);
+  switch (value) {
+    case "window":
+      return "Time window";
+    case "cron":
+      return "Scheduled";
+    case "event":
+      return "Incoming event";
+    case "manual":
+      return "Started by hand";
+    case "retry":
+      return "Retry";
+    default:
+      return readableEnum(value);
+  }
 }
 
 /**

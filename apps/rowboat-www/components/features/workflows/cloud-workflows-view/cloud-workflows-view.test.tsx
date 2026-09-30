@@ -31,8 +31,10 @@ describe("CloudWorkflowsView", () => {
     expect(readableEnum("cron")).toBe("Cron");
     expect(readableEnum("")).toBe("");
     expect(triggerLabel("window")).toBe("Time window");
-    expect(triggerLabel("cron")).toBe("Cron");
-    expect(runRowDetail("failed", "cron")).toBe("Failed · Cron");
+    expect(triggerLabel("cron")).toBe("Scheduled");
+    expect(triggerLabel("event")).toBe("Incoming event");
+    expect(triggerLabel("manual")).toBe("Started by hand");
+    expect(runRowDetail("failed", "cron")).toBe("Failed · Scheduled");
     expect(runRowDetail("failed", "window")).toBe("Failed · Time window");
     expect(source).toContain("runRowDetail(run.status, run.trigger)");
     expect(source).toContain("triggerLabel(run.trigger)");
