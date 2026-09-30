@@ -9,6 +9,7 @@ import {
   companyDirectoryTitle,
   companyListEmptyCopy,
   companySheetPositionLabel,
+  companyReviewCopy,
   completenessExplanationCopy,
   completenessProductLabel,
   detailSourceLabel,
@@ -159,6 +160,18 @@ describe("RelationshipsView", () => {
   });
 
   it("describes a company record without model jargon", () => {
+    expect(
+      companyReviewCopy({ previousReviewedStateVersion: 0, changedSinceReview: false }),
+    ).toEqual({ change: "Not reviewed yet.", footer: "Not reviewed yet." });
+    expect(
+      companyReviewCopy({ previousReviewedStateVersion: 2, changedSinceReview: false }),
+    ).toEqual({
+      change: "Nothing changed since your last review.",
+      footer: "Nothing new since your last review.",
+    });
+    expect(source).toContain("companyReviewCopy(model).footer");
+    expect(source).not.toContain("Reviewed {new Date(model.asOf)");
+    expect(source).toContain('disabled={busy === "recovery" || data.commitments.length === 0}');
     expect(completenessExplanationCopy("No source connection has completed its first useful sync.")).toBe(
       "Connect a source before these details can fill in.",
     );

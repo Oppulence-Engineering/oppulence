@@ -1443,6 +1443,23 @@ export function completenessProductLabel(status: string): string {
  * Completeness text is stored with the company. The empty-workspace sentence
  * talks about a sync. The sheet says what the person can do.
  */
+/**
+ * asOf is the moment the company was loaded, not a review time. A company
+ * that has never been reviewed must not claim it was reviewed just now.
+ */
+export function companyReviewCopy(model: {
+  previousReviewedStateVersion: number;
+  changedSinceReview: boolean;
+}): { change: string; footer: string } {
+  if (!model.changedSinceReview && model.previousReviewedStateVersion <= 0) {
+    return { change: "Not reviewed yet.", footer: "Not reviewed yet." };
+  }
+  return {
+    change: "Nothing changed since your last review.",
+    footer: "Nothing new since your last review.",
+  };
+}
+
 export function completenessExplanationCopy(explanation: string): string {
   if (explanation.trim() === "No source connection has completed its first useful sync.") {
     return "Connect a source before these details can fill in.";
@@ -1558,7 +1575,7 @@ function MissionControlOverview({
                       relationshipLabel(change.dimension),
                   )
                   .join(", ") || "State changed"
-              : "Nothing changed since your last review.";
+              : companyReviewCopy(model).change;
           } else if (question.key === "evidence") {
             answer = `${supported} of ${total} details come from a source you can open.`;
           } else if (question.key === "action") {
@@ -1623,9 +1640,7 @@ function MissionControlOverview({
           <Check /> Mark as reviewed
         </Button>
       ) : (
-        <p className="text-[11px] text-primary/40">
-          Reviewed {new Date(model.asOf).toLocaleString()}
-        </p>
+        <p className="text-[11px] text-primary/40">{companyReviewCopy(model).footer}</p>
       )}
     </section>
   );
@@ -2397,11 +2412,12 @@ export function RelationshipSheet({
                     <SectionTitle
                       title={`Commitment recovery (${data.intelligence?.recoveryEvaluations.length ?? 0})`}
                     />
+                    {/* No promises means there is nothing to reconcile. */}
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
-                      disabled={busy === "recovery"}
+                      disabled={busy === "recovery" || data.commitments.length === 0}
                       onClick={() => void act("recovery", () => runCommitmentRecovery(id))}
                     >
                       {busy === "recovery" ? <Spinner className="size-4" /> : null}
