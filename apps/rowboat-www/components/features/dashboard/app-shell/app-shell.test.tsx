@@ -14,4 +14,9 @@ describe("AppShellSidebar", () => {
     expect(source).toContain('onOpenSettings?.("help")');
     expect(source).not.toContain('href="/blog"');
   });
+
+  it("describes preferences as the controls that page actually has", () => {
+    expect(source).toContain("Default agent and anonymous usage data.");
+    expect(source).not.toContain("reasoning, notifications, privacy, and memory");
+  });
 });

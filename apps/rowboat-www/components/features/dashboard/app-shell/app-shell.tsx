@@ -106,7 +106,7 @@ export const SETTINGS_SECTIONS: {
     label: "Preferences",
     icon: Clock,
     group: "workspace",
-    description: "Default agent, reasoning, notifications, privacy, and memory.",
+    description: "Default agent and anonymous usage data.",
   },
   {
     key: "notifications",

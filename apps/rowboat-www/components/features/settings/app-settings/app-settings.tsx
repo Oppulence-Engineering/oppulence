@@ -850,7 +850,7 @@ function HelpSection() {
   return (
     <>
       <PageIntro
-        description="Get help, report a problem, or review the product documentation."
+        description="Get help, report a problem, or review the API reference."
         title="Help"
       />
       <div className="settings-card-grid">
@@ -920,7 +920,7 @@ function PermissionsSection({ session }: { session: SessionShape }) {
           <div className="settings-row-copy">
             <p className="settings-row-label">Connected services</p>
             <p className="settings-row-description">
-              Manage service-level access from Extensions. Removing a connection stops new evidence
+              Manage service-level access from Connections. Removing a connection stops new evidence
               from entering this workspace.
             </p>
           </div>
@@ -1036,7 +1036,9 @@ export function SettingsView({
               title="Oppulence Connect"
             />
             <div className="settings-inline-notice">
-              Connected to {session.user.organizationId || "your Oppulence organization"}.
+              {session.user.organizationId
+                ? `Connected to ${session.user.organizationId}.`
+                : "No organization is attached to this session."}
             </div>
             <ConnectorSettings />
           </>
