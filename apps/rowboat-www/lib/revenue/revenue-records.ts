@@ -84,3 +84,53 @@ export function collapseWorkspaceNotes(
     .filter((note) => note.eventType === "note")
     .sort((left, right) => right.occurredAt.localeCompare(left.occurredAt));
 }
+
+export type WorkspaceNoteDay = "today" | "yesterday" | "earlier";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Local midnight, so "today" follows the reader's calendar rather than UTC. */
+function localDayStart(value: Date): number {
+  return new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime();
+}
+
+/**
+ * The notes list used to title every note "Created today". Day buckets keep
+ * that label for notes from the current local day and separate the rest.
+ * A timestamp in the future stays with today so a clock skew does not invent
+ * a fourth section. DST makes a local-day delta 23 or 25 hours, so the day
+ * count is rounded.
+ */
+export function workspaceNoteDay(occurredAt: string, now: Date): WorkspaceNoteDay {
+  const occurred = new Date(occurredAt);
+  if (Number.isNaN(occurred.getTime())) return "earlier";
+  const diffDays = Math.round((localDayStart(now) - localDayStart(occurred)) / DAY_MS);
+  if (diffDays <= 0) return "today";
+  if (diffDays === 1) return "yesterday";
+  return "earlier";
+}
+
+export const WORKSPACE_NOTE_DAY_LABEL: Record<WorkspaceNoteDay, string> = {
+  today: "Created today",
+  yesterday: "Created yesterday",
+  earlier: "Earlier",
+};
+
+export function groupWorkspaceNotes(
+  notes: readonly WorkspaceNote[],
+  now: Date,
+  newestFirst: boolean,
+): { day: WorkspaceNoteDay; label: string; notes: WorkspaceNote[] }[] {
+  const buckets: Record<WorkspaceNoteDay, WorkspaceNote[]> = {
+    today: [],
+    yesterday: [],
+    earlier: [],
+  };
+  for (const note of notes) buckets[workspaceNoteDay(note.occurredAt, now)].push(note);
+  const order: WorkspaceNoteDay[] = newestFirst
+    ? ["today", "yesterday", "earlier"]
+    : ["earlier", "yesterday", "today"];
+  return order
+    .filter((day) => buckets[day].length > 0)
+    .map((day) => ({ day, label: WORKSPACE_NOTE_DAY_LABEL[day], notes: buckets[day] }));
+}

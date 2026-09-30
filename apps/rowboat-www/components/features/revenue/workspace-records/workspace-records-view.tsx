@@ -94,7 +94,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@oppulence/ui/components/sheet";
-import { plateText, type WorkspaceNote } from "@/lib/revenue/revenue-records";
+import { noteIdFromHash, workspaceNoteHref } from "@/lib/revenue/note-link";
+import { groupWorkspaceNotes, plateText, type WorkspaceNote } from "@/lib/revenue/revenue-records";
 import {
   createConsoleResource,
   deleteConsoleResource,
@@ -624,6 +625,32 @@ export function NotesView({ onError, onNotice }: ViewProps) {
       ? right.occurredAt.localeCompare(left.occurredAt)
       : left.occurredAt.localeCompare(right.occurredAt),
   );
+  const noteGroups = groupWorkspaceNotes(visible, new Date(), newestFirst);
+  const openedNoteHash = React.useRef<string | null>(null);
+  // The hash is read after paint so SSR and the first client render agree.
+  // Remembering the id we already handled keeps a refetch from reopening a
+  // note the reader just closed. A new hash clears that memory.
+  React.useEffect(() => {
+    if (loading) return;
+    const openLinkedNote = () => {
+      const noteId = noteIdFromHash(window.location.hash);
+      if (!noteId || openedNoteHash.current === noteId) return;
+      openedNoteHash.current = noteId;
+      const note = notes.find((item) => item.externalId === noteId);
+      if (!note) {
+        onNotice("That note is no longer in this workspace.");
+        return;
+      }
+      setEditing(note);
+    };
+    openLinkedNote();
+    const onHashChange = () => {
+      openedNoteHash.current = null;
+      openLinkedNote();
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, [loading, notes, onNotice]);
   const favoriteIds = new Set(favoritesQuery.data?.map((item) => item.payload.noteId) ?? []);
   const favoriteNotes = visible.filter((note) => favoriteIds.has(note.externalId));
   return (
@@ -853,11 +880,12 @@ export function NotesView({ onError, onNotice }: ViewProps) {
               )}
             </section>
           ) : null}
-          <div className="mt-3 border-t border-border px-4 py-3">
+          {noteGroups.map((group) => (
+          <div className="mt-3 border-t border-border px-4 py-3" key={group.day}>
             <Label className="mb-3 flex items-center gap-1 text-[12px] font-normal text-primary/55">
-              Created today{" "}
+              {group.label}{" "}
               <Badge className="text-[10px] font-normal" variant="outline">
-                {visible.length}
+                {group.notes.length}
               </Badge>
             </Label>
             <div
@@ -867,7 +895,7 @@ export function NotesView({ onError, onNotice }: ViewProps) {
                   : "space-y-2"
               }
             >
-              {visible.map((note) => (
+              {group.notes.map((note) => (
                 <Card
                   className={cn(
                     "cursor-pointer gap-0 py-0 transition-colors hover:bg-background-100",
@@ -932,13 +960,23 @@ export function NotesView({ onError, onNotice }: ViewProps) {
               ))}
             </div>
           </div>
+          ))}
         </div>
       )}
       {editing ? (
         <NoteDialog
           key={"externalId" in editing ? editing.externalId : editing.template?.id || "new"}
           note={"externalId" in editing ? editing : undefined}
-          onClose={() => setEditing(null)}
+          onClose={() => {
+            if (noteIdFromHash(window.location.hash)) {
+              window.history.replaceState(
+                null,
+                "",
+                `${window.location.pathname}${window.location.search}`,
+              );
+            }
+            setEditing(null);
+          }}
           onCreateTemplate={() => setEditingTemplate("new")}
           onError={onError}
           onNotice={onNotice}
@@ -1246,10 +1284,12 @@ function NoteDialog({
               className="h-auto rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
               variant="ghost"
               onClick={async () => {
-                await navigator.clipboard.writeText(
-                  `${window.location.origin}${window.location.pathname}#note=${noteId}`,
-                );
-                onNotice("Note link copied.");
+                try {
+                  await navigator.clipboard.writeText(workspaceNoteHref(window.location, noteId));
+                  onNotice("Note link copied.");
+                } catch {
+                  onNotice("Could not copy the note link.");
+                }
               }}
             >
               <Link className="size-3.5" /> Copy link

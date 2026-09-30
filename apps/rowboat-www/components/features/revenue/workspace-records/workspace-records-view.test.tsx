@@ -3,7 +3,7 @@
 import "@testing-library/jest-dom/vitest";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -95,6 +95,7 @@ describe("durable note templates and favorites", () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    window.history.replaceState(null, "", "/");
   });
 
   it("renders the real favorite count from durable resources", async () => {
@@ -160,10 +161,63 @@ describe("durable note templates and favorites", () => {
     expect(await screen.findByDisplayValue("Weekly review")).toBeInTheDocument();
     expect(screen.getByText("Wins and risks")).toBeInTheDocument();
   });
+
+  it("opens the note a copied link points at", async () => {
+    window.history.replaceState(null, "", "/app/revenue?tab=commitments#note=note-1");
+    renderNotes();
+
+    expect(await screen.findByDisplayValue("Account review")).toBeInTheDocument();
+  });
+
+  it("says when the linked note is gone", async () => {
+    window.history.replaceState(null, "", "/app/revenue?tab=notes#note=missing");
+    const onNotice = vi.fn();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <NotesView onError={vi.fn()} onNotice={onNotice} />
+      </QueryClientProvider>,
+    );
+
+    await screen.findAllByText("Account review");
+    await waitFor(() =>
+      expect(onNotice).toHaveBeenCalledWith("That note is no longer in this workspace."),
+    );
+    expect(screen.queryByLabelText("Note title")).not.toBeInTheDocument();
+  });
+
+  it("copies a link that stays on the notes tab", async () => {
+    window.history.replaceState(null, "", "/app/revenue?tab=commitments#note=note-1");
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    renderNotes();
+
+    await user.click(await screen.findByRole("button", { name: "Copy link" }));
+
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(
+        `${window.location.origin}/app/revenue?tab=notes#note=note-1`,
+      ),
+    );
+  });
+
+  it("does not call an older note created today", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 8, 30, 15, 0, 0));
+    renderNotes();
+
+    expect(await screen.findByText("Earlier")).toBeInTheDocument();
+    expect(screen.queryByText("Created today")).not.toBeInTheDocument();
+    vi.useRealTimers();
+  });
 });
 import { describe, expect, it } from "vitest";
 
-import { collapseWorkspaceNotes, plateText } from "@/lib/revenue/revenue-records";
+import { collapseWorkspaceNotes, groupWorkspaceNotes, plateText } from "@/lib/revenue/revenue-records";
 import type { RelationshipObservation, RevenueRelationship } from "@/lib/revenue/types";
 
 const relationship = {
@@ -226,5 +280,39 @@ describe("workspace record notes", () => {
         { type: "p", children: [{ text: "Second " }, { text: "line" }] },
       ]),
     ).toBe("First line\nSecond line");
+  });
+
+  it("groups notes by the reader's local day", () => {
+    const now = new Date(2026, 8, 30, 15, 0, 0);
+    const note = (externalId: string, occurredAt: string): ReturnType<typeof collapseWorkspaceNotes>[number] => ({
+      externalId,
+      title: externalId,
+      body: "",
+      relationshipId: "relationship-1",
+      relationshipName: "Acme",
+      occurredAt,
+      eventType: "note",
+    });
+    const today = new Date(2026, 8, 30, 9, 0, 0).toISOString();
+    const yesterday = new Date(2026, 8, 29, 9, 0, 0).toISOString();
+    const earlier = new Date(2026, 8, 17, 9, 0, 0).toISOString();
+
+    expect(
+      groupWorkspaceNotes(
+        [note("older", earlier), note("yesterday", yesterday), note("today", today)],
+        now,
+        true,
+      ).map((group) => [group.label, group.notes.map((item) => item.externalId)]),
+    ).toEqual([
+      ["Created today", ["today"]],
+      ["Created yesterday", ["yesterday"]],
+      ["Earlier", ["older"]],
+    ]);
+
+    expect(
+      groupWorkspaceNotes([note("older", earlier), note("today", today)], now, false).map(
+        (group) => group.label,
+      ),
+    ).toEqual(["Earlier", "Created today"]);
   });
 });
