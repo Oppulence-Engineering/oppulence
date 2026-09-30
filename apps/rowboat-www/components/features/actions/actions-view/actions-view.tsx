@@ -222,9 +222,9 @@ export function ActionsView() {
         <ActionsEmpty
           description={
             <>
-              No pending actions yet! Agent proposals
+              No pending actions yet! Actions an agent wants to take
               <br />
-              will land here for your approval.
+              will wait here until you approve them.
             </>
           }
           title="Agent approvals"
@@ -297,7 +297,7 @@ export function ActionsView() {
                             ? "Approving…"
                             : verb === "execute"
                               ? "Executing…"
-                              : "Approve & execute"}
+                              : "Approve and run"}
                         </Button>
                         <Button
                           size="sm"
@@ -375,7 +375,7 @@ function ActionsEmpty({ title, description }: { title: string; description: Reac
       description={description}
       image="actions"
       learnMore={[
-        { label: "Approve before anything executes" },
+        { label: "Nothing happens until you approve" },
         { label: "Audit trail for every action" },
       ]}
       title={title}
@@ -400,7 +400,7 @@ function RejectDialog({
         <DialogHeader>
           <DialogTitle>Reject this action</DialogTitle>
           <DialogDescription>
-            The proposal is discarded. Add a short reason for the audit trail.
+            This action is discarded. Add a short reason for the audit trail.
           </DialogDescription>
         </DialogHeader>
         <Textarea

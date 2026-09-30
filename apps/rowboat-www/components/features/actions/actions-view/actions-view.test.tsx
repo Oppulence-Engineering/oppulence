@@ -12,6 +12,12 @@ describe("ActionsView", () => {
 
   it("describes approvals without implementation tokens", () => {
     expect(source).toContain("Nothing happens until you approve one.");
+    expect(source).toContain("Actions an agent wants to take");
+    expect(source).toContain("Nothing happens until you approve");
+    expect(source).toContain("Approve and run");
+    expect(source).not.toContain("Agent proposals");
+    expect(source).not.toContain("anything executes");
+    expect(source).not.toContain("Approve & execute");
     expect(source).toContain("this action cannot run yet");
     expect(source).not.toContain("scoped token");
     expect(source).not.toContain("Act seam");

@@ -11,7 +11,7 @@ const STARTING_POINTS = [
   {
     title: "Find a slipping promise",
     prompt:
-      "Find the promise most likely to slip this week. Show me the source evidence, who owns it, and the smallest intervention that would get it back on track.",
+      "Find the promise most likely to slip this week. Show me the evidence, who owns it, and the smallest step that would get it back on track.",
   },
   {
     title: "Review an at-risk company",
@@ -19,9 +19,9 @@ const STARTING_POINTS = [
       "Which company needs attention right now? Trace the signals that indicate risk and recommend the next conversation to have.",
   },
   {
-    title: "Sequence open obligations",
+    title: "Prioritize what we owe",
     prompt:
-      "Turn our open obligations into a recovery sequence. Prioritize by business impact, identify dependencies, and draft the next action for each owner.",
+      "List what we still owe. Put the most important first, name what each one depends on, and draft the next step for the person who owns it.",
   },
 ] as const;
 

@@ -22,6 +22,25 @@ import {
 } from "@/lib/revenue/revenue";
 import type { CommunicationPolicy, CommunicationPrivacyRule } from "@/lib/revenue/types";
 
+const PRIVACY_RULE_LABELS: Record<string, string> = {
+  protected_address: "Protected address",
+  protected_domain: "Protected domain",
+  blocked_address: "Blocked address",
+  blocked_domain: "Blocked domain",
+};
+
+/**
+ * The menu already names each kind. The saved list used to repeat the stored
+ * snake_case token, so a rule the person just added read as protected_address.
+ */
+export function privacyRuleLabel(kind: string): string {
+  const known = PRIVACY_RULE_LABELS[kind];
+  if (known) return known;
+  const words = kind.replaceAll("_", " ").trim();
+  if (!words) return kind;
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 export function CommunicationPrivacySettings() {
   const queryClient = useQueryClient();
   const [accountId, setAccountId] = React.useState("");
@@ -169,8 +188,8 @@ export function CommunicationPrivacySettings() {
         <div className="settings-row-copy">
           <p className="settings-row-label">Protected or blocked addresses</p>
           <p className="settings-row-description">
-            Protected recipients stay owner-only. Blocked addresses never project into the
-            workspace.
+            Protected recipients stay visible only to you. Blocked addresses are left out of
+            this workspace.
           </p>
         </div>
         <div className="settings-inline-controls">
@@ -202,7 +221,7 @@ export function CommunicationPrivacySettings() {
           {rules.map((rule) => (
             <li className="settings-list-item" key={rule.id}>
               <span>
-                {rule.kind}: {rule.value}
+                {privacyRuleLabel(rule.kind)}: {rule.value}
               </span>
               <Button
                 disabled={busy}
