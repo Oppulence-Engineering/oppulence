@@ -31,6 +31,12 @@ describe("SettingsView", () => {
     expect(source).toContain("No organization is attached to this session.");
     expect(source).toContain('fetch("/readyz"');
     expect(source).toContain("Check again");
+    expect(source).toContain("Signed-in address");
+    expect(source).toContain("useSyncExternalStore");
+    expect(source).not.toContain("Organization server");
+    expect(source).not.toContain(">Default</SettingsStatus>");
+    expect(source).toContain("readBrowserOrigin");
+    expect(source).toContain("return window.location.origin");
     expect(source).toContain("How you appear in Oppulence across signed-in devices.");
     expect(source).toContain("the next time you open Oppulence.");
     expect(source).toContain("How Oppulence looks on this device.");

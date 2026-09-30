@@ -232,6 +232,19 @@ function useSavedFlash(): [boolean, () => void] {
   return [saved, flash];
 }
 
+function subscribeBrowserOrigin(): () => void {
+  return () => {};
+}
+
+/** Reading `window` during render stays blank after hydration, so the address is a client snapshot. */
+export function readBrowserOrigin(): string {
+  return window.location.origin;
+}
+
+export function useBrowserOrigin(): string {
+  return React.useSyncExternalStore(subscribeBrowserOrigin, readBrowserOrigin, () => "");
+}
+
 function WorkspaceConnection() {
   const [state, setState] = React.useState<"checking" | "ready" | "unavailable">("checking");
 
@@ -281,6 +294,23 @@ function WorkspaceConnection() {
         >
           Check again
         </Button>
+      </div>
+    </SettingsRow>
+  );
+}
+
+function SignedInAddress() {
+  const origin = useBrowserOrigin();
+  return (
+    <SettingsRow
+      description="The address this session is signed in to. Oppulence Cloud is checked separately below."
+      title="This browser"
+    >
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <p className="settings-row-label">Signed-in address</p>
+          <p className="settings-row-description font-mono">{origin}</p>
+        </div>
       </div>
     </SettingsRow>
   );
@@ -1014,20 +1044,7 @@ export function SettingsView({
         {section === "advanced" ? (
           <>
             <PageIntro description={current.description} title={current.label} />
-            <SettingsRow
-              description="Where this browser is signed in."
-              title="Server configuration"
-            >
-              <div className="settings-row">
-                <div className="settings-row-copy">
-                  <p className="settings-row-label">Organization server</p>
-                  <p className="settings-row-description font-mono">
-                    {typeof window === "undefined" ? "" : window.location.origin}
-                  </p>
-                </div>
-                <SettingsStatus>Default</SettingsStatus>
-              </div>
-            </SettingsRow>
+            <SignedInAddress />
             <WorkspaceConnection />
           </>
         ) : null}
