@@ -1513,6 +1513,56 @@ export function privacyDecisionCopy(count: number): string {
   return `${String(count)} privacy decisions recorded.`;
 }
 
+/** Capture is a rule, not a stored token. "Require Consent" does not say what happens. */
+export function capturePolicyLabel(capture: string): string {
+  switch (capture) {
+    case "deny":
+      return "Do not capture";
+    case "require_consent":
+      return "Ask before capturing";
+    case "allow":
+      return "Capture is allowed";
+    default:
+      return relationshipLabel(capture);
+  }
+}
+
+/** publishEvidence is whether shared excerpts can be published. It is not a save switch. */
+export function evidencePublicationLabel(enabled: boolean): string {
+  return enabled ? "Shared excerpts: on" : "Shared excerpts: off";
+}
+
+/** externalShare is whether a plan can leave this workspace. */
+export function externalPlanShareLabel(enabled: boolean): string {
+  return enabled
+    ? "Plan sharing outside this workspace: allowed"
+    : "Plan sharing outside this workspace: blocked";
+}
+
+const CONVERSATION_NOTE_SOURCES = new Set(["meeting", "desktop_note", "voice_note", "browser"]);
+
+/**
+ * Deletion removes mail, meetings, notes, and commitments. An empty company
+ * has none of those, so the button must not offer a deletion that cannot run.
+ */
+export function conversationDeletionAvailable(input: {
+  emailThreads: number;
+  meetingsAndMail: number;
+  commitments: number;
+  conversationNotes: number;
+}): boolean {
+  return (
+    input.emailThreads > 0 ||
+    input.meetingsAndMail > 0 ||
+    input.commitments > 0 ||
+    input.conversationNotes > 0
+  );
+}
+
+export function conversationNoteCount(sources: readonly string[]): number {
+  return sources.filter((source) => CONVERSATION_NOTE_SOURCES.has(source)).length;
+}
+
 export function completenessExplanationCopy(explanation: string): string {
   if (explanation.trim() === "No source connection has completed its first useful sync.") {
     return "Connect a source before these details can fill in.";
@@ -2419,18 +2469,16 @@ export function RelationshipSheet({
                       </summary>
                       <div className="mt-2 grid gap-1 sm:grid-cols-2">
                         <Badge className="justify-start font-normal" variant="secondary">
-                          Capture: {humanize(data.intelligence.effectivePolicy.capture)}
+                          Capture: {capturePolicyLabel(data.intelligence.effectivePolicy.capture)}
                         </Badge>
                         <Badge className="justify-start font-normal" variant="secondary">
                           Retention: {data.intelligence.effectivePolicy.retentionDays} days
                         </Badge>
                         <Badge className="justify-start font-normal" variant="secondary">
-                          Saving details:{" "}
-                          {data.intelligence.effectivePolicy.publishEvidence ? "on" : "off"}
+                          {evidencePublicationLabel(data.intelligence.effectivePolicy.publishEvidence)}
                         </Badge>
                         <Badge className="justify-start font-normal" variant="secondary">
-                          External share:{" "}
-                          {data.intelligence.effectivePolicy.externalShare ? "allowed" : "blocked"}
+                          {externalPlanShareLabel(data.intelligence.effectivePolicy.externalShare)}
                         </Badge>
                       </div>
                       <p className="mt-2 text-[11px]">
@@ -2442,26 +2490,35 @@ export function RelationshipSheet({
                         </p>
                       ) : null}
                     </details>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="mt-3"
-                      disabled={busy === "delete-conversation"}
-                      onClick={() => {
-                        if (
-                          !window.confirm(
-                            "Delete shared conversation evidence for this company? Device and provider copies will remain pending until separately confirmed.",
+                    {conversationDeletionAvailable({
+                      emailThreads: data.emailThreads.length,
+                      meetingsAndMail: communicationTimeline.length,
+                      commitments: data.commitments.length,
+                      conversationNotes: conversationNoteCount(timeline.map((item) => item.source)),
+                    }) ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="mt-3"
+                        disabled={busy === "delete-conversation"}
+                        onClick={() => {
+                          if (
+                            !window.confirm(
+                              "Delete shared conversation evidence for this company? Device and provider copies will remain pending until separately confirmed.",
+                            )
                           )
-                        )
-                          return;
-                        void act("delete-conversation", () =>
-                          requestConversationDeletion(id, crypto.randomUUID()),
-                        );
-                      }}
-                    >
-                      Delete conversation data
-                    </Button>
+                            return;
+                          void act("delete-conversation", () =>
+                            requestConversationDeletion(id, crypto.randomUUID()),
+                          );
+                        }}
+                      >
+                        Delete conversation data
+                      </Button>
+                    ) : (
+                      <p className="mt-3 text-[11px] text-primary/45">No mail or meeting data to delete.</p>
+                    )}
                   </div>
                 ) : null}
 

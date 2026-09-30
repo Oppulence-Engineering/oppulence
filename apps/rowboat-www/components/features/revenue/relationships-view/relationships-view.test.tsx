@@ -16,6 +16,11 @@ import {
   recordDetailBadge,
   completenessExplanationCopy,
   privacyDecisionCopy,
+  capturePolicyLabel,
+  evidencePublicationLabel,
+  externalPlanShareLabel,
+  conversationDeletionAvailable,
+  conversationNoteCount,
   completenessProductLabel,
   detailSourceLabel,
   enrichmentAvailabilityCopy,
@@ -213,6 +218,33 @@ describe("RelationshipsView", () => {
     expect(privacyDecisionCopy(4)).toBe("4 privacy decisions recorded.");
     expect(source).toContain("privacyDecisionCopy(data.intelligence.governanceDecisions.length)");
     expect(source).not.toContain("effectivePolicy.policyVersion");
+    expect(capturePolicyLabel("require_consent")).toBe("Ask before capturing");
+    expect(capturePolicyLabel("deny")).toBe("Do not capture");
+    expect(capturePolicyLabel("allow")).toBe("Capture is allowed");
+    expect(evidencePublicationLabel(true)).toBe("Shared excerpts: on");
+    expect(evidencePublicationLabel(false)).toBe("Shared excerpts: off");
+    expect(externalPlanShareLabel(true)).toBe("Plan sharing outside this workspace: allowed");
+    expect(externalPlanShareLabel(false)).toBe("Plan sharing outside this workspace: blocked");
+    expect(source).not.toContain("Saving details:");
+    expect(source).not.toContain("External share:");
+    expect(
+      conversationDeletionAvailable({
+        emailThreads: 0,
+        meetingsAndMail: 0,
+        commitments: 0,
+        conversationNotes: 0,
+      }),
+    ).toBe(false);
+    expect(
+      conversationDeletionAvailable({
+        emailThreads: 0,
+        meetingsAndMail: 0,
+        commitments: 1,
+        conversationNotes: 0,
+      }),
+    ).toBe(true);
+    expect(conversationNoteCount(["user", "meeting", "gmail"])).toBe(1);
+    expect(source).toContain("No mail or meeting data to delete.");
     expect(completenessProductLabel("partial")).toBe("Some details are still missing");
     expect(completenessProductLabel("complete")).toBe("Details are current");
     expect(completenessProductLabel("custom_status")).toBe("Custom Status");
