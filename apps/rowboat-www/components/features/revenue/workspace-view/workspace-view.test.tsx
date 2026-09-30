@@ -139,6 +139,7 @@ describe("WorkspaceView", () => {
     renderWorkspace();
 
     expect(await screen.findByText("Out of date")).toBeInTheDocument();
+    expect(screen.getByText("owner@example.com")).toHaveClass("normal-case");
     expect(
       screen.getByText(/no successful update arrived on schedule/i),
     ).toBeVisible();

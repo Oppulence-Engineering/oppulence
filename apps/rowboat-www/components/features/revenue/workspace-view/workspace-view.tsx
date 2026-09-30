@@ -319,8 +319,10 @@ function SourceRow({
         <div className="font-normal capitalize text-[var(--text-primary)]">
           {source.source}
           {source.sourceAccountId && source.sourceAccountId !== "default" ? (
+            // The row title-cases the provider slug. The account id is often an
+            // email, and that same transform would rewrite owner@example.com.
             <Badge
-              className="ml-2 font-mono text-xs font-normal text-[var(--text-muted)]"
+              className="ml-2 font-mono text-xs font-normal normal-case text-[var(--text-muted)]"
               variant="outline"
             >
               {source.sourceAccountId}
