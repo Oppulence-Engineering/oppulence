@@ -480,6 +480,8 @@ describe("people directory copy", () => {
     expect(source).not.toContain("Link notes to accounts");
     expect(source).not.toContain("Introduction to tasks");
     expect(source).toContain('placeholder="Quarterly company review"');
+    expect(source).toContain('placeholder="The text a new note starts with…"');
+    expect(source).not.toContain("Add prompts or a reusable note structure");
     expect(source).not.toContain("Quarterly account review");
   });
 });

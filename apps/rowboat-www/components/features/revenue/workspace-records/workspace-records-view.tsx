@@ -1194,7 +1194,7 @@ function TemplateDialog({
             className="min-h-48"
             maxLength={65_536}
             onChange={(event) => setBody(event.target.value)}
-            placeholder="Add prompts or a reusable note structure…"
+            placeholder="The text a new note starts with…"
             value={body}
           />
           {mutation.isError ? (
