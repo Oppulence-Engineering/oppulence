@@ -15,6 +15,7 @@ import {
   companyStateAnswer,
   recordDetailBadge,
   completenessExplanationCopy,
+  privacyDecisionCopy,
   completenessProductLabel,
   detailSourceLabel,
   enrichmentAvailabilityCopy,
@@ -207,6 +208,11 @@ describe("RelationshipsView", () => {
     expect(completenessExplanationCopy("Details are already current.")).toBe(
       "Details are already current.",
     );
+    expect(privacyDecisionCopy(0)).toBe("No privacy decisions recorded.");
+    expect(privacyDecisionCopy(1)).toBe("1 privacy decision recorded.");
+    expect(privacyDecisionCopy(4)).toBe("4 privacy decisions recorded.");
+    expect(source).toContain("privacyDecisionCopy(data.intelligence.governanceDecisions.length)");
+    expect(source).not.toContain("effectivePolicy.policyVersion");
     expect(completenessProductLabel("partial")).toBe("Some details are still missing");
     expect(completenessProductLabel("complete")).toBe("Details are current");
     expect(completenessProductLabel("custom_status")).toBe("Custom Status");

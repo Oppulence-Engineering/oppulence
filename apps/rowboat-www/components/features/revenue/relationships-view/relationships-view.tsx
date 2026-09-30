@@ -1503,6 +1503,16 @@ export function recordDetailBadge(label: string, value: string): string {
   return `${label} · ${relationshipLabel(value)}`;
 }
 
+/**
+ * The policy version is a hash. Privacy should say whether any decision
+ * was recorded, not show that identifier.
+ */
+export function privacyDecisionCopy(count: number): string {
+  if (count === 0) return "No privacy decisions recorded.";
+  if (count === 1) return "1 privacy decision recorded.";
+  return `${String(count)} privacy decisions recorded.`;
+}
+
 export function completenessExplanationCopy(explanation: string): string {
   if (explanation.trim() === "No source connection has completed its first useful sync.") {
     return "Connect a source before these details can fill in.";
@@ -2423,9 +2433,8 @@ export function RelationshipSheet({
                           {data.intelligence.effectivePolicy.externalShare ? "allowed" : "blocked"}
                         </Badge>
                       </div>
-                      <p className="mt-2 break-all text-[11px]">
-                        {data.intelligence.effectivePolicy.policyVersion} ·{" "}
-                        {data.intelligence.governanceDecisions.length} recorded decisions
+                      <p className="mt-2 text-[11px]">
+                        {privacyDecisionCopy(data.intelligence.governanceDecisions.length)}
                       </p>
                       {data.intelligence.deletionReceipts[0] ? (
                         <p className="mt-1">
