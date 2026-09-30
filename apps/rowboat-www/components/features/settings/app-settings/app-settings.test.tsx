@@ -29,6 +29,7 @@ describe("SettingsView", () => {
     expect(source).not.toContain("from Extensions");
     expect(source).not.toContain("your Oppulence organization");
     expect(source).toContain("No organization is attached to this session.");
+    expect(source).toContain('empty="Member"');
     expect(source).toContain('fetch("/readyz"');
     expect(source).toContain("Check again");
     expect(source).toContain("Signed-in address");

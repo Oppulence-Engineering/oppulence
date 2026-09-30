@@ -143,16 +143,20 @@ function ValueRow({
   label,
   value,
   copy,
+  empty = "—",
 }: {
   label: string;
   value?: string | null;
   copy?: boolean;
+  /** Shown when there is no id to copy. A missing organization is an explanation, not a blank badge. */
+  empty?: string;
 }) {
   const [copied, setCopied] = React.useState(false);
+  const shown = value?.trim() ?? "";
 
   const handleCopy = () => {
-    if (!value) return;
-    navigator.clipboard.writeText(value).then(() => {
+    if (!shown) return;
+    navigator.clipboard.writeText(shown).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     });
@@ -162,16 +166,14 @@ function ValueRow({
     <div className="group/row flex min-h-[34px] items-center justify-between gap-4 rounded-none px-4 py-1 transition-colors hover:bg-background-100 dark:hover:bg-background-200">
       <Label className="text-xs font-normal capitalize text-primary/60">{label}</Label>
       <div className="flex min-w-0 items-center gap-1.5">
-        <Badge
-          className={cn(
-            "truncate font-mono font-normal",
-            value ? "text-primary" : "text-primary/40",
-          )}
-          variant="secondary"
-        >
-          {value || "—"}
-        </Badge>
-        {copy && value ? (
+        {shown ? (
+          <Badge className="truncate font-mono font-normal text-primary" variant="secondary">
+            {shown}
+          </Badge>
+        ) : (
+          <span className="text-right text-xs font-normal text-primary/55">{empty}</span>
+        )}
+        {copy && shown ? (
           <Button
             aria-label={`Copy ${label}`}
             className="size-7 text-primary/50 opacity-0 transition-opacity hover:text-primary group-hover/row:opacity-100"
@@ -981,8 +983,8 @@ function AccountSection({ session }: { session: SessionShape }) {
         <div className="flex flex-col gap-0.5 py-2">
           <ValueRow label="Email" value={session.user.email} />
           <ValueRow copy label="User ID" value={session.user.workosUserId || session.user.id} />
-          <ValueRow copy label="Organization" value={session.user.organizationId} />
-          <ValueRow label="Role" value={session.user.role} />
+          <ValueRow copy label="Organization" empty="No organization is attached to this session." value={session.user.organizationId} />
+          <ValueRow label="Role" empty="Member" value={session.user.role} />
         </div>
       </SettingsRow>
       <PlanSection session={session} />
