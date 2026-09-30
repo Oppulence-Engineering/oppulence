@@ -60,6 +60,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@oppulence/ui/components/dropdown-menu";
+import { sidebarRunLabel } from "@/hooks/queries/utils/fetch-sidebar";
 import { getPref, setPref, usePref } from "@/lib/console/console-prefs";
 import { connectedSourceCount, googleNeedsReconnect } from "@/lib/revenue/revenue";
 import { loadChangelog, type ChangelogEntry } from "@/lib/api/changelog/changelog";
@@ -776,7 +777,7 @@ export function AppShellSidebar({
       key: "agents",
       label: "Agents",
       kind: "agent",
-      items: agents.map((name) => ({ label: name, value: name })),
+      items: agents,
       empty: "No agents found",
       loading: loadingGroups.agents,
       error: groupErrors.agents,
@@ -796,7 +797,7 @@ export function AppShellSidebar({
       key: "runs",
       label: "Runs",
       kind: "taskrun",
-      items: taskRuns,
+      items: taskRuns.map((run) => ({ ...run, label: sidebarRunLabel(run, tasks) })),
       empty: "No runs yet",
       loading: loadingGroups.runs,
       error: groupErrors.runs,

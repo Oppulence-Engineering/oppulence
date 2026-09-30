@@ -34,6 +34,32 @@ const SidebarRunListSchema = z
 export type SidebarNavItem = { label: string; value: string };
 
 /**
+ * The sidebar opens an agent by slug. The row people see is the agent name,
+ * the same label as the Agents page and the composer.
+ */
+export function sidebarAgentItem(agent: { slug: string; name: string }): SidebarNavItem {
+  const value = agent.slug.replace(/\.[^/.]+$/, "");
+  return { value, label: agent.name.trim() || value };
+}
+
+/**
+ * Run rows are stored as `slug · status`. The slug is the workflow id; the
+ * sidebar already has that workflow's name on the task list.
+ */
+export function sidebarRunLabel(
+  run: SidebarNavItem,
+  tasks: readonly SidebarNavItem[] = [],
+): string {
+  const slug = run.value.split("/")[0] ?? "";
+  const workflow = tasks.find((task) => task.value === slug)?.label || slug;
+  const marker = " · ";
+  const splitAt = run.label.indexOf(marker);
+  const status = splitAt >= 0 ? run.label.slice(splitAt + marker.length).trim() : "";
+  if (!status) return workflow;
+  return `${workflow} · ${status.charAt(0).toUpperCase()}${status.slice(1)}`;
+}
+
+/**
  * Sidebar labels only. Generated background-task contracts are strictObject
  * and would empty the nav when the API adds fields the client has not regenerated.
  */
