@@ -7,6 +7,7 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "relationships-vie
 
 import {
   companyDirectoryTitle,
+  companyListEmptyCopy,
   completenessProductLabel,
   detailSourceLabel,
   enrichmentAvailabilityCopy,
@@ -31,9 +32,19 @@ describe("RelationshipsView", () => {
       label: "Filtered",
       filtered: true,
     });
-    expect(
-      companyDirectoryTitle({ query: " ", health: "at_risk", lifecycle: "all" }).filtered,
+    expect(companyDirectoryTitle({ query: " ", health: "at_risk", lifecycle: "all" }).filtered,
     ).toBe(true);
+    expect(
+      companyListEmptyCopy({ filtered: true, hasConnectedSource: false, lookbackLabel: "6 months" }),
+    ).toBe("No companies match these filters.");
+    expect(
+      companyListEmptyCopy({
+        filtered: false,
+        hasConnectedSource: false,
+        lookbackLabel: "6 months",
+      }),
+    ).toBe("Connect Gmail to discover companies from real conversations, or add one by hand.");
+    expect(source).toContain("companyListEmptyCopy({");
   });
 
   it("does not offer company checkboxes that select nothing", () => {

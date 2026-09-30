@@ -455,6 +455,22 @@ export function companyDirectoryTitle(input: {
   return { label: filtered ? "Filtered" : "All companies", filtered };
 }
 
+/**
+ * A filtered directory can be empty because nothing matched. That is not the
+ * same as a workspace that has never had a company.
+ */
+export function companyListEmptyCopy(input: {
+  filtered: boolean;
+  hasConnectedSource: boolean;
+  lookbackLabel: string;
+}): string {
+  if (input.filtered) return "No companies match these filters.";
+  if (input.hasConnectedSource) {
+    return `Gmail is connected. Run the ${input.lookbackLabel} audit from Commitments to discover companies and the people behind each conversation.`;
+  }
+  return "Connect Gmail to discover companies from real conversations, or add one by hand.";
+}
+
 export function RelationshipsView({
   onError,
   onNotice,
@@ -786,25 +802,35 @@ export function RelationshipsView({
             </div>
           ) : companies.length === 0 ? (
             <EmptyBlock
-              body={
-                hasConnectedSource
-                  ? `Gmail is connected. Run the ${REVENUE_EVIDENCE_LOOKBACK_LABEL} audit from Commitments to discover companies and the people behind each conversation.`
-                  : "Connect Gmail to discover companies from real conversations, or add one by hand."
-              }
+              body={companyListEmptyCopy({
+                filtered: directoryTitle.filtered,
+                hasConnectedSource,
+                lookbackLabel: REVENUE_EVIDENCE_LOOKBACK_LABEL,
+              })}
               image="companies"
-              learnMore={[
-                { label: "One place for each company" },
-                { label: "People stay with their company" },
-              ]}
+              learnMore={
+                directoryTitle.filtered
+                  ? []
+                  : [
+                      { label: "One place for each company" },
+                      { label: "People stay with their company" },
+                    ]
+              }
               title="Companies"
             >
-              <Button
-                className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-                onClick={() => setCreating(true)}
-                size="sm"
-              >
-                <Plus /> New company
-              </Button>
+              {directoryTitle.filtered ? (
+                <Button onClick={clearCompanyFilters} size="sm" type="button" variant="outline">
+                  Clear filters
+                </Button>
+              ) : (
+                <Button
+                  className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+                  onClick={() => setCreating(true)}
+                  size="sm"
+                >
+                  <Plus /> New company
+                </Button>
+              )}
             </EmptyBlock>
           ) : (
             <div className="min-w-0 flex-1 overflow-auto">

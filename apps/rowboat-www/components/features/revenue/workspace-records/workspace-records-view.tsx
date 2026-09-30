@@ -242,6 +242,12 @@ export function personDirectoryTitle(query: string): { label: string; filtered: 
   return { label: filtered ? "Filtered" : "All people", filtered };
 }
 
+/** A search with no hits is not an empty workspace. */
+export function peopleListEmptyCopy(filtered: boolean): string {
+  if (filtered) return "No people match this search.";
+  return "Connect Gmail or add a person to keep a contact for each company.";
+}
+
 /**
  * Enrichment is the count of verified profile fields. Location already has
  * its own column; using it as a fallback made a known city look enriched.
@@ -407,21 +413,36 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
         </div>
       ) : people.length === 0 ? (
         <EmptyBlock
-          body="Connect Gmail or add a person to keep a contact for each company."
+          body={peopleListEmptyCopy(directoryTitle.filtered)}
           image="people"
-          learnMore={[
-            { label: "See who you are talking to" },
-            { label: "Fill in their role and company" },
-          ]}
+          learnMore={
+            directoryTitle.filtered
+              ? []
+              : [{ label: "See who you are talking to" }, { label: "Fill in their role and company" }]
+          }
           title="People"
         >
-          <Button
-            className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-            onClick={() => setCreating(true)}
-            size="sm"
-          >
-            <Plus /> New person
-          </Button>
+          {directoryTitle.filtered ? (
+            <Button
+              onClick={() => {
+                setQuery("");
+                setDebouncedQuery("");
+              }}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              Clear search
+            </Button>
+          ) : (
+            <Button
+              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+              onClick={() => setCreating(true)}
+              size="sm"
+            >
+              <Plus /> New person
+            </Button>
+          )}
         </EmptyBlock>
       ) : (
         <div className="min-w-0 flex-1 overflow-auto">
