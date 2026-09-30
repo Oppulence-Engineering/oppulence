@@ -161,6 +161,11 @@ import {
 import { relationshipKeys } from "@/hooks/queries/utils/relationship-keys";
 import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-source-keys";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  enumLabel as humanize,
+  missingScopeLabels,
+  sourceProductCopy,
+} from "@/lib/revenue/source-product-copy";
 import { cn } from "@/lib/utils";
 
 const LIFECYCLE_OPTIONS = [
@@ -182,8 +187,6 @@ const HEALTH_TONE: Record<string, string> = {
   critical: "border-red-500/30 text-red-600 dark:text-red-400",
   unknown: "text-primary/45",
 };
-
-const humanize = (value?: string) => (value || "unknown").replaceAll("_", " ");
 
 type OptionalCompanyColumn =
   | "people"
@@ -1120,13 +1123,14 @@ function SourceConnectionCards({
           Evidence sources
         </h3>
         <p className="mt-0.5 text-xs text-primary/55">
-          Connect Google plus Slack or HubSpot. Read access builds history; action scopes remain
-          approval-gated.
+          Connect Gmail, Slack, or HubSpot. Reading builds company history. Anything that writes
+          waits for your approval.
         </p>
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
         {needsAttention.map((item) => {
           const account = item.accounts[0];
+          const copy = sourceProductCopy(item.source, item.scopeExplanation);
           const progress =
             account && account.backfillTotal > 0
               ? Math.round((account.backfillCompleted / account.backfillTotal) * 100)
@@ -1142,25 +1146,27 @@ function SourceConnectionCards({
                   {humanize(account?.status || "not_connected")}
                 </Badge>
               </div>
-              <p className="text-xs text-primary/55">{item.scopeExplanation}</p>
+              <p className="text-xs text-primary/55">{copy.explanation}</p>
               <details className="text-[11px] text-primary/55">
-                <summary className="cursor-pointer">Permissions and capabilities</summary>
+                <summary className="cursor-pointer">Permissions</summary>
                 <p className="mt-1">
-                  <Label className="font-medium">Read:</Label> {item.readScopes.join(", ")}
+                  <Label className="font-medium">Read:</Label> {copy.read}
                 </p>
                 <p className="mt-1">
-                  <Label className="font-medium">On approval:</Label> {item.writeScopes.join(", ")}
+                  <Label className="font-medium">On approval:</Label> {copy.write}
                 </p>
               </details>
               {account ? (
                 <div className="space-y-1 text-[11px] text-primary/50">
                   <p>
                     {humanize(account.completeness)}
-                    {progress !== null ? ` · backfill ${progress}%` : ""}
+                    {progress !== null ? ` · ${progress}% of history synced` : ""}
                     {account.lagSeconds ? ` · ${Math.round(account.lagSeconds / 60)}m lag` : ""}
                   </p>
                   {account.missingScopes.length > 0 ? (
-                    <p className="text-amber-600">Missing: {account.missingScopes.join(", ")}</p>
+                    <p className="text-amber-600">
+                      Missing: {missingScopeLabels(account.missingScopes)}
+                    </p>
                   ) : null}
                   {account.lastError ? (
                     <p className="text-destructive">{account.lastError}</p>
@@ -1264,8 +1270,8 @@ function IdentityReviewInbox({
             Identity review
           </h3>
           <p className="mt-0.5 text-xs text-primary/55">
-            {candidates.length} ambiguous relationship{candidates.length === 1 ? "" : "s"} cannot
-            receive actions until reviewed.
+            {candidates.length} possible {candidates.length === 1 ? "duplicate" : "duplicates"}{" "}
+            cannot receive actions until reviewed.
           </p>
         </div>
         <Badge variant="outline" className="rounded-none border-amber-500/40">

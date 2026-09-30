@@ -60,6 +60,12 @@ describe("RelationshipsView", () => {
     expect(source).toContain('{ label: "One model per company" }');
     expect(source).not.toContain("Account domain");
     expect(source).not.toContain("One model per account");
+    expect(source).toContain("Reading builds company history.");
+    expect(source).not.toContain("action scopes remain");
+    expect(source).not.toContain("approval-gated");
+    expect(source).not.toContain("backfill ${progress}%");
+    expect(source).not.toContain("ambiguous relationship");
+    expect(source).toContain("possible {candidates.length === 1 ? \"duplicate\" : \"duplicates\"}");
   });
 
   it("asks Oppulence from the company sheet instead of showing a dead badge", () => {
