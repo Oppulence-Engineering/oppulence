@@ -2,7 +2,7 @@
 
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, screen } from "@testing-library/react";
+import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { renderWithQuery } from "@/quality/test-support/render-query";
@@ -35,5 +35,19 @@ describe("CommunicationPrivacySettings", () => {
     expect(screen.queryByText(/owner-only/)).not.toBeInTheDocument();
     expect(privacyRuleLabel("protected_address")).toBe("Protected address");
     expect(privacyRuleLabel("blocked_domain")).toBe("Blocked domain");
+  });
+
+  it("keeps Add rule off until an address or domain is entered", () => {
+    renderWithQuery(<CommunicationPrivacySettings />);
+    const add = screen.getByRole("button", { name: "Add rule" });
+    expect(add).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("Privacy rule value"), {
+      target: { value: "  " },
+    });
+    expect(add).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("Privacy rule value"), {
+      target: { value: "buyer@example.com" },
+    });
+    expect(add).toBeEnabled();
   });
 });

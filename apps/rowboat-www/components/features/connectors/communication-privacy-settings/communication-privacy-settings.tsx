@@ -210,7 +210,12 @@ export function CommunicationPrivacySettings() {
             placeholder="buyer@example.com"
             value={ruleValue}
           />
-          <Button disabled={busy} onClick={() => void addRule()} type="button" variant="outline">
+          <Button
+            disabled={busy || !ruleValue.trim()}
+            onClick={() => void addRule()}
+            type="button"
+            variant="outline"
+          >
             Add rule
           </Button>
         </div>
