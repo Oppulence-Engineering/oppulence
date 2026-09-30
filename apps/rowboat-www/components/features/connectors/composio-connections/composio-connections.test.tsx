@@ -48,6 +48,11 @@ describe("Composio connections", () => {
 
     expect(await screen.findByText("Jira")).toBeInTheDocument();
     expect(screen.getByText(/not treated as promises/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Promises come from Gmail, Google Calendar, Slack, and HubSpot/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/so those are/)).toBeNull();
+    expect(screen.getAllByText("Not connected")).toHaveLength(2);
     expect(screen.queryByText(/company evidence/)).toBeNull();
     expect(screen.queryByText(/relationship sources/)).toBeNull();
     expect(screen.getAllByRole("button", { name: "Connect" })).toHaveLength(2);
@@ -131,7 +136,7 @@ describe("Composio connections", () => {
     // The live connection wins over the newer pending ones, and Jira shows once.
     expect(await screen.findByRole("button", { name: "Disconnect" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Disconnect" })).toHaveLength(1);
-    expect(screen.getByText("active")).toBeInTheDocument();
+    expect(screen.getByText("Connected")).toBeInTheDocument();
   });
 
   it("falls back to the newest connection when none is active", async () => {
@@ -141,7 +146,7 @@ describe("Composio connections", () => {
     ]);
     renderWithQuery(<ComposioConnections />);
 
-    expect(await screen.findByText("expired")).toBeInTheDocument();
+    expect(await screen.findByText("Expired")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Disconnect" })).toHaveLength(1);
   });
 
@@ -152,6 +157,17 @@ describe("Composio connections", () => {
     await vi.waitFor(() => {
       expect(container).toBeEmptyDOMElement();
     });
+  });
+
+  it("names a connection that is still waiting, and an unfamiliar status", async () => {
+    mocks.listComposioConnections.mockResolvedValue([
+      { id: "ca_wait", toolkit: "jira", status: "INITIATED", createdAt: "2026-09-16T09:00:00Z" },
+      { id: "ca_fail", toolkit: "asana", status: "FAILED", createdAt: "2026-09-16T09:00:00Z" },
+    ]);
+    renderWithQuery(<ComposioConnections />);
+
+    expect(await screen.findByText("Waiting to finish")).toBeInTheDocument();
+    expect(screen.getByText("Failed")).toBeInTheDocument();
   });
 
   it("says so when the products cannot be loaded", async () => {
@@ -174,6 +190,7 @@ describe("Composio connections for products no longer offered", () => {
     renderWithQuery(<ComposioConnections />);
 
     expect(await screen.findByText("gmail")).toBeInTheDocument();
+    expect(screen.getByText("Connected · no longer offered here")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Disconnect" }));
 
     expect(mocks.disconnectComposio).toHaveBeenCalledWith("ca_1");

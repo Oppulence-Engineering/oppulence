@@ -15,6 +15,25 @@ import {
   type ComposioConnection,
 } from "@/lib/api/composio/client";
 
+/**
+ * Composio returns connection enums. A teammate should see the same kind of
+ * status the native cards use, not `active` or `expired`.
+ */
+const CONNECTION_STATUS_LABELS: Record<string, string> = {
+  ACTIVE: "Connected",
+  INITIATED: "Waiting to finish",
+  EXPIRED: "Expired",
+};
+
+function connectionStatusLabel(status: string): string {
+  const key = status.trim().toUpperCase();
+  if (!key) return "Not connected";
+  const known = CONNECTION_STATUS_LABELS[key];
+  if (known) return known;
+  const words = key.toLowerCase().replace(/[_-]+/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 /** An active connection wins; otherwise the most recently created one does. */
 function betterConnection(candidate: ComposioConnection, held: ComposioConnection): boolean {
   const candidateActive = candidate.status.toUpperCase() === "ACTIVE";
@@ -53,7 +72,7 @@ export function ComposioConnections({
   const [busy, setBusy] = React.useState("");
   const [error, setError] = React.useState("");
   // Set when the user leaves for Composio's page, so their return refreshes the
-  // list. Without it a finished connection still reads "not connected".
+  // list. Without it a finished connection still reads "Not connected".
   const awaitingConnection = React.useRef(false);
 
   React.useEffect(() => {
@@ -134,7 +153,7 @@ export function ComposioConnections({
         <h3 className="text-sm font-medium text-primary">More products</h3>
         <p className="mt-1 text-sm text-muted-foreground">
           Connect other tools, such as Jira or Asana. Agents can use them, but they are not treated
-          as promises. Connect Gmail, Google Calendar, Slack, and HubSpot above so those are.
+          as promises. Promises come from Gmail, Google Calendar, Slack, and HubSpot.
         </p>
       </div>
       {state === "loading" ? (
@@ -152,7 +171,7 @@ export function ComposioConnections({
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-primary">{toolkit.name || toolkit.slug}</p>
                   <p className="text-xs text-muted-foreground">
-                    {connection ? connection.status.toLowerCase() : "not connected"}
+                    {connection ? connectionStatusLabel(connection.status) : "Not connected"}
                   </p>
                 </div>
                 {connection ? (
@@ -181,7 +200,7 @@ export function ComposioConnections({
               <div className="min-w-0">
                 <p className="text-sm font-medium text-primary">{connection.toolkit}</p>
                 <p className="text-xs text-muted-foreground">
-                  {connection.status.toLowerCase()} · no longer offered here
+                  {connectionStatusLabel(connection.status)} · no longer offered here
                 </p>
               </div>
               <Button
