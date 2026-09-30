@@ -194,6 +194,8 @@ function ChatPromptInput({
             </PromptInputActionMenu>
             <PromptInputSpeechButton
               aria-label="Dictate message"
+              onDictationError={setChatError}
+              onListening={() => setChatError("")}
               onTranscriptionChange={setText}
               textareaRef={textareaRef}
             />
