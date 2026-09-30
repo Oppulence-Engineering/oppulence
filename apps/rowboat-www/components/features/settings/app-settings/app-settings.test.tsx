@@ -49,8 +49,8 @@ describe("SettingsView", () => {
     expect(source).toContain("What you can do");
     expect(source).toContain('title="Workspace"');
     expect(source).toContain("Review who is signed in and what this session can open.");
-    expect(source).toContain(">Signed in</p>");
-    expect(source).toContain("session.user.email?.trim()");
+    expect(source.match(/>Signed in<\/p>/g)).toHaveLength(2);
+    expect(source.match(/session\.user\.email\?\.trim\(\)/g)).toHaveLength(2);
     expect(source).toContain("No email is attached to this session.");
     expect(source).toContain("Oppulence only uses what connected services return.");
     expect(source).toContain("if (!organizationId) return null");
