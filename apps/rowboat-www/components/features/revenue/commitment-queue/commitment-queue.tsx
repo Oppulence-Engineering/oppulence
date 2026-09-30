@@ -387,8 +387,11 @@ export function CommitmentQueue({
   const [correctedText, setCorrectedText] = React.useState("");
   const [correctedDueAt, setCorrectedDueAt] = React.useState("");
   const items = React.useMemo(() => toQueueItems(entries), [entries]);
+  // An empty select cannot be "chosen". That case is a missing company, not a
+  // prompt to pick one.
+  const noAccounts = view === "by_account" && accounts.length === 0;
   const scopeMissing =
-    (view === "by_account" && !accountId) || (view === "by_owner" && !owner.trim());
+    (view === "by_account" && !noAccounts && !accountId) || (view === "by_owner" && !owner.trim());
   const filtered = items.filter((item) => {
     if (filter === "review" && item.missingEvidence.length === 0) return false;
     if (filter === "due" && item.urgency !== "overdue" && item.urgency !== "due_soon") return false;
@@ -474,7 +477,7 @@ export function CommitmentQueue({
               value={query}
             />
           </div>
-          {view === "by_account" ? (
+          {view === "by_account" && accounts.length > 0 ? (
             <Select onValueChange={onAccountChange} value={accountId}>
               <SelectTrigger aria-label="Choose account" className="h-8 w-44">
                 <SelectValue placeholder="Choose an account" />
@@ -666,6 +669,21 @@ export function CommitmentQueue({
         ) : loading ? (
           <div className="flex flex-1 items-center justify-center gap-2 p-6 text-sm text-primary/55">
             <Spinner className="size-4" /> Loading commitments…
+          </div>
+        ) : noAccounts ? (
+          <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
+            <h2 className="text-[20px] font-semibold leading-6 text-primary">No companies yet</h2>
+            <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
+              Add a company before this view can show its promise history.
+            </p>
+            <Button
+              className="mt-5 bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+              onClick={onOpenAccounts}
+              size="sm"
+              type="button"
+            >
+              <Plus /> Add a company
+            </Button>
           </div>
         ) : scopeMissing ? (
           <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">

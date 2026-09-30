@@ -106,11 +106,37 @@ describe("CommitmentQueue", () => {
     expect(REGISTER_VIEWS.find((view) => view.id === "by_account")?.hint).toBe(
       "The full two-sided history for one account.",
     );
-    render(<CommitmentQueue aria-label="Client commitments" {...props({ view: "by_account" })} />);
+    render(
+      <CommitmentQueue
+        aria-label="Client commitments"
+        {...props({
+          view: "by_account",
+          accounts: [{ id: "acct-1", label: "Acme" }],
+        })}
+      />,
+    );
     expect(
       screen.getByText("Select one account to see its two-sided promise history."),
     ).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Choose account" })).toBeVisible();
     expect(screen.queryByText(/one relationship/)).toBeNull();
+  });
+
+  it("says there is nothing to choose when the workspace has no companies", async () => {
+    const onOpenAccounts = vi.fn();
+    render(
+      <CommitmentQueue
+        aria-label="Client commitments"
+        {...props({ view: "by_account", accounts: [], onOpenAccounts })}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: "No companies yet" })).toBeVisible();
+    expect(
+      screen.queryByText("Select one account to see its two-sided promise history."),
+    ).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Choose account" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Add a company" }));
+    expect(onOpenAccounts).toHaveBeenCalledOnce();
   });
 
   it("shows the operational promise, evidence, warning, and next action", async () => {
