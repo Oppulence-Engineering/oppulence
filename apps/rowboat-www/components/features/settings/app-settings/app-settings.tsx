@@ -18,6 +18,7 @@ import {
 } from "@/lib/icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAgentSummaries } from "@/hooks/queries/use-agents";
+import { agentDisplayName } from "@/lib/agents/agent-schemas";
 import { useConsolePreferences as useConsolePreferencesQuery } from "@/hooks/queries/use-console";
 import { consoleKeys } from "@/hooks/queries/utils/console-keys";
 
@@ -484,9 +485,13 @@ function DefaultsCard() {
               value={agent || undefined}
             >
               <SelectTrigger className="w-full max-w-xs" id="settings-default-agent">
+                {/* Same reason as the composer: the closed trigger does not
+                    keep the item label, so a saved default would look unset. */}
                 <SelectValue
                   placeholder={state === "loading" ? "Loading agents…" : "Choose an agent"}
-                />
+                >
+                  {agent ? agentDisplayName(agents, agent) : undefined}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className="app-shell rounded-[2px]">
                 {agents.map((item) => (

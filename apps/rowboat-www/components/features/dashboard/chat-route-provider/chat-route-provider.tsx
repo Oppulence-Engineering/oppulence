@@ -199,7 +199,12 @@ function ChatPromptInput({
             />
             <Select onValueChange={onSelectAgent} value={selectedAgent}>
               <SelectTrigger aria-label="Agent" className="w-auto max-w-52">
-                <SelectValue placeholder="Agent" />
+                {/* Radix copies the item label into the trigger only while the
+                    menu is mounted. Closed, that left the composer showing a
+                    blank control, so the name is rendered from the catalog. */}
+                <SelectValue placeholder="Agent">
+                  {agentDisplayName(agents, selectedAgent)}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>

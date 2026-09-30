@@ -39,6 +39,7 @@ vi.mock("@/components/auth/auth-gate", () => ({
 vi.mock("@/hooks/dashboard/use-agent-catalog", () => ({
   useAgentCatalog: () => ({
     agentOptions: ["assistant"],
+    agents: [{ slug: "assistant", name: "Assistant" }],
     refreshAgents: vi.fn(),
     selectedAgent: "assistant",
     setSelectedAgent: vi.fn(),
@@ -84,7 +85,7 @@ vi.mock("@oppulence/ui/components/select", () => ({
   SelectTrigger: ({ children }: { children: React.ReactNode }) => (
     <button type="button">{children}</button>
   ),
-  SelectValue: () => <span>Agent</span>,
+  SelectValue: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
 }));
 
 import {
@@ -122,6 +123,7 @@ describe("ChatRouteProvider", () => {
       "placeholder",
       "Name the loose end…",
     );
+    expect(screen.getByRole("button", { name: "Assistant" })).toBeVisible();
 
     screen.getByRole("button", { name: "New chat" }).click();
     expect(mocks.resetRun).toHaveBeenCalledOnce();
