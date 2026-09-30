@@ -14,9 +14,9 @@ const STARTING_POINTS = [
       "Find the promise most likely to slip this week. Show me the source evidence, who owns it, and the smallest intervention that would get it back on track.",
   },
   {
-    title: "Review an at-risk relationship",
+    title: "Review an at-risk company",
     prompt:
-      "Which relationship needs intervention right now? Trace the signals that indicate risk and recommend the next conversation to have.",
+      "Which company needs attention right now? Trace the signals that indicate risk and recommend the next conversation to have.",
   },
   {
     title: "Sequence open obligations",
