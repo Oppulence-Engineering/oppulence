@@ -188,7 +188,9 @@ describe("CommitmentQueue", () => {
     await userEvent.click(screen.getByRole("tab", { name: "Evidence" }));
     expect(component).toHaveTextContent("I will send the signed security packet by Friday.");
     expect(screen.getAllByText("At risk").length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: /Run 6-month Promise Leak Audit/ })).toBeEnabled();
+    expect(
+      screen.queryByRole("button", { name: /Run 6-month Promise Leak Audit/ }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Connect Gmail & Calendar/ })).toBeEnabled();
   });
 
@@ -226,6 +228,7 @@ describe("CommitmentQueue", () => {
 
     expect(screen.getByText(/No explicit promises were found/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Google connected/ })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Run 6-month Promise Leak Audit/ })).toBeEnabled();
     expect(
       screen.queryByRole("button", { name: /Connect Gmail & Calendar/ }),
     ).not.toBeInTheDocument();

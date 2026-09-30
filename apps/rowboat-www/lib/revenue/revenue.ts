@@ -341,6 +341,34 @@ export function googleSourceHealth(
 export const googleNeedsReconnect = (sources: RelationshipSourceStatus[]) =>
   relationshipSourceHealth(sources) === "needs_reconnect";
 
+export type GoogleAuditLaunch = "run" | "reconnect" | "connect";
+
+/**
+ * An audit reads Gmail. A dead grant has to be repaired, and a workspace with
+ * no Google account cannot start a scan that the API will reject. Only a
+ * usable account is allowed to run.
+ */
+export function googleAuditLaunch(sources: RelationshipSourceStatus[]): GoogleAuditLaunch {
+  const health = relationshipSourceHealth(sources);
+  if (health === "needs_reconnect") return "reconnect";
+  if (health === "not_connected") return "connect";
+  return "run";
+}
+
+/** The audit button says what the click will do. A missing mailbox is not a scan. */
+export function auditLaunchLabel(input: {
+  needsReconnect: boolean;
+  needsConnect: boolean;
+  scanning: boolean;
+  scanningLabel: string;
+  runLabel: string;
+}): string {
+  if (input.needsReconnect) return "Reconnect Google";
+  if (input.needsConnect) return "Connect Gmail & Calendar";
+  if (input.scanning) return input.scanningLabel;
+  return input.runLabel;
+}
+
 /** Sources still delivering evidence; stopped grants do not count. */
 export const connectedSourceCount = (sources: RelationshipSourceStatus[]) =>
   sources.filter(

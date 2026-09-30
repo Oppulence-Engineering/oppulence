@@ -21,7 +21,7 @@ import { capture, RevenueEvents } from "@/lib/analytics/analytics";
 import {
   appendCommitmentTransition,
   friendlyRevenueError,
-  googleNeedsReconnect,
+  googleAuditLaunch,
   getCommitmentRecordMarkdown,
   REVENUE_EVIDENCE_LOOKBACK_DAYS,
   RevenueAPIError,
@@ -99,7 +99,13 @@ export function RevenuePanel({
 
   const queryClient = useQueryClient();
   const sourceStatusQuery = useRelationshipSourceStatuses();
-  const reconnectBeforeAudit = googleNeedsReconnect(sourceStatusQuery.data ?? []);
+  // Statuses still loading are not "nothing connected". Treating the empty
+  // cache as a missing mailbox would flash a connect button on every visit.
+  const auditLaunch = sourceStatusQuery.isSuccess
+    ? googleAuditLaunch(sourceStatusQuery.data ?? [])
+    : "run";
+  const reconnectBeforeAudit = auditLaunch === "reconnect";
+  const connectBeforeAudit = auditLaunch === "connect";
 
   const activeScanIsRunning = activeScan?.status === "running" || activeScan?.status === "pending";
   const scanQuery = useReportScan(activeScanIsRunning ? (activeScan?.id ?? null) : null, {
@@ -169,9 +175,9 @@ export function RevenuePanel({
   }, [scanQuery.data, queryClient]);
 
   const runScan = React.useCallback(async () => {
-    // Every audit button routes here. With every Google account needing a
-    // reconnect the audit can only fail, so send the user to the fix instead.
-    if (reconnectBeforeAudit && onOpenConnectors) {
+    // Every audit button routes here. A dead grant and a missing mailbox both
+    // make the scan fail before it reads anything, so send the user to the fix.
+    if ((reconnectBeforeAudit || connectBeforeAudit) && onOpenConnectors) {
       onOpenConnectors();
       return;
     }
@@ -191,7 +197,7 @@ export function RevenuePanel({
         setError(e instanceof Error ? e.message : "Could not start the scan.");
       }
     }
-  }, [reconnectBeforeAudit, onOpenConnectors]);
+  }, [connectBeforeAudit, reconnectBeforeAudit, onOpenConnectors]);
 
   const transitionCommitment = React.useCallback(
     async (item: CommitmentQueueItem, transition: CommitmentQueueTransition) => {
@@ -318,6 +324,7 @@ export function RevenuePanel({
             onOpenCompanies={() => onTabChange("relationships")}
             onScan={runScan}
             scanning={scanning}
+            needsConnect={connectBeforeAudit}
             needsReconnect={reconnectBeforeAudit}
           />
         ) : tab === "actions" ? (
@@ -338,6 +345,7 @@ export function RevenuePanel({
           <PeopleView onError={setBanner} onNotice={setNoticeMsg} />
         ) : tab === "impact" ? (
           <ImpactView
+            needsConnect={connectBeforeAudit}
             needsReconnect={reconnectBeforeAudit}
             onError={setBanner}
             onScan={runScan}
@@ -354,6 +362,7 @@ export function RevenuePanel({
             scans={scans}
             activeScan={activeScan}
             scanning={scanning}
+            needsConnect={connectBeforeAudit}
             needsReconnect={reconnectBeforeAudit}
             onScan={runScan}
           />

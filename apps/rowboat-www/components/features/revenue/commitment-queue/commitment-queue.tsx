@@ -584,7 +584,10 @@ export function CommitmentQueue({
               >
                 <Plugs /> Reconnect Google
               </Button>
-            ) : (
+            ) : googleConnected || scanning ? (
+              // A scan with no mailbox is rejected before it reads anything.
+              // Connect is already the action in that case; this button only
+              // stays while a scan is running or Gmail can actually be read.
               <Button
                 className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
                 disabled={scanning}
@@ -602,7 +605,7 @@ export function CommitmentQueue({
                   {scanning ? "Scanning" : "Run audit"}
                 </Label>
               </Button>
-            )}
+            ) : null}
           </div>
         </SimProductToolbar>
 

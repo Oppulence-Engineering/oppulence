@@ -10,6 +10,7 @@ import {
   trialDaysRemaining,
   workspaceLabel,
 } from "@/components/features/dashboard/app-shell/app-shell";
+import { auditLaunchLabel, googleAuditLaunch } from "@/lib/revenue/revenue";
 import type { RelationshipSourceStatus } from "@/lib/revenue/types";
 
 const inDays = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString();
@@ -119,14 +120,39 @@ describe("audit reconnect guard", () => {
     ).toBe(false);
   });
 
-  // With no rows the audit runs, fails if it must, and marks the real account.
-  it("does not block when nothing is known about Google yet", () => {
+  // A missing reconnect flag is not permission to start the scan. No Google
+  // rows means there is no mailbox to read, so the button connects instead.
+  it("does not treat a missing mailbox as a dead grant", () => {
     expect(googleNeedsReconnect([])).toBe(false);
     expect(
       googleNeedsReconnect([
         { source: "slack", status: "reconnect_required" } as RelationshipSourceStatus,
       ]),
     ).toBe(false);
+    expect(googleAuditLaunch([])).toBe("connect");
+    expect(
+      googleAuditLaunch([
+        { source: "slack", status: "connected" } as RelationshipSourceStatus,
+      ]),
+    ).toBe("connect");
+  });
+
+  it("runs the audit only when a Google account can be read", () => {
+    expect(googleAuditLaunch([google("connected")])).toBe("run");
+    expect(googleAuditLaunch([google("reconnect_required"), google("live", "default")])).toBe(
+      "run",
+    );
+    expect(googleAuditLaunch([google("reconnect_required")])).toBe("reconnect");
+    expect(googleAuditLaunch([google("not_connected")])).toBe("reconnect");
+    expect(
+      auditLaunchLabel({
+        needsReconnect: false,
+        needsConnect: true,
+        scanning: false,
+        scanningLabel: "Auditing…",
+        runLabel: "Run Promise Leak Audit",
+      }),
+    ).toBe("Connect Gmail & Calendar");
   });
 });
 

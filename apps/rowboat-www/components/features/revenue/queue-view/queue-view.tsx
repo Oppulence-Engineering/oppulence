@@ -51,6 +51,7 @@ import {
 } from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
 import {
   ACTION_TYPE_LABELS,
+  auditLaunchLabel,
   createAction,
   DETECTOR_LABELS,
   dismissAction,
@@ -121,6 +122,7 @@ export function QueueView({
   onScan,
   scanning,
   needsReconnect = false,
+  needsConnect = false,
   onOpenCompanies,
 }: {
   workspace: RevenueWorkspace | null;
@@ -130,6 +132,8 @@ export function QueueView({
   scanning: boolean;
   /** The audit can only fail until Google is reconnected; `onScan` opens the fix. */
   needsReconnect?: boolean;
+  /** No mailbox is connected, so `onScan` opens connections instead of a scan. */
+  needsConnect?: boolean;
   /** Opens the company directory when a new action has nothing to attach to. */
   onOpenCompanies?: () => void;
 }) {
@@ -169,6 +173,13 @@ export function QueueView({
   );
 
   const empty = actionsQuery.isSuccess && actions.length === 0;
+  const auditLabel = auditLaunchLabel({
+    needsReconnect,
+    needsConnect,
+    scanning,
+    scanningLabel: "Auditing…",
+    runLabel: "Run Promise Leak Audit",
+  });
 
   return (
     <div className="flex min-h-full w-full min-w-0 flex-col p-3" data-slot="queue-view">
@@ -221,21 +232,31 @@ export function QueueView({
                   onClick={onScan}
                   size="sm"
                 >
-                  {needsReconnect ? (
+                  {needsReconnect || needsConnect ? (
                     <>
-                      <Plugs /> Reconnect Google
+                      <Plugs /> {auditLabel}
                     </>
                   ) : (
-                    <>{scanning ? <Spinner /> : <MagnifyingGlass />} Run Promise Leak Audit</>
+                    <>
+                      {scanning ? <Spinner /> : <MagnifyingGlass />} {auditLabel}
+                    </>
                   )}
                 </Button>
               }
               description={
-                <>
-                  No recovery drafts yet! Run an audit
-                  <br />
-                  or draft recovery from a promise.
-                </>
+                needsConnect ? (
+                  <>
+                    No recovery drafts yet. Connect Gmail and Calendar
+                    <br />
+                    before an audit can find promises to recover.
+                  </>
+                ) : (
+                  <>
+                    No recovery drafts yet! Run an audit
+                    <br />
+                    or draft recovery from a promise.
+                  </>
+                )
               }
               image="recovery"
               learnMore={[

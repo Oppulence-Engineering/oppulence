@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@oppulence/ui/components/table";
-import { relativeTime, REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue/revenue";
+import { auditLaunchLabel, relativeTime, REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue/revenue";
 import type { RevenueLeakScan } from "@/lib/revenue/types";
 
 export function ScansView({
@@ -27,6 +27,7 @@ export function ScansView({
   activeScan,
   scanning,
   needsReconnect = false,
+  needsConnect = false,
   onScan,
 }: {
   scans: RevenueLeakScan[];
@@ -34,6 +35,8 @@ export function ScansView({
   scanning: boolean;
   /** The audit can only fail until Google is reconnected; `onScan` opens the fix. */
   needsReconnect?: boolean;
+  /** No mailbox is connected, so `onScan` opens connections instead of a scan. */
+  needsConnect?: boolean;
   onScan: () => void;
 }) {
   const rows = React.useMemo(() => {
@@ -42,6 +45,14 @@ export function ScansView({
     if (activeScan) map.set(activeScan.id, activeScan);
     return [...map.values()].sort((a, b) => (b.startedAt ?? "").localeCompare(a.startedAt ?? ""));
   }, [scans, activeScan]);
+  const launchLabel = auditLaunchLabel({
+    needsReconnect,
+    needsConnect,
+    scanning,
+    scanningLabel: "Auditing…",
+    runLabel: "Run Promise Leak Audit",
+  });
+  const waitingOnGoogle = needsReconnect || needsConnect;
 
   return (
     <div className="flex min-h-full w-full min-w-0 flex-col" data-slot="scans-view">
@@ -51,8 +62,8 @@ export function ScansView({
           promises and follow-ups that have gone quiet. Nothing is sent without your approval.
         </p>
         <Button size="sm" onClick={onScan} disabled={scanning}>
-          {needsReconnect ? <Plugs /> : scanning ? <Spinner /> : <MagnifyingGlass />}
-          {needsReconnect ? "Reconnect Google" : scanning ? "Auditing…" : "Run Promise Leak Audit"}
+          {waitingOnGoogle ? <Plugs /> : scanning ? <Spinner /> : <MagnifyingGlass />}
+          {launchLabel}
         </Button>
       </div>
 
@@ -65,21 +76,31 @@ export function ScansView({
               onClick={onScan}
               size="sm"
             >
-              {needsReconnect ? (
+              {waitingOnGoogle ? (
                 <>
-                  <Plugs /> Reconnect Google
+                  <Plugs /> {launchLabel}
                 </>
               ) : (
-                <>{scanning ? <Spinner /> : <MagnifyingGlass />} Run Promise Leak Audit</>
+                <>
+                  {scanning ? <Spinner /> : <MagnifyingGlass />} {launchLabel}
+                </>
               )}
             </Button>
           }
           description={
-            <>
-              No audits yet! Run your first audit
-              <br />
-              to find promises in your mail.
-            </>
+            needsConnect ? (
+              <>
+                Connect Gmail and Calendar before an audit
+                <br />
+                can read your mail.
+              </>
+            ) : (
+              <>
+                No audits yet! Run your first audit
+                <br />
+                to find promises in your mail.
+              </>
+            )
           }
           image="audits"
           learnMore={[

@@ -189,4 +189,20 @@ describe("revenue panel after an audit", () => {
     expect(onOpenConnectors).toHaveBeenCalledTimes(1);
     expect(mocks.startScan).not.toHaveBeenCalled();
   });
+
+  // No Google row is not an unknown grant. The scan is rejected before it
+  // reads mail, so the button should open connections instead of failing.
+  it("opens connections when Gmail is not connected", async () => {
+    mocks.listRelationshipSourceStatuses.mockResolvedValue([]);
+    const onOpenConnectors = renderPanel("scans");
+
+    const buttons = await screen.findAllByRole("button", { name: /Connect Gmail & Calendar/ });
+    expect(buttons.length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /Run Promise Leak Audit/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/Connect Gmail and Calendar before an audit/)).toBeInTheDocument();
+    await userEvent.click(buttons[0]);
+
+    expect(onOpenConnectors).toHaveBeenCalledTimes(1);
+    expect(mocks.startScan).not.toHaveBeenCalled();
+  });
 });

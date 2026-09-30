@@ -28,7 +28,7 @@ import {
   TableRow,
 } from "@oppulence/ui/components/table";
 
-import { DETECTOR_LABELS } from "@/lib/revenue/revenue";
+import { auditLaunchLabel, DETECTOR_LABELS } from "@/lib/revenue/revenue";
 import { EmptyBlock, errMessage, ListSkeleton } from "@/components/features/revenue/shared/shared";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +37,7 @@ export function ImpactView({
   onScan,
   scanning = false,
   needsReconnect = false,
+  needsConnect = false,
 }: {
   onError: (m: string) => void;
   /** Same audit the Audits and Recovery empty states start. Omitted in tests that only retry a failed load. */
@@ -44,6 +45,8 @@ export function ImpactView({
   scanning?: boolean;
   /** The audit can only fail until Google is reconnected; `onScan` opens the fix. */
   needsReconnect?: boolean;
+  /** No mailbox is connected, so `onScan` opens connections instead of a scan. */
+  needsConnect?: boolean;
 }) {
   const impactQuery = useImpactBundle();
 
@@ -71,9 +74,20 @@ export function ImpactView({
   const { data, digest } = impactQuery.data;
 
   if (data.surfaced === 0 && data.atRiskRelationships === 0 && data.overdueCommitments === 0) {
+    const auditLabel = auditLaunchLabel({
+      needsReconnect,
+      needsConnect,
+      scanning,
+      scanningLabel: "Auditing…",
+      runLabel: "Run Promise Leak Audit",
+    });
     return (
       <EmptyBlock
-        body="Run an audit and start reviewing actions — replies, meetings, and wins show up here as they come in."
+        body={
+          needsConnect
+            ? "Connect Gmail and Calendar. Replies, meetings, and wins show up here after an audit."
+            : "Run an audit and start reviewing actions — replies, meetings, and wins show up here as they come in."
+        }
         image="impact"
         learnMore={[{ label: "Track recovery outcomes" }, { label: "Measure company risk" }]}
         title="Impact"
@@ -86,13 +100,13 @@ export function ImpactView({
             size="sm"
             type="button"
           >
-            {needsReconnect ? (
+            {needsReconnect || needsConnect ? (
               <>
-                <Plugs /> Reconnect Google
+                <Plugs /> {auditLabel}
               </>
             ) : (
               <>
-                {scanning ? <Spinner /> : <MagnifyingGlass />} Run Promise Leak Audit
+                {scanning ? <Spinner /> : <MagnifyingGlass />} {auditLabel}
               </>
             )}
           </Button>
