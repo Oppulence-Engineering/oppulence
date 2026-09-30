@@ -447,7 +447,7 @@ function CreateActionDialog({
         <DialogHeader>
           <DialogTitle>New action</DialogTitle>
           <DialogDescription>
-            Add a manual follow-up to the queue for a company already in this workspace.
+            Add a follow-up for a company already in this workspace.
           </DialogDescription>
         </DialogHeader>
         {relationships.length === 0 ? (

@@ -13,6 +13,8 @@ describe("QueueView", () => {
   });
 
   it("points an empty workspace at Companies and names the action", () => {
+    expect(source).toContain("Add a follow-up for a company already in this workspace.");
+    expect(source).not.toContain("manual follow-up");
     expect(source).toContain("No companies yet. Add one in Companies, or run an audit to find them.");
     expect(source).toContain("Add a company");
     expect(source).toContain("onOpenCompanies");
