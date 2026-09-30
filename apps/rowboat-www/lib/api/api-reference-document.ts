@@ -33,7 +33,7 @@ export function presentApiReferenceDocument<T>(spec: T): T {
 export function renderApiReferencePage(spec: unknown): string {
   const payload = JSON.stringify(spec ?? null).replaceAll("<", "\\u003c");
   const viewer = spec
-    ? `<script src="https://unpkg.com/@scalar/api-reference"></script>
+    ? `<script src="https://unpkg.com/@scalar/api-reference/dist/browser/standalone.js"></script>
     <script>
       Scalar.createApiReference("#app", {
         content: document.getElementById("api-reference-spec").textContent,
