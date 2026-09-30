@@ -20,10 +20,10 @@ describe("sidebar labels", () => {
         { value: "meeting-pre-brief/run-1", label: "meeting-pre-brief · succeeded" },
         [{ value: "meeting-pre-brief", label: "Meeting Pre-Brief" }],
       ),
-    ).toBe("Meeting Pre-Brief · Succeeded");
+    ).toBe("Meeting pre-brief · Succeeded");
     expect(
       sidebarRunLabel({ value: "meeting-pre-brief/run-1", label: "meeting-pre-brief · queued" }),
-    ).toBe("meeting-pre-brief · Queued");
+    ).toBe("Meeting pre-brief · Queued");
     expect(
       sidebarRunLabel(
         {

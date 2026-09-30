@@ -9,6 +9,7 @@ const COMPANY_REFRESH = {
 };
 
 const ATTENTION_MONITOR = {
+  name: "Attention monitor",
   description: "Explain which companies need attention now and why.",
 };
 
@@ -19,10 +20,12 @@ const MEETING_FOLLOW_UP = {
 };
 
 const MEETING_PRE_BRIEF = {
+  name: "Meeting pre-brief",
   description: "Get the promises, risks, and goals ready before a meeting.",
 };
 
 const RECOMMENDATION_REVIEW = {
+  name: "Recommendation review",
   description: "Collect recommendations that are waiting so you can approve them together.",
 };
 

@@ -19,6 +19,16 @@ describe("workflow product copy", () => {
     expect(workflowProductName("oppulence-relationship-refresh", "Relationship Refresh")).toBe(
       "Company refresh",
     );
+    expect(workflowProductName("oppulence-meeting-pre-brief", "Meeting Pre-Brief")).toBe(
+      "Meeting pre-brief",
+    );
+    expect(workflowProductName("meeting-pre-brief", "Meeting Pre-Brief")).toBe("Meeting pre-brief");
+    expect(workflowProductName("oppulence-attention-monitor", "Attention Monitor")).toBe(
+      "Attention monitor",
+    );
+    expect(workflowProductName("oppulence-recommendation-review", "Recommendation Review")).toBe(
+      "Recommendation review",
+    );
     expect(workflowProductName("my-renewal-check", "Renewal check")).toBe("Renewal check");
     expect(workflowProductName(undefined, "Renewal check")).toBe("Renewal check");
   });
