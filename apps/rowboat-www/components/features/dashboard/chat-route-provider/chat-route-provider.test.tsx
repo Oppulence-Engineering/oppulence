@@ -26,7 +26,18 @@ vi.mock("@/components/ai-elements/prompt-input", () => ({
   PromptInputFooter: ({ children }: { children: React.ReactNode }) => children,
   PromptInputHeader: ({ children }: { children: React.ReactNode }) => children,
   PromptInputSpeechButton: () => null,
-  PromptInputSubmit: () => <button type="submit">Submit</button>,
+  PromptInputSubmit: ({
+    disabled,
+    "aria-label": label,
+  }: {
+    disabled?: boolean;
+    "aria-label"?: string;
+  }) => (
+    <button type="submit" disabled={disabled} aria-label={label}>
+      Submit
+    </button>
+  ),
+  usePromptInputAttachments: () => ({ files: [] }),
   PromptInputTextarea: ({ placeholder }: { placeholder: string }) => (
     <textarea aria-label="Prompt" placeholder={placeholder} />
   ),
@@ -94,6 +105,7 @@ vi.mock("@oppulence/ui/components/select", () => ({
 
 import {
   ChatRouteProvider,
+  chatSubmitDisabled,
   useChatRouteState,
   useDashboardChatController,
 } from "./chat-route-provider";
@@ -129,6 +141,12 @@ describe("ChatRouteProvider", () => {
     );
     expect(screen.getByRole("button", { name: "Assistant" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Add text file" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
+    expect(chatSubmitDisabled("ready", "   ", 0)).toBe(true);
+    expect(chatSubmitDisabled("ready", "Find the slipping promise", 0)).toBe(false);
+    expect(chatSubmitDisabled("ready", "", 1)).toBe(false);
+    expect(chatSubmitDisabled("streaming", "", 0)).toBe(false);
+    expect(chatSubmitDisabled("submitted", "Find the slipping promise", 0)).toBe(true);
 
     screen.getByRole("button", { name: "New chat" }).click();
     expect(mocks.resetRun).toHaveBeenCalledOnce();

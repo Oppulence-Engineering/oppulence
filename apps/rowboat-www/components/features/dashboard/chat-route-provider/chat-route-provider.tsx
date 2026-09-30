@@ -29,12 +29,13 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputTools,
+  usePromptInputAttachments,
 } from "@/components/ai-elements/prompt-input";
 import { useAuthSession } from "@/components/auth/auth-gate";
 import { useWorkspaceLabel } from "@/components/features/dashboard/app-shell/app-shell";
 import { useAgentCatalog } from "@/hooks/dashboard/use-agent-catalog";
 import { agentDisplayName, agentSelectName, visibleAgentLabel } from "@/lib/agents/agent-schemas";
-import { useAgentRun } from "@/hooks/dashboard/use-agent-run";
+import { useAgentRun, type AgentRunStatus } from "@/hooks/dashboard/use-agent-run";
 import { useChatSessions } from "@/hooks/dashboard/use-chat-sessions";
 import { useDashboardArtifact } from "@/hooks/dashboard/use-dashboard-artifact";
 import { useProductRouteState } from "@/hooks/dashboard/use-product-route-state";
@@ -133,6 +134,37 @@ type ChatPromptInputProps = {
   onSelectAgent: (agent: string) => void;
 };
 
+/** Stop stays available. Send stays off until there is text or a file. */
+export function chatSubmitDisabled(status: AgentRunStatus, text: string, fileCount: number): boolean {
+  if (status === "submitted") return true;
+  if (status === "streaming") return false;
+  return !text.trim() && fileCount === 0;
+}
+
+function ChatPromptSubmit({
+  status,
+  stopRun,
+  text,
+}: {
+  status: AgentRunStatus;
+  stopRun: () => void | Promise<void>;
+  text: string;
+}) {
+  const attachments = usePromptInputAttachments();
+  return (
+    <PromptInputSubmit
+      aria-label={status === "streaming" ? "Stop response" : "Submit"}
+      disabled={chatSubmitDisabled(status, text, attachments.files.length)}
+      onClick={(event) => {
+        if (status !== "streaming") return;
+        event.preventDefault();
+        void stopRun();
+      }}
+      status={status}
+    />
+  );
+}
+
 /**
  * Keeps the prompt's attachment and stop semantics beside the chat lifecycle
  * that owns them, rather than coupling shell chrome to agent-run details.
@@ -222,16 +254,7 @@ function ChatPromptInput({
               </SelectContent>
             </Select>
           </PromptInputTools>
-          <PromptInputSubmit
-            aria-label={status === "streaming" ? "Stop response" : "Submit"}
-            disabled={status === "submitted"}
-            onClick={(event) => {
-              if (status !== "streaming") return;
-              event.preventDefault();
-              void stopRun();
-            }}
-            status={status}
-          />
+          <ChatPromptSubmit status={status} stopRun={stopRun} text={text} />
         </PromptInputFooter>
       </PromptInput>
     </div>

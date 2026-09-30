@@ -251,7 +251,7 @@ export function useAgentRun(selectedAgent: string) {
 
   const submit = useCallback(
     async (message: PromptInputMessage) => {
-      if (!(message.text || message.files?.length)) return;
+      if (!(message.text?.trim() || message.files?.length)) return;
 
       let prepared: Awaited<ReturnType<typeof prepareWebChatInput>>;
       try {
