@@ -79,7 +79,26 @@ const API_REFERENCE_TAGS: Record<string, { name: string; description: string }> 
   },
 };
 
-type ApiReferenceOperation = { tags?: string[] };
+const HTTP_METHODS = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
+
+/** Sidebar titles. The stored summary is the route's name, not the product's. */
+const API_REFERENCE_SUMMARIES: Record<string, string> = {
+  "Get connector broker JWKS": "Get connection signing keys",
+  "Create background task mirror": "Save a background task",
+  "Delete background task mirror": "Delete a background task",
+  "Get background task mirror": "Get a background task",
+  "Patch background task mirror": "Update a background task",
+  "Create task run mirror": "Record a task run",
+  "Patch task run mirror": "Update a task run",
+  "Mint connector MCP token": "Create a connection token",
+  "Correct reviewed conversation evidence": "Correct a reviewed conversation",
+  "Open source evidence": "Open the original detail",
+  "Get evidence timeline": "Get the activity history",
+  "Request policy preflight": "Check before sending",
+  "Link the OutboundConsole workspace": "Link the sending workspace",
+};
+
+type ApiReferenceOperation = { tags?: string[]; summary?: string; description?: string };
 
 type ApiReferenceDocument = {
   info?: { title?: string; description?: string };
@@ -90,6 +109,30 @@ type ApiReferenceDocument = {
 
 function presentedTagName(name: string): string {
   return API_REFERENCE_TAGS[name]?.name ?? name;
+}
+
+/**
+ * Operation prose still names the old product, RFCs, and the sending service.
+ * Replacements stay phrase-sized so a sentence does not lose its verb.
+ */
+function presentReferenceProse(value: string): string {
+  return value
+    .replaceAll("Solomon AI API", "Oppulence API")
+    .replaceAll("Solomon AI", "Oppulence")
+    .replaceAll("authenticated Rowboat user", "signed-in person")
+    .replaceAll("explicit Rowboat handoff", "workspace handoff")
+    .replaceAll("Rowboat", "Oppulence")
+    .replaceAll("OutboundConsole workspace", "sending workspace")
+    .replaceAll("OutboundConsole preflight", "sending check")
+    .replaceAll("OutboundConsole", "checked sending")
+    .replaceAll("policy preflight", "sending check")
+    .replaceAll("policy facade", "sending check")
+    .replace(/RFC \d+/g, "")
+    .replace(/\( /g, "(")
+    .replace(/\(\)/g, "")
+    .replace(/ {2,}/g, " ")
+    .replace(/ \./g, ".")
+    .trim();
 }
 
 export function presentApiReferenceDocument<T>(spec: T): T {
@@ -111,9 +154,16 @@ export function presentApiReferenceDocument<T>(spec: T): T {
   });
   for (const path of Object.values(document.paths ?? {})) {
     if (!path || typeof path !== "object") continue;
-    for (const operation of Object.values(path)) {
-      if (!operation?.tags) continue;
-      operation.tags = operation.tags.map(presentedTagName);
+    for (const [method, operation] of Object.entries(path)) {
+      if (!HTTP_METHODS.has(method) || !operation) continue;
+      if (operation.tags) operation.tags = operation.tags.map(presentedTagName);
+      if (operation.summary) {
+        operation.summary =
+          API_REFERENCE_SUMMARIES[operation.summary] ?? presentReferenceProse(operation.summary);
+      }
+      if (operation.description) {
+        operation.description = presentReferenceProse(operation.description);
+      }
     }
   }
   return document as T;

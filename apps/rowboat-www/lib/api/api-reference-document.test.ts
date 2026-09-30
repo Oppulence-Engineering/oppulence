@@ -82,6 +82,32 @@ describe("API reference document", () => {
     expect(presented.paths["/v1/chat"]?.post?.tags).toEqual(["Model calls", "System"]);
   });
 
+  it("renames operation titles and drops the old product from their text", () => {
+    const presented = presentApiReferenceDocument({
+      paths: {
+        "/v1/revenue-workspaces/link": {
+          post: {
+            summary: "Link the OutboundConsole workspace",
+            description:
+              "Completes the OutboundConsole workspace link (RFC 030). Requires a configured policy facade.",
+            tags: ["Revenue"],
+          },
+          parameters: [{ name: "slug", description: "Solomon AI API slug" }],
+        },
+      },
+    });
+    const operation = presented.paths["/v1/revenue-workspaces/link"]?.post;
+    expect(operation?.summary).toBe("Link the sending workspace");
+    expect(operation?.description).toBe(
+      "Completes the sending workspace link. Requires a configured sending check.",
+    );
+    expect(operation?.description).not.toMatch(/Solomon|OutboundConsole|RFC/);
+    expect(operation?.tags).toEqual(["Promises"]);
+    expect(presented.paths["/v1/revenue-workspaces/link"]?.parameters?.[0]?.description).toContain(
+      "Solomon AI API",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
