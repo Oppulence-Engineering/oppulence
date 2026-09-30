@@ -938,12 +938,14 @@ export function NotesView({ onError, onNotice }: ViewProps) {
         <NoteDialog
           key={"externalId" in editing ? editing.externalId : editing.template?.id || "new"}
           note={"externalId" in editing ? editing : undefined}
-          template={"template" in editing ? editing.template : undefined}
-          relationships={relationships}
           onClose={() => setEditing(null)}
+          onCreateTemplate={() => setEditingTemplate("new")}
           onError={onError}
-          onSaved={() => void load()}
           onNotice={onNotice}
+          onSaved={() => void load()}
+          onViewTemplates={() => setTab("templates")}
+          relationships={relationships}
+          template={"template" in editing ? editing.template : undefined}
         />
       ) : null}
       {editingTemplate ? (
@@ -1059,17 +1061,21 @@ function NoteDialog({
   template,
   relationships,
   onClose,
+  onCreateTemplate,
   onSaved,
   onError,
   onNotice,
+  onViewTemplates,
 }: {
   note?: WorkspaceNote;
   template?: NoteTemplateResource;
   relationships: RevenueRelationship[];
   onClose: () => void;
+  onCreateTemplate: () => void;
   onSaved: () => void;
   onError: (message: string) => void;
   onNotice: (message: string) => void;
+  onViewTemplates: () => void;
 }) {
   const noteId = React.useRef(note?.externalId || crypto.randomUUID()).current;
   const [title, setTitle] = React.useState(
@@ -1145,11 +1151,20 @@ function NoteDialog({
 
   const closeEditor = async () => {
     const dirty = snapshot !== lastSaved.current;
-    // Empty drafts and notes without a linked company should still dismiss on close.
     if (dirty && noteHasDraftContent && relationshipId) {
-      if (!(await publish("note"))) return;
+      if (!(await publish("note"))) return false;
+    }
+    // A note can only be stored against a company. Closing still dismisses the
+    // draft, but the status line and this notice are the only signal that the
+    // text was not written.
+    if (dirty && noteHasDraftContent && !relationshipId) {
+      onNotice("Link a company before this note can be saved.");
     }
     onClose();
+    return true;
+  };
+  const leaveFor = async (next: () => void) => {
+    if (await closeEditor()) next();
   };
   const selectedRelationship = relationships.find((item) => item.id === relationshipId);
   const bodyEmpty = !plateText(content).trim();
@@ -1163,13 +1178,19 @@ function NoteDialog({
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-5">
           <div className="flex min-w-0 items-center gap-2 text-[12px] text-primary/80">
             <Note className="size-3.5 text-primary/45" />
-            <Select value={relationshipId || undefined} onValueChange={setRelationshipId}>
+            <Select
+              disabled={relationships.length === 0}
+              value={relationshipId || undefined}
+              onValueChange={setRelationshipId}
+            >
               <SelectTrigger
                 id="note-relationship"
                 aria-label="Linked company"
                 className="h-auto max-w-56 border-0 bg-transparent p-0 text-[12px] text-primary underline shadow-none focus:ring-0"
               >
-                <SelectValue placeholder="Link a company" />
+                <SelectValue
+                  placeholder={relationships.length === 0 ? "No companies yet" : "Link a company"}
+                />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-none">
                 {relationships.map((relationship) => (
@@ -1338,6 +1359,7 @@ function NoteDialog({
                   type="button"
                   className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
                   variant="ghost"
+                  onClick={() => void leaveFor(onViewTemplates)}
                 >
                   <Note className="size-4" /> View all templates
                 </Button>
@@ -1345,13 +1367,18 @@ function NoteDialog({
                   type="button"
                   className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
                   variant="ghost"
+                  onClick={() => void leaveFor(onCreateTemplate)}
                 >
                   <Note className="size-4" /> Create new template
                 </Button>
               </div>
             </div>
           ) : null}
-          {saveState !== "saved" ? (
+          {noteHasDraftContent && !relationshipId ? (
+            <p className="absolute right-5 bottom-3 text-[11px] font-normal text-destructive" role="status">
+              Link a company to save this note.
+            </p>
+          ) : saveState !== "saved" ? (
             <Label
               className={`absolute right-5 bottom-3 text-[11px] font-normal ${saveState === "error" ? "text-destructive" : "text-primary/55"}`}
             >

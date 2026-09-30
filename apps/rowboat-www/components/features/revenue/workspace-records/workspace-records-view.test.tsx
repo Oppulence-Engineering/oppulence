@@ -104,6 +104,52 @@ describe("durable note templates and favorites", () => {
     expect(screen.getByText("Favorites").parentElement).toHaveTextContent("1");
   });
 
+  it("says a note cannot be saved until a company exists", async () => {
+    mocks.fetchWorkspaceNotes.mockResolvedValue({
+      notes: [],
+      relationships: [],
+      failedTimelineCount: 0,
+    });
+    const onNotice = vi.fn();
+    const user = userEvent.setup();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <NotesView onError={vi.fn()} onNotice={onNotice} />
+      </QueryClientProvider>,
+    );
+
+    await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
+    await user.type(screen.getByLabelText("Note title"), "Call notes");
+
+    expect(screen.getByText("Link a company to save this note.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Linked company")).toHaveTextContent("No companies yet");
+
+    await user.click(screen.getByRole("button", { name: "Close note" }));
+    expect(onNotice).toHaveBeenCalledWith("Link a company before this note can be saved.");
+  });
+
+  it("opens the template library from the empty note", async () => {
+    const user = userEvent.setup();
+    renderNotes();
+
+    await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
+    await user.click(await screen.findByRole("button", { name: "View all templates" }));
+
+    expect(await screen.findByText("Reusable note templates")).toBeInTheDocument();
+    expect(screen.getByText("Weekly review")).toBeInTheDocument();
+  });
+
+  it("opens the template editor from the empty note", async () => {
+    const user = userEvent.setup();
+    renderNotes();
+
+    await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
+    await user.click(await screen.findByRole("button", { name: "Create new template" }));
+
+    expect(await screen.findByRole("heading", { name: "New note template" })).toBeInTheDocument();
+  });
+
   it("applies a durable template to a new note", async () => {
     const user = userEvent.setup();
     renderNotes();
