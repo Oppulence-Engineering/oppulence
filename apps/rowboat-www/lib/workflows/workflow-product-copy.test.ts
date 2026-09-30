@@ -58,6 +58,18 @@ describe("workflow product copy", () => {
       "Watch the renewal date.",
     );
     expect(
+      workflowProductDescription(
+        "event-triage",
+        "Route inbound provider/webhook events into an actionable incident or support digest.",
+      ),
+    ).toBe("Turn events from GitHub, Linear, or Stripe into a short list of what needs a response.");
+    expect(
+      workflowProductDescription(
+        "data-report",
+        "Run sandboxed analysis and publish a markdown report artifact.",
+      ),
+    ).toBe("Turn a question about your data into a written report.");
+    expect(
       workflowProductDescription("oppulence-attention-monitor", "which relationships need attention"),
     ).toBe("Explain which companies need attention now and why.");
     expect(

@@ -95,7 +95,10 @@ import {
   type VisualWorkflowDefinition,
   type WorkflowActionKind,
 } from "@/lib/workflows/cloud-workflows";
-import { workflowProductName } from "@/lib/workflows/workflow-product-copy";
+import {
+  workflowProductDescription,
+  workflowProductName,
+} from "@/lib/workflows/workflow-product-copy";
 import { cn } from "@/lib/utils";
 
 type FilterValue<T extends string> = T | "all";
@@ -343,9 +346,11 @@ function CreateWorkflowDialog({
                   .map((template) => (
                     <div className="flex items-start justify-between gap-4 p-3" key={template.slug}>
                       <div>
-                        <p className="text-[13px] font-medium">{template.name}</p>
+                        <p className="text-[13px] font-medium">
+                          {workflowProductName(template.slug, template.name)}
+                        </p>
                         <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
-                          {template.description}
+                          {workflowProductDescription(template.slug, template.description)}
                         </p>
                       </div>
                       <Button

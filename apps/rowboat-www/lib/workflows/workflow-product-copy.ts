@@ -35,6 +35,17 @@ const SOURCE_HEALTH = {
     "Watch whether each connected source is current, and repair the ones that stop updating.",
 };
 
+// Starter templates are not first-party jobs, but their stored descriptions
+// still read like an internal spec. The create dialog shows this copy.
+const EVENT_TRIAGE = {
+  description:
+    "Turn events from GitHub, Linear, or Stripe into a short list of what needs a response.",
+};
+
+const DATA_REPORT = {
+  description: "Turn a question about your data into a written report.",
+};
+
 const FIRST_PARTY_WORKFLOW_COPY: Record<string, { name?: string; description?: string }> = {
   "oppulence-relationship-refresh": COMPANY_REFRESH,
   "relationship-refresh": COMPANY_REFRESH,
@@ -48,6 +59,8 @@ const FIRST_PARTY_WORKFLOW_COPY: Record<string, { name?: string; description?: s
   "recommendation-review": RECOMMENDATION_REVIEW,
   "oppulence-connector-health-repair": SOURCE_HEALTH,
   "connector-health-repair": SOURCE_HEALTH,
+  "event-triage": EVENT_TRIAGE,
+  "data-report": DATA_REPORT,
 };
 
 export function workflowProductName(slug: string | undefined, stored: string | undefined): string {

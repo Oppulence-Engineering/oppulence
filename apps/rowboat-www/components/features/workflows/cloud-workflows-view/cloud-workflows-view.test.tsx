@@ -181,6 +181,8 @@ describe("CloudWorkflowsView", () => {
     ).toBe("Explain which companies need attention now and why.");
     expect(source).toContain("automate recurring company follow-up");
     expect(source).not.toContain("recurring relationship work");
+    expect(source).toContain("workflowProductDescription(template.slug, template.description)");
+    expect(source).not.toContain("{template.description}");
     expect(source).toContain(
       "When a promise is about to slip, review the company and draft a follow-up that waits for your approval.",
     );
