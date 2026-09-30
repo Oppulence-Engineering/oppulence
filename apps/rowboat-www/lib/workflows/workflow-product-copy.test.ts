@@ -33,5 +33,11 @@ describe("workflow product copy", () => {
     expect(
       workflowProductDescription("oppulence-attention-monitor", "which relationships need attention"),
     ).toBe("Explain which companies need attention now and why.");
+    expect(
+      workflowProductDescription(
+        "oppulence-connector-health-repair",
+        "Monitor source freshness, scopes, retries, and backfill progress with actionable repair guidance.",
+      ),
+    ).toBe("Watch whether each connected source is current, and repair the ones that stop updating.");
   });
 });

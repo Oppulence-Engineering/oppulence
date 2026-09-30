@@ -19,6 +19,8 @@ const MEETING_FOLLOW_UP = {
 
 const SOURCE_HEALTH = {
   name: "Source health",
+  description:
+    "Watch whether each connected source is current, and repair the ones that stop updating.",
 };
 
 const FIRST_PARTY_WORKFLOW_COPY: Record<string, { name?: string; description?: string }> = {
