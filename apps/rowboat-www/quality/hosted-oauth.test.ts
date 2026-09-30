@@ -7,6 +7,7 @@ import type {
 import {
   callbackStatusOutcome,
   claimOutcome,
+  connectionReasonCopy,
   connectorSettingsURL,
   safeAuthorizationURL,
   startOutcome,
@@ -59,6 +60,17 @@ describe("hosted connector OAuth outcomes", () => {
     expect(claimOutcome(claim(409, "authorization_restart_required"))).toBe("restart");
     expect(claimOutcome(claim(429, "rate_limited"))).toBe("retry");
     expect(claimOutcome(claim(503, "connector_disabled"))).toBe("error");
+  });
+
+  it("turns a machine connection reason into a sentence", () => {
+    expect(connectionReasonCopy("provider_configuration_missing")).toBe(
+      "This connection is not set up for this workspace yet.",
+    );
+    expect(connectionReasonCopy("reauth_required")).toBe(
+      "Sign in again to restore this connection.",
+    );
+    expect(connectionReasonCopy("upstream_timeout")).toBe("Upstream timeout");
+    expect(connectionReasonCopy("")).toBe("This connection is unavailable.");
   });
 
   it("maps generated start failures and provider callback restart states", () => {

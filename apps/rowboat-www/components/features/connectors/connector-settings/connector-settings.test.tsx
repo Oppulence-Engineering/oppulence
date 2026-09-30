@@ -215,7 +215,8 @@ describe("hosted connector settings", () => {
 
     const row = await screen.findByTestId("connector-google");
     expect(within(row).getByRole("button", { name: "Connect Google" })).toBeDisabled();
-    expect(within(row).getByText("provider_configuration_missing")).toBeVisible();
+    expect(within(row).getByText("This connection is not set up for this workspace yet.")).toBeVisible();
+    expect(within(row).queryByText("provider_configuration_missing")).toBeNull();
   });
 
   it("shows the claimed active lifecycle and health without retaining callback state", async () => {
@@ -235,12 +236,12 @@ describe("hosted connector settings", () => {
     renderWithQuery(<ConnectorSettings />);
 
     expect(
-      await screen.findByText(/Authorization was claimed and the connection is active/),
+      await screen.findByText("Connected."),
     ).toBeVisible();
     const row = await screen.findByTestId("connector-google");
     expect(within(row).getByText("Active")).toBeVisible();
     expect(within(row).getByText("Healthy")).toBeVisible();
-    expect(within(row).getByText(/Granted scopes: google:email.read/)).toBeVisible();
+    expect(within(row).getByText("Permissions: Read email evidence")).toBeVisible();
     expect(window.location.search).toBe("?settings=connections");
   });
 });

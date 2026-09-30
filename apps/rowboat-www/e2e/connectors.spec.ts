@@ -28,12 +28,10 @@ test("settings Connect completes the authenticated hosted claim and shows active
   await expect(page.getByRole("button", { name: "Connect Disabled Connector" })).toBeDisabled();
   await google.getByRole("button", { name: "Connect Google" }).click();
 
-  await expect(
-    page.getByText(/Authorization was claimed and the connection is active/),
-  ).toBeVisible();
+  await expect(page.getByText("Connected.")).toBeVisible();
   await expect(google.getByText("Active")).toBeVisible();
   await expect(google.getByText("Healthy")).toBeVisible();
-  await expect(google.getByText(/Granted scopes: google:email.read/)).toBeVisible();
+  await expect(google.getByText("Permissions: Read email evidence")).toBeVisible();
   await expect(page).toHaveURL(`${appOrigin}/app/settings?settings=connections`);
 
   const state = await (await request.get(`${fakeAPIOrigin}/__test/state`)).json();
@@ -71,16 +69,16 @@ test("callback replay and restart outcomes fail safely without retaining the tic
     .getByTestId("connector-google")
     .getByRole("button", { name: "Connect Google" })
     .click();
-  await expect(page.getByText(/Authorization was claimed/)).toBeVisible();
+  await expect(page.getByText("Connected.")).toBeVisible();
 
   await page.goto(
     "/api/connectors/oauth/callback?connector=google&status=success&session=ticket-1",
   );
-  await expect(page.getByText(/one-time authorization ticket was already used/)).toBeVisible();
+  await expect(page.getByText(/connection link was already used/)).toBeVisible();
   await expect(page).toHaveURL(`${appOrigin}/app/settings?settings=connections`);
 
   await page.goto("/api/connectors/oauth/callback?connector=google&status=restart_required");
-  await expect(page.getByText(/Authorization needs to restart/)).toBeVisible();
+  await expect(page.getByText(/connection needs to start over/)).toBeVisible();
   await expect(page).toHaveURL(`${appOrigin}/app/settings?settings=connections`);
 });
 
@@ -90,11 +88,11 @@ test("claim entitlement, scope, expiry, retry, and broker failures show safe out
   await authenticate(page);
 
   const cases = [
-    ["entitlement-ticket", /workspace entitlement does not allow/],
-    ["scope-ticket", /invalid or broader scope set/],
-    ["expired-ticket", /authorization ticket expired/],
-    ["retry-ticket", /connector broker is busy/],
-    ["error-ticket", /Authorization could not be completed/],
+    ["entitlement-ticket", /plan does not include this connection/],
+    ["scope-ticket", /permissions this workspace cannot accept/],
+    ["expired-ticket", /connection link expired/],
+    ["retry-ticket", /connection service is busy/],
+    ["error-ticket", /connection could not be completed/],
   ] as const;
   for (const [ticket, message] of cases) {
     await page.goto(
@@ -105,7 +103,7 @@ test("claim entitlement, scope, expiry, retry, and broker failures show safe out
   }
 
   await page.goto("/api/connectors/oauth/callback?connector=google&status=error");
-  await expect(page.getByText(/Authorization could not be completed/)).toBeVisible();
+  await expect(page.getByText(/connection could not be completed/)).toBeVisible();
   await expect(page).toHaveURL(`${appOrigin}/app/settings?settings=connections`);
 });
 

@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { ComposioConnections } from "@/components/features/connectors/composio-connections/composio-connections";
 import { dashboardFetch } from "@/lib/auth/client";
 import {
+  connectionReasonCopy,
   hostedOAuthUnsupportedReason,
   requiredConnectorScopes,
   safeAuthorizationURL,
@@ -40,15 +41,14 @@ import {
 } from "@/lib/connectors/hosted-oauth";
 
 const OUTCOME_MESSAGES: Record<HostedOAuthOutcome, string> = {
-  active: "Authorization was claimed and the connection is active.",
-  entitlement: "Your current workspace entitlement does not allow this connector or scope set.",
-  error: "Authorization could not be completed. No connector grant was stored.",
-  expired: "The one-time authorization ticket expired. Start a new connection.",
-  replay:
-    "That one-time authorization ticket was already used. The existing connection was not changed.",
-  restart: "Authorization needs to restart. No partial connector grant was kept.",
-  retry: "The connector broker is busy. Wait a moment, then try again.",
-  scope: "The provider returned an invalid or broader scope set. Review permissions and reconnect.",
+  active: "Connected.",
+  entitlement: "This workspace plan does not include this connection.",
+  error: "The connection could not be completed. Nothing was saved.",
+  expired: "That connection link expired. Start again.",
+  replay: "That connection link was already used. The existing connection was not changed.",
+  restart: "The connection needs to start over. Nothing was saved.",
+  retry: "The connection service is busy. Wait a moment, then try again.",
+  scope: "The provider asked for permissions this workspace cannot accept. Review them and connect again.",
 };
 
 function proxyPath(path: string): string {
@@ -391,7 +391,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
               id={`connector-support-${connector.name}`}
               variant="outline"
             >
-              {connector.connectionReason}
+              {connectionReasonCopy(connector.connectionReason)}
             </Badge>
           ) : null}
         </div>
@@ -486,7 +486,10 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
 
       {connector.connected && connector.grantedScopes?.length ? (
         <p className="font-mono text-[11px] text-primary/50">
-          Granted scopes: {connector.grantedScopes.map((scope) => scope.name).join(", ")}
+          Permissions:{" "}
+          {connector.grantedScopes
+            .map((scope) => scope.displayName?.trim() || scope.name)
+            .join(", ")}
         </p>
       ) : null}
 
@@ -550,8 +553,8 @@ export function ConnectorSettings({ showHeading = true }: { showHeading?: boolea
           <div>
             <h2 className="settings-section-title">Connectors</h2>
             <p className="settings-section-description">
-              Managed connections your agents can use. OAuth grants complete through the
-              authenticated broker claim flow; provider credentials remain server-side.
+              Connections your agents can use. Sign-in stays with Oppulence, and provider passwords
+              are not stored in this browser.
             </p>
           </div>
         </div>
