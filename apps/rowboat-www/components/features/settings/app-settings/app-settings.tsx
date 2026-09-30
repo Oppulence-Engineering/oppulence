@@ -368,8 +368,8 @@ function DefaultsCard() {
   const { query, mutation } = useConsolePreferences();
   const agentsQuery = useAgentSummaries();
   const state = agentsQuery.isPending ? "loading" : agentsQuery.isError ? "error" : "ready";
-  // The chat session API is keyed by slug, so prefer it over the display name.
-  const agentNames = (agentsQuery.data ?? []).map((agent) => agent.slug).filter(Boolean);
+  // Runs are keyed by slug. The menu shows the name and still saves the slug.
+  const agents = (agentsQuery.data ?? []).filter((agent) => agent.slug);
 
   const [agent, setAgent] = React.useState("");
   const [initial, setInitial] = React.useState("");
@@ -429,9 +429,9 @@ function DefaultsCard() {
                 />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-[2px]">
-                {agentNames.map((name) => (
-                  <SelectItem key={name} value={name}>
-                    {name}
+                {agents.map((item) => (
+                  <SelectItem key={item.slug} value={item.slug}>
+                    {item.name.trim() || item.slug}
                   </SelectItem>
                 ))}
               </SelectContent>

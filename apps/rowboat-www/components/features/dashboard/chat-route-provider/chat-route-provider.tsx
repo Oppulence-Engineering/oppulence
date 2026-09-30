@@ -33,6 +33,7 @@ import {
 import { useAuthSession } from "@/components/auth/auth-gate";
 import { useWorkspaceLabel } from "@/components/features/dashboard/app-shell/app-shell";
 import { useAgentCatalog } from "@/hooks/dashboard/use-agent-catalog";
+import { agentDisplayName } from "@/lib/agents/agent-schemas";
 import { useAgentRun } from "@/hooks/dashboard/use-agent-run";
 import { useChatSessions } from "@/hooks/dashboard/use-chat-sessions";
 import { useDashboardArtifact } from "@/hooks/dashboard/use-dashboard-artifact";
@@ -116,6 +117,7 @@ export function useDashboardChatController(): DashboardChatController {
 
 type ChatPromptInputProps = {
   agentOptions: string[];
+  agents: Parameters<typeof agentDisplayName>[0];
   chatError: string | null;
   empty: boolean;
   selectedAgent: string;
@@ -135,6 +137,7 @@ type ChatPromptInputProps = {
  */
 function ChatPromptInput({
   agentOptions,
+  agents,
   chatError,
   empty,
   onSelectAgent,
@@ -193,14 +196,14 @@ function ChatPromptInput({
               textareaRef={textareaRef}
             />
             <Select onValueChange={onSelectAgent} value={selectedAgent}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger aria-label="Agent" className="w-auto max-w-52">
                 <SelectValue placeholder="Agent" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
                   {agentOptions.map((agent) => (
                     <SelectItem key={agent} value={agent}>
-                      {agent}
+                      {agentDisplayName(agents, agent)}
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -243,7 +246,8 @@ export function ChatRouteProvider({ children, className, ...props }: ChatRoutePr
   const workspace = useWorkspaceLabel(workspaceUser);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [selectedResource, setSelectedResource] = useState<SelectedResource | null>(null);
-  const { agentOptions, refreshAgents, selectedAgent, setSelectedAgent } = useAgentCatalog();
+  const { agentOptions, agents = [], refreshAgents, selectedAgent, setSelectedAgent } =
+    useAgentCatalog();
   const run = useAgentRun(selectedAgent);
 
   const selectPrompt = useCallback(
@@ -319,6 +323,7 @@ export function ChatRouteProvider({ children, className, ...props }: ChatRoutePr
   const promptInput = (
     <ChatPromptInput
       agentOptions={agentOptions}
+      agents={agents}
       chatError={run.chatError}
       empty={run.conversation.length === 0}
       onSelectAgent={selectAgent}
@@ -334,7 +339,7 @@ export function ChatRouteProvider({ children, className, ...props }: ChatRoutePr
   );
   const value: ChatRouteContextValue = {
     chat: {
-      activeAgent: selectedAgent,
+      activeAgent: agentDisplayName(agents, selectedAgent),
       workspace,
       processing: run.processing,
       conversation: run.conversation,

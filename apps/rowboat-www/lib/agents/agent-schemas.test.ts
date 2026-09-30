@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseAgentDocument, parseAgentsResponse } from "@/lib/agents/agent-schemas";
+import { agentDisplayName, parseAgentDocument, parseAgentsResponse } from "@/lib/agents/agent-schemas";
 
 describe("agent schemas", () => {
   it("validates and normalizes agent list responses", () => {
@@ -34,6 +34,12 @@ describe("agent schemas", () => {
       },
     ]);
     expect(() => parseAgentsResponse({ agents: [{ name: "Missing slug" }] })).toThrow();
+  });
+
+  it("shows the agent name while the stored value stays the slug", () => {
+    const agents = [{ slug: "concierge-slack", name: "Slack Concierge" }];
+    expect(agentDisplayName(agents, "concierge-slack")).toBe("Slack Concierge");
+    expect(agentDisplayName(agents, "missing")).toBe("missing");
   });
 
   it("rejects malformed projection fields before creating an editor document", () => {

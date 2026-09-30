@@ -40,6 +40,21 @@ export type AgentSummary = {
   limits?: Record<string, unknown>;
 };
 
+/**
+ * Chat and settings store the agent slug because runs are keyed by it.
+ * The label people see is the name from the same record.
+ */
+export function agentDisplayName(
+  agents: readonly Pick<AgentSummary, "slug" | "name">[],
+  slug: string,
+): string {
+  const match = agents.find(
+    (agent) => agent.slug === slug || agent.slug.replace(/\.[^/.]+$/, "") === slug,
+  );
+  const name = match?.name.trim();
+  return name || slug;
+}
+
 /** Validates and normalizes the list projection returned by the agents API. */
 export function parseAgentsResponse(value: unknown): AgentSummary[] {
   return AgentsResponseSchema.parse(value).agents.map((agent) => {
