@@ -270,10 +270,14 @@ describe("people directory labels", () => {
     expect(personDirectoryTitle("ada")).toEqual({ label: "Filtered", filtered: true });
   });
 
-  it("reports verified fields without copying location", () => {
-    expect(personEnrichmentLabel({ attributesVersion: 0 })).toBe("Not enriched");
-    expect(personEnrichmentLabel({ attributesVersion: 1 })).toBe("1 verified field");
-    expect(personEnrichmentLabel({ attributesVersion: 3 })).toBe("3 verified fields");
+  it("counts profile facts and ignores the projection counter", () => {
+    expect(personEnrichmentLabel({})).toBe("Not enriched");
+    expect(personEnrichmentLabel({ employmentStatus: "unknown" })).toBe("Not enriched");
+    expect(personEnrichmentLabel({ location: "Lisbon" })).toBe("1 verified field");
+    expect(
+      personEnrichmentLabel({ location: "Lisbon", title: "VP", department: "Sales" }),
+    ).toBe("3 verified fields");
+    expect(personEnrichmentLabel({ employmentStatus: "departed" })).toBe("1 verified field");
   });
 });
 

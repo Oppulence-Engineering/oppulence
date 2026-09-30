@@ -245,14 +245,31 @@ export function personDirectoryTitle(query: string): { label: string; filtered: 
  * Enrichment is the count of verified profile fields. Location already has
  * its own column; using it as a fallback made a known city look enriched.
  */
+const ENRICHMENT_FIELDS = [
+  "title",
+  "seniority",
+  "orgName",
+  "orgDomain",
+  "location",
+  "linkedinUrl",
+  "department",
+  "timezone",
+  "locale",
+] as const;
+
+/**
+ * Count profile facts the directory can already see. attributesVersion is only
+ * the projection counter: adding a name bumps it to 1 and writes a display
+ * name plus an alias, which is not enrichment.
+ */
 export function personEnrichmentLabel(
-  person: Pick<RelationshipPerson, "attributesVersion">,
+  person: Pick<RelationshipPerson, (typeof ENRICHMENT_FIELDS)[number] | "employmentStatus">,
 ): string {
-  const verified = person.attributesVersion;
-  if (verified > 0) {
-    return `${verified} verified ${verified === 1 ? "field" : "fields"}`;
-  }
-  return "Not enriched";
+  const verified =
+    ENRICHMENT_FIELDS.filter((field) => person[field]?.trim()).length +
+    (person.employmentStatus && person.employmentStatus !== "unknown" ? 1 : 0);
+  if (verified === 0) return "Not enriched";
+  return `${verified} verified ${verified === 1 ? "field" : "fields"}`;
 }
 
 export function PeopleView({ onError, onNotice }: ViewProps) {
