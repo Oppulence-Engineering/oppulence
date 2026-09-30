@@ -156,6 +156,11 @@ describe("hosted connector settings", () => {
     const fetchMock = mockConnectors(connector());
     renderWithQuery(<ConnectorSettings />);
 
+    const gmail = (await screen.findByText("Gmail & Google Calendar")).closest(".settings-panel");
+    expect(gmail).not.toBeNull();
+    expect(within(gmail as HTMLElement).getByText("Not connected")).toBeVisible();
+    expect(within(gmail as HTMLElement).queryByText("Required")).not.toBeInTheDocument();
+
     const row = await screen.findByTestId("connector-google");
     expect(within(row).getByText("Not connected")).toBeVisible();
     expect(within(row).queryByText(/Lifecycle/)).not.toBeInTheDocument();

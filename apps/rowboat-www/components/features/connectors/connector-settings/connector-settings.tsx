@@ -64,7 +64,7 @@ function displayDate(value?: string | null): string | null {
 // The Google card used to render a bare connected/not-connected badge, so a
 // dead grant still read as "Active" while every scan failed with a 401. The
 // source status is the only thing that knows whether the token actually works.
-const GOOGLE_HEALTH: Record<string, { label: string; tone: "ok" | "warn" | "bad" }> = {
+const GOOGLE_HEALTH: Record<string, { label: string; tone: "ok" | "warn" | "bad" | "neutral" }> = {
   live: { label: "Active", tone: "ok" },
   connected: { label: "Active", tone: "ok" },
   backfilling: { label: "Syncing", tone: "warn" },
@@ -74,7 +74,8 @@ const GOOGLE_HEALTH: Record<string, { label: string; tone: "ok" | "warn" | "bad"
   stale: { label: "Stale", tone: "warn" },
   reconnect_required: { label: "Reconnect required", tone: "bad" },
   disconnected: { label: "Disconnected", tone: "bad" },
-  not_connected: { label: "Required", tone: "bad" },
+  // Never linked is not a failed grant. Red "Required" looked like Google had broken.
+  not_connected: { label: "Not connected", tone: "neutral" },
 };
 
 function googleHealth(connected: boolean, sourceStatus?: string) {
