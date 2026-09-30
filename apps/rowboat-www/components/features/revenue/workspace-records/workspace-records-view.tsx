@@ -939,7 +939,7 @@ export function NotesView({
             <WorkspaceEmptyState
               action={
                 <Button size="sm" onClick={() => setEditingTemplate("new")}>
-                  <Plus /> Create template
+                  <Plus /> New template
                 </Button>
               }
               description="Create a reusable starting point for notes."

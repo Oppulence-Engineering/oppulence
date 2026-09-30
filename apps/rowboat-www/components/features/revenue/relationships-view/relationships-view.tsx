@@ -803,7 +803,7 @@ export function RelationshipsView({
                 onClick={() => setCreating(true)}
                 size="sm"
               >
-                <Plus /> Add company
+                <Plus /> New company
               </Button>
             </EmptyBlock>
           ) : (
