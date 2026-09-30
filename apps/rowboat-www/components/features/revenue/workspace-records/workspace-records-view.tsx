@@ -818,7 +818,10 @@ export function NotesView({
         onValueChange={(value) => setTab(value as "notes" | "templates")}
         value={tab}
       >
-        <TabsList className="h-11 w-full justify-start rounded-none border-b border-border bg-transparent px-3">
+        <TabsList
+          aria-label="Notes and templates"
+          className="h-11 w-full justify-start rounded-none border-b border-border bg-transparent px-3"
+        >
           <TabsTrigger
             className="h-9 rounded-none border px-3 text-[13px] data-[state=active]:border-border data-[state=active]:bg-background-100"
             value="notes"

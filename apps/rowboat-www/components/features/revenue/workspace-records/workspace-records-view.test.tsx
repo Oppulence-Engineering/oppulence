@@ -498,6 +498,7 @@ describe("empty note template heading", () => {
   );
 
   it("names the template links instead of a generic actions heading", () => {
+    expect(source).toContain('aria-label="Notes and templates"');
     expect(source).toContain("uppercase tracking-wide text-primary/45\">\n                Templates");
     expect(source).toContain("<Plus /> New template");
     expect(source).not.toContain("<Plus /> Create template");
