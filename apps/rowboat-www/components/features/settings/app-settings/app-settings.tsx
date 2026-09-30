@@ -706,6 +706,19 @@ export function usageMeterValue(key: string, value: string | number): string {
   return String(value);
 }
 
+/**
+ * A missing Stripe setup is not a blip. "Please try again" sends someone back
+ * to a button that cannot open checkout until the server is configured.
+ */
+export function checkoutFailureCopy(error: unknown): string {
+  const code =
+    error && typeof error === "object" && "code" in error && typeof error.code === "string"
+      ? error.code
+      : "";
+  if (code === "provider_unconfigured") return "Checkout isn't configured on the server yet.";
+  return "Checkout is temporarily unavailable. Please try again.";
+}
+
 export function PlanSection({ session }: { session: SessionShape }) {
   const billing = session.billing;
   const [upgrading, setUpgrading] = React.useState(false);
@@ -726,8 +739,8 @@ export function PlanSection({ session }: { session: SessionShape }) {
     try {
       const url = await startCheckout("pro");
       window.location.assign(url);
-    } catch {
-      setUpgradeError("Checkout is temporarily unavailable. Please try again.");
+    } catch (error) {
+      setUpgradeError(checkoutFailureCopy(error));
       setUpgrading(false);
     }
   };

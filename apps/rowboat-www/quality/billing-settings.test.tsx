@@ -20,6 +20,7 @@ vi.mock("@/lib/revenue/revenue", () => ({
 }));
 
 import {
+  checkoutFailureCopy,
   PlanSection,
   usageMeterLabel,
   usageMeterValue,
@@ -52,6 +53,28 @@ describe("settings billing upgrade", () => {
       "Checkout is temporarily unavailable",
     );
     expect(upgrade).toBeEnabled();
+  });
+
+  it("says when checkout is not configured instead of asking for a retry", async () => {
+    const user = userEvent.setup();
+    billing.startCheckout.mockRejectedValue(
+      Object.assign(new Error("Stripe checkout is not configured"), {
+        code: "provider_unconfigured",
+        status: 502,
+      }),
+    );
+    render(<PlanSection session={session("free")} />);
+
+    await user.click(screen.getByRole("button", { name: /upgrade to pro/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Checkout isn't configured on the server yet.",
+    );
+    expect(screen.queryByText(/please try again/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Stripe/)).not.toBeInTheDocument();
+    expect(checkoutFailureCopy(new Error("checkout unavailable"))).toBe(
+      "Checkout is temporarily unavailable. Please try again.",
+    );
   });
 
   it("names credit meters instead of API field names", () => {
