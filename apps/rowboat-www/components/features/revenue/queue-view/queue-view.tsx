@@ -515,7 +515,7 @@ function CreateActionDialog({
             <Input
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Why now? (reason)"
+              placeholder="Why this follow-up is needed"
             />
             <Input
               value={subject}

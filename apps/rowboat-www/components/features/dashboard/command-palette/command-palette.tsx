@@ -39,6 +39,42 @@ import { useRelationships, useSemanticSearch } from "@/hooks/queries/use-relatio
 import type { SessionMeta } from "@/lib/agents/chat-sessions";
 import type { SemanticMatch } from "@/lib/revenue/revenue";
 
+/** Mail search is about messages, not an evidence store. */
+export function mailSearchPlaceholder(mode: "accounts" | "mail"): string {
+  return mode === "mail" ? "Describe the mail to find…" : "Search companies, or type a command…";
+}
+
+/**
+ * Search results arrive as signal classes. A promise used to be stored as
+ * "commitment"; the row should use the same word as the rest of the product.
+ */
+export function mailMatchKind(classification: string | undefined): string {
+  switch (classification) {
+    case "deal":
+      return "Deal";
+    case "invoice":
+      return "Invoice";
+    case "client":
+      return "Customer";
+    case "referral":
+      return "Referral";
+    case "other":
+      return "Other";
+    case "commitment":
+      return "Promise";
+    default: {
+      const words = classification?.replaceAll("_", " ").trim() ?? "";
+      if (!words) return "";
+      return words.charAt(0).toUpperCase() + words.slice(1);
+    }
+  }
+}
+
+export function mailMatchMeta(match: Pick<SemanticMatch, "counterparty" | "classification" | "score">): string {
+  const score = typeof match.score === "number" ? `${Math.round(match.score * 100)}%` : "";
+  return [match.counterparty, mailMatchKind(match.classification), score].filter(Boolean).join(" · ");
+}
+
 /** The overview section is already named Settings. Prefixing it reads "Settings · Settings". */
 export function settingsCommandLabel(section: { key: string; label: string }): string {
   if (section.key === "overview") return "Settings";
@@ -129,11 +165,7 @@ export function CommandPalette({
     >
       <CommandInput
         onValueChange={setQuery}
-        placeholder={
-          searchMode === "mail"
-            ? "Describe the mail evidence to find…"
-            : "Search companies, or type a command…"
-        }
+        placeholder={mailSearchPlaceholder(searchMode)}
         value={query}
       />
       <div className="flex gap-1 border-b border-border px-3 py-2" aria-label="Search mode">
@@ -174,7 +206,7 @@ export function CommandPalette({
         </CommandEmpty>
         {mailMatches.length > 0 ? (
           <>
-            <CommandGroup heading="Mail evidence">
+            <CommandGroup heading="Mail">
               {mailMatches.map((match) => (
                 <CommandItem
                   key={match.threadId}
@@ -189,8 +221,7 @@ export function CommandPalette({
                   <span className="min-w-0">
                     <span className="block truncate">{match.subject}</span>
                     <span className="block truncate text-xs text-muted-foreground">
-                      {match.counterparty} · {match.classification} ·{" "}
-                      {Math.round(match.score * 100)}%
+                      {mailMatchMeta(match)}
                     </span>
                     <span className="block truncate text-xs text-muted-foreground">
                       {match.summary}

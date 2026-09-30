@@ -29,5 +29,7 @@ describe("QueueView", () => {
     expect(recoveryShownLabel(0)).toBeNull();
     expect(recoveryShownLabel(1)).toBe("1 shown");
     expect(recoveryShownLabel(4)).toBe("4 shown");
+    expect(source).toContain('placeholder="Why this follow-up is needed"');
+    expect(source).not.toContain("Why now? (reason)");
   });
 });

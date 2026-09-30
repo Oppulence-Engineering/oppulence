@@ -133,7 +133,12 @@ describe("CommandPalette semantic mail search", () => {
       );
     });
     expect(await screen.findByText("Launch follow-up")).toBeVisible();
-    expect(screen.getByText(/Ada · commitment · 91%/)).toBeVisible();
+    expect(screen.getByText("Ada · Promise · 91%")).toBeVisible();
+    expect(screen.queryByText("Mail evidence")).toBeNull();
+    expect(screen.getByRole("textbox", { name: "Command search" })).toHaveAttribute(
+      "placeholder",
+      "Describe the mail to find…",
+    );
   });
 
   it("distinguishes an unavailable workspace capability from a search failure", async () => {
