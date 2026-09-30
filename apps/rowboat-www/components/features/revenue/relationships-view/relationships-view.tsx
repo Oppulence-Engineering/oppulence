@@ -420,6 +420,21 @@ function RelationshipEnrichment({
   );
 }
 
+/**
+ * The header claims "All companies" even after search or a health filter,
+ * and the control was a button with no action. A filtered list should say so,
+ * and that button is what clears the filters.
+ */
+export function companyDirectoryTitle(input: {
+  query: string;
+  health: string;
+  lifecycle: string;
+}): { label: string; filtered: boolean } {
+  const filtered =
+    input.query.trim().length > 0 || input.health !== "all" || input.lifecycle !== "all";
+  return { label: filtered ? "Filtered" : "All companies", filtered };
+}
+
 export function RelationshipsView({
   onError,
   onNotice,
@@ -469,6 +484,13 @@ export function RelationshipsView({
     ["connected", "backfilling", "live"].includes(source.status),
   );
   const companies = rows.filter((relationship) => relationship.kind !== "person");
+  const directoryTitle = companyDirectoryTitle({ query, health, lifecycle });
+  const clearCompanyFilters = () => {
+    setQuery("");
+    setDebouncedQuery("");
+    setHealth("all");
+    setLifecycle("all");
+  };
   const companyAttention = attention.filter((item) =>
     companies.some((relationship) => relationship.id === item.relationshipId),
   );
@@ -537,16 +559,30 @@ export function RelationshipsView({
   return (
     <div className="flex min-h-full flex-col" data-slot="relationships-view">
       <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-3">
-        <Button
-          className="h-8 rounded-none border border-border bg-background px-3 text-[13px] font-medium text-primary hover:bg-background-100"
-          type="button"
-          variant="ghost"
-        >
-          <Buildings /> All companies{" "}
-          <Badge className="font-normal text-primary/40" variant="secondary">
-            {companies.length}
+        {directoryTitle.filtered ? (
+          <Button
+            aria-label="Clear company filters"
+            className="h-8 rounded-none border border-border bg-background px-3 text-[13px] font-medium text-primary hover:bg-background-100"
+            onClick={clearCompanyFilters}
+            type="button"
+            variant="ghost"
+          >
+            <Buildings /> {directoryTitle.label}{" "}
+            <Badge className="font-normal text-primary/40" variant="secondary">
+              {companies.length}
+            </Badge>
+          </Button>
+        ) : (
+          <Badge
+            className="h-8 gap-2 rounded-none border border-border bg-background px-3 text-[13px] font-medium text-primary"
+            variant="outline"
+          >
+            <Buildings /> {directoryTitle.label}{" "}
+            <Badge className="font-normal text-primary/40" variant="secondary">
+              {companies.length}
+            </Badge>
           </Badge>
-        </Button>
+        )}
         <div className="flex items-center gap-2">
           <ToggleGroup
             type="single"
@@ -3094,21 +3130,25 @@ function CreateRelationshipDialog({
         </DialogHeader>
         <div className="flex flex-col gap-3">
           <Input
+            aria-label="Company name"
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
             placeholder="Company name"
           />
           <Input
+            aria-label="Account domain"
             value={accountDomain}
             onChange={(event) => setAccountDomain(event.target.value)}
             placeholder="Account domain (optional)"
           />
           <Input
+            aria-label="Primary email"
             value={primaryEmail}
             onChange={(event) => setPrimaryEmail(event.target.value)}
             placeholder="Primary email (optional)"
           />
           <Input
+            aria-label="Relationship context"
             value={summary}
             onChange={(event) => setSummary(event.target.value)}
             placeholder="Relationship context (optional)"
