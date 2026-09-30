@@ -133,10 +133,8 @@ export function ComposioConnections({
       <div className="border-b border-primary/10 p-4">
         <h3 className="text-sm font-medium text-primary">More products</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Connect the tools Oppulence does not track as company evidence, such as Jira or Asana.
-          Agents can act in them; nothing they return counts as evidence for a commitment. Gmail,
-          Google Calendar, Slack and HubSpot are not listed here: connect those above, where they
-          become company evidence.
+          Connect other tools, such as Jira or Asana. Agents can use them, but they are not treated
+          as promises. Connect Gmail, Google Calendar, Slack, and HubSpot above so those are.
         </p>
       </div>
       {state === "loading" ? (

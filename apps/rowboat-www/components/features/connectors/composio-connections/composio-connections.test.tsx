@@ -47,7 +47,8 @@ describe("Composio connections", () => {
     renderWithQuery(<ComposioConnections />);
 
     expect(await screen.findByText("Jira")).toBeInTheDocument();
-    expect(screen.getByText(/does not track as company evidence/)).toBeInTheDocument();
+    expect(screen.getByText(/not treated as promises/)).toBeInTheDocument();
+    expect(screen.queryByText(/company evidence/)).toBeNull();
     expect(screen.queryByText(/relationship sources/)).toBeNull();
     expect(screen.getAllByRole("button", { name: "Connect" })).toHaveLength(2);
   });

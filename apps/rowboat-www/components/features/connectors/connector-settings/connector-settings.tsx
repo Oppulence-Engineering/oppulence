@@ -221,7 +221,7 @@ function GoogleConnectionSettings() {
           </Badge>
         </Label>
         <CardDescription className="mt-1 text-xs">
-          Read recent correspondence and meetings to identify operational commitments.
+          Read recent mail and meetings to find promises. Sending and calendar changes wait for approval.
         </CardDescription>
         {health.tone === "bad" && status?.connected ? (
           <p className="mt-1 text-xs text-destructive">
