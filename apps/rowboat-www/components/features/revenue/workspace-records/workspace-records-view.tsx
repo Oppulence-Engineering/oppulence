@@ -1392,7 +1392,7 @@ function NoteDialog({
     // draft, but the status line and this notice are the only signal that the
     // text was not written.
     if (dirty && noteHasDraftContent && !relationshipId) {
-      onNotice("Link a company before this note can be saved.");
+      onNotice(noteNeedsCompanyCopy("notice"));
     }
     onClose();
     return true;
@@ -1643,7 +1643,7 @@ function NoteDialog({
               className="absolute right-5 bottom-3 text-[11px] font-normal text-destructive"
               role="status"
             >
-              Link a company to save this note.
+              {noteNeedsCompanyCopy("status")}
             </p>
           ) : saveState !== "saved" ? (
             <Label
@@ -1736,6 +1736,16 @@ export function taskFilterName(filter: "all" | "today" | "overdue"): string {
 /** The note's company menu shows the choice inside the control. The name has to repeat it. */
 export function linkedCompanyName(label: string): string {
   return comboboxFilterName("Linked company", label);
+}
+
+/**
+ * A note is stored on a company. This line only appears when the workspace has
+ * none, so it has to say add — the company menu is disabled and cannot link one.
+ */
+export function noteNeedsCompanyCopy(surface: "status" | "notice"): string {
+  return surface === "status"
+    ? "Add a company to save this note."
+    : "Add a company before this note can be saved.";
 }
 
 export function TasksView({

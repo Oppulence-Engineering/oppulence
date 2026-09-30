@@ -14,7 +14,10 @@ vi.mock("@/lib/revenue/revenue", () => ({
   createAction: mocks.createAction,
 }));
 
-import { TaskCreateDialog } from "@/components/features/revenue/task-create-dialog/task-create-dialog";
+import {
+  TaskCreateDialog,
+  taskCompanyRequiredCopy,
+} from "@/components/features/revenue/task-create-dialog/task-create-dialog";
 
 describe("TaskCreateDialog", () => {
   afterEach(() => {
@@ -39,7 +42,8 @@ describe("TaskCreateDialog", () => {
     expect(screen.getByRole("button", { name: "Company, Link a company" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Save" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Add a company before saving.");
+    expect(await screen.findByRole("alert")).toHaveTextContent(taskCompanyRequiredCopy(false));
+    expect(taskCompanyRequiredCopy(false)).toBe("Link a company before saving.");
     expect(mocks.createAction).not.toHaveBeenCalled();
   });
 
@@ -60,6 +64,9 @@ describe("TaskCreateDialog", () => {
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
     expect(screen.getByRole("switch", { name: "Create more tasks after saving" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Company, No companies yet" })).toBeDisabled();
+    await user.keyboard("{Enter}");
+    expect(await screen.findByRole("alert")).toHaveTextContent(taskCompanyRequiredCopy(true));
+    expect(taskCompanyRequiredCopy(true)).toBe("Add a company before saving.");
     expect(screen.getByRole("button", { name: "Due date, Today" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Add a company" })).toBeNull();
     expect(screen.getByLabelText("Task title")).toHaveAttribute(

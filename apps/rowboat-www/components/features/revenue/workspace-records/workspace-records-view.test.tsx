@@ -54,6 +54,7 @@ import {
   personSheetSubtitle,
   sortTasksByDue,
   linkedCompanyName,
+  noteNeedsCompanyCopy,
   taskFilterName,
   taskListEmptyCopy,
 } from "@/components/features/revenue/workspace-records/workspace-records-view";
@@ -143,13 +144,15 @@ describe("durable note templates and favorites", () => {
     await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
     await user.type(screen.getByLabelText("Note title"), "Call notes");
 
-    expect(screen.getByText("Link a company to save this note.")).toBeInTheDocument();
+    expect(screen.getByText(noteNeedsCompanyCopy("status"))).toBeInTheDocument();
+    expect(noteNeedsCompanyCopy("status")).toBe("Add a company to save this note.");
     expect(screen.getByLabelText("Linked company, No companies yet")).toHaveTextContent(
       "No companies yet",
     );
 
     await user.click(screen.getByRole("button", { name: "Close note" }));
-    expect(onNotice).toHaveBeenCalledWith("Link a company before this note can be saved.");
+    expect(onNotice).toHaveBeenCalledWith(noteNeedsCompanyCopy("notice"));
+    expect(noteNeedsCompanyCopy("notice")).toBe("Add a company before this note can be saved.");
 
     await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
     const writeText = vi.fn().mockResolvedValue(undefined);

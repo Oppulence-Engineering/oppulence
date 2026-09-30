@@ -31,6 +31,11 @@ export type TaskCreateDialogProps = {
   onAddCompany?: () => void;
 };
 
+/** Save needs a company. Adding one is the next step only when the workspace has none. */
+export function taskCompanyRequiredCopy(noCompanies: boolean): string {
+  return noCompanies ? "Add a company before saving." : "Link a company before saving.";
+}
+
 const todayValue = () => {
   const date = new Date();
   const pad = (value: number) => String(value).padStart(2, "0");
@@ -142,7 +147,9 @@ export function TaskCreateDialog({
             }
           }}
         />
-        {recordError ? <ChipModalError>Add a company before saving.</ChipModalError> : null}
+        {recordError ? (
+          <ChipModalError>{taskCompanyRequiredCopy(noCompanies)}</ChipModalError>
+        ) : null}
         {noCompanies && onAddCompany ? (
           <button
             className="mt-2 self-start px-1 text-caption text-[var(--text-secondary)] underline"
