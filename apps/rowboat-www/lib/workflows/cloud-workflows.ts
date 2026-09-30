@@ -155,6 +155,16 @@ export function taskVisualWorkflow(task: CloudTask): VisualWorkflowDefinition | 
 }
 
 /**
+ * Run status and trigger values are API tokens such as "succeeded" and "cron".
+ * The product shows them as words. The stored value stays the token.
+ */
+export function readableEnum(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
+/**
  * The library subtitle. A saved canvas objective wins. Otherwise the template
  * description does: first-party workflows have no canvas object, and showing
  * one shared fallback made every row read the same.

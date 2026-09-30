@@ -76,6 +76,7 @@ import {
   retryCloudRun,
   taskCron,
   taskVisualWorkflow,
+  readableEnum,
   workflowListSummary,
   triggerCloudRun,
   updateCloudTask,
@@ -562,7 +563,7 @@ function RunInspector({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <Badge className={cn("rounded-none", statusTone(run.status))} variant="outline">
-              <StatusIcon status={run.status} /> {run.status}
+              <StatusIcon status={run.status} /> {readableEnum(run.status)}
             </Badge>
             <p className="mt-2 truncate font-mono text-xs text-muted-foreground" title={run.runId}>
               {run.runId}
@@ -601,7 +602,7 @@ function RunInspector({
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div>
             <Label className="font-normal text-muted-foreground">Trigger</Label>
-            <p className="mt-0.5">{run.trigger}</p>
+            <p className="mt-0.5">{readableEnum(run.trigger)}</p>
           </div>
           <div>
             <Label className="font-normal text-muted-foreground">Attempt</Label>
@@ -713,7 +714,7 @@ function WorkflowRuns({
               <SelectItem value="all">All status</SelectItem>
               {(["queued", "running", "succeeded", "failed", "stopped"] as const).map((value) => (
                 <SelectItem className="rounded-none" key={value} value={value}>
-                  {value}
+                  {readableEnum(value)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -729,7 +730,7 @@ function WorkflowRuns({
               <SelectItem value="all">All triggers</SelectItem>
               {(["manual", "cron", "window", "event", "retry"] as const).map((value) => (
                 <SelectItem className="rounded-none" key={value} value={value}>
-                  {value}
+                  {readableEnum(value)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -767,7 +768,7 @@ function WorkflowRuns({
                     {tasks.find((task) => task.slug === run.slug)?.name || run.slug}
                   </Label>
                   <CardDescription className="mt-0.5 block text-[11px]">
-                    {run.trigger} · {formatDate(run.createdAt)}
+                    {readableEnum(run.trigger)} · {formatDate(run.createdAt)}
                   </CardDescription>
                 </div>
                 <CaretRight className="size-4 text-muted-foreground" />
@@ -971,9 +972,11 @@ function WorkflowEditor({
                 >
                   <StatusIcon status={run.status} />
                   <div className="min-w-0 flex-1">
-                    <Label className="block truncate text-[12px] font-medium">{run.status}</Label>
+                    <Label className="block truncate text-[12px] font-medium">
+                      {readableEnum(run.status)}
+                    </Label>
                     <CardDescription className="text-[11px]">
-                      {run.trigger} · {formatDate(run.createdAt)}
+                      {readableEnum(run.trigger)} · {formatDate(run.createdAt)}
                     </CardDescription>
                   </div>
                   <CaretRight className="size-4 text-muted-foreground" />

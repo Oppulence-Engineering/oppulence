@@ -7,7 +7,7 @@ import {
   sortWorkflowTasks,
   workflowForTask,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
-import { workflowListSummary, type CloudTask } from "@/lib/workflows/cloud-workflows";
+import { readableEnum, workflowListSummary, type CloudTask } from "@/lib/workflows/cloud-workflows";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "cloud-workflows-view.tsx"), "utf8");
 
@@ -15,6 +15,12 @@ const task = (name: string, updatedAt: string): CloudTask =>
   ({ name, updatedAt }) as CloudTask;
 
 describe("CloudWorkflowsView", () => {
+  it("shows run status and trigger tokens as words", () => {
+    expect(readableEnum("succeeded")).toBe("Succeeded");
+    expect(readableEnum("cron")).toBe("Cron");
+    expect(readableEnum("")).toBe("");
+  });
+
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function CloudWorkflowsView");
   });
