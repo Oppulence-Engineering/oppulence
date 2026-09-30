@@ -167,6 +167,24 @@ describe("API reference document", () => {
       "When the deletion finished (RFC 3339).",
     );
     expect(schema.properties.userId.description).toBe("User id (UUID) owning the event.");
+    const samples = presentApiReferenceDocument({
+      components: {
+        schemas: {
+          ConsentClientIdentity: {
+            properties: { display_name: { example: "Rowboat Desktop" } },
+          },
+          VoiceTextToSpeechRequest: {
+            properties: { text: { example: "Hello from Solomon AI." } },
+          },
+          PreConsentRequest: {
+            properties: { hydra_client_id: { example: "rowboat-desktop" } },
+          },
+        },
+      },
+    }).components.schemas;
+    expect(samples.ConsentClientIdentity.properties.display_name.example).toBe("Oppulence Desktop");
+    expect(samples.VoiceTextToSpeechRequest.properties.text.example).toBe("Hello from Oppulence.");
+    expect(samples.PreConsentRequest.properties.hydra_client_id.example).toBe("rowboat-desktop");
     expect(presented.components.schemas.RevenuePolicyDecision.description).toBe(
       "Immutable sending check decision for one exact action revision. Oppulence snapshots the decision; it never composes one.",
     );

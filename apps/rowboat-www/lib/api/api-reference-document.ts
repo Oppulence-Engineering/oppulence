@@ -160,6 +160,11 @@ function presentDescriptions(node: unknown): void {
   if (typeof record.description === "string") {
     record.description = presentReferenceProse(record.description);
   }
+  // Sample values render beside the field. Identifiers such as rowboat-desktop
+  // do not match these phrases and stay as the API published them.
+  if (typeof record.example === "string") {
+    record.example = presentReferenceProse(record.example);
+  }
   for (const [key, value] of Object.entries(record)) {
     if (key === "description" || key === "parameters") continue;
     presentDescriptions(value);
