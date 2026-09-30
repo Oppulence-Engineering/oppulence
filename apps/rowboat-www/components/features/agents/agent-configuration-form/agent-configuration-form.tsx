@@ -189,6 +189,28 @@ export function agentIdentityHint(readOnly: boolean): string {
     : "Give the agent a clear name and tell it how to work.";
 }
 
+/** A maintained agent cannot change its model. The hint must not ask for an edit. */
+export function agentModelHint(readOnly: boolean): string {
+  return readOnly
+    ? "Oppulence sets the provider and model for this agent."
+    : "Leave these blank to use the workspace defaults.";
+}
+
+/** The switches are disabled on a maintained agent, so this is not a choice. */
+export function agentToolsHint(readOnly: boolean): string {
+  return readOnly
+    ? "Oppulence chooses the capabilities for this agent."
+    : "Choose only the capabilities this agent needs.";
+}
+
+/** "Included" is only true when a tool sits outside the catalog. */
+export function agentExtraToolsHint(readOnly: boolean, extraCount: number): string {
+  if (!readOnly) return "Add another tool Oppulence has approved for this workspace.";
+  return extraCount > 0
+    ? "These are included with this agent."
+    : "No other tools are included.";
+}
+
 export function AgentConfigurationForm({
   agentSlugs,
   content,
@@ -343,7 +365,7 @@ export function AgentConfigurationForm({
       <section className="space-y-5 p-5 sm:p-6">
         <div>
           <h3 className="text-sm font-medium">AI model</h3>
-          <FieldHint>Leave these blank to use the workspace defaults.</FieldHint>
+          <FieldHint>{agentModelHint(readOnly)}</FieldHint>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
@@ -401,7 +423,7 @@ export function AgentConfigurationForm({
           </div>
           <div>
             <h3 className="text-sm font-medium">Tools</h3>
-            <FieldHint>Choose only the capabilities this agent needs.</FieldHint>
+            <FieldHint>{agentToolsHint(readOnly)}</FieldHint>
           </div>
         </div>
 
@@ -441,11 +463,7 @@ export function AgentConfigurationForm({
 
         <div className="space-y-2 rounded-none border border-dashed p-4">
           <Label>More tools</Label>
-          <FieldHint>
-            {readOnly
-              ? "These are included with this agent."
-              : "Add another tool Oppulence has approved for this workspace."}
-          </FieldHint>
+          <FieldHint>{agentExtraToolsHint(readOnly, customTools.length)}</FieldHint>
           <TagEditor
             addLabel="Tool name"
             disabled={readOnly}

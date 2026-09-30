@@ -3,7 +3,12 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { agentIdentityHint } from "@/components/features/agents/agent-configuration-form/agent-configuration-form";
+import {
+  agentExtraToolsHint,
+  agentIdentityHint,
+  agentModelHint,
+  agentToolsHint,
+} from "@/components/features/agents/agent-configuration-form/agent-configuration-form";
 
 const source = fs.readFileSync(
   path.join(import.meta.dirname, "agent-configuration-form.tsx"),
@@ -41,7 +46,19 @@ describe("AgentConfigurationForm", () => {
       "Oppulence maintains this name and how the agent works.",
     );
     expect(agentIdentityHint(false)).toBe("Give the agent a clear name and tell it how to work.");
+    expect(agentModelHint(true)).toBe("Oppulence sets the provider and model for this agent.");
+    expect(agentModelHint(false)).toBe("Leave these blank to use the workspace defaults.");
+    expect(agentToolsHint(true)).toBe("Oppulence chooses the capabilities for this agent.");
+    expect(agentToolsHint(false)).toBe("Choose only the capabilities this agent needs.");
+    expect(agentExtraToolsHint(true, 0)).toBe("No other tools are included.");
+    expect(agentExtraToolsHint(true, 2)).toBe("These are included with this agent.");
+    expect(agentExtraToolsHint(false, 0)).toBe(
+      "Add another tool Oppulence has approved for this workspace.",
+    );
     expect(source).toContain("agentIdentityHint(readOnly)");
+    expect(source).toContain("agentModelHint(readOnly)");
+    expect(source).toContain("agentToolsHint(readOnly)");
+    expect(source).toContain("agentExtraToolsHint(readOnly, customTools.length)");
     expect(source).toContain(">Short name</Label>");
     expect(source).toContain("The short name is fixed after an agent is created.");
     expect(source).not.toContain(">Agent ID</Label>");
