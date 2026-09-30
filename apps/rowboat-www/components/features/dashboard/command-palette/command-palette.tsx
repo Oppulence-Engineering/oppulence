@@ -57,7 +57,7 @@ export function CommandPalette({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  agents: string[];
+  agents: readonly { slug: string; name: string }[];
   sessions: SessionMeta[];
   onNewChat: () => void;
   onNavigateChat: () => void;
@@ -260,10 +260,10 @@ export function CommandPalette({
           <>
             <CommandSeparator />
             <CommandGroup heading="Agents">
-              {agents.map((name) => (
-                <CommandItem key={name} onSelect={runAnd(() => onOpenAgent(name))}>
+              {agents.map((agent) => (
+                <CommandItem key={agent.slug} onSelect={runAnd(() => onOpenAgent(agent.slug))}>
                   <Folder />
-                  {name}
+                  {agent.name.trim() || agent.slug}
                 </CommandItem>
               ))}
             </CommandGroup>

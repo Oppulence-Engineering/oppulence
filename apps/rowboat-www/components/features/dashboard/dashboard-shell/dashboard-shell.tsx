@@ -21,6 +21,7 @@ import {
 } from "@/components/features/dashboard/app-shell/app-shell";
 import { useAuthSession } from "@/components/auth/auth-gate";
 import { CommandPalette } from "@/components/features/dashboard/command-palette/command-palette";
+import { agentDisplayName } from "@/lib/agents/agent-schemas";
 import { useDashboardChatController } from "@/components/features/dashboard/chat-route-provider/chat-route-provider";
 import { useProductRouteState } from "@/hooks/dashboard/use-product-route-state";
 import { SidebarSimple } from "@/lib/icons";
@@ -141,7 +142,10 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
       >
         <div className="flex min-h-0 w-full flex-1 flex-col">
           <CommandPalette
-            agents={chat.agentOptions}
+            agents={chat.agentOptions.map((slug) => ({
+              slug,
+              name: agentDisplayName(chat.agentCatalog ?? [], slug),
+            }))}
             onNavigateChat={() => navigateWithoutResource(() => navigateTo("chat"))}
             onNavigateRelationship={() => openRevenueTab("relationships")}
             onNewChat={chat.onNewChat}

@@ -36,6 +36,7 @@ vi.mock("@/components/features/dashboard/command-palette/command-palette", () =>
 vi.mock("@/components/features/dashboard/chat-route-provider/chat-route-provider", () => ({
   useDashboardChatController: () => ({
     agentOptions: ["assistant"],
+    agentCatalog: [{ slug: "assistant", name: "Assistant" }],
     activeRunId: null,
     empty: true,
     sessions: [],

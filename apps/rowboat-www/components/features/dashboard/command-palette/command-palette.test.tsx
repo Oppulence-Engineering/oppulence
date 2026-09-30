@@ -88,6 +88,21 @@ afterEach(() => {
 });
 
 describe("CommandPalette semantic mail search", () => {
+  it("shows an agent by name and opens it by slug", async () => {
+    const user = userEvent.setup();
+    const onOpenAgent = vi.fn();
+    renderPalette({
+      ...requiredProps,
+      agents: [{ slug: "concierge-slack", name: "Slack Concierge" }],
+      onOpenAgent,
+    });
+
+    await user.click(screen.getByRole("button", { name: "Slack Concierge" }));
+
+    expect(onOpenAgent).toHaveBeenCalledWith("concierge-slack");
+    expect(screen.queryByRole("button", { name: "concierge-slack" })).toBeNull();
+  });
+
   it("uses an explicit mail mode and renders evidence metadata", async () => {
     const user = userEvent.setup();
     fetchers.fetchSemanticSearch.mockResolvedValue({

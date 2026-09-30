@@ -77,6 +77,8 @@ export type ChatRouteState = {
 
 export type DashboardChatController = {
   agentOptions: string[];
+  /** Full records so surfaces can show a name while still opening by slug. */
+  agentCatalog: readonly { slug: string; name: string }[];
   activeRunId: string | null;
   empty: boolean;
   sessions: SessionMeta[];
@@ -352,6 +354,7 @@ export function ChatRouteProvider({ children, className, ...props }: ChatRoutePr
     },
     controller: {
       agentOptions,
+      agentCatalog: agents,
       activeRunId: run.runId,
       empty: run.conversation.length === 0,
       sessions,
