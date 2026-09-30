@@ -26,6 +26,12 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain("Could not load the company graph.");
     expect(source).not.toContain("Could not load the relationship graph.");
     expect(source).toContain(">Company graph</h2>");
+    expect(source).toContain("<Graph /> Diagram");
+    expect(source).toContain("How many to show");
+    expect(source).toContain("Hide unconnected");
+    expect(source).not.toContain("<Graph /> Canvas");
+    expect(source).not.toContain("Hide isolated");
+    expect(source).not.toContain('aria-label="Graph density"');
     expect(source).toContain("Companies, people, and the evidence between them");
     expect(source).toContain("All companies");
     expect(source).toContain("walk this graph one node at a time");

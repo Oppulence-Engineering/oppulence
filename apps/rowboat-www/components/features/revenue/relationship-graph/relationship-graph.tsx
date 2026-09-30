@@ -1360,7 +1360,7 @@ export function RelationshipGraphWorkspace({
           aria-label="Graph presentation"
         >
           <ToggleGroupItem value="canvas" className="data-[state=on]:bg-primary/10">
-            <Graph /> Canvas
+            <Graph /> Diagram
           </ToggleGroupItem>
           <ToggleGroupItem value="table" className="data-[state=on]:bg-primary/10">
             <ListBullets /> Table
@@ -1382,7 +1382,7 @@ export function RelationshipGraphWorkspace({
           </SelectContent>
         </Select>
         <label className="flex items-center gap-2 text-xs text-primary/50">
-          Density
+          How many to show
           <Slider
             min={0.25}
             max={1}
@@ -1390,7 +1390,7 @@ export function RelationshipGraphWorkspace({
             value={[viewState.density]}
             onValueChange={(value) => updateState({ density: value[0] ?? DEFAULT_STATE.density })}
             className="w-20"
-            aria-label="Graph density"
+            aria-label="How many to show"
           />
         </label>
         <label className="flex items-center gap-1.5 text-xs text-primary/55">
@@ -1398,7 +1398,7 @@ export function RelationshipGraphWorkspace({
             checked={viewState.hideIsolated}
             onCheckedChange={(checked) => updateState({ hideIsolated: checked === true })}
           />
-          Hide isolated
+          Hide unconnected
         </label>
         <label className="flex items-center gap-1.5 text-xs text-primary/55">
           <Checkbox
