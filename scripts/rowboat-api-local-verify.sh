@@ -17,6 +17,8 @@
 # Schema is applied with cmd/migrate. Postgres rejects AUTO_MIGRATE, so this
 # script never sets it. The worker also refuses to boot unless the development
 # connector-entitlement bypass is on: there is no product signer in this stack.
+# ACTIONS_ENABLED matches kind: the approvals queue is live, and execute fails
+# closed because no Act-seam URL is configured.
 #
 # LLM upstream follows the kind script. A real OpenRouter key (sk-or-…) calls
 # https://openrouter.ai/api/v1. Anything else, or ROWBOAT_LOCAL_MOCK_LLM=1,
@@ -170,6 +172,7 @@ up() {
   export INFISICAL_ENABLED=false ENVIRONMENT=development LOG_LEVEL=info
   export CONNECTOR_ALLOW_LOCAL_ENTITLEMENT_DEVELOPMENT=true
   export FREE_TIER_CREDITS=10000
+  export ACTIONS_ENABLED=true
   export AUTO_MIGRATE=false
   export LLM_MODEL="${LLM_MODEL:-openai/gpt-4.1}"
   export TEMPORAL_ENABLED=true TEMPORAL_ADDRESS="localhost:${TMPPORT}" \

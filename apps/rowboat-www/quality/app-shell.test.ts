@@ -48,6 +48,9 @@ describe("Better Auth–style app shell", () => {
     expect(providers).toContain("Toaster");
     expect(layout).toContain("https://unpkg.com/react-scan@0.5.7/dist/auto.global.js");
     expect(layout).not.toContain('src="//unpkg.com');
+    // A classic script cannot `return`. That SyntaxError fired on every page.
+    expect(layout).not.toContain("if (!meta) return");
+    expect(layout).toContain("if (meta) {");
     expect(layout).toContain("react-grab/dist/index.global.js");
     expect(layout).toContain("@react-grab/mcp/dist/client.global.js");
     expect(layout).toContain('activationKey: " "');
@@ -120,6 +123,9 @@ describe("Better Auth–style app shell", () => {
     const config = readFileSync(new URL("../next.config.ts", import.meta.url), "utf8");
 
     expect(config).toContain("https://unpkg.com");
+    expect(config).toContain("https://www.react-grab.com");
+    expect(config).toContain("http://localhost:4723");
     expect(config).toContain("http://localhost:5567");
+    expect(config).toContain("worker-src 'self' ${reactGrabDev.worker}");
   });
 });

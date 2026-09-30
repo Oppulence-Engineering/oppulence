@@ -46,16 +46,22 @@ const reactGrabOptions = {
   maxContextLines: 3,
 } as const;
 
-/** Keep theme-color in sync with next-themes before hydration paints the shell. */
+/**
+ * Keep the browser chrome theme-color in sync with next-themes before
+ * hydration paints the shell. This string is a classic script, not a
+ * function: a bare `return` is a SyntaxError ("Illegal return statement")
+ * on every page, so the early exit is an if around the write.
+ */
 const themeColorScript = `
 try {
   var meta = document.querySelector('meta[name="theme-color"]');
-  if (!meta) return;
-  var prefersDark =
-    localStorage.theme === "dark" ||
-    ((!('theme' in localStorage) || localStorage.theme === "system") &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches);
-  meta.setAttribute("content", prefersDark ? "#111111" : "#ffffff");
+  if (meta) {
+    var prefersDark =
+      localStorage.theme === "dark" ||
+      ((!('theme' in localStorage) || localStorage.theme === "system") &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+    meta.setAttribute("content", prefersDark ? "#111111" : "#ffffff");
+  }
 } catch (_) {}
 `;
 
