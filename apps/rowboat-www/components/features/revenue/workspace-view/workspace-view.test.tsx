@@ -8,6 +8,8 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  gmailDraftsAvailable,
+  localModeNotice,
   sourceRefreshNotice,
   WorkspaceView,
   workspaceMetadataValue,
@@ -193,11 +195,25 @@ describe("WorkspaceView", () => {
     expect(screen.queryByPlaceholderText("org_…")).not.toBeInTheDocument();
     const emptySources = await screen.findByText(/Nothing is connected yet/);
     expect(emptySources).toBeVisible();
+    expect(screen.getByText(/Connect Gmail before a draft can land in your mailbox/)).toBeVisible();
+    expect(screen.queryByText(/Drafts still land in your Gmail/)).not.toBeInTheDocument();
     expect(emptySources).toHaveTextContent(
       "Nothing is connected yet. Connect Gmail and Calendar, or another tool below.",
     );
     expect(emptySources).not.toHaveTextContent(/Slack/);
     expect(screen.queryByText(/OutboundConsole/)).not.toBeInTheDocument();
     expect(screen.queryByText(/\bCRM\b/)).not.toBeInTheDocument();
+  });
+
+  it("keeps the Gmail draft sentence once Google is connected", () => {
+    expect(gmailDraftsAvailable([{ source: "google", status: "live" }])).toBe(true);
+    expect(gmailDraftsAvailable([{ source: "google", status: "disconnected" }])).toBe(false);
+    expect(localModeNotice("connected")).toContain(
+      "Drafts still land in your Gmail so you can send them yourself.",
+    );
+    expect(localModeNotice("missing")).toContain(
+      "Connect Gmail before a draft can land in your mailbox.",
+    );
+    expect(localModeNotice("unknown")).not.toContain("Gmail");
   });
 });

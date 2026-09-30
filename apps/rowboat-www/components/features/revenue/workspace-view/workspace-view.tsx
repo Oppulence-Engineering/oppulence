@@ -35,6 +35,31 @@ import type { RelationshipSourceStatus, RevenueWorkspace } from "@/lib/revenue/t
 
 const CONNECTORS_SECTION_ID = "sources-connectors";
 
+const GMAIL_DRAFT_STATUSES = new Set(["connected", "live", "backfilling"]);
+
+/**
+ * Local mode never sends. A Gmail draft is only possible once Google is
+ * connected, so the page must not promise a mailbox the workspace does not have.
+ */
+export function gmailDraftsAvailable(
+  statuses: readonly { source: string; status: string }[],
+): boolean {
+  return statuses.some(
+    (source) => source.source === "google" && GMAIL_DRAFT_STATUSES.has(source.status),
+  );
+}
+
+export function localModeNotice(gmail: "connected" | "missing" | "unknown"): string {
+  const base = "Audits and drafts work here. Sending stays off until this workspace is linked.";
+  if (gmail === "connected") {
+    return `${base} Drafts still land in your Gmail so you can send them yourself.`;
+  }
+  if (gmail === "missing") {
+    return `${base} Connect Gmail before a draft can land in your mailbox.`;
+  }
+  return base;
+}
+
 function scrollToConnectors() {
   document
     .getElementById(CONNECTORS_SECTION_ID)
@@ -87,6 +112,12 @@ export function WorkspaceView({
 
   const linked = workspace.mode === "linked" && workspace.status === "active";
   const sources = sourcesQuery.data;
+  const gmail =
+    sourcesQuery.isLoading || sourcesQuery.isError
+      ? "unknown"
+      : gmailDraftsAvailable(sources ?? [])
+        ? "connected"
+        : "missing";
   const autoRefreshBlocker = autoRefreshQuery.data ?? "";
 
   const submitLink = async () => {
@@ -218,10 +249,7 @@ export function WorkspaceView({
           <Alert>
             <Plugs weight="fill" />
             <AlertTitle>Local mode</AlertTitle>
-            <AlertDescription>
-              Audits and drafts work here. Sending stays off until this workspace is linked. Drafts
-              still land in your Gmail so you can send them yourself.
-            </AlertDescription>
+            <AlertDescription>{localModeNotice(gmail)}</AlertDescription>
           </Alert>
 
           <SimProductPanel>
