@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { recoveryShownLabel } from "@/components/features/revenue/queue-view/queue-view";
+
 const source = fs.readFileSync(path.join(import.meta.dirname, "queue-view.tsx"), "utf8");
 
 describe("QueueView", () => {
@@ -22,5 +24,10 @@ describe("QueueView", () => {
     expect(source).toContain("ACTION_TYPE_LABELS[t]");
     expect(source).toContain('errMessage(relationshipsQuery.error, "Could not load companies.")');
     expect(source).not.toContain("Could not load relationships.");
+    expect(source).toContain('errMessage(actionsQuery.error, "Could not load recovery.")');
+    expect(source).not.toContain("Could not load the queue.");
+    expect(recoveryShownLabel(0)).toBeNull();
+    expect(recoveryShownLabel(1)).toBe("1 shown");
+    expect(recoveryShownLabel(4)).toBe("4 shown");
   });
 });

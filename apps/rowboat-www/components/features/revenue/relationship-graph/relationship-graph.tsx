@@ -858,6 +858,16 @@ export function graphCountLabel(count: number, singular: string, plural: string)
 }
 
 /**
+ * The toolbar date is a moment to view, not a mode called "historical".
+ * The banner uses the same words once a moment is chosen.
+ */
+export function graphAsOfLabel(asOf: string): string {
+  const parsed = new Date(asOf);
+  const when = Number.isNaN(parsed.getTime()) ? asOf : parsed.toLocaleString();
+  return `As of ${when}`;
+}
+
+/**
  * The query engine still says "relationship", and a typed question comes back
  * as `text: …`. The graph is a company graph, so the answer should read that way.
  */
@@ -1436,8 +1446,8 @@ export function RelationshipGraphWorkspace({
               focusDepth: 0,
             })
           }
-          aria-label="Historical graph date"
-          placeholder="Historical view"
+          aria-label="View the graph as of a date"
+          placeholder="As of a date"
           className="w-64"
         />
         <div className="ml-auto flex items-center gap-1">
@@ -1549,9 +1559,11 @@ export function RelationshipGraphWorkspace({
               />
             </ReactFlowProvider>
           )}
-          {graph?.historical ? (
+          {/* The graph response echoes asOf and still leaves historical false, so the
+              banner follows the moment the user chose. */}
+          {viewState.asOf ? (
             <div className="absolute bottom-3 left-3 flex items-center gap-1 border border-amber-500/30 bg-background/90 px-2 py-1 text-[10px] text-amber-600 backdrop-blur dark:text-amber-400">
-              <ClockCounterClockwise /> Historical as of {new Date(graph.asOf).toLocaleString()}
+              <ClockCounterClockwise /> {graphAsOfLabel(viewState.asOf)}
             </div>
           ) : null}
           {graph && viewState.focusDepth && viewState.selectedNodeId ? (

@@ -69,6 +69,15 @@ import { ReviewSheet } from "@/components/features/revenue/review-sheet/review-s
 import { AuditSheet } from "@/components/features/revenue/audit-sheet/audit-sheet";
 import type { RevenueAction, RevenueRelationship, RevenueWorkspace } from "@/lib/revenue/types";
 
+/**
+ * A non-empty filter says how many rows match. Zero is the empty state below
+ * the header, so "0 shown" would read as if rows were hidden.
+ */
+export function recoveryShownLabel(count: number): string | null {
+  if (count <= 0) return null;
+  return count === 1 ? "1 shown" : `${count} shown`;
+}
+
 export function QueueView({
   workspace,
   onError,
@@ -99,7 +108,7 @@ export function QueueView({
 
   React.useEffect(() => {
     if (actionsQuery.error) {
-      onError(errMessage(actionsQuery.error, "Could not load the queue."));
+      onError(errMessage(actionsQuery.error, "Could not load recovery."));
     }
   }, [actionsQuery.error, onError]);
 
@@ -128,7 +137,7 @@ export function QueueView({
   return (
     <div className="flex min-h-full w-full min-w-0 flex-col p-3" data-slot="queue-view">
       <SimProductPanel className="flex min-h-0 flex-1 flex-col">
-        <SimProductHeader actions={`${actions.length} shown`} title="Recovery queue" />
+        <SimProductHeader actions={recoveryShownLabel(actions.length)} title="Recovery queue" />
         <SimProductToolbar>
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger

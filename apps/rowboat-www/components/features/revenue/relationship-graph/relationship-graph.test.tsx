@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   accountGraphPrompt,
   graphCanvasEmptyState,
+  graphAsOfLabel,
   graphCountLabel,
   graphLayoutLabel,
   graphQueryAnswer,
@@ -39,6 +40,14 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain("Hide unconnected");
     expect(source).toContain("Changed since you last looked");
     expect(source).toContain('placeholder="Ask about a company or a promise."');
+    expect(source).toContain('placeholder="As of a date"');
+    expect(source).toContain('aria-label="View the graph as of a date"');
+    expect(source).not.toContain("Historical view");
+    expect(source).not.toContain("Historical as of");
+    expect(source).toContain("graphAsOfLabel(viewState.asOf)");
+    expect(source).not.toContain("graph?.historical");
+    expect(graphAsOfLabel("not-a-date")).toBe("As of not-a-date");
+    expect(graphAsOfLabel("2026-09-30T13:00:00.000Z")).toMatch(/^As of /);
     expect(source).toContain('aria-label="Ask this graph"');
     expect(source).not.toContain("Ask graph");
     expect(source).not.toContain("Changed since review");
