@@ -16,6 +16,11 @@ describe("OpenPromisesReportClient", () => {
     );
     expect(source).not.toContain("sourcesQuery.isLoading || (!scanId && scansQuery.isLoading)");
     expect(source).toContain("that still look open");
+    expect(source).toContain("See the message each promise came from");
+    expect(source).not.toContain("See exact message evidence");
+    expect(source).toContain("Open commitments");
+    expect(source).not.toContain("Open the register");
+    expect(source).not.toContain("complete ledger");
     expect(source).not.toContain("no evidence of fulfillment");
     expect(source).not.toContain("fulfilment");
   });

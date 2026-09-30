@@ -750,8 +750,8 @@ export function CommitmentQueue({
                 ? googleConnected
                   ? "No explicit promises were found. Run another audit after new conversations."
                   : googleNeedsReconnect
-                    ? "Reconnect Google to resume finding who promised what, when it is due, and the exact evidence behind it."
-                    : "Connect Gmail and Calendar to find who promised what, when it is due, and the exact evidence behind it."
+                    ? "Reconnect Google to resume finding who promised what, when it is due, and the message it came from."
+                    : "Connect Gmail and Calendar to find who promised what, when it is due, and the message it came from."
                 : "Change the filter or search query."}
             </p>
             {items.length === 0 ? (

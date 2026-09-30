@@ -448,6 +448,8 @@ it("keeps the commitment filter and drops the chips that did nothing", () => {
 
 it("does not offer a meeting import that opens the company directory", () => {
   const source = fs.readFileSync(path.join(import.meta.dirname, "commitment-queue.tsx"), "utf8");
+  expect(source).toContain("and the message it came from.");
+  expect(source).not.toContain("exact evidence behind it");
   expect(source).not.toContain("Import meeting evidence");
   expect(source).not.toContain("import reviewed meeting evidence");
   expect(source).toContain("Add a company");

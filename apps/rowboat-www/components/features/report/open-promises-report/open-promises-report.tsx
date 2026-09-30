@@ -425,7 +425,7 @@ function GoogleConnectionStep({
       }
       image="openPromises"
       learnMore={[
-        { label: "See exact message evidence" },
+        { label: "See the message each promise came from" },
         { label: "Nothing is sent on your behalf" },
       ]}
       title="Open promises"
@@ -453,7 +453,7 @@ function StartStep({ onRun, busy }: { onRun: () => void; busy: boolean }) {
       description={`Read the last ${REVENUE_EVIDENCE_LOOKBACK_LABEL} for promises that still look open. This takes a few minutes — you can leave and come back.`}
       image="openPromises"
       learnMore={[
-        { label: "See exact message evidence" },
+        { label: "See the message each promise came from" },
         { label: "Nothing is sent on your behalf" },
       ]}
       title="Open promises"
@@ -548,7 +548,7 @@ function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string
         </Button>
         <Button asChild variant="outline">
           <Link href="/app/revenue">
-            Open the register <ArrowRightIcon />
+            Open commitments <ArrowRightIcon />
           </Link>
         </Button>
       </div>
@@ -556,7 +556,7 @@ function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string
       {downloadError ? <p className="text-[13px] text-destructive">{downloadError}</p> : null}
       {report.truncated ? (
         <p className="border border-amber-500/40 bg-amber-500/5 p-3 text-[13px] text-primary/70">
-          This report shows the first 200 open promises. Open the register for the complete ledger.
+          This report shows the first 200 open promises. Open commitments to see the rest.
         </p>
       ) : null}
 
