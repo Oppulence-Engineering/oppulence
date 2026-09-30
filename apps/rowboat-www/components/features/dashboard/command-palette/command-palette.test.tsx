@@ -150,7 +150,7 @@ describe("CommandPalette semantic mail search", () => {
     await user.type(screen.getByRole("textbox", { name: "Command search" }), "renewal risk");
 
     expect(
-      await screen.findByText("Searching mail is not included for this workspace."),
+      await screen.findByText("Mail search is not set up for this workspace yet."),
     ).toBeVisible();
   });
 

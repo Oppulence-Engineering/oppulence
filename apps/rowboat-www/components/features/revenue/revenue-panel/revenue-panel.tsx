@@ -299,7 +299,7 @@ export function RevenuePanel({
               commitmentQuery.error instanceof Error
                 ? commitmentQuery.error.message
                 : commitmentQuery.error
-                  ? "Could not load the Commitment Queue."
+                  ? "Could not load commitments."
                   : commitmentQuery.data?.registerError
             }
             scanning={scanning}

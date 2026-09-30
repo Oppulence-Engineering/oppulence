@@ -9,4 +9,9 @@ describe("RevenuePanel", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function RevenuePanel");
   });
+
+  it("names a failed commitments load without the internal queue name", () => {
+    expect(source).toContain('"Could not load commitments."');
+    expect(source).not.toContain("Commitment Queue");
+  });
 });

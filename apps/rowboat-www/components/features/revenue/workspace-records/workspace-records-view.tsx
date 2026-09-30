@@ -359,7 +359,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
     try {
       setAttributes(await getPersonAttributes(person.id));
     } catch (error) {
-      onError(errMessage(error, "Could not load profile evidence."));
+      onError(errMessage(error, "Could not load this profile."));
     }
   };
 

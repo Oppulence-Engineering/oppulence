@@ -45,6 +45,14 @@ export function mailSearchPlaceholder(mode: "accounts" | "mail"): string {
 }
 
 /**
+ * The search API sets `available` to false when mail search is not configured.
+ * That is a setup gap, not a plan that leaves the feature out.
+ */
+export function mailSearchUnavailableCopy(): string {
+  return "Mail search is not set up for this workspace yet.";
+}
+
+/**
  * Search results arrive as signal classes. A promise used to be stored as
  * "commitment"; the row should use the same word as the rest of the product.
  */
@@ -199,7 +207,7 @@ export function CommandPalette({
           ) : searchError ? (
             "Search is temporarily unavailable."
           ) : searchMode === "mail" && semanticAvailable === false ? (
-            "Searching mail is not included for this workspace."
+            mailSearchUnavailableCopy()
           ) : (
             "No results found."
           )}

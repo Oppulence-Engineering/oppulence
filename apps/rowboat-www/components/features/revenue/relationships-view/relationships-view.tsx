@@ -1240,6 +1240,34 @@ function SourceConnectionCards({
   );
 }
 
+/** Supporting details behind a possible duplicate, counted for a person rather than an evidence store. */
+export function identitySupportLabel(count: number): string {
+  const total = Number.isFinite(count) ? Math.max(0, Math.round(count)) : 0;
+  return total === 1 ? "1 supporting detail" : `${total} supporting details`;
+}
+
+/** How sure the match is, as a percent. */
+export function identityMatchLabel(confidence: number): string {
+  const percent = Number.isFinite(confidence) ? Math.round(confidence * 100) : 0;
+  return `${percent}% match`;
+}
+
+/**
+ * Two company records that share an email or domain.
+ * The shared value may be hidden, so the line still names the kind of match.
+ */
+export function identityMatchDetail(candidate: {
+  anchorKind: string;
+  anchorProvider?: string | null;
+  anchorPreview?: string | null;
+}): string {
+  const kind = humanize(candidate.anchorKind);
+  const provider = candidate.anchorProvider?.trim() ?? "";
+  const from = provider ? ` from ${provider.charAt(0).toUpperCase()}${provider.slice(1)}` : "";
+  const preview = candidate.anchorPreview?.trim() || "not shown";
+  return `Matched on ${kind}${from}: ${preview}`;
+}
+
 function IdentityReviewInbox({
   candidates,
   onChanged,
@@ -1282,7 +1310,7 @@ function IdentityReviewInbox({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 id="identity-review-heading" className="text-sm font-medium text-primary">
-            Identity review
+            Review possible duplicates
           </h3>
           <p className="mt-0.5 text-xs text-primary/55">
             {candidates.length} possible {candidates.length === 1 ? "duplicate" : "duplicates"}{" "}
@@ -1290,7 +1318,7 @@ function IdentityReviewInbox({
           </p>
         </div>
         <Badge variant="outline" className="rounded-none border-amber-500/40">
-          Human decision required
+          Needs your review
         </Badge>
       </div>
       {candidates.map((candidate) => (
@@ -1301,15 +1329,11 @@ function IdentityReviewInbox({
                 {candidate.proposedRelationship.displayName} may match{" "}
                 {candidate.existingRelationship.displayName}
               </p>
-              <p className="mt-0.5 text-xs text-primary/55">
-                Exact {humanize(candidate.anchorKind)} anchor
-                {candidate.anchorProvider ? ` from ${candidate.anchorProvider}` : ""}:{" "}
-                {candidate.anchorPreview || "preview withheld"}
-              </p>
+              <p className="mt-0.5 text-xs text-primary/55">{identityMatchDetail(candidate)}</p>
             </div>
             <Badge className="text-xs font-normal text-primary/45" variant="secondary">
-              {candidate.evidenceCount} evidence item{candidate.evidenceCount === 1 ? "" : "s"} ·{" "}
-              {Math.round(candidate.recommendationConfidence * 100)}% recommendation confidence
+              {identitySupportLabel(candidate.evidenceCount)} ·{" "}
+              {identityMatchLabel(candidate.recommendationConfidence)}
             </Badge>
           </div>
           <div className="flex flex-wrap gap-1.5 text-[11px] text-primary/55">
@@ -1325,7 +1349,7 @@ function IdentityReviewInbox({
             onChange={(event) =>
               setReasons((current) => ({ ...current, [candidate.id]: event.target.value }))
             }
-            placeholder="Optional audit reason"
+            placeholder="Why you made this choice (optional)"
           />
           <div className="flex flex-wrap gap-2">
             {(candidate.status === "resolved"
@@ -1799,7 +1823,7 @@ export function RelationshipSheet({
       const result = await getRelationshipEvidence(id, observation.id);
       setEvidence((current) => ({ ...current, [observation.id]: result.payload }));
     } catch (error) {
-      onError(errMessage(error, "Could not open source evidence."));
+      onError(errMessage(error, "Could not open the original detail."));
     }
   };
 

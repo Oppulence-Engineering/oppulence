@@ -483,5 +483,7 @@ describe("people directory copy", () => {
     expect(source).toContain('placeholder="The text a new note starts with…"');
     expect(source).not.toContain("Add prompts or a reusable note structure");
     expect(source).not.toContain("Quarterly account review");
+    expect(source).toContain('errMessage(error, "Could not load this profile.")');
+    expect(source).not.toContain("Could not load profile evidence.");
   });
 });

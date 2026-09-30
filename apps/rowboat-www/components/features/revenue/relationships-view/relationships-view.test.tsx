@@ -10,6 +10,9 @@ import {
   completenessProductLabel,
   detailSourceLabel,
   enrichmentAvailabilityCopy,
+  identityMatchDetail,
+  identityMatchLabel,
+  identitySupportLabel,
   liveCueCopy,
 } from "@/components/features/revenue/relationships-view/relationships-view";
 
@@ -92,6 +95,17 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("backfill ${progress}%");
     expect(source).not.toContain("ambiguous relationship");
     expect(source).toContain("possible {candidates.length === 1 ? \"duplicate\" : \"duplicates\"}");
+    expect(source).toContain("Review possible duplicates");
+    expect(source).toContain("Needs your review");
+    expect(source).toContain('placeholder="Why you made this choice (optional)"');
+    expect(source).toContain("Could not open the original detail.");
+    expect(source).not.toContain("Identity review");
+    expect(source).not.toContain("Human decision required");
+    expect(source).not.toContain("Optional audit reason");
+    expect(source).not.toContain("evidence item");
+    expect(source).not.toContain("preview withheld");
+    expect(source).not.toContain("recommendation confidence");
+    expect(source).not.toContain("Could not open source evidence.");
     expect(source).not.toContain("Parallel Web");
     expect(source).toContain("None connected");
     expect(source).not.toContain("No evidence sources yet");
@@ -165,5 +179,21 @@ describe("RelationshipsView", () => {
     expect(source).toContain("useAskOppulence");
     expect(source).toContain("askOppulence(askedCompany ? companyName(askedCompany) : undefined)");
     expect(source).not.toContain(">Ask Oppulence</Badge>");
+  });
+
+  it("names a possible duplicate in product language", () => {
+    expect(identitySupportLabel(1)).toBe("1 supporting detail");
+    expect(identitySupportLabel(3)).toBe("3 supporting details");
+    expect(identityMatchLabel(0.42)).toBe("42% match");
+    expect(
+      identityMatchDetail({
+        anchorKind: "email",
+        anchorProvider: "google",
+        anchorPreview: "ada@example.com",
+      }),
+    ).toBe("Matched on Email from Google: ada@example.com");
+    expect(identityMatchDetail({ anchorKind: "domain", anchorPreview: "  " })).toBe(
+      "Matched on Domain: not shown",
+    );
   });
 });
