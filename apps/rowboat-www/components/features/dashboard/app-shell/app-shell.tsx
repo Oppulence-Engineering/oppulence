@@ -113,7 +113,7 @@ export const SETTINGS_SECTIONS: {
     label: "Notifications",
     icon: Bell,
     group: "workspace",
-    description: "Configure browser and relationship notification preferences.",
+    description: "Configure browser and workspace notification preferences.",
   },
   {
     key: "permissions",

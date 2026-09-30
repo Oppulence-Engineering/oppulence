@@ -742,7 +742,7 @@ function SecuritySection({ session }: { session: SessionShape }) {
             <p className="settings-row-description">
               {session.user.permissions.length > 0
                 ? session.user.permissions.join(", ")
-                : "Standard relationship access"}
+                : "Standard workspace access"}
             </p>
           </div>
           <ShieldCheck className="size-4 text-[var(--settings-success)]" />
@@ -756,13 +756,13 @@ function HelpSection() {
   const items = [
     {
       title: "Send feedback",
-      description: "Tell us what is missing or where relationship intelligence should go next.",
+      description: "Tell us what is missing or where the product should go next.",
       icon: Bell,
       href: "mailto:hello@oppulence.io?subject=Oppulence%20feedback",
     },
     {
       title: "Read the documentation",
-      description: "Review the relationship model, product guides, and API reference.",
+      description: "Review the product guides and API reference.",
       icon: BookOpen,
       href: "/api/reference",
     },
@@ -808,7 +808,7 @@ function PermissionsSection({ session }: { session: SessionShape }) {
         title="Permissions"
       />
       <SettingsRow
-        description="The signed-in organization controls access to shared relationships and evidence."
+        description="The signed-in organization controls access to shared companies, people, and evidence."
         title="Authorized workspace"
       >
         <div className="settings-row">
@@ -827,7 +827,7 @@ function PermissionsSection({ session }: { session: SessionShape }) {
               {session.user.role || "Member"} ·{" "}
               {session.user.permissions.length
                 ? session.user.permissions.join(", ")
-                : "Standard relationship access"}
+                : "Standard workspace access"}
             </p>
           </div>
           <ShieldCheck className="size-4 text-[var(--settings-success)]" />
@@ -842,7 +842,7 @@ function PermissionsSection({ session }: { session: SessionShape }) {
             <p className="settings-row-label">Connected services</p>
             <p className="settings-row-description">
               Manage service-level access from Extensions. Removing a connection stops new evidence
-              from entering the relationship model.
+              from entering this workspace.
             </p>
           </div>
           <Plugs className="size-4 text-primary/40" />

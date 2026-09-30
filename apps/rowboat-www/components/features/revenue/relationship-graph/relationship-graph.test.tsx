@@ -20,5 +20,9 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphCanvasEmptyState(4).offerReset).toBe(true);
     expect(source).toContain("Could not load the company graph.");
     expect(source).not.toContain("Could not load the relationship graph.");
+    expect(source).toContain(">Company graph</h2>");
+    expect(source).toContain("Companies, people, and the evidence between them");
+    expect(source).not.toContain(">Relationship graph</h2>");
+    expect(source).not.toContain("Versioned state, evidence, and governed action");
   });
 });

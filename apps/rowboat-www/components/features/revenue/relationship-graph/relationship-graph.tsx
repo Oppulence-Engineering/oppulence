@@ -474,7 +474,7 @@ function GraphCanvas({
       maxZoom={2}
       fitView
       proOptions={{ hideAttribution: true }}
-      aria-label="Relationship intelligence graph"
+      aria-label="Company graph"
     >
       <MiniMap
         pannable
@@ -778,7 +778,7 @@ function GraphTable({
     <div
       className="h-full overflow-auto"
       role="region"
-      aria-label="Relationship graph list view"
+      aria-label="Company graph list"
       tabIndex={0}
     >
       <Table className="border-collapse text-left text-xs">
@@ -1182,9 +1182,9 @@ export function RelationshipGraphWorkspace({
               <ShareNetwork className="size-4" weight="duotone" />
             </ItemMedia>
             <div>
-              <h2 className="text-sm font-semibold text-primary">Relationship graph</h2>
+              <h2 className="text-sm font-semibold text-primary">Company graph</h2>
               <p className="text-[10px] text-primary/40">
-                Versioned state, evidence, and governed action
+                Companies, people, and the evidence between them
               </p>
             </div>
           </div>

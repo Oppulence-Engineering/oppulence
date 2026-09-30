@@ -7,7 +7,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ComponentProps } from "react";
 
-import { CommitmentQueue } from "./commitment-queue";
+import { CommitmentQueue, REGISTER_VIEWS } from "./commitment-queue";
 import type {
   RegisterEntry,
   RelationshipSourceInventoryItem,
@@ -102,6 +102,15 @@ function props(overrides: Partial<ComponentProps<typeof CommitmentQueue>> = {}) 
 }
 
 describe("CommitmentQueue", () => {
+  it("asks for an account when that view has none selected", () => {
+    expect(REGISTER_VIEWS.find((view) => view.id === "by_account")?.hint).toBe(
+      "The full two-sided history for one account.",
+    );
+    render(<CommitmentQueue aria-label="Client commitments" {...props({ view: "by_account" })} />);
+    expect(screen.getByText("Select one account to see its two-sided promise history.")).toBeVisible();
+    expect(screen.queryByText(/one relationship/)).toBeNull();
+  });
+
   it("shows the operational promise, evidence, warning, and next action", async () => {
     render(<CommitmentQueue aria-label="Client commitments" {...props()} />);
 
