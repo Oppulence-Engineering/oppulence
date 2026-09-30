@@ -329,7 +329,11 @@ export function RevenuePanel({
             onOpenCompanies={() => onTabChange("relationships")}
           />
         ) : tab === "notes" ? (
-          <NotesView onError={setBanner} onNotice={setNoticeMsg} />
+          <NotesView
+            onError={setBanner}
+            onNotice={setNoticeMsg}
+            onOpenCompanies={() => onTabChange("relationships")}
+          />
         ) : tab === "people" ? (
           <PeopleView onError={setBanner} onNotice={setNoticeMsg} />
         ) : tab === "impact" ? (

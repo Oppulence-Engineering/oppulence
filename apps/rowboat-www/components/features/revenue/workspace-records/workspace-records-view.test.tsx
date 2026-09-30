@@ -158,6 +158,28 @@ describe("durable note templates and favorites", () => {
     expect(writeText).not.toHaveBeenCalled();
   });
 
+  it("opens New company from an empty note", async () => {
+    mocks.fetchWorkspaceNotes.mockResolvedValue({
+      notes: [],
+      relationships: [],
+      failedTimelineCount: 0,
+    });
+    const onOpenCompanies = vi.fn();
+    const user = userEvent.setup();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <NotesView onError={vi.fn()} onNotice={vi.fn()} onOpenCompanies={onOpenCompanies} />
+      </QueryClientProvider>,
+    );
+
+    await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
+    await user.click(screen.getByRole("button", { name: "Add a company" }));
+
+    expect(onOpenCompanies).toHaveBeenCalledOnce();
+    expect(screen.queryByLabelText("Note title")).toBeNull();
+  });
+
   it("opens the template library from the empty note", async () => {
     const user = userEvent.setup();
     renderNotes();

@@ -705,7 +705,11 @@ const todayValue = () => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
 
-export function NotesView({ onError, onNotice }: ViewProps) {
+export function NotesView({
+  onError,
+  onNotice,
+  onOpenCompanies,
+}: ViewProps & { onOpenCompanies?: () => void }) {
   const queryClient = useQueryClient();
   const author = useNoteAuthor();
   const notesQuery = useWorkspaceNotes();
@@ -1118,6 +1122,14 @@ export function NotesView({ onError, onNotice }: ViewProps) {
           onError={onError}
           onNotice={onNotice}
           onSaved={() => void load()}
+          onAddCompany={
+            onOpenCompanies
+              ? () => {
+                  setEditing(null);
+                  openCompanyCreate(onOpenCompanies);
+                }
+              : undefined
+          }
           onViewTemplates={() => setTab("templates")}
           author={author}
           relationships={relationships}
@@ -1243,6 +1255,7 @@ function NoteDialog({
   onError,
   onNotice,
   onViewTemplates,
+  onAddCompany,
 }: {
   note?: WorkspaceNote;
   template?: NoteTemplateResource;
@@ -1254,6 +1267,8 @@ function NoteDialog({
   onError: (message: string) => void;
   onNotice: (message: string) => void;
   onViewTemplates: () => void;
+  /** Closes this note and opens New company. Absent in tests that only check the empty copy. */
+  onAddCompany?: () => void;
 }) {
   const noteId = React.useRef(note?.externalId || crypto.randomUUID()).current;
   const [title, setTitle] = React.useState(
@@ -1494,16 +1509,27 @@ function NoteDialog({
             onChange={(event) => setTitle(event.target.value)}
           />
           <div className="mt-3 flex items-center gap-4 text-[13px] text-primary/55">
-            <Label
-              className={cn(
-                "flex items-center gap-2 font-normal text-primary/55",
-                selectedRelationship && "text-primary underline",
-              )}
-            >
-              <Note className="size-3.5" />
-              {selectedRelationship?.displayName ||
-                (relationships.length === 0 ? "No companies yet" : "Link a company")}
-            </Label>
+            {relationships.length === 0 && onAddCompany ? (
+              <Button
+                className="h-auto rounded-none px-0 py-0 text-[13px] font-normal text-primary/55 hover:bg-transparent hover:text-primary"
+                type="button"
+                variant="ghost"
+                onClick={onAddCompany}
+              >
+                <Note className="size-3.5" /> Add a company
+              </Button>
+            ) : (
+              <Label
+                className={cn(
+                  "flex items-center gap-2 font-normal text-primary/55",
+                  selectedRelationship && "text-primary underline",
+                )}
+              >
+                <Note className="size-3.5" />
+                {selectedRelationship?.displayName ||
+                  (relationships.length === 0 ? "No companies yet" : "Link a company")}
+              </Label>
+            )}
             <Button
               aria-pressed={meetingLinked}
               type="button"
