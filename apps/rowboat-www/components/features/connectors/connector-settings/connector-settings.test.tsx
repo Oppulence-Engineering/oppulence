@@ -172,6 +172,10 @@ describe("hosted connector settings", () => {
     expect(within(gmail as HTMLElement).queryByText("Required")).not.toBeInTheDocument();
 
     const row = await screen.findByTestId("connector-google");
+    expect(within(row).getByText("Permissions")).toHaveAttribute(
+      "aria-label",
+      "Permissions for Google",
+    );
     expect(within(row).getByText("Not connected")).toBeVisible();
     expect(within(row).queryByText(/Lifecycle/)).not.toBeInTheDocument();
     expect(within(row).queryByText("Disconnected")).not.toBeInTheDocument();
@@ -250,6 +254,7 @@ describe("hosted connector settings", () => {
       await screen.findByText("Connected."),
     ).toBeVisible();
     const row = await screen.findByTestId("connector-google");
+    expect(within(row).getByRole("button", { name: "Disconnect Google" })).toBeVisible();
     expect(within(row).getByText("Active")).toBeVisible();
     expect(within(row).getByText("Healthy")).toBeVisible();
     expect(within(row).getByText("Permissions: Read email evidence")).toBeVisible();

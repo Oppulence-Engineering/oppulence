@@ -233,6 +233,7 @@ export function WorkspaceView({
               {/* The stored id belongs to the sending service. The label does not name that service. */}
               <Field label="Sending workspace ID">
                 <Input
+                  aria-label="Sending workspace ID"
                   onChange={(event) => setWsId(event.target.value)}
                   placeholder="Workspace id"
                   value={wsId}
@@ -240,6 +241,7 @@ export function WorkspaceView({
               </Field>
               <Field label="Organization ID (optional)">
                 <Input
+                  aria-label="Organization ID"
                   onChange={(event) => setOrgId(event.target.value)}
                   placeholder="Organization id"
                   value={orgId}

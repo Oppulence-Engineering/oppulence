@@ -129,16 +129,23 @@ function OptionalConnectorScope({ scope }: { scope: ConnectorScope }) {
 }
 
 function ConnectorScopeList({
+  productName,
   scopes,
   action,
 }: {
+  productName: string;
   scopes: ConnectorScope[];
   action?: React.ReactNode;
 }) {
   if (scopes.length === 0) return null;
   return (
     <details className="rounded-[3px] border border-primary/10 bg-primary/[0.02] px-3 py-2">
-      <summary className="cursor-pointer text-xs font-medium text-primary/70">Permissions</summary>
+      <summary
+        aria-label={`Permissions for ${productName}`}
+        className="cursor-pointer text-xs font-medium text-primary/70"
+      >
+        Permissions
+      </summary>
       <div className="mt-2 flex flex-col gap-2">
         {scopes.map((scope) =>
           scope.grantTier === "required" ? (
@@ -431,7 +438,12 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
                 </Button>
               </>
             ) : (
-              <Button onClick={() => setConfirming(true)} size="sm" variant="outline">
+              <Button
+                aria-label={`Disconnect ${connector.displayName}`}
+                onClick={() => setConfirming(true)}
+                size="sm"
+                variant="outline"
+              >
                 Disconnect
               </Button>
             )
@@ -481,6 +493,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
           onSubmit={startOAuth}
         >
           <ConnectorScopeList
+            productName={connector.displayName}
             action={
               unsupportedReason ? null : (
                 <Button
