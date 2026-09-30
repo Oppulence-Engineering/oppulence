@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { agentDisplayName, parseAgentDocument, parseAgentsResponse, visibleAgentLabel } from "@/lib/agents/agent-schemas";
+import { agentDisplayName, agentSourceLabel, parseAgentDocument, parseAgentsResponse, visibleAgentLabel } from "@/lib/agents/agent-schemas";
 
 describe("agent schemas", () => {
   it("validates and normalizes agent list responses", () => {
@@ -42,6 +42,15 @@ describe("agent schemas", () => {
     expect(agentDisplayName(agents, "missing")).toBe("missing");
     expect(visibleAgentLabel([], "assistant")).toBe("Agent");
     expect(visibleAgentLabel(agents, "concierge-slack")).toBe("Slack Concierge");
+  });
+
+  it("names an agent source the way the product talks", () => {
+    expect(agentSourceLabel("builtin")).toBe("Oppulence");
+    expect(agentSourceLabel("gitops")).toBe("Managed");
+    expect(agentSourceLabel("tenant")).toBe("Workspace");
+    expect(agentSourceLabel("unknown")).toBe("Custom");
+    expect(agentSourceLabel("")).toBe("Custom");
+    expect(agentSourceLabel("partner_pack")).toBe("Partner pack");
   });
 
   it("rejects malformed projection fields before creating an editor document", () => {

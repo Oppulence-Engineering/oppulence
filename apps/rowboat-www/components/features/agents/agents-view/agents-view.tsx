@@ -38,7 +38,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAgentSummaries } from "@/hooks/queries/use-agents";
 import { agentKeys } from "@/hooks/queries/utils/agent-keys";
 import { dashboardFetch } from "@/lib/auth/client";
-import { type AgentSummary } from "@/lib/agents/agent-schemas";
+import { type AgentSummary, agentSourceLabel } from "@/lib/agents/agent-schemas";
 import { cn } from "@/lib/utils";
 
 function slugify(value: string): string {
@@ -348,7 +348,7 @@ export function AgentsView({
                   <div>
                     <div className="flex items-center gap-2">
                       <h2 className="text-2xl font-medium tracking-tight">{selected.name}</h2>
-                      <Badge variant="outline">{selected.source}</Badge>
+                      <Badge variant="outline">{agentSourceLabel(selected.source)}</Badge>
                     </div>
                     <p className="mt-1 font-mono text-xs text-muted-foreground">{selected.slug}</p>
                   </div>

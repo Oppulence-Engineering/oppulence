@@ -67,6 +67,22 @@ export function visibleAgentLabel(
   return agentDisplayName(agents, slug);
 }
 
+const AGENT_SOURCE_LABELS: Record<string, string> = {
+  builtin: "Oppulence",
+  gitops: "Managed",
+  tenant: "Workspace",
+  unknown: "Custom",
+};
+
+/** The API stores a source enum. The agents page badge is a product label. */
+export function agentSourceLabel(source: string): string {
+  const known = AGENT_SOURCE_LABELS[source];
+  if (known) return known;
+  const words = source.replace(/[_-]+/g, " ").trim();
+  if (!words) return "Custom";
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 /** Validates and normalizes the list projection returned by the agents API. */
 export function parseAgentsResponse(value: unknown): AgentSummary[] {
   return AgentsResponseSchema.parse(value).agents.map((agent) => {
