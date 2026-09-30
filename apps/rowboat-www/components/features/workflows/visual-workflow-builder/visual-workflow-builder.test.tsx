@@ -56,11 +56,12 @@ describe("VisualWorkflowBuilder", () => {
 
     const component = screen.getByRole("region", { name: "Example visual-workflow-builder" });
     expect(component).toHaveAttribute("data-slot", "visual-workflow-builder");
-    expect(component).toHaveTextContent("Communication received");
+    expect(component).toHaveTextContent("Mail or message received");
     expect(component).toHaveTextContent("Read companies, people, promises, and evidence");
     expect(component).toHaveTextContent("Review company");
     expect(component).not.toHaveTextContent("Review account");
-    expect(component).toHaveTextContent("Draft recovery email");
+    expect(component).toHaveTextContent("Draft a follow-up");
+    expect(component).not.toHaveTextContent("Draft recovery email");
     expect(component).not.toHaveTextContent("Read relationships");
   });
 
@@ -74,7 +75,7 @@ describe("VisualWorkflowBuilder", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Select action:1" }));
-    fireEvent.click(screen.getByRole("button", { name: "Remove Draft recovery email" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove Draft a follow-up" }));
 
     expect(onChange).toHaveBeenCalledWith({
       ...workflow,

@@ -66,7 +66,7 @@ const triggers: Array<{
   { value: "schedule", label: "Scheduled time", detail: "Run on a simple recurring cadence" },
   {
     value: "communication",
-    label: "Communication received",
+    label: "Mail or message received",
     detail: "Gmail, Calendar, Slack, or HubSpot",
   },
   {
@@ -81,8 +81,8 @@ const triggers: Array<{
   },
   {
     value: "commitment-risk",
-    label: "Commitment needs recovery",
-    detail: "A promise is due, blocked, disputed, or overdue",
+    label: "A promise needs a follow-up",
+    detail: "A promise is due, disputed, or overdue.",
   },
 ];
 
@@ -112,8 +112,8 @@ const actions: Array<{
   },
   {
     value: "draft-email",
-    label: "Draft recovery email",
-    detail: "Create a Gmail draft and require approval",
+    label: "Draft a follow-up",
+    detail: "Create a Gmail draft that waits for your approval.",
     icon: <EnvelopeSimple />,
     fields: [
       {
@@ -150,7 +150,7 @@ const actions: Array<{
         defaultValue: "relationship-owner",
         options: [
           { value: "relationship-owner", label: "Company owner" },
-          { value: "commitment-owner", label: "Commitment owner" },
+          { value: "commitment-owner", label: "Promise owner" },
         ],
       },
       {
@@ -729,7 +729,7 @@ export function VisualWorkflowBuilder({
                         trigger: { ...value.trigger, criteria: event.target.value },
                       })
                     }
-                    placeholder="For example: a customer mentions a blocker or missed deadline"
+                    placeholder="For example: a customer says a deadline was missed"
                     value={value.trigger.criteria ?? ""}
                   />
                 </div>

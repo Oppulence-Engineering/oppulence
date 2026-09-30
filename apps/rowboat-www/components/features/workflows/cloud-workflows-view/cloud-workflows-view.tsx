@@ -182,13 +182,13 @@ export function scheduleLabel(task: CloudTask): string {
   const visual = taskVisualWorkflow(task);
   switch (visual?.trigger.kind) {
     case "communication":
-      return "When communication arrives";
+      return "When mail or a message arrives";
     case "profile-change":
       return "When a company or person is updated";
     case "relationship-risk":
       return "When company risk changes";
     case "commitment-risk":
-      return "When a commitment needs recovery";
+      return "When a promise needs a follow-up";
     default:
       return "Manual start";
   }
@@ -294,7 +294,7 @@ function CreateWorkflowDialog({
                 className="rounded-none"
                 id="workflow-name"
                 onChange={(event) => setName(event.target.value)}
-                placeholder="Recover at-risk commitments"
+                placeholder="Follow up when a promise slips"
                 value={name}
               />
             </div>
@@ -304,7 +304,7 @@ function CreateWorkflowDialog({
                 className="min-h-28 rounded-none"
                 id="workflow-objective"
                 onChange={(event) => setObjective(event.target.value)}
-                placeholder="When a customer promise is at risk, review the company and draft a concise recovery email for approval."
+                placeholder="When a promise is about to slip, review the company and draft a follow-up that waits for your approval."
                 value={objective}
               />
             </div>

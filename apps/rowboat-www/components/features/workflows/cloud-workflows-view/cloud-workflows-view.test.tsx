@@ -170,8 +170,16 @@ describe("CloudWorkflowsView", () => {
     ).toBe("Explain which companies need attention now and why.");
     expect(source).toContain("automate recurring company follow-up");
     expect(source).not.toContain("recurring relationship work");
-    expect(source).toContain("review the company and draft a concise recovery email");
+    expect(source).toContain(
+      "When a promise is about to slip, review the company and draft a follow-up that waits for your approval.",
+    );
+    expect(source).toContain('placeholder="Follow up when a promise slips"');
+    expect(source).not.toContain("Recover at-risk commitments");
+    expect(source).not.toContain("concise recovery email");
     expect(source).not.toContain("review the account");
+    expect(source).toContain("When a promise needs a follow-up");
+    expect(source).not.toContain("When a commitment needs recovery");
+    expect(source).toContain("When mail or a message arrives");
     expect(source).toContain("Oppulence Cloud keeps the schedule.");
     expect(source).not.toContain("cloud runtime");
     expect(source).not.toContain("View settings");
