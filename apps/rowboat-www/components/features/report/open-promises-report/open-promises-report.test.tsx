@@ -15,7 +15,9 @@ describe("OpenPromisesReportClient", () => {
       "sourcesQuery.isPending || (!scanId && scansQuery.isPending)",
     );
     expect(source).not.toContain("sourcesQuery.isLoading || (!scanId && scansQuery.isLoading)");
-    expect(source).toContain("that still look open");
+    expect(source).toContain('title={reconnect ? "Reconnect Google" : "Connect Gmail and Calendar"}');
+    expect(source).toContain('title="Find promises in your mail"');
+    expect(source).not.toContain('title="Open promises"');
     expect(source).toContain("See the message each promise came from");
     expect(source).not.toContain("See exact message evidence");
     expect(source).toContain("Open commitments");

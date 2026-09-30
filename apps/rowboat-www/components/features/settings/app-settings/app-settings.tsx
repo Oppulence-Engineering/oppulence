@@ -867,7 +867,7 @@ function PreferencesSection() {
   return (
     <>
       <PageIntro
-        description="Choose account-wide defaults and whether anonymous product events may be captured."
+        description="The default agent for a new chat, and whether anonymous product events may be captured."
         title="Preferences"
       />
       <DefaultsCard />

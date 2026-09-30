@@ -472,18 +472,19 @@ export function VisualWorkflowBuilder({
             showInteractive={false}
           />
         </ReactFlow>
-        <div className="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center">
-          <Button
-            className="pointer-events-auto rounded-none bg-background shadow-none"
-            disabled={disabled}
-            onClick={addAction}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            <Plus /> Add step
-          </Button>
-        </div>
+        {disabled ? null : (
+          <div className="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center">
+            <Button
+              className="pointer-events-auto rounded-none bg-background shadow-none"
+              onClick={addAction}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <Plus /> Add step
+            </Button>
+          </div>
+        )}
       </div>
 
       <aside className="min-h-0 border-t border-border bg-background md:overflow-y-auto md:border-l md:border-t-0">

@@ -428,7 +428,7 @@ function GoogleConnectionStep({
         { label: "See the message each promise came from" },
         { label: "Nothing is sent on your behalf" },
       ]}
-      title="Open promises"
+      title={reconnect ? "Reconnect Google" : "Connect Gmail and Calendar"}
     />
   );
 }
@@ -456,7 +456,7 @@ function StartStep({ onRun, busy }: { onRun: () => void; busy: boolean }) {
         { label: "See the message each promise came from" },
         { label: "Nothing is sent on your behalf" },
       ]}
-      title="Open promises"
+      title="Find promises in your mail"
     />
   );
 }

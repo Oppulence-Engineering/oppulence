@@ -67,7 +67,8 @@ describe("SettingsView", () => {
     expect(source).not.toContain(">Default</SettingsStatus>");
     expect(source).toContain("readBrowserOrigin");
     expect(source).toContain("return window.location.origin");
-    expect(source).toContain("How you appear in Oppulence across signed-in devices.");
+    expect(source).toContain("The default agent for a new chat, and whether anonymous product events may be captured.");
+    expect(source).not.toContain("account-wide");
     expect(source).toContain("the next time you start a chat.");
     expect(source).toContain('title="Chat defaults"');
     expect(source).toContain('title="Current plan"');

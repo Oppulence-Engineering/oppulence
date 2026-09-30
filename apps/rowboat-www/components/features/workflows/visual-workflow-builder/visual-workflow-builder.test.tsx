@@ -67,7 +67,20 @@ describe("VisualWorkflowBuilder", () => {
     expect(component).not.toHaveTextContent("Step configuration");
     expect(component).toHaveTextContent("Draft a follow-up");
     expect(component).not.toHaveTextContent("Draft recovery email");
+    expect(component).toHaveTextContent("Add step");
     expect(component).not.toHaveTextContent("Read relationships");
+  });
+
+  it("hides add step on a workflow the workspace cannot edit", () => {
+    render(
+      <VisualWorkflowBuilder
+        disabled
+        onChange={vi.fn()}
+        value={{ ...workflow, actions: [...workflow.actions] }}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Add step" })).not.toBeInTheDocument();
   });
 
   it("names a repeating schedule without calling it a cadence", () => {
