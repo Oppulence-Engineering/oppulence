@@ -9,9 +9,11 @@ const KNOWN_CONNECTOR_DESCRIPTIONS: Record<string, string> = {
   cadence: "Billing, payments, and approvals before money moves.",
   conduit: "How data moves between the tools you connect.",
   eigen: "Search what you know, and run an action only after you approve it.",
+  github: "Repositories, issues, and pull requests.",
   hubspot: "Contacts, deals, companies, tickets, and notes.",
   linear: "Issues, projects, and comments.",
   notion: "Pages and databases.",
+  stripe: "Customers, charges, invoices, subscriptions, and refunds.",
 };
 
 export function connectorProductDescription(name: string, stored: string): string {
@@ -40,6 +42,30 @@ const KNOWN_SCOPE_COPY: Record<string, { label: string; detail: string }> = {
   "conduit:pipelines.write": {
     label: "Change how data moves",
     detail: "Change how data moves between the tools you connect.",
+  },
+  "corinthian:ar.read": {
+    label: "See what is owed",
+    detail: "See who owes money, how much, and how long it has been open.",
+  },
+  "corinthian:collections.read": {
+    label: "See collection work",
+    detail: "See collection cases, customer messages, and promises to pay.",
+  },
+  "canvas:invoices.read": {
+    label: "Read invoices",
+    detail: "See balances, status, due dates, and each line on the invoice.",
+  },
+  "canvas:customers.read": {
+    label: "Read customers",
+    detail: "See who the invoice is for.",
+  },
+  "cadence:payment_runs.read": {
+    label: "Read payment runs",
+    detail: "See whether a payment is waiting, what it totals, and whether it is approved.",
+  },
+  "cadence:payments.execute": {
+    label: "Execute approved payments",
+    detail: "Send a payment only after you approve that payment.",
   },
 };
 
