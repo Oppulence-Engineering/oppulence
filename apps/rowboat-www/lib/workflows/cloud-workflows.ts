@@ -165,6 +165,43 @@ export function readableEnum(value: string): string {
 }
 
 /**
+ * Schedule health "current" means the cloud schedule matches the workflow.
+ * The badge sits next to "Run in Oppulence Cloud", where "current" reads as
+ * an unfinished token.
+ */
+export function scheduleHealthLabel(value: string): string {
+  switch (value) {
+    case "current":
+      return "In sync";
+    case "syncing":
+      return "Syncing";
+    case "failed":
+      return "Needs repair";
+    case "paused":
+      return "Paused";
+    case "unknown":
+      return "Unknown";
+    default:
+      return readableEnum(value);
+  }
+}
+
+/**
+ * Transcript types are dotted tokens such as temporal.failed and
+ * runtime.tool_call_started. The prefix is the emitter, not something a
+ * person needs in the heading.
+ */
+export function runEventLabel(type: string): string {
+  const body = type
+    .trim()
+    .replace(/^(temporal|runtime|desktop)\./, "")
+    .replaceAll("_", " ");
+  if (!body) return type;
+  const withAcronyms = body.replace(/\bllm\b/g, "LLM");
+  return withAcronyms.charAt(0).toUpperCase() + withAcronyms.slice(1);
+}
+
+/**
  * The library subtitle. A saved canvas objective wins. Otherwise the template
  * description does: first-party workflows have no canvas object, and showing
  * one shared fallback made every row read the same.

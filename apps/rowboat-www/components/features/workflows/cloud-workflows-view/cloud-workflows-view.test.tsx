@@ -4,10 +4,17 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  scheduleLabel,
   sortWorkflowTasks,
   workflowForTask,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
-import { readableEnum, workflowListSummary, type CloudTask } from "@/lib/workflows/cloud-workflows";
+import {
+  readableEnum,
+  runEventLabel,
+  scheduleHealthLabel,
+  workflowListSummary,
+  type CloudTask,
+} from "@/lib/workflows/cloud-workflows";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "cloud-workflows-view.tsx"), "utf8");
 
@@ -19,6 +26,21 @@ describe("CloudWorkflowsView", () => {
     expect(readableEnum("succeeded")).toBe("Succeeded");
     expect(readableEnum("cron")).toBe("Cron");
     expect(readableEnum("")).toBe("");
+  });
+
+  it("names schedule health and transcript events", () => {
+    expect(scheduleHealthLabel("current")).toBe("In sync");
+    expect(scheduleHealthLabel("failed")).toBe("Needs repair");
+    expect(runEventLabel("temporal.failed")).toBe("Failed");
+    expect(runEventLabel("runtime.tool_call_started")).toBe("Tool call started");
+    expect(runEventLabel("desktop.llm_stream_event")).toBe("LLM stream event");
+  });
+
+  it("names weekday crons that the first-party templates use", () => {
+    const digest = { triggers: { cronExpr: "0 8 * * 1-5" } } as CloudTask;
+    const followups = { triggers: { cronExpr: "0 17 * * 1-5" } } as CloudTask;
+    expect(scheduleLabel(digest)).toBe("Weekdays at 8:00 AM");
+    expect(scheduleLabel(followups)).toBe("Weekdays at 5:00 PM");
   });
 
   it("keeps the named product export at the generator path", () => {

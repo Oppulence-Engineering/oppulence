@@ -77,6 +77,8 @@ import {
   taskCron,
   taskVisualWorkflow,
   readableEnum,
+  runEventLabel,
+  scheduleHealthLabel,
   workflowListSummary,
   triggerCloudRun,
   updateCloudTask,
@@ -157,7 +159,7 @@ function eventText(event: CloudRunEvent): string {
   return JSON.stringify(event.event, null, 2) ?? String(event.event);
 }
 
-function scheduleLabel(task: CloudTask): string {
+export function scheduleLabel(task: CloudTask): string {
   const cron = taskCron(task);
   const labels: Record<string, string> = {
     "*/15 * * * *": "Every 15 minutes",
@@ -166,6 +168,8 @@ function scheduleLabel(task: CloudTask): string {
     "0 9 * * 1-5": "Weekdays at 9:00 AM",
     "0 8 * * *": "Every day at 8:00 AM",
     "0 8 * * 1": "Every Monday at 8:00 AM",
+    "0 8 * * 1-5": "Weekdays at 8:00 AM",
+    "0 17 * * 1-5": "Weekdays at 5:00 PM",
   };
   if (cron) return labels[cron] ?? "Recurring schedule";
   const visual = taskVisualWorkflow(task);
@@ -644,7 +648,7 @@ function RunInspector({
                 </Badge>
                 <div className="min-w-0 border border-border p-2.5">
                   <div className="flex justify-between gap-2">
-                    <Label className="font-medium">{event.type}</Label>
+                    <Label className="font-medium">{runEventLabel(event.type)}</Label>
                     <time className="text-muted-foreground">{formatDate(event.receivedAt)}</time>
                   </div>
                   <pre className="mt-1.5 overflow-x-auto whitespace-pre-wrap font-sans leading-5 text-muted-foreground">
@@ -1047,7 +1051,7 @@ function WorkflowEditor({
                   variant="outline"
                 >
                   <StatusIcon status={schedule?.health || task.scheduleSyncState} />{" "}
-                  {schedule?.health || task.scheduleSyncState}
+                  {scheduleHealthLabel(schedule?.health || task.scheduleSyncState)}
                 </Badge>
               </div>
               {task.systemManaged ? (
