@@ -108,9 +108,27 @@ import { cn } from "@/lib/utils";
 type FilterValue<T extends string> = T | "all";
 type EditorTab = "editor" | "runs" | "settings";
 
+/**
+ * A loaded page is not the whole history. The tab says 50+ while another
+ * page exists, and it omits a count until the workflow's own page arrives.
+ */
+export function workflowRunCountLabel(count: number, hasMore: boolean, settled = true): string {
+  if (!settled) return "";
+  if (hasMore) return `${count}+`;
+  return String(count);
+}
+
 /** The count used to be glued onto the raw tab id, so the name was "runs16". */
-export function workflowEditorTabName(value: EditorTab, runCount: number): string {
-  if (value === "runs") return runCount === 1 ? "Runs, 1" : `Runs, ${runCount}`;
+export function workflowEditorTabName(
+  value: EditorTab,
+  runCount: number,
+  hasMore = false,
+  settled = true,
+): string {
+  if (value === "runs") {
+    const count = workflowRunCountLabel(runCount, hasMore, settled);
+    return count ? `Runs, ${count}` : "Runs";
+  }
   if (value === "settings") return "Settings";
   return "Editor";
 }
@@ -219,11 +237,16 @@ export function workflowRunsForEditor<T extends { slug: string }>(
   slug: string,
   accountRuns: readonly T[],
   workflowRuns: readonly T[] | null,
-): { runs: T[]; settled: boolean } {
+  hasMore = false,
+): { runs: T[]; settled: boolean; hasMore: boolean } {
   if (workflowRuns) {
-    return { runs: workflowRuns.filter((run) => run.slug === slug), settled: true };
+    return {
+      runs: workflowRuns.filter((run) => run.slug === slug),
+      settled: true,
+      hasMore,
+    };
   }
-  return { runs: accountRuns.filter((run) => run.slug === slug), settled: false };
+  return { runs: accountRuns.filter((run) => run.slug === slug), settled: false, hasMore: false };
 }
 
 /** Status and trigger as words. The runs list used to show only an icon, so
@@ -1049,11 +1072,13 @@ function WorkflowEditor({
   const scopedRuns = scopedRunsQuery.isSuccess
     ? (scopedRunsQuery.data.pages.flatMap((page) => page.runs) as CloudRun[])
     : null;
-  const { runs: taskRuns, settled: taskRunsSettled } = workflowRunsForEditor(
-    task.slug,
-    runs,
-    scopedRuns,
-  );
+  const { runs: taskRuns, settled: taskRunsSettled, hasMore: taskRunsHasMore } =
+    workflowRunsForEditor(
+      task.slug,
+      runs,
+      scopedRuns,
+      scopedRunsQuery.isSuccess && scopedRunsQuery.hasNextPage,
+    );
 
   const save = async () => {
     const compiled = compileVisualWorkflow(workflow);
@@ -1124,7 +1149,12 @@ function WorkflowEditor({
         >
           {(["editor", "runs", "settings"] as const).map((value) => (
             <TabsTrigger
-              aria-label={workflowEditorTabName(value, taskRuns.length)}
+              aria-label={workflowEditorTabName(
+                value,
+                taskRuns.length,
+                taskRunsHasMore,
+                value === "runs" ? taskRunsSettled : true,
+              )}
               className={cn(
                 "h-full rounded-none border-b bg-transparent px-0 text-[12px] shadow-none data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none",
                 tab === value
@@ -1136,9 +1166,9 @@ function WorkflowEditor({
             >
               {value === "settings" ? <Gear className="size-3.5" /> : null}
               {EDITOR_TAB_LABEL[value]}
-              {value === "runs" ? (
+              {value === "runs" && taskRunsSettled ? (
                 <Badge className="rounded-none text-[9px]" variant="secondary">
-                  {taskRuns.length}
+                  {workflowRunCountLabel(taskRuns.length, taskRunsHasMore)}
                 </Badge>
               ) : null}
             </TabsTrigger>
@@ -1192,6 +1222,18 @@ function WorkflowEditor({
                 <p className="p-8 text-center text-xs text-muted-foreground">
                   {taskRunsSettled ? "No runs yet." : "Loading runs…"}
                 </p>
+              ) : null}
+              {taskRunsHasMore ? (
+                <Button
+                  className="w-full rounded-none"
+                  disabled={scopedRunsQuery.isFetchingNextPage}
+                  onClick={() => void scopedRunsQuery.fetchNextPage()}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  {scopedRunsQuery.isFetchingNextPage ? "Loading…" : "Load more"}
+                </Button>
               ) : null}
             </ScrollArea>
             <ScrollArea className="min-h-0">

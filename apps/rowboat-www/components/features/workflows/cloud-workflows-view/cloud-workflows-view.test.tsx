@@ -12,6 +12,7 @@ import {
   scheduleLabel,
   sortWorkflowTasks,
   workflowEditorTabName,
+  workflowRunCountLabel,
   workflowForTask,
   workflowOpeningScreen,
   workflowLastRunAt,
@@ -51,7 +52,13 @@ describe("CloudWorkflowsView", () => {
     expect(workflowEditorTabName("settings", 16)).toBe("Settings");
     expect(workflowEditorTabName("runs", 16)).toBe("Runs, 16");
     expect(workflowEditorTabName("runs", 1)).toBe("Runs, 1");
-    expect(source).toContain("aria-label={workflowEditorTabName(value, taskRuns.length)}");
+    expect(workflowEditorTabName("runs", 50, true)).toBe("Runs, 50+");
+    expect(workflowEditorTabName("runs", 6, false, false)).toBe("Runs");
+    expect(workflowRunCountLabel(50, true)).toBe("50+");
+    expect(workflowRunCountLabel(9, false)).toBe("9");
+    expect(workflowRunCountLabel(6, false, false)).toBe("");
+    expect(source).toContain("workflowEditorTabName(");
+    expect(source).toContain("taskRunsHasMore");
     expect(source).toContain('aria-label="Workflow"');
     expect(source).toContain('subscribeWorkflowLibrary(() => setScreen("library"))');
   });
@@ -356,10 +363,17 @@ describe("CloudWorkflowsView", () => {
     expect(workflowRunsForEditor("oppulence-attention-monitor", account, null)).toEqual({
       runs: [],
       settled: false,
+      hasMore: false,
     });
     expect(workflowRunsForEditor("oppulence-attention-monitor", account, [daily])).toEqual({
       runs: [daily],
       settled: true,
+      hasMore: false,
+    });
+    expect(workflowRunsForEditor("oppulence-attention-monitor", account, [daily], true)).toEqual({
+      runs: [daily],
+      settled: true,
+      hasMore: true,
     });
     expect(
       workflowRunsForEditor("oppulence-post-meeting-processor", account, null).runs,
