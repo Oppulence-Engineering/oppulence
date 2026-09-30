@@ -195,6 +195,7 @@ describe("CloudWorkflowsView", () => {
     expect(scheduleMomentLabel(null, "America/New_York")).toBe("—");
     expect(source).toContain("scheduleMomentLabel(lastRunAt)");
     expect(source).toContain("scheduleMomentLabel(schedule?.nextDueAt)");
+    expect(source).toContain("return scheduleMomentLabel(value)");
     expect(
       scheduleLabel({
         triggers: {

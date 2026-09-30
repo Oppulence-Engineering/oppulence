@@ -149,16 +149,13 @@ const defaultVisualWorkflow = (): VisualWorkflowDefinition => ({
   },
 });
 
+/**
+ * Run rows sit beside a schedule that fires in UTC. The library and the next-run
+ * line already show the UTC instant when the viewer's clock differs; these rows
+ * used a local-only clock, so a New York teammate saw "4:00 AM" for an 8:00 AM UTC run.
+ */
 function formatDate(value?: string | null): string {
-  if (!value) return "—";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(parsed);
+  return scheduleMomentLabel(value);
 }
 
 /**
