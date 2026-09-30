@@ -866,8 +866,14 @@ function WorkflowEditor({
           <Button
             className="rounded-none"
             disabled={busy || !task.active}
-            onClick={onRun}
+            onClick={() => {
+              // Selecting the run in the parent does not change this tab, so
+              // Run now looked like a no-op while the request succeeded.
+              setTab("runs");
+              onRun();
+            }}
             size="sm"
+            type="button"
           >
             <Play weight="fill" /> Run now
           </Button>
