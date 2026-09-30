@@ -3,8 +3,8 @@
 import "client-only";
 
 import { relationshipLabel } from "@oppulence/relationship-contract";
-import { Badge, Chip } from "@sim/emcn";
-import { ChevronDown, Layout, ListFilter, TagIcon, TypeNumber, TypeText } from "@sim/emcn/icons";
+import { Badge } from "@sim/emcn";
+import { Layout, TagIcon, TypeNumber, TypeText } from "@sim/emcn/icons";
 import * as React from "react";
 import { Check } from "@/lib/icons";
 
@@ -27,13 +27,27 @@ const COLUMNS = [
 ] as const;
 
 function healthBadge(item: RelationshipAttentionItem) {
-  if (item.urgencyBand === "critical" || item.urgencyBand === "high") {
-    return { label: "At risk", variant: "red" as const };
-  }
-  if (item.urgencyBand === "normal") {
-    return { label: "Watch", variant: "amber" as const };
-  }
+  const band = attentionBand(item);
+  if (band === "at_risk") return { label: "At risk", variant: "red" as const };
+  if (band === "watch") return { label: "Watch", variant: "amber" as const };
   return { label: "Stable", variant: "green" as const };
+}
+
+export type AttentionBand = "all" | "at_risk" | "watch" | "stable";
+
+/** The health badge and the band filter share one reading of urgency. */
+export function attentionBand(item: RelationshipAttentionItem): Exclude<AttentionBand, "all"> {
+  if (item.urgencyBand === "critical" || item.urgencyBand === "high") return "at_risk";
+  if (item.urgencyBand === "normal") return "watch";
+  return "stable";
+}
+
+export function filterAttentionItems(
+  items: readonly RelationshipAttentionItem[],
+  band: AttentionBand,
+): RelationshipAttentionItem[] {
+  if (band === "all") return [...items];
+  return items.filter((item) => attentionBand(item) === band);
 }
 
 export type AttentionQueueSurfaceProps = Omit<
@@ -58,18 +72,21 @@ export function AttentionQueueSurface({
   ...props
 }: AttentionQueueSurfaceProps) {
   const [busy, setBusy] = React.useState<string | null>(null);
+  const [band, setBand] = React.useState<AttentionBand>("all");
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
-  const selected = items.find((item) => item.id === selectedId) ?? items[0] ?? null;
+  const visible = filterAttentionItems(items, band);
+  const selected = visible.find((item) => item.id === selectedId) ?? visible[0] ?? null;
 
   React.useEffect(() => {
-    if (items.length === 0) {
+    const shown = filterAttentionItems(items, band);
+    if (shown.length === 0) {
       setSelectedId(null);
       return;
     }
-    if (!selectedId || !items.some((item) => item.id === selectedId)) {
-      setSelectedId(items[0]?.id ?? null);
+    if (!selectedId || !shown.some((item) => item.id === selectedId)) {
+      setSelectedId(shown[0]?.id ?? null);
     }
-  }, [items, selectedId]);
+  }, [band, items, selectedId]);
 
   const decide = async (
     item: RelationshipAttentionItem,
@@ -122,11 +139,20 @@ export function AttentionQueueSurface({
               Attention queue
             </h2>
           }
-          actions={loading ? "Loading…" : `${items.length} account${items.length === 1 ? "" : "s"}`}
+          actions={loading ? "Loading…" : `${visible.length} account${visible.length === 1 ? "" : "s"}`}
         />
         <SimProductToolbar>
-          <Chip rightIcon={ChevronDown}>Open items</Chip>
-          <Chip leftIcon={ListFilter}>Filter</Chip>
+          <select
+            aria-label="Attention band"
+            className="h-8 border border-[var(--border)] bg-transparent px-2 text-[13px] text-[var(--text-primary)]"
+            onChange={(event) => setBand(event.target.value as AttentionBand)}
+            value={band}
+          >
+            <option value="all">All open items</option>
+            <option value="at_risk">At risk</option>
+            <option value="watch">Watch</option>
+            <option value="stable">Stable</option>
+          </select>
         </SimProductToolbar>
 
         <div className="overflow-x-auto">
@@ -163,8 +189,14 @@ export function AttentionQueueSurface({
                     Loading attention queue…
                   </td>
                 </tr>
+              ) : visible.length === 0 ? (
+                <tr className="h-[37px] border-[var(--border)] border-b">
+                  <td className="px-2.5 text-[var(--text-secondary)]" colSpan={4}>
+                    No accounts in this band.
+                  </td>
+                </tr>
               ) : (
-                items.slice(0, 10).map((item, index) => {
+                visible.slice(0, 10).map((item, index) => {
                   const health = healthBadge(item);
                   const isSelected = selected?.id === item.id;
                   return (
