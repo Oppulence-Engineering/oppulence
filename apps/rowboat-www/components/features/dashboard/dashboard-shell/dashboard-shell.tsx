@@ -22,6 +22,7 @@ import {
 import { useAuthSession } from "@/components/auth/auth-gate";
 import { CommandPalette } from "@/components/features/dashboard/command-palette/command-palette";
 import { agentDisplayName } from "@/lib/agents/agent-schemas";
+import { SIDEBAR_TOGGLE_KEY, sidebarShortcutTitle } from "@/lib/a11y/sidebar-shortcut";
 import { useDashboardChatController } from "@/components/features/dashboard/chat-route-provider/chat-route-provider";
 import { useProductRouteState } from "@/hooks/dashboard/use-product-route-state";
 import { SidebarSimple } from "@/lib/icons";
@@ -92,7 +93,7 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
         return;
       }
       if (
-        event.key === "[" &&
+        event.key === SIDEBAR_TOGGLE_KEY &&
         !event.metaKey &&
         !event.ctrlKey &&
         !event.altKey &&
@@ -224,7 +225,7 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
                       }`}
                       onClick={toggleSidebar}
                       size="icon"
-                      title="Toggle sidebar  ["
+                      title={sidebarShortcutTitle("Toggle sidebar")}
                       type="button"
                       variant="ghost"
                     >

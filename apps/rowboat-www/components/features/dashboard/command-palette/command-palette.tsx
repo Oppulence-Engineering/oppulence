@@ -22,6 +22,7 @@ import {
   useThemePreference,
   type SettingsSection,
 } from "@/components/features/dashboard/app-shell/app-shell";
+import { SIDEBAR_TOGGLE_KEY } from "@/lib/a11y/sidebar-shortcut";
 import {
   CommandDialog,
   CommandEmpty,
@@ -269,7 +270,7 @@ export function CommandPalette({
           <CommandItem onSelect={runAnd(onToggleSidebar)}>
             <SidebarSimple />
             Toggle sidebar
-            <CommandShortcut>[</CommandShortcut>
+            <CommandShortcut>{SIDEBAR_TOGGLE_KEY}</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={runAnd(() => setTheme("light"))}>
             <Sun />

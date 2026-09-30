@@ -5,6 +5,7 @@ import "client-only";
 import * as React from "react";
 import { useTheme } from "next-themes";
 import { useConsolePreferences } from "@/hooks/queries/use-console";
+import { sidebarShortcutTitle } from "@/lib/a11y/sidebar-shortcut";
 import { useRelationshipSourceStatuses } from "@/hooks/queries/use-relationship-sources";
 import {
   useSidebarAgents,
@@ -1187,7 +1188,7 @@ export function AppShellSidebar({
           aria-label="Collapse sidebar"
           className="absolute top-0 right-0 z-10 h-full w-[2px] min-w-0 cursor-w-resize rounded-none p-0 hover:bg-border"
           onClick={onToggle}
-          title="Collapse sidebar  [ ]"
+          title={sidebarShortcutTitle("Collapse sidebar")}
           type="button"
           variant="ghost"
         />
