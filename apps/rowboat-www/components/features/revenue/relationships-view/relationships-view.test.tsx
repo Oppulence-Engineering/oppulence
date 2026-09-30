@@ -23,6 +23,7 @@ import {
   conversationDeletionAvailable,
   conversationNoteCount,
   completenessProductLabel,
+  detailEvidenceCopy,
   detailSourceLabel,
   enrichmentAvailabilityCopy,
   identityMatchDetail,
@@ -274,6 +275,24 @@ describe("RelationshipsView", () => {
     expect(completenessProductLabel("custom_status")).toBe("Custom Status");
     expect(detailSourceLabel("ai_inference", true)).toBe("Suggested");
     expect(detailSourceLabel("source_fact", false)).toBe("Not filled in yet");
+    expect(
+      detailEvidenceCopy({
+        supported: false,
+        missingReason: "No active assertion supports this value at the response asOf boundary.",
+      }),
+    ).toBe("Nothing connected has filled this in.");
+    expect(
+      detailEvidenceCopy({
+        supported: false,
+        missingReason: "The winning assertion has no accessible source evidence reference.",
+      }),
+    ).toBe("This detail has no source you can open.");
+    expect(detailEvidenceCopy({ supported: false })).toBe("Nothing connected has filled this in.");
+    expect(
+      detailEvidenceCopy({ supported: true, reason: "Confirmed in the last meeting." }),
+    ).toBe("Confirmed in the last meeting.");
+    expect(source).toContain("detailEvidenceCopy(item)");
+    expect(source).not.toContain("{item.reason || item.missingReason}");
     expect(liveCueCopy({ kind: "missing_next_step", title: "No next step", detail: "Agree on an owner and a dated next step before the meeting ends." })).toEqual({
       title: "No next step",
       detail: "Add an owner and a date for what happens next.",

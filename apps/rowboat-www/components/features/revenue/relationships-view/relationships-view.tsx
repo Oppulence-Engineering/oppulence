@@ -1629,6 +1629,26 @@ export function liveCueCopy(cue: { kind: string; title: string; detail: string }
   return { title: cue.title, detail: cue.detail };
 }
 
+/**
+ * Missing-detail text is stored for the model. The sheet says what the person
+ * can do about it. A supported detail keeps the reason that was recorded.
+ */
+export function detailEvidenceCopy(item: {
+  supported: boolean;
+  reason?: string;
+  missingReason?: string;
+}): string {
+  if (item.supported) return item.reason?.trim() || "";
+  const missing = item.missingReason?.trim() ?? "";
+  if (missing === "" || missing.includes("asOf boundary")) {
+    return "Nothing connected has filled this in.";
+  }
+  if (missing.includes("no accessible source evidence reference")) {
+    return "This detail has no source you can open.";
+  }
+  return missing;
+}
+
 /** Authority codes stay in the model. The sheet says who the detail came from. */
 export function detailSourceLabel(authority: string | undefined, supported: boolean): string {
   if (!supported) return "Not filled in yet";
@@ -1753,7 +1773,9 @@ function MissionControlOverview({
                   </Badge>
                 ) : null}
               </div>
-              <p className="mt-1 text-primary/55">{item.reason || item.missingReason}</p>
+              {detailEvidenceCopy(item) ? (
+                <p className="mt-1 text-primary/55">{detailEvidenceCopy(item)}</p>
+              ) : null}
               {item.evidence.length ? (
                 <p className="mt-1 text-primary/40">
                   {item.evidence
