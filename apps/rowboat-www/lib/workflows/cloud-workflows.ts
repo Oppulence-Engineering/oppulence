@@ -247,9 +247,10 @@ export function scheduleHealthLabel(value: string): string {
 export function runEventLabel(type: string): string {
   const stripped = type.trim().replace(/^(temporal|runtime|desktop)\./, "");
   if (stripped === "llm_call_started") return "Model call started";
+  if (stripped === "llm_stream_event") return "Model stream";
   const body = stripped.replaceAll("_", " ");
   if (!body) return type;
-  const withAcronyms = body.replace(/\bllm\b/g, "LLM");
+  const withAcronyms = body.replace(/\bllm\b/g, "model");
   return withAcronyms.charAt(0).toUpperCase() + withAcronyms.slice(1);
 }
 
@@ -283,6 +284,8 @@ const INFRASTRUCTURE_EVENT_COPY: Record<string, string> = {
 };
 
 function rewriteInfrastructureEvent(value: string): string {
+  const step = /^Agent step (\d+)\.$/.exec(value);
+  if (step) return `Step ${step[1]}.`;
   return INFRASTRUCTURE_EVENT_COPY[value] ?? value;
 }
 

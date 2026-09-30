@@ -59,7 +59,7 @@ describe("CloudWorkflowsView", () => {
     expect(runEventLabel("temporal.failed")).toBe("Failed");
     expect(runEventLabel("runtime.tool_call_started")).toBe("Tool call started");
     expect(runEventLabel("runtime.llm_call_started")).toBe("Model call started");
-    expect(runEventLabel("desktop.llm_stream_event")).toBe("LLM stream event");
+    expect(runEventLabel("desktop.llm_stream_event")).toBe("Model stream");
   });
 
   it("describes a transcript row without the worker payload", () => {
@@ -100,7 +100,7 @@ describe("CloudWorkflowsView", () => {
     expect(runEventBody({ type: "runtime.unknown", event: { prompt_version: "cloud-runtime-v1" } })).toBe(
       "Recorded an update.",
     );
-    expect(runEventBody({ event: "Agent step 1." })).toBe("Agent step 1.");
+    expect(runEventBody({ event: "Agent step 1." })).toBe("Step 1.");
     expect(source).toContain("runEventBody(event)");
     expect(source).not.toContain("JSON.stringify(event.event");
     expect(runReference("sched-temporal-c9522e0b-4fc9-47a3-9fbf-434c9faf2262")).toBe(
