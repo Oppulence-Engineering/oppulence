@@ -18,7 +18,10 @@ describe("AgentConfigurationForm", () => {
   });
 
   it("offers workspace tools and hides developer surfaces until enabled", () => {
-    expect(tools).toContain('label: "Read workspace memory"');
+    expect(tools).toContain('label: "Look up companies and promises"');
+    expect(tools).not.toContain('label: "Read workspace memory"');
+    expect(tools).toContain('label: "Send a Gmail message after you approve it"');
+    expect(tools).not.toContain('label: "Send email"');
     expect(tools).toContain('label: "Create task"');
     expect(source).toContain("visibleTools(selectedTools)");
     expect(source).toContain("agentInstructionsCopy(");

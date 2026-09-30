@@ -17,19 +17,19 @@ export const AGENT_TOOL_CATALOG = [
   { name: "echo", label: "Echo", description: "Send a short message back, to confirm this agent can use a tool." },
   {
     name: "tool_result.read",
-    label: "Tool results",
-    description: "Read results produced by another tool.",
+    label: "Earlier results",
+    description: "Read what an earlier step already returned.",
   },
   {
     name: "relationship.read",
-    label: "Read workspace memory",
+    label: "Look up companies and promises",
     description:
-      "Read companies, people, conversations, notes, tasks, commitments, risks, and source health.",
+      "Read companies, people, conversations, notes, tasks, promises, and source health.",
   },
   {
     name: "source.retry_sync",
-    label: "Retry source sync",
-    description: "Try syncing a source again. This does not reconnect the account.",
+    label: "Sync a source again",
+    description: "Try reading a connected source again. This does not reconnect the account.",
   },
   {
     name: "task.create",
@@ -93,7 +93,7 @@ export const AGENT_TOOL_CATALOG = [
   },
   {
     name: "connector.write.gmail_send",
-    label: "Send email",
+    label: "Send a Gmail message after you approve it",
     description: "Send a Gmail message after you approve it.",
   },
   {

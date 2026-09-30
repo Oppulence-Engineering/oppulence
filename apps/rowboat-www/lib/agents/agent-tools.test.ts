@@ -7,7 +7,12 @@ describe("agent tool labels", () => {
     expect(agentToolLabel("echo")).toBe("Echo");
     expect(agentToolLabel("workflow.read")).toBe("Workflows");
     expect(agentToolLabel("run_history.read")).toBe("Past runs");
-    expect(agentToolLabel("relationship.read")).toBe("Read workspace memory");
+    expect(agentToolLabel("relationship.read")).toBe("Look up companies and promises");
+    expect(agentToolLabel("source.retry_sync")).toBe("Sync a source again");
+    expect(agentToolLabel("connector.write.gmail_send")).toBe(
+      "Send a Gmail message after you approve it",
+    );
+    expect(agentToolLabel("tool_result.read")).toBe("Earlier results");
     expect(agentToolLabel("relationship.create")).toBe("Add a company");
     expect(agentToolLabel("connector.read.composio_tool_search")).toBe("Find a connected action");
     expect(agentToolLabel("connector.read.composio_tool_describe")).toBe("Read a connected action");
