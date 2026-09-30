@@ -43,7 +43,8 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).not.toContain("<Graph /> Canvas");
     expect(source).not.toContain("Hide isolated");
     expect(source).not.toContain('aria-label="Graph density"');
-    expect(source).toContain("Companies, people, and the evidence between them");
+    expect(source).toContain("Companies, people, and the promises between them");
+    expect(source).not.toContain("the evidence between them");
     expect(source).toContain("All companies");
     expect(source).toContain("walk this graph one node at a time");
     expect(source).not.toContain("Portfolio graph");
@@ -64,7 +65,8 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryFilterLabel("overdue commitments")).toBe("overdue commitments");
     expect(source).toContain("Building the company graph");
     expect(source).not.toContain("Building authorized graph");
-    expect(source).toContain("Select a company, person, or evidence item");
+    expect(source).toContain("Select a company or a person to see how it connects.");
+    expect(source).not.toContain("or evidence item");
     expect(source).not.toContain("governed next actions");
     expect(source).toContain('relationship: "Company"');
     expect(source).not.toContain('relationship: "Account"');

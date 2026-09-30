@@ -545,7 +545,7 @@ function Inspector({
         <Graph className="size-7 text-primary/25" />
         <p className="mt-3 text-sm font-medium text-primary">Inspect the graph</p>
         <p className="mt-1 max-w-56 text-xs text-primary/45">
-          Select a company, person, or evidence item to see its state and connections.
+          Select a company or a person to see how it connects.
         </p>
       </aside>
     );
@@ -1241,7 +1241,7 @@ export function RelationshipGraphWorkspace({
             <div>
               <h2 className="text-sm font-semibold text-primary">Company graph</h2>
               <p className="text-[10px] text-primary/40">
-                Companies, people, and the evidence between them
+                Companies, people, and the promises between them
               </p>
             </div>
           </div>
