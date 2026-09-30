@@ -43,6 +43,10 @@ describe("API reference document", () => {
     expect(page).toContain('"title":"Oppulence API"');
     expect(page).not.toContain("</script><script>alert(1)</script>");
     expect(page).toContain("\\u003c/script>");
+    expect(page).toContain('src="/api/reference/viewer"');
+    expect(page).toContain("withDefaultFonts: false");
+    expect(page).not.toContain("unpkg.com");
+    expect(page).not.toContain("fonts.scalar.com");
   });
 
   it("says the reference could not be loaded when the spec is missing", () => {

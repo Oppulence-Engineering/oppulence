@@ -32,11 +32,15 @@ export function presentApiReferenceDocument<T>(spec: T): T {
 
 export function renderApiReferencePage(spec: unknown): string {
   const payload = JSON.stringify(spec ?? null).replaceAll("<", "\\u003c");
+  // The viewer is served from this app. Loading it from unpkg would require
+  // opening script-src to every package on that host, and Scalar's default
+  // fonts are fetched from fonts.scalar.com, which the page policy blocks.
   const viewer = spec
-    ? `<script src="https://unpkg.com/@scalar/api-reference/dist/browser/standalone.js"></script>
+    ? `<script src="/api/reference/viewer"></script>
     <script>
       Scalar.createApiReference("#app", {
         content: document.getElementById("api-reference-spec").textContent,
+        withDefaultFonts: false,
       });
     </script>`
     : `<p style="font: 14px/1.5 sans-serif; margin: 24px;">The API reference could not be loaded.</p>`;
