@@ -1441,17 +1441,41 @@ function NoteDialog({
   );
 }
 
+/**
+ * Due dates are ISO strings, so lexicographic order is chronological.
+ * A task with no due date stays at the end in both directions: it is not
+ * the soonest date and it is not the latest one.
+ */
+export function sortTasksByDue<T extends { dueAt?: string | null }>(
+  tasks: readonly T[],
+  soonestFirst: boolean,
+): T[] {
+  return [...tasks].sort((left, right) => {
+    const leftDue = left.dueAt || "";
+    const rightDue = right.dueAt || "";
+    if (!leftDue && !rightDue) return 0;
+    if (!leftDue) return 1;
+    if (!rightDue) return -1;
+    const order = leftDue.localeCompare(rightDue);
+    return soonestFirst ? order : -order;
+  });
+}
+
 export function TasksView({ onError, onNotice }: ViewProps) {
   const queryClient = useQueryClient();
   const actionsQuery = useRevenueActions("open", 100);
   const relationshipsQuery = useRelationships();
   const [creating, setCreating] = React.useState(false);
   const [filter, setFilter] = React.useState<"all" | "today" | "overdue">("all");
+  const [soonestFirst, setSoonestFirst] = React.useState(true);
   const [busy, setBusy] = React.useState<string | null>(null);
   const [now] = React.useState(() => Date.now());
-  const tasks = (actionsQuery.data ?? [])
-    .filter((action) => action.actionType === "follow_up_task" && action.channel === "task")
-    .sort((left, right) => (left.dueAt || "9999").localeCompare(right.dueAt || "9999"));
+  const tasks = sortTasksByDue(
+    (actionsQuery.data ?? []).filter(
+      (action) => action.actionType === "follow_up_task" && action.channel === "task",
+    ),
+    soonestFirst,
+  );
   const relationships = (relationshipsQuery.data ?? []).filter(
     (record) => record.kind !== "person",
   );
@@ -1497,7 +1521,9 @@ export function TasksView({ onError, onNotice }: ViewProps) {
             variant="outline"
           >
             <List className="size-4" /> Sorted by{" "}
-            <Label className="font-normal text-primary">Due date</Label>
+            <Label className="font-normal text-primary">
+              {soonestFirst ? "Soonest due" : "Latest due"}
+            </Label>
           </Badge>
           <Select value={filter} onValueChange={(value) => setFilter(value as typeof filter)}>
             <SelectTrigger
@@ -1517,13 +1543,25 @@ export function TasksView({ onError, onNotice }: ViewProps) {
           </Select>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            className="h-8 rounded-none border border-border bg-background px-3 text-[13px] text-primary hover:bg-background-100"
-            variant="ghost"
-          >
-            <SlidersHorizontal className="size-4" /> View settings
-          </Button>
+          <details className="relative">
+            <summary className="flex h-8 cursor-pointer list-none items-center gap-2 border border-border bg-background px-3 text-[13px] text-primary hover:bg-background-100">
+              <SlidersHorizontal className="size-4" /> View settings
+            </summary>
+            <div className="absolute right-0 z-20 mt-1 w-56 border border-border bg-background p-3 shadow-xl">
+              <label
+                className="flex cursor-pointer items-center justify-between gap-4 text-[13px] text-primary/70"
+                htmlFor="tasks-soonest-due"
+              >
+                Soonest due first
+                <Checkbox
+                  aria-label="Soonest due first"
+                  checked={soonestFirst}
+                  id="tasks-soonest-due"
+                  onCheckedChange={(checked) => setSoonestFirst(checked === true)}
+                />
+              </label>
+            </div>
+          </details>
           <Button
             className="h-8 bg-[#3478f6] px-3 text-white hover:bg-[#2f6fe6]"
             size="sm"

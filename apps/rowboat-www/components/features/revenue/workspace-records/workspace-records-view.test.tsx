@@ -36,7 +36,7 @@ vi.mock("@oppulence/ui/components/dialog", () => ({
   DialogTitle: ({ children }: React.PropsWithChildren) => <h2>{children}</h2>,
 }));
 
-import { NotesView } from "@/components/features/revenue/workspace-records/workspace-records-view";
+import { NotesView, sortTasksByDue } from "@/components/features/revenue/workspace-records/workspace-records-view";
 
 const timestamps = {
   createdAt: "2026-09-17T12:00:00Z",
@@ -314,5 +314,25 @@ describe("workspace record notes", () => {
         (group) => group.label,
       ),
     ).toEqual(["Earlier", "Created today"]);
+  });
+});
+
+describe("task due order", () => {
+  it("puts undated tasks after dated ones, and reverses when latest is requested", () => {
+    const tasks = [
+      { id: "undated" },
+      { id: "later", dueAt: "2026-10-02" },
+      { id: "sooner", dueAt: "2026-09-01" },
+    ];
+    expect(sortTasksByDue(tasks, true).map((task) => task.id)).toEqual([
+      "sooner",
+      "later",
+      "undated",
+    ]);
+    expect(sortTasksByDue(tasks, false).map((task) => task.id)).toEqual([
+      "later",
+      "sooner",
+      "undated",
+    ]);
   });
 });
