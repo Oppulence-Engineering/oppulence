@@ -1,9 +1,11 @@
 /**
  * The product opens this reference from Help and the sidebar. The API process
  * still publishes the document as "Solomon AI", including its HTML page. We
- * keep the spec and replace the heading and section names a person reads.
+ * keep the spec and replace the heading, section names, and field descriptions
+ * a person reads. Path parameter text stays, because generated clients use it.
  * The viewer chrome that only exists on a developer machine — Ask AI, Generate
- * MCP, and Developer Tools — stays off, because this page is the product reference.
+ * MCP, Developer Tools, and the API client — stays off, because this page is
+ * the product reference.
  */
 export const API_REFERENCE_TITLE = "Oppulence API";
 
@@ -112,8 +114,10 @@ function presentedTagName(name: string): string {
 }
 
 /**
- * Operation prose still names the old product, RFCs, and the sending service.
+ * Prose still names the old product, internal RFCs, and the sending service.
  * Replacements stay phrase-sized so a sentence does not lose its verb.
+ * Four-digit RFC numbers are public standards (dates, keys, problem details)
+ * and stay. Three-digit numbers are internal design notes and come out.
  */
 function presentReferenceProse(value: string): string {
   return value
@@ -121,18 +125,45 @@ function presentReferenceProse(value: string): string {
     .replaceAll("Solomon AI", "Oppulence")
     .replaceAll("authenticated Rowboat user", "signed-in person")
     .replaceAll("explicit Rowboat handoff", "workspace handoff")
+    .replaceAll("a Rowboat user", "a signed-in person")
+    .replaceAll("Rowboat user id", "User id")
+    .replaceAll("Rowboat tenant", "Oppulence workspace")
     .replaceAll("Rowboat", "Oppulence")
+    .replaceAll("OutboundConsole organization id", "Sending organization id")
+    .replaceAll("OutboundConsole workspace id", "Sending workspace id")
+    .replaceAll("OutboundConsole identifiers", "Sending workspace identifiers")
     .replaceAll("OutboundConsole workspace", "sending workspace")
     .replaceAll("OutboundConsole preflight", "sending check")
     .replaceAll("OutboundConsole", "checked sending")
     .replaceAll("policy preflight", "sending check")
     .replaceAll("policy facade", "sending check")
-    .replace(/RFC \d+/g, "")
+    .replace(/RFC \d{1,3}\b/g, "")
     .replace(/\( /g, "(")
     .replace(/\(\)/g, "")
     .replace(/ {2,}/g, " ")
     .replace(/ \./g, ".")
     .trim();
+}
+
+/**
+ * Field descriptions live on schemas, request bodies, and responses. Parameter
+ * descriptions stay as published so a path parameter does not change under a
+ * generated client.
+ */
+function presentDescriptions(node: unknown): void {
+  if (!node || typeof node !== "object") return;
+  if (Array.isArray(node)) {
+    for (const item of node) presentDescriptions(item);
+    return;
+  }
+  const record = node as Record<string, unknown>;
+  if (typeof record.description === "string") {
+    record.description = presentReferenceProse(record.description);
+  }
+  for (const [key, value] of Object.entries(record)) {
+    if (key === "description" || key === "parameters") continue;
+    presentDescriptions(value);
+  }
 }
 
 export function presentApiReferenceDocument<T>(spec: T): T {
@@ -166,6 +197,7 @@ export function presentApiReferenceDocument<T>(spec: T): T {
       }
     }
   }
+  presentDescriptions(document);
   return document as T;
 }
 
@@ -181,6 +213,7 @@ export function renderApiReferencePage(spec: unknown): string {
         content: document.getElementById("api-reference-spec").textContent,
         withDefaultFonts: false,
         showDeveloperTools: "never",
+        hideClientButton: true,
         agent: { disabled: true },
         mcp: { disabled: true },
       });

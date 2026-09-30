@@ -6,7 +6,7 @@ import {
 } from "@/lib/api/api-reference-document";
 
 describe("API reference document", () => {
-  it("replaces the Solomon heading and leaves the rest of the spec", () => {
+  it("replaces the Solomon heading and names schema text for the product", () => {
     const presented = presentApiReferenceDocument({
       openapi: "3.0.3",
       info: {
@@ -30,7 +30,10 @@ describe("API reference document", () => {
     );
     expect(presented.info.version).toBe("0.1.0");
     expect(presented.servers[0]?.description).toBe("Current Oppulence API origin");
-    expect(presented.components.schemas.ErrorEnvelope.description).toContain("Solomon AI API");
+    expect(presented.components.schemas.ErrorEnvelope.description).toBe(
+      "RFC 9457 problem details returned by Oppulence API handlers.",
+    );
+    expect(presented.components.schemas.ErrorEnvelope.description).not.toMatch(/Solomon/);
   });
 
   it("renders a page titled for Oppulence and escapes embedded markup", () => {
@@ -46,6 +49,7 @@ describe("API reference document", () => {
     expect(page).toContain('src="/api/reference/viewer"');
     expect(page).toContain("withDefaultFonts: false");
     expect(page).toContain('showDeveloperTools: "never"');
+    expect(page).toContain("hideClientButton: true");
     expect(page).toContain("agent: { disabled: true }");
     expect(page).toContain("mcp: { disabled: true }");
     expect(page).not.toContain("unpkg.com");
@@ -105,6 +109,79 @@ describe("API reference document", () => {
     expect(operation?.tags).toEqual(["Promises"]);
     expect(presented.paths["/v1/revenue-workspaces/link"]?.parameters?.[0]?.description).toContain(
       "Solomon AI API",
+    );
+  });
+
+  it("names schema fields without the old product and keeps public standards", () => {
+    const presented = presentApiReferenceDocument({
+      components: {
+        schemas: {
+          RevenueWorkspace: {
+            description:
+              "Mapping between the Rowboat tenant and the canonical OutboundConsole workspace. Local mode has no link.",
+            properties: {
+              outboundOrganizationId: { description: "OutboundConsole organization id." },
+              outboundWorkspaceId: { description: "OutboundConsole workspace id." },
+              completedAt: { description: "When the deletion finished (RFC 3339)." },
+              userId: { description: "Rowboat user id (UUID) owning the event." },
+            },
+          },
+          RevenuePolicyDecision: {
+            description:
+              "Immutable OutboundConsole preflight decision for one exact action revision. Rowboat snapshots the decision; it never composes one.",
+          },
+          ErrorEnvelope: {
+            description:
+              "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+          },
+        },
+      },
+      paths: {
+        "/v1/revenue-workspaces/link": {
+          post: {
+            requestBody: { description: "OutboundConsole identifiers." },
+            responses: {
+              "409": {
+                description:
+                  "The browser install is incomplete, or the workspace is already owned by another Rowboat account.",
+              },
+            },
+          },
+        },
+        "/v1/webhooks/slack": {
+          post: {
+            description:
+              "event_callback deliveries for workspaces mapped to a Rowboat user are ingested.",
+          },
+        },
+      },
+    });
+
+    const schema = presented.components.schemas.RevenueWorkspace;
+    expect(schema.description).toBe(
+      "Mapping between the Oppulence workspace and the canonical sending workspace. Local mode has no link.",
+    );
+    expect(schema.properties.outboundOrganizationId.description).toBe("Sending organization id.");
+    expect(schema.properties.outboundWorkspaceId.description).toBe("Sending workspace id.");
+    expect(schema.properties.completedAt.description).toBe(
+      "When the deletion finished (RFC 3339).",
+    );
+    expect(schema.properties.userId.description).toBe("User id (UUID) owning the event.");
+    expect(presented.components.schemas.RevenuePolicyDecision.description).toBe(
+      "Immutable sending check decision for one exact action revision. Oppulence snapshots the decision; it never composes one.",
+    );
+    expect(presented.components.schemas.ErrorEnvelope.description).toContain("RFC 9457");
+    expect(presented.components.schemas.ErrorEnvelope.description).not.toMatch(/Solomon/);
+    expect(presented.paths["/v1/revenue-workspaces/link"]?.post?.requestBody?.description).toBe(
+      "Sending workspace identifiers.",
+    );
+    expect(
+      presented.paths["/v1/revenue-workspaces/link"]?.post?.responses?.["409"]?.description,
+    ).toBe(
+      "The browser install is incomplete, or the workspace is already owned by another Oppulence account.",
+    );
+    expect(presented.paths["/v1/webhooks/slack"]?.post?.description).toBe(
+      "event_callback deliveries for workspaces mapped to a signed-in person are ingested.",
     );
   });
 
