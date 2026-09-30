@@ -180,6 +180,10 @@ describe("WorkspaceView", () => {
     expect(screen.getByText("Sending check")).toBeVisible();
     expect(screen.getByText("Turn on checked sending")).toBeVisible();
     expect(screen.getByText("Sending workspace ID")).toBeVisible();
+    expect(screen.getByPlaceholderText("Workspace id")).toBeVisible();
+    expect(screen.getByPlaceholderText("Organization id")).toBeVisible();
+    expect(screen.queryByPlaceholderText("ws_…")).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("org_…")).not.toBeInTheDocument();
     expect(await screen.findByText(/Nothing is connected yet/)).toBeVisible();
     expect(screen.queryByText(/OutboundConsole/)).not.toBeInTheDocument();
     expect(screen.queryByText(/\bCRM\b/)).not.toBeInTheDocument();

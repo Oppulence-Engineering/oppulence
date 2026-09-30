@@ -234,14 +234,14 @@ export function WorkspaceView({
               <Field label="Sending workspace ID">
                 <Input
                   onChange={(event) => setWsId(event.target.value)}
-                  placeholder="ws_…"
+                  placeholder="Workspace id"
                   value={wsId}
                 />
               </Field>
               <Field label="Organization ID (optional)">
                 <Input
                   onChange={(event) => setOrgId(event.target.value)}
-                  placeholder="org_…"
+                  placeholder="Organization id"
                   value={orgId}
                 />
               </Field>
