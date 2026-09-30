@@ -162,6 +162,12 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain("Oppulence Cloud keeps the schedule.");
     expect(source).not.toContain("cloud runtime");
     expect(source).not.toContain("View settings");
+    expect(source).toContain(
+      "Name what this workflow should do. You can choose when it starts and what it does next.",
+    );
+    expect(source).toContain("Create workflow");
+    expect(source).not.toContain("Create draft");
+    expect(source).not.toContain("configure the trigger and actions on the canvas");
   });
 
   it("keeps the named product export at the generator path", () => {

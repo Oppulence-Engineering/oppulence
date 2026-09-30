@@ -279,7 +279,7 @@ function CreateWorkflowDialog({
         <DialogHeader>
           <DialogTitle>Create workflow</DialogTitle>
           <DialogDescription>
-            Start with a focused objective, then configure the trigger and actions on the canvas.
+            Name what this workflow should do. You can choose when it starts and what it does next.
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="custom">
@@ -315,7 +315,7 @@ function CreateWorkflowDialog({
                 disabled={busy || !name.trim() || !objective.trim()}
                 onClick={create}
               >
-                {busy ? <Spinner className="size-4" /> : <Cloud />} Create draft
+                {busy ? <Spinner className="size-4" /> : <Cloud />} Create workflow
               </Button>
             </DialogFooter>
           </TabsContent>
