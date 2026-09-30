@@ -68,6 +68,7 @@ export function TaskCreateDialog({
       })),
     [relationships],
   );
+  const noCompanies = relationships.length === 0;
 
   const close = React.useCallback(() => onOpenChange(false), [onOpenChange]);
 
@@ -139,8 +140,12 @@ export function TaskCreateDialog({
         cancelDisabled={busy}
         onCancel={close}
         primaryAction={{
-          disabled: busy || !title.trim() || !dueDate,
-          disabledTooltip: !relationshipId ? "Link a company to save" : undefined,
+          disabled: busy || !title.trim() || !dueDate || noCompanies,
+          disabledTooltip: noCompanies
+            ? "Add a company before this task can be saved"
+            : !relationshipId
+              ? "Link a company to save"
+              : undefined,
           label: "Save",
           leftAdornment: busy ? (
             <Loader animate className="size-[14px] text-[var(--text-tertiary)]" />
@@ -183,9 +188,16 @@ export function TaskCreateDialog({
             custom: (
               <ChipDropdown
                 className={recordError ? "text-[var(--text-error)]" : undefined}
+                disabled={noCompanies}
                 leftIcon={Link}
                 options={relationshipOptions}
-                placeholder={recordError ? "Add a record to save" : "Add record"}
+                placeholder={
+                  noCompanies
+                    ? "No companies yet"
+                    : recordError
+                      ? "Add a record to save"
+                      : "Add record"
+                }
                 value={relationshipId || undefined}
                 onChange={(value) => {
                   setRelationshipId(value);

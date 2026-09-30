@@ -41,4 +41,23 @@ describe("TaskCreateDialog", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Add a company before saving.");
     expect(mocks.createAction).not.toHaveBeenCalled();
   });
+
+  it("does not offer a save when the workspace has no companies", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <TaskCreateDialog
+        open
+        relationships={[]}
+        onError={vi.fn()}
+        onOpenChange={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+
+    await user.type(screen.getByLabelText("Task title"), "Follow up on renewal");
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "No companies yet" })).toBeDisabled();
+    expect(mocks.createAction).not.toHaveBeenCalled();
+  });
 });
