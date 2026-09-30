@@ -107,7 +107,13 @@ function props(overrides: Partial<ComponentProps<typeof CommitmentQueue>> = {}) 
 describe("CommitmentQueue", () => {
   it("asks for an account when that view has none selected", () => {
     expect(REGISTER_VIEWS.find((view) => view.id === "by_account")?.hint).toBe(
-      "The full two-sided history for one account.",
+      "Every promise for one account.",
+    );
+    expect(REGISTER_VIEWS.find((view) => view.id === "they_owe")?.hint).toBe(
+      "Promises they made to us.",
+    );
+    expect(REGISTER_VIEWS.map((view) => view.hint).join(" ")).not.toMatch(
+      /obligation|no other tool|handover|two-sided/i,
     );
     render(
       <CommitmentQueue

@@ -106,26 +106,26 @@ export interface CommitmentQueueItem {
  *  different query against GET /v1/commitments, not a different screen. */
 
 export const REGISTER_VIEWS: { id: RegisterView; label: string; hint: string }[] = [
-  { id: "we_owe", label: "What we owe", hint: "Outbound obligations by risk, then by date." },
+  { id: "we_owe", label: "What we owe", hint: "Promises we made, most urgent first." },
   {
     id: "they_owe",
     label: "What they owe us",
-    hint: "Inbound obligations. The view no other tool offers.",
+    hint: "Promises they made to us.",
   },
   {
     id: "changed",
     label: "What changed",
-    hint: "New commitments and slippage since the last review.",
+    hint: "Promises that are new, or that slipped, since the last look.",
   },
   {
     id: "by_account",
     label: "By account",
-    hint: "The full two-sided history for one account.",
+    hint: "Every promise for one account.",
   },
   {
     id: "by_owner",
     label: "By owner",
-    hint: "What each person has promised. Used for load and handover.",
+    hint: "What each person has promised.",
   },
 ];
 
@@ -447,7 +447,7 @@ export function CommitmentQueue({
     >
       <SimProductPanel className="mx-3 mt-3 flex min-h-0 flex-1 flex-col">
         <SimProductHeader
-          actions={`${filtered.length} row${filtered.length === 1 ? "" : "s"}`}
+          actions={`${filtered.length} commitment${filtered.length === 1 ? "" : "s"}`}
           icon={TableIcon}
           title="Commitment register"
         />
@@ -743,7 +743,7 @@ export function CommitmentQueue({
           <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[84px] text-center">
             <WorkspaceEmptyIllustration image="commitments" />
             <h2 className="text-[20px] font-semibold leading-6 text-primary">
-              {items.length === 0 ? "Commitment Queue" : "No commitments match this view"}
+              {items.length === 0 ? "No commitments yet" : "No commitments match this view"}
             </h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
               {items.length === 0
