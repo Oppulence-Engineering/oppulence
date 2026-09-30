@@ -65,11 +65,15 @@ const plainChat = {
   ],
 };
 
-// react-grab loads from unpkg in dev and talks to a local MCP server (Cursor 5567,
-// Claude 4567, Gemini 5568, OpenCode 6567). Keep these origins dev-only.
+// react-grab and react-scan load from unpkg in dev. Both ping
+// https://www.react-grab.com/api/version, and the grab MCP client probes its
+// default health port (4723) plus the agent ports (Cursor 5567, Claude 4567,
+// Gemini 5568, OpenCode 6567). Keep these origins dev-only.
 const reactGrabDev = {
   script: "https://unpkg.com",
   connect: [
+    "https://www.react-grab.com",
+    "http://localhost:4723",
     "http://localhost:4567",
     "http://localhost:5567",
     "http://localhost:5568",
