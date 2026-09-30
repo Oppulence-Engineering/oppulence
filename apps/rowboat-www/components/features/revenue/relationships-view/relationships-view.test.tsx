@@ -8,6 +8,7 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "relationships-vie
 import {
   companyDirectoryTitle,
   companyListEmptyCopy,
+  companySheetPositionLabel,
   completenessProductLabel,
   detailSourceLabel,
   enrichmentAvailabilityCopy,
@@ -47,6 +48,10 @@ describe("RelationshipsView", () => {
       }),
     ).toBe("Connect Gmail to discover companies from real conversations, or add one by hand.");
     expect(source).toContain("companyListEmptyCopy({");
+    expect(companySheetPositionLabel(1, 4, false)).toBe("1 of 4 in All companies");
+    expect(companySheetPositionLabel(1, 1, true)).toBe("1 of 1 in this filter");
+    expect(source).toContain("companySheetPositionLabel(position, total, filtered)");
+    expect(source).not.toContain("in All companies`");
   });
 
   it("does not offer company checkboxes that select nothing", () => {

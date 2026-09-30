@@ -178,6 +178,9 @@ export function friendlyRevenueError(message: string) {
   if (/gmail.*(?:returned 429|user-rate limit exceeded)/i.test(message)) {
     return "Google is temporarily limiting Gmail reads for this account. Please try the audit again in about 15 minutes.";
   }
+  if (/\brate limit\b|too many requests|\(429\)/i.test(message)) {
+    return "Too many requests were sent from this workspace. Wait a moment, then try again.";
+  }
   if (/session refresh is temporarily unavailable|session_unavailable/i.test(message)) {
     return "Your session could not be refreshed. Sign out and sign in again.";
   }

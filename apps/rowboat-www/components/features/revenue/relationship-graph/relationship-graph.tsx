@@ -88,7 +88,13 @@ import {
   TableRow,
 } from "@oppulence/ui/components/table";
 import { ToggleGroup, ToggleGroupItem } from "@oppulence/ui/components/toggle-group";
-import { approveAction, createAction, evaluateAction, rejectAction } from "@/lib/revenue/revenue";
+import {
+  approveAction,
+  createAction,
+  evaluateAction,
+  friendlyRevenueError,
+  rejectAction,
+} from "@/lib/revenue/revenue";
 import { createConsoleResource, deleteConsoleResource } from "@/lib/console/console";
 import {
   LEGACY_GRAPH_VIEWS_KEY,
@@ -963,8 +969,10 @@ export function RelationshipGraphWorkspace({
   );
   const graph = graphEnabled ? (graphQuery.data ?? null) : null;
   const loading = graphEnabled && graphQuery.isPending;
+  // The canvas already explains a failed load and offers Retry. Sending the
+  // same failure to the page banner left it sitting on every other tab.
   const loadError = graphQuery.error
-    ? errMessage(graphQuery.error, "Could not load the company graph.")
+    ? friendlyRevenueError(errMessage(graphQuery.error, "Could not load the company graph."))
     : null;
   const savedViewsQuery = useConsoleResources("graph_saved_view", graphSavedViews);
   const legacyViews = React.useMemo(
@@ -1064,12 +1072,6 @@ export function RelationshipGraphWorkspace({
         : current,
     );
   }, [graph]);
-
-  React.useEffect(() => {
-    if (graphQuery.error) {
-      onError(errMessage(graphQuery.error, "Could not load the company graph."));
-    }
-  }, [graphQuery.error, onError]);
 
   React.useEffect(() => {
     writeURLState(viewState);

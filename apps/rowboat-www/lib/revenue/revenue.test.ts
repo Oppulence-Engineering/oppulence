@@ -214,6 +214,9 @@ describe("friendlyRevenueError", () => {
         "revenue: gmail thread sweep: gmail threads.list: google api returned 429: User-rate limit exceeded",
       ),
     ).toContain("try the audit again in about 15 minutes");
+    expect(friendlyRevenueError("rate limit exceeded")).toBe(
+      "Too many requests were sent from this workspace. Wait a moment, then try again.",
+    );
   });
 });
 

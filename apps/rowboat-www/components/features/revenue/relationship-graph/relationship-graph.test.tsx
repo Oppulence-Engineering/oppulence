@@ -33,6 +33,8 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).not.toContain("raise density");
     expect(source).not.toContain("No nodes match");
     expect(source).toContain("Could not load the company graph.");
+    expect(source).toContain("friendlyRevenueError(errMessage(graphQuery.error");
+    expect(source).not.toContain("onError(errMessage(graphQuery.error");
     expect(source).not.toContain("Could not load the relationship graph.");
     expect(source).toContain(">Company graph</h2>");
     expect(source).toContain("<Graph /> Diagram");

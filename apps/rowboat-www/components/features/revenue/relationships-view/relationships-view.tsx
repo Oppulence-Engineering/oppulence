@@ -459,6 +459,18 @@ export function companyDirectoryTitle(input: {
  * A filtered directory can be empty because nothing matched. That is not the
  * same as a workspace that has never had a company.
  */
+/**
+ * Position is within the list on screen. After a search or health filter
+ * that list is not every company, so the sheet must not say it is.
+ */
+export function companySheetPositionLabel(
+  position: number,
+  total: number,
+  filtered: boolean,
+): string {
+  return `${position} of ${total} in ${filtered ? "this filter" : "All companies"}`;
+}
+
 export function companyListEmptyCopy(input: {
   filtered: boolean;
   hasConnectedSource: boolean;
@@ -1062,6 +1074,7 @@ export function RelationshipsView({
             1,
             companies.findIndex((relationship) => relationship.id === detail) + 1,
           )}
+          filtered={directoryTitle.filtered}
           total={companies.length}
           onClose={() => setDetail(null)}
           onError={onError}
@@ -1757,6 +1770,7 @@ export function RelationshipSheet({
   seed,
   position,
   total,
+  filtered = false,
   onClose,
   onError,
   onChanged,
@@ -1765,6 +1779,7 @@ export function RelationshipSheet({
   seed?: RevenueRelationship;
   position: number;
   total: number;
+  filtered?: boolean;
   onClose: () => void;
   onError: (m: string) => void;
   onChanged: () => void;
@@ -1886,7 +1901,7 @@ export function RelationshipSheet({
       >
         <SheetHeader className="min-h-12 flex-row items-center border-b border-border py-2 pl-14 pr-3">
           <SheetTitle className="text-xs font-normal text-primary/55">
-            {data || seed ? `${position} of ${total} in All companies` : "Company"}
+            {data || seed ? companySheetPositionLabel(position, total, filtered) : "Company"}
           </SheetTitle>
           <SheetDescription className="sr-only">
             {data?.relationship.primaryEmail}
