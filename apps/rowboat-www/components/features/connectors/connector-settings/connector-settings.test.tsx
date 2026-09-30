@@ -36,6 +36,7 @@ const optionalScope = {
   displayName: "Create drafts",
   grantTier: "optional" as const,
   name: "google:drafts.write",
+  requiredPlan: "intelligence",
   risk: "medium" as const,
 };
 
@@ -188,6 +189,7 @@ describe("hosted connector settings", () => {
 
     const row = await screen.findByTestId("connector-google");
     await userEvent.click(within(row).getByText("Permissions"));
+    expect(within(row).getByText("Create drafts · Optional · Intelligence plan")).toBeVisible();
     await userEvent.click(within(row).getByRole("checkbox"));
     const authorize = within(row).getByRole("button", {
       name: "Authorize Google with selected permissions",

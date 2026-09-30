@@ -29,6 +29,7 @@ import type {
 import { createGoogleCommitmentsAuthorizationURL } from "@/lib/api/connectors/google-oauth";
 import { startHostedOAuth } from "@/lib/api/connectors/hosted-oauth";
 import { GOOGLE_OAUTH_CONNECTED_EVENT } from "@/components/features/connectors/google-oauth-return-handler/google-oauth-return-handler";
+import { planLabel } from "@/lib/product/plan-label";
 import { cn } from "@/lib/utils";
 import { ComposioConnections } from "@/components/features/connectors/composio-connections/composio-connections";
 import { dashboardFetch } from "@/lib/auth/client";
@@ -112,7 +113,7 @@ function OptionalConnectorScope({ scope }: { scope: ConnectorScope }) {
       <div>
         <Label className="font-normal text-primary/80">
           {scope.displayName} · Optional
-          {scope.requiredPlan ? ` · ${scope.requiredPlan} plan` : ""}
+          {scope.requiredPlan ? ` · ${planLabel(scope.requiredPlan)} plan` : ""}
         </Label>
         <CardDescription className="block">{scope.description}</CardDescription>
       </div>
@@ -138,7 +139,7 @@ function ConnectorScopeList({ scopes }: { scopes: ConnectorScope[] }) {
               <div>
                 <Label className="font-normal text-primary/80">
                   {scope.displayName} · Required
-                  {scope.requiredPlan ? ` · ${scope.requiredPlan} plan` : ""}
+                  {scope.requiredPlan ? ` · ${planLabel(scope.requiredPlan)} plan` : ""}
                 </Label>
                 <CardDescription className="block">{scope.description}</CardDescription>
               </div>

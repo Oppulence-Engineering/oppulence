@@ -161,6 +161,7 @@ import {
 import { relationshipKeys } from "@/hooks/queries/utils/relationship-keys";
 import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-source-keys";
 import { useQueryClient } from "@tanstack/react-query";
+import { planLabel } from "@/lib/product/plan-label";
 import {
   enumLabel as humanize,
   missingScopeLabels,
@@ -418,19 +419,6 @@ function RelationshipEnrichment({
   );
 }
 
-const ENRICHMENT_PLAN_LABELS: Record<string, string> = {
-  intelligence: "Intelligence",
-  pro: "Pro",
-  free: "Free",
-};
-
-function enrichmentPlanLabel(plan?: string): string {
-  const trimmed = plan?.trim() ?? "";
-  if (!trimmed) return "";
-  return (
-    ENRICHMENT_PLAN_LABELS[trimmed] ?? trimmed.charAt(0).toUpperCase() + trimmed.slice(1)
-  );
-}
 
 /**
  * Research status mixes a vendor setup step with the stored plan slug. The
@@ -441,7 +429,7 @@ export function enrichmentAvailabilityCopy(status: {
   reason?: string;
   requiredPlan?: string;
 }): string {
-  const plan = enrichmentPlanLabel(status.requiredPlan);
+  const plan = planLabel(status.requiredPlan);
   if (!status.available) {
     return plan && status.reason === "plan_required"
       ? `Cited profile enrichment is part of the ${plan} plan. This workspace does not include it.`
