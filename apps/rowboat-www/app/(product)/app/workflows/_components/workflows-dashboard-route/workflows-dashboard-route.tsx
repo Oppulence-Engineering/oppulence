@@ -5,6 +5,7 @@ import "client-only";
 import dynamic from "next/dynamic";
 import type { ComponentPropsWithoutRef } from "react";
 
+import { useProductRouteState } from "@/hooks/dashboard/use-product-route-state";
 import { cn } from "@oppulence/ui/lib/utils";
 import { useDashboardChatController } from "@/components/features/dashboard/chat-route-provider/chat-route-provider";
 import type { WorkflowFocus } from "@/lib/dashboard/product-navigation";
@@ -25,6 +26,11 @@ export function WorkflowsDashboardRoute({
   ...props
 }: WorkflowsDashboardRouteProps) {
   const { selectedResource: resource } = useDashboardChatController();
+  // The page prop is the first server render. Sidebar Runs updates the URL
+  // through nuqs, which does not rerun that server page, so the shell title
+  // would change while this canvas stayed on the workflow editor.
+  const { workflowFocus } = useProductRouteState();
+  const activeFocus = workflowFocus || focus;
   const isTaskResource = resource?.kind === "task" || resource?.kind === "taskrun";
   return (
     <section
@@ -33,8 +39,8 @@ export function WorkflowsDashboardRoute({
       {...props}
     >
       <CloudWorkflowsView
-        key={isTaskResource ? `${focus}:${resource.name}` : focus}
-        focus={focus}
+        key={isTaskResource ? `${activeFocus}:${resource.name}` : activeFocus}
+        focus={activeFocus}
         initialRunId={
           resource?.kind === "taskrun" ? resource.name.split("/").slice(1).join("/") : undefined
         }

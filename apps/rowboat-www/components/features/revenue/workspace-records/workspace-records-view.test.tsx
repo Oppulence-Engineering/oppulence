@@ -476,6 +476,8 @@ describe("people directory copy", () => {
     expect(source).not.toContain(">Relationships</TableHead>");
     expect(source).not.toContain("relationship timeline");
     expect(source).toContain("Link notes to companies");
+    expect(source).toContain('{ label: "Turn notes into promises" }');
+    expect(source).not.toContain("Turn notes into commitments");
     expect(source).toContain("Link a task to a company");
     expect(source).not.toContain("Link notes to accounts");
     expect(source).not.toContain("Introduction to tasks");

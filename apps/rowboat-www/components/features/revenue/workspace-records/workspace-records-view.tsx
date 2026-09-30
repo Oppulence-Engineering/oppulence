@@ -969,7 +969,7 @@ export function NotesView({ onError, onNotice }: ViewProps) {
           image="notes"
           learnMore={[
             { label: "Link notes to companies" },
-            { label: "Turn notes into commitments" },
+            { label: "Turn notes into promises" },
           ]}
           title="Notes"
         />
