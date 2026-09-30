@@ -247,7 +247,8 @@ export function useBrowserOrigin(): string {
   return React.useSyncExternalStore(subscribeBrowserOrigin, readBrowserOrigin, () => "");
 }
 
-function WorkspaceConnection() {
+function WorkspaceConnection({ organizationId }: { organizationId?: string }) {
+  const copy = sessionWorkspaceCopy(organizationId);
   const [state, setState] = React.useState<"checking" | "ready" | "unavailable">("checking");
 
   const check = React.useCallback(async () => {
@@ -267,17 +268,14 @@ function WorkspaceConnection() {
   const label = state === "ready" ? "Ready" : state === "checking" ? "Checking" : "Unavailable";
 
   return (
-    <SettingsRow
-      description="Oppulence Cloud serves companies, people, and promises for this organization."
-      title="Workspace connection"
-    >
+    <SettingsRow description={copy.cloud} title="Workspace connection">
       <div className="settings-row">
         <div className="settings-row-copy">
           <p className="settings-row-label">Oppulence Cloud</p>
           <p className="settings-row-description">
             {state === "unavailable"
               ? "The workspace could not be reached. Check again in a moment."
-              : "Companies, people, and promises for the signed-in organization."}
+              : copy.cloudDetail}
           </p>
         </div>
         {state === "unavailable" ? (
@@ -305,12 +303,12 @@ function SignedInAddress() {
   const origin = useBrowserOrigin();
   return (
     <SettingsRow
-      description="The address this session is signed in to. Oppulence Cloud is checked separately below."
+      description="Where this Oppulence tab is open. The cloud connection is checked separately below."
       title="This browser"
     >
       <div className="settings-row">
         <div className="settings-row-copy">
-          <p className="settings-row-label">Signed-in address</p>
+          <p className="settings-row-label">Browser address</p>
           <p className="settings-row-description font-mono">{origin}</p>
         </div>
       </div>
@@ -327,6 +325,37 @@ function SettingsStatus({ children }: { children: React.ReactNode }) {
       {children}
     </Badge>
   );
+}
+
+/**
+ * A signed-in session can have no organization. Sentences that say an
+ * organization controls the workspace are only true once an id is attached.
+ */
+export function sessionWorkspaceCopy(organizationId: string | undefined): {
+  security: string;
+  permissions: string;
+  cloud: string;
+  cloudDetail: string;
+  connect: string;
+} {
+  if (organizationId?.trim()) {
+    return {
+      security: "Workspace access is controlled by the signed-in Oppulence organization.",
+      permissions:
+        "The signed-in organization controls access to shared companies, people, and their details.",
+      cloud: "Oppulence Cloud serves companies, people, and promises for this organization.",
+      cloudDetail: "Companies, people, and promises for the signed-in organization.",
+      connect: "Use organization-approved connections across this workspace.",
+    };
+  }
+  return {
+    security: "This session has no organization. Access stays with the signed-in account.",
+    permissions:
+      "This session has no organization. Companies, people, and their details stay with the signed-in account.",
+    cloud: "Oppulence Cloud serves companies, people, and promises for this signed-in account.",
+    cloudDetail: "Companies, people, and promises for this signed-in account.",
+    connect: "Connections you add here stay with this signed-in account.",
+  };
 }
 
 /**
@@ -852,16 +881,14 @@ function NotificationsSection() {
 }
 
 function SecuritySection({ session }: { session: SessionShape }) {
+  const copy = sessionWorkspaceCopy(session.user.organizationId);
   return (
     <>
       <PageIntro
         description="Review who is signed in and what this session can open."
         title="Security"
       />
-      <SettingsRow
-        description="Workspace access is controlled by the signed-in Oppulence organization."
-        title="Session access"
-      >
+      <SettingsRow description={copy.security} title="Session access">
         <div className="settings-row">
           <div className="settings-row-copy">
             <p className="settings-row-label">Organization</p>
@@ -936,16 +963,14 @@ function HelpSection() {
 }
 
 function PermissionsSection({ session }: { session: SessionShape }) {
+  const copy = sessionWorkspaceCopy(session.user.organizationId);
   return (
     <>
       <PageIntro
         description="Review who you are and what this session can do."
         title="Permissions"
       />
-      <SettingsRow
-        description="The signed-in organization controls access to shared companies, people, and their details."
-        title="Workspace"
-      >
+      <SettingsRow description={copy.permissions} title="Workspace">
         <div className="settings-row">
           <div className="settings-row-copy">
             <p className="settings-row-label">Current organization</p>
@@ -1071,7 +1096,7 @@ export function SettingsView({
           <>
             <PageIntro description={current.description} title={current.label} />
             <SignedInAddress />
-            <WorkspaceConnection />
+            <WorkspaceConnection organizationId={session.user.organizationId} />
           </>
         ) : null}
         {section === "customization" ? <AppearanceSection /> : null}
@@ -1080,7 +1105,7 @@ export function SettingsView({
         {section === "connect" ? (
           <>
             <PageIntro
-              description="Use organization-approved connections across this workspace."
+              description={sessionWorkspaceCopy(session.user.organizationId).connect}
               title="Oppulence Connect"
             />
             <div className="settings-inline-notice">

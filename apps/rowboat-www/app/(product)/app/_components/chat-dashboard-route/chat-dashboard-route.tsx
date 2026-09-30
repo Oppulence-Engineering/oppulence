@@ -88,8 +88,9 @@ const HOME_STATS: {
   read: (impact: RevenueImpact) => number;
 }[] = [
   {
+    // The number is past-due promises, not how many commitments the register holds.
     tab: "commitments",
-    label: "commitments",
+    label: "overdue",
     read: (impact) => impact.overdueCommitments,
   },
   { tab: "queue", label: "recovery", read: (impact) => impact.open },

@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { sessionWorkspaceCopy } from "@/components/features/settings/app-settings/app-settings";
+
 const source = fs.readFileSync(path.join(import.meta.dirname, "app-settings.tsx"), "utf8");
 
 describe("SettingsView", () => {
@@ -55,7 +57,11 @@ describe("SettingsView", () => {
     expect(source).toContain('empty="Member"');
     expect(source).toContain('fetch("/readyz"');
     expect(source).toContain("Check again");
-    expect(source).toContain("Signed-in address");
+    expect(source).toContain("Browser address");
+    expect(source).toContain("Where this Oppulence tab is open.");
+    expect(source).not.toContain("Signed-in address");
+    expect(source).toContain("This session has no organization. Access stays with the signed-in account.");
+    expect(source).toContain("Connections you add here stay with this signed-in account.");
     expect(source).toContain("useSyncExternalStore");
     expect(source).not.toContain("Organization server");
     expect(source).not.toContain(">Default</SettingsStatus>");
@@ -77,5 +83,28 @@ describe("SettingsView", () => {
     expect(source).not.toContain("mailbox metadata defaults");
     expect(source).not.toContain("this console");
     expect(source).not.toContain("the console");
+  });
+
+  it("talks about an organization only when one is attached", () => {
+    const attached = sessionWorkspaceCopy("org_123");
+    expect(attached.security).toBe(
+      "Workspace access is controlled by the signed-in Oppulence organization.",
+    );
+    expect(attached.cloudDetail).toBe(
+      "Companies, people, and promises for the signed-in organization.",
+    );
+    expect(attached.connect).toBe("Use organization-approved connections across this workspace.");
+
+    const personal = sessionWorkspaceCopy(undefined);
+    expect(personal.security).toBe(
+      "This session has no organization. Access stays with the signed-in account.",
+    );
+    expect(personal.permissions).toContain("stay with the signed-in account.");
+    expect(personal.cloud).toContain("this signed-in account.");
+    expect(personal.cloudDetail).toBe(
+      "Companies, people, and promises for this signed-in account.",
+    );
+    expect(personal.connect).toBe("Connections you add here stay with this signed-in account.");
+    expect(sessionWorkspaceCopy("  ").security).toBe(personal.security);
   });
 });
