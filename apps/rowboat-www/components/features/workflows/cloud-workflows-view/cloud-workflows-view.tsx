@@ -184,7 +184,7 @@ export function scheduleLabel(task: CloudTask): string {
     case "communication":
       return "When communication arrives";
     case "profile-change":
-      return "When a profile is enriched";
+      return "When a company or person is updated";
     case "relationship-risk":
       return "When company risk changes";
     case "commitment-risk":

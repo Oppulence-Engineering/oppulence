@@ -117,6 +117,17 @@ describe("CloudWorkflowsView", () => {
         },
       } as CloudTask),
     ).toBe("When company risk changes");
+    expect(
+      scheduleLabel({
+        triggers: {
+          workflow: {
+            version: 1,
+            trigger: { kind: "profile-change" },
+            actions: ["review-account"],
+          },
+        },
+      } as CloudTask),
+    ).toBe("When a company or person is updated");
     expect(workflowListSummary({ name: "Untitled", triggers: {} } as CloudTask)).toBe(
       "Recurring company follow-up",
     );
