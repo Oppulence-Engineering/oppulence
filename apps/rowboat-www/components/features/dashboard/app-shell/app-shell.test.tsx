@@ -19,4 +19,11 @@ describe("AppShellSidebar", () => {
     expect(source).toContain("Default agent and anonymous usage data.");
     expect(source).not.toContain("reasoning, notifications, privacy, and memory");
   });
+
+  it("describes permissions and security without authorization jargon", () => {
+    expect(source).toContain("Who you are and what this session can do.");
+    expect(source).toContain("Review this session and what it can open.");
+    expect(source).not.toContain("authorized workspace resources");
+    expect(source).not.toContain("authorized evidence access");
+  });
 });

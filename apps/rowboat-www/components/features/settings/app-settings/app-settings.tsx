@@ -329,6 +329,15 @@ function SettingsStatus({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * The success badge means an organization is attached. An empty organization
+ * is not a granted workspace, so the badge stays off until an id exists.
+ */
+function OrganizationSignInStatus({ organizationId }: { organizationId?: string }) {
+  if (!organizationId) return null;
+  return <SettingsStatus>Signed in</SettingsStatus>;
+}
+
 function ThemePreviewSkeleton({ dark }: { dark: boolean }) {
   const line = dark ? "bg-zinc-400/35" : "bg-zinc-400/35";
   const accent = dark ? "bg-zinc-400/60" : "bg-zinc-400/60";
@@ -836,7 +845,7 @@ function SecuritySection({ session }: { session: SessionShape }) {
   return (
     <>
       <PageIntro
-        description="Review the identity, organization, and evidence permissions active in this session."
+        description="Review who is signed in and what this session can open."
         title="Security"
       />
       <SettingsRow
@@ -850,11 +859,11 @@ function SecuritySection({ session }: { session: SessionShape }) {
               {session.user.organizationId || "No organization is attached to this session."}
             </p>
           </div>
-          <SettingsStatus>Authorized</SettingsStatus>
+          <OrganizationSignInStatus organizationId={session.user.organizationId} />
         </div>
         <div className="settings-row">
           <div className="settings-row-copy">
-            <p className="settings-row-label">Effective permissions</p>
+            <p className="settings-row-label">What you can do</p>
             <p className="settings-row-description">
               {session.user.permissions.length > 0
                 ? session.user.permissions.join(", ")
@@ -925,7 +934,7 @@ function PermissionsSection({ session }: { session: SessionShape }) {
       />
       <SettingsRow
         description="The signed-in organization controls access to shared companies, people, and evidence."
-        title="Authorized workspace"
+        title="Workspace"
       >
         <div className="settings-row">
           <div className="settings-row-copy">
@@ -934,7 +943,7 @@ function PermissionsSection({ session }: { session: SessionShape }) {
               {session.user.organizationId || "No organization is attached to this session."}
             </p>
           </div>
-          <SettingsStatus>Authorized</SettingsStatus>
+          <OrganizationSignInStatus organizationId={session.user.organizationId} />
         </div>
         <div className="settings-row">
           <div className="settings-row-copy">
@@ -950,7 +959,7 @@ function PermissionsSection({ session }: { session: SessionShape }) {
         </div>
       </SettingsRow>
       <SettingsRow
-        description="Oppulence only uses evidence returned by authorized services."
+        description="Oppulence only uses what connected services return."
         title="Evidence access"
       >
         <div className="settings-row">

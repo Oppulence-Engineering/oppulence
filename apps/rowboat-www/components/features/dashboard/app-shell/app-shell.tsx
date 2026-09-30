@@ -120,14 +120,14 @@ export const SETTINGS_SECTIONS: {
     label: "Permissions",
     icon: AddressBook,
     group: "workspace",
-    description: "Control identity, access, and authorized workspace resources.",
+    description: "Who you are and what this session can do.",
   },
   {
     key: "security",
     label: "Security",
     icon: ShieldCheck,
     group: "workspace",
-    description: "Review session security and authorized evidence access.",
+    description: "Review this session and what it can open.",
   },
   {
     key: "connections",

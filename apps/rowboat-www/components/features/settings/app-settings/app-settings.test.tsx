@@ -31,6 +31,16 @@ describe("SettingsView", () => {
     expect(source).not.toContain("from Extensions");
     expect(source).not.toContain("your Oppulence organization");
     expect(source).toContain("No organization is attached to this session.");
+    expect(source).toContain("What you can do");
+    expect(source).toContain('title="Workspace"');
+    expect(source).toContain("Review who is signed in and what this session can open.");
+    expect(source).toContain("Oppulence only uses what connected services return.");
+    expect(source).toContain("if (!organizationId) return null");
+    expect(source).toContain(">Signed in</SettingsStatus>");
+    expect(source).not.toContain(">Authorized</SettingsStatus>");
+    expect(source).not.toContain('title="Authorized workspace"');
+    expect(source).not.toContain("Effective permissions");
+    expect(source).not.toContain("authorized services");
     expect(source).toContain('empty="Member"');
     expect(source).toContain('fetch("/readyz"');
     expect(source).toContain("Check again");
