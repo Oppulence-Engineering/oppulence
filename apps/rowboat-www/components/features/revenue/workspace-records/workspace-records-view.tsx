@@ -1592,7 +1592,7 @@ export function TasksView({ onError, onNotice }: ViewProps) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="app-shell rounded-none">
-              <SelectItem value="all">Filter</SelectItem>
+              <SelectItem value="all">All tasks</SelectItem>
               <SelectItem value="today">Due today</SelectItem>
               <SelectItem value="overdue">Overdue</SelectItem>
             </SelectContent>
