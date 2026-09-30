@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { connectorProductDescription } from "./connector-product-copy";
+import {
+  connectorProductDescription,
+  scopeProductDetail,
+  scopeProductLabel,
+} from "./connector-product-copy";
 
 describe("connector product descriptions", () => {
   it("replaces catalog jargon for known connections", () => {
@@ -16,6 +20,16 @@ describe("connector product descriptions", () => {
     expect(connectorProductDescription("conduit", "Data pipelines, event routing, and operational integrations")).not.toMatch(
       /pipeline|operational/i,
     );
+  });
+
+  it("names Eigen permissions without the internal product", () => {
+    expect(scopeProductLabel("eigen:actions.execute", "Execute governed actions")).toBe(
+      "Run an approved action",
+    );
+    expect(scopeProductDetail("eigen:knowledge.read", "Search governed Eigen knowledge and citations.")).toBe(
+      "Search what this workspace already knows.",
+    );
+    expect(scopeProductLabel("github:repo.read", "Read repositories")).toBe("Read repositories");
   });
 
   it("keeps an unknown connection's stored sentence", () => {

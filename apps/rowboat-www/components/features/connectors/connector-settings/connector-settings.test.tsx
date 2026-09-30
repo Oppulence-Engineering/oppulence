@@ -192,7 +192,7 @@ describe("hosted connector settings", () => {
     expect(within(row).getByText("Create drafts · Optional · Intelligence plan")).toBeVisible();
     await userEvent.click(within(row).getByRole("checkbox"));
     const authorize = within(row).getByRole("button", {
-      name: "Authorize Google with selected permissions",
+      name: "Connect Google with these permissions",
     });
     await userEvent.click(authorize);
 

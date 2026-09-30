@@ -19,3 +19,26 @@ export function connectorProductDescription(name: string, stored: string): strin
   if (known) return known;
   return stored.trim();
 }
+
+/**
+ * Scope titles come from the catalog. A few still name an internal product
+ * or a policy gate. Unknown scopes keep the stored title.
+ */
+const KNOWN_SCOPE_COPY: Record<string, { label: string; detail: string }> = {
+  "eigen:knowledge.read": {
+    label: "Search what you know",
+    detail: "Search what this workspace already knows.",
+  },
+  "eigen:actions.execute": {
+    label: "Run an approved action",
+    detail: "Run an action after you approve it.",
+  },
+};
+
+export function scopeProductLabel(name: string, stored: string): string {
+  return KNOWN_SCOPE_COPY[name]?.label ?? stored.trim();
+}
+
+export function scopeProductDetail(name: string, stored: string): string {
+  return KNOWN_SCOPE_COPY[name]?.detail ?? stored.trim();
+}

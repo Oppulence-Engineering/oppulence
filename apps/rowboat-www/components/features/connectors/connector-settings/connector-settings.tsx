@@ -40,7 +40,11 @@ import {
   safeAuthorizationURL,
   type HostedOAuthOutcome,
 } from "@/lib/connectors/hosted-oauth";
-import { connectorProductDescription } from "@/lib/connectors/connector-product-copy";
+import {
+  connectorProductDescription,
+  scopeProductDetail,
+  scopeProductLabel,
+} from "@/lib/connectors/connector-product-copy";
 
 const OUTCOME_MESSAGES: Record<HostedOAuthOutcome, string> = {
   active: "Connected.",
@@ -104,7 +108,7 @@ function OptionalConnectorScope({ scope }: { scope: ConnectorScope }) {
       htmlFor={`connector-scope-${scope.name}`}
     >
       <Checkbox
-        aria-label={scope.displayName}
+        aria-label={scopeProductLabel(scope.name, scope.displayName)}
         checked={checked}
         className="mt-0.5"
         id={`connector-scope-${scope.name}`}
@@ -113,16 +117,24 @@ function OptionalConnectorScope({ scope }: { scope: ConnectorScope }) {
       {checked ? <input name="requested_scope" type="hidden" value={scope.name} /> : null}
       <div>
         <Label className="font-normal text-primary/80">
-          {scope.displayName} · Optional
+          {scopeProductLabel(scope.name, scope.displayName)} · Optional
           {scope.requiredPlan ? ` · ${planLabel(scope.requiredPlan)} plan` : ""}
         </Label>
-        <CardDescription className="block">{scope.description}</CardDescription>
+        <CardDescription className="block">
+          {scopeProductDetail(scope.name, scope.description)}
+        </CardDescription>
       </div>
     </label>
   );
 }
 
-function ConnectorScopeList({ scopes }: { scopes: ConnectorScope[] }) {
+function ConnectorScopeList({
+  scopes,
+  action,
+}: {
+  scopes: ConnectorScope[];
+  action?: React.ReactNode;
+}) {
   if (scopes.length === 0) return null;
   return (
     <details className="rounded-[3px] border border-primary/10 bg-primary/[0.02] px-3 py-2">
@@ -132,17 +144,19 @@ function ConnectorScopeList({ scopes }: { scopes: ConnectorScope[] }) {
           scope.grantTier === "required" ? (
             <div className="flex items-start gap-2 text-xs text-muted-foreground" key={scope.name}>
               <input
-                aria-label={scope.displayName}
+                aria-label={scopeProductLabel(scope.name, scope.displayName)}
                 name="requested_scope"
                 type="hidden"
                 value={scope.name}
               />
               <div>
                 <Label className="font-normal text-primary/80">
-                  {scope.displayName} · Required
+                  {scopeProductLabel(scope.name, scope.displayName)} · Required
                   {scope.requiredPlan ? ` · ${planLabel(scope.requiredPlan)} plan` : ""}
                 </Label>
-                <CardDescription className="block">{scope.description}</CardDescription>
+                <CardDescription className="block">
+                  {scopeProductDetail(scope.name, scope.description)}
+                </CardDescription>
               </div>
             </div>
           ) : (
@@ -150,6 +164,7 @@ function ConnectorScopeList({ scopes }: { scopes: ConnectorScope[] }) {
           ),
         )}
       </div>
+      {action ? <div className="mt-3">{action}</div> : null}
     </details>
   );
 }
@@ -465,7 +480,23 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
           method="post"
           onSubmit={startOAuth}
         >
-          <ConnectorScopeList scopes={connector.availableScopes ?? []} />
+          <ConnectorScopeList
+            action={
+              unsupportedReason ? null : (
+                <Button
+                  aria-label={`Connect ${connector.displayName} with these permissions`}
+                  className="self-start"
+                  disabled={busy}
+                  size="sm"
+                  type="submit"
+                  variant="outline"
+                >
+                  Connect with these permissions
+                </Button>
+              )
+            }
+            scopes={connector.availableScopes ?? []}
+          />
           {unsupportedReason && !connector.connectionReason ? (
             <p
               className="font-mono text-xs text-oppulence-orange"
@@ -473,17 +504,6 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
             >
               {unsupportedReason}
             </p>
-          ) : !unsupportedReason ? (
-            <Button
-              aria-label={`Authorize ${connector.displayName} with selected permissions`}
-              className="self-start"
-              disabled={busy}
-              size="sm"
-              type="submit"
-              variant="outline"
-            >
-              Authorize selected permissions
-            </Button>
           ) : null}
         </form>
       ) : null}
@@ -492,7 +512,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
         <p className="font-mono text-[11px] text-primary/50">
           Permissions:{" "}
           {connector.grantedScopes
-            .map((scope) => scope.displayName?.trim() || scope.name)
+            .map((scope) => scopeProductLabel(scope.name, scope.displayName?.trim() || scope.name))
             .join(", ")}
         </p>
       ) : null}
