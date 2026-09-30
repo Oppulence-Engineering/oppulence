@@ -140,7 +140,7 @@ function CreateAgentDialog({
           <DialogTitle>{source ? `Customize ${source.name}` : "Create an agent"}</DialogTitle>
           <DialogDescription>
             {source
-              ? "Create an editable workspace copy, then adjust its model, tools, and safeguards."
+              ? "Create an editable workspace copy, then adjust its model, tools, and limits."
               : "Start with a name and purpose. You can choose tools and limits next."}
           </DialogDescription>
         </DialogHeader>

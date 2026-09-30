@@ -10,5 +10,7 @@ describe("AgentsView", () => {
     expect(source).toContain("export function AgentsView");
     expect(source).toContain("agentInstructionsCopy(selected)");
     expect(source).not.toContain("{selected.instructions");
+    expect(source).toContain("adjust its model, tools, and limits.");
+    expect(source).not.toContain("safeguards");
   });
 });
