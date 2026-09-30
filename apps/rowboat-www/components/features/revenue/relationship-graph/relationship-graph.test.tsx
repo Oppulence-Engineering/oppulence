@@ -18,5 +18,7 @@ describe("RelationshipGraphWorkspace", () => {
       offerReset: false,
     });
     expect(graphCanvasEmptyState(4).offerReset).toBe(true);
+    expect(source).toContain("Could not load the company graph.");
+    expect(source).not.toContain("Could not load the relationship graph.");
   });
 });

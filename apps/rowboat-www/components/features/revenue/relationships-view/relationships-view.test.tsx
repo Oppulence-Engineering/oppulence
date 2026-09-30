@@ -31,6 +31,25 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("Select ${relationship.displayName}");
   });
 
+  it("uses company words for create, update, and load failures", () => {
+    expect(source).toContain('onNotice("Company added.")');
+    expect(source).toContain('onNotice("Company updated.")');
+    expect(source).toContain('errMessage(error, "Could not create the company.")');
+    expect(source).toContain('errMessage(error, "Could not load this company.")');
+    expect(source).toContain('errMessage(error, "Could not update this company.")');
+    expect(source).toContain('errMessage(error, "Could not load companies.")');
+    expect(source).toContain('errMessage(error, "Could not enrich companies and people.")');
+    expect(source).not.toContain("Relationship added.");
+    expect(source).not.toContain("Relationship state updated.");
+    expect(source).not.toContain("Could not create the relationship.");
+    expect(source).not.toContain("Could not load the relationship.");
+    expect(source).not.toContain("Could not load relationship intelligence.");
+    expect(source).not.toContain("Could not update this relationship.");
+    expect(source).not.toContain("Could not enrich relationship profiles.");
+    expect(source).toContain('aria-label="Show company graph"');
+    expect(source).not.toContain('aria-label="Show relationship graph"');
+  });
+
   it("asks Oppulence from the company sheet instead of showing a dead badge", () => {
     expect(source).toContain("useAskOppulence");
     expect(source).toContain("askOppulence(askedCompany ? companyName(askedCompany) : undefined)");

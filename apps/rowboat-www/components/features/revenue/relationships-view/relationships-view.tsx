@@ -333,7 +333,7 @@ function RelationshipEnrichment({
       onChanged();
       await load();
     } catch (error) {
-      onError(errMessage(error, "Could not enrich relationship profiles."));
+      onError(errMessage(error, "Could not enrich companies and people."));
     } finally {
       setBusy(false);
     }
@@ -529,7 +529,7 @@ export function RelationshipsView({
     ) {
       return;
     }
-    onError(errMessage(error, "Could not load relationship intelligence."));
+    onError(errMessage(error, "Could not load companies."));
   }, [
     attentionQuery.error,
     deferredQuery.error,
@@ -600,7 +600,7 @@ export function RelationshipsView({
             </ToggleGroupItem>
             <ToggleGroupItem
               value="graph"
-              aria-label="Show relationship graph"
+              aria-label="Show company graph"
               data-capability="relationship-graph graph-query graph-saved-views graph-governed-actions"
             >
               <Graph /> Graph
@@ -1017,7 +1017,7 @@ export function RelationshipsView({
           onClose={() => setDetail(null)}
           onError={onError}
           onChanged={() => {
-            onNotice("Relationship state updated.");
+            onNotice("Company updated.");
             void load();
           }}
         />
@@ -1028,7 +1028,7 @@ export function RelationshipsView({
           onClose={() => setCreating(false)}
           onCreated={() => {
             setCreating(false);
-            onNotice("Relationship added.");
+            onNotice("Company added.");
             void load();
           }}
           onError={onError}
@@ -1694,7 +1694,7 @@ export function RelationshipSheet({
       );
       setPersonAttributes(Object.fromEntries(attributes));
     } catch (error) {
-      const message = errMessage(error, "Could not load the relationship.");
+      const message = errMessage(error, "Could not load this company.");
       setLoadError(message);
       // Keep the failure in the sheet. A missing optional pane used to
       // paint the page-level "Action needed" banner and leave this
@@ -1716,7 +1716,7 @@ export function RelationshipSheet({
       onChanged();
       return true;
     } catch (error) {
-      onError(errMessage(error, "Could not update this relationship."));
+      onError(errMessage(error, "Could not update this company."));
       return false;
     } finally {
       setBusy(null);
@@ -3113,7 +3113,7 @@ function CreateRelationshipDialog({
       });
       onCreated();
     } catch (error) {
-      onError(errMessage(error, "Could not create the relationship."));
+      onError(errMessage(error, "Could not create the company."));
     } finally {
       setBusy(false);
     }

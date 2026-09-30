@@ -891,7 +891,7 @@ export function RelationshipGraphWorkspace({
   const graph = graphEnabled ? (graphQuery.data ?? null) : null;
   const loading = graphEnabled && graphQuery.isPending;
   const loadError = graphQuery.error
-    ? errMessage(graphQuery.error, "Could not load the relationship graph.")
+    ? errMessage(graphQuery.error, "Could not load the company graph.")
     : null;
   const savedViewsQuery = useConsoleResources("graph_saved_view", graphSavedViews);
   const legacyViews = React.useMemo(
@@ -993,7 +993,7 @@ export function RelationshipGraphWorkspace({
 
   React.useEffect(() => {
     if (graphQuery.error) {
-      onError(errMessage(graphQuery.error, "Could not load the relationship graph."));
+      onError(errMessage(graphQuery.error, "Could not load the company graph."));
     }
   }, [graphQuery.error, onError]);
 

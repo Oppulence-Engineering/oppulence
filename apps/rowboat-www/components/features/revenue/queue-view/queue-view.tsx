@@ -403,7 +403,7 @@ function CreateActionDialog({
 
   React.useEffect(() => {
     if (relationshipsQuery.error) {
-      onError(errMessage(relationshipsQuery.error, "Could not load relationships."));
+      onError(errMessage(relationshipsQuery.error, "Could not load companies."));
     }
   }, [onError, relationshipsQuery.error]);
 
