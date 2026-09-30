@@ -33,7 +33,7 @@ import {
 import { useAuthSession } from "@/components/auth/auth-gate";
 import { useWorkspaceLabel } from "@/components/features/dashboard/app-shell/app-shell";
 import { useAgentCatalog } from "@/hooks/dashboard/use-agent-catalog";
-import { agentDisplayName } from "@/lib/agents/agent-schemas";
+import { agentDisplayName, visibleAgentLabel } from "@/lib/agents/agent-schemas";
 import { useAgentRun } from "@/hooks/dashboard/use-agent-run";
 import { useChatSessions } from "@/hooks/dashboard/use-chat-sessions";
 import { useDashboardArtifact } from "@/hooks/dashboard/use-dashboard-artifact";
@@ -203,7 +203,7 @@ function ChatPromptInput({
                     menu is mounted. Closed, that left the composer showing a
                     blank control, so the name is rendered from the catalog. */}
                 <SelectValue placeholder="Agent">
-                  {agentDisplayName(agents, selectedAgent)}
+                  {visibleAgentLabel(agents, selectedAgent)}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -346,7 +346,7 @@ export function ChatRouteProvider({ children, className, ...props }: ChatRoutePr
   );
   const value: ChatRouteContextValue = {
     chat: {
-      activeAgent: agentDisplayName(agents, selectedAgent),
+      activeAgent: visibleAgentLabel(agents, selectedAgent),
       workspace,
       processing: run.processing,
       conversation: run.conversation,

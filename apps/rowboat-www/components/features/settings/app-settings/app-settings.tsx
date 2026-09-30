@@ -18,7 +18,7 @@ import {
 } from "@/lib/icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAgentSummaries } from "@/hooks/queries/use-agents";
-import { agentDisplayName } from "@/lib/agents/agent-schemas";
+import { visibleAgentLabel } from "@/lib/agents/agent-schemas";
 import { useConsolePreferences as useConsolePreferencesQuery } from "@/hooks/queries/use-console";
 import { consoleKeys } from "@/hooks/queries/utils/console-keys";
 
@@ -490,7 +490,7 @@ function DefaultsCard() {
                 <SelectValue
                   placeholder={state === "loading" ? "Loading agents…" : "Choose an agent"}
                 >
-                  {agent ? agentDisplayName(agents, agent) : undefined}
+                  {agent ? visibleAgentLabel(agents, agent) : undefined}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent className="app-shell rounded-[2px]">

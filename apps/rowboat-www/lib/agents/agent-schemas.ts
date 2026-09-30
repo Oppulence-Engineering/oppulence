@@ -55,6 +55,18 @@ export function agentDisplayName(
   return name || slug;
 }
 
+/**
+ * A closed select cannot read its menu item. Until the catalog arrives, a
+ * neutral label is clearer than flashing the stored slug.
+ */
+export function visibleAgentLabel(
+  agents: readonly Pick<AgentSummary, "slug" | "name">[],
+  slug: string,
+): string {
+  if (agents.length === 0) return "Agent";
+  return agentDisplayName(agents, slug);
+}
+
 /** Validates and normalizes the list projection returned by the agents API. */
 export function parseAgentsResponse(value: unknown): AgentSummary[] {
   return AgentsResponseSchema.parse(value).agents.map((agent) => {
