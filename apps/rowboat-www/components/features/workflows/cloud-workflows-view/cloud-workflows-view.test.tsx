@@ -12,6 +12,7 @@ describe("CloudWorkflowsView", () => {
 
   it("opens the runs tab when Run now is clicked", () => {
     expect(source).toContain('setTab("runs")');
+    expect(source).toContain('useState<EditorTab>(selectedRun ? "runs" : "editor")');
     expect(source).toContain("onRun();");
   });
 });

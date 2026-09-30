@@ -813,7 +813,10 @@ function WorkflowEditor({
 }) {
   const editable = !task.systemManaged;
   const original = workflowForTask(task);
-  const [tab, setTab] = React.useState<EditorTab>("editor");
+  // The editor remounts when the task revision changes. Run now updates that
+  // revision after it selects the new run, which was throwing the user back
+  // onto the canvas. A selected run means this mount should open on Runs.
+  const [tab, setTab] = React.useState<EditorTab>(selectedRun ? "runs" : "editor");
   const [name, setName] = React.useState(task.name);
   const [workflow, setWorkflow] = React.useState(original);
   const dirty =
