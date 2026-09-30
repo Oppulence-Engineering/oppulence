@@ -7,7 +7,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { WorkspaceView } from "@/components/features/revenue/workspace-view/workspace-view";
+import { WorkspaceView, workspaceMetadataValue } from "@/components/features/revenue/workspace-view/workspace-view";
 import { fetchRelationshipSourceStatuses } from "@/hooks/queries/utils/fetch-relationship-sources";
 import { fetchRelationshipRefreshBlocker } from "@/hooks/queries/utils/fetch-workflows";
 import { resyncRelationshipSource } from "@/lib/revenue/revenue";
@@ -163,4 +163,10 @@ describe("WorkspaceView", () => {
       expect(fetchRelationshipRefreshBlocker).toHaveBeenCalled();
     },
   );
+
+  it("names a workspace that needs repair instead of showing the stored slug", () => {
+    expect(workspaceMetadataValue("repair_required")).toBe("Needs repair");
+    expect(workspaceMetadataValue("local")).toBe("Local");
+    expect(workspaceMetadataValue("disconnected")).toBe("Disconnected");
+  });
 });

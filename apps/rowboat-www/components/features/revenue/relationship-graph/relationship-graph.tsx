@@ -124,7 +124,7 @@ const KIND_ORDER: RelationshipGraphNode["kind"][] = [
 ];
 
 const KIND_LABEL: Record<RelationshipGraphNode["kind"], string> = {
-  relationship: "Account",
+  relationship: "Company",
   person: "Person",
   commitment: "Commitment",
   risk: "Risk",

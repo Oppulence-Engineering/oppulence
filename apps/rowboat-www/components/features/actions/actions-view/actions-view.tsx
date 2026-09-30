@@ -85,7 +85,7 @@ export function ActionsView() {
   const [rejecting, setRejecting] = React.useState<ActionProposal | null>(null);
   const [auditRef, setAuditRef] = React.useState<string | null>(null);
   // Tokens held in memory after approve for a within-session execute retry when
-  // the Act seam is momentarily unavailable. Never persisted.
+  // execution is momentarily unavailable. Never persisted.
   const tokens = React.useRef<Record<string, string>>({});
   const unavailable =
     proposalsQuery.error instanceof DashboardRequestError &&
@@ -120,9 +120,9 @@ export function ActionsView() {
   const replace = (p: ActionProposal) =>
     setLocalProposals((cur) => (cur ? cur.map((x) => (x.id === p.id ? p : x)) : cur));
 
-  // Approve then immediately execute with the freshly issued token. If the Act
-  // seam is unavailable the proposal stays approved and the token is kept for a
-  // manual retry.
+  // Approve then immediately execute with the freshly issued approval. If
+  // execution is unavailable the proposal stays approved and the approval is
+  // kept for a manual retry.
   async function approveAndExecute(p: ActionProposal) {
     setRowBusy(p.id, "approve");
     setError(null);
@@ -156,7 +156,7 @@ export function ActionsView() {
     } catch (e) {
       if (e instanceof ActionAPIError && e.code === "execution_unavailable") {
         setError(
-          "Approved, but no execution backend is configured yet. The approval is held — retry execute once the product Act seam is connected.",
+          "Approved, but this action cannot run yet. The approval is saved — try again once execution is available.",
         );
       } else {
         setError(errMessage(e, "Execution failed."));
@@ -192,8 +192,7 @@ export function ActionsView() {
     <div className="flex min-h-full w-full min-w-0 flex-col" data-slot="actions-view">
       <header className="flex min-h-12 items-center justify-between gap-4 border-b border-border px-3 py-2">
         <p className="min-w-0 flex-1 truncate text-[13px] text-primary/55">
-          Closed-loop finance actions your agents propose. Approve one to issue a single-use, scoped
-          token and execute it against the product — money never moves without it.
+          Finance actions an agent proposes wait here. Nothing happens until you approve one.
         </p>
         <Button
           variant="outline"
@@ -318,7 +317,7 @@ export function ActionsView() {
                           heldToken
                             ? void runExecute(p.id, heldToken, p.kind)
                             : setError(
-                                "This approval's token is no longer in this session. Reject and re-propose.",
+                                "This approval cannot be run again from this page. Reject it and propose it again.",
                               )
                         }
                         disabled={!!verb || !heldToken}

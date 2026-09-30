@@ -183,8 +183,8 @@ export function WorkspaceView({
           title="Workspace"
         />
         <div className="divide-y divide-[var(--border)] text-sm">
-          <MetadataRow label="Mode" value={workspace.mode} />
-          <MetadataRow label="Status" value={workspace.status} />
+          <MetadataRow label="Mode" value={workspaceMetadataValue(workspace.mode)} />
+          <MetadataRow label="Status" value={workspaceMetadataValue(workspace.status)} />
           <MetadataRow
             label="Preflight"
             value={workspace.preflightAvailable ? "Available" : "Unavailable (drafts only)"}
@@ -368,6 +368,18 @@ function SourceRow({
       </div>
     </div>
   );
+}
+
+/** Stored workspace slugs are not labels. "repair_required" would otherwise show the underscore. */
+export function workspaceMetadataValue(value: string): string {
+  const labels: Record<string, string> = {
+    local: "Local",
+    linked: "Linked",
+    active: "Active",
+    disconnected: "Disconnected",
+    repair_required: "Needs repair",
+  };
+  return labels[value] ?? value.replaceAll("_", " ");
 }
 
 function MetadataRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {

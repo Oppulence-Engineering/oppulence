@@ -31,5 +31,10 @@ describe("SettingsView", () => {
     expect(source).toContain("No organization is attached to this session.");
     expect(source).toContain('fetch("/readyz"');
     expect(source).toContain("Check again");
+    expect(source).toContain("How you appear in Oppulence across signed-in devices.");
+    expect(source).toContain("the next time you open Oppulence.");
+    expect(source).toContain("How Oppulence looks on this device.");
+    expect(source).not.toContain("this console");
+    expect(source).not.toContain("the console");
   });
 });

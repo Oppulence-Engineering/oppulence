@@ -33,6 +33,7 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).not.toContain(">Relationship graph</h2>");
     expect(accountGraphPrompt(0)).toBe("Add a company before this graph can be built.");
     expect(accountGraphPrompt(2)).toBe("Choose an account to build its graph.");
-    expect(source).not.toContain("Versioned state, evidence, and governed action");
+    expect(source).toContain('relationship: "Company"');
+    expect(source).not.toContain('relationship: "Account"');
   });
 });

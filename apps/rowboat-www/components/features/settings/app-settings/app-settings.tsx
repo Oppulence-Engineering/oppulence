@@ -376,7 +376,7 @@ function ProfileCard() {
 
   return (
     <SettingsRow
-      description="How you appear in this console across signed-in devices."
+      description="How you appear in Oppulence across signed-in devices."
       footer={
         <SaveFooter
           dirty={dirty}
@@ -452,7 +452,7 @@ function DefaultsCard() {
 
   return (
     <SettingsRow
-      description="What new chats start with. Applies the next time you open the console."
+      description="What new chats start with. Applies the next time you open Oppulence."
       footer={
         <SaveFooter
           dirty={dirty}
@@ -534,7 +534,7 @@ function AppearanceSection() {
         title="Appearance"
       />
       <SettingsRow
-        description="How the console looks on this device. Applies immediately."
+        description="How Oppulence looks on this device. Applies immediately."
         title="Theme"
       >
         <ToggleGroup
