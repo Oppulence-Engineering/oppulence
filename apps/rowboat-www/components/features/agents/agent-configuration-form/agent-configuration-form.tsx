@@ -131,13 +131,14 @@ function TagEditor({
             <Badge
               className="gap-1.5 py-1 pl-2.5 pr-1 font-normal"
               key={value}
-              title={label === value ? undefined : value}
               variant="secondary"
             >
+              {/* The badge already shows the product name. A tooltip with the
+                  stored id (run_history.read) is what a person sees on hover. */}
               {label}
               {!disabled ? (
                 <Button
-                  aria-label={`Remove ${value}`}
+                  aria-label={`Remove ${label}`}
                   className="size-auto rounded p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
                   onClick={() => onChange(values.filter((candidate) => candidate !== value))}
                   size="icon-xs"

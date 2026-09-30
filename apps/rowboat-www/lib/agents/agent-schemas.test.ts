@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  agentArtifactTitle,
   agentDisplayName,
   agentInstructionsCopy,
   agentSlugTitle,
@@ -100,6 +101,10 @@ describe("agent schemas", () => {
     expect(agentSlugTitle("assistant")).toBe("Assistant");
     expect(agentSlugTitle("concierge-slack")).toBe("Slack Concierge");
     expect(agentSlugTitle("renewal-reviewer")).toBe("Renewal Reviewer");
+    expect(agentArtifactTitle("Assistant", "assistant")).toBe("Assistant");
+    expect(agentArtifactTitle("assistant", "assistant")).toBe("Assistant");
+    expect(agentArtifactTitle(undefined, "concierge-slack")).toBe("Slack Concierge");
+    expect(agentArtifactTitle("Renewal reviewer", "renewal-reviewer")).toBe("Renewal reviewer");
   });
 
   it("rejects malformed projection fields before creating an editor document", () => {

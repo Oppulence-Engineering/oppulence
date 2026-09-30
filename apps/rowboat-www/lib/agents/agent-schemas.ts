@@ -137,6 +137,17 @@ export function duplicateAgentInstructions(
  * Delegation buttons only have the slug. Known agents use their product name;
  * any other slug is shown as words.
  */
+/**
+ * Configuration opens by slug, because that is how the agent is stored.
+ * The panel title is the name a person gave it. A slug used as the name
+ * is still shown as the product title.
+ */
+export function agentArtifactTitle(name: string | undefined, slug: string): string {
+  const trimmed = name?.trim() || "";
+  if (trimmed && trimmed !== slug.trim()) return trimmed;
+  return agentSlugTitle(slug);
+}
+
 export function agentSlugTitle(slug: string): string {
   const known: Record<string, string> = {
     assistant: "Assistant",

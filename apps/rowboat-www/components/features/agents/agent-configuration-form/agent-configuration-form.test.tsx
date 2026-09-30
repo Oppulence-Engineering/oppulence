@@ -26,6 +26,8 @@ describe("AgentConfigurationForm", () => {
     expect(source).toContain("visibleTools(selectedTools)");
     expect(source).toContain("agentInstructionsCopy(");
     expect(source).toContain("agentToolLabel");
+    expect(source).toContain("aria-label={`Remove ${label}`}");
+    expect(source).not.toContain("title={label === value ? undefined : value}");
     expect(source).toContain("agentSlugTitle(slug)");
     expect(source).toContain("More tools");
     expect(source).toContain("Connected services");

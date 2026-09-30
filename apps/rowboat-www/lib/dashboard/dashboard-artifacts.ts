@@ -2,7 +2,12 @@
 
 import "client-only";
 
-import { AgentViewSchema, agentSourceLabel, parseAgentDocument } from "@/lib/agents/agent-schemas";
+import {
+  AgentViewSchema,
+  agentArtifactTitle,
+  agentSourceLabel,
+  parseAgentDocument,
+} from "@/lib/agents/agent-schemas";
 import {
   GetBackgroundTask200Response,
   GetBackgroundTaskRun200Response,
@@ -69,7 +74,7 @@ export async function loadDashboardArtifact(
     const source = agent.source ?? "";
     const readOnly = source === "builtin" || source === "gitops";
     return {
-      title: resource.name,
+      title: agentArtifactTitle(agent.name, id),
       subtitle: readOnly ? `${agentSourceLabel(source || "builtin")} agent` : "Agent definition",
       text: JSON.stringify(parseAgentDocument(agent, id), null, 2),
       readOnly,
