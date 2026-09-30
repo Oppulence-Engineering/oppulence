@@ -253,6 +253,12 @@ describe("API reference document", () => {
     expect(text).toContain("Installs or updates the maintained workflows for the signed-in person.");
     expect(text).toContain("Cancel a cloud run");
     expect(text).not.toMatch(/Temporal|task\.yaml|API-worker|API-target|\bmirror\b|Instantiate|ndjson/);
+    expect(presented.components.schemas.BackgroundTask.description).toBe(
+      "One background task. It belongs to one person.",
+    );
+    expect(presented.components.schemas.User.description).toBe(
+      "The signed-in person, saved when they first sign in.",
+    );
   });
 
   it("says the reference could not be loaded when the spec is missing", () => {

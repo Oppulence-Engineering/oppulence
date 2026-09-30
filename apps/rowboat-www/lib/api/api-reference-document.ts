@@ -204,6 +204,35 @@ function presentReferenceProse(value: string): string {
     .replaceAll("Updated run mirror.", "Updated run.")
     .replaceAll("Queued or started run mirror.", "Queued or started run.")
     .replaceAll("Run mirror.", "Run.")
+    .replaceAll(
+      "Server-readable mirror of one desktop background task spec. Owned by a user and keyed by slug per user.",
+      "One background task. It belongs to one person.",
+    )
+    .replaceAll(
+      "Markdown artifact mirror for bg-tasks/<slug>/index.md.",
+      "The note for this workflow.",
+    )
+    .replaceAll(
+      "Creates or revision-checks an artifact mirror update. Omit revision or send 0 when creating a missing artifact.",
+      "Saves an update to the workflow note. Leave the revision empty, or send 0, when creating a missing note.",
+    )
+    .replaceAll(
+      "Creates or first-syncs a desktop background task into the cloud mirror.",
+      "Saves a background task from the desktop.",
+    )
+    .replaceAll(
+      "Revision-checked partial update for the task mirror. Omitted fields are left unchanged; triggers:null clears the trigger JSON.",
+      "Updates part of a background task. Omitted fields stay as they are. Sending an empty trigger clears it.",
+    )
+    .replaceAll(
+      "Creates a run mirror for a desktop execution. Remote/manual queue creation usually uses POST /trigger instead.",
+      "Records a desktop run. Queue a new run with the start endpoint instead.",
+    )
+    .replaceAll("One event to append to a run log mirror.", "One event to add to a run.")
+    .replaceAll(
+      "Local mirror of a WorkOS identity. Upserted when a verified bearer token is first seen.",
+      "The signed-in person, saved when they first sign in.",
+    )
     .replaceAll("Solomon AI API", "Oppulence API")
     .replaceAll("Solomon AI", "Oppulence")
     .replaceAll("authenticated Rowboat user", "signed-in person")
