@@ -205,8 +205,8 @@ function ReportBody() {
       <header>
         <h1 className="text-[28px] font-medium leading-tight text-primary">Open promises</h1>
         <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-primary/60">
-          The commitments your team made in the last {REVENUE_EVIDENCE_LOOKBACK_LABEL} that have no
-          evidence of fulfillment, and the exact message that created each one.
+          Promises from the last {REVENUE_EVIDENCE_LOOKBACK_LABEL} that still look open, and the
+          message each one came from.
         </p>
       </header>
 
@@ -450,7 +450,7 @@ function StartStep({ onRun, busy }: { onRun: () => void; busy: boolean }) {
           {busy ? "Starting" : "Find my open promises"}
         </Button>
       }
-      description={`Read the last ${REVENUE_EVIDENCE_LOOKBACK_LABEL} to surface commitments with no evidence of fulfillment. This takes a few minutes — you can leave and come back.`}
+      description={`Read the last ${REVENUE_EVIDENCE_LOOKBACK_LABEL} for promises that still look open. This takes a few minutes — you can leave and come back.`}
       image="openPromises"
       learnMore={[
         { label: "See exact message evidence" },

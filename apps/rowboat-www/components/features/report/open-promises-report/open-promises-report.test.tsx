@@ -15,7 +15,8 @@ describe("OpenPromisesReportClient", () => {
       "sourcesQuery.isPending || (!scanId && scansQuery.isPending)",
     );
     expect(source).not.toContain("sourcesQuery.isLoading || (!scanId && scansQuery.isLoading)");
-    expect(source).toContain("no evidence of fulfillment");
+    expect(source).toContain("that still look open");
+    expect(source).not.toContain("no evidence of fulfillment");
     expect(source).not.toContain("fulfilment");
   });
 });
