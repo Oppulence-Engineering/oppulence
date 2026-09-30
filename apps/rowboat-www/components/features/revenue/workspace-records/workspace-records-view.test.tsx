@@ -53,6 +53,7 @@ import {
   personEvidenceProvenance,
   personSheetSubtitle,
   sortTasksByDue,
+  taskListEmptyCopy,
 } from "@/components/features/revenue/workspace-records/workspace-records-view";
 
 const timestamps = {
@@ -448,6 +449,11 @@ describe("workspace record notes", () => {
 });
 
 describe("task due order", () => {
+  const source = fs.readFileSync(
+    path.join(import.meta.dirname, "workspace-records-view.tsx"),
+    "utf8",
+  );
+
   it("puts undated tasks after dated ones, and reverses when latest is requested", () => {
     const tasks = [
       { id: "undated" },
@@ -464,6 +470,15 @@ describe("task due order", () => {
       "sooner",
       "undated",
     ]);
+  });
+
+  it("names an empty due filter instead of saying the workspace has no tasks", () => {
+    expect(taskListEmptyCopy("today")).toBe("Nothing is due today.");
+    expect(taskListEmptyCopy("overdue")).toBe("Nothing is overdue.");
+    expect(taskListEmptyCopy("all")).toBeNull();
+    expect(source).toContain("taskListEmptyCopy(filter)");
+    expect(source).toContain("Show all tasks");
+    expect(source).toContain("No tasks yet! Create your first");
   });
 });
 

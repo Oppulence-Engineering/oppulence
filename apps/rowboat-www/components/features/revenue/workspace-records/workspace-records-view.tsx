@@ -1696,6 +1696,16 @@ export function sortTasksByDue<T extends { dueAt?: string | null }>(
   });
 }
 
+/**
+ * Due today and Overdue are filters. An empty result means nothing falls in
+ * that window, which is not the same as a workspace with no tasks.
+ */
+export function taskListEmptyCopy(filter: "all" | "today" | "overdue"): string | null {
+  if (filter === "today") return "Nothing is due today.";
+  if (filter === "overdue") return "Nothing is overdue.";
+  return null;
+}
+
 export function TasksView({
   onError,
   onNotice,
@@ -1822,26 +1832,38 @@ export function TasksView({
       ) : visible.length === 0 ? (
         <WorkspaceEmptyState
           action={
-            <Button
-              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-              onClick={() => setCreating(true)}
-              size="sm"
-            >
-              <Plus /> New task
-            </Button>
+            filter === "all" ? (
+              <Button
+                className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+                onClick={() => setCreating(true)}
+                size="sm"
+              >
+                <Plus /> New task
+              </Button>
+            ) : (
+              <Button onClick={() => setFilter("all")} size="sm" type="button" variant="outline">
+                Show all tasks
+              </Button>
+            )
           }
           description={
-            <>
-              No tasks yet! Create your first
-              <br />
-              task to get started.
-            </>
+            taskListEmptyCopy(filter) ?? (
+              <>
+                No tasks yet! Create your first
+                <br />
+                task to get started.
+              </>
+            )
           }
           image="tasks"
-          learnMore={[
-            { label: "Link a task to a company" },
-            { label: "Complete a task from the list" },
-          ]}
+          learnMore={
+            filter === "all"
+              ? [
+                  { label: "Link a task to a company" },
+                  { label: "Complete a task from the list" },
+                ]
+              : []
+          }
           title="Tasks"
         />
       ) : (
