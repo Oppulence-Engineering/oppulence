@@ -571,12 +571,12 @@ export function RelationshipsView({
       );
       const link = document.createElement("a");
       link.href = url;
-      link.download = `oppulence-beta-diagnostics-${new Date().toISOString().slice(0, 10)}.json`;
+      link.download = `oppulence-support-${new Date().toISOString().slice(0, 10)}.json`;
       link.click();
       URL.revokeObjectURL(url);
-      onNotice("Redacted beta diagnostics exported.");
+      onNotice("Support file downloaded. Secrets are left out.");
     } catch (error) {
-      onError(errMessage(error, "Could not export beta diagnostics."));
+      onError(errMessage(error, "Could not download the support file."));
     }
   }, [onError, onNotice]);
 
@@ -761,7 +761,7 @@ export function RelationshipsView({
                     data-capability="support-diagnostics"
                     onClick={() => void exportDiagnostics()}
                   >
-                    <DownloadSimple /> Export diagnostics
+                    <DownloadSimple /> Download support file
                   </Button>
                 </div>
               </div>

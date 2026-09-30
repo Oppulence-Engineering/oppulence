@@ -72,6 +72,10 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("Parallel Web");
     expect(source).toContain("None connected");
     expect(source).not.toContain("No evidence sources yet");
+    expect(source).toContain("Download support file");
+    expect(source).toContain("Support file downloaded. Secrets are left out.");
+    expect(source).not.toContain("Export diagnostics");
+    expect(source).not.toContain("beta diagnostics");
   });
 
   it("names the enrichment plan instead of the research vendor", () => {
