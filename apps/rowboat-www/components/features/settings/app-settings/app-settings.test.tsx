@@ -57,6 +57,7 @@ describe("SettingsView", () => {
     expect(source).not.toContain("/api/rowboat/v1/relationships");
     expect(source).not.toContain("window.location.reload()");
     expect(source).toContain("from Connections.");
+    expect(source).toContain("<PermissionsSection onNavigate={onNavigate} session={session} />");
     expect(source).not.toContain("from Extensions");
     expect(source).not.toContain("your Oppulence organization");
     expect(source).toContain("No organization is attached to this session.");

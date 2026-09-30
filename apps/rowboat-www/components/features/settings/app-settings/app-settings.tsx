@@ -11,7 +11,6 @@ import {
   Clipboard,
   Monitor,
   Moon,
-  Plugs,
   ShieldCheck,
   Sun,
   type Icon as PhosphorIcon,
@@ -1071,7 +1070,13 @@ function HelpSection() {
   );
 }
 
-function PermissionsSection({ session }: { session: SessionShape }) {
+function PermissionsSection({
+  session,
+  onNavigate,
+}: {
+  session: SessionShape;
+  onNavigate: (section: SettingsSection) => void;
+}) {
   const copy = sessionWorkspaceCopy(session.user.organizationId);
   return (
     <>
@@ -1122,7 +1127,14 @@ function PermissionsSection({ session }: { session: SessionShape }) {
               calendar updates from entering this workspace.
             </p>
           </div>
-          <Plugs className="size-4 text-primary/40" />
+          <Button
+            onClick={() => onNavigate("connections")}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            Open connections
+          </Button>
         </div>
       </SettingsRow>
     </>
@@ -1197,7 +1209,9 @@ export function SettingsView({
         {section === "notifications" ? (
           <NotificationsSection onNavigate={onNavigate} />
         ) : null}
-        {section === "permissions" ? <PermissionsSection session={session} /> : null}
+        {section === "permissions" ? (
+          <PermissionsSection onNavigate={onNavigate} session={session} />
+        ) : null}
         {section === "security" ? <SecuritySection session={session} /> : null}
         {section === "connections" ? (
           <>

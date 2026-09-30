@@ -155,6 +155,23 @@ describe("synced console preferences", () => {
     expect(onNavigate).toHaveBeenCalledWith("appearance");
   });
 
+  it("opens connections from the permissions page that names them", async () => {
+    const onNavigate = vi.fn();
+    const user = userEvent.setup();
+    renderWithQuery(
+      <SettingsView
+        onNavigate={onNavigate}
+        section="permissions"
+        session={{ user: { permissions: [] } }}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "Permissions" })).toBeVisible();
+    expect(screen.getByText(/Manage service-level access from Connections/)).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Open connections" }));
+    expect(onNavigate).toHaveBeenCalledWith("connections");
+  });
+
   it("does not repeat the personal connection list as shared connections", async () => {
     const onNavigate = vi.fn();
     const user = userEvent.setup();
