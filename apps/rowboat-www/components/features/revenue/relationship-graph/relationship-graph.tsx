@@ -1182,7 +1182,7 @@ export function RelationshipGraphWorkspace({
     writeURLState(viewState);
     try {
       await navigator.clipboard.writeText(window.location.href);
-      onNotice("Graph deep link copied.");
+      onNotice("Link copied.");
     } catch {
       onError("Could not copy the graph link.");
     }
@@ -1195,10 +1195,11 @@ export function RelationshipGraphWorkspace({
       if (kind === "approve") await approveAction(actionId);
       if (kind === "reject")
         await rejectAction(actionId, "Rejected from relationship graph review.");
-      onNotice(kind === "evaluate" ? "Policy evaluation completed." : `Action ${kind}d.`);
+      onNotice(kind === "evaluate" ? "Sending check finished." : `Action ${kind}d.`);
       await load();
     } catch (error) {
-      onError(errMessage(error, `Could not ${kind} this action.`));
+      const verb = kind === "evaluate" ? "check" : kind;
+      onError(errMessage(error, `Could not ${verb} this action.`));
     } finally {
       setBusy(false);
     }
@@ -1217,7 +1218,7 @@ export function RelationshipGraphWorkspace({
         reason: `Follow up on ${KIND_LABEL[node.kind].toLowerCase()}: ${node.label}`,
         proposedMessage: node.summary || `Review and follow up on ${node.label}.`,
       });
-      onNotice("Follow-up proposed. It still requires policy evaluation and approval.");
+      onNotice("Follow-up proposed. It still needs your approval.");
       await load();
     } catch (error) {
       onError(errMessage(error, "Could not propose a follow-up."));
@@ -1449,10 +1450,10 @@ export function RelationshipGraphWorkspace({
             <Button
               onClick={() => void savedViewsQuery.refetch()}
               size="sm"
-              title="Local saved views are available read-only until the API reconnects."
+              title="Saved views on this computer stay readable until Oppulence is reachable again."
               variant="outline"
             >
-              <WarningDiamond /> Views offline · Retry
+              <WarningDiamond /> Saved views unavailable · Retry
             </Button>
           ) : null}
           {savedViews.length ? (

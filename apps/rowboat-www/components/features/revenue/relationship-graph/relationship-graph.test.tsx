@@ -107,6 +107,13 @@ describe("RelationshipGraphWorkspace", () => {
   });
 
   it("names a saved view in the product dialog", () => {
+    expect(source).toContain('onNotice("Link copied.")');
+    expect(source).toContain("Follow-up proposed. It still needs your approval.");
+    expect(source).toContain("Sending check finished.");
+    expect(source).toContain("Saved views unavailable · Retry");
+    expect(source).not.toContain("policy evaluation");
+    expect(source).not.toContain("Graph deep link");
+    expect(source).not.toContain("Views offline");
     expect(source).not.toContain("window.prompt");
     expect(source).toContain("Name this graph view");
     expect(source).toContain('htmlFor="graph-view-name"');
