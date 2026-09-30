@@ -1391,6 +1391,9 @@ export function RelationshipGraphWorkspace({
           ) : null}
         </div>
 
+        {/* Ask, layout, and filters read a built graph. An account graph with no
+            company has nothing for them to change. */}
+        {graphEnabled ? (
         <form
           className="mt-3 flex flex-col gap-2 lg:flex-row"
           onSubmit={(event) => {
@@ -1444,6 +1447,7 @@ export function RelationshipGraphWorkspace({
             </Button>
           ) : null}
         </form>
+        ) : null}
 
         {queryResult ? (
           <div
@@ -1473,6 +1477,7 @@ export function RelationshipGraphWorkspace({
         ) : null}
       </div>
 
+      {graphEnabled ? (
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
         <ToggleGroup
           type="single"
@@ -1621,8 +1626,11 @@ export function RelationshipGraphWorkspace({
           </Button>
         </div>
       </div>
+      ) : null}
 
-      <div className="grid min-h-[620px] grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div
+        className={`grid min-h-[620px] grid-cols-1 ${graph ? "xl:grid-cols-[minmax(0,1fr)_320px]" : ""}`}
+      >
         <div className="relative min-h-[500px] bg-background">
           {loading ? (
             <div className="absolute inset-0 flex items-center justify-center text-sm text-primary/45">
@@ -1708,9 +1716,7 @@ export function RelationshipGraphWorkspace({
             focusDepth={viewState.focusDepth}
             onFocusDepth={(focusDepth) => updateState({ focusDepth })}
           />
-        ) : (
-          <aside className="border-l border-border" />
-        )}
+        ) : null}
       </div>
       <Dialog open={namingView} onOpenChange={setNamingView}>
         <DialogContent className="rounded-none sm:max-w-md">

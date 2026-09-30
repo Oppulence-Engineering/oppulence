@@ -79,6 +79,7 @@ describe("RelationshipGraphWorkspace", () => {
       'aria-label={comboboxFilterName("Layout", graphLayoutLabel(viewState.layout))}',
     );
     expect(source).toContain('{mode === "canvas" ? (');
+    expect(source).toContain("{graphEnabled ? (");
     expect(graphAccountChoice("  Harbor  ")).toBe("Harbor");
     expect(graphAccountChoice("")).toBe("Choose an account");
     expect(graphSavedViewChoice(undefined)).toBe("Saved views");
