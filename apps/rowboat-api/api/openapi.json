@@ -12364,17 +12364,8 @@
             "type": "string"
           },
           "reason": {
-            "description": "Reason code for the ledger entry.",
-            "enum": [
-              "llm_call",
-              "llm_call_reserve",
-              "llm_settle",
-              "voice_tts",
-              "exa_search",
-              "grant",
-              "refund"
-            ],
-            "example": "llm_settle",
+            "description": "Why this action was proposed.",
+            "example": "Follow up on the open promise.",
             "type": "string"
           },
           "recipientEmail": {
@@ -12504,17 +12495,8 @@
             "type": "string"
           },
           "reason": {
-            "description": "Reason code for the ledger entry.",
-            "enum": [
-              "llm_call",
-              "llm_call_reserve",
-              "llm_settle",
-              "voice_tts",
-              "exa_search",
-              "grant",
-              "refund"
-            ],
-            "example": "llm_settle",
+            "description": "Why this action was proposed.",
+            "example": "Follow up on the open promise.",
             "type": "string"
           },
           "recipient_email": {
