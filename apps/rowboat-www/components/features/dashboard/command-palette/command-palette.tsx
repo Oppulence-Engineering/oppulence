@@ -39,6 +39,12 @@ import { useRelationships, useSemanticSearch } from "@/hooks/queries/use-relatio
 import type { SessionMeta } from "@/lib/agents/chat-sessions";
 import type { SemanticMatch } from "@/lib/revenue/revenue";
 
+/** The overview section is already named Settings. Prefixing it reads "Settings · Settings". */
+export function settingsCommandLabel(section: { key: string; label: string }): string {
+  if (section.key === "overview") return "Settings";
+  return `Settings · ${section.label}`;
+}
+
 export function CommandPalette({
   open,
   onOpenChange,
@@ -252,7 +258,7 @@ export function CommandPalette({
           {SETTINGS_SECTIONS.map((section) => (
             <CommandItem key={section.key} onSelect={runAnd(() => onOpenSettings(section.key))}>
               <section.icon />
-              Settings · {section.label}
+              {settingsCommandLabel(section)}
             </CommandItem>
           ))}
         </CommandGroup>

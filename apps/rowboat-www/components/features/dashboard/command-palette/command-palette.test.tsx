@@ -22,7 +22,10 @@ vi.mock("@oppulence/ui/components/spinner", () => ({
   Spinner: () => <span>Searching…</span>,
 }));
 vi.mock("@/components/features/dashboard/app-shell/app-shell", () => ({
-  SETTINGS_SECTIONS: [],
+  SETTINGS_SECTIONS: [
+    { key: "overview", label: "Settings", icon: () => null },
+    { key: "preferences", label: "Preferences", icon: () => null },
+  ],
   useThemePreference: () => ({ setTheme: vi.fn() }),
 }));
 vi.mock("@oppulence/ui/components/command", () => ({
@@ -154,6 +157,9 @@ describe("CommandPalette semantic mail search", () => {
       "placeholder",
       "Search companies, or type a command…",
     );
+    expect(screen.getByRole("button", { name: "Settings", exact: true })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Settings · Preferences" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Settings · Settings" })).toBeNull();
   });
 
   it("fills the search box with the company a surface asked about", async () => {
