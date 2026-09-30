@@ -160,7 +160,7 @@ export const SETTINGS_SECTIONS: {
     label: "Appearance",
     icon: Palette,
     group: "global",
-    description: "Set theme, language, and window preferences.",
+    description: "Set the theme and the interface language.",
   },
   {
     key: "account",

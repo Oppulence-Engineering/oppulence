@@ -20,6 +20,11 @@ describe("AppShellSidebar", () => {
     expect(source).not.toContain("reasoning, notifications, privacy, and memory");
   });
 
+  it("describes appearance as the controls that page actually has", () => {
+    expect(source).toContain("Set the theme and the interface language.");
+    expect(source).not.toContain("window preferences");
+  });
+
   it("describes permissions and security without authorization jargon", () => {
     expect(source).toContain("Who you are and what this session can do.");
     expect(source).toContain("Review this session and what it can open.");
