@@ -125,11 +125,16 @@ describe("RelationshipsView", () => {
     expect(source).toContain('aria-label="Company domain"');
     expect(source).toContain('placeholder="Company domain (optional)"');
     expect(source).toContain("Mail and meetings can fill in its people and activity later.");
-    expect(source).toContain('onClick={() => openSection("history")}');
-    expect(source).toContain('onClick={() => openSection("emails")}');
+    expect(source).toContain('["history", "Activity"]');
+    expect(source).toContain('["emails", `Emails ${data.emailThreads.length}`]');
     expect(source).toContain("id={`${id}:history`}");
     expect(source).toContain("id={`${id}:emails`}");
+    expect(source).toContain('onClick={() => openSection(section)}');
+    expect(source).toContain('aria-current={activeSection === section ? "page" : undefined}');
     expect(source).not.toContain('onClick={() => openSection("activity")}');
+    expect(source).not.toContain(
+      'className="h-auto rounded-none bg-background-200 px-3 py-1.5 text-primary"',
+    );
     expect(source).toContain("<Plus /> New company");
     expect(source).not.toContain("<Plus /> Add company");
     expect(source).not.toContain("synced conversations");

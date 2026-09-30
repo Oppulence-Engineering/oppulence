@@ -1988,6 +1988,9 @@ export function RelationshipSheet({
   >({});
   const [loading, setLoading] = React.useState(true);
   const [loadError, setLoadError] = React.useState<string | null>(null);
+  const [activeSection, setActiveSection] = React.useState<
+    "overview" | "history" | "emails" | "commitments" | "people"
+  >("overview");
   const askOppulence = useAskOppulence();
   const askedCompany = data?.relationship ?? seed;
 
@@ -2036,6 +2039,10 @@ export function RelationshipSheet({
     void load();
   }, [load]);
 
+  React.useEffect(() => {
+    setActiveSection("overview");
+  }, [id]);
+
   const act = async (key: string, operation: () => Promise<unknown>): Promise<boolean> => {
     setBusy(key);
     try {
@@ -2068,10 +2075,12 @@ export function RelationshipSheet({
     }
   };
 
-  const openSection = (section: string) =>
+  const openSection = (section: typeof activeSection) => {
+    setActiveSection(section);
     document
       .getElementById(`${id}:${section}`)
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   const primaryContact = data?.participants.find((participant) => participant.email);
   const companySource = data
     ? Object.values(data.relationship.companyEnrichmentRefs ?? {})
@@ -2294,47 +2303,32 @@ export function RelationshipSheet({
             <div className="min-w-0 overflow-y-auto">
               <nav className="sticky top-0 z-10 flex h-12 items-center gap-1 border-b border-border bg-background px-4 text-xs">
                 {/* Activity is the history log. Emails is the thread list.
-                    They used to scroll to the same place. */}
-                <Button
-                  type="button"
-                  onClick={() => openSection("overview")}
-                  className="h-auto rounded-none bg-background-200 px-3 py-1.5 text-primary"
-                  variant="secondary"
-                >
-                  Overview
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => openSection("history")}
-                  className="h-auto rounded-none px-3 py-1.5 text-primary/50 hover:text-primary"
-                  variant="ghost"
-                >
-                  Activity
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => openSection("emails")}
-                  className="h-auto rounded-none px-3 py-1.5 text-primary/50 hover:text-primary"
-                  variant="ghost"
-                >
-                  Emails {data.emailThreads.length}
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => openSection("commitments")}
-                  className="h-auto rounded-none px-3 py-1.5 text-primary/50 hover:text-primary"
-                  variant="ghost"
-                >
-                  Commitments {data.commitments.length}
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => openSection("people")}
-                  className="h-auto rounded-none px-3 py-1.5 text-primary/50 hover:text-primary"
-                  variant="ghost"
-                >
-                  People {data.participants.length}
-                </Button>
+                    They used to scroll to the same place. Overview used to
+                    stay highlighted after those clicks. */}
+                {(
+                  [
+                    ["overview", "Overview"],
+                    ["history", "Activity"],
+                    ["emails", `Emails ${data.emailThreads.length}`],
+                    ["commitments", `Commitments ${data.commitments.length}`],
+                    ["people", `People ${data.participants.length}`],
+                  ] as const
+                ).map(([section, label]) => (
+                  <Button
+                    aria-current={activeSection === section ? "page" : undefined}
+                    className={
+                      activeSection === section
+                        ? "h-auto rounded-none bg-background-200 px-3 py-1.5 text-primary"
+                        : "h-auto rounded-none px-3 py-1.5 text-primary/50 hover:text-primary"
+                    }
+                    key={section}
+                    onClick={() => openSection(section)}
+                    type="button"
+                    variant={activeSection === section ? "secondary" : "ghost"}
+                  >
+                    {label}
+                  </Button>
+                ))}
               </nav>
               <div id={`${id}:overview`} className="flex scroll-mt-14 flex-col gap-6 px-5 py-5">
                 {(() => {
