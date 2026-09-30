@@ -131,6 +131,20 @@ describe("CommitmentQueue", () => {
     expect(screen.queryByText(/one relationship/)).toBeNull();
   });
 
+  it("opens the recovery queue from the empty register without claiming an approval", async () => {
+    const onOpenRecoveryQueue = vi.fn();
+    render(
+      <CommitmentQueue {...props({ entries: [], onOpenRecoveryQueue })} />,
+    );
+    expect(screen.getByText("What you can do")).toBeVisible();
+    expect(screen.queryByText("Learn more")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Approve recovery before anything is sent" }),
+    ).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Review recovery drafts" }));
+    expect(onOpenRecoveryQueue).toHaveBeenCalledOnce();
+  });
+
   it("says there is nothing to choose when the workspace has no companies", async () => {
     const onOpenAccounts = vi.fn();
     render(

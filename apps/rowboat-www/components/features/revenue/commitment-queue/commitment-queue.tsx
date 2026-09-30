@@ -799,7 +799,10 @@ export function CommitmentQueue({
             ) : null}
             {items.length === 0 ? (
               <div className="mb-4 mt-auto w-full max-w-[640px] text-left">
-                <p className="mb-2 text-[12px] text-primary/45">Learn more</p>
+                {/* These are actions. "Learn more" made the recovery card
+                    read like an article, and its label described an approval
+                    the click never performs. It only opens the recovery queue. */}
+                <p className="mb-2 text-[12px] text-primary/45">What you can do</p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Button
                     className="flex h-[72px] items-center justify-start gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] font-normal text-primary/80 hover:bg-background-100"
@@ -825,7 +828,7 @@ export function CommitmentQueue({
                         <ArrowClockwise className="size-4" />
                       </AvatarFallback>
                     </Avatar>
-                    Approve recovery before anything is sent
+                    Review recovery drafts
                   </Button>
                 </div>
               </div>
