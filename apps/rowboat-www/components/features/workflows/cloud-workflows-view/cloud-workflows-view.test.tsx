@@ -417,14 +417,26 @@ describe("CloudWorkflowsView", () => {
     ).toBe("Get the promises, risks, and goals ready before a meeting.");
   });
 
-  it("does not invent HubSpot writes for a system workflow without a canvas", () => {
+  it("does not invent steps for a system workflow without a canvas", () => {
     const meeting = {
       name: "Post-Meeting Processor",
       slug: "oppulence-post-meeting-processor",
       templateSlug: "post-meeting-processor",
       triggers: { cronExpr: "*/15 * * * *" },
     } as CloudTask;
-    expect(workflowForTask(meeting).actions).toEqual(["review-account", "write-brief"]);
+    const sourceHealth = {
+      name: "Connector Health and Repair",
+      slug: "oppulence-connector-health-repair",
+      triggers: { cronExpr: "*/30 * * * *" },
+    } as CloudTask;
+    expect(workflowForTask(meeting).actions).toEqual([]);
+    expect(workflowForTask(sourceHealth).actions).toEqual([]);
+    expect(workflowStepLabel(meeting)).toBe("Maintained");
+    expect(workflowStepLabel(sourceHealth)).toBe("Maintained");
+    expect(workflowForTask(meeting).objective).toBe(
+      "Turn a finished meeting into promises, risks, and a follow-up that waits for your approval.",
+    );
     expect(source).not.toContain("update-crm-note");
+    expect(source).not.toContain('return ["review-account", "write-brief"]');
   });
 });

@@ -305,22 +305,18 @@ export function scheduleLabel(task: CloudTask): string {
   }
 }
 
-function inferredManagedActions(): WorkflowActionKind[] {
-  // These rows store instructions, not a canvas. Guessing HubSpot writes from
-  // the slug showed Meeting follow-up as if it updated a CRM it never touches.
-  return ["review-account", "write-brief"];
-}
-
 export function workflowForTask(
   task: CloudTask,
   templates: readonly Pick<CloudTaskTemplate, "slug" | "taskSlug" | "description">[] = [],
 ): VisualWorkflowDefinition {
   const visual = taskVisualWorkflow(task);
   if (visual) return visual;
+  // These rows store instructions, not a canvas. Drawing the same two steps
+  // on every one made Source health look like it reviews a company.
   return {
     version: 1,
     trigger: taskCron(task) ? { kind: "schedule", cronExpr: taskCron(task) } : { kind: "manual" },
-    actions: inferredManagedActions(),
+    actions: [],
     objective: workflowListSummary(task, templates),
   };
 }
@@ -328,9 +324,12 @@ export function workflowForTask(
 /**
  * The library column counts canvas actions. The trigger already has its own
  * Starts column, so adding it here made a two-step workflow read as three.
+ * A maintained workflow has no canvas, so a step count would be invented.
  */
 export function workflowStepLabel(task: CloudTask): string {
-  const steps = workflowForTask(task).actions.length;
+  const visual = taskVisualWorkflow(task);
+  if (!visual) return "Maintained";
+  const steps = visual.actions.length;
   return steps === 1 ? "1 step" : `${steps} steps`;
 }
 
@@ -1121,7 +1120,7 @@ function WorkflowEditor({
         >
           {task.systemManaged ? (
             <p className="shrink-0 border-b border-border px-4 py-2 text-[12px] text-muted-foreground">
-              This workflow is maintained by Oppulence. You can pause it, inspect it, and run it on
+              Oppulence maintains the steps for this workflow. You can pause it and run it on
               demand.
             </p>
           ) : null}
