@@ -191,14 +191,17 @@ function inferredManagedActions(task: CloudTask): WorkflowActionKind[] {
   return ["review-account", "write-brief"];
 }
 
-function workflowForTask(task: CloudTask): VisualWorkflowDefinition {
+export function workflowForTask(
+  task: CloudTask,
+  templates: readonly Pick<CloudTaskTemplate, "slug" | "taskSlug" | "description">[] = [],
+): VisualWorkflowDefinition {
   const visual = taskVisualWorkflow(task);
   if (visual) return visual;
   return {
     version: 1,
     trigger: taskCron(task) ? { kind: "schedule", cronExpr: taskCron(task) } : { kind: "manual" },
     actions: inferredManagedActions(task),
-    objective: `${task.name} keeps relationship intelligence current and surfaces the next evidence-backed action.`,
+    objective: workflowListSummary(task, templates),
   };
 }
 
@@ -804,6 +807,7 @@ function WorkflowRuns({
 
 function WorkflowEditor({
   task,
+  templates,
   schedule,
   runs,
   selectedRun,
@@ -817,6 +821,7 @@ function WorkflowEditor({
   onUpdate,
 }: {
   task: CloudTask;
+  templates: CloudTaskTemplate[];
   schedule: CloudSchedule | null;
   runs: CloudRun[];
   selectedRun: CloudRun | null;
@@ -835,7 +840,7 @@ function WorkflowEditor({
   }) => Promise<void>;
 }) {
   const editable = !task.systemManaged;
-  const original = workflowForTask(task);
+  const original = workflowForTask(task, templates);
   // The editor remounts when the task revision changes. Run now updates that
   // revision after it selects the new run, which was throwing the user back
   // onto the canvas. A selected run means this mount should open on Runs.
@@ -934,9 +939,15 @@ function WorkflowEditor({
         </TabsList>
 
         <TabsContent
-          className="min-h-0 flex-1 overflow-hidden data-[state=active]:flex"
+          className="min-h-0 flex-1 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col"
           value="editor"
         >
+          {task.systemManaged ? (
+            <p className="shrink-0 border-b border-border px-4 py-2 text-[12px] text-muted-foreground">
+              This workflow is maintained by Oppulence. You can pause it, inspect it, and run it on
+              demand.
+            </p>
+          ) : null}
           <VisualWorkflowBuilder
             aria-label={`${task.name} workflow editor`}
             disabled={!editable}
@@ -1307,6 +1318,7 @@ export function CloudWorkflowsView({
         <WorkflowEditor
           busy={busy}
           events={events}
+          templates={templates}
           key={`${selectedTask.id}:${selectedTask.revision}`}
           onBack={() => {
             selectRun(null);

@@ -3,7 +3,10 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { sortWorkflowTasks } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
+import {
+  sortWorkflowTasks,
+  workflowForTask,
+} from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import { workflowListSummary, type CloudTask } from "@/lib/workflows/cloud-workflows";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "cloud-workflows-view.tsx"), "utf8");
@@ -70,5 +73,23 @@ describe("CloudWorkflowsView", () => {
         },
       }),
     ).toBe("Brief me before the Acme call.");
+  });
+
+  it("opens a managed workflow on its template description", () => {
+    const meeting = {
+      name: "Meeting Pre-Brief",
+      slug: "oppulence-meeting-pre-brief",
+      templateSlug: "meeting-pre-brief",
+      triggers: { cronExpr: "*/30 * * * *" },
+    } as CloudTask;
+    expect(
+      workflowForTask(meeting, [
+        {
+          slug: "meeting-pre-brief",
+          taskSlug: "oppulence-meeting-pre-brief",
+          description: "Prepare evidence-linked context for upcoming customer meetings.",
+        },
+      ]).objective,
+    ).toBe("Prepare evidence-linked context for upcoming customer meetings.");
   });
 });
