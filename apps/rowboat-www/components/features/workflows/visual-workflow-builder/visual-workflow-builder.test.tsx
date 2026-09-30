@@ -57,7 +57,8 @@ describe("VisualWorkflowBuilder", () => {
     const component = screen.getByRole("region", { name: "Example visual-workflow-builder" });
     expect(component).toHaveAttribute("data-slot", "visual-workflow-builder");
     expect(component).toHaveTextContent("Mail or message received");
-    expect(component).toHaveTextContent("Read companies, people, promises, and evidence");
+    expect(component).toHaveTextContent("Read the company, the people on it, and its open promises.");
+    expect(component).not.toHaveTextContent("evidence");
     expect(component).toHaveTextContent("Review company");
     expect(component).not.toHaveTextContent("Review account");
     expect(component).toHaveTextContent("Draft a follow-up");

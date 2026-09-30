@@ -96,7 +96,7 @@ const actions: Array<{
   {
     value: "review-account",
     label: "Review company",
-    detail: "Read companies, people, promises, and evidence",
+    detail: "Read the company, the people on it, and its open promises.",
     icon: <MagnifyingGlass />,
     fields: [
       {
