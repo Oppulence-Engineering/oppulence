@@ -32,6 +32,8 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain("Hide unconnected");
     expect(source).toContain("Changed since you last looked");
     expect(source).toContain('placeholder="Ask about a company or a promise."');
+    expect(source).toContain('aria-label="Ask this graph"');
+    expect(source).not.toContain("Ask graph");
     expect(source).not.toContain("Changed since review");
     expect(source).not.toContain("overdue commitments");
     expect(graphLayoutLabel("force")).toBe("Grouped");

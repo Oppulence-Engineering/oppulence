@@ -1314,7 +1314,7 @@ export function RelationshipGraphWorkspace({
             />
           </div>
           <Button type="submit" size="sm">
-            Ask graph
+            Ask
           </Button>
           {viewState.query ? (
             <Button
