@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  runFailureLine,
   runRowDetail,
   scheduleLabel,
   sortWorkflowTasks,
@@ -37,6 +38,15 @@ describe("CloudWorkflowsView", () => {
     expect(runRowDetail("failed", "cron")).toBe("Failed · Scheduled");
     expect(runRowDetail("failed", "window")).toBe("Failed · Time window");
     expect(source).toContain("runRowDetail(run.status, run.trigger)");
+    expect(runFailureLine({ error: "", errorCode: "" })).toBeNull();
+    expect(
+      runFailureLine({
+        error:
+          'llm upstream returned status 401: {"error":{"message":"Missing Authentication header"}}',
+        errorCode: "llm_call_failed",
+      }),
+    ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
+    expect(source.match(/<RunRowFailure run=\{run\} \/>/g)).toHaveLength(2);
     expect(source).toContain("triggerLabel(run.trigger)");
     expect(source).not.toContain("{readableEnum(run.trigger)}");
     expect(source).toContain("workflowName={taskTitle(task)}");

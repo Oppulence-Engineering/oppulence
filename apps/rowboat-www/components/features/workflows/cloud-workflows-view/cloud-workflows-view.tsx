@@ -131,6 +131,12 @@ export function runRowDetail(status: string, trigger: string): string {
   return `${readableEnum(status)} · ${triggerLabel(trigger)}`;
 }
 
+/** A failed run should say why in the list. Opening it is not required to learn that. */
+export function runFailureLine(run: Pick<CloudRun, "error" | "errorCode">): string | null {
+  if (!run.error) return null;
+  return runFailureCopy(run as CloudRun);
+}
+
 function statusTone(status: string): string {
   switch (status) {
     case "succeeded":
@@ -146,6 +152,16 @@ function statusTone(status: string): string {
     default:
       return "border-border bg-muted/50 text-muted-foreground";
   }
+}
+
+function RunRowFailure({ run }: { run: CloudRun }) {
+  const failure = runFailureLine(run);
+  if (!failure) return null;
+  return (
+    <CardDescription className="mt-0.5 block truncate text-[11px] text-destructive">
+      {failure}
+    </CardDescription>
+  );
 }
 
 function StatusIcon({ status }: { status: string }) {
@@ -793,6 +809,7 @@ function WorkflowRuns({
                   <CardDescription className="mt-0.5 block text-[11px]">
                     {runRowDetail(run.status, run.trigger)} · {formatDate(run.createdAt)}
                   </CardDescription>
+                  <RunRowFailure run={run} />
                 </div>
                 <CaretRight className="size-4 text-muted-foreground" />
               </Button>
@@ -1002,6 +1019,7 @@ function WorkflowEditor({
                     <CardDescription className="text-[11px]">
                       {triggerLabel(run.trigger)} · {formatDate(run.createdAt)}
                     </CardDescription>
+                    <RunRowFailure run={run} />
                   </div>
                   <CaretRight className="size-4 text-muted-foreground" />
                 </Button>
