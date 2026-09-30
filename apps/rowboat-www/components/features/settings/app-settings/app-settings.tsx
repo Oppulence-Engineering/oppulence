@@ -696,10 +696,6 @@ function PreferencesSection() {
   );
 }
 
-function NotificationsSection() {
-  return <PreferencesSection />;
-}
-
 function SecuritySection({ session }: { session: SessionShape }) {
   return (
     <>
@@ -896,7 +892,6 @@ export function SettingsView({
       <div className={cn("settings-page", section === "overview" && "settings-page--wide")}>
         {section === "overview" ? <OverviewSection onNavigate={onNavigate} /> : null}
         {section === "preferences" ? <PreferencesSection /> : null}
-        {section === "notifications" ? <NotificationsSection /> : null}
         {section === "permissions" ? <PermissionsSection session={session} /> : null}
         {section === "security" ? <SecuritySection session={session} /> : null}
         {section === "connections" ? (
@@ -960,7 +955,6 @@ export function SettingsView({
             </SettingsRow>
           </>
         ) : null}
-        {section === "customization" ? <AppearanceSection /> : null}
         {section === "appearance" ? <AppearanceSection /> : null}
         {section === "account" ? <AccountSection session={session} /> : null}
         {section === "connect" ? (

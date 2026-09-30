@@ -22,6 +22,8 @@ describe("product navigation", () => {
     expect(revenueTabFromParam("not-a-tab")).toBe("commitments");
     expect(settingsSectionFromParam("security")).toBe("security");
     expect(settingsSectionFromParam("extensions")).toBe("connections");
+    expect(settingsSectionFromParam("notifications")).toBe("preferences");
+    expect(settingsSectionFromParam("customization")).toBe("appearance");
     expect(settingsSectionFromParam("models")).toBe("overview");
     expect(settingsSectionFromParam("environment")).toBe("overview");
     expect(settingsSectionFromParam("not-a-section")).toBe("overview");

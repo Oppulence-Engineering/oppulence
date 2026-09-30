@@ -13,13 +13,10 @@ import Link from "next/link";
 import {
   ArrowLeft,
   AddressBook,
-  Bell,
-  Brain,
   CaretRight,
   CaretUpDown,
   CheckCircle,
   Clock,
-  Folder,
   GearSix,
   Monitor,
   Moon,
@@ -103,14 +100,7 @@ export const SETTINGS_SECTIONS: {
     label: "Preferences",
     icon: Clock,
     group: "workspace",
-    description: "Default agent, reasoning, notifications, privacy, and memory.",
-  },
-  {
-    key: "notifications",
-    label: "Notifications",
-    icon: Bell,
-    group: "workspace",
-    description: "Configure browser and relationship notification preferences.",
+    description: "Default agent, privacy, and memory.",
   },
   {
     key: "permissions",
@@ -139,13 +129,6 @@ export const SETTINGS_SECTIONS: {
     icon: Rocket,
     group: "workspace",
     description: "Inspect endpoints, diagnostics, and advanced workspace controls.",
-  },
-  {
-    key: "customization",
-    label: "Customization",
-    icon: Folder,
-    group: "global",
-    description: "Tune product branding, navigation, and workspace layout.",
   },
   {
     key: "appearance",

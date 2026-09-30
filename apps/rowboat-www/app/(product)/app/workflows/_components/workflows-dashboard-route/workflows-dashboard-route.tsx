@@ -7,6 +7,7 @@ import type { ComponentPropsWithoutRef } from "react";
 
 import { cn } from "@oppulence/ui/lib/utils";
 import { useDashboardChatController } from "@/components/features/dashboard/chat-route-provider/chat-route-provider";
+import { useProductRouteState } from "@/hooks/dashboard/use-product-route-state";
 import type { WorkflowFocus } from "@/lib/dashboard/product-navigation";
 
 const CloudWorkflowsView = dynamic(() =>
@@ -21,10 +22,16 @@ export type WorkflowsDashboardRouteProps = ComponentPropsWithoutRef<"section"> &
 
 export function WorkflowsDashboardRoute({
   className,
-  focus,
+  focus: _serverFocus,
   ...props
 }: WorkflowsDashboardRouteProps) {
   const { selectedResource: resource } = useDashboardChatController();
+  const { workflowFocus } = useProductRouteState();
+  // nuqs writes `?focus=runs` with history.replace. Cache Components does not
+  // refetch this route on that update, so the server `focus` prop stays on the
+  // first paint and the library stays open while the header says Runs. The
+  // hook is the live focus; it matches the prop on the initial document load.
+  const focus: WorkflowFocus = workflowFocus;
   const isTaskResource = resource?.kind === "task" || resource?.kind === "taskrun";
   return (
     <section
