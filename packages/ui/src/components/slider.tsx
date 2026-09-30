@@ -9,6 +9,8 @@ function Slider({
   value,
   min = 0,
   max = 100,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
   ...props
 }: React.ComponentProps<typeof SliderPrimitive.Root>) {
   const _values = React.useMemo(
@@ -20,6 +22,12 @@ function Slider({
           : [min, max],
     [value, defaultValue, min, max]
   )
+  // Radix puts role="slider" on the thumb. A name on the root span never
+  // reaches that thumb, so a single slider has to carry the name itself.
+  const thumbName =
+    _values.length === 1
+      ? { "aria-label": ariaLabel, "aria-labelledby": ariaLabelledBy }
+      : undefined
 
   return (
     <SliderPrimitive.Root
@@ -52,6 +60,7 @@ function Slider({
           data-slot="slider-thumb"
           key={index}
           className="block size-4 shrink-0 rounded-full border border-primary bg-white shadow-sm ring-ring/50 transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
+          {...thumbName}
         />
       ))}
     </SliderPrimitive.Root>
