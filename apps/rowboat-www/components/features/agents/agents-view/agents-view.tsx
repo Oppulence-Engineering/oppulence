@@ -437,7 +437,9 @@ export function AgentsView({
                   <div className="mt-2 flex flex-wrap gap-2">
                     {selected.enabledTools?.length ? (
                       selected.enabledTools.map((tool) => (
-                        <Badge key={tool} title={tool} variant="secondary">
+                        // The badge already shows the product name. A title of
+                        // the tool id put relationship.read on hover.
+                        <Badge key={tool} variant="secondary">
                           {agentToolLabel(tool)}
                         </Badge>
                       ))

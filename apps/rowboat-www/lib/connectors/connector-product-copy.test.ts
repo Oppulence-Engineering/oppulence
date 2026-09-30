@@ -47,6 +47,10 @@ describe("connector product descriptions", () => {
     expect(scopeProductDetail("cadence:payment_runs.read", "View payment-run status, totals, and approval context.")).not.toMatch(
       /payment-run|approval context/i,
     );
+    expect(scopeProductLabel("cadence:payment_runs.read", "Read payment runs")).toBe("See payments");
+    expect(scopeProductLabel("cadence:payments.execute", "Execute approved payments")).toBe(
+      "Send an approved payment",
+    );
     expect(scopeProductDetail("cadence:payments.execute", "Execute a payment only after a separate action-specific approval.")).toBe(
       "Send a payment only after you approve that payment.",
     );

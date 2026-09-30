@@ -15,5 +15,7 @@ describe("AgentsView", () => {
     expect(source).toContain(">Short name</Label>");
     expect(source).not.toMatch(/>\s*Instructions\s*</);
     expect(source).toMatch(/>\s*Purpose\s*</);
+    expect(source).toContain("{agentToolLabel(tool)}");
+    expect(source).not.toContain("title={tool}");
   });
 });

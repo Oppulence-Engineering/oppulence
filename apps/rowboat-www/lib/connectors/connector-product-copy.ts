@@ -60,11 +60,11 @@ const KNOWN_SCOPE_COPY: Record<string, { label: string; detail: string }> = {
     detail: "See who the invoice is for.",
   },
   "cadence:payment_runs.read": {
-    label: "Read payment runs",
+    label: "See payments",
     detail: "See whether a payment is waiting, what it totals, and whether it is approved.",
   },
   "cadence:payments.execute": {
-    label: "Execute approved payments",
+    label: "Send an approved payment",
     detail: "Send a payment only after you approve that payment.",
   },
 };
