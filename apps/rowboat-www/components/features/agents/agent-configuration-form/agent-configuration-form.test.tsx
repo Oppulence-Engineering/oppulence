@@ -30,6 +30,14 @@ describe("AgentConfigurationForm", () => {
     expect(source).not.toContain("connector.custom.action");
     expect(source).not.toContain("slack:messages.read");
     expect(source).not.toContain("Required connection scopes");
+    expect(source).toContain("Safety limits");
+    expect(source).toContain("Reply limit");
+    expect(source).toContain("Model call limit");
+    expect(source).toContain("Tool use limit");
+    expect(source).toContain("Spending limit (USD)");
+    expect(source).not.toContain("Maximum tool calls");
+    expect(source).not.toContain("Spend ceiling");
+    expect(source).not.toContain("Maximum AI calls");
     expect(tools).toContain('"echo"');
     expect(tools).toContain('"conduit.read"');
     expect(source).not.toContain("Read relationship memory");

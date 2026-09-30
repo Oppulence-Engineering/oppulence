@@ -525,9 +525,9 @@ export function AgentConfigurationForm({
               <div className="flex items-center gap-3">
                 <ShieldCheck className="size-5 text-muted-foreground" />
                 <div>
-                  <Label className="block text-sm font-medium">Advanced run limits</Label>
+                  <Label className="block text-sm font-medium">Safety limits</Label>
                   <CardDescription className="mt-1 block text-xs font-normal">
-                    Optional safeguards; blank fields inherit workspace limits.
+                    Blank fields use the workspace limits.
                   </CardDescription>
                 </div>
               </div>
@@ -536,10 +536,10 @@ export function AgentConfigurationForm({
               <div className="grid gap-4 border-t pt-4 sm:grid-cols-2">
                 {(
                   [
-                    ["maxTurns", "Maximum turns", "20"],
-                    ["maxLLMCalls", "Maximum AI calls", "50"],
-                    ["maxToolCalls", "Maximum tool calls", "25"],
-                    ["spendCeilingUsd", "Spend ceiling (USD)", "5.00"],
+                    ["maxTurns", "Reply limit", "20"],
+                    ["maxLLMCalls", "Model call limit", "50"],
+                    ["maxToolCalls", "Tool use limit", "25"],
+                    ["spendCeilingUsd", "Spending limit (USD)", "5.00"],
                   ] as const
                 ).map(([field, label, placeholder]) => (
                   <div className="space-y-2" key={field}>
