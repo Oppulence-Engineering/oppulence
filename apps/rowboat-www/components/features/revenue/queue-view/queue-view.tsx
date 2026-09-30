@@ -49,6 +49,7 @@ import {
   SimProductToolbar,
 } from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
 import {
+  ACTION_TYPE_LABELS,
   createAction,
   DETECTOR_LABELS,
   dismissAction,
@@ -440,14 +441,14 @@ function CreateActionDialog({
         <DialogHeader>
           <DialogTitle>New action</DialogTitle>
           <DialogDescription>
-            Add a manual follow-up to the queue against an existing relationship.
+            Add a manual follow-up to the queue for a company already in this workspace.
           </DialogDescription>
         </DialogHeader>
         {relationships.length === 0 ? (
           <Empty className="gap-3 py-4">
             <EmptyHeader>
               <EmptyDescription className="text-sm text-primary/55">
-                No relationships yet — run a scan or add one in the Relationships tab first.
+                No companies yet. Add one in Companies, or run an audit to find them.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -455,7 +456,7 @@ function CreateActionDialog({
           <div className="flex flex-col gap-3">
             <Select value={relationshipId} onValueChange={setRelationshipId}>
               <SelectTrigger size="sm">
-                <SelectValue placeholder="Relationship" />
+                <SelectValue placeholder="Company" />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-[2px]">
                 {relationships.map((r) => (
@@ -479,7 +480,7 @@ function CreateActionDialog({
               <SelectContent className="app-shell rounded-[2px]">
                 {createActionTypes.map((t) => (
                   <SelectItem key={t} value={t}>
-                    {t.replace(/_/g, " ")}
+                    {ACTION_TYPE_LABELS[t] ?? t.replaceAll("_", " ")}
                   </SelectItem>
                 ))}
               </SelectContent>

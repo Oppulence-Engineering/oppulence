@@ -11,4 +11,10 @@ describe("QueueView", () => {
     expect(source).not.toContain("ListFilter");
     expect(source).toContain('aria-label="Filter recovery actions"');
   });
+
+  it("points an empty workspace at Companies and names the action", () => {
+    expect(source).toContain("No companies yet. Add one in Companies, or run an audit to find them.");
+    expect(source).not.toContain("Relationships tab");
+    expect(source).toContain("ACTION_TYPE_LABELS[t]");
+  });
 });
