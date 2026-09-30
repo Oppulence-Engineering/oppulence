@@ -54,6 +54,12 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain('aria-label="Show accounts"');
     expect(source).not.toContain('aria-label="Show relationship graph"');
     expect(source).toContain("Profile enrichment");
+    expect(source).toContain(">All stages</SelectItem>");
+    expect(source).toContain("<Sparkle /> Sources");
+    expect(source).toContain("Sources and company details");
+    expect(source).not.toContain(">All lifecycle</SelectItem>");
+    expect(source).not.toContain("Data health");
+    expect(source).not.toContain("Allow cited enrichment");
     expect(source).not.toContain("Relationship enrichment");
     expect(source).toContain("Delete shared conversation evidence for this company?");
     expect(source).not.toContain("for this relationship?");
@@ -89,10 +95,10 @@ describe("RelationshipsView", () => {
         requiredPlan: "intelligence",
       }),
     ).toBe(
-      "Cited profile enrichment is part of the Intelligence plan. This workspace does not include it.",
+      "Public research is part of the Intelligence plan. This workspace does not include it.",
     );
     expect(enrichmentAvailabilityCopy({ available: false, reason: "unconfigured" })).toBe(
-      "Cited profile enrichment is not available in this workspace.",
+      "Public research is not available in this workspace.",
     );
     expect(
       enrichmentAvailabilityCopy({ available: true, reason: "plan_required", requiredPlan: "pro" }),

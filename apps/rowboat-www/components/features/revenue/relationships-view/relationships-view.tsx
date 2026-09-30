@@ -355,11 +355,9 @@ function RelationshipEnrichment({
           </p>
           <h3 className="mt-1 text-sm font-semibold text-primary">Know who is behind the inbox</h3>
           <p className="mt-1 max-w-3xl text-xs text-primary/55">
-            Cited public-web research builds dossiers across company ownership, size, funding,
-            revenue, products, buyers, technology, executives, news, and growth signals—plus each
-            person’s role, department, bio, work history, expertise, activity, and verified LinkedIn.
-            Every stored fact keeps its source link; message content, notes, and full email
-            addresses never leave Oppulence.
+            Public research can fill in a company and the people who work there, and each fact
+            keeps its source link. Message content, notes, and full email addresses stay in
+            Oppulence.
           </p>
         </div>
         {status?.consent.consented ? (
@@ -375,13 +373,13 @@ function RelationshipEnrichment({
         ) : status?.available && status.reason === "consent_required" ? (
           <Button type="button" size="sm" disabled={busy} onClick={() => void changeConsent(true)}>
             {busy ? <Spinner className="size-4" /> : <Sparkle />}
-            Allow cited enrichment
+            Allow public research
           </Button>
         ) : null}
       </div>
 
       {!status ? (
-        <p className="mt-3 text-xs text-primary/45">Checking enrichment availability…</p>
+        <p className="mt-3 text-xs text-primary/45">Checking whether public research is available…</p>
       ) : status.allowed && status.consent.consented ? (
         <div className="mt-3 flex flex-col justify-between gap-3 border-t border-border pt-3 sm:flex-row sm:items-center">
           <div className="text-xs text-primary/65">
@@ -397,7 +395,7 @@ function RelationshipEnrichment({
                 events checked daily
               </p>
             ) : (
-              <p>Calculating the enrichment estimate…</p>
+              <p>Calculating the estimate…</p>
             )}
             {result ? <p className="mt-1 text-primary">{result}</p> : null}
           </div>
@@ -406,7 +404,7 @@ function RelationshipEnrichment({
           (personEstimate.people ?? 0) + (companyEstimate.companies ?? 0) > 0 ? (
             <Button type="button" size="sm" disabled={busy} onClick={() => void run()}>
               {busy ? <Spinner className="size-4" /> : <Sparkle />}
-              Enrich companies &amp; people
+              Fill in companies and people
             </Button>
           ) : null}
         </div>
@@ -422,7 +420,7 @@ function RelationshipEnrichment({
 
 /**
  * Research status mixes a vendor setup step with the stored plan slug. The
- * panel says whether this workspace includes cited enrichment.
+ * panel says whether this workspace includes public research.
  */
 export function enrichmentAvailabilityCopy(status: {
   available: boolean;
@@ -432,16 +430,16 @@ export function enrichmentAvailabilityCopy(status: {
   const plan = planLabel(status.requiredPlan);
   if (!status.available) {
     return plan && status.reason === "plan_required"
-      ? `Cited profile enrichment is part of the ${plan} plan. This workspace does not include it.`
-      : "Cited profile enrichment is not available in this workspace.";
+      ? `Public research is part of the ${plan} plan. This workspace does not include it.`
+      : "Public research is not available in this workspace.";
   }
   if (status.reason === "plan_required") {
     return plan
       ? `Available on the ${plan} plan.`
-      : "This workspace plan does not include cited profile enrichment.";
+      : "This workspace plan does not include public research.";
   }
   if (status.reason === "capability_disabled") return "Cloud research is disabled for this workspace.";
-  return "Enrichment is off until you explicitly allow it.";
+  return "Public research stays off until you allow it.";
 }
 
 /**
@@ -674,10 +672,10 @@ export function RelationshipsView({
             </Select>
             <Select value={lifecycle} onValueChange={setLifecycle}>
               <SelectTrigger className="h-8 w-40" size="sm">
-                <SelectValue placeholder="Lifecycle" />
+                <SelectValue placeholder="Stage" />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-none">
-                <SelectItem value="all">All lifecycle</SelectItem>
+                <SelectItem value="all">All stages</SelectItem>
                 {LIFECYCLE_OPTIONS.map((value) => (
                   <SelectItem key={value} value={value}>
                     {humanize(value)}
@@ -696,7 +694,7 @@ export function RelationshipsView({
             </Button>
             <details className="group relative ml-auto">
               <summary className="flex h-8 cursor-pointer list-none items-center gap-2 rounded-none border border-border bg-background px-3 text-[12px] text-primary/65 outline-none hover:bg-background-100 hover:text-primary focus-visible:ring-1 focus-visible:ring-primary/20">
-                <Sparkle /> Data health
+                <Sparkle /> Sources
                 {companyAttention.length + identityCandidates.length > 0 ? (
                   <Badge variant="secondary">
                     {companyAttention.length + identityCandidates.length}
@@ -707,10 +705,10 @@ export function RelationshipsView({
                 <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
                   <div className="min-w-0">
                     <p className="text-[13px] font-medium text-primary">
-                      Data health &amp; profile enrichment
+                      Sources and company details
                     </p>
                     <p className="mt-0.5 text-[12px] text-primary/45">
-                      Sources, enrichment, and identity review
+                      Which sources are connected, and which details still need a look.
                     </p>
                   </div>
                   <SourceHealth statuses={sources} />
