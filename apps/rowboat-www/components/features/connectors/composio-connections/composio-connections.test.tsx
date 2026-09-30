@@ -55,7 +55,8 @@ describe("Composio connections", () => {
     expect(screen.getAllByText("Not connected")).toHaveLength(2);
     expect(screen.queryByText(/company evidence/)).toBeNull();
     expect(screen.queryByText(/relationship sources/)).toBeNull();
-    expect(screen.getAllByRole("button", { name: "Connect" })).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Connect Jira" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Connect Asana" })).toBeInTheDocument();
   });
 
   // The account is linked on Composio's page, not here, so the click must hand
@@ -70,7 +71,7 @@ describe("Composio connections", () => {
     renderWithQuery(<ComposioConnections />);
     await screen.findByText("Jira");
 
-    await userEvent.click(screen.getAllByRole("button", { name: "Connect" })[0]);
+    await userEvent.click(screen.getByRole("button", { name: "Connect Jira" }));
 
     expect(mocks.startComposioConnection).toHaveBeenCalledWith("jira");
     expect(open).toHaveBeenCalledWith(
@@ -87,7 +88,7 @@ describe("Composio connections", () => {
     mocks.disconnectComposio.mockResolvedValue(undefined);
     renderWithQuery(<ComposioConnections />);
 
-    await userEvent.click(await screen.findByRole("button", { name: "Disconnect" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Disconnect Jira" }));
 
     expect(mocks.disconnectComposio).toHaveBeenCalledWith("ca_1");
     expect(mocks.listComposioConnections).toHaveBeenCalledTimes(2);
@@ -104,7 +105,7 @@ describe("Composio connections", () => {
     });
     const user = userEvent.setup();
     renderWithQuery(<ComposioConnections />);
-    await user.click((await screen.findAllByRole("button", { name: "Connect" }))[0]);
+    await user.click(await screen.findByRole("button", { name: "Connect Jira" }));
 
     // The user authorizes on Composio's page, so the account now exists.
     mocks.listComposioConnections.mockResolvedValue([
@@ -112,7 +113,7 @@ describe("Composio connections", () => {
     ]);
     document.dispatchEvent(new Event("visibilitychange"));
 
-    expect(await screen.findByRole("button", { name: "Disconnect" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Disconnect Jira" })).toBeInTheDocument();
     expect(mocks.listComposioConnections).toHaveBeenCalledTimes(2);
   });
 
@@ -134,8 +135,8 @@ describe("Composio connections", () => {
     renderWithQuery(<ComposioConnections />);
 
     // The live connection wins over the newer pending ones, and Jira shows once.
-    expect(await screen.findByRole("button", { name: "Disconnect" })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Disconnect" })).toHaveLength(1);
+    expect(await screen.findByRole("button", { name: "Disconnect Jira" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Disconnect/ })).toHaveLength(1);
     expect(screen.getByText("Connected")).toBeInTheDocument();
   });
 
@@ -147,7 +148,7 @@ describe("Composio connections", () => {
     renderWithQuery(<ComposioConnections />);
 
     expect(await screen.findByText("Expired")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Disconnect" })).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Disconnect Jira" })).toBeInTheDocument();
   });
 
   it("renders nothing when the server holds no project key", async () => {
@@ -191,7 +192,7 @@ describe("Composio connections for products no longer offered", () => {
 
     expect(await screen.findByText("gmail")).toBeInTheDocument();
     expect(screen.getByText("Connected · no longer offered here")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Disconnect" }));
+    await userEvent.click(screen.getByRole("button", { name: "Disconnect gmail" }));
 
     expect(mocks.disconnectComposio).toHaveBeenCalledWith("ca_1");
   });

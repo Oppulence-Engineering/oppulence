@@ -210,7 +210,8 @@ describe("durable note templates and favorites", () => {
     renderNotes();
 
     await user.click(await screen.findByRole("tab", { name: /Templates/ }));
-    await user.click(await screen.findByRole("button", { name: "Apply" }));
+    expect(screen.getByRole("button", { name: "Edit Weekly review" })).toBeVisible();
+    await user.click(await screen.findByRole("button", { name: "Apply Weekly review" }));
 
     expect(await screen.findByDisplayValue("Weekly review")).toBeInTheDocument();
     expect(screen.getByText("Wins and risks")).toBeInTheDocument();

@@ -937,6 +937,7 @@ export function NotesView({
                   </CardDescription>
                   <div className="mt-auto flex gap-2">
                     <Button
+                      aria-label={`Apply ${template.payload.title}`}
                       size="sm"
                       onClick={() => {
                         setEditing({ template });
@@ -946,6 +947,7 @@ export function NotesView({
                       Apply
                     </Button>
                     <Button
+                      aria-label={`Edit ${template.payload.title}`}
                       size="sm"
                       variant="outline"
                       onClick={() => setEditingTemplate(template)}

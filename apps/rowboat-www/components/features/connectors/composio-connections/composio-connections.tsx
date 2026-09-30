@@ -176,6 +176,11 @@ export function ComposioConnections({
                 </div>
                 {connection ? (
                   <Button
+                    aria-label={
+                      busy === toolkit.slug
+                        ? `Working on ${toolkit.name || toolkit.slug}`
+                        : `Disconnect ${toolkit.name || toolkit.slug}`
+                    }
                     disabled={busy === toolkit.slug}
                     onClick={() => void disconnect(connection)}
                     size="sm"
@@ -185,6 +190,11 @@ export function ComposioConnections({
                   </Button>
                 ) : (
                   <Button
+                    aria-label={
+                      busy === toolkit.slug
+                        ? `Opening ${toolkit.name || toolkit.slug}`
+                        : `Connect ${toolkit.name || toolkit.slug}`
+                    }
                     disabled={busy === toolkit.slug}
                     onClick={() => void connect(toolkit.slug)}
                     size="sm"
@@ -204,6 +214,11 @@ export function ComposioConnections({
                 </p>
               </div>
               <Button
+                aria-label={
+                  busy === connection.toolkit
+                    ? `Working on ${connection.toolkit}`
+                    : `Disconnect ${connection.toolkit}`
+                }
                 disabled={busy === connection.toolkit}
                 onClick={() => void disconnect(connection)}
                 size="sm"

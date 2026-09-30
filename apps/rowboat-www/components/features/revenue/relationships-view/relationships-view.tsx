@@ -1194,7 +1194,9 @@ function SourceConnectionCards({
               </div>
               <p className="text-xs text-primary/55">{copy.explanation}</p>
               <details className="text-[11px] text-primary/55">
-                <summary className="cursor-pointer">Permissions</summary>
+                <summary aria-label={`Permissions for ${item.displayName}`} className="cursor-pointer">
+                  Permissions
+                </summary>
                 <p className="mt-1">
                   <Label className="font-medium">Read:</Label> {copy.read}
                 </p>
