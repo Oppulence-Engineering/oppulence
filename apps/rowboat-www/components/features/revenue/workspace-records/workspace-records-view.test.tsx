@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 
+import fs from "node:fs";
+import path from "node:path";
+
 import "@testing-library/jest-dom/vitest";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -277,9 +280,9 @@ describe("people directory labels", () => {
     expect(personEnrichmentLabel({})).toBe("Not enriched");
     expect(personEnrichmentLabel({ employmentStatus: "unknown" })).toBe("Not enriched");
     expect(personEnrichmentLabel({ location: "Lisbon" })).toBe("1 verified field");
-    expect(
-      personEnrichmentLabel({ location: "Lisbon", title: "VP", department: "Sales" }),
-    ).toBe("3 verified fields");
+    expect(personEnrichmentLabel({ location: "Lisbon", title: "VP", department: "Sales" })).toBe(
+      "3 verified fields",
+    );
     expect(personEnrichmentLabel({ employmentStatus: "departed" })).toBe("1 verified field");
   });
 
@@ -294,17 +297,19 @@ describe("people directory labels", () => {
         { dimension: "location", status: "active" },
       ]).map((attribute) => attribute.dimension),
     ).toEqual(["location"]);
-    expect(
-      personEvidenceProvenance({ extractor: "email_signature", source: "gmail" }),
-    ).toBe("From their email signature");
-    expect(personEvidenceProvenance({ extractor: "unknown", source: "gmail" })).toBe("Gmail");
-    expect(personEvidenceProvenance({ extractor: "unknown", source: "user" })).toBe(
-      "Added by you",
+    expect(personEvidenceProvenance({ extractor: "email_signature", source: "gmail" })).toBe(
+      "From their email signature",
     );
+    expect(personEvidenceProvenance({ extractor: "unknown", source: "gmail" })).toBe("Gmail");
+    expect(personEvidenceProvenance({ extractor: "unknown", source: "user" })).toBe("Added by you");
   });
 });
 
-import { collapseWorkspaceNotes, groupWorkspaceNotes, plateText } from "@/lib/revenue/revenue-records";
+import {
+  collapseWorkspaceNotes,
+  groupWorkspaceNotes,
+  plateText,
+} from "@/lib/revenue/revenue-records";
 import type { RelationshipObservation, RevenueRelationship } from "@/lib/revenue/types";
 
 const relationship = {
@@ -371,7 +376,10 @@ describe("workspace record notes", () => {
 
   it("groups notes by the reader's local day", () => {
     const now = new Date(2026, 8, 30, 15, 0, 0);
-    const note = (externalId: string, occurredAt: string): ReturnType<typeof collapseWorkspaceNotes>[number] => ({
+    const note = (
+      externalId: string,
+      occurredAt: string,
+    ): ReturnType<typeof collapseWorkspaceNotes>[number] => ({
       externalId,
       title: externalId,
       body: "",
@@ -421,5 +429,21 @@ describe("task due order", () => {
       "sooner",
       "undated",
     ]);
+  });
+});
+
+describe("people directory copy", () => {
+  const source = fs.readFileSync(
+    path.join(import.meta.dirname, "workspace-records-view.tsx"),
+    "utf8",
+  );
+
+  it("talks about companies on the empty directory and the account count", () => {
+    expect(source).toContain("keep a contact for each company.");
+    expect(source).toContain(">Companies</TableHead>");
+    expect(source).toContain("company timeline");
+    expect(source).not.toContain("relationship-aware");
+    expect(source).not.toContain(">Relationships</TableHead>");
+    expect(source).not.toContain("relationship timeline");
   });
 });

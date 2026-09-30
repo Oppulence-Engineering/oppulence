@@ -8,5 +8,7 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "scans-view.tsx"),
 describe("ScansView", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function ScansView");
+    expect(source).toContain(">Companies</TableHead>");
+    expect(source).not.toContain(">Relationships</TableHead>");
   });
 });

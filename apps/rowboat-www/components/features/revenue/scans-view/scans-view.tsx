@@ -98,7 +98,7 @@ export function ScansView({
                 <TableHead className="h-10 w-[100px] px-3 text-primary/45">Threads</TableHead>
                 <TableHead className="h-10 w-[100px] px-3 text-primary/45">Candidates</TableHead>
                 <TableHead className="h-10 w-[100px] px-3 text-primary/45">Drafts</TableHead>
-                <TableHead className="h-10 w-[100px] px-3 text-primary/45">Relationships</TableHead>
+                <TableHead className="h-10 w-[100px] px-3 text-primary/45">Companies</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

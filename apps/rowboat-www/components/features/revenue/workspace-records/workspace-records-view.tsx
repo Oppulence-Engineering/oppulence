@@ -406,7 +406,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
         </div>
       ) : people.length === 0 ? (
         <EmptyBlock
-          body="Connect Gmail or add a person to build a relationship-aware contact record."
+          body="Connect Gmail or add a person to keep a contact for each company."
           image="people"
           learnMore={[
             { label: "See who you are talking to" },
@@ -436,7 +436,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                 <TableHead className="h-10 w-36 border-r px-3">Department</TableHead>
                 <TableHead className="h-10 w-40 border-r px-3">Location</TableHead>
                 <TableHead className="h-10 w-36 border-r px-3">Last interaction</TableHead>
-                <TableHead className="h-10 w-28 border-r px-3 text-center">Relationships</TableHead>
+                <TableHead className="h-10 w-28 border-r px-3 text-center">Companies</TableHead>
                 <TableHead className="h-10 w-28 border-r px-3">LinkedIn</TableHead>
                 <TableHead className="h-10 px-3">Enrichment</TableHead>
               </TableRow>
@@ -747,7 +747,7 @@ export function NotesView({ onError, onNotice }: ViewProps) {
     const failed = notesQuery.data?.failedTimelineCount ?? 0;
     if (failed > 0) {
       onNotice(
-        `Loaded available notes, but ${String(failed)} relationship timeline${failed === 1 ? "" : "s"} could not be read.`,
+        `Loaded available notes, but ${String(failed)} company timeline${failed === 1 ? "" : "s"} could not be read.`,
       );
     }
   }, [notesQuery.data?.failedTimelineCount, onNotice]);
@@ -1014,88 +1014,88 @@ export function NotesView({ onError, onNotice }: ViewProps) {
             </section>
           ) : null}
           {noteGroups.map((group) => (
-          <div className="mt-3 border-t border-border px-4 py-3" key={group.day}>
-            <Label className="mb-3 flex items-center gap-1 text-[12px] font-normal text-primary/55">
-              {group.label}{" "}
-              <Badge className="text-[10px] font-normal" variant="outline">
-                {group.notes.length}
-              </Badge>
-            </Label>
-            <div
-              className={
-                layout === "grid"
-                  ? "grid grid-cols-[repeat(auto-fill,minmax(300px,368px))] gap-3"
-                  : "space-y-2"
-              }
-            >
-              {group.notes.map((note) => (
-                <Card
-                  className={cn(
-                    "cursor-pointer gap-0 py-0 transition-colors hover:bg-background-100",
-                    layout === "grid" ? "h-52 max-w-[368px]" : "h-24 w-full",
-                  )}
-                  key={note.externalId}
-                  onClick={() => setEditing(note)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      setEditing(note);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <CardHeader className="flex-1 gap-1 px-4 pb-0 pt-4">
-                    <div className="flex items-center gap-2 text-[12px] text-primary/65">
-                      <Note className="size-3.5" />
-                      <Label className="font-normal underline">{note.relationshipName}</Label>
-                    </div>
-                    <CardTitle className="mt-3 text-[15px] text-primary">
-                      {note.title || "Untitled note"}
-                    </CardTitle>
-                    <CardDescription className="line-clamp-2 text-[13px]">
-                      {note.body || "This note has no content."}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardFooter className="flex h-10 items-center justify-between border-t px-4 text-[12px] text-primary/50">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="size-4 rounded-none" size="sm">
-                        <AvatarFallback
-                          className="rounded-none bg-cyan-600 text-[9px] text-white"
-                          data-slot="note-author"
-                        >
-                          {author.mark}
-                        </AvatarFallback>
-                      </Avatar>
-                      <Label className="font-normal">{author.label}</Label>
-                    </div>
-                    <Badge className="font-normal" variant="secondary">
-                      {relativeTime(note.occurredAt)}
-                    </Badge>
-                    <Button
-                      aria-label={
-                        favoriteIds.has(note.externalId)
-                          ? `Remove ${note.title} from favorites`
-                          : `Add ${note.title} to favorites`
+            <div className="mt-3 border-t border-border px-4 py-3" key={group.day}>
+              <Label className="mb-3 flex items-center gap-1 text-[12px] font-normal text-primary/55">
+                {group.label}{" "}
+                <Badge className="text-[10px] font-normal" variant="outline">
+                  {group.notes.length}
+                </Badge>
+              </Label>
+              <div
+                className={
+                  layout === "grid"
+                    ? "grid grid-cols-[repeat(auto-fill,minmax(300px,368px))] gap-3"
+                    : "space-y-2"
+                }
+              >
+                {group.notes.map((note) => (
+                  <Card
+                    className={cn(
+                      "cursor-pointer gap-0 py-0 transition-colors hover:bg-background-100",
+                      layout === "grid" ? "h-52 max-w-[368px]" : "h-24 w-full",
+                    )}
+                    key={note.externalId}
+                    onClick={() => setEditing(note)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setEditing(note);
                       }
-                      disabled={favoriteMutation.isPending}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        favoriteMutation.mutate(note.externalId);
-                      }}
-                      size="icon-xs"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <BookmarkSimple
-                        weight={favoriteIds.has(note.externalId) ? "fill" : "regular"}
-                      />
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <CardHeader className="flex-1 gap-1 px-4 pb-0 pt-4">
+                      <div className="flex items-center gap-2 text-[12px] text-primary/65">
+                        <Note className="size-3.5" />
+                        <Label className="font-normal underline">{note.relationshipName}</Label>
+                      </div>
+                      <CardTitle className="mt-3 text-[15px] text-primary">
+                        {note.title || "Untitled note"}
+                      </CardTitle>
+                      <CardDescription className="line-clamp-2 text-[13px]">
+                        {note.body || "This note has no content."}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardFooter className="flex h-10 items-center justify-between border-t px-4 text-[12px] text-primary/50">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="size-4 rounded-none" size="sm">
+                          <AvatarFallback
+                            className="rounded-none bg-cyan-600 text-[9px] text-white"
+                            data-slot="note-author"
+                          >
+                            {author.mark}
+                          </AvatarFallback>
+                        </Avatar>
+                        <Label className="font-normal">{author.label}</Label>
+                      </div>
+                      <Badge className="font-normal" variant="secondary">
+                        {relativeTime(note.occurredAt)}
+                      </Badge>
+                      <Button
+                        aria-label={
+                          favoriteIds.has(note.externalId)
+                            ? `Remove ${note.title} from favorites`
+                            : `Add ${note.title} to favorites`
+                        }
+                        disabled={favoriteMutation.isPending}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          favoriteMutation.mutate(note.externalId);
+                        }}
+                        size="icon-xs"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <BookmarkSimple
+                          weight={favoriteIds.has(note.externalId) ? "fill" : "regular"}
+                        />
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
             </div>
-          </div>
           ))}
         </div>
       )}
@@ -1564,7 +1564,10 @@ function NoteDialog({
             </div>
           ) : null}
           {noteHasDraftContent && !relationshipId ? (
-            <p className="absolute right-5 bottom-3 text-[11px] font-normal text-destructive" role="status">
+            <p
+              className="absolute right-5 bottom-3 text-[11px] font-normal text-destructive"
+              role="status"
+            >
               Link a company to save this note.
             </p>
           ) : saveState !== "saved" ? (

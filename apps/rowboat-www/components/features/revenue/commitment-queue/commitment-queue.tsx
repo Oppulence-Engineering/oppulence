@@ -48,13 +48,7 @@ import {
 } from "@oppulence/ui/components/select";
 import { cn } from "@oppulence/ui/lib/utils";
 import { Badge as SimBadge, Chip } from "@sim/emcn";
-import {
-  Plus,
-  Table as TableIcon,
-  TagIcon,
-  TypeNumber,
-  TypeText,
-} from "@sim/emcn/icons";
+import { Plus, Table as TableIcon, TagIcon, TypeNumber, TypeText } from "@sim/emcn/icons";
 import { WorkspaceEmptyIllustration } from "@/components/features/revenue/shared/shared";
 import {
   SimProductHeader,
@@ -611,7 +605,7 @@ export function CommitmentQueue({
               ) : null}
               <div className="flex items-center gap-1.5">
                 <dd className="font-medium text-primary">{latestScan.relationshipsCreated ?? 0}</dd>
-                <dt>New relationships</dt>
+                <dt>New companies</dt>
               </div>
               <div className="hidden items-center gap-1.5 lg:flex">
                 <dd className="font-medium text-primary">{latestScan.candidatesSeen ?? 0}</dd>
@@ -626,7 +620,7 @@ export function CommitmentQueue({
                 type="button"
                 variant="outline"
               >
-                Review relationships
+                Review companies
               </Button>
             ) : null}
           </div>

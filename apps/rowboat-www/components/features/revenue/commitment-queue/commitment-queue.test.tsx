@@ -107,7 +107,9 @@ describe("CommitmentQueue", () => {
       "The full two-sided history for one account.",
     );
     render(<CommitmentQueue aria-label="Client commitments" {...props({ view: "by_account" })} />);
-    expect(screen.getByText("Select one account to see its two-sided promise history.")).toBeVisible();
+    expect(
+      screen.getByText("Select one account to see its two-sided promise history."),
+    ).toBeVisible();
     expect(screen.queryByText(/one relationship/)).toBeNull();
   });
 
@@ -186,10 +188,8 @@ describe("CommitmentQueue", () => {
 
     expect(screen.getByText("Latest 90-day audit")).toBeInTheDocument();
     expect(screen.getByText("12", { selector: "dd" })).toBeInTheDocument();
-    expect(screen.getByText("New relationships").closest("div")).toHaveTextContent(
-      "2New relationships",
-    );
-    expect(screen.getByRole("button", { name: "Review relationships" })).toBeEnabled();
+    expect(screen.getByText("New companies").closest("div")).toHaveTextContent("2New companies");
+    expect(screen.getByRole("button", { name: "Review companies" })).toBeEnabled();
   });
 
   it("asks for a scope before loading an owner view", () => {
