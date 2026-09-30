@@ -937,11 +937,25 @@ function SecuritySection({ session }: { session: SessionShape }) {
   );
 }
 
+/** A mail draft belongs in this tab. A new tab for it comes back blank. */
+export function helpDestination(href: string): { href: string; target: "self" | "blank" } {
+  return href.startsWith("mailto:") ? { href, target: "self" } : { href, target: "blank" };
+}
+
+function openHelpDestination(href: string) {
+  const destination = helpDestination(href);
+  if (destination.target === "self") {
+    window.location.assign(destination.href);
+    return;
+  }
+  window.open(destination.href, "_blank", "noopener,noreferrer");
+}
+
 function HelpSection() {
   const items = [
     {
       title: "Send feedback",
-      description: "Tell us what is missing or where the product should go next.",
+      description: "Report a problem, or tell us what is missing and where the product should go next.",
       icon: Bell,
       href: "mailto:hello@oppulence.io?subject=Oppulence%20feedback",
     },
@@ -964,7 +978,7 @@ function HelpSection() {
           <Button
             className="settings-card h-auto"
             key={item.title}
-            onClick={() => window.open(item.href, "_blank")}
+            onClick={() => openHelpDestination(item.href)}
             type="button"
             variant="ghost"
           >

@@ -3,7 +3,10 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { sessionWorkspaceCopy } from "@/components/features/settings/app-settings/app-settings";
+import {
+  helpDestination,
+  sessionWorkspaceCopy,
+} from "@/components/features/settings/app-settings/app-settings";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "app-settings.tsx"), "utf8");
 
@@ -32,6 +35,13 @@ describe("SettingsView", () => {
     expect(source).not.toContain('title="Evidence access"');
     expect(source).not.toContain("stops new evidence");
     expect(source).toContain("where the product should go next.");
+    expect(source).toContain("Report a problem, or tell us what is missing and where the product should go next.");
+    expect(helpDestination("mailto:hello@oppulence.io?subject=Oppulence%20feedback").target).toBe(
+      "self",
+    );
+    expect(helpDestination("/api/reference").target).toBe("blank");
+    expect(source).toContain("openHelpDestination(item.href)");
+    expect(source).not.toContain('window.open(item.href, "_blank")');
     expect(source).toContain("Review the Oppulence API reference.");
     expect(source).toContain("or review the API reference.");
     expect(source).not.toContain("product documentation");
