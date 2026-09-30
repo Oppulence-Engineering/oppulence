@@ -60,7 +60,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@oppulence/ui/components/dropdown-menu";
-import { sidebarRunLabel } from "@/hooks/queries/utils/fetch-sidebar";
+import {
+  sidebarRunCountLabel,
+  sidebarRunLabel,
+  type SidebarRunPreview,
+} from "@/hooks/queries/utils/fetch-sidebar";
 import { getPref, setPref, usePref } from "@/lib/console/console-prefs";
 import { connectedSourceCount, googleNeedsReconnect } from "@/lib/revenue/revenue";
 import { loadChangelog, type ChangelogEntry } from "@/lib/api/changelog/changelog";
@@ -494,6 +498,17 @@ const SOURCE_TONE_CARD: Record<SourceHealth["tone"], string> = {
 // revenue data contract and is shared by report, sidebar, and audit surfaces.
 export { connectedSourceCount, googleNeedsReconnect };
 
+/**
+ * The meter is a ratio of sources that are still delivering. An empty workspace
+ * is not a ratio: "0 / 0" under "No sources connected" reads as a broken meter.
+ */
+export function sourceMeterVisible(
+  total: number | undefined,
+  connected: number | undefined,
+): boolean {
+  return typeof total === "number" && typeof connected === "number" && total > 0;
+}
+
 /** A row of ticks, filled up to `ratio`. */
 function TickMeter({ ratio }: { ratio: number }) {
   return (
@@ -533,7 +548,9 @@ function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen
       variant="ghost"
     >
       <Label className="text-[15px] font-normal">{health.label}</Label>
-      {typeof total === "number" && typeof connected === "number" ? (
+      {sourceMeterVisible(total, connected) &&
+      typeof total === "number" &&
+      typeof connected === "number" ? (
         <div className="flex w-full flex-col gap-1.5">
           <div className="flex items-center justify-between text-[13px]">
             <Label className="font-normal text-primary">Sources connected</Label>
@@ -558,6 +575,12 @@ function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen
 
 /* --------------------------------- sidebar --------------------------------- */
 
+/** A zero count is omitted. A string such as "8+" is a capped preview, not a total. */
+function sidebarCountLabel(count: number | string | undefined): string {
+  if (typeof count === "number") return count > 0 ? String(count) : "";
+  return count?.trim() ?? "";
+}
+
 function SidebarNavItem({
   label,
   count,
@@ -570,7 +593,7 @@ function SidebarNavItem({
   disabled,
 }: {
   label: string;
-  count?: number;
+  count?: number | string;
   active?: boolean;
   chevron?: boolean;
   chevronOpen?: boolean;
@@ -579,6 +602,7 @@ function SidebarNavItem({
   disabled?: boolean;
   className?: string;
 }) {
+  const countLabel = sidebarCountLabel(count);
   const classes = cn(
     "group/item flex h-[var(--shell-nav-row-height,30px)] w-full shrink-0 items-center justify-start gap-1.5 rounded-lg px-2 text-left text-[var(--text-small,13px)] text-[var(--text-body)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[var(--border)]",
     active && "bg-[var(--surface-active)] text-[var(--text-primary)]",
@@ -587,16 +611,16 @@ function SidebarNavItem({
   const content = (
     <>
       <Label className="truncate font-normal">{label}</Label>
-      {typeof count === "number" && count > 0 ? (
+      {countLabel ? (
         <Badge className="ml-auto font-normal text-primary/40" variant="secondary">
-          {count}
+          {countLabel}
         </Badge>
       ) : null}
       {chevron ? (
         <CaretRight
           className={cn(
             "h-3.5 w-3.5 shrink-0 text-primary/40 transition-transform",
-            typeof count === "number" && count > 0 ? "" : "ml-auto",
+            countLabel ? "" : "ml-auto",
             chevronOpen && "rotate-90",
           )}
         />
@@ -746,7 +770,8 @@ export function AppShellSidebar({
   const runsQuery = useSidebarRuns();
   const agents = agentsQuery.data ?? [];
   const tasks = tasksQuery.data ?? [];
-  const taskRuns = runsQuery.data ?? [];
+  const runPreview: SidebarRunPreview = runsQuery.data ?? { items: [], truncated: false };
+  const taskRuns = runPreview.items;
   const loadingGroups = {
     agents: agentsQuery.isPending,
     scheduled: tasksQuery.isPending,
@@ -768,6 +793,7 @@ export function AppShellSidebar({
     label: string;
     kind?: ResourceKind;
     items: { label: string; value: string }[];
+    countLabel?: string;
     empty: string;
     loading?: boolean;
     error?: string;
@@ -798,6 +824,7 @@ export function AppShellSidebar({
       label: "Runs",
       kind: "taskrun",
       items: taskRuns.map((run) => ({ ...run, label: sidebarRunLabel(run, tasks) })),
+      countLabel: sidebarRunCountLabel(runPreview),
       empty: "No runs yet",
       loading: loadingGroups.runs,
       error: groupErrors.runs,
@@ -932,7 +959,7 @@ export function AppShellSidebar({
                     active={activeResourceGroup === group.key}
                     chevron
                     chevronOpen={Boolean(openGroups[group.key])}
-                    count={group.items.length}
+                    count={group.countLabel ?? group.items.length}
                     label={group.label}
                     onClick={group.onNavigate}
                   />

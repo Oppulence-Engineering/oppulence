@@ -6,6 +6,7 @@ import {
   revenueTabFromParam,
   revenueTabSearch,
   sourceHealth,
+  sourceMeterVisible,
   trialDaysRemaining,
   workspaceLabel,
 } from "@/components/features/dashboard/app-shell/app-shell";
@@ -52,6 +53,13 @@ describe("sidebar source status", () => {
 
   it("says nothing is connected when no source reports", () => {
     expect(sourceHealth([]).tone).toBe("idle");
+    expect(sourceMeterVisible(0, 0)).toBe(false);
+    expect(sourceMeterVisible(undefined, undefined)).toBe(false);
+  });
+
+  it("shows the meter once a source exists, including a ratio of zero", () => {
+    expect(sourceMeterVisible(2, 0)).toBe(true);
+    expect(sourceMeterVisible(2, 2)).toBe(true);
   });
 
   it("reports a healthy portfolio of sources", () => {

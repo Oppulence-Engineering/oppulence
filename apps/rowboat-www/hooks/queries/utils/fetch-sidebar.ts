@@ -34,6 +34,20 @@ const SidebarRunListSchema = z
 
 export type SidebarNavItem = { label: string; value: string };
 
+/** Recent runs in the sidebar. The account list is much longer; this is only a preview. */
+export const SIDEBAR_RUN_PREVIEW = 8;
+
+export type SidebarRunPreview = {
+  items: SidebarNavItem[];
+  /**
+   * The account has more runs than the sidebar lists. The nav badge must not
+   * treat the preview length as the total.
+   */
+  truncated: boolean;
+};
+
+const EMPTY_RUN_PREVIEW: SidebarRunPreview = { items: [], truncated: false };
+
 /**
  * The sidebar opens an agent by slug. The row people see is the agent name,
  * the same label as the Agents page and the composer.
@@ -87,25 +101,46 @@ export async function loadSidebarTasks(
   }
 }
 
+/**
+ * Keep a short preview for the sidebar. A longer account history still comes
+ * back from the runs list, so the badge has to say the preview is incomplete.
+ */
+export function previewSidebarRuns(
+  runs: readonly { runId?: string; slug?: string; status?: string }[],
+): SidebarRunPreview {
+  const eligible = runs.filter(
+    (run): run is { runId: string; slug: string; status?: string } =>
+      typeof run.runId === "string" && typeof run.slug === "string",
+  );
+  return {
+    truncated: eligible.length > SIDEBAR_RUN_PREVIEW,
+    items: eligible.slice(0, SIDEBAR_RUN_PREVIEW).map((run) => ({
+      value: `${run.slug}/${run.runId}`,
+      label: run.status ? `${run.slug} · ${run.status}` : run.slug,
+    })),
+  };
+}
+
+/** Badge text for the runs group. An exact number is only honest when every run is listed. */
+export function sidebarRunCountLabel(preview: SidebarRunPreview): string {
+  if (preview.items.length === 0) return "";
+  if (preview.truncated) return `${preview.items.length}+`;
+  return String(preview.items.length);
+}
+
 export async function loadSidebarRuns(
   request: RequestJsonFn,
   signal?: AbortSignal,
-): Promise<SidebarNavItem[]> {
+): Promise<SidebarRunPreview> {
   try {
     const data = await request({
       path: "/background-task-runs",
       schema: SidebarRunListSchema,
       signal,
     });
-    return (data.runs ?? [])
-      .filter((run) => typeof run.runId === "string" && typeof run.slug === "string")
-      .slice(0, 8)
-      .map((run) => ({
-        value: `${run.slug}/${run.runId}`,
-        label: run.status ? `${run.slug} · ${run.status}` : run.slug,
-      }));
+    return previewSidebarRuns(data.runs ?? []);
   } catch (error) {
-    if (isOptionalRequestFailure(error)) return [];
+    if (isOptionalRequestFailure(error)) return EMPTY_RUN_PREVIEW;
     throw error;
   }
 }
@@ -118,6 +153,6 @@ export function fetchSidebarTasks(signal?: AbortSignal): Promise<SidebarNavItem[
   return loadSidebarTasks(requestJson, signal);
 }
 
-export function fetchSidebarRuns(signal?: AbortSignal): Promise<SidebarNavItem[]> {
+export function fetchSidebarRuns(signal?: AbortSignal): Promise<SidebarRunPreview> {
   return loadSidebarRuns(requestJson, signal);
 }
