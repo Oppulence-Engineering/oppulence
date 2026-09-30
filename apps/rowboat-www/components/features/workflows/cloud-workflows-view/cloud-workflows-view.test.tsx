@@ -11,6 +11,7 @@ import {
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
   readableEnum,
+  runEventBody,
   runEventLabel,
   scheduleHealthLabel,
   workflowListSummary,
@@ -38,6 +39,46 @@ describe("CloudWorkflowsView", () => {
     expect(runEventLabel("temporal.failed")).toBe("Failed");
     expect(runEventLabel("runtime.tool_call_started")).toBe("Tool call started");
     expect(runEventLabel("desktop.llm_stream_event")).toBe("LLM stream event");
+  });
+
+  it("describes a transcript row without the worker payload", () => {
+    expect(
+      runEventBody({
+        type: "temporal.queued",
+        event: { message: "Queued by Temporal schedule." },
+      }),
+    ).toBe("Queued on the schedule.");
+    expect(
+      runEventBody({
+        type: "temporal.running",
+        event: { message: "API worker claimed the run." },
+      }),
+    ).toBe("Oppulence Cloud started this run.");
+    expect(
+      runEventBody({
+        type: "runtime.llm_call_started",
+        event: {
+          model: "openai/gpt-4.1",
+          prompt_version: "cloud-runtime-v1",
+        },
+      }),
+    ).toBe("Calling openai/gpt-4.1.");
+    expect(
+      runEventBody({
+        type: "temporal.failed",
+        event: {
+          message: "Failed.",
+          error:
+            'llm upstream returned status 401: {"error":{"message":"Missing Authentication header"}}',
+        },
+      }),
+    ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
+    expect(runEventBody({ type: "runtime.unknown", event: { prompt_version: "cloud-runtime-v1" } })).toBe(
+      "Recorded an update.",
+    );
+    expect(runEventBody({ event: "Agent step 1." })).toBe("Agent step 1.");
+    expect(source).toContain("runEventBody(event)");
+    expect(source).not.toContain("JSON.stringify(event.event");
   });
 
   it("names weekday crons that the first-party templates use", () => {

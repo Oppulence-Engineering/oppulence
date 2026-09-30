@@ -10,6 +10,7 @@ import {
   fetchWorkflowTemplates,
 } from "@/hooks/queries/utils/fetch-workflows";
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
+import { friendlyAgentError } from "@/lib/agents/agent-history";
 import { workflowProductDescription } from "@/lib/workflows/workflow-product-copy";
 
 export const CloudTaskSchema = z.object({
@@ -200,6 +201,44 @@ export function runEventLabel(type: string): string {
   if (!body) return type;
   const withAcronyms = body.replace(/\bllm\b/g, "LLM");
   return withAcronyms.charAt(0).toUpperCase() + withAcronyms.slice(1);
+}
+
+const INFRASTRUCTURE_EVENT_COPY: Record<string, string> = {
+  "Queued by Temporal schedule.": "Queued on the schedule.",
+  "API worker claimed the run.": "Oppulence Cloud started this run.",
+};
+
+function rewriteInfrastructureEvent(value: string): string {
+  return INFRASTRUCTURE_EVENT_COPY[value] ?? value;
+}
+
+function eventStringField(record: Record<string, unknown>, key: string): string {
+  const value = record[key];
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/**
+ * Transcript rows store worker payloads. A message is shown when it is already
+ * a sentence. Model-call records have no message, and stringifying them put
+ * prompt versions and event types on screen.
+ */
+export function runEventBody(event: { type?: string; event: unknown }): string {
+  if (typeof event.event === "string") return rewriteInfrastructureEvent(event.event);
+  if (!event.event || typeof event.event !== "object") return "Recorded an update.";
+  const record = event.event as Record<string, unknown>;
+  const type = event.type || eventStringField(record, "type");
+  if (type === "runtime.llm_call_started") {
+    const model = eventStringField(record, "model");
+    return model ? `Calling ${model}.` : "Calling the model.";
+  }
+  const message = ["message", "summary", "content"]
+    .map((key) => eventStringField(record, key))
+    .find(Boolean);
+  if (message && message !== "Failed.") return rewriteInfrastructureEvent(message);
+  const error = eventStringField(record, "error");
+  if (error) return friendlyAgentError(error, "run");
+  if (message) return "This run could not finish.";
+  return "Recorded an update.";
 }
 
 /**

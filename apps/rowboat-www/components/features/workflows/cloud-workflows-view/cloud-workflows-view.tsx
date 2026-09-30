@@ -77,6 +77,7 @@ import {
   taskCron,
   taskVisualWorkflow,
   readableEnum,
+  runEventBody,
   runEventLabel,
   scheduleHealthLabel,
   workflowListSummary,
@@ -161,18 +162,6 @@ function runFailureCopy(run: CloudRun): string {
   // is rewritten, prefixing that token puts the internal name back on screen.
   if (friendly !== message) return friendly;
   return run.errorCode ? `${run.errorCode}: ${message}` : message;
-}
-
-function eventText(event: CloudRunEvent): string {
-  if (typeof event.event === "string") return event.event;
-  if (event.event && typeof event.event === "object") {
-    const record = event.event as Record<string, unknown>;
-    for (const key of ["message", "summary", "error", "content"]) {
-      const value = record[key];
-      if (typeof value === "string") return value;
-    }
-  }
-  return JSON.stringify(event.event, null, 2) ?? String(event.event);
 }
 
 export function scheduleLabel(task: CloudTask): string {
@@ -680,7 +669,7 @@ function RunInspector({
                     <time className="text-muted-foreground">{formatDate(event.receivedAt)}</time>
                   </div>
                   <pre className="mt-1.5 overflow-x-auto whitespace-pre-wrap font-sans leading-5 text-muted-foreground">
-                    {eventText(event)}
+                    {runEventBody(event)}
                   </pre>
                 </div>
               </li>
