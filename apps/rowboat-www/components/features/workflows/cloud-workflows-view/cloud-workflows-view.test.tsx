@@ -94,8 +94,9 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain("runEventBody(event)");
     expect(source).not.toContain("JSON.stringify(event.event");
     expect(runReference("sched-temporal-c9522e0b-4fc9-47a3-9fbf-434c9faf2262")).toBe(
-      "c9522e0b-4fc9-47a3-9fbf-434c9faf2262",
+      "c9522e0b",
     );
+    expect(runReference("241dea88-95d9-4d7b-add0-075e93288cdd")).toBe("241dea88");
     expect(runReference("api-trigger-9f")).toBe("9f");
     expect(runReference("retry-1")).toBe("1");
     expect(runReference("manual-run")).toBe("manual-run");

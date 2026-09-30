@@ -165,19 +165,24 @@ const RUN_ID_PREFIXES = [
   "event-",
 ] as const;
 
+const RUN_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
- * A run id starts with the scheduler that created it. The inspector already
- * names the trigger, so the reference people see is the id without that prefix.
- * The full id stays on the title for support.
+ * A run id starts with the scheduler that created it, then a UUID. The inspector
+ * already names the workflow, status, and trigger, so the visible reference is
+ * the first UUID group. The full id stays on the title for support.
  */
 export function runReference(runId: string): string {
   const trimmed = runId.trim();
+  let body = trimmed;
   for (const prefix of RUN_ID_PREFIXES) {
     if (trimmed.startsWith(prefix) && trimmed.length > prefix.length) {
-      return trimmed.slice(prefix.length);
+      body = trimmed.slice(prefix.length);
+      break;
     }
   }
-  return trimmed;
+  if (RUN_UUID.test(body)) return body.slice(0, 8);
+  return body;
 }
 
 /**
