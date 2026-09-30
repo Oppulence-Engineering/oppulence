@@ -58,6 +58,10 @@ describe("TaskCreateDialog", () => {
     await user.type(screen.getByLabelText("Task title"), "Follow up on renewal");
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "No companies yet" })).toBeDisabled();
+    expect(screen.getByLabelText("Task title")).toHaveAttribute(
+      "placeholder",
+      "Follow up on the proposal",
+    );
     expect(mocks.createAction).not.toHaveBeenCalled();
   });
 });

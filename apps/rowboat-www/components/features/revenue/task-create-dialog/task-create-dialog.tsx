@@ -122,7 +122,7 @@ export function TaskCreateDialog({
           aria-label="Task title"
           autoFocus
           className="min-h-[88px] border-0 bg-transparent px-1 py-1 shadow-none focus-visible:outline-none"
-          placeholder="Schedule a demo with @Contact"
+          placeholder="Follow up on the proposal"
           rows={3}
           value={title}
           onChange={(event) => setTitle(event.target.value)}
@@ -195,8 +195,8 @@ export function TaskCreateDialog({
                   noCompanies
                     ? "No companies yet"
                     : recordError
-                      ? "Add a record to save"
-                      : "Add record"
+                      ? "Link a company to save"
+                      : "Link a company"
                 }
                 value={relationshipId || undefined}
                 onChange={(value) => {
