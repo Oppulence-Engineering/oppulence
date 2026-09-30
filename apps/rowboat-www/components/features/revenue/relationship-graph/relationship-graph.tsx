@@ -138,7 +138,7 @@ const KIND_LABEL: Record<RelationshipGraphNode["kind"], string> = {
   risk: "Risk",
   milestone: "Milestone",
   action: "Action",
-  evidence: "Evidence",
+  evidence: "Detail",
   source: "Source",
   note: "Note",
 };
@@ -512,7 +512,7 @@ function GraphCanvas({
         position="top-right"
         className="rounded-[2px] border border-border bg-background/90 px-2 py-1 text-[10px] text-primary/50 backdrop-blur"
       >
-        {graphNodes.length} nodes · {graphEdges.length} directed links
+        {graphNodes.length} items · {graphEdges.length} connections
       </Panel>
     </ReactFlow>
   );
@@ -697,7 +697,7 @@ function Inspector({
       {node.evidenceRefs.length ? (
         <div className="mt-4">
           <p className="font-mono text-[10px] uppercase tracking-wide text-primary/40">
-            Evidence · {node.evidenceRefs.length}
+            Details · {node.evidenceRefs.length}
           </p>
           <div className="mt-2 flex flex-wrap gap-1">
             {evidenceNodes.slice(0, 6).map((evidence) => (
@@ -708,12 +708,12 @@ function Inspector({
                 onClick={() => onSelectNode(evidence.id)}
                 className="text-primary/55"
               >
-                {evidence.source || "evidence"}
+                {evidence.source || "detail"}
               </Button>
             ))}
             {!evidenceNodes.length ? (
               <Label className="text-[10px] font-normal text-primary/40">
-                Evidence references retained in the record.
+                Details kept on this record.
               </Label>
             ) : null}
           </div>
@@ -803,11 +803,11 @@ function GraphTable({
       <Table className="border-collapse text-left text-xs">
         <TableHeader className="sticky top-0 z-10 bg-background">
           <TableRow className="border-border font-mono text-xs uppercase text-primary/40">
-            <TableHead className="px-3 py-2 font-normal">Node</TableHead>
+            <TableHead className="px-3 py-2 font-normal">Name</TableHead>
             <TableHead className="px-3 py-2 font-normal">Type</TableHead>
             <TableHead className="px-3 py-2 font-normal">State</TableHead>
             <TableHead className="px-3 py-2 font-normal">Links</TableHead>
-            <TableHead className="px-3 py-2 font-normal">Evidence</TableHead>
+            <TableHead className="px-3 py-2 font-normal">Details</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

@@ -81,6 +81,12 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("Account domain");
     expect(source).not.toContain("One model per account");
     expect(source).toContain("Reading builds company history.");
+    expect(source).toContain("Sources to connect");
+    expect(source).not.toContain("Evidence sources");
+    expect(source).toContain("Could not update this source.");
+    expect(source).not.toContain("evidence source");
+    expect(source).toContain("Review saved.");
+    expect(source).not.toContain("Identity decision applied.");
     expect(source).not.toContain("action scopes remain");
     expect(source).not.toContain("approval-gated");
     expect(source).not.toContain("backfill ${progress}%");

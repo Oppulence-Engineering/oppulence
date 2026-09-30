@@ -72,6 +72,15 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).not.toContain("governed next actions");
     expect(source).toContain('relationship: "Company"');
     expect(source).not.toContain('relationship: "Account"');
+    expect(source).toContain('evidence: "Detail"');
+    expect(source).toContain(">Name</TableHead>");
+    expect(source).toContain(">Details</TableHead>");
+    expect(source).not.toContain(">Node</TableHead>");
+    expect(source).not.toContain(">Evidence</TableHead>");
+    expect(source).toContain("Details kept on this record.");
+    expect(source).not.toContain("Evidence references retained");
+    expect(source).toContain("items · {graphEdges.length} connections");
+    expect(source).not.toContain("directed links");
   });
 
   it("names a saved view in the product dialog", () => {

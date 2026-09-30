@@ -744,7 +744,7 @@ export function RelationshipsView({
                   candidates={identityCandidates}
                   onError={onError}
                   onChanged={() => {
-                    onNotice("Identity decision applied.");
+                    onNotice("Review saved.");
                     void load();
                   }}
                 />
@@ -1121,7 +1121,7 @@ function SourceConnectionCards({
       await operation();
       onChanged();
     } catch (error) {
-      onError(errMessage(error, "Could not update the evidence source."));
+      onError(errMessage(error, "Could not update this source."));
     } finally {
       setBusy(null);
     }
@@ -1135,7 +1135,7 @@ function SourceConnectionCards({
     >
       <div>
         <h3 id="source-connections-heading" className="text-sm font-medium text-primary">
-          Evidence sources
+          Sources to connect
         </h3>
         <p className="mt-0.5 text-xs text-primary/55">
           Connect Gmail, Slack, or HubSpot. Reading builds company history. Anything that writes
@@ -1267,7 +1267,7 @@ function IdentityReviewInbox({
       });
       onChanged();
     } catch (error) {
-      onError(errMessage(error, "Could not apply the identity decision. Refresh and try again."));
+      onError(errMessage(error, "Could not save this review. Refresh and try again."));
     } finally {
       setBusy(null);
     }
