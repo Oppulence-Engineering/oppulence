@@ -17,6 +17,7 @@ import {
   workflowOpeningScreen,
   workflowLastRunAt,
   workflowLastRunMark,
+  workflowSettingsLastRun,
   workflowRunsForEditor,
   maintainedWorkflowNotice,
   workflowStepLabel,
@@ -355,6 +356,20 @@ describe("CloudWorkflowsView", () => {
     ).toBe("Stopped");
     expect(source).toContain("workflowLastRunMark(");
     expect(source).not.toContain("lastRunError}");
+    expect(
+      workflowSettingsLastRun(
+        { lastRunAt: "2026-09-30T09:00:00Z", lastRunError: "activity error" },
+        null,
+      ),
+    ).toMatch(/ · Failed$/);
+    expect(workflowSettingsLastRun({ lastRunAt: null, lastRunError: null }, null)).toBe("Never");
+    expect(
+      workflowSettingsLastRun(
+        { lastRunAt: "2026-09-30T18:30:00Z", lastRunError: "stale" },
+        { createdAt: "2026-09-30T18:30:00Z", status: "succeeded" },
+      ),
+    ).not.toContain("Failed");
+    expect(source).toContain("workflowSettingsLastRun(");
   });
 
   it("loads a workflow's own runs when they are off the account page", () => {

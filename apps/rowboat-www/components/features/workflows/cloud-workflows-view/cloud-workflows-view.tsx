@@ -226,6 +226,18 @@ export function workflowLastRunMark(
   return task.lastRunError?.trim() ? "Failed" : null;
 }
 
+/** Settings already says the schedule is in sync. That is not the last run. */
+export function workflowSettingsLastRun(
+  task: { lastRunAt?: string | null; lastRunError?: string | null },
+  pageRun?: { createdAt?: string | null; status?: string | null } | null,
+): string {
+  const at = workflowLastRunAt(task, pageRun?.createdAt);
+  if (!at) return "Never";
+  const when = scheduleMomentLabel(at);
+  const mark = workflowLastRunMark(task, pageRun);
+  return mark ? `${when} · ${mark}` : when;
+}
+
 /**
  * The account run list is the newest page across every workflow. A workflow
  * that runs once a day falls off that page, so its Runs tab said there were
@@ -1268,18 +1280,31 @@ function WorkflowEditor({
                   value={name}
                 />
               </div>
-              <div className="grid grid-cols-2 border border-border">
-                <div className="border-r border-border p-4">
-                  <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-                    Starts
-                  </p>
-                  <p className="mt-2 text-[13px]">{scheduleLabel(task)}</p>
+              <div className="border border-border">
+                <div className="grid grid-cols-2">
+                  <div className="border-r border-border p-4">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                      Starts
+                    </p>
+                    <p className="mt-2 text-[13px]">{scheduleLabel(task)}</p>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                      Next run
+                    </p>
+                    <p className="mt-2 text-[13px]">{scheduleMomentLabel(schedule?.nextDueAt)}</p>
+                  </div>
                 </div>
-                <div className="p-4">
+                <div className="border-t border-border p-4">
                   <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-                    Next run
+                    Last run
                   </p>
-                  <p className="mt-2 text-[13px]">{scheduleMomentLabel(schedule?.nextDueAt)}</p>
+                  <p className="mt-2 text-[13px]">
+                    {workflowSettingsLastRun(
+                      task,
+                      runs.find((run) => run.slug === task.slug),
+                    )}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center justify-between border-y border-border py-4">
