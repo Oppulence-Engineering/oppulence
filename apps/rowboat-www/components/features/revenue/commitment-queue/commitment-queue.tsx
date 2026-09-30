@@ -29,7 +29,7 @@ import {
 } from "@oppulence/ui/components/card";
 import { Label } from "@oppulence/ui/components/label";
 import { Spinner } from "@oppulence/ui/components/spinner";
-import { Tabs, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
 import type { AppendCommitmentTransitionInput } from "@/hooks/queries/utils/mutate-append-commitment-transition";
 import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue/revenue";
@@ -1025,8 +1025,13 @@ export function CommitmentQueue({
             </div>
           </aside>
           <div className="min-w-0 flex-1 overflow-y-auto">
-            <Tabs defaultValue="overview">
-              <TabsList className="h-12 w-full justify-start rounded-none border-b border-border bg-transparent px-4">
+            {/* A new record starts on Overview. Evidence used to be a tab that
+                left this same page in place, so the quote never came forward. */}
+            <Tabs className="flex min-h-full flex-col" defaultValue="overview" key={selected.id}>
+              <TabsList
+                aria-label="Promise detail"
+                className="h-12 w-full justify-start rounded-none border-b border-border bg-transparent px-4"
+              >
                 <TabsTrigger
                   className="rounded-none bg-background-200 px-3 py-1.5 text-[13px] data-[state=active]:bg-background-200"
                   value="overview"
@@ -1039,15 +1044,8 @@ export function CommitmentQueue({
                 >
                   Evidence
                 </TabsTrigger>
-                <TabsTrigger
-                  className="rounded-none px-2 text-[13px] text-primary/45"
-                  value="activity"
-                >
-                  Activity
-                </TabsTrigger>
               </TabsList>
-            </Tabs>
-            <div className="mx-auto max-w-4xl p-6">
+              <TabsContent className="mx-auto w-full max-w-4xl p-6" value="overview">
               <h3 className="text-sm font-medium text-primary/60">Highlights</h3>
               <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 <DetailCard
@@ -1077,17 +1075,6 @@ export function CommitmentQueue({
                   }
                 />
               </div>
-              <section className="mt-8">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-primary/60">Supporting evidence</h3>
-                  <Badge className="text-[12px] font-normal text-primary/40" variant="secondary">
-                    Exact quote
-                  </Badge>
-                </div>
-                <blockquote className="mt-3 rounded-none border border-border bg-background-50 p-4 text-[14px] leading-6 text-primary/75">
-                  {selected.quote ? `“${selected.quote}”` : "No exact quote is attached yet."}
-                </blockquote>
-              </section>
               <section className="mt-8">
                 <h3 className="text-sm font-medium text-primary/60">Next action</h3>
                 <Card className="mt-3 gap-3 py-4">
@@ -1175,7 +1162,21 @@ export function CommitmentQueue({
                   </div>
                 </Card>
               </section>
-            </div>
+              </TabsContent>
+              <TabsContent className="mx-auto w-full max-w-4xl p-6" value="evidence">
+                <section>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-primary/60">Supporting evidence</h3>
+                    <Badge className="text-[12px] font-normal text-primary/40" variant="secondary">
+                      Exact quote
+                    </Badge>
+                  </div>
+                  <blockquote className="mt-3 rounded-none border border-border bg-background-50 p-4 text-[14px] leading-6 text-primary/75">
+                    {selected.quote ? `“${selected.quote}”` : "No exact quote is attached yet."}
+                  </blockquote>
+                </section>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       ) : null}

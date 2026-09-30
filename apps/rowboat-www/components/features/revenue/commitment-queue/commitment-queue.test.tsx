@@ -157,8 +157,9 @@ describe("CommitmentQueue", () => {
     await userEvent.click(screen.getByText("Acme"));
     expect(component).toHaveTextContent("Taylor");
     expect(component).toHaveTextContent("Morgan");
-    expect(component).toHaveTextContent("I will send the signed security packet by Friday.");
     expect(component).toHaveTextContent("Due within 72h");
+    await userEvent.click(screen.getByRole("tab", { name: "Evidence" }));
+    expect(component).toHaveTextContent("I will send the signed security packet by Friday.");
     expect(screen.getAllByText("At risk").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /Run 6-month Promise Leak Audit/ })).toBeEnabled();
     expect(screen.getByRole("button", { name: /Connect Gmail & Calendar/ })).toBeEnabled();
@@ -233,6 +234,23 @@ describe("CommitmentQueue", () => {
     expect(screen.getByRole("textbox", { name: "Filter by owner" })).toBeInTheDocument();
     expect(screen.getByText("Enter an owner")).toBeInTheDocument();
     expect(screen.queryByText(/Connect Gmail and Calendar to find/)).not.toBeInTheDocument();
+  });
+
+  it("shows the quote on Evidence and keeps the decision on Overview", async () => {
+    const user = userEvent.setup();
+    render(<CommitmentQueue {...props({ entries: entries("candidate") })} />);
+
+    await user.click(screen.getByText("Acme"));
+
+    expect(screen.getByRole("tablist", { name: "Promise detail" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Confirm promise" })).toBeVisible();
+    expect(screen.queryByText(/signed security packet by Friday/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Activity" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Evidence" }));
+
+    expect(screen.getByText(/signed security packet by Friday/)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Confirm promise" })).not.toBeInTheDocument();
   });
 
   it("records confirmation and correction through transition callbacks", async () => {
