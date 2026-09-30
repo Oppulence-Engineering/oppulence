@@ -79,7 +79,7 @@ export const AGENT_TOOL_CATALOG = [
   {
     name: "slack.post_message",
     label: "Post to Slack",
-    description: "Send a Slack message with approval controls.",
+    description: "Send a Slack message after you approve it.",
   },
   {
     name: "connector.read.gmail",
@@ -94,7 +94,7 @@ export const AGENT_TOOL_CATALOG = [
   {
     name: "connector.write.gmail_send",
     label: "Send email",
-    description: "Send Gmail messages with approval controls.",
+    description: "Send a Gmail message after you approve it.",
   },
   {
     name: "connector.read.calendar",
@@ -163,12 +163,12 @@ export const DEVELOPER_TOOL_NAMES = new Set<string>([
 
 /** Granted on built-in agents, and not offered in the picker until a teammate adds them. */
 const GRANTED_TOOL_LABELS: Record<string, string> = {
-  "run_history.read": "Run history",
+  "run_history.read": "Past runs",
   "workflow.read": "Workflows",
   "workspace.read": "Workspaces",
   "relationship.create": "Add a company",
   "relationship.correct": "Correct a company",
-  "relationship.assertion.retract": "Withdraw a statement",
+  "relationship.assertion.retract": "Remove a recorded fact",
   "relationship.review.acknowledge": "Acknowledge a review",
   "relationship.identity.decide": "Review a possible duplicate",
   "relationship.attention.decide": "Update an attention item",
@@ -194,9 +194,9 @@ const GRANTED_TOOL_LABELS: Record<string, string> = {
   "person.delete": "Remove a person",
   "action_proposal.read": "Read proposed actions",
   "subagent.delegate": "Delegate to an agent",
-  "connector.read.composio_tool_search": "Search more tools",
-  "connector.read.composio_tool_describe": "Describe a tool",
-  "connector.write.composio_tool_execute": "Run a connected tool",
+  "connector.read.composio_tool_search": "Find a connected action",
+  "connector.read.composio_tool_describe": "Read a connected action",
+  "connector.write.composio_tool_execute": "Run a connected action",
 };
 
 export function agentToolLabel(name: string): string {
