@@ -12,6 +12,7 @@ import {
   graphLayoutLabel,
   graphAccountChoice,
   graphSavedViewChoice,
+  graphAskChanges,
   graphQueryAnswer,
   graphQueryFilterLabel,
 } from "@/components/features/revenue/relationship-graph/relationship-graph";
@@ -57,6 +58,17 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphAsOfLabel("2026-09-30T13:00:00.000Z")).toMatch(/^As of /);
     expect(source).toContain('aria-label="Ask this graph"');
     expect(source).not.toContain("Ask graph");
+    expect(source).toContain("disabled={\n              !graphAskChanges(queryDraft,");
+    expect(graphAskChanges("  ", { query: "", focusDepth: 0 })).toBe(false);
+    expect(graphAskChanges("overdue promises", { query: "", focusDepth: 0 })).toBe(true);
+    expect(graphAskChanges("", { query: "overdue promises", focusDepth: 0 })).toBe(true);
+    expect(graphAskChanges("overdue promises", { query: "overdue promises", focusDepth: 0 })).toBe(
+      false,
+    );
+    expect(
+      graphAskChanges("", { query: "", focusDepth: 0, selectedNodeId: "company-1" }),
+    ).toBe(true);
+    expect(graphAskChanges("", { query: "", focusDepth: 1 })).toBe(true);
     expect(source).not.toContain("Changed since review");
     expect(source).not.toContain("overdue commitments");
     expect(graphLayoutLabel("force")).toBe("Grouped");

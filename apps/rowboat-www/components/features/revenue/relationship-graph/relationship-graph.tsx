@@ -917,6 +917,14 @@ export function graphAsOfLabel(asOf: string): string {
  * The query engine still says "relationship", and a typed question comes back
  * as `text: …`. The graph is a company graph, so the answer should read that way.
  */
+/** Ask rewrites the question and clears the selected company. Skip a click that would do neither. */
+export function graphAskChanges(
+  draft: string,
+  state: Pick<RelationshipGraphSavedViewState, "query" | "focusDepth" | "selectedNodeId">,
+): boolean {
+  return draft.trim() !== state.query || Boolean(state.selectedNodeId) || state.focusDepth !== 0;
+}
+
 export function graphQueryAnswer(answer: string, companyCount: number): string {
   if (companyCount === 0) return "No companies are in this graph yet.";
   return answer
@@ -1387,6 +1395,15 @@ export function RelationshipGraphWorkspace({
           className="mt-3 flex flex-col gap-2 lg:flex-row"
           onSubmit={(event) => {
             event.preventDefault();
+            if (
+              !graphAskChanges(queryDraft, {
+                query: viewState.query,
+                focusDepth: viewState.focusDepth,
+                selectedNodeId: viewState.selectedNodeId,
+              })
+            ) {
+              return;
+            }
             updateState({ query: queryDraft.trim(), selectedNodeId: undefined, focusDepth: 0 });
           }}
         >
@@ -1400,7 +1417,17 @@ export function RelationshipGraphWorkspace({
               placeholder="Ask about a company or a promise."
             />
           </div>
-          <Button type="submit" size="sm">
+          <Button
+            disabled={
+              !graphAskChanges(queryDraft, {
+                query: viewState.query,
+                focusDepth: viewState.focusDepth,
+                selectedNodeId: viewState.selectedNodeId,
+              })
+            }
+            type="submit"
+            size="sm"
+          >
             Ask
           </Button>
           {viewState.query ? (
