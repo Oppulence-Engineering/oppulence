@@ -60,6 +60,16 @@ export function localModeNotice(gmail: "connected" | "missing" | "unknown"): str
   return base;
 }
 
+/** Preflight off means Oppulence will not send. "Drafts only" is true once Gmail can receive one. */
+export function sendingCheckLabel(
+  preflightAvailable: boolean,
+  gmail: "connected" | "missing" | "unknown",
+): string {
+  if (preflightAvailable) return "Available";
+  if (gmail === "connected") return "Unavailable (drafts only)";
+  return "Unavailable";
+}
+
 function scrollToConnectors() {
   document
     .getElementById(CONNECTORS_SECTION_ID)
@@ -218,7 +228,7 @@ export function WorkspaceView({
           <MetadataRow label="Status" value={workspaceMetadataValue(workspace.status)} />
           <MetadataRow
             label="Sending check"
-            value={workspace.preflightAvailable ? "Available" : "Unavailable (drafts only)"}
+            value={sendingCheckLabel(workspace.preflightAvailable, gmail)}
           />
           {workspace.outboundOrganizationId ? (
             <MetadataRow label="Organization" mono value={workspace.outboundOrganizationId} />

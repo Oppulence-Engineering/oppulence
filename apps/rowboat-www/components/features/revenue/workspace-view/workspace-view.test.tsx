@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   gmailDraftsAvailable,
   localModeNotice,
+  sendingCheckLabel,
   sourceRefreshNotice,
   WorkspaceView,
   workspaceMetadataValue,
@@ -182,9 +183,10 @@ describe("WorkspaceView", () => {
   it("keeps the preflight sentence as written", async () => {
     vi.mocked(fetchRelationshipSourceStatuses).mockResolvedValue([]);
     renderWorkspace();
-    const preflight = await screen.findByText("Unavailable (drafts only)");
+    const preflight = await screen.findByText("Unavailable");
     expect(preflight).toBeVisible();
     expect(preflight).not.toHaveClass("capitalize");
+    expect(screen.queryByText("Unavailable (drafts only)")).not.toBeInTheDocument();
     expect(screen.getByText("Sending check")).toBeVisible();
     expect(screen.getByText("Turn on checked sending")).toBeVisible();
     expect(screen.getByRole("textbox", { name: "Sending workspace ID" })).toBeVisible();
@@ -215,5 +217,8 @@ describe("WorkspaceView", () => {
       "Connect Gmail before a draft can land in your mailbox.",
     );
     expect(localModeNotice("unknown")).not.toContain("Gmail");
+    expect(sendingCheckLabel(true, "missing")).toBe("Available");
+    expect(sendingCheckLabel(false, "missing")).toBe("Unavailable");
+    expect(sendingCheckLabel(false, "connected")).toBe("Unavailable (drafts only)");
   });
 });
