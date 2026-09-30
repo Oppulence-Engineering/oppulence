@@ -15,7 +15,11 @@ vi.mock("@/components/ai-elements/prompt-input", () => ({
   PromptInputActionAddAttachments: () => null,
   PromptInputActionMenu: ({ children }: { children: React.ReactNode }) => children,
   PromptInputActionMenuContent: ({ children }: { children: React.ReactNode }) => children,
-  PromptInputActionMenuTrigger: () => null,
+  PromptInputActionMenuTrigger: ({ "aria-label": label }: { "aria-label"?: string }) => (
+    <button type="button" aria-label={label}>
+      Add
+    </button>
+  ),
   PromptInputAttachment: () => null,
   PromptInputAttachments: () => null,
   PromptInputBody: ({ children }: { children: React.ReactNode }) => children,
@@ -124,6 +128,7 @@ describe("ChatRouteProvider", () => {
       "Ask about a company, a promise, or the next step.",
     );
     expect(screen.getByRole("button", { name: "Assistant" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add text file" })).toBeVisible();
 
     screen.getByRole("button", { name: "New chat" }).click();
     expect(mocks.resetRun).toHaveBeenCalledOnce();

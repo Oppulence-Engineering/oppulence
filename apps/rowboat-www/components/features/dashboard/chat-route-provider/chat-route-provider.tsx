@@ -187,7 +187,7 @@ function ChatPromptInput({
         <PromptInputFooter>
           <PromptInputTools>
             <PromptInputActionMenu>
-              <PromptInputActionMenuTrigger />
+              <PromptInputActionMenuTrigger aria-label="Add text file" />
               <PromptInputActionMenuContent>
                 <PromptInputActionAddAttachments label="Add text file" />
               </PromptInputActionMenuContent>
