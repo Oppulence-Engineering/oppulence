@@ -178,11 +178,9 @@ function ChatPromptInput({
             ref={textareaRef}
             className={empty ? "min-h-12 max-h-[200px]" : "min-h-[46px] max-h-[200px]"}
             onChange={(event) => setText(event.target.value)}
-            placeholder={
-              empty
-                ? "Ask about a company, a promise, or the next step."
-                : "Ask about a client, commitment, or next step"
-            }
+            // An empty thread used to ask people to "name the loose end," and a
+            // started thread said "client." Both states ask the same question.
+            placeholder="Ask about a company, a promise, or the next step."
             value={text}
           />
         </PromptInputBody>
