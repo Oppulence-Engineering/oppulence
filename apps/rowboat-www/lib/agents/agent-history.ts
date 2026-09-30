@@ -15,7 +15,7 @@ export type AgentSessionSummary = Pick<
   "sessionId" | "agent" | "title" | "createdAt" | "lastActivityAt"
 >;
 
-export function friendlyAgentError(message: string): string {
+export function friendlyAgentError(message: string, subject: "agent" | "run" = "agent"): string {
   if (/openrouter_credits|upstream_credits_exhausted|upstream provider account/i.test(message)) {
     return "Oppulence's AI provider is temporarily unavailable. Your workspace credits were not charged. Try again later.";
   }
@@ -28,12 +28,14 @@ export function friendlyAgentError(message: string): string {
   }
   // A bad or missing provider key comes back wrapped in a Temporal activity
   // error. Match it before the generic activity rewrite, or dogfooding looks
-  // like a random agent failure instead of a credential problem.
+  // like a random failure instead of a credential problem.
   if (/status 401|missing authentication header|invalid api key|invalid_api_key/i.test(message)) {
     return "The AI provider rejected the API key for this workspace. Nothing was charged.";
   }
   if (/activity error|scheduledEventID|startedEventID/i.test(message)) {
-    return "The agent could not complete this request. Please try again.";
+    return subject === "run"
+      ? "This run could not finish. Please try again."
+      : "The agent could not complete this request. Please try again.";
   }
   return message;
 }

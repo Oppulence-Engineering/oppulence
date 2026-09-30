@@ -30,6 +30,7 @@ describe("CloudWorkflowsView", () => {
     expect(runRowDetail("failed", "cron")).toBe("Failed · Cron");
     expect(source).toContain("runRowDetail(run.status, run.trigger)");
     expect(source).toContain("workflowName={task.name}");
+    expect(source).toContain("friendlyAgentError(message, \"run\")");
   });
 
   it("names schedule health and transcript events", () => {

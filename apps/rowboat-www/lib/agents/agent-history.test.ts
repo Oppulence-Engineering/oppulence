@@ -29,6 +29,15 @@ it("hides provider and workflow details from agent failures", () => {
   expect(friendlyAgentError("activity error: scheduledEventID=1 startedEventID=2")).toBe(
     "The agent could not complete this request. Please try again.",
   );
+  expect(
+    friendlyAgentError(
+      "llm_call_failed: activity error (type: rowboat.background_tasks.execute_api_task.v1, scheduledEventID: 11): llm upstream returned status 401: Missing Authentication header",
+      "run",
+    ),
+  ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
+  expect(friendlyAgentError("activity error: scheduledEventID=1", "run")).toBe(
+    "This run could not finish. Please try again.",
+  );
   expect(friendlyAgentError("The agent was canceled.")).toBe("The agent was canceled.");
 });
 

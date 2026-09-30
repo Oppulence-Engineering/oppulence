@@ -20,6 +20,7 @@ import {
   XCircle,
 } from "@/lib/icons";
 
+import { friendlyAgentError } from "@/lib/agents/agent-history";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
 import {
@@ -151,6 +152,15 @@ function StatusIcon({ status }: { status: string }) {
   if (status === "running" || status === "syncing") return <Spinner className="size-4" />;
   if (status === "queued") return <Clock className="size-4" />;
   return <Pause className="size-4" />;
+}
+
+function runFailureCopy(run: CloudRun): string {
+  const message = run.error ?? "";
+  const friendly = friendlyAgentError(message, "run");
+  // The stored code is an API token such as llm_call_failed. Once the message
+  // is rewritten, prefixing that token puts the internal name back on screen.
+  if (friendly !== message) return friendly;
+  return run.errorCode ? `${run.errorCode}: ${message}` : message;
 }
 
 function eventText(event: CloudRunEvent): string {
@@ -640,8 +650,7 @@ function RunInspector({
         ) : null}
         {run.error ? (
           <p className="border border-destructive/30 bg-destructive/5 p-2.5 text-xs leading-5 text-destructive">
-            {run.errorCode ? `${run.errorCode}: ` : ""}
-            {run.error}
+            {runFailureCopy(run)}
           </p>
         ) : null}
       </div>
