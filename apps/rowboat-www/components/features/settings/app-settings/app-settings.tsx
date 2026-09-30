@@ -983,8 +983,13 @@ function AccountSection({ session }: { session: SessionShape }) {
         <div className="flex flex-col gap-0.5 py-2">
           <ValueRow label="Email" value={session.user.email} />
           <ValueRow copy label="User ID" value={session.user.workosUserId || session.user.id} />
-          <ValueRow copy label="Organization" empty="No organization is attached to this session." value={session.user.organizationId} />
-          <ValueRow label="Role" empty="Member" value={session.user.role} />
+          <ValueRow
+            copy
+            empty="No organization is attached to this session."
+            label="Organization"
+            value={session.user.organizationId}
+          />
+          <ValueRow empty="Member" label="Role" value={session.user.role} />
         </div>
       </SettingsRow>
       <PlanSection session={session} />
