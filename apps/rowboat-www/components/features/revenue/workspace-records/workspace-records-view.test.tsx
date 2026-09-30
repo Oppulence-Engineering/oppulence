@@ -27,6 +27,11 @@ vi.mock("@/hooks/queries/utils/fetch-workspace-notes", () => ({
 vi.mock("@/lib/revenue/revenue", () => ({
   relativeTime: () => "now",
 }));
+vi.mock("@/components/auth/auth-gate", () => ({
+  useAuthSession: () => ({
+    user: { email: "ada@example.com", workosUserId: "user_ada" },
+  }),
+}));
 vi.mock("@oppulence/ui/components/dialog", () => ({
   Dialog: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
   DialogContent: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
@@ -160,6 +165,28 @@ describe("durable note templates and favorites", () => {
 
     expect(await screen.findByDisplayValue("Weekly review")).toBeInTheDocument();
     expect(screen.getByText("Wins and risks")).toBeInTheDocument();
+  });
+
+  it("names the signed-in author and does not close the note from minimize", async () => {
+    const user = userEvent.setup();
+    renderNotes();
+
+    await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
+
+    expect(screen.getByLabelText("Note author ada")).toHaveTextContent("A");
+    expect(screen.queryByText("Y")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Minimize note" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Mark as meeting note" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+
+    await user.click(screen.getByRole("button", { name: "Maximize note" }));
+    await user.click(screen.getByRole("button", { name: "Minimize note" }));
+
+    expect(screen.getByLabelText("Note title")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Minimize note" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Maximize note" })).toBeEnabled();
   });
 
   it("inserts a heading from the note content control", async () => {

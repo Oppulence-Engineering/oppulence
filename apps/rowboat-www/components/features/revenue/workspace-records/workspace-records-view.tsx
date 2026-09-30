@@ -32,6 +32,8 @@ import {
   X,
 } from "@/lib/icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthSession } from "@/components/auth/auth-gate";
+import { useWorkspaceLabel } from "@/components/features/dashboard/app-shell/app-shell";
 import { useConsoleResources } from "@/hooks/queries/use-console";
 import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
 import { usePersons, useRelationships } from "@/hooks/queries/use-relationships";
@@ -134,6 +136,16 @@ const initials = (name: string) =>
     .map((part) => part[0])
     .join("")
     .toUpperCase();
+
+/** Notes are written by the signed-in account. The mark matches the sidebar label, not a hardcoded "Y". */
+function useNoteAuthor() {
+  const session = useAuthSession();
+  const label = useWorkspaceLabel({
+    name: session.user.email || session.user.workosUserId || "You",
+    email: session.user.email || "",
+  });
+  return { label, mark: initials(label) };
+}
 
 const notePlugins = [
   createPlatePlugin({ key: "bold", node: { isLeaf: true }, render: { as: "strong" } }),
@@ -294,9 +306,6 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
           >
             <TableHeader className="sticky top-0 z-10 bg-background [&_tr]:border-border">
               <TableRow className="h-10 border-b text-[12px] font-medium text-primary/55 hover:bg-transparent">
-                <TableHead className="h-10 w-10 border-r px-3">
-                  <Checkbox aria-label="Select all people" className="size-4" />
-                </TableHead>
                 <TableHead className="h-10 w-[250px] border-r px-3">Person</TableHead>
                 <TableHead className="h-10 w-[210px] border-r px-3">Company</TableHead>
                 <TableHead className="h-10 w-36 border-r px-3">Role</TableHead>
@@ -311,9 +320,6 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
             <TableBody>
               {people.map((person) => (
                 <TableRow key={person.id} className="h-11 border-border hover:bg-background-100/70">
-                  <TableCell className="border-r px-3">
-                    <Checkbox aria-label={`Select ${person.displayName}`} className="size-4" />
-                  </TableCell>
                   <TableCell className="border-r px-3">
                     <Button
                       aria-label={`Open ${person.displayName}`}
@@ -456,11 +462,13 @@ function CreatePersonDialog({
         </DialogHeader>
         <div className="space-y-3">
           <Input
+            aria-label="Full name"
             placeholder="Full name"
             value={name}
             onChange={(event) => setName(event.target.value)}
           />
           <Input
+            aria-label="Email address"
             type="email"
             placeholder="Email address (optional)"
             value={email}
@@ -576,6 +584,7 @@ const todayValue = () => {
 
 export function NotesView({ onError, onNotice }: ViewProps) {
   const queryClient = useQueryClient();
+  const author = useNoteAuthor();
   const notesQuery = useWorkspaceNotes();
   const notes = notesQuery.data?.notes ?? [];
   const relationships = notesQuery.data?.relationships ?? [];
@@ -927,11 +936,14 @@ export function NotesView({ onError, onNotice }: ViewProps) {
                   <CardFooter className="flex h-10 items-center justify-between border-t px-4 text-[12px] text-primary/50">
                     <div className="flex items-center gap-2">
                       <Avatar className="size-4 rounded-none" size="sm">
-                        <AvatarFallback className="rounded-none bg-cyan-600 text-[9px] text-white">
-                          Y
+                        <AvatarFallback
+                          className="rounded-none bg-cyan-600 text-[9px] text-white"
+                          data-slot="note-author"
+                        >
+                          {author.mark}
                         </AvatarFallback>
                       </Avatar>
-                      <Label className="font-normal">You</Label>
+                      <Label className="font-normal">{author.label}</Label>
                     </div>
                     <Badge className="font-normal" variant="secondary">
                       {relativeTime(note.occurredAt)}
@@ -982,6 +994,7 @@ export function NotesView({ onError, onNotice }: ViewProps) {
           onNotice={onNotice}
           onSaved={() => void load()}
           onViewTemplates={() => setTab("templates")}
+          author={author}
           relationships={relationships}
           template={"template" in editing ? editing.template : undefined}
         />
@@ -1098,6 +1111,7 @@ function NoteDialog({
   note,
   template,
   relationships,
+  author,
   onClose,
   onCreateTemplate,
   onSaved,
@@ -1108,6 +1122,7 @@ function NoteDialog({
   note?: WorkspaceNote;
   template?: NoteTemplateResource;
   relationships: RevenueRelationship[];
+  author: { label: string; mark: string };
   onClose: () => void;
   onCreateTemplate: () => void;
   onSaved: () => void;
@@ -1252,9 +1267,11 @@ function NoteDialog({
               aria-label="Minimize note"
               type="button"
               className="size-7 rounded-none text-primary/45 hover:bg-background-100 hover:text-primary"
+              disabled={!maximized}
               size="icon-xs"
+              title={maximized ? "Leave full screen" : "The note is already in a window"}
               variant="ghost"
-              onClick={() => void closeEditor()}
+              onClick={() => setMaximized(false)}
             >
               <Minus className="size-3.5" />
             </Button>
@@ -1283,8 +1300,12 @@ function NoteDialog({
         <div className="relative min-h-0 flex-1 overflow-auto px-[52px] pb-14 pt-[57px] text-primary/80">
           <div className="absolute right-[18px] top-1 flex items-center gap-3 text-[13px] text-primary/55">
             <Avatar className="size-5 rounded-none">
-              <AvatarFallback className="rounded-none border border-border bg-background-100 text-[10px] font-semibold text-primary/70">
-                Y
+              <AvatarFallback
+                aria-label={`Note author ${author.label}`}
+                className="rounded-none border border-border bg-background-100 text-[10px] font-semibold text-primary/70"
+                data-slot="note-author"
+              >
+                {author.mark}
               </AvatarFallback>
             </Avatar>
             <Button
@@ -1348,13 +1369,15 @@ function NoteDialog({
                 (relationships.length === 0 ? "No companies yet" : "Link a company")}
             </Label>
             <Button
+              aria-pressed={meetingLinked}
               type="button"
               className="h-auto rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
               variant="ghost"
               onClick={() => setMeetingLinked((value) => !value)}
             >
               <CalendarBlank className="size-4" />
-              {meetingLinked ? "Meeting linked" : "Link a meeting"}
+              {/* Stored as a boolean on the note. There is no meeting to attach. */}
+              {meetingLinked ? "Meeting note" : "Mark as meeting note"}
             </Button>
           </div>
           <div className="mt-6 flex items-center gap-1 border-y border-border py-1">

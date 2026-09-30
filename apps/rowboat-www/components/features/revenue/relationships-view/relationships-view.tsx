@@ -791,10 +791,7 @@ export function RelationshipsView({
               >
                 <TableHeader className="sticky top-0 z-10 bg-background [&_tr]:border-border">
                   <TableRow className="h-10 border-b text-[13px] font-medium text-primary/55 hover:bg-transparent">
-                    <TableHead className="sticky left-0 z-20 h-10 w-10 border-r bg-background px-3">
-                      <Checkbox aria-label="Select all companies" className="size-4" />
-                    </TableHead>
-                    <TableHead className="sticky left-10 z-20 h-10 w-[200px] border-r bg-background px-3">
+                    <TableHead className="sticky left-0 z-20 h-10 w-[200px] border-r bg-background px-3">
                       <div className="flex items-center justify-between gap-2">
                         <Label className="font-normal">Company</Label>
                         <DropdownMenu>
@@ -872,12 +869,6 @@ export function RelationshipsView({
                       className="group h-9 border-border hover:bg-background-100/70"
                     >
                       <TableCell className="sticky left-0 z-[5] border-r bg-background px-3 group-hover:bg-background-100">
-                        <Checkbox
-                          aria-label={`Select ${relationship.displayName}`}
-                          className="size-4"
-                        />
-                      </TableCell>
-                      <TableCell className="sticky left-10 z-[5] border-r bg-background px-3 group-hover:bg-background-100">
                         <Button
                           className="flex h-auto w-full items-center justify-start gap-2 truncate px-0 py-0 text-left text-sm font-medium text-primary hover:bg-transparent"
                           onClick={() => setDetail(relationship.id)}

@@ -26,6 +26,11 @@ describe("RelationshipsView", () => {
     ).toBe(true);
   });
 
+  it("does not offer company checkboxes that select nothing", () => {
+    expect(source).not.toContain("Select all companies");
+    expect(source).not.toContain("Select ${relationship.displayName}");
+  });
+
   it("asks Oppulence from the company sheet instead of showing a dead badge", () => {
     expect(source).toContain("useAskOppulence");
     expect(source).toContain("askOppulence(askedCompany ? companyName(askedCompany) : undefined)");
