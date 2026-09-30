@@ -39,6 +39,7 @@ import {
   safeResearchCitationURL,
   startScan,
 } from "@/lib/revenue/revenue";
+import { promiseDueLabel } from "@/lib/revenue/revenue-records";
 import type { OpenPromisesReport, RelationshipSourceStatus } from "@/lib/revenue/types";
 
 export function OpenPromisesReportClient() {
@@ -577,7 +578,7 @@ function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string
                 </Badge>
               ) : null}
               <Label className="ml-auto text-[12px] font-normal text-primary/45">
-                {item.dueAt ? `due ${item.dueAt.slice(0, 10)}` : "due unspecified"}
+                {promiseDueLabel(item.dueAt)}
               </Label>
             </div>
             <p className="mt-1.5 text-[14px] leading-snug text-primary">{item.text}</p>

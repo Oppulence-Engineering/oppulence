@@ -58,6 +58,7 @@ describe("TaskCreateDialog", () => {
 
     await user.type(screen.getByLabelText("Task title"), "Follow up on renewal");
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+    expect(screen.getByRole("switch", { name: "Create more tasks after saving" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Company, No companies yet" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Due date, Today" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Add a company" })).toBeNull();

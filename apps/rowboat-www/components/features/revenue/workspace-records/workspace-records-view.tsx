@@ -98,7 +98,12 @@ import {
 } from "@oppulence/ui/components/sheet";
 import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { noteIdFromHash, workspaceNoteHref } from "@/lib/revenue/note-link";
-import { groupWorkspaceNotes, plateText, type WorkspaceNote } from "@/lib/revenue/revenue-records";
+import {
+  groupWorkspaceNotes,
+  plateText,
+  taskIsDueToday,
+  type WorkspaceNote,
+} from "@/lib/revenue/revenue-records";
 import {
   createConsoleResource,
   deleteConsoleResource,
@@ -1775,7 +1780,8 @@ export function TasksView({
   );
   const today = todayValue();
   const visible = tasks.filter((task) => {
-    if (filter === "today") return task.dueAt?.slice(0, 10) === today;
+    // Stored as 5pm local, which is already the next UTC date west of UTC.
+    if (filter === "today") return taskIsDueToday(task.dueAt, today);
     if (filter === "overdue") return Boolean(task.dueAt && new Date(task.dueAt).getTime() < now);
     return true;
   });

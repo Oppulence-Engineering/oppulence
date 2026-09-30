@@ -31,4 +31,9 @@ describe("OpenPromisesReportClient", () => {
     expect(source).not.toContain("Syncing Google evidence");
     expect(source).not.toContain("fulfilment");
   });
+
+  it("prints a promise due date on the reader's calendar", () => {
+    expect(source).toContain("{promiseDueLabel(item.dueAt)}");
+    expect(source).not.toContain("item.dueAt.slice(0, 10)");
+  });
 });

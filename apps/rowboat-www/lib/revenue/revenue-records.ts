@@ -95,6 +95,35 @@ function localDayStart(value: Date): number {
 }
 
 /**
+ * YYYY-MM-DD on the reader's calendar. A task saved for 5pm local is already
+ * the next UTC date west of UTC, so the UTC prefix is not "today".
+ */
+export function localCalendarDay(instant: string | Date): string {
+  const date = instant instanceof Date ? instant : new Date(instant);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+export function taskIsDueToday(dueAt: string | null | undefined, today: string): boolean {
+  if (!dueAt) return false;
+  const day = localCalendarDay(dueAt);
+  return day !== "" && day === today;
+}
+
+/** Open promises used to print the UTC date prefix. The reader sees their own day. */
+export function promiseDueLabel(dueAt: string | null | undefined): string {
+  if (!dueAt) return "due unspecified";
+  const date = new Date(dueAt);
+  if (Number.isNaN(date.getTime())) return "due unspecified";
+  return `due ${date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })}`;
+}
+
+/**
  * The notes list used to title every note "Created today". Day buckets keep
  * that label for notes from the current local day and separate the rest.
  * A timestamp in the future stays with today so a clock skew does not invent

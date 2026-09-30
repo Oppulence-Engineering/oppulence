@@ -500,6 +500,8 @@ describe("task due order", () => {
     expect(linkedCompanyName("No companies yet")).toBe("Linked company, No companies yet");
     expect(source).toContain("aria-label={taskFilterName(filter)}");
     expect(source).toContain("taskListEmptyCopy(filter)");
+    expect(source).toContain("taskIsDueToday(task.dueAt, today)");
+    expect(source).not.toContain("task.dueAt?.slice(0, 10) === today");
     expect(source).toContain("Show all tasks");
     expect(source).toContain("No tasks yet! Create your first");
   });

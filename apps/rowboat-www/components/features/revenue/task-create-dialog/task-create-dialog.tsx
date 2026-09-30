@@ -171,11 +171,15 @@ export function TaskCreateDialog({
           onClick: () => void submit(),
         }}
         primaryAdjacentAction={{
+          // Create more only applies after a save, and a save needs a company.
           custom: (
-            <label className="inline-flex cursor-pointer items-center gap-2 px-1 text-[var(--text-secondary)] text-caption">
+            <label
+              className={`inline-flex items-center gap-2 px-1 text-[var(--text-secondary)] text-caption ${noCompanies ? "cursor-not-allowed" : "cursor-pointer"}`}
+            >
               <Switch
                 aria-label="Create more tasks after saving"
                 checked={createMore}
+                disabled={noCompanies}
                 onCheckedChange={setCreateMore}
               />
               Create more
