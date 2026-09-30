@@ -305,7 +305,7 @@ function SourceRow({
     try {
       const updated = await resyncRelationshipSource(source.source, source.sourceAccountId);
       await onUpdated(updated);
-      onNotice(`${source.source} sync queued.`);
+      onNotice(sourceRefreshNotice(source.source));
     } catch (error) {
       onError(errMessage(error, "Could not retry the source sync."));
     } finally {
@@ -369,6 +369,12 @@ function SourceRow({
       </div>
     </div>
   );
+}
+
+/** The stored source is a lowercase provider name. The toast is a sentence. */
+export function sourceRefreshNotice(source: string): string {
+  const name = source ? source.charAt(0).toUpperCase() + source.slice(1) : "Source";
+  return `${name} refresh queued.`;
 }
 
 /** Stored workspace slugs are not labels. "repair_required" would otherwise show the underscore. */

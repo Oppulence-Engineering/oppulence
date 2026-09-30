@@ -7,7 +7,11 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { WorkspaceView, workspaceMetadataValue } from "@/components/features/revenue/workspace-view/workspace-view";
+import {
+  sourceRefreshNotice,
+  WorkspaceView,
+  workspaceMetadataValue,
+} from "@/components/features/revenue/workspace-view/workspace-view";
 import { fetchRelationshipSourceStatuses } from "@/hooks/queries/utils/fetch-relationship-sources";
 import { fetchRelationshipRefreshBlocker } from "@/hooks/queries/utils/fetch-workflows";
 import { resyncRelationshipSource } from "@/lib/revenue/revenue";
@@ -128,7 +132,8 @@ describe("WorkspaceView", () => {
       expect(resyncRelationshipSource).toHaveBeenCalledWith("google", "owner@example.com"),
     );
     expect(await screen.findByText("syncing")).toBeInTheDocument();
-    expect(onNotice).toHaveBeenCalledWith("google sync queued.");
+    expect(onNotice).toHaveBeenCalledWith("Google refresh queued.");
+    expect(sourceRefreshNotice("slack")).toBe("Slack refresh queued.");
   });
 
   it("distinguishes stale freshness from an incomplete history sync", async () => {
