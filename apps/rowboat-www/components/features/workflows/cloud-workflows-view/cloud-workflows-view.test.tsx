@@ -13,6 +13,7 @@ import {
   calledModelLabel,
   readableEnum,
   runEventBody,
+  triggerLabel,
   runEventLabel,
   runReference,
   scheduleHealthLabel,
@@ -29,8 +30,13 @@ describe("CloudWorkflowsView", () => {
     expect(readableEnum("succeeded")).toBe("Succeeded");
     expect(readableEnum("cron")).toBe("Cron");
     expect(readableEnum("")).toBe("");
+    expect(triggerLabel("window")).toBe("Time window");
+    expect(triggerLabel("cron")).toBe("Cron");
     expect(runRowDetail("failed", "cron")).toBe("Failed · Cron");
+    expect(runRowDetail("failed", "window")).toBe("Failed · Time window");
     expect(source).toContain("runRowDetail(run.status, run.trigger)");
+    expect(source).toContain("triggerLabel(run.trigger)");
+    expect(source).not.toContain("{readableEnum(run.trigger)}");
     expect(source).toContain("workflowName={taskTitle(task)}");
     expect(source).toContain('friendlyAgentError(message, "run")');
   });

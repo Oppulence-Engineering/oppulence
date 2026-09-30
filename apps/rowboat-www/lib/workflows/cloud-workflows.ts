@@ -191,6 +191,15 @@ export function readableEnum(value: string): string {
 }
 
 /**
+ * A window trigger only runs inside a time range. Title-casing the stored
+ * token leaves "Window", which does not say what started the run.
+ */
+export function triggerLabel(value: string): string {
+  if (value === "window") return "Time window";
+  return readableEnum(value);
+}
+
+/**
  * Schedule health "current" means the cloud schedule matches the workflow.
  * The badge sits next to "Run in Oppulence Cloud", where "current" reads as
  * an unfinished token.

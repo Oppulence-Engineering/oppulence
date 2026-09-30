@@ -77,6 +77,7 @@ import {
   taskCron,
   taskVisualWorkflow,
   readableEnum,
+  triggerLabel,
   runEventBody,
   runEventLabel,
   runReference,
@@ -127,7 +128,7 @@ function formatDate(value?: string | null): string {
 /** Status and trigger as words. The runs list used to show only an icon, so
  * every row looked the same until you opened it. */
 export function runRowDetail(status: string, trigger: string): string {
-  return `${readableEnum(status)} · ${readableEnum(trigger)}`;
+  return `${readableEnum(status)} · ${triggerLabel(trigger)}`;
 }
 
 function statusTone(status: string): string {
@@ -625,7 +626,7 @@ function RunInspector({
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div>
             <Label className="font-normal text-muted-foreground">Trigger</Label>
-            <p className="mt-0.5">{readableEnum(run.trigger)}</p>
+            <p className="mt-0.5">{triggerLabel(run.trigger)}</p>
           </div>
           <div>
             <Label className="font-normal text-muted-foreground">Attempt</Label>
@@ -752,7 +753,7 @@ function WorkflowRuns({
               <SelectItem value="all">All triggers</SelectItem>
               {(["manual", "cron", "window", "event", "retry"] as const).map((value) => (
                 <SelectItem className="rounded-none" key={value} value={value}>
-                  {readableEnum(value)}
+                  {triggerLabel(value)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -999,7 +1000,7 @@ function WorkflowEditor({
                       {readableEnum(run.status)}
                     </Label>
                     <CardDescription className="text-[11px]">
-                      {readableEnum(run.trigger)} · {formatDate(run.createdAt)}
+                      {triggerLabel(run.trigger)} · {formatDate(run.createdAt)}
                     </CardDescription>
                   </div>
                   <CaretRight className="size-4 text-muted-foreground" />
