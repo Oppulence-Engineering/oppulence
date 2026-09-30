@@ -74,6 +74,48 @@ const AGENT_SOURCE_LABELS: Record<string, string> = {
   unknown: "Custom",
 };
 
+/**
+ * First-party agents ship a runtime prompt. That prompt names the old product
+ * and the tool ids the model calls. The agents page is for people, so these
+ * three get a description of the job instead of that prompt.
+ */
+const MAINTAINED_AGENT_INSTRUCTIONS: Record<string, string> = {
+  assistant:
+    "Answers questions about this workspace. It can look up companies, promises, and workflows, and it can draft the next step. Anything that writes waits for your approval.",
+  concierge:
+    "Handles requests that need connected tools. It can look up records and prepare notes or tasks. Sending and other writes wait for your approval.",
+  "concierge-slack":
+    "Works from Slack. It can read a thread, check mail and calendar, and prepare a reply. Messages it posts wait for your approval.",
+};
+
+function isRuntimePrompt(text: string): boolean {
+  return /rowboat|run_history|mission_control|agent\.rowboat/i.test(text);
+}
+
+/**
+ * Workspace agents show the instructions their author wrote. Maintained agents
+ * keep the runtime prompt on the server and show a description of the job.
+ */
+export function agentInstructionsCopy(input: {
+  slug: string;
+  source?: string;
+  instructions?: string;
+}): string {
+  const slug = input.slug.trim();
+  const source = input.source?.trim() || "";
+  const stored = input.instructions?.trim() || "";
+  if (source === "tenant") return stored || "No additional instructions.";
+  const maintained = MAINTAINED_AGENT_INSTRUCTIONS[slug];
+  if (maintained && source !== "unknown") return maintained;
+  if (
+    (source === "builtin" || source === "gitops") &&
+    (!stored || isRuntimePrompt(stored))
+  ) {
+    return "Oppulence maintains this agent. Its instructions stay with the product.";
+  }
+  return stored || "No additional instructions.";
+}
+
 /** The API stores a source enum. The agents page badge is a product label. */
 export function agentSourceLabel(source: string): string {
   const known = AGENT_SOURCE_LABELS[source];

@@ -38,7 +38,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAgentSummaries } from "@/hooks/queries/use-agents";
 import { agentKeys } from "@/hooks/queries/utils/agent-keys";
 import { dashboardFetch } from "@/lib/auth/client";
-import { type AgentSummary, agentDisplayName, agentSourceLabel } from "@/lib/agents/agent-schemas";
+import {
+  type AgentSummary,
+  agentDisplayName,
+  agentInstructionsCopy,
+  agentSourceLabel,
+} from "@/lib/agents/agent-schemas";
 import { agentToolLabel } from "@/lib/agents/agent-tools";
 import { cn } from "@/lib/utils";
 
@@ -420,7 +425,7 @@ export function AgentsView({
                     Instructions
                   </h3>
                   <p className="mt-2 whitespace-pre-wrap rounded-none border bg-muted/15 p-4 text-sm leading-6">
-                    {selected.instructions || "No additional instructions."}
+                    {agentInstructionsCopy(selected)}
                   </p>
                 </section>
 

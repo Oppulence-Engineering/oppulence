@@ -27,6 +27,7 @@ import { Switch } from "@oppulence/ui/components/switch";
 import { Textarea } from "@oppulence/ui/components/textarea";
 
 import { dashboardFetch } from "@/lib/auth/client";
+import { agentInstructionsCopy } from "@/lib/agents/agent-schemas";
 import { AGENT_TOOL_CATALOG, DEVELOPER_TOOL_NAMES } from "@/lib/agents/agent-tools";
 import { cn } from "@/lib/utils";
 
@@ -296,16 +297,27 @@ export function AgentConfigurationForm({
 
         <div className="space-y-2">
           <Label htmlFor="agent-instructions">Instructions</Label>
-          <Textarea
-            className="min-h-44 resize-y leading-6"
-            disabled={readOnly}
-            id="agent-instructions"
-            onChange={(event) => setString("instructions", event.target.value)}
-            placeholder="Describe the agent’s role, priorities, tone, and boundaries in plain language."
-            value={document.spec.instructions || ""}
-          />
+          {readOnly ? (
+            <p className="text-sm leading-6" id="agent-instructions">
+              {agentInstructionsCopy({
+                slug: document.metadata.slug,
+                source: "builtin",
+                instructions: document.spec.instructions,
+              })}
+            </p>
+          ) : (
+            <Textarea
+              className="min-h-44 resize-y leading-6"
+              id="agent-instructions"
+              onChange={(event) => setString("instructions", event.target.value)}
+              placeholder="Describe the agent’s role, priorities, tone, and boundaries in plain language."
+              value={document.spec.instructions || ""}
+            />
+          )}
           <FieldHint>
-            Use plain language. These instructions guide every conversation this agent handles.
+            {readOnly
+              ? "Oppulence maintains these instructions."
+              : "Use plain language. These instructions guide every conversation this agent handles."}
           </FieldHint>
         </div>
       </section>

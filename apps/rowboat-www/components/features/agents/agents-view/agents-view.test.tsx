@@ -8,5 +8,7 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "agents-view.tsx")
 describe("AgentsView", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function AgentsView");
+    expect(source).toContain("agentInstructionsCopy(selected)");
+    expect(source).not.toContain("{selected.instructions");
   });
 });

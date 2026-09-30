@@ -21,6 +21,8 @@ describe("AgentConfigurationForm", () => {
     expect(tools).toContain('label: "Read workspace memory"');
     expect(tools).toContain('label: "Create task"');
     expect(source).toContain("visibleTools(selectedTools)");
+    expect(source).toContain("agentInstructionsCopy(");
+    expect(source).toContain("Oppulence maintains these instructions.");
     expect(tools).toContain('"echo"');
     expect(tools).toContain('"conduit.read"');
     expect(source).not.toContain("Read relationship memory");
