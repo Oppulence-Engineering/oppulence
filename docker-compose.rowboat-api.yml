@@ -58,6 +58,11 @@ x-rowboat-runtime-env: &rowboat-runtime-env
   # opt into the development-only bypass or the worker exits at boot.
   CONNECTOR_ALLOW_LOCAL_ENTITLEMENT_DEVELOPMENT: "true"
   FREE_TIER_CREDITS: "10000"
+  # Same as the kind chart: the approvals queue is mounted. No Act-seam URL
+  # is set, so execute fails closed. Leaving this off makes
+  # GET /v1/action-proposals return 501 and the product page says approvals
+  # are not switched on.
+  ACTIONS_ENABLED: "true"
   GOOGLE_OAUTH_CLIENT_ID: "${GOOGLE_CLIENT_ID:?set GOOGLE_CLIENT_ID in root .env}"
   GOOGLE_OAUTH_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:?set GOOGLE_CLIENT_SECRET in root .env}"
   GOOGLE_REDIRECT_URI: "http://localhost:18080/oauth/google/callback"

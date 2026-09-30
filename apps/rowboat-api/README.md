@@ -79,6 +79,10 @@ Chat calls **live OpenRouter** (`https://openrouter.ai/api/v1`). Put
 offline plumbing check; devstack then answers every turn with
 `Hello from the mock LLM.`
 
+`ACTIONS_ENABLED` is on, matching the kind chart, so Agent approvals lists a
+real queue. No Act-seam URL is configured, so approving a proposal cannot
+execute it externally.
+
 ```bash
 # root .env holds WORKOS_API_KEY, OPENROUTER_API_KEY, OPENAI_API_KEY,
 # GOOGLE_CLIENT_ID, and GOOGLE_CLIENT_SECRET
