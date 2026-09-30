@@ -4,6 +4,7 @@ import "client-only";
 
 import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { openCompanyCreate } from "@/lib/dashboard/company-create-request";
 import { useRelationships } from "@/hooks/queries/use-relationships";
 import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
 import { revenueActionKeys } from "@/hooks/queries/utils/revenue-action-keys";
@@ -470,7 +471,7 @@ function CreateActionDialog({
               <Button
                 onClick={() => {
                   onClose();
-                  onOpenCompanies();
+                  openCompanyCreate(onOpenCompanies);
                 }}
                 size="sm"
                 type="button"

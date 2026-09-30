@@ -3,6 +3,7 @@
 import "client-only";
 
 import * as React from "react";
+import { openCompanyCreate } from "@/lib/dashboard/company-create-request";
 import {
   ArrowClockwise,
   Check,
@@ -678,7 +679,7 @@ export function CommitmentQueue({
             </p>
             <Button
               className="mt-5 bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-              onClick={onOpenAccounts}
+              onClick={() => openCompanyCreate(onOpenAccounts)}
               size="sm"
               type="button"
             >
@@ -785,7 +786,7 @@ export function CommitmentQueue({
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Button
                     className="flex h-[72px] items-center justify-start gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] font-normal text-primary/80 hover:bg-background-100"
-                    onClick={onOpenAccounts}
+                    onClick={() => openCompanyCreate(onOpenAccounts)}
                     type="button"
                     variant="ghost"
                   >

@@ -26,6 +26,8 @@ export type TaskCreateDialogProps = {
   relationships: RevenueRelationship[];
   onSaved: () => void;
   onError: (message: string) => void;
+  /** Present when the workspace can switch to Companies and open New company. */
+  onAddCompany?: () => void;
 };
 
 const todayValue = () => {
@@ -51,6 +53,7 @@ export function TaskCreateDialog({
   relationships,
   onSaved,
   onError,
+  onAddCompany,
 }: TaskCreateDialogProps) {
   const todayDefault = React.useMemo(() => todayValue(), []);
   const [title, setTitle] = React.useState("");
@@ -134,6 +137,15 @@ export function TaskCreateDialog({
           }}
         />
         {recordError ? <ChipModalError>Add a company before saving.</ChipModalError> : null}
+        {noCompanies && onAddCompany ? (
+          <button
+            className="mt-2 self-start px-1 text-caption text-[var(--text-secondary)] underline"
+            type="button"
+            onClick={onAddCompany}
+          >
+            Add a company
+          </button>
+        ) : null}
       </ChipModalPromptBody>
 
       <ChipModalFooter

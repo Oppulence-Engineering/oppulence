@@ -34,6 +34,7 @@ import {
 } from "@/components/features/revenue/shared/shared";
 import { AttentionQueueSurface } from "@/components/features/revenue/attention-queue-surface/attention-queue-surface";
 import { useAskOppulence } from "@/components/features/dashboard/dashboard-shell/dashboard-shell";
+import { subscribeCompanyCreate } from "@/lib/dashboard/company-create-request";
 import {
   AccountMissionControlSurface,
   accountAttentionFromHealth,
@@ -524,6 +525,10 @@ export function RelationshipsView({
     const timer = window.setTimeout(() => setSurface("graph"), 0);
     return () => window.clearTimeout(timer);
   }, []);
+
+  // Recovery and tasks request a company before this surface mounts.
+  // The flag is read here so New company opens on the first paint of Companies.
+  React.useEffect(() => subscribeCompanyCreate(() => setCreating(true)), []);
 
   const load = React.useCallback(async () => {
     await Promise.all([

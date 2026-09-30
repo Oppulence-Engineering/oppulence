@@ -58,10 +58,31 @@ describe("TaskCreateDialog", () => {
     await user.type(screen.getByLabelText("Task title"), "Follow up on renewal");
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "No companies yet" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Add a company" })).toBeNull();
     expect(screen.getByLabelText("Task title")).toHaveAttribute(
       "placeholder",
       "Follow up on the proposal",
     );
+    expect(mocks.createAction).not.toHaveBeenCalled();
+  });
+
+  it("offers to add a company when the workspace has none", async () => {
+    const user = userEvent.setup();
+    const onAddCompany = vi.fn();
+
+    render(
+      <TaskCreateDialog
+        open
+        relationships={[]}
+        onAddCompany={onAddCompany}
+        onError={vi.fn()}
+        onOpenChange={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Add a company" }));
+    expect(onAddCompany).toHaveBeenCalledOnce();
     expect(mocks.createAction).not.toHaveBeenCalled();
   });
 });

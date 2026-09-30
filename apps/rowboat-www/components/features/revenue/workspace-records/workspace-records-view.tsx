@@ -123,6 +123,7 @@ import type {
   RevenueRelationship,
 } from "@/lib/revenue/types";
 import { TaskCreateDialog } from "@/components/features/revenue/task-create-dialog/task-create-dialog";
+import { openCompanyCreate } from "@/lib/dashboard/company-create-request";
 
 type ViewProps = {
   onError: (message: string) => void;
@@ -1648,7 +1649,11 @@ export function sortTasksByDue<T extends { dueAt?: string | null }>(
   });
 }
 
-export function TasksView({ onError, onNotice }: ViewProps) {
+export function TasksView({
+  onError,
+  onNotice,
+  onOpenCompanies,
+}: ViewProps & { onOpenCompanies?: () => void }) {
   const queryClient = useQueryClient();
   const actionsQuery = useRevenueActions("open", 100);
   const relationshipsQuery = useRelationships();
@@ -1842,6 +1847,14 @@ export function TasksView({ onError, onNotice }: ViewProps) {
         <TaskCreateDialog
           open
           relationships={relationships}
+          onAddCompany={
+            onOpenCompanies
+              ? () => {
+                  setCreating(false);
+                  openCompanyCreate(onOpenCompanies);
+                }
+              : undefined
+          }
           onError={onError}
           onOpenChange={setCreating}
           onSaved={() => {
