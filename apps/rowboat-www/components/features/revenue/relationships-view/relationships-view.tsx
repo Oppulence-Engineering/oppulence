@@ -1478,6 +1478,16 @@ export function companyReviewCopy(model: {
   };
 }
 
+/** Lifecycle and health are stored tokens. The sheet names which is which. */
+export function companyStateAnswer(lifecycle: string, health: string): string {
+  return `Lifecycle: ${relationshipLabel(lifecycle)} · Health: ${relationshipLabel(health)}`;
+}
+
+/** Record badges sit together. The dimension has to travel with the value. */
+export function recordDetailBadge(label: string, value: string): string {
+  return `${label} · ${relationshipLabel(value)}`;
+}
+
 export function completenessExplanationCopy(explanation: string): string {
   if (explanation.trim() === "No source connection has completed its first useful sync.") {
     return "Connect a source before these details can fill in.";
@@ -1541,6 +1551,7 @@ function MissionControlOverview({
   const tone = completenessTone(model.completeness.status);
   const supported = Object.values(model.evidence).filter((item) => item.supported).length;
   const total = Object.keys(model.evidence).length;
+  const reviewCopy = companyReviewCopy(model);
   return (
     <section
       aria-labelledby="mission-control-heading"
@@ -1583,7 +1594,10 @@ function MissionControlOverview({
         {MISSION_CONTROL_QUESTIONS.map((question) => {
           let answer = "No supported answer yet.";
           if (question.key === "state") {
-            answer = `${relationshipLabel(String(model.evidence.lifecycle?.value ?? "unknown"))} · ${relationshipLabel(String(model.evidence.health?.value ?? "unknown"))}`;
+            answer = companyStateAnswer(
+              String(model.evidence.lifecycle?.value ?? "unknown"),
+              String(model.evidence.health?.value ?? "unknown"),
+            );
           } else if (question.key === "change") {
             answer = model.changedSinceReview
               ? model.changes
@@ -1593,7 +1607,7 @@ function MissionControlOverview({
                       relationshipLabel(change.dimension),
                   )
                   .join(", ") || "State changed"
-              : companyReviewCopy(model).change;
+              : reviewCopy.change;
           } else if (question.key === "evidence") {
             answer = `${supported} of ${total} details come from a source you can open.`;
           } else if (question.key === "action") {
@@ -1657,9 +1671,9 @@ function MissionControlOverview({
         <Button type="button" size="sm" variant="outline" disabled={busy} onClick={onAcknowledge}>
           <Check /> Mark as reviewed
         </Button>
-      ) : (
-        <p className="text-[11px] text-primary/40">{companyReviewCopy(model).footer}</p>
-      )}
+      ) : reviewCopy.footer !== reviewCopy.change ? (
+        <p className="text-[11px] text-primary/40">{reviewCopy.footer}</p>
+      ) : null}
     </section>
   );
 }
@@ -2024,20 +2038,20 @@ export function RelationshipSheet({
               <section className="mt-5 border-t border-border pt-4">
                 <p className="mb-3 text-xs font-medium text-primary/55">Record details</p>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline" className="rounded-none capitalize">
-                    {humanize(data.relationship.lifecycle)}
+                  <Badge variant="outline" className="rounded-none">
+                    {recordDetailBadge("Lifecycle", data.relationship.lifecycle)}
                   </Badge>
                   <Badge
                     variant="outline"
-                    className={`rounded-none capitalize ${HEALTH_TONE[data.relationship.health]}`}
+                    className={`rounded-none ${HEALTH_TONE[data.relationship.health]}`}
                   >
-                    {humanize(data.relationship.health)}
+                    {recordDetailBadge("Health", data.relationship.health)}
                   </Badge>
-                  <Badge variant="secondary" className="capitalize">
-                    {humanize(data.relationship.engagement)}
+                  <Badge variant="secondary">
+                    {recordDetailBadge("Engagement", data.relationship.engagement)}
                   </Badge>
-                  <Badge variant="secondary" className="capitalize">
-                    {humanize(data.relationship.sentiment)}
+                  <Badge variant="secondary">
+                    {recordDetailBadge("Sentiment", data.relationship.sentiment)}
                   </Badge>
                 </div>
                 <dl className="mt-5 grid grid-cols-[88px_minmax(0,1fr)] gap-x-3 gap-y-3 text-xs">
@@ -3185,7 +3199,7 @@ function StateCorrection({
             setValue(relationship[nextDimension]);
           }}
         >
-          <SelectTrigger size="sm">
+          <SelectTrigger aria-label={comboboxFilterName("Detail", humanize(dimension))} size="sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="app-shell rounded-none">
@@ -3197,7 +3211,7 @@ function StateCorrection({
           </SelectContent>
         </Select>
         <Select value={value} onValueChange={setValue}>
-          <SelectTrigger size="sm">
+          <SelectTrigger aria-label={comboboxFilterName("Value", humanize(value))} size="sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="app-shell rounded-none">

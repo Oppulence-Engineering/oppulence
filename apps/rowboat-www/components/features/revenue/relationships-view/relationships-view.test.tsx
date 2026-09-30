@@ -12,6 +12,8 @@ import {
   companyStageFilterName,
   companySheetPositionLabel,
   companyReviewCopy,
+  companyStateAnswer,
+  recordDetailBadge,
   completenessExplanationCopy,
   completenessProductLabel,
   detailSourceLabel,
@@ -182,7 +184,14 @@ describe("RelationshipsView", () => {
       change: "Nothing changed since your last review.",
       footer: "Nothing new since your last review.",
     });
-    expect(source).toContain("companyReviewCopy(model).footer");
+    expect(companyStateAnswer("prospect", "unknown")).toBe(
+      "Lifecycle: Prospect · Health: Unknown",
+    );
+    expect(recordDetailBadge("Sentiment", "unknown")).toBe("Sentiment · Unknown");
+    expect(source).toContain("companyReviewCopy(model)");
+    expect(source).toContain("reviewCopy.footer !== reviewCopy.change");
+    expect(source).toContain('comboboxFilterName("Detail", humanize(dimension))');
+    expect(source).toContain('comboboxFilterName("Value", humanize(value))');
     expect(source).not.toContain("Reviewed {new Date(model.asOf)");
     expect(source).toContain('disabled={busy === "recovery" || data.commitments.length === 0}');
     expect(completenessExplanationCopy("No source connection has completed its first useful sync.")).toBe(
