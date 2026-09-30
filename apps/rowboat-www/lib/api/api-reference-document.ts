@@ -233,6 +233,40 @@ function presentReferenceProse(value: string): string {
       "Local mirror of a WorkOS identity. Upserted when a verified bearer token is first seen.",
       "The signed-in person, saved when they first sign in.",
     )
+    .replaceAll(
+      "Background task instructions mirrored from task.yaml.",
+      "Instructions for this background task.",
+    )
+    .replaceAll(
+      "Last desktop or remote-trigger run id mirrored for this task.",
+      "Id of the latest run for this task.",
+    )
+    .replaceAll(
+      "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
+      "When this task starts. That can be a schedule or an incoming event. An empty value clears it.",
+    )
+    .replaceAll("Server timestamp for the last mirrored task update.", "When this task was last updated.")
+    .replaceAll("Task instructions mirrored from task.yaml.", "Instructions for this task.")
+    .replaceAll("Mirrored background tasks visible to this user.", "Background tasks for this person.")
+    .replaceAll(
+      "Mirrored run state for one desktop background task execution or queued remote trigger.",
+      "One background run, including a run waiting to start.",
+    )
+    .replaceAll("Run error mirrored from the desktop.", "Error from the desktop run.")
+    .replaceAll("Run summary mirrored from the desktop.", "Summary from the desktop run.")
+    .replaceAll("Mirrored JSONL event from a background task run log.", "One event from a background run.")
+    .replaceAll(
+      "Zero-based sequence number for a mirrored JSONL run event.",
+      "Event number, starting at zero.",
+    )
+    .replaceAll(
+      "Revision-checked update for mirrored run state.",
+      "Updates a run. Send the current revision.",
+    )
+    .replaceAll(
+      "Minimal org-scoped entity spine projection. Raw note bodies and mirrored payloads are forbidden.",
+      "A short record for this organization. Note bodies are not included.",
+    )
     .replaceAll("Solomon AI API", "Oppulence API")
     .replaceAll("Solomon AI", "Oppulence")
     .replaceAll("authenticated Rowboat user", "signed-in person")

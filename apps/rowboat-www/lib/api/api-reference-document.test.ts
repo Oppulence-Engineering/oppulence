@@ -259,6 +259,7 @@ describe("API reference document", () => {
     expect(presented.components.schemas.User.description).toBe(
       "The signed-in person, saved when they first sign in.",
     );
+    expect(JSON.stringify(presented)).not.toMatch(/mirrored|task\.yaml/i);
   });
 
   it("says the reference could not be loaded when the spec is missing", () => {
