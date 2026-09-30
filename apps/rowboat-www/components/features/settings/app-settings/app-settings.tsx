@@ -943,7 +943,7 @@ function PermissionsSection({ session }: { session: SessionShape }) {
         title="Permissions"
       />
       <SettingsRow
-        description="The signed-in organization controls access to shared companies, people, and evidence."
+        description="The signed-in organization controls access to shared companies, people, and their details."
         title="Workspace"
       >
         <div className="settings-row">
