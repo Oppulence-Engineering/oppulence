@@ -9,6 +9,8 @@ import {
   graphAsOfLabel,
   graphCountLabel,
   graphLayoutLabel,
+  graphAccountChoice,
+  graphSavedViewChoice,
   graphQueryAnswer,
   graphQueryFilterLabel,
 } from "@/components/features/revenue/relationship-graph/relationship-graph";
@@ -61,6 +63,12 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain(
       'aria-label={comboboxFilterName("Layout", graphLayoutLabel(viewState.layout))}',
     );
+    expect(graphAccountChoice("  Harbor  ")).toBe("Harbor");
+    expect(graphAccountChoice("")).toBe("Choose an account");
+    expect(graphSavedViewChoice(undefined)).toBe("Saved views");
+    expect(source).toContain('comboboxFilterName(\n                  "Account",');
+    expect(source).toContain('comboboxFilterName(\n                  "Saved view",');
+    expect(source).toContain('placeholder="Choose an account"');
     expect(source).not.toContain("Cluster layout");
     expect(source).not.toContain("Radial layout");
     expect(source).not.toContain("<Graph /> Canvas");

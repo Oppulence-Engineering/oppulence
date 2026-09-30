@@ -321,6 +321,21 @@ export function graphLayoutLabel(layout: RelationshipGraphSavedViewState["layout
   return "Grouped";
 }
 
+/**
+ * The account menu's visible placeholder is "Choose an account". Chrome does
+ * not use that text as the combobox name, so the name has to carry it.
+ */
+export function graphAccountChoice(name: string | null | undefined): string {
+  const trimmed = name?.trim() ?? "";
+  return trimmed || "Choose an account";
+}
+
+/** Same gap for the saved-view menu, which only renders once a view exists. */
+export function graphSavedViewChoice(label: string | null | undefined): string {
+  const trimmed = label?.trim() ?? "";
+  return trimmed || "Saved views";
+}
+
 function layoutNodes(
   nodes: RelationshipGraphNode[],
   layout: RelationshipGraphSavedViewState["layout"],
@@ -1306,7 +1321,17 @@ export function RelationshipGraphWorkspace({
                 updateState({ relationshipId, selectedNodeId: undefined, focusDepth: 0 })
               }
             >
-              <SelectTrigger size="sm" className="w-52">
+              <SelectTrigger
+                aria-label={comboboxFilterName(
+                  "Account",
+                  graphAccountChoice(
+                    relationships.find((relationship) => relationship.id === viewState.relationshipId)
+                      ?.displayName,
+                  ),
+                )}
+                size="sm"
+                className="w-52"
+              >
                 <SelectValue placeholder="Choose an account" />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-[2px]">
@@ -1475,7 +1500,16 @@ export function RelationshipGraphWorkspace({
           ) : null}
           {savedViews.length ? (
             <Select value={activeSavedViewId} onValueChange={applySavedView}>
-              <SelectTrigger size="sm" className="w-36">
+              <SelectTrigger
+                aria-label={comboboxFilterName(
+                  "Saved view",
+                  graphSavedViewChoice(
+                    savedViews.find((view) => view.id === activeSavedViewId)?.label,
+                  ),
+                )}
+                size="sm"
+                className="w-36"
+              >
                 <SelectValue placeholder="Saved views" />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-[2px]">
