@@ -312,7 +312,13 @@ describe("hosted connector settings", () => {
 
 describe("Google grant claimed in the web app", () => {
   function mockDashboard(
-    options: { connectors?: Connector[]; toolkits?: unknown[]; composioStatus?: number } = {},
+    options: {
+      connectors?: Connector[];
+      toolkits?: unknown[];
+      composioStatus?: number;
+      googleConnected?: boolean;
+      googleStart?: Response;
+    } = {},
   ) {
     const calls: string[] = [];
     const json = (body: unknown) =>
@@ -329,9 +335,13 @@ describe("Google grant claimed in the web app", () => {
         );
         if (url.includes("/google-oauth/claim")) return json({});
         if (url.includes("/google-oauth/start")) {
-          return json({ authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth?state=s1" });
+          return (
+            options.googleStart ??
+            json({ authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth?state=s1" })
+          );
         }
         if (url.includes("/google-oauth")) {
+          if (options.googleConnected === false) return json({ connected: false, accounts: [] });
           return json({
             connected: true,
             accounts: [
@@ -374,6 +384,24 @@ describe("Google grant claimed in the web app", () => {
   // The reported bug: a reconnect started on this page came back to the desktop
   // app's deep link, so nothing here claimed the grant and the dead grant stayed
   // dead. The start call names the web flow so the callback returns here.
+  it("says when Google sign-in is not configured", async () => {
+    mockDashboard({
+      googleConnected: false,
+      googleStart: new Response(
+        '<!doctype html><meta charset=utf-8><title>Oppulence</title><p style="font:14px system-ui;margin:3rem">Google sign-in isn\'t configured on the server yet.</p>',
+        { status: 502, headers: { "Content-Type": "text/html" } },
+      ),
+    });
+    renderWithQuery(<ConnectorSettings />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Connect Google" }));
+
+    expect(
+      await screen.findByText("Google sign-in isn't configured on the server yet."),
+    ).toBeVisible();
+    expect(screen.queryByText(/please try again/i)).toBeNull();
+  });
+
   it("starts Google authorization as a web flow", async () => {
     const calls = mockDashboard();
     vi.stubGlobal(

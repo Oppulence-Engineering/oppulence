@@ -206,8 +206,10 @@ function GoogleConnectionSettings() {
     setError(null);
     try {
       window.location.assign((await createGoogleCommitmentsAuthorizationURL()).toString());
-    } catch {
-      setError("Google authorization could not be started.");
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Google authorization could not be started.",
+      );
       setBusy(false);
     }
   };

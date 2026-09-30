@@ -192,8 +192,10 @@ function ReportBody() {
       window.location.assign(
         (await createGoogleCommitmentsAuthorizationURL("/app/report")).toString(),
       );
-    } catch {
-      setError("Google authorization could not be started. Please try again.");
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Google authorization could not be started.",
+      );
       setConnecting(false);
     }
   }, []);

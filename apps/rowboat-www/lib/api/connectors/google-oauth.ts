@@ -8,6 +8,23 @@ const GOOGLE_CONNECTIONS_PATH = "/app/settings?settings=connections";
 export type GoogleOAuthReturnPath = "/app/report" | typeof GOOGLE_CONNECTIONS_PATH;
 
 /**
+ * Start failures are HTML pages, because the same route used to be a browser
+ * navigation. A status code with "try again" hides the reason, including when
+ * Google sign-in is not configured and another attempt cannot succeed.
+ */
+export function googleStartFailureMessage(body: string): string {
+  const match = body.match(/<p\b[^>]*>([\s\S]*?)<\/p>/i);
+  const sentence = (match?.[1] ?? "")
+    .replaceAll("&amp;", "&")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (sentence && sentence.length <= 180 && !/[<>]/.test(sentence)) return sentence;
+  return "Google authorization could not be started.";
+}
+
+/**
  * Creates a web Google authorization URL for commitment evidence.
  *
  * The explicit web return mode is required because the same API also serves
@@ -26,7 +43,7 @@ export async function createGoogleCommitmentsAuthorizationURL(
     method: "POST",
   });
   if (!response.ok) {
-    throw new Error(`Could not start Google authorization (${String(response.status)})`);
+    throw new Error(googleStartFailureMessage(await response.text()));
   }
 
   const data = StartGoogleOAuth200Response.parse(await response.json());
