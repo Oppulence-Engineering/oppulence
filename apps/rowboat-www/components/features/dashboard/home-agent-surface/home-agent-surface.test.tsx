@@ -93,6 +93,7 @@ describe("HomeAgentSurface", () => {
       1,
       expect.not.stringContaining("intervention"),
     );
+    expect(onSelectPrompt).toHaveBeenNthCalledWith(1, expect.not.stringContaining("evidence"));
     expect(onSelectPrompt).toHaveBeenNthCalledWith(
       2,
       expect.not.stringContaining("obligations"),

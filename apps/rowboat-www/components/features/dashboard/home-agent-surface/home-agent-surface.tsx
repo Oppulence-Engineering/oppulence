@@ -11,7 +11,7 @@ const STARTING_POINTS = [
   {
     title: "Find a slipping promise",
     prompt:
-      "Find the promise most likely to slip this week. Show me the evidence, who owns it, and the smallest step that would get it back on track.",
+      "Find the promise most likely to slip this week. Show me where it came from, who owns it, and the smallest step that would get it back on track.",
   },
   {
     title: "Review an at-risk company",

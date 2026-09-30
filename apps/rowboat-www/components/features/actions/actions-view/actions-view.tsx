@@ -376,7 +376,7 @@ function ActionsEmpty({ title, description }: { title: string; description: Reac
       image="actions"
       learnMore={[
         { label: "Nothing happens until you approve" },
-        { label: "Audit trail for every action" },
+        { label: "A record of what you approved" },
       ]}
       title={title}
     />
