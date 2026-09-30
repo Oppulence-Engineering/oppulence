@@ -232,7 +232,7 @@ function GraphNodeCard({ data, selected }: NodeProps<FlowNode>) {
         {node.changedSinceReview ? (
           <Badge
             className="size-2 shrink-0 rounded-full border-0 bg-oppulence-orange p-0"
-            title="Changed since review"
+            title="Changed since you last looked"
             variant="outline"
           />
         ) : null}
@@ -1310,7 +1310,7 @@ export function RelationshipGraphWorkspace({
               onChange={(event) => setQueryDraft(event.target.value)}
               className="pl-8"
               aria-label="Ask this graph"
-              placeholder="Ask this graph, e.g. Which renewals depend on overdue commitments?"
+              placeholder="Ask about a company or a promise."
             />
           </div>
           <Button type="submit" size="sm">
@@ -1416,7 +1416,7 @@ export function RelationshipGraphWorkspace({
             checked={viewState.changedSinceReview}
             onCheckedChange={(checked) => updateState({ changedSinceReview: checked === true })}
           />
-          Changed since review
+          Changed since you last looked
         </label>
         <DateTimePicker
           value={viewState.asOf}

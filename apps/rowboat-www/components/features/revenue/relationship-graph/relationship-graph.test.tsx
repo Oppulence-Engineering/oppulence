@@ -30,6 +30,10 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain("<Graph /> Diagram");
     expect(source).toContain("How many to show");
     expect(source).toContain("Hide unconnected");
+    expect(source).toContain("Changed since you last looked");
+    expect(source).toContain('placeholder="Ask about a company or a promise."');
+    expect(source).not.toContain("Changed since review");
+    expect(source).not.toContain("overdue commitments");
     expect(graphLayoutLabel("force")).toBe("Grouped");
     expect(graphLayoutLabel("radial")).toBe("Circle");
     expect(graphLayoutLabel("timeline")).toBe("By time");
