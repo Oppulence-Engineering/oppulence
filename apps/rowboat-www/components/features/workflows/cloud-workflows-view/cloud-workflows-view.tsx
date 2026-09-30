@@ -360,7 +360,7 @@ function CreateWorkflowDialog({
 
 export type WorkflowLibrarySort = "published" | "name";
 
-/** Last published follows the task's own update time, which is what the library label claims. */
+/** The library calls this sort Last updated. The order is the task's update time. */
 function taskTitle(task: Pick<CloudTask, "slug" | "name">): string {
   return workflowProductName(task.slug, task.name);
 }
@@ -416,7 +416,7 @@ function WorkflowLibrary({
           type="button"
           variant="outline"
         >
-          Sorted by {sort === "published" ? "Last published" : "Name"}
+          Sorted by {sort === "published" ? "Last updated" : "Name"}
         </Button>
         <div className="flex items-center gap-2">
           <Button
