@@ -3149,7 +3149,7 @@ function CreateRelationshipDialog({
         <DialogHeader>
           <DialogTitle>New company</DialogTitle>
           <DialogDescription>
-            Add a company now; synced conversations will fill in its people and activity.
+            Add a company. Mail and meetings can fill in its people and activity later.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">

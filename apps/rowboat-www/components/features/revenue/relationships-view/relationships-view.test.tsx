@@ -66,6 +66,8 @@ describe("RelationshipsView", () => {
     expect(source).toContain('companyAttention.length === 1 ? "company" : "companies"');
     expect(source).toContain('aria-label="Company domain"');
     expect(source).toContain('placeholder="Company domain (optional)"');
+    expect(source).toContain("Mail and meetings can fill in its people and activity later.");
+    expect(source).not.toContain("synced conversations");
     expect(source).toContain('{ label: "One place for each company" }');
     expect(source).toContain('{ label: "People stay with their company" }');
     expect(source).not.toContain("One model per company");

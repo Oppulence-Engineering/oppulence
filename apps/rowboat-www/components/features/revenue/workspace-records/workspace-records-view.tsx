@@ -578,7 +578,7 @@ function CreatePersonDialog({
         <DialogHeader>
           <DialogTitle>New person</DialogTitle>
           <DialogDescription>
-            Add a contact now; synced activity and enrichment will extend the profile.
+            Add someone you work with. Mail and meetings can fill in the rest later.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
