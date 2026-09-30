@@ -29,6 +29,10 @@ describe("connector product descriptions", () => {
     expect(scopeProductDetail("eigen:knowledge.read", "Search governed Eigen knowledge and citations.")).toBe(
       "Search what this workspace already knows.",
     );
+    expect(scopeProductLabel("conduit:pipelines.read", "Read pipelines")).toBe("See how data moves");
+    expect(scopeProductDetail("conduit:pipelines.write", "Create or update pipeline configuration.")).toBe(
+      "Change how data moves between the tools you connect.",
+    );
     expect(scopeProductLabel("github:repo.read", "Read repositories")).toBe("Read repositories");
   });
 

@@ -33,6 +33,14 @@ const KNOWN_SCOPE_COPY: Record<string, { label: string; detail: string }> = {
     label: "Run an approved action",
     detail: "Run an action after you approve it.",
   },
+  "conduit:pipelines.read": {
+    label: "See how data moves",
+    detail: "See how data moves between the tools you connect, and whether that movement is healthy.",
+  },
+  "conduit:pipelines.write": {
+    label: "Change how data moves",
+    detail: "Change how data moves between the tools you connect.",
+  },
 };
 
 export function scopeProductLabel(name: string, stored: string): string {
