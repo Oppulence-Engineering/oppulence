@@ -2142,7 +2142,8 @@ export function RelationshipSheet({
                     {data.relationship.accountDomain || "Not detected"}
                   </dd>
                   <dt className="text-primary/40">Company</dt>
-                  <dd className="capitalize text-primary/75">{companyName(data.relationship)}</dd>
+                  {/* The name is whatever was saved. capitalize turned "acme harbor" into "Acme Harbor". */}
+                  <dd className="text-primary/75">{companyName(data.relationship)}</dd>
                   <dt className="text-primary/40">Category</dt>
                   <dd className="text-primary/75">
                     {data.relationship.categories?.join(", ") || "Not filled in"}
@@ -2528,7 +2529,7 @@ export function RelationshipSheet({
                 <section data-capability="commitment-management">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <SectionTitle
-                      title={`Commitment recovery (${data.intelligence?.recoveryEvaluations.length ?? 0})`}
+                      title={`Promises to follow up (${data.intelligence?.recoveryEvaluations.length ?? 0})`}
                     />
                     {/* No promises means there is nothing to reconcile. */}
                     <Button

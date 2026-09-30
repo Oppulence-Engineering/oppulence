@@ -90,6 +90,14 @@ describe("RelationshipsView", () => {
     expect(source).toContain('aria-label="Show company graph"');
     expect(source).toContain('aria-label="Show company list"');
     expect(source).toContain("clearCompanyGraphURL()");
+    expect(source).toContain(
+      '<dd className="text-primary/75">{companyName(data.relationship)}</dd>',
+    );
+    expect(source).not.toContain(
+      '<dd className="capitalize text-primary/75">{companyName(data.relationship)}</dd>',
+    );
+    expect(source).toContain("Promises to follow up (");
+    expect(source).not.toContain("Commitment recovery (");
     expect(source).not.toContain('aria-label="Show accounts"');
     expect(source).not.toContain('aria-label="Show relationship graph"');
     expect(source).toContain("Public research");
