@@ -85,7 +85,7 @@ export function AccountMissionControlSurface({
   attentionLabel,
   attentionVariant = "amber",
   className,
-  emptyMessage = "No commitments recorded for this account yet.",
+  emptyMessage = "No commitments recorded for this company yet.",
   items,
   showHeader = true,
   ...props

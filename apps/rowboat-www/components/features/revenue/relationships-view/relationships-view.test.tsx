@@ -9,6 +9,7 @@ import {
   companyDirectoryTitle,
   companyListEmptyCopy,
   companySheetPositionLabel,
+  completenessExplanationCopy,
   completenessProductLabel,
   detailSourceLabel,
   enrichmentAvailabilityCopy,
@@ -158,6 +159,12 @@ describe("RelationshipsView", () => {
   });
 
   it("describes a company record without model jargon", () => {
+    expect(completenessExplanationCopy("No source connection has completed its first useful sync.")).toBe(
+      "Connect a source before these details can fill in.",
+    );
+    expect(completenessExplanationCopy("Details are already current.")).toBe(
+      "Details are already current.",
+    );
     expect(completenessProductLabel("partial")).toBe("Some details are still missing");
     expect(completenessProductLabel("complete")).toBe("Details are current");
     expect(completenessProductLabel("custom_status")).toBe("Custom Status");

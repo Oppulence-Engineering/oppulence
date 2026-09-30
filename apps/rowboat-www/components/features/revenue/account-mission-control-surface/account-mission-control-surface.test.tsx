@@ -13,6 +13,6 @@ describe("AccountMissionControlSurface", () => {
 
     const surface = screen.getByRole("region", { name: "Acme" });
     expect(surface).toHaveAttribute("data-slot", "account-mission-control-surface");
-    expect(screen.getByText("No commitments recorded for this account yet.")).toBeInTheDocument();
+    expect(screen.getByText("No commitments recorded for this company yet.")).toBeInTheDocument();
   });
 });

@@ -1440,6 +1440,17 @@ export function completenessProductLabel(status: string): string {
 }
 
 /**
+ * Completeness text is stored with the company. The empty-workspace sentence
+ * talks about a sync. The sheet says what the person can do.
+ */
+export function completenessExplanationCopy(explanation: string): string {
+  if (explanation.trim() === "No source connection has completed its first useful sync.") {
+    return "Connect a source before these details can fill in.";
+  }
+  return explanation;
+}
+
+/**
  * Cue text is stored with the company. A missing next step is not a meeting,
  * so the sheet does not tell you to finish one.
  */
@@ -1518,7 +1529,7 @@ function MissionControlOverview({
             <p className="mt-1 text-xs text-primary/60">
               {emailThreadCount > 0 && supported === 0
                 ? `${emailThreadCount} Gmail ${emailThreadCount === 1 ? "thread is" : "threads are"} linked. Health and status still need a clearer source.`
-                : model.completeness.explanation}
+                : completenessExplanationCopy(model.completeness.explanation)}
             </p>
           </div>
           <Badge variant="outline" className="rounded-none font-normal">
@@ -1838,7 +1849,7 @@ export function RelationshipSheet({
       setLoadError(message);
       // Keep the failure in the sheet. A missing optional pane used to
       // paint the page-level "Action needed" banner and leave this
-      // surface stuck on "Loading living state…".
+      // surface stuck on its loading line.
     } finally {
       setLoading(false);
     }
@@ -1940,7 +1951,7 @@ export function RelationshipSheet({
                 </div>
               </>
             ) : (
-              <p className="text-sm text-primary/50">Loading living state…</p>
+              <p className="text-sm text-primary/50">Loading this company…</p>
             )}
           </div>
         ) : (
@@ -2183,7 +2194,7 @@ export function RelationshipSheet({
                   ].map(([label, value]) => (
                     <div key={label} className="min-h-24 rounded-none border border-border p-3">
                       <p className="text-[11px] text-primary/40">{label}</p>
-                      <p className="mt-5 text-sm font-medium capitalize text-primary">{value}</p>
+                      <p className="mt-5 text-sm font-medium text-primary">{value}</p>
                     </div>
                   ))}
                 </div>
