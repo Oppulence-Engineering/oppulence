@@ -8,6 +8,7 @@ import {
   runRowDetail,
   scheduleLabel,
   sortWorkflowTasks,
+  workflowEditorTabName,
   workflowForTask,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
@@ -27,6 +28,14 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "cloud-workflows-v
 const task = (name: string, updatedAt: string): CloudTask => ({ name, updatedAt }) as CloudTask;
 
 describe("CloudWorkflowsView", () => {
+  it("names editor tabs without gluing the run count onto the id", () => {
+    expect(workflowEditorTabName("editor", 16)).toBe("Editor");
+    expect(workflowEditorTabName("settings", 16)).toBe("Settings");
+    expect(workflowEditorTabName("runs", 16)).toBe("Runs, 16");
+    expect(workflowEditorTabName("runs", 1)).toBe("Runs, 1");
+    expect(source).toContain("aria-label={workflowEditorTabName(value, taskRuns.length)}");
+    expect(source).toContain('subscribeWorkflowLibrary(() => setScreen("library"))');
+  });
   it("shows run status and trigger tokens as words", () => {
     expect(readableEnum("succeeded")).toBe("Succeeded");
     expect(readableEnum("cron")).toBe("Cron");

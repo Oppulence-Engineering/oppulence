@@ -10,6 +10,7 @@ import { reportParsers, reportUrlKeys } from "@/app/(product)/app/report/search-
 import { revenueParsers, revenueUrlKeys } from "@/app/(product)/app/revenue/search-params";
 import { settingsParsers, settingsUrlKeys } from "@/app/(product)/app/settings/search-params";
 import { workflowParsers, workflowUrlKeys } from "@/app/(product)/app/workflows/search-params";
+import { requestWorkflowLibrary } from "@/lib/dashboard/workflow-library-request";
 import {
   PRODUCT_VIEW_PATHS,
   productViewForPathname,
@@ -86,6 +87,9 @@ export function useProductRouteState(): ProductRouteState {
     (focus: WorkflowFocus) => {
       if (view === "workflows") {
         void setWorkflows({ focus });
+        // Focus is already "scheduled" while a workflow is open, so the query
+        // write does not remount the canvas. Ask it to show the list.
+        if (focus === "scheduled") requestWorkflowLibrary();
         return;
       }
       router.push(`${PRODUCT_VIEW_PATHS.workflows}${workflowSearch(focus)}`, { scroll: false });

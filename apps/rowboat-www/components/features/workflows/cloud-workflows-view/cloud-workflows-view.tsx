@@ -57,6 +57,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@oppulence/ui/componen
 import { Textarea } from "@oppulence/ui/components/textarea";
 import { WorkspaceEmptyState } from "@/components/features/revenue/shared/shared";
 import { VisualWorkflowBuilder } from "@/components/features/workflows/visual-workflow-builder/visual-workflow-builder";
+import { subscribeWorkflowLibrary } from "@/lib/dashboard/workflow-library-request";
 import {
   useWorkflowRuns,
   useWorkflowTasks,
@@ -103,6 +104,19 @@ import { cn } from "@/lib/utils";
 
 type FilterValue<T extends string> = T | "all";
 type EditorTab = "editor" | "runs" | "settings";
+
+/** The count used to be glued onto the raw tab id, so the name was "runs16". */
+export function workflowEditorTabName(value: EditorTab, runCount: number): string {
+  if (value === "runs") return runCount === 1 ? "Runs, 1" : `Runs, ${runCount}`;
+  if (value === "settings") return "Settings";
+  return "Editor";
+}
+
+const EDITOR_TAB_LABEL: Record<EditorTab, string> = {
+  editor: "Editor",
+  runs: "Runs",
+  settings: "Settings",
+};
 
 const terminalStatuses = new Set<CloudRunStatus>(["succeeded", "failed", "stopped"]);
 const defaultVisualWorkflow = (): VisualWorkflowDefinition => ({
@@ -965,8 +979,9 @@ function WorkflowEditor({
         <TabsList className="h-10 shrink-0 justify-start gap-5 rounded-none border-b border-border bg-transparent px-3">
           {(["editor", "runs", "settings"] as const).map((value) => (
             <TabsTrigger
+              aria-label={workflowEditorTabName(value, taskRuns.length)}
               className={cn(
-                "h-full rounded-none border-b bg-transparent px-0 text-[12px] capitalize shadow-none data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none",
+                "h-full rounded-none border-b bg-transparent px-0 text-[12px] shadow-none data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none",
                 tab === value
                   ? "border-foreground text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground",
@@ -975,7 +990,7 @@ function WorkflowEditor({
               value={value}
             >
               {value === "settings" ? <Gear className="size-3.5" /> : null}
-              {value}
+              {EDITOR_TAB_LABEL[value]}
               {value === "runs" ? (
                 <Badge className="rounded-none text-[9px]" variant="secondary">
                   {taskRuns.length}
@@ -1163,6 +1178,8 @@ export function CloudWorkflowsView({
       : queryCause
         ? "Could not load workflows"
         : null;
+
+  React.useEffect(() => subscribeWorkflowLibrary(() => setScreen("library")), []);
 
   const selectedTask = tasks.find((task) => task.slug === selectedSlug);
   const selectedTaskSlug = selectedTask?.slug;
