@@ -510,6 +510,7 @@ describe("empty note template heading", () => {
     );
     expect(source).toContain('["h2", "Insert heading 2"]');
     expect(source).not.toContain("TextHOne");
+    expect(source).toContain('lastSaved.current ? "Delete note" : "Discard draft"');
   });
 });
 

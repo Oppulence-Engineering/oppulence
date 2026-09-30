@@ -1518,6 +1518,7 @@ function NoteDialog({
                     className="h-auto w-full justify-start rounded-none px-3 py-2 text-[12px] text-destructive hover:bg-background-100"
                     variant="ghost"
                     onClick={async () => {
+                      // A draft was never stored. Delete would claim a note was removed.
                       if (!lastSaved.current) {
                         onClose();
                         return;
@@ -1525,7 +1526,7 @@ function NoteDialog({
                       if (await publish("note_deleted")) onClose();
                     }}
                   >
-                    Delete note
+                    {lastSaved.current ? "Delete note" : "Discard draft"}
                   </Button>
                 </div>
               ) : null}
