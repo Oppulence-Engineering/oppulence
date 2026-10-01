@@ -26,8 +26,8 @@ import type {
 export const getListRevenueActionsResponseMock = (
   overrideResponse: Partial<Extract<ListRevenueActions200, object>> = {},
 ): ListRevenueActions200 => ({
-  actions: faker.helpers.arrayElement([
-    Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+  actions: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => ({
       actionType: faker.helpers.arrayElement([
         "warm_follow_up",
         "proposal_nudge",
@@ -182,9 +182,9 @@ export const getListRevenueActionsResponseMock = (
         faker.date.past().toISOString().slice(0, 19) + "Z",
         undefined,
       ]),
-    })),
-    undefined,
-  ]),
+    }),
+  ),
+  hasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
   ...overrideResponse,
 });
 

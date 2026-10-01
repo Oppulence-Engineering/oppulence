@@ -1139,11 +1139,16 @@ func addRevenuePaths(paths obj) {
 	})}
 
 	paths["/v1/revenue-actions"] = obj{
-		"get": operation("Revenue", "List the action queue", "Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions.", "listRevenueActions", bearer(), []any{
+		"get": operation("Revenue", "List the action queue", "Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.", "listRevenueActions", bearer(), []any{
 			obj{"name": "queueStatus", "in": "query", "required": false, "description": "Queue status filter, or all.", "schema": obj{"type": "string", "enum": []any{"open", "snoozed", "dismissed", "handled", "all"}}},
 			obj{"name": "limit", "in": "query", "required": false, "description": "Page size (max 100, default 10).", "schema": obj{"type": "integer"}},
+			obj{"name": "offset", "in": "query", "required": false, "description": "How many actions to skip. Pages stay in priority order.", "schema": obj{"type": "integer", "minimum": 0}},
+			obj{"name": "surface", "in": "query", "required": false, "description": "task keeps follow-up tasks. recovery keeps every other action.", "schema": obj{"type": "string", "enum": []any{"task", "recovery"}}},
 		}, nil, obj{
-			"200": jsonResponse("Queue page.", objectSchema("Action list.", obj{"actions": arraySchema("Actions.", ref("RevenueAction"))}), nil),
+			"200": jsonResponse("Queue page.", objectSchema("Action list. A full page is the end of the queue when hasMore is false.", obj{
+				"actions": arraySchema("Actions.", ref("RevenueAction")),
+				"hasMore": boolSchema("Another task or follow-up exists beyond this page.", false),
+			}, "actions"), nil),
 			"401": responseRef("401"),
 		}),
 		"post": operation("Revenue", "Create a manual action", "Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.", "createRevenueAction", bearer(), nil, jsonRequest("Action.", objectSchema("Create request.", obj{

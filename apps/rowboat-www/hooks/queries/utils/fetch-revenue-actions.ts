@@ -8,6 +8,36 @@ export type RevenueActionSurface = "task" | "recovery";
 /** The queue refuses a larger page. The next rows use this same size as an offset. */
 export const ACTION_QUEUE_PAGE = 100;
 
+export type ActionPage = {
+  actions: RevenueAction[];
+  hasMore: boolean;
+};
+
+/** Rows from a queue page. A bare array is a test fixture that has no flag. */
+export function actionRows(
+  page: ActionPage | readonly RevenueAction[] | null | undefined,
+): RevenueAction[] {
+  if (!page) return [];
+  if (Array.isArray(page)) return [...page];
+  return page.actions ?? [];
+}
+
+/** True only when the server says another action exists past this page. */
+export function actionPageHasMore(
+  page: ActionPage | readonly RevenueAction[] | null | undefined,
+): boolean {
+  if (!page || Array.isArray(page)) return false;
+  return Boolean(page.hasMore);
+}
+
+/** Keeps the server flag while the visible rows change. */
+export function replaceActionPage(
+  page: ActionPage | readonly RevenueAction[] | null | undefined,
+  actions: RevenueAction[],
+): ActionPage {
+  return { actions, hasMore: actionPageHasMore(page) };
+}
+
 function revenueActionsPath(
   queueStatus: string,
   limit: number,
@@ -29,13 +59,16 @@ export async function loadRevenueActions(
   signal?: AbortSignal,
   surface?: RevenueActionSurface,
   offset = 0,
-): Promise<RevenueAction[]> {
+): Promise<ActionPage> {
   const body = await request({
     path: revenueActionsPath(queueStatus, limit, surface, offset),
     schema: ListRevenueActions200Response,
     signal,
   });
-  return body.actions ?? [];
+  return {
+    actions: body.actions ?? [],
+    hasMore: Boolean(body.hasMore),
+  };
 }
 
 export function fetchRevenueActions(
@@ -44,6 +77,6 @@ export function fetchRevenueActions(
   signal?: AbortSignal,
   surface?: RevenueActionSurface,
   offset = 0,
-): Promise<RevenueAction[]> {
+): Promise<ActionPage> {
   return loadRevenueActions(requestJson, queueStatus, limit, signal, surface, offset);
 }

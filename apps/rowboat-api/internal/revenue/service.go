@@ -1030,10 +1030,27 @@ type ListFilter struct {
 	Surface     string
 }
 
+// ActionListPage is one queue page. HasMore is true only when another action
+// exists past this page, so an exact page of 100 is not offered as if a 101st
+// task or follow-up were waiting.
+type ActionListPage struct {
+	Actions []*ent.RevenueAction
+	HasMore bool
+}
+
 // ListActions returns the caller's queue ordered by priority, then oldest
 // first. Actions that share both stay in id order, so the next page does not
 // repeat one and skip another.
 func (s *Service) ListActions(ctx context.Context, u *ent.User, f ListFilter) ([]*ent.RevenueAction, error) {
+	page, err := s.ListActionPage(ctx, u, f)
+	if err != nil || page == nil {
+		return nil, err
+	}
+	return page.Actions, nil
+}
+
+// ListActionPage is ListActions plus the end-of-list flag.
+func (s *Service) ListActionPage(ctx context.Context, u *ent.User, f ListFilter) (*ActionListPage, error) {
 	limit := f.Limit
 	if limit <= 0 {
 		limit = 10
@@ -1074,15 +1091,23 @@ func (s *Service) ListActions(ctx context.Context, u *ent.User, f ListFilter) ([
 			revenueaction.ChannelNEQ("task"),
 		))
 	}
-	return q.WithRelationship().
+	rows, err := q.WithRelationship().
 		Order(
 			ent.Desc(revenueaction.FieldPriorityScore),
 			ent.Asc(revenueaction.FieldCreatedAt),
 			ent.Asc(revenueaction.FieldID),
 		).
-		Limit(limit).
+		Limit(limit + 1).
 		Offset(f.Offset).
 		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	hasMore := len(rows) > limit
+	if hasMore {
+		rows = rows[:limit]
+	}
+	return &ActionListPage{Actions: rows, HasMore: hasMore}, nil
 }
 
 // ReopenDueSnoozes returns elapsed snoozes to the caller's open queue.

@@ -22,7 +22,10 @@ describe("QueueView", () => {
     expect(source).toContain("export function QueueView");
     expect(source).toContain("recoveryQueueActions(recoveryRows)");
     expect(source).toContain('useRevenueActions(filter, ACTION_QUEUE_PAGE, "recovery")');
-    expect(source).toContain("loadedRecoveryCount.current");
+    expect(source).toContain("actionPageHasMore");
+    expect(source).toContain("recoveryPage.length + extraActions.length");
+    expect(source).not.toContain("loadedRecoveryCount.current");
+    expect(source).not.toContain("=== ACTION_QUEUE_PAGE");
     expect(source).not.toContain("ListFilter");
     expect(recoveryFilterName("open")).toBe("Recovery, Open");
     expect(recoveryFilterName("snoozed")).toBe("Recovery, Snoozed");

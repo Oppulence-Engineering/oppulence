@@ -76,7 +76,7 @@ export const getListRevenueActionsUrl = (params?: ListRevenueActionsParams) => {
 };
 
 /**
- * Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions.
+ * Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.
  * @summary List the action queue
  */
 export const listRevenueActions = async (

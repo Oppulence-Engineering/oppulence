@@ -38,6 +38,8 @@ import { useConsoleResources } from "@/hooks/queries/use-console";
 import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
 import {
   ACTION_QUEUE_PAGE,
+  actionPageHasMore,
+  actionRows,
   fetchRevenueActions,
 } from "@/hooks/queries/utils/fetch-revenue-actions";
 import { usePersons, useRelationships } from "@/hooks/queries/use-relationships";
@@ -2194,11 +2196,9 @@ export function TasksView({
   const [busy, setBusy] = React.useState<string | null>(null);
   const [now] = React.useState(() => Date.now());
   const [extraTasks, setExtraTasks] = React.useState<RevenueAction[]>([]);
-  const [moreTasks, setMoreTasks] = React.useState(false);
+  const [laterTasksHasMore, setLaterTasksHasMore] = React.useState<boolean | null>(null);
   const [loadingMoreTasks, setLoadingMoreTasks] = React.useState(false);
-  const loadedTaskCount = React.useRef(0);
-  const primedTasks = React.useRef("");
-  const taskPage = actionsQuery.data ?? [];
+  const taskPage = actionRows(actionsQuery.data);
   const taskRows = React.useMemo(() => {
     if (extraTasks.length === 0) return taskPage;
     const seen = new Set(taskPage.map((task) => task.id));
@@ -2211,12 +2211,8 @@ export function TasksView({
       }),
     ];
   }, [extraTasks, taskPage]);
-  React.useEffect(() => {
-    if (!actionsQuery.isSuccess || primedTasks.current === "open") return;
-    primedTasks.current = "open";
-    loadedTaskCount.current = actionsQuery.data?.length ?? 0;
-    setMoreTasks(loadedTaskCount.current === ACTION_QUEUE_PAGE);
-  }, [actionsQuery.data, actionsQuery.isSuccess]);
+  const hasMoreTasks =
+    laterTasksHasMore ?? (taskPage.length > 0 && actionPageHasMore(actionsQuery.data));
   const tasks = sortTasksByDue(taskRows.filter(isWorkspaceTask), soonestFirst);
   const relationships = relationshipRows(relationshipsQuery.data).filter(
     (record) => record.kind !== "person",
@@ -2224,16 +2220,14 @@ export function TasksView({
   const loading = actionsQuery.isPending || relationshipsQuery.isPending;
   const load = React.useCallback(async () => {
     setExtraTasks([]);
-    setMoreTasks(false);
-    primedTasks.current = "";
-    loadedTaskCount.current = 0;
+    setLaterTasksHasMore(null);
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: revenueActionKeys.all }),
       queryClient.invalidateQueries({ queryKey: relationshipKeys.all }),
     ]);
   }, [queryClient]);
   const loadMoreTasks = React.useCallback(async () => {
-    if (loadingMoreTasks || !moreTasks) return;
+    if (loadingMoreTasks || !hasMoreTasks) return;
     setLoadingMoreTasks(true);
     try {
       const next = await fetchRevenueActions(
@@ -2241,17 +2235,16 @@ export function TasksView({
         ACTION_QUEUE_PAGE,
         undefined,
         "task",
-        loadedTaskCount.current,
+        taskPage.length + extraTasks.length,
       );
-      loadedTaskCount.current += next.length;
-      if (next.length < ACTION_QUEUE_PAGE) setMoreTasks(false);
-      setExtraTasks((current) => [...current, ...next]);
+      setLaterTasksHasMore(actionPageHasMore(next));
+      setExtraTasks((current) => [...current, ...actionRows(next)]);
     } catch (reason) {
       onError(explainedRevenueError(reason, "Could not load the next tasks."));
     } finally {
       setLoadingMoreTasks(false);
     }
-  }, [loadingMoreTasks, moreTasks, onError]);
+  }, [extraTasks.length, hasMoreTasks, loadingMoreTasks, onError, taskPage.length]);
 
   React.useEffect(() => {
     const error = actionsQuery.error ?? relationshipsQuery.error;
@@ -2350,7 +2343,7 @@ export function TasksView({
       ) : visible.length === 0 ? (
         <WorkspaceEmptyState
           action={
-            moreTasks ? (
+            hasMoreTasks ? (
               <Button
                 disabled={loadingMoreTasks}
                 onClick={() => void loadMoreTasks()}
@@ -2453,7 +2446,7 @@ export function TasksView({
             );
           })}
         </ul>
-        {moreTasks ? (
+        {hasMoreTasks ? (
           <Button
             className="m-3"
             disabled={loadingMoreTasks}

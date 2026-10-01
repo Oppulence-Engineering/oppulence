@@ -9,7 +9,7 @@ import {
   fetchReportScan,
   fetchReportScans,
 } from "@/hooks/queries/utils/fetch-report";
-import { fetchRevenueActions } from "@/hooks/queries/utils/fetch-revenue-actions";
+import { actionRows, fetchRevenueActions } from "@/hooks/queries/utils/fetch-revenue-actions";
 import {
   fetchRelationshipSources,
   fetchRelationshipSourceStatuses,
@@ -442,7 +442,7 @@ export async function listActions(
   limit = 25,
   signal?: AbortSignal,
 ): Promise<RevenueAction[]> {
-  return viaRequest(() => fetchRevenueActions(queueStatus, limit, signal));
+  return viaRequest(async () => actionRows(await fetchRevenueActions(queueStatus, limit, signal)));
 }
 
 export const getAction = (actionId: string) => call<RevenueAction>(`/revenue-actions/${actionId}`);

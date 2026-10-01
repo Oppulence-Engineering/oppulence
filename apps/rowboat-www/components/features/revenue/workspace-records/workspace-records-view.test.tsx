@@ -744,7 +744,10 @@ describe("task due order", () => {
     expect(source).toContain("peoplePage.length + extraPeople.length");
     expect(source).not.toContain("peoplePage.length === PERSON_PAGE_SIZE");
     expect(source).toContain('useRevenueActions("open", ACTION_QUEUE_PAGE, "task")');
-    expect(source).toContain("loadedTaskCount.current");
+    expect(source).toContain("actionPageHasMore");
+    expect(source).toContain("taskPage.length + extraTasks.length");
+    expect(source).not.toContain("loadedTaskCount.current");
+    expect(source).not.toContain("=== ACTION_QUEUE_PAGE");
     expect(source).toContain("No tasks yet! Create your first");
     expect(source).toContain("onOpenCompany(task.relationshipId)");
   });

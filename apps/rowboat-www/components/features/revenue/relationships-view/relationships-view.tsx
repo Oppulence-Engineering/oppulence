@@ -160,6 +160,7 @@ import type {
 } from "@/lib/revenue/types";
 import { DashboardRequestError } from "@/lib/api/request-json";
 import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
+import { actionRows } from "@/hooks/queries/utils/fetch-revenue-actions";
 import {
   useIdentityCandidates,
   useRelationshipAttention,
@@ -755,7 +756,7 @@ export function RelationshipsView({
   const companyAttention = attentionWithCompanyTitles(
     attentionWithoutTasks(
       attention.filter((item) => !personIds.has(item.relationshipId)),
-      openActionsQuery.isSuccess ? workspaceTaskIds(openActionsQuery.data) : new Set(),
+      openActionsQuery.isSuccess ? workspaceTaskIds(actionRows(openActionsQuery.data)) : new Set(),
     ),
     companies,
   );

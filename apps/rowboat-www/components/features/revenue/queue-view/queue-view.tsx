@@ -10,7 +10,10 @@ import { relationshipRows } from "@/hooks/queries/utils/fetch-relationships";
 import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
 import {
   ACTION_QUEUE_PAGE,
+  actionPageHasMore,
+  actionRows,
   fetchRevenueActions,
+  replaceActionPage,
 } from "@/hooks/queries/utils/fetch-revenue-actions";
 import { revenueActionKeys } from "@/hooks/queries/utils/revenue-action-keys";
 import {
@@ -188,11 +191,9 @@ export function QueueView({
   const actionsQueryKey = revenueActionKeys.list(filter, ACTION_QUEUE_PAGE, "recovery");
   const actionsQuery = useRevenueActions(filter, ACTION_QUEUE_PAGE, "recovery");
   const [extraActions, setExtraActions] = React.useState<RevenueAction[]>([]);
-  const [moreRecovery, setMoreRecovery] = React.useState(false);
+  const [laterRecoveryHasMore, setLaterRecoveryHasMore] = React.useState<boolean | null>(null);
   const [loadingMoreRecovery, setLoadingMoreRecovery] = React.useState(false);
-  const loadedRecoveryCount = React.useRef(0);
-  const primedRecovery = React.useRef("");
-  const recoveryPage = actionsQuery.data ?? [];
+  const recoveryPage = actionRows(actionsQuery.data);
   const recoveryRows = React.useMemo(() => {
     if (extraActions.length === 0) return recoveryPage;
     const seen = new Set(recoveryPage.map((action) => action.id));
@@ -206,18 +207,12 @@ export function QueueView({
     ];
   }, [extraActions, recoveryPage]);
   const actions = recoveryQueueActions(recoveryRows);
+  const hasMoreRecovery =
+    laterRecoveryHasMore ?? (recoveryPage.length > 0 && actionPageHasMore(actionsQuery.data));
   React.useEffect(() => {
     setExtraActions([]);
-    setMoreRecovery(false);
-    primedRecovery.current = "";
-    loadedRecoveryCount.current = 0;
+    setLaterRecoveryHasMore(null);
   }, [filter]);
-  React.useEffect(() => {
-    if (!actionsQuery.isSuccess || primedRecovery.current === filter) return;
-    primedRecovery.current = filter;
-    loadedRecoveryCount.current = actionsQuery.data?.length ?? 0;
-    setMoreRecovery(loadedRecoveryCount.current === ACTION_QUEUE_PAGE);
-  }, [actionsQuery.data, actionsQuery.isSuccess, filter]);
 
   React.useEffect(() => {
     if (actionsQuery.error) {
@@ -226,7 +221,7 @@ export function QueueView({
   }, [actionsQuery.error, onError]);
 
   const loadMoreRecovery = React.useCallback(async () => {
-    if (loadingMoreRecovery || !moreRecovery) return;
+    if (loadingMoreRecovery || !hasMoreRecovery) return;
     setLoadingMoreRecovery(true);
     try {
       const next = await fetchRevenueActions(
@@ -234,22 +229,31 @@ export function QueueView({
         ACTION_QUEUE_PAGE,
         undefined,
         "recovery",
-        loadedRecoveryCount.current,
+        recoveryPage.length + extraActions.length,
       );
-      loadedRecoveryCount.current += next.length;
-      if (next.length < ACTION_QUEUE_PAGE) setMoreRecovery(false);
-      setExtraActions((current) => [...current, ...next]);
+      setLaterRecoveryHasMore(actionPageHasMore(next));
+      setExtraActions((current) => [...current, ...actionRows(next)]);
     } catch (reason) {
       onError(explainedRevenueError(reason, "Could not load the next follow-ups."));
     } finally {
       setLoadingMoreRecovery(false);
     }
-  }, [filter, loadingMoreRecovery, moreRecovery, onError]);
+  }, [
+    extraActions.length,
+    filter,
+    hasMoreRecovery,
+    loadingMoreRecovery,
+    onError,
+    recoveryPage.length,
+  ]);
 
   const removeFromQueue = React.useCallback(
     (id: string) => {
-      queryClient.setQueryData<RevenueAction[]>(actionsQueryKey, (current = []) =>
-        current.filter((action) => action.id !== id),
+      queryClient.setQueryData(actionsQueryKey, (current) =>
+        replaceActionPage(
+          current,
+          actionRows(current).filter((action) => action.id !== id),
+        ),
       );
       setExtraActions((current) => current.filter((action) => action.id !== id));
       setSelected((cur) => (cur?.id === id ? null : cur));
@@ -259,8 +263,11 @@ export function QueueView({
 
   const patchAction = React.useCallback(
     (updated: RevenueAction) => {
-      queryClient.setQueryData<RevenueAction[]>(actionsQueryKey, (current = []) =>
-        current.map((action) => (action.id === updated.id ? updated : action)),
+      queryClient.setQueryData(actionsQueryKey, (current) =>
+        replaceActionPage(
+          current,
+          actionRows(current).map((action) => (action.id === updated.id ? updated : action)),
+        ),
       );
       setExtraActions((current) =>
         current.map((action) => (action.id === updated.id ? updated : action)),
@@ -283,7 +290,7 @@ export function QueueView({
     <div className="flex min-h-full w-full min-w-0 flex-col p-3" data-slot="queue-view">
       <SimProductPanel className="flex min-h-0 flex-1 flex-col">
         <SimProductHeader
-          actions={recoveryShownLabel(actions.length, moreRecovery)}
+          actions={recoveryShownLabel(actions.length, hasMoreRecovery)}
           title="Recovery queue"
         />
         <SimProductToolbar>
@@ -392,7 +399,7 @@ export function QueueView({
               </li>
             ))}
           </ul>
-          {moreRecovery ? (
+          {hasMoreRecovery ? (
             <Button
               className="m-3"
               disabled={loadingMoreRecovery}

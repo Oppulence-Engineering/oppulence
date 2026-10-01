@@ -25656,7 +25656,7 @@
     },
     "/v1/revenue-actions": {
       "get": {
-        "description": "Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions.",
+        "description": "Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.",
         "operationId": "listRevenueActions",
         "parameters": [
           {
@@ -25704,7 +25704,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "Action list.",
+                  "description": "Action list. A full page is the end of the queue when hasMore is false.",
                   "properties": {
                     "actions": {
                       "description": "Actions.",
@@ -25712,8 +25712,14 @@
                         "$ref": "#/components/schemas/RevenueAction"
                       },
                       "type": "array"
+                    },
+                    "hasMore": {
+                      "description": "Another task or follow-up exists beyond this page.",
+                      "example": false,
+                      "type": "boolean"
                     }
                   },
+                  "required": ["actions"],
                   "type": "object"
                 }
               }

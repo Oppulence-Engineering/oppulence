@@ -2882,16 +2882,16 @@ func (h *Handler) ListActions(w http.ResponseWriter, r *http.Request) {
 		}
 		f.Offset = n
 	}
-	actions, err := h.svc.ListActions(r.Context(), u, f)
+	page, err := h.svc.ListActionPage(r.Context(), u, f)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	out := make([]actionDTO, 0, len(actions))
-	for _, a := range actions {
+	out := make([]actionDTO, 0, len(page.Actions))
+	for _, a := range page.Actions {
 		out = append(out, actionToDTO(a))
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"actions": out})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"actions": out, "hasMore": page.HasMore})
 }
 
 // CreateAction proposes a manual queue action.

@@ -850,29 +850,85 @@ func TestListActionsTiedPriorityUsesID(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	first, err := f.svc.ListActions(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 100, Surface: "task"})
-	if err != nil {
+	first, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 100, Surface: "task"})
+	if err != nil || first == nil {
 		t.Fatal(err)
 	}
-	if len(first) != 100 {
-		t.Fatalf("newest page = %d", len(first))
+	if len(first.Actions) != 100 || !first.HasMore {
+		t.Fatalf("newest page = %d hasMore=%v", len(first.Actions), first.HasMore)
 	}
-	for _, action := range first {
+	for _, action := range first.Actions {
 		if action.Reason == "Tied Task Last" {
 			t.Fatal("the highest id was included beside lower ids with the same priority")
 		}
 	}
-	second, err := f.svc.ListActions(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 100, Offset: 100, Surface: "task"})
+	second, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 100, Offset: 100, Surface: "task"})
+	if err != nil || second == nil {
+		t.Fatal(err)
+	}
+	if len(second.Actions) != 1 || second.Actions[0].Reason != "Tied Task Last" || second.HasMore {
+		t.Fatalf("later id page = %d hasMore=%v %q", len(second.Actions), second != nil && second.HasMore, func() string {
+			if second == nil || len(second.Actions) == 0 {
+				return ""
+			}
+			return second.Actions[0].Reason
+		}())
+	}
+}
+
+func TestListActionsExactPageIsNotAnotherPage(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(second) != 1 || second[0].Reason != "Tied Task Last" {
-		t.Fatalf("later id page = %d %q", len(second), func() string {
-			if len(second) == 0 {
-				return ""
-			}
-			return second[0].Reason
-		}())
+	rel := f.relationship(t)
+	touched := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	seed := func(i int, reason string) {
+		t.Helper()
+		if _, err := f.client.RevenueAction.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("a116b000-0000-4000-8000-%012x", i))).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetRelationship(rel).
+			SetActionType("follow_up_task").
+			SetChannel("task").
+			SetDetector("manual").
+			SetDedupeKey(fmt.Sprintf("exact-task-%d", i)).
+			SetRevisionHash(fmt.Sprintf("exact-task-hash-%d", i)).
+			SetReason(reason).
+			SetPriorityScore(40).
+			SetCreatedAt(touched).
+			SetUpdatedAt(touched).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	seed(1, "Task One")
+	seed(2, "Task Two")
+	exact, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 2, Surface: "task"})
+	if err != nil || exact == nil || len(exact.Actions) != 2 || exact.HasMore {
+		hasMore := false
+		count := 0
+		if exact != nil {
+			hasMore = exact.HasMore
+			count = len(exact.Actions)
+		}
+		t.Fatalf("exact page = %d hasMore=%v err=%v", count, hasMore, err)
+	}
+	seed(3, "Task Extra")
+	first, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 2, Surface: "task"})
+	if err != nil || first == nil || len(first.Actions) != 2 || !first.HasMore {
+		t.Fatalf("full page = %+v err=%v", first, err)
+	}
+	for _, action := range first.Actions {
+		if action.Reason == "Task Extra" {
+			t.Fatal("the highest id was included on the first page")
+		}
+	}
+	next, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 2, Offset: 2, Surface: "task"})
+	if err != nil || next == nil || len(next.Actions) != 1 || next.Actions[0].Reason != "Task Extra" || next.HasMore {
+		t.Fatalf("later page = %+v err=%v", next, err)
 	}
 }
 

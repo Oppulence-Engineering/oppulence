@@ -8,7 +8,7 @@
 import * as zod from "zod";
 
 /**
- * Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions.
+ * Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.
  * @summary List the action queue
  */
 export const listRevenueActionsQueryOffsetMin = 0;
@@ -159,10 +159,13 @@ export const ListRevenueActions200Response = zod
             "One Revenue Action Queue item. State is split into independent dimensions: queue triage, policy preflight, approval, and execution. Every edit creates a new revision and invalidates the previous policy decision and approval.",
           ),
       )
-      .optional()
       .describe("Actions."),
+    hasMore: zod
+      .boolean()
+      .optional()
+      .describe("Another task or follow-up exists beyond this page."),
   })
-  .describe("Action list.");
+  .describe("Action list. A full page is the end of the queue when hasMore is false.");
 
 export const ListRevenueActions401Response = zod
   .strictObject({

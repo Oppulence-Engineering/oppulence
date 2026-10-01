@@ -77,6 +77,17 @@ vi.mock("@/hooks/queries/utils/fetch-revenue-actions", () => ({
     mocks.listActions(filter, limit, signal),
   loadRevenueActions: (request: unknown, filter: string, limit?: number, signal?: AbortSignal) =>
     mocks.listActions(filter, limit, signal),
+  actionRows: (page: { actions?: RevenueAction[] } | RevenueAction[] | null | undefined) =>
+    Array.isArray(page) ? page : (page?.actions ?? []),
+  actionPageHasMore: (page: { hasMore?: boolean } | unknown[] | null | undefined) =>
+    Boolean(page && !Array.isArray(page) && page.hasMore),
+  replaceActionPage: (
+    page: { hasMore?: boolean } | unknown[] | null | undefined,
+    actions: RevenueAction[],
+  ) => ({
+    actions,
+    hasMore: Boolean(page && !Array.isArray(page) && page.hasMore),
+  }),
 }));
 vi.mock("@/lib/api/connectors/google-oauth", () => ({
   createGoogleCommitmentsAuthorizationURL: mocks.createGoogleCommitmentsAuthorizationURL,
