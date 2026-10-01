@@ -280,6 +280,7 @@ function titledModelRest(rest: string): string {
 
 const INFRASTRUCTURE_EVENT_COPY: Record<string, string> = {
   "Queued by Temporal schedule.": "Queued on the schedule.",
+  "Queued for API worker.": "Queued to run.",
   "API worker claimed the run.": "Oppulence Cloud started this run.",
 };
 

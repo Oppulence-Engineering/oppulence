@@ -149,6 +149,12 @@ describe("CloudWorkflowsView", () => {
     ).toBe("Queued on the schedule.");
     expect(
       runEventBody({
+        type: "temporal.queued",
+        event: { message: "Queued for API worker." },
+      }),
+    ).toBe("Queued to run.");
+    expect(
+      runEventBody({
         type: "temporal.running",
         event: { message: "API worker claimed the run." },
       }),
