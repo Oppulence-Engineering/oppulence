@@ -388,25 +388,45 @@ function layoutNodes(
   );
 }
 
-function readURLState(): RelationshipGraphSavedViewState {
-  if (typeof window === "undefined") return DEFAULT_STATE;
-  const params = new URLSearchParams(window.location.search);
+/**
+ * A graph link often carries only the moment. A missing scope used to fail the
+ * whole parse, so the graph opened on today's data and the date was gone.
+ */
+export function graphStateFromSearch(search: string): RelationshipGraphSavedViewState {
+  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
   if (params.get("graph") !== "1") return DEFAULT_STATE;
   const density = Number(params.get("graphDensity"));
+  const focusRaw = Number(params.get("graphFocusDepth") || 0);
+  const scopeParam = params.get("graphScope");
+  const layoutParam = params.get("graphLayout");
   const candidate = {
-    scope: params.get("graphScope") || undefined,
+    scope: scopeParam === "relationship" || scopeParam === "portfolio" ? scopeParam : "portfolio",
     relationshipId: params.get("graphRelationship") || undefined,
     query: params.get("graphQuery") || "",
-    layout: params.get("graphLayout") || undefined,
-    density: Number.isFinite(density) && density > 0 ? density : undefined,
+    layout:
+      layoutParam === "force" || layoutParam === "radial" || layoutParam === "timeline"
+        ? layoutParam
+        : "force",
+    density:
+      Number.isFinite(density) && density >= 0.25 && density <= 1 ? density : DEFAULT_STATE.density,
     hideIsolated: params.get("graphHideIsolated") === "1",
     selectedNodeId: params.get("graphNode") || undefined,
-    focusDepth: Number(params.get("graphFocusDepth") || 0),
+    focusDepth: focusRaw === 1 || focusRaw === 2 ? focusRaw : 0,
     asOf: params.get("graphAsOf") || undefined,
     changedSinceReview: params.get("graphChanged") === "1",
   };
   const parsed = RelationshipGraphSavedViewSchema.shape.state.safeParse(candidate);
-  return parsed.success ? parsed.data : DEFAULT_STATE;
+  if (parsed.success) return parsed.data;
+  const withoutMoment = RelationshipGraphSavedViewSchema.shape.state.safeParse({
+    ...candidate,
+    asOf: undefined,
+  });
+  return withoutMoment.success ? withoutMoment.data : DEFAULT_STATE;
+}
+
+function readURLState(): RelationshipGraphSavedViewState {
+  if (typeof window === "undefined") return DEFAULT_STATE;
+  return graphStateFromSearch(window.location.search);
 }
 
 const COMPANY_GRAPH_PARAMS = [

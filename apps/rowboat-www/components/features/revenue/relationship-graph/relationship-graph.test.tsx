@@ -9,6 +9,7 @@ import {
   graphInspectorPrompt,
   graphAsOfLabel,
   graphChangedDetail,
+  graphStateFromSearch,
   graphCountLabel,
   graphLayoutLabel,
   graphAccountChoice,
@@ -289,6 +290,20 @@ describe("RelationshipGraphWorkspace", () => {
     ).toBe("tab=relationships");
     expect(searchWithoutCompanyGraph("?tab=relationships")).toBe("tab=relationships");
     expect(source).toContain("searchWithoutCompanyGraph(url.search)");
+    expect(source).toContain("graphStateFromSearch(window.location.search)");
+  });
+
+  it("keeps an as-of moment when the graph link omits the other settings", () => {
+    expect(
+      graphStateFromSearch("?tab=relationships&graph=1&graphAsOf=2026-10-01T08:00:00.000Z"),
+    ).toMatchObject({
+      scope: "portfolio",
+      asOf: "2026-10-01T08:00:00.000Z",
+    });
+    expect(
+      graphStateFromSearch("?graph=1&graphScope=portfolio&graphAsOf=not-a-date").asOf,
+    ).toBeUndefined();
+    expect(graphStateFromSearch("?tab=relationships").asOf).toBeUndefined();
   });
 });
 
