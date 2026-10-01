@@ -1852,7 +1852,7 @@ export function linkedCompanyName(label: string): string {
   return comboboxFilterName("Linked company", label);
 }
 
-/** The company on a note card is a link to that company, not another way to open the note. */
+/** The company named on a note or a task opens that company. */
 export function noteCompanyLabel(name: string): string {
   const company = name.trim() || "company";
   return `Open company ${company}`;
@@ -1880,7 +1880,11 @@ export function TasksView({
   onError,
   onNotice,
   onOpenCompanies,
-}: ViewProps & { onOpenCompanies?: () => void }) {
+  onOpenCompany,
+}: ViewProps & {
+  onOpenCompanies?: () => void;
+  onOpenCompany?: (relationshipId: string) => void;
+}) {
   const queryClient = useQueryClient();
   const actionsQuery = useRevenueActions("open", 100);
   const relationshipsQuery = useRelationships();
@@ -2039,6 +2043,7 @@ export function TasksView({
         <ul className="divide-y divide-border">
           {visible.map((task) => {
             const overdue = taskIsOverdue(task.dueAt, now);
+            const companyName = names.get(task.relationshipId || "");
             return (
               <li
                 key={task.id}
@@ -2058,9 +2063,21 @@ export function TasksView({
                 <Label className="truncate text-[13px] font-medium text-primary">
                   {task.reason}
                 </Label>
-                <CardDescription className="truncate text-[12px]">
-                  {names.get(task.relationshipId || "") || "Unlinked"}
-                </CardDescription>
+                {companyName && onOpenCompany && task.relationshipId ? (
+                  <Button
+                    aria-label={noteCompanyLabel(companyName)}
+                    className="h-auto max-w-full justify-start truncate rounded-none px-0 py-0 text-[12px] font-normal text-primary/55 underline hover:bg-transparent hover:text-primary"
+                    onClick={() => onOpenCompany(task.relationshipId)}
+                    type="button"
+                    variant="ghost"
+                  >
+                    {companyName}
+                  </Button>
+                ) : (
+                  <CardDescription className="truncate text-[12px]">
+                    {companyName || "Unlinked"}
+                  </CardDescription>
+                )}
                 <Badge
                   className={cn(
                     "ml-auto justify-end text-[12px] font-normal",

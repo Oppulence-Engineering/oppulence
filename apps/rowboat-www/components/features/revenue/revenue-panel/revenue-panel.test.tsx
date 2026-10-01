@@ -24,4 +24,13 @@ describe("RevenuePanel", () => {
   it("opens the company named on a note", () => {
     expect(source).toContain("onOpenCompany={onOpenCompany}");
   });
+
+  it("opens the company named on a task", () => {
+    expect(source).toContain(`<TasksView
+            onError={setBanner}
+            onNotice={setNoticeMsg}
+            onOpenCompanies={() => onTabChange("relationships")}
+            onOpenCompany={onOpenCompany}
+          />`);
+  });
 });

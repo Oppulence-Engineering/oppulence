@@ -36,6 +36,30 @@ vi.mock("@/lib/revenue/revenue", async (importOriginal) => {
     ingestRelationshipObservations: mocks.ingestRelationshipObservations,
   };
 });
+vi.mock("@/hooks/queries/use-revenue-actions", () => ({
+  useRevenueActions: () => ({
+    data: [
+      {
+        id: "task-1",
+        reason: "Call the harbor",
+        relationshipId: "relationship-1",
+        dueAt: "2026-10-11T21:00:00.000Z",
+        actionType: "follow_up_task",
+        channel: "task",
+      },
+    ],
+    isPending: false,
+    error: null,
+  }),
+}));
+vi.mock("@/hooks/queries/use-relationships", () => ({
+  useRelationships: () => ({
+    data: [{ id: "relationship-1", kind: "company", displayName: "Acme" }],
+    isPending: false,
+    error: null,
+  }),
+  usePersons: () => ({ data: [], isPending: false, error: null }),
+}));
 vi.mock("@/components/auth/auth-gate", () => ({
   useAuthSession: () => ({
     user: { email: "ada@example.com", workosUserId: "user_ada" },
@@ -52,6 +76,7 @@ vi.mock("@oppulence/ui/components/dialog", () => ({
 
 import {
   NotesView,
+  TasksView,
   personDirectoryTitle,
   peopleListEmptyCopy,
   enrichmentEvidence,
@@ -638,6 +663,22 @@ describe("task due order", () => {
     expect(source).not.toContain("task.dueAt?.slice(0, 10) === today");
     expect(source).toContain("Show all tasks");
     expect(source).toContain("No tasks yet! Create your first");
+    expect(source).toContain("onOpenCompany(task.relationshipId)");
+  });
+
+  it("opens the company named on a task", async () => {
+    const onOpenCompany = vi.fn();
+    const user = userEvent.setup();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <TasksView onError={vi.fn()} onNotice={vi.fn()} onOpenCompany={onOpenCompany} />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("Call the harbor")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Open company Acme" }));
+    expect(onOpenCompany).toHaveBeenCalledWith("relationship-1");
   });
 });
 

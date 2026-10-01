@@ -354,6 +354,7 @@ export function RevenuePanel({
             onError={setBanner}
             onNotice={setNoticeMsg}
             onOpenCompanies={() => onTabChange("relationships")}
+            onOpenCompany={onOpenCompany}
           />
         ) : tab === "notes" ? (
           <NotesView
