@@ -51,7 +51,97 @@ function titleCase(value: string): string {
 
 /** Health, lifecycle, and similar stored tokens are not sentences. */
 export function enumLabel(value?: string): string {
-  return titleCase((value || "unknown").replaceAll("_", " "));
+  return titleCase((value || "unknown").replaceAll("_", " ").replaceAll(".", " "));
+}
+
+const ACTIVITY_SOURCE_LABELS: Record<string, string> = {
+  gmail: "Gmail",
+  google: "Google",
+  calendar: "Calendar",
+  slack: "Slack",
+  hubspot: "HubSpot",
+  meeting: "A meeting",
+  desktop_note: "A note",
+  voice_note: "A voice note",
+  browser: "The browser",
+  crm: "The CRM",
+  user: "Added by you",
+  web: "The web",
+  composio: "A connected app",
+};
+
+const ACTIVITY_EVENT_LABELS: Record<string, string> = {
+  "thread.updated": "Mail updated",
+  thread: "Mail",
+  "thread.snapshot": "Mail",
+  "message.posted": "Message",
+  "message.snapshot": "Message",
+  "message.created": "Message",
+  "event.updated": "Meeting updated",
+  "meeting.snapshot": "Meeting",
+  "company.created": "Company added",
+  "company.updated": "Company updated",
+  "company.snapshot": "Company record",
+  "relationship.observed": "Recorded",
+  "relationship.reviewed": "Reviewed",
+  person_added: "Person added",
+  note: "Note saved",
+  note_deleted: "Note removed",
+  commitment_confirmed: "Promise confirmed",
+  commitment_created: "Promise added",
+  commitment_status_changed: "Promise updated",
+  commitment_evidence_observed: "Promise evidence",
+  lifecycle_changed: "Lifecycle updated",
+  lifecycle_observed: "Lifecycle updated",
+  deal_stage_changed: "Deal stage updated",
+  meeting_missing: "Meeting missing",
+  engagement_declined: "Engagement changed",
+  engagement_changed: "Engagement changed",
+  contact_departed: "Contact left",
+  conversation_evidence_compiled: "Conversation reviewed",
+  conversation_evidence_corrected: "Conversation corrected",
+  relationship_contradiction_resolved: "Contradiction resolved",
+  "crm.activity": "CRM activity",
+  mutual_action_plan_response_received: "Plan response",
+  oppulence_action: "Action recorded",
+};
+
+/** A stored connector slug becomes the name a person already sees elsewhere. */
+export function activitySourceLabel(source: string): string {
+  const key = source.trim().toLowerCase();
+  return ACTIVITY_SOURCE_LABELS[key] ?? enumLabel(key);
+}
+
+/** A stored event type becomes a short activity name. Dots are not words. */
+export function activityEventLabel(eventType: string): string {
+  const key = eventType.trim().toLowerCase();
+  return ACTIVITY_EVENT_LABELS[key] ?? enumLabel(key);
+}
+
+export function activityHeading(source: string, eventType: string): string {
+  return `${activitySourceLabel(source)} · ${activityEventLabel(eventType)}`;
+}
+
+const MAIL_ACCESS_REASONS: Record<string, string> = {
+  mailbox_owner: "Your mailbox",
+  owner_default: "Shared in this workspace",
+  owner_private: "Kept private",
+  protected_recipient: "Protected",
+  explicit_grant: "Shared with you",
+  cross_tenant: "Outside this workspace",
+  missing_identity: "Could not confirm who this is",
+  owner_outside_workspace: "Outside this workspace",
+  membership_unavailable: "Workspace membership could not be checked",
+  workspace_policy_unavailable: "Privacy settings could not be checked",
+  policy_unavailable: "Privacy settings could not be checked",
+  rules_unavailable: "Privacy settings could not be checked",
+  grants_unavailable: "Sharing settings could not be checked",
+};
+
+/** Why a mail row is visible. The stored reason is a policy token, not a sentence. */
+export function mailAccessReason(reason: string): string {
+  const key = reason.trim().toLowerCase();
+  return MAIL_ACCESS_REASONS[key] ?? enumLabel(key);
 }
 
 /**

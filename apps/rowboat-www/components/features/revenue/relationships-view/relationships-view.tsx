@@ -180,7 +180,10 @@ import {
 export { companyName };
 import {
   activityEvidenceLines,
+  activityHeading,
+  activitySourceLabel,
   enumLabel as humanize,
+  mailAccessReason,
   missingScopeLabels,
   relationshipDeltaValue,
   removePersonConfirmCopy,
@@ -3292,8 +3295,8 @@ export function RelationshipSheet({
                       {communicationTimeline.map((item) => (
                         <li key={item.id} className="p-3">
                           <div className="flex items-center justify-between gap-2">
-                            <Label className="text-xs font-medium capitalize text-primary">
-                              {item.source} · {humanize(item.interactionType)}
+                              <Label className="text-xs font-medium text-primary">
+                              {activitySourceLabel(item.source)} · {humanize(item.interactionType)}
                             </Label>
                             <Badge
                               className="text-[11px] font-normal text-primary/35"
@@ -3306,7 +3309,7 @@ export function RelationshipSheet({
                             {item.subject || "No message preview"}
                           </p>
                           <p className="mt-1 text-[11px] text-primary/40">
-                            {relativeTime(item.occurredAt)} · {humanize(item.access.reason)}
+                            {relativeTime(item.occurredAt)} · {mailAccessReason(item.access.reason)}
                           </p>
                         </li>
                       ))}
@@ -3329,8 +3332,8 @@ export function RelationshipSheet({
                             className="h-auto w-full justify-start rounded-none p-0 text-left hover:bg-transparent"
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <Label className="text-xs font-medium capitalize text-primary">
-                                {humanize(observation.source)} · {humanize(observation.eventType)}
+                              <Label className="text-xs font-medium text-primary">
+                                {activityHeading(observation.source, observation.eventType)}
                               </Label>
                               <Badge
                                 className="text-[11px] font-normal text-primary/35"

@@ -423,14 +423,16 @@ describe("RelationshipsView", () => {
     expect(source).toContain("activityEvidenceLines(");
     expect(source).toContain("evidence[observation.id]");
     expect(source).toContain("observation.normalizedFacts");
-    expect(source).toContain(
-      "{humanize(observation.source)} · {humanize(observation.eventType)}",
-    );
+    expect(source).toContain("activityHeading(observation.source, observation.eventType)");
+    expect(source).toContain("activitySourceLabel(item.source)");
+    expect(source).toContain("mailAccessReason(item.access.reason)");
     expect(source).not.toContain("JSON.stringify(evidence[observation.id]");
     expect(source).toContain("removePersonConfirmCopy(participant.displayName)");
     expect(source).toContain("Confirm remove");
     expect(source).not.toContain("window.confirm(\n                                        `Remove ${participant.displayName}");
     expect(source).not.toContain("{observation.source} · {humanize(observation.eventType)}");
+    expect(source).not.toContain("{humanize(observation.source)} · {humanize(observation.eventType)}");
+    expect(source).not.toContain("{humanize(item.access.reason)}");
     expect(source).not.toContain("Not enriched");
     expect(source).not.toContain("winning assertion");
     expect(source).not.toContain("state dimensions sourced");

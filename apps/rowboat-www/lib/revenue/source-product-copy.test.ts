@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   activityEvidenceLines,
+  activityHeading,
   enumLabel,
+  mailAccessReason,
   missingScopeLabels,
   relationshipDeltaValue,
   removePersonConfirmCopy,
@@ -44,6 +46,7 @@ describe("source product copy", () => {
     expect(enumLabel("needs_attention")).toBe("Needs Attention");
     expect(enumLabel("former_customer")).toBe("Former Customer");
     expect(enumLabel(undefined)).toBe("Unknown");
+    expect(enumLabel("thread.updated")).toBe("Thread Updated");
     expect(scopeLabel("https://www.googleapis.com/auth/gmail.readonly")).toBe("Mail");
     expect(scopeLabel("chat:write")).toBe("Post a message");
     expect(missingScopeLabels(["https://www.googleapis.com/auth/gmail.send", "chat:write"])).toBe(
@@ -96,5 +99,20 @@ describe("source product copy", () => {
         content: [{ type: "p", children: [{ text: "Body lives in the editor." }] }],
       }),
     ).toEqual(["Note: Body lives in the editor."]);
+  });
+
+  it("names an activity with the product title", () => {
+    expect(activityHeading("gmail", "thread.updated")).toBe("Gmail · Mail updated");
+    expect(activityHeading("desktop_note", "note")).toBe("A note · Note saved");
+    expect(activityHeading("hubspot", "company.updated")).toBe("HubSpot · Company updated");
+    expect(activityHeading("custom_feed", "custom.event_name")).toBe(
+      "Custom Feed · Custom Event Name",
+    );
+    expect(activityHeading("gmail", "thread.updated")).not.toContain("thread.updated");
+    expect(activityHeading("desktop_note", "note")).not.toContain("desktop_note");
+    expect(mailAccessReason("mailbox_owner")).toBe("Your mailbox");
+    expect(mailAccessReason("owner_private")).toBe("Kept private");
+    expect(mailAccessReason("explicit_grant")).toBe("Shared with you");
+    expect(mailAccessReason("mailbox_owner")).not.toContain("mailbox_owner");
   });
 });

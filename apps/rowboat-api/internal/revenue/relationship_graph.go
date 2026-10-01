@@ -607,12 +607,12 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 				occurredAt := observation.OccurredAt.UTC()
 				label := observation.Summary
 				if strings.TrimSpace(label) == "" {
-					label = strings.ReplaceAll(observation.EventType, "_", " ")
+					label = graphEventLabel(observation.EventType)
 				}
 				nodes[observationNodeID] = relationshipGraphNodeDTO{
 					ID: observationNodeID, Kind: "evidence", Label: label,
 					RelationshipID: relationshipID, RelationshipIDs: []string{relationshipID},
-					Status: observation.EventType, Source: observation.Source,
+					Status: graphEventLabel(observation.EventType), Source: observation.Source,
 					Freshness: graphFreshness(occurredAt, aggregate.AsOf), OccurredAt: &occurredAt,
 					EvidenceRefs: []string{observation.ID.String()}, ResourceRef: observation.ID.String(),
 				}
@@ -686,6 +686,92 @@ func graphActionLabel(actionType string) string {
 	}
 }
 
+// graphSourceLabel matches the company activity titles. A stored desktop_note
+// is "A note", and gmail is "Gmail".
+func graphSourceLabel(source string) string {
+	switch strings.ToLower(strings.TrimSpace(source)) {
+	case "gmail":
+		return "Gmail"
+	case "google":
+		return "Google"
+	case "calendar":
+		return "Calendar"
+	case "slack":
+		return "Slack"
+	case "hubspot":
+		return "HubSpot"
+	case "meeting":
+		return "A meeting"
+	case "desktop_note":
+		return "A note"
+	case "voice_note":
+		return "A voice note"
+	case "browser":
+		return "The browser"
+	case "crm":
+		return "The CRM"
+	case "user":
+		return "Added by you"
+	case "web":
+		return "The web"
+	case "composio":
+		return "A connected app"
+	default:
+		return graphTokenLabel(source)
+	}
+}
+
+// graphEventLabel is the activity name when an observation has no summary.
+// thread.updated is "Mail updated", not the stored token.
+func graphEventLabel(eventType string) string {
+	switch strings.ToLower(strings.TrimSpace(eventType)) {
+	case "thread.updated":
+		return "Mail updated"
+	case "thread", "thread.snapshot":
+		return "Mail"
+	case "message.posted", "message.snapshot", "message.created":
+		return "Message"
+	case "event.updated":
+		return "Meeting updated"
+	case "meeting.snapshot":
+		return "Meeting"
+	case "company.created":
+		return "Company added"
+	case "company.updated":
+		return "Company updated"
+	case "company.snapshot":
+		return "Company record"
+	case "relationship.observed":
+		return "Recorded"
+	case "relationship.reviewed":
+		return "Reviewed"
+	case "person_added":
+		return "Person added"
+	case "note":
+		return "Note saved"
+	case "note_deleted":
+		return "Note removed"
+	case "commitment_confirmed":
+		return "Promise confirmed"
+	default:
+		return graphTokenLabel(eventType)
+	}
+}
+
+func graphTokenLabel(value string) string {
+	parts := strings.Fields(strings.NewReplacer("_", " ", ".", " ").Replace(strings.TrimSpace(value)))
+	for i, part := range parts {
+		if part == "" {
+			continue
+		}
+		parts[i] = strings.ToUpper(part[:1]) + part[1:]
+	}
+	if len(parts) == 0 {
+		return "Unknown"
+	}
+	return strings.Join(parts, " ")
+}
+
 func ensureGraphSourceNode(
 	nodes map[string]relationshipGraphNodeDTO,
 	nodeID string,
@@ -703,7 +789,7 @@ func ensureGraphSourceNode(
 		status = statuses[source]
 	}
 	node := relationshipGraphNodeDTO{
-		ID: nodeID, Kind: "source", Label: strings.ReplaceAll(source, "_", " "),
+		ID: nodeID, Kind: "source", Label: graphSourceLabel(source),
 		RelationshipID: relationshipID, RelationshipIDs: []string{relationshipID}, Source: source,
 		ResourceRef: source,
 	}

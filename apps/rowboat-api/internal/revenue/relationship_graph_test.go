@@ -168,3 +168,21 @@ func TestGraphActionLabelUsesTheProductTitle(t *testing.T) {
 		t.Fatalf("unknown action label = %q", got)
 	}
 }
+
+func TestGraphSourceLabelUsesTheProductTitle(t *testing.T) {
+	if got := graphSourceLabel("desktop_note"); got != "A note" {
+		t.Fatalf("desktop_note label = %q", got)
+	}
+	if got := graphSourceLabel("gmail"); got != "Gmail" {
+		t.Fatalf("gmail label = %q", got)
+	}
+	if got := graphSourceLabel("custom_feed"); got != "Custom Feed" {
+		t.Fatalf("unknown source label = %q", got)
+	}
+	if got := graphEventLabel("thread.updated"); got != "Mail updated" {
+		t.Fatalf("thread.updated label = %q", got)
+	}
+	if got := graphEventLabel("custom.event_name"); got != "Custom Event Name" {
+		t.Fatalf("unknown event label = %q", got)
+	}
+}
