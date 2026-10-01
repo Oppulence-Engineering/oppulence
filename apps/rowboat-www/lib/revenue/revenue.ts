@@ -410,12 +410,24 @@ export interface RelationshipFilters {
   engagement?: string;
 }
 
+/** A stored web address. http(s) is kept. A bare host gets https. Other schemes are dropped. */
+export function webAddressHref(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return null;
+  return `https://${trimmed}`;
+}
+
 export const companyLinkedInURL = (
   displayName: string,
   resourceRefs: string[],
   linkedinURL?: string,
 ) => {
-  if (linkedinURL?.startsWith("https://www.linkedin.com/company/")) return linkedinURL;
+  // A saved page is the profile, even when it is not the www company prefix.
+  // Ignoring it sent "View profile" to a name search.
+  const saved = webAddressHref(linkedinURL);
+  if (saved) return saved;
   const prefix = "linkedin:company:";
   const linkedInRef = resourceRefs.find((ref) => ref.startsWith(prefix));
   return linkedInRef

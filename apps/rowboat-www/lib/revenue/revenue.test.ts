@@ -229,6 +229,13 @@ describe("companyLinkedInURL", () => {
     expect(
       companyLinkedInURL("Solomon AI", [], "https://www.linkedin.com/company/solomon-ai-inc"),
     ).toBe("https://www.linkedin.com/company/solomon-ai-inc");
+    expect(companyLinkedInURL("Acme", [], "https://linkedin.com/company/acme")).toBe(
+      "https://linkedin.com/company/acme",
+    );
+    expect(companyLinkedInURL("Acme", [], "  www.linkedin.com/company/acme  ")).toBe(
+      "https://www.linkedin.com/company/acme",
+    );
+    expect(companyLinkedInURL("Acme", [], "javascript:alert(1)")).toContain("keywords=Acme");
   });
 });
 

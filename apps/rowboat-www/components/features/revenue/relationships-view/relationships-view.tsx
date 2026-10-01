@@ -132,6 +132,7 @@ import {
   retractRelationshipAssertion,
   setResearchConsent,
   companyLinkedInURL,
+  webAddressHref,
   interactionCountLabel,
   RevenueAPIError,
   relativeTime,
@@ -1039,7 +1040,7 @@ export function RelationshipsView({
                           rel="noreferrer"
                           target="_blank"
                         >
-                          {relationship.linkedinUrl ||
+                          {webAddressHref(relationship.linkedinUrl) ||
                           relationship.resourceRefs.some((ref) =>
                             ref.startsWith("linkedin:company:"),
                           )
@@ -2225,10 +2226,10 @@ export function RelationshipSheet({
                   </dd>
                   <dt className="text-primary/40">LinkedIn</dt>
                   <dd className="text-primary/75">
-                    {data.relationship.linkedinUrl ? (
+                    {webAddressHref(data.relationship.linkedinUrl) ? (
                       <a
                         className="underline-offset-2 hover:underline"
-                        href={data.relationship.linkedinUrl}
+                        href={webAddressHref(data.relationship.linkedinUrl) ?? undefined}
                         rel="noreferrer"
                         target="_blank"
                       >

@@ -121,6 +121,7 @@ import {
   ingestRelationshipObservations,
   relativeTime,
   safeResearchCitationURL,
+  webAddressHref,
 } from "@/lib/revenue/revenue";
 import type {
   RelationshipPerson,
@@ -514,10 +515,10 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                     {person.relationshipCount}
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px]">
-                    {person.linkedinUrl ? (
+                    {webAddressHref(person.linkedinUrl) ? (
                       <a
                         className="text-primary/60 underline-offset-2 hover:text-primary hover:underline"
-                        href={person.linkedinUrl}
+                        href={webAddressHref(person.linkedinUrl) ?? undefined}
                         rel="noreferrer"
                         target="_blank"
                       >
