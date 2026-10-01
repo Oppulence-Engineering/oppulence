@@ -286,6 +286,40 @@ describe("CommitmentQueue", () => {
     expect(screen.queryByRole("button", { name: "Confirm promise" })).not.toBeInTheDocument();
   });
 
+  it("asks what is blocking on the promise instead of a browser prompt", async () => {
+    const user = userEvent.setup();
+    const prompt = vi.spyOn(window, "prompt").mockReturnValue("should not run");
+    const onTransition = vi.fn(async () => true);
+    const source = fs.readFileSync(path.join(import.meta.dirname, "commitment-queue.tsx"), "utf8");
+    render(<CommitmentQueue {...props({ entries: entries("accepted"), onTransition })} />);
+
+    await user.click(screen.getByText("Acme"));
+    expect(
+      screen.queryByRole("textbox", { name: "What is blocking this commitment" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Confirm blocked" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Mark blocked" }));
+    const reason = screen.getByRole("textbox", { name: "What is blocking this commitment" });
+    expect(screen.getByRole("button", { name: "Confirm blocked" })).toBeDisabled();
+    await user.type(reason, "Waiting on legal review");
+    await user.click(screen.getByRole("button", { name: "Confirm blocked" }));
+
+    await waitFor(() =>
+      expect(onTransition).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "commitment-1" }),
+        expect.objectContaining({
+          kind: "blocked",
+          blocker: "Waiting on legal review",
+          idempotencyKey: "commitment-queue:blocked:commitment-1:v3",
+        }),
+      ),
+    );
+    expect(prompt).not.toHaveBeenCalled();
+    expect(source).not.toContain("window.prompt");
+    prompt.mockRestore();
+  });
+
   it("records confirmation and correction through transition callbacks", async () => {
     const user = userEvent.setup();
     const onTransition = vi.fn(async () => true);

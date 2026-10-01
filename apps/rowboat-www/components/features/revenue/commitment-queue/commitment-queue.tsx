@@ -420,11 +420,17 @@ export function CommitmentQueue({
   const [editing, setEditing] = React.useState<CommitmentQueueItem | null>(null);
   const [correctedText, setCorrectedText] = React.useState("");
   const [correctedDueAt, setCorrectedDueAt] = React.useState("");
+  const [blocking, setBlocking] = React.useState(false);
+  const [blockerText, setBlockerText] = React.useState("");
   // Home's count is past due only. "Due soon or overdue" would add rows the
   // number did not include.
   React.useEffect(() => {
     if (overdueOnly) setFilter("overdue");
   }, [overdueOnly]);
+  React.useEffect(() => {
+    setBlocking(false);
+    setBlockerText("");
+  }, [selected?.id]);
   const items = React.useMemo(() => toQueueItems(entries), [entries]);
   // An empty select cannot be "chosen". That case is a missing company, not a
   // prompt to pick one.
@@ -1165,19 +1171,57 @@ export function CommitmentQueue({
                       </Button>
                     ) : null}
                     {selected.acceptance === "accepted" ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={busy !== null}
-                        onClick={() => {
-                          const blocker = window.prompt("What is blocking this commitment?");
-                          if (blocker?.trim())
-                            void transition(selected, "blocked", { blocker: blocker.trim() });
-                        }}
-                      >
-                        Mark blocked
-                      </Button>
+                      blocking ? (
+                        <>
+                          <Input
+                            aria-label="What is blocking this commitment"
+                            className="h-8 max-w-xs rounded-none"
+                            placeholder="Waiting on legal review"
+                            value={blockerText}
+                            onChange={(event) => setBlockerText(event.target.value)}
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={busy !== null || !blockerText.trim()}
+                            onClick={() => {
+                              const blocker = blockerText.trim();
+                              if (!blocker) return;
+                              void transition(selected, "blocked", { blocker }).then((saved) => {
+                                if (saved) {
+                                  setBlocking(false);
+                                  setBlockerText("");
+                                }
+                              });
+                            }}
+                          >
+                            Confirm blocked
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            disabled={busy !== null}
+                            onClick={() => {
+                              setBlocking(false);
+                              setBlockerText("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={busy !== null}
+                          onClick={() => setBlocking(true)}
+                        >
+                          Mark blocked
+                        </Button>
+                      )
                     ) : null}
                     {selected.blocker ? (
                       <Button
