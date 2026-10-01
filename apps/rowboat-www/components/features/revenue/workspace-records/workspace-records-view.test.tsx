@@ -95,7 +95,9 @@ import {
   NotesView,
   PeopleView,
   TasksView,
+  personDirectoryCount,
   personDirectoryTitle,
+  personRemainderLabel,
   peopleListEmptyCopy,
   enrichmentEvidence,
   personEnrichmentLabel,
@@ -488,6 +490,9 @@ describe("people directory labels", () => {
     expect(personDirectoryTitle("")).toEqual({ label: "All people", filtered: false });
     expect(personDirectoryTitle("   ")).toEqual({ label: "All people", filtered: false });
     expect(personDirectoryTitle("ada")).toEqual({ label: "Filtered", filtered: true });
+    expect(personDirectoryCount(500, true)).toBe("500+");
+    expect(personDirectoryCount(501, false)).toBe("501");
+    expect(personRemainderLabel()).toBe("Show the next people");
   });
 
   it("counts profile facts and ignores the projection counter", () => {
@@ -735,6 +740,7 @@ describe("task due order", () => {
     expect(noteCountLabel(2, false)).toBe("2");
     expect(earlierNotesLabel()).toBe("Show earlier notes");
     expect(source).toContain("fetchMoreWorkspaceNotes");
+    expect(source).toContain("fetchPersons(debouncedQuery, undefined, loadedPeopleCount.current)");
     expect(source).toContain('useRevenueActions("open", ACTION_QUEUE_PAGE, "task")');
     expect(source).toContain("loadedTaskCount.current");
     expect(source).toContain("No tasks yet! Create your first");

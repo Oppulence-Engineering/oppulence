@@ -243,13 +243,18 @@ export function fetchSemanticSearch(
   return loadSemanticSearch(requestJson, query, signal);
 }
 
+/** The people API refuses a larger page. The next rows use this same size as an offset. */
+export const PERSON_PAGE_SIZE = 500;
+
 export async function loadPersons(
   request: RequestJsonFn,
   query = "",
   signal?: AbortSignal,
+  offset = 0,
 ): Promise<RelationshipPerson[]> {
-  const params = new URLSearchParams({ limit: "500" });
+  const params = new URLSearchParams({ limit: String(PERSON_PAGE_SIZE) });
   if (query.trim()) params.set("q", query.trim());
+  if (offset > 0) params.set("offset", String(offset));
   const body = await request({
     path: `/relationship-persons?${params.toString()}`,
     schema: PersonListSchema,
@@ -258,6 +263,10 @@ export async function loadPersons(
   return (body.persons ?? []) as RelationshipPerson[];
 }
 
-export function fetchPersons(query = "", signal?: AbortSignal): Promise<RelationshipPerson[]> {
-  return loadPersons(requestJson, query, signal);
+export function fetchPersons(
+  query = "",
+  signal?: AbortSignal,
+  offset = 0,
+): Promise<RelationshipPerson[]> {
+  return loadPersons(requestJson, query, signal, offset);
 }

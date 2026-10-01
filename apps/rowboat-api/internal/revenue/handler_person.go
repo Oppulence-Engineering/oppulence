@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
@@ -26,6 +27,14 @@ func (h *Handler) ListPersons(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		filter.Limit = limit
+	}
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		filter.Offset = n
 	}
 	people, err := h.svc.ListPersons(r.Context(), u, filter)
 	if err != nil {

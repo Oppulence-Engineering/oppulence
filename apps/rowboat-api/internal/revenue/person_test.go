@@ -443,6 +443,35 @@ func TestPersonSearchFindsTheCompanyTitle(t *testing.T) {
 	}
 }
 
+func TestListPersonsOffsetSkipsEarlierNames(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"Ada Offset", "Bea Offset", "Cara Offset"} {
+		if _, err := f.client.Person.Create().
+			SetDisplayName(name).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	page, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Limit: 1, Offset: 1})
+	if err != nil || len(page) != 1 || page[0].DisplayName != "Bea Offset" {
+		t.Fatalf("offset page = %+v err=%v", page, err)
+	}
+	none, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Limit: 1, Offset: 3})
+	if err != nil || len(none) != 0 {
+		t.Fatalf("past the end = %d err=%v", len(none), err)
+	}
+	all, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Limit: 10, Offset: -2})
+	if err != nil || len(all) != 3 || all[0].DisplayName != "Ada Offset" {
+		t.Fatalf("negative offset = %+v err=%v", all, err)
+	}
+}
+
 func TestPersonSearchSQLUsesPostgresPlaceholders(t *testing.T) {
 	selector := sql.Dialect(dialect.Postgres).Select().From(sql.Table(person.Table))
 	personNormalizedContains("Dogfood Label")(selector)

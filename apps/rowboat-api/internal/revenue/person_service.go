@@ -24,6 +24,7 @@ type PersonFilter struct {
 	Query  string
 	Status string
 	Limit  int
+	Offset int
 }
 
 const defaultPersonLimit = 100
@@ -39,6 +40,9 @@ func (s *Service) ListPersons(
 	limit := filter.Limit
 	if limit <= 0 || limit > 500 {
 		limit = defaultPersonLimit
+	}
+	if filter.Offset < 0 {
+		filter.Offset = 0
 	}
 	q := s.client.Person.Query().
 		Where(person.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)))
@@ -67,6 +71,7 @@ func (s *Service) ListPersons(
 			person.ByDisplayName(),
 		).
 		Limit(limit).
+		Offset(filter.Offset).
 		All(ctx)
 }
 
