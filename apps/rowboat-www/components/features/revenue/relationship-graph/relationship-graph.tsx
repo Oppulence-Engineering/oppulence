@@ -621,6 +621,13 @@ function Inspector({
   focusDepth: RelationshipGraphSavedViewState["focusDepth"];
   onFocusDepth: (depth: RelationshipGraphSavedViewState["focusDepth"]) => void;
 }) {
+  const [expandedConnections, setExpandedConnections] = React.useState(false);
+  const [expandedDetails, setExpandedDetails] = React.useState(false);
+  React.useEffect(() => {
+    setExpandedConnections(false);
+    setExpandedDetails(false);
+  }, [node?.id]);
+
   if (!node) {
     const prompt = graphInspectorPrompt(graph.nodes.length);
     return (
@@ -642,15 +649,24 @@ function Inspector({
         (candidate) => candidate.kind === "relationship" && candidate.relationshipIds.includes(id),
       )?.label || "account",
   }));
-  const connected = graph.edges.filter(
-    (edge) => edge.source === node.id || edge.target === node.id,
-  );
+  const connected = graph.edges.flatMap((edge) => {
+    if (edge.source !== node.id && edge.target !== node.id) return [];
+    const otherId = edge.source === node.id ? edge.target : edge.source;
+    const other = graph.nodes.find((candidate) => candidate.id === otherId);
+    return other ? [{ edge, other }] : [];
+  });
+  const shownConnections = expandedConnections
+    ? connected
+    : connected.slice(0, GRAPH_CONNECTION_PAGE);
+  const hiddenConnections = connected.length - shownConnections.length;
   const actionId = node.kind === "action" ? node.resourceRef : undefined;
   const evidenceNodes = graph.nodes.filter(
     (candidate) =>
       candidate.kind === "evidence" &&
       candidate.evidenceRefs.some((ref) => node.evidenceRefs.includes(ref)),
   );
+  const shownEvidence = expandedDetails ? evidenceNodes : evidenceNodes.slice(0, GRAPH_DETAIL_PAGE);
+  const hiddenEvidence = evidenceNodes.length - shownEvidence.length;
 
   return (
     <aside
@@ -752,33 +768,40 @@ function Inspector({
       <div className="mt-4">
         <p className="font-mono text-[10px] uppercase tracking-wide text-primary/40">Connections</p>
         <ul className="mt-2 space-y-1">
-          {connected.slice(0, 12).map((edge) => {
-            const otherId = edge.source === node.id ? edge.target : edge.source;
-            const other = graph.nodes.find((candidate) => candidate.id === otherId);
-            return other ? (
-              <li key={edge.id}>
-                <Button
-                  variant="outline"
-                  size="xs"
-                  onClick={() => onSelectNode(other.id)}
-                  className="h-auto w-full justify-start rounded-none px-2 py-1.5 text-left"
+          {shownConnections.map(({ edge, other }) => (
+            <li key={edge.id}>
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={() => onSelectNode(other.id)}
+                className="h-auto w-full justify-start rounded-none px-2 py-1.5 text-left"
+              >
+                <NodeIcon kind={other.kind} />
+                <Label className="min-w-0 flex-1 truncate font-normal">{other.label}</Label>
+                <Label
+                  className="font-mono text-[9px] font-normal text-primary/35"
+                  aria-label={`${edge.source === node.id ? "Outgoing" : "Incoming"}: ${edge.label}`}
                 >
-                  <NodeIcon kind={other.kind} />
-                  <Label className="min-w-0 flex-1 truncate font-normal">{other.label}</Label>
-                  <Label
-                    className="font-mono text-[9px] font-normal text-primary/35"
-                    aria-label={`${edge.source === node.id ? "Outgoing" : "Incoming"}: ${edge.label}`}
-                  >
-                    {edge.source === node.id ? "→" : "←"} {edge.label}
-                  </Label>
-                </Button>
-              </li>
-            ) : null;
-          })}
+                  {edge.source === node.id ? "→" : "←"} {edge.label}
+                </Label>
+              </Button>
+            </li>
+          ))}
           {!connected.length ? (
             <li className="text-xs text-primary/35">No visible connections.</li>
           ) : null}
         </ul>
+        {hiddenConnections > 0 ? (
+          <Button
+            className="mt-2"
+            onClick={() => setExpandedConnections(true)}
+            size="xs"
+            type="button"
+            variant="outline"
+          >
+            {graphListRemainderLabel(hiddenConnections, "connection", "connections")}
+          </Button>
+        ) : null}
       </div>
 
       {node.evidenceRefs.length ? (
@@ -787,7 +810,7 @@ function Inspector({
             Details · {node.evidenceRefs.length}
           </p>
           <div className="mt-2 flex flex-wrap gap-1">
-            {evidenceNodes.slice(0, 6).map((evidence) => (
+            {shownEvidence.map((evidence) => (
               <Button
                 key={evidence.id}
                 variant="outline"
@@ -804,6 +827,17 @@ function Inspector({
               </Label>
             ) : null}
           </div>
+          {hiddenEvidence > 0 ? (
+            <Button
+              className="mt-2"
+              onClick={() => setExpandedDetails(true)}
+              size="xs"
+              type="button"
+              variant="outline"
+            >
+              {graphListRemainderLabel(hiddenEvidence, "detail", "details")}
+            </Button>
+          ) : null}
         </div>
       ) : null}
 
@@ -960,6 +994,15 @@ function GraphTable({
 /** One item reads differently from many. The canvas count is the only place this is shown. */
 export function graphCountLabel(count: number, singular: string, plural: string): string {
   return `${count} ${count === 1 ? singular : plural}`;
+}
+
+/** First screen of the inspector lists. The rest stay one click away. */
+export const GRAPH_CONNECTION_PAGE = 12;
+export const GRAPH_DETAIL_PAGE = 6;
+
+/** The rows past the first screen, in the same words as the graph counts. */
+export function graphListRemainderLabel(hidden: number, singular: string, plural: string): string {
+  return `Show the other ${graphCountLabel(hidden, singular, plural)}`;
 }
 
 /**

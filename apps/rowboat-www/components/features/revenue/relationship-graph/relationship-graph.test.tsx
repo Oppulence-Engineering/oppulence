@@ -15,6 +15,7 @@ import {
   graphNodeSummaryLabel,
   graphStateFromSearch,
   graphCountLabel,
+  graphListRemainderLabel,
   graphLayoutLabel,
   graphAccountChoice,
   graphSavedViewChoice,
@@ -236,7 +237,17 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).not.toContain("Evidence references retained");
     expect(graphCountLabel(1, "item", "items")).toBe("1 item");
     expect(graphCountLabel(0, "connection", "connections")).toBe("0 connections");
+    expect(graphListRemainderLabel(1, "connection", "connections")).toBe(
+      "Show the other 1 connection",
+    );
+    expect(graphListRemainderLabel(3, "detail", "details")).toBe("Show the other 3 details");
     expect(source).toContain('graphCountLabel(graphNodes.length, "item", "items")');
+    expect(source).toContain(
+      'graphListRemainderLabel(hiddenConnections, "connection", "connections")',
+    );
+    expect(source).toContain('graphListRemainderLabel(hiddenEvidence, "detail", "details")');
+    expect(source).not.toContain("connected.slice(0, 12)");
+    expect(source).not.toContain("evidenceNodes.slice(0, 6)");
     expect(source).not.toContain("directed links");
   });
 
