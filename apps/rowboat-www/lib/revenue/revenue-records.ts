@@ -133,6 +133,79 @@ export function recoveryQueueActions<T extends { actionType?: string; channel?: 
   return actions.filter((action) => !isWorkspaceTask(action));
 }
 
+export function workspaceTaskIds(
+  actions: readonly { id: string; actionType?: string; channel?: string }[] | undefined,
+): ReadonlySet<string> {
+  return new Set((actions ?? []).filter(isWorkspaceTask).map((action) => action.id));
+}
+
+/** A task recommendation is the task itself, not a company risk. */
+export function isTaskAttention(
+  item: { recommendationId?: string },
+  taskIds: ReadonlySet<string>,
+): boolean {
+  return Boolean(item.recommendationId && taskIds.has(item.recommendationId));
+}
+
+export function attentionWithoutTasks<T extends { recommendationId?: string }>(
+  items: readonly T[],
+  taskIds: ReadonlySet<string>,
+): T[] {
+  return items.filter((item) => !isTaskAttention(item, taskIds));
+}
+
+/**
+ * Home's at-risk number counts companies with an open attention item. A task
+ * also opens one, and that company is not at risk when the task is the only
+ * reason. Until both lists arrive, the number stays unset.
+ */
+export function atRiskPulseCount(
+  apiCount: number | undefined,
+  attention: readonly { relationshipId: string; recommendationId?: string }[] | undefined,
+  actions: readonly { id: string; actionType?: string; channel?: string }[] | undefined,
+  listsFailed = false,
+): number | null {
+  if (apiCount == null) return null;
+  if (apiCount === 0 || listsFailed) return apiCount;
+  if (!attention || !actions) return null;
+  const taskIds = workspaceTaskIds(actions);
+  const taskOnly = new Set<string>();
+  const other = new Set<string>();
+  for (const item of attention) {
+    if (isTaskAttention(item, taskIds)) taskOnly.add(item.relationshipId);
+    else other.add(item.relationshipId);
+  }
+  let subtracted = 0;
+  for (const id of taskOnly) if (!other.has(id)) subtracted += 1;
+  return Math.max(0, apiCount - subtracted);
+}
+
+/** A portfolio score driven only by a task is not account risk. */
+export function exposureRiskScore(apiScore: number, atRisk: number | null): number {
+  if (atRisk === 0) return 0;
+  return apiScore;
+}
+
+export function exposureReasons<T extends { reason: string; relationships: number }>(
+  reasons: readonly T[] | undefined,
+  attention: readonly { relationshipId: string; reasonCode?: string; recommendationId?: string }[] | undefined,
+  actions: readonly { id: string; actionType?: string; channel?: string }[] | undefined,
+): T[] {
+  const list = [...(reasons ?? [])];
+  if (!attention || !actions) return list;
+  const taskIds = workspaceTaskIds(actions);
+  const recommendationAccounts = new Set(
+    attention
+      .filter((item) => item.reasonCode === "recommendation" && !isTaskAttention(item, taskIds))
+      .map((item) => item.relationshipId),
+  );
+  return list.flatMap((reason) => {
+    if (reason.reason !== "recommendation") return [reason];
+    if (recommendationAccounts.size === 0) return [];
+    return [{ ...reason, relationships: recommendationAccounts.size }];
+  });
+}
+
 export function taskIsDueToday(dueAt: string | null | undefined, today: string): boolean {
   if (!dueAt) return false;
   const day = localCalendarDay(dueAt);

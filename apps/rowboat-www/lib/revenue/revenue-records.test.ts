@@ -7,6 +7,10 @@ import {
   localCalendarDay,
   mapSettledWithConcurrency,
   promiseDueLabel,
+  atRiskPulseCount,
+  attentionWithoutTasks,
+  exposureReasons,
+  exposureRiskScore,
   recoveryPulseCount,
   recoveryQueueActions,
   taskIsDueToday,
@@ -73,6 +77,34 @@ describe("local due dates", () => {
     expect(recoveryPulseCount(1, [task])).toBe(0);
     expect(recoveryPulseCount(2, [task, draft])).toBe(1);
     expect(recoveryPulseCount(1, undefined, true)).toBe(1);
+    const taskAttention = {
+      relationshipId: "company-1",
+      recommendationId: "task-1",
+      reasonCode: "recommendation",
+    };
+    const overdueAttention = {
+      relationshipId: "company-2",
+      reasonCode: "overdue_commitment",
+    };
+    expect(
+      attentionWithoutTasks([taskAttention, overdueAttention], new Set(["task-1"])),
+    ).toEqual([overdueAttention]);
+    expect(atRiskPulseCount(1, [taskAttention], [{ id: "task-1", actionType: "follow_up_task", channel: "task" }])).toBe(0);
+    expect(
+      atRiskPulseCount(2, [taskAttention, overdueAttention], [
+        { id: "task-1", actionType: "follow_up_task", channel: "task" },
+      ]),
+    ).toBe(1);
+    expect(atRiskPulseCount(1, undefined, [])).toBeNull();
+    expect(exposureRiskScore(30, 0)).toBe(0);
+    expect(exposureRiskScore(30, 2)).toBe(30);
+    expect(
+      exposureReasons(
+        [{ reason: "recommendation", relationships: 1 }],
+        [taskAttention],
+        [{ id: "task-1", actionType: "follow_up_task", channel: "task" }],
+      ),
+    ).toEqual([]);
     expect(taskIsDueToday(stored, picked)).toBe(true);
     expect(taskIsDueToday(undefined, picked)).toBe(false);
     expect(taskIsDueToday("not-a-date", picked)).toBe(false);

@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { type ComponentPropsWithoutRef } from "react";
 import { useImpact } from "@/hooks/queries/use-impact";
 import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
+import { useRelationshipAttention } from "@/hooks/queries/use-relationships";
 import { z } from "zod";
 import { FloppyDisk, LockSimple } from "@/lib/icons";
 
@@ -39,7 +40,7 @@ import {
 import type { AgentHistoryItem } from "@/lib/agents/agent-history";
 import { agentToolLabel } from "@/lib/agents/agent-tools";
 import { requestDueCommitments } from "@/lib/dashboard/commitment-due-request";
-import { recoveryPulseCount } from "@/lib/revenue/revenue-records";
+import { atRiskPulseCount, recoveryPulseCount } from "@/lib/revenue/revenue-records";
 import type { RevenueTab } from "@/lib/dashboard/product-navigation";
 import type { RevenueImpact } from "@/lib/revenue/types";
 
@@ -116,15 +117,30 @@ function renderToolOutput(value: unknown): string {
   }
 }
 
+function PulseFigure({ failed, value }: { failed: boolean; value: number | null }) {
+  if (value == null) {
+    return failed ? "—" : <Skeleton className="inline-block h-3 w-4" />;
+  }
+  return value;
+}
+
 function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
   const impactQuery = useImpact();
-  const openActionsQuery = useRevenueActions("open");
+  const openActionsQuery = useRevenueActions("open", 100);
+  const attentionQuery = useRelationshipAttention("open");
   const impact = impactQuery.data ?? null;
   const failed = impactQuery.isError;
+  const listsFailed = openActionsQuery.isError || attentionQuery.isError;
   const recovery = recoveryPulseCount(
     impact?.open,
     openActionsQuery.isSuccess ? openActionsQuery.data : undefined,
     openActionsQuery.isError,
+  );
+  const atRisk = atRiskPulseCount(
+    impact?.atRiskRelationships,
+    attentionQuery.isSuccess ? attentionQuery.data : undefined,
+    openActionsQuery.isSuccess ? openActionsQuery.data : undefined,
+    listsFailed,
   );
 
   return (
@@ -149,23 +165,18 @@ function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
             type="button"
           >
             <span className="font-mono tabular-nums text-[var(--text-secondary)]">
-              {stat.label === "recovery" ? (
-                recovery == null ? (
-                  failed ? (
-                    "—"
-                  ) : (
-                    <Skeleton className="inline-block h-3 w-4" />
-                  )
-                ) : (
-                  recovery
-                )
-              ) : impact ? (
-                stat.read(impact)
-              ) : failed ? (
-                "—"
-              ) : (
-                <Skeleton className="inline-block h-3 w-4" />
-              )}
+              <PulseFigure
+                failed={failed}
+                value={
+                  stat.label === "recovery"
+                    ? recovery
+                    : stat.label === "at risk"
+                      ? atRisk
+                      : impact
+                        ? stat.read(impact)
+                        : null
+                }
+              />
             </span>
             <span>{stat.label}</span>
           </button>

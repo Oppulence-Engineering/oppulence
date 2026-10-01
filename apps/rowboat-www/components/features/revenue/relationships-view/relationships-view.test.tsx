@@ -44,6 +44,7 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain('"headquarters",\n    "employees",\n    "funding",');
     expect(source).toContain("subscribeCompanyCreate(() => setCreating(true))");
     expect(source).toContain("relationshipDeltaValue(change.before)");
+    expect(source).toContain("attentionWithoutTasks(");
     expect(source).not.toContain("JSON.stringify(change.before");
     expect(source).toContain("aria-label={`Connect ${item.displayName}`}");
     expect(source).toContain("aria-label={`Permissions for ${item.displayName}`}");

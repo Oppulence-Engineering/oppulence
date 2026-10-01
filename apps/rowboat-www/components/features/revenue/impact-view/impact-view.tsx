@@ -5,7 +5,8 @@ import "client-only";
 import * as React from "react";
 import { EnvelopeSimple, MagnifyingGlass, Plugs, WarningDiamond } from "@/lib/icons";
 import { useImpactBundle } from "@/hooks/queries/use-impact";
-import { useRelationships } from "@/hooks/queries/use-relationships";
+import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
+import { useRelationshipAttention, useRelationships } from "@/hooks/queries/use-relationships";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
 import { Badge } from "@oppulence/ui/components/badge";
@@ -30,6 +31,7 @@ import {
 } from "@oppulence/ui/components/table";
 
 import { auditLaunchLabel, DETECTOR_LABELS } from "@/lib/revenue/revenue";
+import { atRiskPulseCount, exposureReasons, exposureRiskScore } from "@/lib/revenue/revenue-records";
 import type { RevenueImpact } from "@/lib/revenue/types";
 import { EmptyBlock, errMessage, ListSkeleton } from "@/components/features/revenue/shared/shared";
 import { cn } from "@/lib/utils";
@@ -86,6 +88,8 @@ export function ImpactView({
 }) {
   const impactQuery = useImpactBundle();
   const relationshipsQuery = useRelationships();
+  const attentionQuery = useRelationshipAttention("open");
+  const openActionsQuery = useRevenueActions("open", 100);
 
   React.useEffect(() => {
     if (impactQuery.error) {
@@ -112,6 +116,19 @@ export function ImpactView({
   const accountTotal = impactAccountTotal(
     relationshipsQuery.isSuccess ? relationshipsQuery.data : undefined,
     data.relationships,
+  );
+  const atRisk = atRiskPulseCount(
+    data.atRiskRelationships,
+    attentionQuery.isSuccess ? attentionQuery.data : undefined,
+    openActionsQuery.isSuccess ? openActionsQuery.data : undefined,
+    attentionQuery.isError || openActionsQuery.isError,
+  );
+  const atRiskShown = atRisk ?? data.atRiskRelationships;
+  const riskScore = exposureRiskScore(data.portfolioRiskScore, atRisk);
+  const riskReasons = exposureReasons(
+    data.riskReasons,
+    attentionQuery.isSuccess ? attentionQuery.data : undefined,
+    openActionsQuery.isSuccess ? openActionsQuery.data : undefined,
   );
 
   if (data.surfaced === 0 && data.atRiskRelationships === 0 && data.overdueCommitments === 0) {
@@ -171,7 +188,7 @@ export function ImpactView({
   const degradedCount =
     data.riskReasons?.find((risk) => risk.reason === "source_degradation")?.relationships ?? 0;
   const sourceDegradationDominates =
-    degradedCount > 0 && degradedCount >= Math.max(1, data.atRiskRelationships);
+    degradedCount > 0 && degradedCount >= Math.max(1, atRiskShown);
 
   return (
     <div className="flex min-h-full w-full min-w-0 flex-col gap-6" data-slot="impact-view">
@@ -211,11 +228,8 @@ export function ImpactView({
           </Alert>
         ) : null}
         <div className="grid grid-cols-2 divide-x divide-y divide-border md:grid-cols-4 md:divide-y-0">
-          <Stat label="Portfolio risk score" value={`${data.portfolioRiskScore}/100`} />
-          <Stat
-            label={`At-risk accounts of ${accountTotal}`}
-            value={data.atRiskRelationships}
-          />
+          <Stat label="Portfolio risk score" value={`${riskScore}/100`} />
+          <Stat label={`At-risk accounts of ${accountTotal}`} value={atRiskShown} />
           <Stat label="Critical accounts" value={data.criticalRelationships} />
           <Stat label="Overdue promises" value={data.overdueCommitments} />
         </div>
@@ -228,9 +242,9 @@ export function ImpactView({
           </dl>
           <div className="border-t border-border p-4 md:border-t-0">
             <p className="mb-2 text-xs font-medium text-primary/55">Why accounts are exposed</p>
-            {data.riskReasons?.length ? (
+            {riskReasons.length ? (
               <ul className="space-y-1.5 text-sm">
-                {data.riskReasons!.slice(0, 5).map((risk) => (
+                {riskReasons.slice(0, 5).map((risk) => (
                   <li className="flex items-center justify-between gap-3" key={risk.reason}>
                     <Label className="font-normal text-primary/60">
                       {DETECTOR_LABELS[risk.reason] ?? risk.reason.replaceAll("_", " ")}

@@ -154,6 +154,7 @@ import type {
   ResearchStatus,
 } from "@/lib/revenue/types";
 import { DashboardRequestError } from "@/lib/api/request-json";
+import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
 import {
   useIdentityCandidates,
   useRelationshipAttention,
@@ -168,6 +169,7 @@ import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-sourc
 import { useQueryClient } from "@tanstack/react-query";
 import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { planLabel } from "@/lib/product/plan-label";
+import { attentionWithoutTasks, workspaceTaskIds } from "@/lib/revenue/revenue-records";
 import {
   enumLabel as humanize,
   missingScopeLabels,
@@ -555,6 +557,7 @@ export function RelationshipsView({
   const pendingQuery = useIdentityCandidates("pending");
   const deferredQuery = useIdentityCandidates("deferred");
   const attentionQuery = useRelationshipAttention("open");
+  const openActionsQuery = useRevenueActions("open", 100);
   const rows = relationshipsQuery.data ?? [];
   const sources = sourcesQuery.data ?? [];
   const sourceInventory = inventoryQuery.data ?? [];
@@ -578,8 +581,11 @@ export function RelationshipsView({
     setHealth("all");
     setLifecycle("all");
   };
-  const companyAttention = attention.filter((item) =>
-    companies.some((relationship) => relationship.id === item.relationshipId),
+  const companyAttention = attentionWithoutTasks(
+    attention.filter((item) =>
+      companies.some((relationship) => relationship.id === item.relationshipId),
+    ),
+    openActionsQuery.isSuccess ? workspaceTaskIds(openActionsQuery.data) : new Set(),
   );
 
   React.useEffect(() => {

@@ -51,7 +51,8 @@ describe("ChatDashboardRoute", () => {
     const source = fs.readFileSync(path.join(import.meta.dirname, "chat-dashboard-route.tsx"), "utf8");
     expect(source).toContain('label: "overdue"');
     expect(source).toContain("recoveryPulseCount(");
-    expect(source).toContain('useRevenueActions("open")');
+    expect(source).toContain("atRiskPulseCount(");
+    expect(source).toContain('useRevenueActions("open", 100)');
     expect(source).toContain("impact.overdueCommitments");
     expect(source).toContain('if (stat.tab === "commitments") requestDueCommitments();');
     expect(source).not.toContain('label: "commitments"');
