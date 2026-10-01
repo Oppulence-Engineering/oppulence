@@ -566,6 +566,8 @@ describe("RelationshipsView", () => {
     expect(source).toContain("relationshipChangeTitle(changes.length, changesHasMore)");
     expect(source).toContain("earlierChangesLabel()");
     expect(source).toContain("Could not load earlier changes.");
+    expect(source).toContain("onLoadMore={() => void loadMoreSheetDuplicates()}");
+    expect(source).toContain("hasMore={hasMoreSheetDuplicates}");
     expect(source).not.toContain("governanceReceipts.slice(0, 5)");
     expect(source).toContain("Activity history");
     expect(source).toContain("activityEvidenceLines(");

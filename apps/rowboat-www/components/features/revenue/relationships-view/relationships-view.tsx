@@ -2328,6 +2328,39 @@ function appendById<T extends { id: string }>(current: T[], next: T[]): T[] {
   return added.length === 0 ? current : [...current, ...added];
 }
 
+type SheetDuplicatePages = {
+  pending: RelationshipIdentityCandidate[];
+  deferred: RelationshipIdentityCandidate[];
+  resolved: RelationshipIdentityCandidate[];
+  extraPending: RelationshipIdentityCandidate[];
+  extraDeferred: RelationshipIdentityCandidate[];
+  extraResolved: RelationshipIdentityCandidate[];
+  pendingExhausted: boolean;
+  deferredExhausted: boolean;
+  resolvedExhausted: boolean;
+};
+
+function emptySheetDuplicatePages(): SheetDuplicatePages {
+  return {
+    pending: [],
+    deferred: [],
+    resolved: [],
+    extraPending: [],
+    extraDeferred: [],
+    extraResolved: [],
+    pendingExhausted: false,
+    deferredExhausted: false,
+    resolvedExhausted: false,
+  };
+}
+
+function mergeIdentityPages(
+  page: readonly RelationshipIdentityCandidate[],
+  extra: readonly RelationshipIdentityCandidate[],
+): RelationshipIdentityCandidate[] {
+  return appendById([...page], [...extra]);
+}
+
 /** Whether any audio excerpt was saved with the receipt. */
 export function governanceExcerptLabel(clip: string): string {
   switch (clip) {
@@ -2782,9 +2815,40 @@ export function RelationshipSheet({
   const [changes, setChanges] = React.useState<RelationshipStateSnapshot[]>([]);
   const [changesHasMore, setChangesHasMore] = React.useState(false);
   const [loadingEarlierChanges, setLoadingEarlierChanges] = React.useState(false);
-  const [identityCandidates, setIdentityCandidates] = React.useState<
-    RelationshipIdentityCandidate[]
-  >([]);
+  const [sheetDuplicates, setSheetDuplicates] = React.useState(emptySheetDuplicatePages);
+  const [loadingSheetDuplicates, setLoadingSheetDuplicates] = React.useState(false);
+  const sheetIdRef = React.useRef(id);
+  sheetIdRef.current = id;
+  const sheetPending = React.useMemo(
+    () => mergeIdentityPages(sheetDuplicates.pending, sheetDuplicates.extraPending),
+    [sheetDuplicates.extraPending, sheetDuplicates.pending],
+  );
+  const sheetDeferred = React.useMemo(
+    () => mergeIdentityPages(sheetDuplicates.deferred, sheetDuplicates.extraDeferred),
+    [sheetDuplicates.deferred, sheetDuplicates.extraDeferred],
+  );
+  const sheetResolved = React.useMemo(
+    () => mergeIdentityPages(sheetDuplicates.resolved, sheetDuplicates.extraResolved),
+    [sheetDuplicates.extraResolved, sheetDuplicates.resolved],
+  );
+  const hasMoreSheetPending = identityCandidateHasMore(
+    sheetDuplicates.pending.length,
+    sheetDuplicates.extraPending.length,
+    sheetDuplicates.pendingExhausted,
+  );
+  const hasMoreSheetDeferred = identityCandidateHasMore(
+    sheetDuplicates.deferred.length,
+    sheetDuplicates.extraDeferred.length,
+    sheetDuplicates.deferredExhausted,
+  );
+  const hasMoreSheetResolved = identityCandidateHasMore(
+    sheetDuplicates.resolved.length,
+    sheetDuplicates.extraResolved.length,
+    sheetDuplicates.resolvedExhausted,
+  );
+  const hasMoreSheetDuplicates =
+    hasMoreSheetPending || hasMoreSheetDeferred || hasMoreSheetResolved;
+  const identityCandidates = [...sheetPending, ...sheetDeferred, ...sheetResolved];
   const [busy, setBusy] = React.useState<string | null>(null);
   const [evidence, setEvidence] = React.useState<Record<string, unknown>>({});
   const [personAttributes, setPersonAttributes] = React.useState<
@@ -2806,6 +2870,8 @@ export function RelationshipSheet({
   const load = React.useCallback(async () => {
     setLoading(true);
     setLoadError(null);
+    setSheetDuplicates(emptySheetDuplicatePages());
+    setLoadingSheetDuplicates(false);
     try {
       const nextData = await getRelationship(id);
       setData(nextData);
@@ -2838,7 +2904,12 @@ export function RelationshipSheet({
       setCommunicationBefore(nextCommunicationTimeline.nextBefore);
       setChanges(nextChanges.snapshots);
       setChangesHasMore(nextChanges.hasMore);
-      setIdentityCandidates([...pending, ...deferred, ...resolved]);
+      setSheetDuplicates({
+        ...emptySheetDuplicatePages(),
+        pending,
+        deferred,
+        resolved,
+      });
       const people = nextData.participants
         .map((participant) => participant.person?.id)
         .filter((personId): personId is string => Boolean(personId));
@@ -2883,6 +2954,69 @@ export function RelationshipSheet({
       return false;
     } finally {
       setBusy(null);
+    }
+  };
+
+  const loadMoreSheetDuplicates = async () => {
+    if (loadingSheetDuplicates || !hasMoreSheetDuplicates) return;
+    const requestedId = id;
+    setLoadingSheetDuplicates(true);
+    try {
+      const [nextPending, nextDeferred, nextResolved] = await Promise.all([
+        hasMoreSheetPending
+          ? fetchIdentityCandidates(
+              "pending",
+              id,
+              undefined,
+              sheetDuplicates.pending.length + sheetDuplicates.extraPending.length,
+            )
+          : Promise.resolve([] as RelationshipIdentityCandidate[]),
+        hasMoreSheetDeferred
+          ? fetchIdentityCandidates(
+              "deferred",
+              id,
+              undefined,
+              sheetDuplicates.deferred.length + sheetDuplicates.extraDeferred.length,
+            )
+          : Promise.resolve([] as RelationshipIdentityCandidate[]),
+        hasMoreSheetResolved
+          ? fetchIdentityCandidates(
+              "resolved",
+              id,
+              undefined,
+              sheetDuplicates.resolved.length + sheetDuplicates.extraResolved.length,
+            )
+          : Promise.resolve([] as RelationshipIdentityCandidate[]),
+      ]);
+      if (sheetIdRef.current !== requestedId) return;
+      setSheetDuplicates((current) => ({
+        ...current,
+        extraPending: hasMoreSheetPending
+          ? appendById(current.extraPending, nextPending)
+          : current.extraPending,
+        extraDeferred: hasMoreSheetDeferred
+          ? appendById(current.extraDeferred, nextDeferred)
+          : current.extraDeferred,
+        extraResolved: hasMoreSheetResolved
+          ? appendById(current.extraResolved, nextResolved)
+          : current.extraResolved,
+        pendingExhausted:
+          hasMoreSheetPending && nextPending.length < IDENTITY_CANDIDATE_PAGE
+            ? true
+            : current.pendingExhausted,
+        deferredExhausted:
+          hasMoreSheetDeferred && nextDeferred.length < IDENTITY_CANDIDATE_PAGE
+            ? true
+            : current.deferredExhausted,
+        resolvedExhausted:
+          hasMoreSheetResolved && nextResolved.length < IDENTITY_CANDIDATE_PAGE
+            ? true
+            : current.resolvedExhausted,
+      }));
+    } catch (error) {
+      onError(errMessage(error, "Could not load the next duplicates."));
+    } finally {
+      if (sheetIdRef.current === requestedId) setLoadingSheetDuplicates(false);
     }
   };
 
@@ -3349,6 +3483,9 @@ export function RelationshipSheet({
 
                 <IdentityReviewInbox
                   candidates={identityCandidates}
+                  hasMore={hasMoreSheetDuplicates}
+                  loadingMore={loadingSheetDuplicates}
+                  onLoadMore={() => void loadMoreSheetDuplicates()}
                   onError={onError}
                   onChanged={() => {
                     void load();
