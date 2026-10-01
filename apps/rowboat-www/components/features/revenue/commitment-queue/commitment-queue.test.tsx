@@ -10,7 +10,14 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ComponentProps } from "react";
 
-import { CommitmentQueue, REGISTER_VIEWS, registerPartyLabels } from "./commitment-queue";
+import {
+  CommitmentQueue,
+  formatMissingEvidence,
+  missingEvidenceLabel,
+  REGISTER_VIEWS,
+  registerPartyLabels,
+  urgencyLabel,
+} from "./commitment-queue";
 import type {
   RegisterEntry,
   RelationshipSourceInventoryItem,
@@ -105,6 +112,16 @@ function props(overrides: Partial<ComponentProps<typeof CommitmentQueue>> = {}) 
 }
 
 describe("CommitmentQueue", () => {
+  it("names an overdue promise and a missing promiser", () => {
+    expect(urgencyLabel("overdue")).toBe("Overdue");
+    expect(urgencyLabel("due_soon")).toBe("Due within 72h");
+    expect(urgencyLabel("closed")).toBe("Closed");
+    expect(missingEvidenceLabel("promiser")).toBe("who promised");
+    expect(missingEvidenceLabel("recipient")).toBe("who it was promised to");
+    expect(formatMissingEvidence(["promiser", "due date"])).toBe("who promised, due date");
+    expect(formatMissingEvidence([])).toBe("");
+  });
+
   it("names both sides of a mutual promise", async () => {
     expect(registerPartyLabels({ direction: "mutual", relationshipName: "Acme" })).toEqual({
       owner: "You and Acme",

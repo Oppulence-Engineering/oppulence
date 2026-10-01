@@ -181,6 +181,22 @@ export interface CommitmentQueueProps extends Omit<
 // from relationship-graph nodes and edges. That reconstruction could not page,
 // could not filter server-side, and could not answer "by owner" at all.
 
+/** A missing register field is a stored token. The record names the gap. */
+export function missingEvidenceLabel(item: string): string {
+  switch (item) {
+    case "promiser":
+      return "who promised";
+    case "recipient":
+      return "who it was promised to";
+    default:
+      return item;
+  }
+}
+
+export function formatMissingEvidence(items: readonly string[]): string {
+  return items.map(missingEvidenceLabel).join(", ");
+}
+
 function missingEvidence(entry: RegisterEntry) {
   const missing: string[] = [];
   if (!entry.ownerParticipantRef?.trim()) missing.push("promiser");
@@ -205,7 +221,7 @@ function nextAction(
   if (state === "missed") return "Acknowledge with the counterparty or renegotiate.";
   if (state === "disputed") return "Clarify the promise with the counterparty.";
   if (blocked) return "Resolve the blocker or renegotiate the promise.";
-  if (missing.length > 0) return `Confirm or correct ${missing[0]}.`;
+  if (missing.length > 0) return `Confirm or correct ${missingEvidenceLabel(missing[0])}.`;
   if (urgency === "overdue") return "Draft a recovery message or task now.";
   if (urgency === "due_soon") return "Review and warn the owner before it is overdue.";
   return "Watch connected sources for fulfillment or a reply.";
@@ -346,6 +362,22 @@ function statusLabel(value: string) {
     superseded: "Superseded",
   };
   return labels[value] || value.replaceAll("_", " ");
+}
+
+/** Urgency is overdue, due soon, open, or closed. Promise status uses a different map. */
+export function urgencyLabel(urgency: string): string {
+  switch (urgency) {
+    case "overdue":
+      return "Overdue";
+    case "due_soon":
+      return "Due within 72h";
+    case "open":
+      return "Open";
+    case "closed":
+      return "Closed";
+    default:
+      return statusLabel(urgency);
+  }
 }
 
 function acceptanceLabel(value: string) {
@@ -1094,9 +1126,11 @@ export function CommitmentQueue({
                 </div>
                 <Fact
                   label="Evidence missing"
-                  value={
-                    selected.missingEvidence.length ? selected.missingEvidence.join(", ") : "None"
-                  }
+                    value={
+                      selected.missingEvidence.length
+                        ? formatMissingEvidence(selected.missingEvidence)
+                        : "None"
+                    }
                 />
               </dl>
             </div>
@@ -1127,11 +1161,7 @@ export function CommitmentQueue({
                 <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   <DetailCard
                     label="Urgency"
-                    value={
-                      selected.urgency === "due_soon"
-                        ? "Due within 72h"
-                        : statusLabel(selected.urgency)
-                    }
+                    value={urgencyLabel(selected.urgency)}
                   />
                   <DetailCard label="Promise status" value={statusLabel(selected.state)} />
                   <DetailCard label="Acceptance" value={acceptanceLabel(selected.acceptance)} />
@@ -1162,7 +1192,7 @@ export function CommitmentQueue({
                     </CardContent>
                     {selected.missingEvidence.length > 0 ? (
                       <p className="mt-2 flex items-center gap-1.5 text-[12px] text-amber-400">
-                        <Warning /> Missing {selected.missingEvidence.join(", ")}
+                        <Warning /> Missing {formatMissingEvidence(selected.missingEvidence)}
                       </p>
                     ) : null}
                     <div className="mt-4 flex flex-wrap gap-2">
