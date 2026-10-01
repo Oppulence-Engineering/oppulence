@@ -45,6 +45,7 @@ import {
   scopeProductDetail,
   scopeProductLabel,
 } from "@/lib/connectors/connector-product-copy";
+import { friendlyRevenueError } from "@/lib/revenue/revenue";
 
 const OUTCOME_MESSAGES: Record<HostedOAuthOutcome, string> = {
   active: "Connected.",
@@ -216,7 +217,9 @@ function GoogleConnectionSettings() {
       window.location.assign((await createGoogleCommitmentsAuthorizationURL()).toString());
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Google authorization could not be started.",
+        friendlyRevenueError(
+          error instanceof Error ? error.message : "Google authorization could not be started.",
+        ),
       );
       setBusy(false);
     }

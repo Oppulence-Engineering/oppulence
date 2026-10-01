@@ -187,7 +187,7 @@ export function friendlyRevenueError(message: string) {
   if (/rowboat-api is unreachable|upstream_unavailable/i.test(message)) {
     return "The Oppulence API is not reachable. In local dev, start rowboat-api on port 18080, then reload.";
   }
-  if (/^Request failed \(503\)$/.test(message)) {
+  if (/\(503\)/.test(message) && /\bfailed\b|unreachable|unavailable/i.test(message)) {
     return "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.";
   }
   return message;

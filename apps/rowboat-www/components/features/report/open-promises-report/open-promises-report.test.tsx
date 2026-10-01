@@ -26,6 +26,12 @@ describe("OpenPromisesReportClient", () => {
     expect(source).not.toContain("no evidence of fulfillment");
     expect(source).toContain("The first read has not started yet.");
     expect(source).toContain("auditFailureCopy(reason)");
+    expect(source).toContain(
+      'friendlyRevenueError(\n          error instanceof Error ? error.message : "Google authorization could not be started.",\n        )',
+    );
+    expect(source).toContain(
+      'friendlyRevenueError(\n          error instanceof Error ? error.message : "The report could not be downloaded.",\n        )',
+    );
     expect(source).not.toContain('{reason || "No reason was recorded."}');
     expect(source).toContain("conversations read.");
     expect(source).not.toContain("evidence records");

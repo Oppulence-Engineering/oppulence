@@ -196,7 +196,9 @@ function ReportBody() {
       );
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Google authorization could not be started.",
+        friendlyRevenueError(
+          error instanceof Error ? error.message : "Google authorization could not be started.",
+        ),
       );
       setConnecting(false);
     }
@@ -513,7 +515,9 @@ function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string
       downloadMarkdown("open-promises.md", await getOpenPromisesReportMarkdown(scanId));
     } catch (error) {
       setDownloadError(
-        error instanceof Error ? error.message : "The report could not be downloaded.",
+        friendlyRevenueError(
+          error instanceof Error ? error.message : "The report could not be downloaded.",
+        ),
       );
     } finally {
       setDownloading(false);

@@ -232,6 +232,18 @@ describe("friendlyRevenueError", () => {
     expect(friendlyRevenueError("rate limit exceeded")).toBe(
       "Too many requests were sent from this workspace. Wait a moment, then try again.",
     );
+    expect(friendlyRevenueError("Report export failed (429)")).toBe(
+      "Too many requests were sent from this workspace. Wait a moment, then try again.",
+    );
+    expect(friendlyRevenueError("Request failed (503)")).toBe(
+      "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.",
+    );
+    expect(friendlyRevenueError("Report export failed (503)")).toBe(
+      "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.",
+    );
+    expect(friendlyRevenueError("Export failed (503)")).toBe(
+      "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.",
+    );
   });
 
   it("explains a failed audit without the provider payload", () => {
