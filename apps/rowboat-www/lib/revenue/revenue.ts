@@ -174,6 +174,17 @@ function parsed<T>(schema: { parse: (value: unknown) => T }, value: unknown, sub
   }
 }
 
+/**
+ * A failed load should keep its short fallback unless the failure is one we
+ * already explain, such as a rate limit or an API that is down.
+ */
+export function explainedRevenueError(error: unknown, fallback: string): string {
+  const message = error instanceof Error ? error.message.trim() : "";
+  if (!message) return fallback;
+  const friendly = friendlyRevenueError(message);
+  return friendly === message ? fallback : friendly;
+}
+
 export function friendlyRevenueError(message: string) {
   if (/gmail.*(?:returned 429|user-rate limit exceeded)/i.test(message)) {
     return "Google is temporarily limiting Gmail reads for this account. Please try the audit again in about 15 minutes.";

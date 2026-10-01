@@ -472,7 +472,9 @@ describe("Google grant claimed in the web app", () => {
     renderWithQuery(<ConnectorSettings />);
 
     const stripe = await screen.findByText("Stripe");
-    const extra = await screen.findByText("Additional products are temporarily unavailable.");
+    const extra = await screen.findByText(
+      "Too many requests were sent from this workspace. Wait a moment, then try again.",
+    );
     expect(stripe.compareDocumentPosition(extra) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

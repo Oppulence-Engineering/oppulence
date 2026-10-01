@@ -6,6 +6,7 @@ import {
   auditFailureCopy,
   companyLinkedInAction,
   companyLinkedInURL,
+  explainedRevenueError,
   friendlyRevenueError,
   getRelationshipCommunicationTimeline,
   getRelationshipGraph,
@@ -219,6 +220,28 @@ describe("getRelationshipCommunicationTimeline", () => {
     );
 
     await expect(getRelationshipCommunicationTimeline("rel-1")).resolves.toEqual([]);
+  });
+});
+
+describe("explainedRevenueError", () => {
+  it("keeps a short fallback when the failure is not one we explain", () => {
+    expect(explainedRevenueError(new Error("upstream"), "Could not load connections.")).toBe(
+      "Could not load connections.",
+    );
+    expect(explainedRevenueError(new Error("  "), "Could not load connections.")).toBe(
+      "Could not load connections.",
+    );
+    expect(
+      explainedRevenueError(new Error("Request failed (429)"), "Could not load connections."),
+    ).toBe("Too many requests were sent from this workspace. Wait a moment, then try again.");
+    expect(
+      explainedRevenueError(
+        new Error("Composio request failed (503)"),
+        "Additional products are temporarily unavailable.",
+      ),
+    ).toBe(
+      "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.",
+    );
   });
 });
 

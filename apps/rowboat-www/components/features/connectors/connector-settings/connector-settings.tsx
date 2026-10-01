@@ -45,7 +45,7 @@ import {
   scopeProductDetail,
   scopeProductLabel,
 } from "@/lib/connectors/connector-product-copy";
-import { friendlyRevenueError } from "@/lib/revenue/revenue";
+import { explainedRevenueError, friendlyRevenueError } from "@/lib/revenue/revenue";
 
 const OUTCOME_MESSAGES: Record<HostedOAuthOutcome, string> = {
   active: "Connected.",
@@ -201,7 +201,11 @@ function GoogleConnectionSettings() {
   }, [queryClient]);
 
   React.useEffect(() => {
-    if (statusQuery.error) setError("Could not load Google connection status.");
+    if (statusQuery.error) {
+      setError(
+        explainedRevenueError(statusQuery.error, "Could not load Google connection status."),
+      );
+    }
   }, [statusQuery.error]);
 
   React.useEffect(() => {
@@ -642,7 +646,9 @@ export function ConnectorSettings({ showHeading = true }: { showHeading?: boolea
         {state === "loading" ? (
           <p className="p-4 text-sm text-muted-foreground">Loading connections…</p>
         ) : state === "error" ? (
-          <p className="p-4 text-sm text-muted-foreground">Could not load connections.</p>
+          <p className="p-4 text-sm text-muted-foreground">
+            {explainedRevenueError(connectorsQuery.error, "Could not load connections.")}
+          </p>
         ) : visibleConnectors.length === 0 ? (
           <p className="p-4 text-sm text-muted-foreground">No connections are available yet.</p>
         ) : (

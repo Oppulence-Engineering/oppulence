@@ -14,7 +14,7 @@ import {
   startComposioConnection,
   type ComposioConnection,
 } from "@/lib/api/composio/client";
-import { friendlyRevenueError } from "@/lib/revenue/revenue";
+import { explainedRevenueError, friendlyRevenueError } from "@/lib/revenue/revenue";
 
 /**
  * Composio returns connection enums. A teammate should see the same kind of
@@ -167,7 +167,10 @@ export function ComposioConnections({
         <p className="p-4 text-sm text-muted-foreground">Loading products…</p>
       ) : state === "error" ? (
         <p className="p-4 text-sm text-muted-foreground">
-          Additional products are temporarily unavailable.
+          {explainedRevenueError(
+            toolkitsQuery.error ?? connectionsQuery.error,
+            "Additional products are temporarily unavailable.",
+          )}
         </p>
       ) : toolkits.length === 0 && orphans.length === 0 ? (
         <p className="p-4 text-sm text-muted-foreground">No products are available to connect.</p>
