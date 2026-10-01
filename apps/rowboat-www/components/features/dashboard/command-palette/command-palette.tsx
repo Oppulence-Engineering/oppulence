@@ -37,6 +37,7 @@ import { Button } from "@oppulence/ui/components/button";
 import { Label } from "@oppulence/ui/components/label";
 import { Spinner } from "@oppulence/ui/components/spinner";
 import { useRelationships, useSemanticSearch } from "@/hooks/queries/use-relationships";
+import { explainedRevenueError } from "@/lib/revenue/revenue";
 import type { SessionMeta } from "@/lib/agents/chat-sessions";
 import type { SemanticMatch } from "@/lib/revenue/revenue";
 import { companyName } from "@/lib/revenue/revenue-records";
@@ -209,7 +210,10 @@ export function CommandPalette({
               Searching…
             </>
           ) : searchError ? (
-            "Search is temporarily unavailable."
+            explainedRevenueError(
+              searchMode === "mail" ? mailQuery.error : accountsQuery.error,
+              "Search is temporarily unavailable.",
+            )
           ) : searchMode === "mail" && semanticAvailable === false ? (
             mailSearchUnavailableCopy()
           ) : (

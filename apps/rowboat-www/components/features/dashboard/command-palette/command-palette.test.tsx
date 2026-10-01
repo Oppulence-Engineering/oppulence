@@ -171,6 +171,27 @@ describe("CommandPalette semantic mail search", () => {
     expect(screen.queryByRole("button", { name: "Theme: light" })).toBeNull();
   });
 
+  it("explains a rate limit instead of saying search is down", async () => {
+    const user = userEvent.setup();
+    fetchers.fetchRelationships.mockRejectedValue(new Error("Request failed (429)"));
+    renderPalette(requiredProps);
+    await user.type(screen.getByRole("textbox", { name: "Command search" }), "acme");
+    expect(
+      await screen.findByText(
+        "Too many requests were sent from this workspace. Wait a moment, then try again.",
+      ),
+    ).toBeVisible();
+    expect(screen.queryByText("Search is temporarily unavailable.")).toBeNull();
+  });
+
+  it("keeps the short search line when the failure is unexplained", async () => {
+    const user = userEvent.setup();
+    fetchers.fetchRelationships.mockRejectedValue(new Error("upstream"));
+    renderPalette(requiredProps);
+    await user.type(screen.getByRole("textbox", { name: "Command search" }), "acme");
+    expect(await screen.findByText("Search is temporarily unavailable.")).toBeVisible();
+  });
+
   it("opens the company that the search found", async () => {
     const user = userEvent.setup();
     const onNavigateRelationship = vi.fn();

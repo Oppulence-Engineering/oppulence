@@ -123,6 +123,7 @@ import {
   createRelationship,
   deletePerson,
   dismissAction,
+  explainedRevenueError,
   getPersonAttributes,
   ingestRelationshipObservations,
   relativeTime,
@@ -1129,7 +1130,9 @@ export function NotesView({
       ) : null}
       {tab === "templates" && templatesQuery.isError ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-          <p className="text-sm text-destructive">Could not load note templates.</p>
+          <p className="text-sm text-destructive">
+            {explainedRevenueError(templatesQuery.error, "Could not load note templates.")}
+          </p>
           <Button size="sm" variant="outline" onClick={() => void templatesQuery.refetch()}>
             <ArrowClockwise /> Retry
           </Button>
@@ -1229,7 +1232,9 @@ export function NotesView({
               </Label>
               {favoritesQuery.isError ? (
                 <div className="flex items-center gap-3 border border-destructive/30 p-3">
-                  <p className="text-xs text-destructive">Could not load favorites.</p>
+                  <p className="text-xs text-destructive">
+                    {explainedRevenueError(favoritesQuery.error, "Could not load favorites.")}
+                  </p>
                   <Button size="sm" variant="outline" onClick={() => void favoritesQuery.refetch()}>
                     Retry
                   </Button>
