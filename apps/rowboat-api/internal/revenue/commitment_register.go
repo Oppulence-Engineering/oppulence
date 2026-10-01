@@ -128,6 +128,8 @@ func registerStatePredicates(states []string, now time.Time) ([]predicate.Commit
 }
 
 // ListCommitments returns one page of the register for the caller's workspace.
+// Promises that share a due time and a created time stay in id order, so the
+// next page does not repeat one and skip another.
 func (s *Service) ListCommitments(
 	ctx context.Context,
 	u *ent.User,
@@ -192,6 +194,10 @@ func (s *Service) ListCommitments(
 	if len(statePredicates) > 0 {
 		q = q.Where(commitment.Or(statePredicates...))
 	}
-	q = q.WithRelationship().Order(ent.Asc(commitment.FieldDueAt), ent.Desc(commitment.FieldCreatedAt))
+	q = q.WithRelationship().Order(
+		ent.Asc(commitment.FieldDueAt),
+		ent.Desc(commitment.FieldCreatedAt),
+		ent.Desc(commitment.FieldID),
+	)
 	return q.Limit(limit).Offset(f.Offset).All(ctx)
 }

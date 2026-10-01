@@ -1,8 +1,11 @@
 package revenue
 
 import (
+	"fmt"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 )
@@ -377,5 +380,65 @@ func TestRegisterExcludesUnconfirmedCandidates(t *testing.T) {
 	}
 	if len(withCandidates) != 2 {
 		t.Fatalf("the review queue could not see candidates: %d", len(withCandidates))
+	}
+}
+
+func TestRegisterTiedDueTimeUsesID(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel := f.relationship(t)
+	touched := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	due := time.Date(2099, 6, 1, 0, 0, 0, 0, time.UTC)
+	const total = 201
+	for i := 1; i <= total; i++ {
+		text := "Tied Promise"
+		if i == 1 {
+			text = "Tied Promise Last"
+		}
+		if _, err := f.client.Commitment.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("a115f000-0000-4000-8000-%012x", i))).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetRelationship(rel).
+			SetDirection("promised_by_me").
+			SetText(text).
+			SetConfidence(0.9).
+			SetSourcePhrase(text).
+			SetAcceptance("internally_confirmed").
+			SetUserConfirmed(true).
+			SetDueAt(due).
+			SetCreatedAt(touched).
+			SetUpdatedAt(touched).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	filter := CommitmentFilter{
+		Direction: "promised_by_me",
+		States:    []string{RegisterOpen},
+		Limit:     200,
+	}
+	first, err := f.svc.ListCommitments(f.ctx, f.user, filter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first) != 200 {
+		t.Fatalf("newest page = %d", len(first))
+	}
+	for _, row := range first {
+		if row.Text == "Tied Promise Last" {
+			t.Fatal("the lowest id was included beside higher ids with the same due time")
+		}
+	}
+	filter.Offset = 200
+	second, err := f.svc.ListCommitments(f.ctx, f.user, filter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(second) != 1 || second[0].Text != "Tied Promise Last" {
+		t.Fatalf("older id page = %d", len(second))
 	}
 }
