@@ -27,7 +27,7 @@ import {
 import { Label } from "@oppulence/ui/components/label";
 import { Skeleton } from "@oppulence/ui/components/skeleton";
 import { cn } from "@/lib/utils";
-import { PRIORITY_COMPONENT_LABELS } from "@/lib/revenue/revenue";
+import { priorityComponentLabel } from "@/lib/revenue/revenue";
 import type { RevenueAction } from "@/lib/revenue/types";
 
 export function priorityTone(score: number): { label: string; className: string } {
@@ -120,7 +120,7 @@ export function PriorityBreakdown({ action }: { action: RevenueAction }) {
           {entries.map(([key, value]) => (
             <li key={key} className="flex items-center justify-between text-xs">
               <Label className="font-normal text-primary/60">
-                {PRIORITY_COMPONENT_LABELS[key] ?? key}
+                {priorityComponentLabel(key)}
               </Label>
               <Badge
                 className={cn(

@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { priorityComponentLabel } from "@/lib/revenue/revenue";
+
 const source = fs.readFileSync(path.join(import.meta.dirname, "shared.tsx"), "utf8");
 
 describe("WorkspaceEmptyState", () => {
@@ -16,5 +18,14 @@ describe("WorkspaceEmptyState", () => {
     expect(source).not.toContain("Notes, Tasks, and Email sending");
     expect(source).toContain("What to expect");
     expect(source).not.toContain("Learn more");
+  });
+
+  it("names earlier outcomes in the ranking breakdown", () => {
+    expect(priorityComponentLabel("outcome_learning")).toBe("Earlier outcomes");
+    expect(priorityComponentLabel("evidence_quality")).toBe("Evidence quality");
+    expect(priorityComponentLabel("contact_risk_penalty")).toBe("Contact risk");
+    expect(priorityComponentLabel("urgency")).toBe("Urgency");
+    expect(source).toContain("priorityComponentLabel(key)");
+    expect(source).not.toContain("PRIORITY_COMPONENT_LABELS[key] ?? key");
   });
 });

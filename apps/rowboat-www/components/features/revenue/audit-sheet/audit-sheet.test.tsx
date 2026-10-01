@@ -3,7 +3,12 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { outcomeKindLabel, outcomeSourceLabel } from "@/components/features/revenue/audit-sheet/audit-sheet";
+import {
+  outcomeKindLabel,
+  outcomeSourceLabel,
+  revisionActionLabel,
+  revisionChannelLabel,
+} from "@/components/features/revenue/audit-sheet/audit-sheet";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "audit-sheet.tsx"), "utf8");
 
@@ -22,5 +27,17 @@ describe("AuditSheet", () => {
     expect(source).toContain("outcomeSourceLabel(o.source)");
     expect(source).not.toContain("{o.source}");
     expect(source).not.toContain("OUTCOME_LABELS[o.kind] ?? o.kind");
+  });
+
+  it("names a revision action and channel", () => {
+    expect(revisionActionLabel("warm_follow_up")).toBe("Warm follow-up");
+    expect(revisionActionLabel("crm_update")).toBe("CRM update");
+    expect(revisionChannelLabel("email")).toBe("Email");
+    expect(revisionChannelLabel("crm_task")).toBe("CRM task");
+    expect(revisionChannelLabel("calendar")).toBe("Calendar");
+    expect(source).toContain("revisionActionLabel(r.actionType)");
+    expect(source).toContain("revisionChannelLabel(r.channel)");
+    expect(source).not.toContain("{r.actionType}");
+    expect(source).not.toContain("{r.channel}");
   });
 });

@@ -48,6 +48,35 @@ export function outcomeKindLabel(kind: string): string {
   return words.replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+const CHANNEL_LABELS: Record<string, string> = {
+  email: "Email",
+  slack: "Slack",
+  call: "Call",
+  crm_task: "CRM task",
+  crm: "CRM",
+  task: "Task",
+  calendar: "Calendar",
+};
+
+function titledSlug(value: string): string {
+  return value
+    .replaceAll(/[._]+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => (word.toLowerCase() === "crm" ? "CRM" : word.charAt(0).toUpperCase() + word.slice(1)))
+    .join(" ");
+}
+
+/** A revision names the action the way the queue does. */
+export function revisionActionLabel(actionType: string): string {
+  return ACTION_TYPE_LABELS[actionType] ?? (titledSlug(actionType) || "Action");
+}
+
+/** A revision names the channel a person would recognize. */
+export function revisionChannelLabel(channel: string): string {
+  return CHANNEL_LABELS[channel] ?? (titledSlug(channel) || "Channel");
+}
+
 /** An outcome source is where the result was seen. The row names that place. */
 export function outcomeSourceLabel(source: string): string {
   switch (source) {
@@ -147,7 +176,7 @@ export function AuditSheet({
                     <Card className="gap-0 py-2" key={r.revision}>
                       <CardContent className="flex items-center justify-between px-3 text-xs">
                         <Label className="font-normal text-primary/70">
-                          Rev {r.revision} · {r.actionType} · {r.channel}
+                          Rev {r.revision} · {revisionActionLabel(r.actionType)} · {revisionChannelLabel(r.channel)}
                         </Label>
                         <Badge
                           className="font-mono font-normal text-primary/40"

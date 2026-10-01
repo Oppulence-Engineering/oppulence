@@ -954,7 +954,17 @@ export const PRIORITY_COMPONENT_LABELS: Record<string, string> = {
   evidence_quality: "Evidence quality",
   uncertainty_penalty: "Uncertainty",
   contact_risk_penalty: "Contact risk",
+  outcome_learning: "Earlier outcomes",
 };
+
+/** A ranking part is a stored slug. The review sheet names the factor. */
+export function priorityComponentLabel(key: string): string {
+  const known = PRIORITY_COMPONENT_LABELS[key];
+  if (known) return known;
+  const words = key.replaceAll(/[._]+/g, " ").trim();
+  if (!words) return "Factor";
+  return words.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
 
 export function relativeTime(iso?: string | null): string {
   if (!iso) return "";
