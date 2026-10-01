@@ -577,6 +577,8 @@ describe("RelationshipsView", () => {
     expect(source).toContain("activitySourceLabel(item.source)");
     expect(source).toContain("activitySourceLabel(source.source)");
     expect(source).toContain("sourceConnectionLabel(source)");
+    expect(source).not.toContain("statuses.slice(0, 4)");
+    expect(source).toContain("{statuses.map((source) => (");
     expect(source).toContain("sourceConnectionLabel({\n                    source: item.source,");
     expect(source).toContain("completenessProductLabel(account.completeness)");
     expect(source).toContain("enrichConfirmCopy(");

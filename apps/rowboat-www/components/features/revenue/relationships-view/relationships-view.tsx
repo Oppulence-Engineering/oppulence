@@ -1455,7 +1455,7 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
   ).length;
   return (
     <div className="flex max-w-sm flex-wrap justify-end gap-1.5">
-      {statuses.slice(0, 4).map((source) => (
+      {statuses.map((source) => (
         <Badge
           key={`${source.source}:${source.sourceAccountId}`}
           variant="outline"
