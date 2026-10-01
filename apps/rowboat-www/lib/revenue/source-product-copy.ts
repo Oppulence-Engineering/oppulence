@@ -54,6 +54,21 @@ export function enumLabel(value?: string): string {
   return titleCase((value || "unknown").replaceAll("_", " ").replaceAll(".", " "));
 }
 
+/** A person on a company stores a role token. The row names the role. */
+export function participantRoleLabel(role: string): string {
+  const labels: Record<string, string> = {
+    contact: "Contact",
+    primary_contact: "Primary contact",
+    champion: "Champion",
+    decision_maker: "Decision maker",
+    blocker: "Blocker",
+    executive_sponsor: "Executive sponsor",
+    owner: "Owner",
+    former_contact: "Former contact",
+  };
+  return labels[role] ?? enumLabel(role);
+}
+
 const ACTIVITY_SOURCE_LABELS: Record<string, string> = {
   gmail: "Gmail",
   google: "Google",

@@ -10,7 +10,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useConsoleResources } from "@/hooks/queries/use-console";
 import { companyName } from "@/lib/revenue/revenue-records";
-import { enumLabel } from "@/lib/revenue/source-product-copy";
+import { enumLabel, participantRoleLabel } from "@/lib/revenue/source-product-copy";
 import { useRelationshipGraph } from "@/hooks/queries/use-relationships";
 import { consoleKeys } from "@/hooks/queries/utils/console-keys";
 import { relationshipKeys } from "@/hooks/queries/utils/relationship-keys";
@@ -212,7 +212,10 @@ type FlowEdge = Edge<{ graphEdge: RelationshipGraphEdge }, "typedEdge">;
 function GraphNodeCard({ data, selected }: NodeProps<FlowNode>) {
   const node = data.graphNode;
   const badges = [
-    node.health ? graphNodeFieldLabel(node.kind, "health", node.health) : "",
+    node.role ? participantRoleLabel(node.role) : "",
+    node.health && node.health !== "unknown"
+      ? graphNodeFieldLabel(node.kind, "health", node.health)
+      : "",
     node.approvalStatus ? graphNodeFieldLabel(node.kind, "approval", node.approvalStatus) : "",
     node.freshness ? graphNodeFieldLabel(node.kind, "freshness", node.freshness) : "",
     node.confidence === undefined ? "" : `${Math.round(node.confidence * 100)}%`,
@@ -708,6 +711,7 @@ function Inspector({
       <dl className="mt-4 grid grid-cols-2 gap-2 text-xs">
         {(
           [
+            ["Role", "other", node.role ? participantRoleLabel(node.role) : undefined],
             ["Status", "status", node.status],
             ["Health", "health", node.health],
             ["Lifecycle", "lifecycle", node.lifecycle],
@@ -1073,12 +1077,16 @@ export function graphExecutionLabel(status: string | undefined): string | undefi
 
 export function graphNodeSummaryLabel(node: {
   kind: string;
+  role?: string;
   health?: string;
   status?: string;
   approvalStatus?: string;
   freshness?: string;
 }): string {
-  if (node.health) return graphNodeFieldLabel(node.kind, "health", node.health);
+  if (node.kind === "person" && node.role) return participantRoleLabel(node.role);
+  if (node.health && node.health !== "unknown") {
+    return graphNodeFieldLabel(node.kind, "health", node.health);
+  }
   if (node.status) return graphNodeFieldLabel(node.kind, "status", node.status);
   if (node.approvalStatus) return graphNodeFieldLabel(node.kind, "approval", node.approvalStatus);
   if (node.freshness) return graphNodeFieldLabel(node.kind, "freshness", node.freshness);

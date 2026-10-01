@@ -99,6 +99,27 @@ describe("RelationshipGraphWorkspace", () => {
     expect(
       graphNodeSummaryLabel({ kind: "commitment", status: "open" }),
     ).toBe("Open");
+    expect(
+      graphNodeSummaryLabel({
+        kind: "relationship",
+        health: "unknown",
+        status: "active",
+      }),
+    ).toBe("Active");
+    expect(
+      graphNodeSummaryLabel({
+        kind: "relationship",
+        health: "needs_attention",
+        status: "active",
+      }),
+    ).toBe("Needs attention");
+    expect(
+      graphNodeSummaryLabel({
+        kind: "person",
+        role: "decision_maker",
+        status: "active",
+      }),
+    ).toBe("Decision maker");
     expect(source).toContain("graphNodeFieldLabel(node.kind, field, String(value))");
     expect(source).toContain("graphNodeSummaryLabel(node)");
     expect(source).not.toContain("graphDetailLabel(String(value))");
