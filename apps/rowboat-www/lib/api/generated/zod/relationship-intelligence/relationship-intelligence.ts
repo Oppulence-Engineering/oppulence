@@ -3255,6 +3255,8 @@ export const getRelationshipGraphQueryScopeDefault = `portfolio`;
 export const getRelationshipGraphQueryDepthDefault = 2;
 export const getRelationshipGraphQueryDepthMax = 3;
 
+export const getRelationshipGraphQueryOffsetMin = 0;
+
 export const GetRelationshipGraphQueryParams = zod.object({
   scope: zod
     .enum(["portfolio", "relationship"])
@@ -3272,6 +3274,12 @@ export const GetRelationshipGraphQueryParams = zod.object({
     .datetime({ offset: true })
     .optional()
     .describe("Historical evidence boundary; must not be in the future."),
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(getRelationshipGraphQueryOffsetMin)
+    .optional()
+    .describe("Company offset. The first page is the 200 most recently updated companies."),
 });
 
 export const getRelationshipGraph200ResponseDepthMax = 3;
@@ -3333,6 +3341,7 @@ export const GetRelationshipGraph200Response = zod
       )
       .describe("Typed directed edges."),
     generatedAt: zod.iso.datetime({ offset: true }).describe("Projection generation time."),
+    hasMore: zod.boolean().optional().describe("Another company exists beyond this page."),
     historical: zod.boolean().describe("Whether the response is an historical projection."),
     nodes: zod
       .array(

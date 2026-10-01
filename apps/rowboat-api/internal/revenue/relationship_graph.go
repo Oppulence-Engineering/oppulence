@@ -39,6 +39,7 @@ type RelationshipGraphFilter struct {
 	RelationshipID *uuid.UUID
 	Depth          int
 	AsOf           time.Time
+	Offset         int
 }
 
 // RelationshipGraphAggregate is the authorized, eagerly loaded source for one graph response.
@@ -50,6 +51,7 @@ type RelationshipGraphAggregate struct {
 	Depth         int
 	AsOf          time.Time
 	Historical    bool
+	HasMore       bool
 }
 
 // RelationshipGraph returns a tenant-scoped graph aggregate. It filters time-bearing
@@ -155,9 +157,20 @@ func (s *Service) RelationshipGraph(
 		q.Where(relationship.IDEQ(*filter.RelationshipID))
 	}
 
-	relationships, err := q.Order(ent.Desc(relationship.FieldUpdatedAt)).Limit(relationshipListLimit).All(ctx)
+	offset := filter.Offset
+	if offset < 0 {
+		offset = 0
+	}
+	relationships, err := q.Order(
+		ent.Desc(relationship.FieldUpdatedAt),
+		ent.Desc(relationship.FieldID),
+	).Limit(relationshipListLimit + 1).Offset(offset).All(ctx)
 	if err != nil {
 		return nil, err
+	}
+	hasMore := len(relationships) > relationshipListLimit
+	if hasMore {
+		relationships = relationships[:relationshipListLimit]
 	}
 	if filter.Scope == "relationship" && len(relationships) == 0 {
 		return nil, ErrNotFound
@@ -182,6 +195,7 @@ func (s *Service) RelationshipGraph(
 		Depth:         filter.Depth,
 		AsOf:          filter.AsOf,
 		Historical:    historical,
+		HasMore:       hasMore,
 	}, nil
 }
 
@@ -263,6 +277,7 @@ type relationshipGraphDTO struct {
 	Nodes           []relationshipGraphNodeDTO      `json:"nodes"`
 	Edges           []relationshipGraphEdgeDTO      `json:"edges"`
 	Permissions     relationshipGraphPermissionsDTO `json:"permissions"`
+	HasMore         bool                            `json:"hasMore,omitempty"`
 }
 
 type graphProjectionState struct {
@@ -650,6 +665,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 		ContractVersion: relationshipGraphContractVersion, GeneratedAt: generatedAt.UTC(),
 		AsOf: aggregate.AsOf, Historical: aggregate.Historical, Scope: aggregate.Scope,
 		Depth: aggregate.Depth, Nodes: nodeList, Edges: edgeList, Permissions: permissions,
+		HasMore: aggregate.HasMore,
 	}
 	if aggregate.Scope == "relationship" && len(aggregate.Relationships) == 1 {
 		dto.RelationshipID = aggregate.Relationships[0].ID.String()
@@ -841,6 +857,16 @@ func (h *Handler) RelationshipGraph(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		filter.AsOf = asOf
+	}
+	if rawOffset := strings.TrimSpace(r.URL.Query().Get("offset")); rawOffset != "" {
+		value, err := strconv.Atoi(rawOffset)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		if value > 0 {
+			filter.Offset = value
+		}
 	}
 	if rawID := strings.TrimSpace(r.URL.Query().Get("relationshipId")); rawID != "" {
 		id, err := uuid.Parse(rawID)

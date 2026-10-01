@@ -11,6 +11,7 @@ export type RelationshipGraphScope = {
   relationshipId?: string;
   depth?: 1 | 2 | 3;
   asOf?: string;
+  offset?: number;
 };
 
 export const relationshipKeys = {

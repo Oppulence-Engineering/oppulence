@@ -61,6 +61,7 @@ function graphPath(input: RelationshipGraphScope): string {
   if (input.relationshipId) params.set("relationshipId", input.relationshipId);
   if (input.depth) params.set("depth", String(input.depth));
   if (input.asOf) params.set("asOf", input.asOf);
+  if (input.offset && input.offset > 0) params.set("offset", String(input.offset));
   return `/relationships/graph?${params.toString()}`;
 }
 

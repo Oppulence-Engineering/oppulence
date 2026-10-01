@@ -2,6 +2,7 @@ package revenue
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -184,5 +185,68 @@ func TestGraphSourceLabelUsesTheProductTitle(t *testing.T) {
 	}
 	if got := graphEventLabel("custom.event_name"); got != "Custom Event Name" {
 		t.Fatalf("unknown event label = %q", got)
+	}
+}
+
+func TestRelationshipGraphPagesPastTheNewestCompanies(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	asOf := f.svc.now().UTC()
+	const total = relationshipListLimit + 1
+	for i := 1; i <= total; i++ {
+		if _, err := f.client.Relationship.Create().
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetKind("company").
+			SetDisplayName(fmt.Sprintf("Graph Page %03d", i)).
+			SetResourceRefs([]string{}).
+			SetRisks([]string{}).
+			SetMilestones([]string{}).
+			SetCreatedAt(asOf.Add(-48 * time.Hour)).
+			SetUpdatedAt(asOf.Add(-time.Duration(i) * time.Second)).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	first, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "portfolio", Depth: 1, AsOf: asOf,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !first.HasMore || len(first.Relationships) != relationshipListLimit {
+		t.Fatalf("newest page = %d hasMore=%v", len(first.Relationships), first.HasMore)
+	}
+	for _, rel := range first.Relationships {
+		if rel.DisplayName == "Graph Page 201" {
+			t.Fatal("the oldest company was included in the newest page")
+		}
+	}
+	second, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "portfolio", Depth: 1, AsOf: asOf, Offset: relationshipListLimit,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.HasMore {
+		t.Fatal("the page after the newest 200 still claimed another page")
+	}
+	found := false
+	for _, rel := range second.Relationships {
+		if rel.DisplayName == "Graph Page 201" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("older page missing Graph Page 201: %d companies", len(second.Relationships))
+	}
+	clamped, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "portfolio", Depth: 1, AsOf: asOf, Offset: -3,
+	})
+	if err != nil || !clamped.HasMore || len(clamped.Relationships) != relationshipListLimit {
+		t.Fatalf("negative offset should match the newest page: %d hasMore=%v err=%v", len(clamped.Relationships), clamped.HasMore, err)
 	}
 }

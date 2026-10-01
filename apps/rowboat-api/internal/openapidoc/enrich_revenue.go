@@ -448,6 +448,7 @@ func addRevenueSchemas(schemas obj) {
 		"depth":           obj{"type": "integer", "minimum": 1, "maximum": 3, "example": 2},
 		"nodes":           arraySchema("Typed nodes.", ref("RelationshipGraphNode")),
 		"edges":           arraySchema("Typed directed edges.", ref("RelationshipGraphEdge")),
+		"hasMore":         boolSchema("Another company exists beyond this page.", true),
 		"permissions": objectSchema("Viewer capabilities for this projection.", obj{
 			"canView":       boolSchema("May view.", true),
 			"canContribute": boolSchema("May propose state or actions.", true),
@@ -796,6 +797,7 @@ func addRevenuePaths(paths obj) {
 			obj{"name": "relationshipId", "in": "query", "required": false, "description": "Required when scope=relationship.", "schema": obj{"type": "string", "format": "uuid"}},
 			obj{"name": "depth", "in": "query", "required": false, "description": "Bounded graph expansion depth.", "schema": obj{"type": "integer", "minimum": 1, "maximum": 3, "default": 2}},
 			obj{"name": "asOf", "in": "query", "required": false, "description": "Historical evidence boundary; must not be in the future.", "schema": obj{"type": "string", "format": "date-time"}},
+			obj{"name": "offset", "in": "query", "required": false, "description": "Company offset. The first page is the 200 most recently updated companies.", "schema": obj{"type": "integer", "minimum": 0}},
 		},
 		nil,
 		obj{

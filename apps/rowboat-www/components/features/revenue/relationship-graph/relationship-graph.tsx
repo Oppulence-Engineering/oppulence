@@ -10,6 +10,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useConsoleResources } from "@/hooks/queries/use-console";
 import { companyName } from "@/lib/revenue/revenue-records";
+import { getRelationshipGraph } from "@/lib/revenue/revenue";
 import { enumLabel, participantRoleLabel } from "@/lib/revenue/source-product-copy";
 import { useRelationshipGraph } from "@/hooks/queries/use-relationships";
 import { consoleKeys } from "@/hooks/queries/utils/console-keys";
@@ -1005,6 +1006,13 @@ export function graphCanvasCapLabel(shown: number, total: number): string {
   return `Showing ${shown} of ${total} · raise how many to show for more`;
 }
 
+/** One graph response is the same page as the company directory. */
+export const GRAPH_COMPANY_PAGE = 200;
+
+export function graphNextCompaniesLabel(): string {
+  return "Show the next companies";
+}
+
 export function graphCountLabel(count: number, singular: string, plural: string): string {
   return `${count} ${count === 1 ? singular : plural}`;
 }
@@ -1353,9 +1361,24 @@ export function RelationshipGraphWorkspace({
     graphEnabled,
   );
   const loadedGraph = graphEnabled ? (graphQuery.data ?? null) : null;
+  const [laterCompanies, setLaterCompanies] = React.useState<RelationshipGraph[]>([]);
+  const [laterHasMore, setLaterHasMore] = React.useState<boolean | null>(null);
+  const [loadingLaterCompanies, setLoadingLaterCompanies] = React.useState(false);
+  React.useEffect(() => {
+    setLaterCompanies([]);
+    setLaterHasMore(null);
+    setLoadingLaterCompanies(false);
+  }, [viewState.scope, viewState.relationshipId, viewState.asOf]);
   const graph = React.useMemo(() => {
     if (!loadedGraph) return null;
-    const visible = withoutPersonDirectoryRecords(loadedGraph.nodes, loadedGraph.edges);
+    const pages = [loadedGraph, ...laterCompanies];
+    const nodes = [
+      ...new Map(pages.flatMap((page) => page.nodes).map((node) => [node.id, node])).values(),
+    ];
+    const edges = [
+      ...new Map(pages.flatMap((page) => page.edges).map((edge) => [edge.id, edge])).values(),
+    ];
+    const visible = withoutPersonDirectoryRecords(nodes, edges);
     const titles = new Map(
       relationships
         .filter((row) => row.kind !== "person")
@@ -1364,14 +1387,33 @@ export function RelationshipGraphWorkspace({
     return {
       ...loadedGraph,
       ...visible,
+      hasMore: laterHasMore ?? loadedGraph.hasMore,
       nodes: visible.nodes.map((node) => {
         if (node.kind !== "relationship" || !node.relationshipId) return node;
         const title = titles.get(node.relationshipId);
         return title ? { ...node, label: title } : node;
       }),
     };
-  }, [loadedGraph, relationships]);
+  }, [laterCompanies, laterHasMore, loadedGraph, relationships]);
   const loading = graphEnabled && graphQuery.isPending;
+  const loadLaterCompanies = async () => {
+    if (!graph?.hasMore || loadingLaterCompanies || viewState.scope !== "portfolio") return;
+    setLoadingLaterCompanies(true);
+    try {
+      const page = await getRelationshipGraph({
+        scope: "portfolio",
+        depth: 2,
+        asOf: viewState.asOf,
+        offset: (laterCompanies.length + 1) * GRAPH_COMPANY_PAGE,
+      });
+      setLaterCompanies((current) => [...current, page]);
+      setLaterHasMore(Boolean(page.hasMore));
+    } catch (error) {
+      onError(errMessage(error, "Could not load the next companies."));
+    } finally {
+      setLoadingLaterCompanies(false);
+    }
+  };
   // The canvas already explains a failed load and offers Retry. Sending the
   // same failure to the page banner left it sitting on every other tab.
   const loadError = graphQuery.error
@@ -1735,6 +1777,17 @@ export function RelationshipGraphWorkspace({
                 ))}
               </SelectContent>
             </Select>
+          ) : null}
+          {graph?.hasMore ? (
+            <Button
+              disabled={loadingLaterCompanies}
+              onClick={() => void loadLaterCompanies()}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {loadingLaterCompanies ? "Loading…" : graphNextCompaniesLabel()}
+            </Button>
           ) : null}
         </div>
 

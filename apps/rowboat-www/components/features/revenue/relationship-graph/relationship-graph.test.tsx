@@ -17,6 +17,7 @@ import {
   graphCountLabel,
   graphNodeCap,
   graphCanvasCapLabel,
+  graphNextCompaniesLabel,
   graphListRemainderLabel,
   graphLayoutLabel,
   graphAccountChoice,
@@ -56,6 +57,9 @@ describe("RelationshipGraphWorkspace", () => {
     );
     expect(source).toContain("graphNodeCap(viewState.density)");
     expect(source).toContain("graphCanvasCapLabel(visible.nodes.length, graph.nodes.length)");
+    expect(graphNextCompaniesLabel()).toBe("Show the next companies");
+    expect(source).toContain("graphNextCompaniesLabel()");
+    expect(source).toContain("Could not load the next companies.");
     expect(source).toContain("raise how many to show for more");
     expect(source).not.toContain("raise density");
     expect(source).not.toContain("No nodes match");
@@ -350,9 +354,7 @@ describe("RelationshipGraphWorkspace", () => {
       "relationship:legacy",
     ]);
     expect(filtered.edges.map((edge) => edge.id)).toEqual(["e5"]);
-    expect(source).toContain(
-      "withoutPersonDirectoryRecords(loadedGraph.nodes, loadedGraph.edges)",
-    );
+    expect(source).toContain("withoutPersonDirectoryRecords(nodes, edges)");
   });
 
   it("drops graph parameters when the company list is the current view", () => {

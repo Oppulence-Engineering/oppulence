@@ -527,6 +527,7 @@ export interface RelationshipGraphRequest {
   relationshipId?: string;
   depth?: 1 | 2 | 3;
   asOf?: string;
+  offset?: number;
 }
 
 export async function getRelationshipGraph(

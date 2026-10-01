@@ -26,4 +26,9 @@ export type GetRelationshipGraphParams = {
    * Historical evidence boundary; must not be in the future.
    */
   asOf?: string;
+  /**
+   * Company offset. The first page is the 200 most recently updated companies.
+   * @minimum 0
+   */
+  offset?: number;
 };

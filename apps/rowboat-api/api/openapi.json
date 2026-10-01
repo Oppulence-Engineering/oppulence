@@ -10491,6 +10491,11 @@
             "format": "date-time",
             "type": "string"
           },
+          "hasMore": {
+            "description": "Another company exists beyond this page.",
+            "example": true,
+            "type": "boolean"
+          },
           "historical": {
             "description": "Whether the response is an historical projection.",
             "example": false,
@@ -23641,6 +23646,16 @@
             "schema": {
               "format": "date-time",
               "type": "string"
+            }
+          },
+          {
+            "description": "Company offset. The first page is the 200 most recently updated companies.",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
             }
           }
         ],
