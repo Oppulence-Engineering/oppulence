@@ -45,6 +45,9 @@ it("hides provider and workflow details from agent failures", () => {
   expect(friendlyAgentError("Could not delete agent (429)")).toBe(
     "Too many requests were sent from this workspace. Wait a moment, then try again.",
   );
+  expect(friendlyAgentError("Agent stream failed (429)")).toBe(
+    "Too many requests were sent from this workspace. Wait a moment, then try again.",
+  );
 });
 
 describe("conversationFromAgentEvents", () => {

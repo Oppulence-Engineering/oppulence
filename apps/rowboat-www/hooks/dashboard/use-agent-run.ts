@@ -94,7 +94,7 @@ export function useAgentRun(selectedAgent: string) {
   const failOpenRun = useCallback((message: string) => {
     setConversation([]);
     setStatus("error");
-    setChatError(message);
+    setChatError(friendlyAgentError(message));
   }, []);
 
   const handleEvent = useCallback((rawEvent: AgentStreamEvent) => {
@@ -165,6 +165,15 @@ export function useAgentRun(selectedAgent: string) {
           });
         } catch (error) {
           if (controller.signal.aborted) return;
+          const message = error instanceof Error ? error.message : "";
+          const explained = friendlyAgentError(message);
+          // A rate limit or a rejected key will not clear by retrying the stream.
+          if (explained !== message) {
+            setChatError(explained);
+            setProcessing(false);
+            setStatus("error");
+            return;
+          }
           console.error("Agent stream interrupted:", error);
           setChatError("Connection to the agent was interrupted. Reconnecting…");
         }
@@ -194,7 +203,9 @@ export function useAgentRun(selectedAgent: string) {
       setProcessing(false);
       setStatus("ready");
     } catch (error) {
-      setChatError(error instanceof Error ? error.message : "Could not stop the run");
+      setChatError(
+        friendlyAgentError(error instanceof Error ? error.message : "Could not stop the run"),
+      );
       setStatus("streaming");
     }
   }, [runId]);
@@ -243,7 +254,11 @@ export function useAgentRun(selectedAgent: string) {
               : item,
           ),
         );
-        setChatError(error instanceof Error ? error.message : "Could not resolve the approval");
+        setChatError(
+          friendlyAgentError(
+            error instanceof Error ? error.message : "Could not resolve the approval",
+          ),
+        );
       }
     },
     [runId],
@@ -310,7 +325,9 @@ export function useAgentRun(selectedAgent: string) {
       } catch (error) {
         setConversation((items) => items.filter((item) => item.id !== userMessageId));
         setText(originalText);
-        setChatError(error instanceof Error ? error.message : "Failed to send message");
+        setChatError(
+          friendlyAgentError(error instanceof Error ? error.message : "Failed to send message"),
+        );
         setStatus("error");
         window.setTimeout(() => setStatus("ready"), 2_000);
         throw error;
