@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { overdueDirectionLines } from "./impact-view";
+
 const source = fs.readFileSync(path.join(import.meta.dirname, "impact-view.tsx"), "utf8");
 
 describe("ImpactView", () => {
@@ -19,5 +21,22 @@ describe("ImpactView", () => {
     expect(source).not.toContain("Relationship exposure");
     expect(source).not.toContain("No active relationship risks.");
     expect(source).not.toContain("underlying relationship records");
+    expect(source).not.toContain("Promises missed");
+  });
+
+  it("calls an open past-due promise overdue, and keeps a mutual one in the total", () => {
+    expect(
+      overdueDirectionLines({ overdueCommitments: 1, overdueByUs: 1, overdueByThem: 0 }),
+    ).toEqual([
+      { label: "Overdue from us", value: 1 },
+      { label: "Overdue from them", value: 0 },
+    ]);
+    expect(
+      overdueDirectionLines({ overdueCommitments: 2, overdueByUs: 0, overdueByThem: 1 }),
+    ).toEqual([
+      { label: "Overdue from us", value: 0 },
+      { label: "Overdue from them", value: 1 },
+      { label: "Overdue together", value: 1 },
+    ]);
   });
 });

@@ -29,8 +29,30 @@ import {
 } from "@oppulence/ui/components/table";
 
 import { auditLaunchLabel, DETECTOR_LABELS } from "@/lib/revenue/revenue";
+import type { RevenueImpact } from "@/lib/revenue/types";
 import { EmptyBlock, errMessage, ListSkeleton } from "@/components/features/revenue/shared/shared";
 import { cn } from "@/lib/utils";
+
+/**
+ * The impact totals are open promises past their due time. "Missed" is a
+ * different, closed state. A mutual promise is in the total and in neither
+ * side, so it gets its own line when that remainder is real.
+ */
+export function overdueDirectionLines(impact: Pick<
+  RevenueImpact,
+  "overdueCommitments" | "overdueByUs" | "overdueByThem"
+>): { label: string; value: number }[] {
+  const together = Math.max(
+    0,
+    impact.overdueCommitments - impact.overdueByUs - impact.overdueByThem,
+  );
+  const lines = [
+    { label: "Overdue from us", value: impact.overdueByUs },
+    { label: "Overdue from them", value: impact.overdueByThem },
+  ];
+  if (together > 0) lines.push({ label: "Overdue together", value: together });
+  return lines;
+}
 
 export function ImpactView({
   onError,
@@ -180,8 +202,9 @@ export function ImpactView({
         </div>
         <div className="grid border-t border-border md:grid-cols-[1fr_1fr] md:divide-x md:divide-border">
           <dl className="space-y-2 p-4 text-sm">
-            <Line label="Promises missed by us" value={data.overdueByUs} />
-            <Line label="Promises missed by them" value={data.overdueByThem} />
+            {overdueDirectionLines(data).map((line) => (
+              <Line key={line.label} label={line.label} value={line.value} />
+            ))}
             <Line label="Longest overdue" value={data.longestOverdueDays} suffix=" days" />
           </dl>
           <div className="border-t border-border p-4 md:border-t-0">
