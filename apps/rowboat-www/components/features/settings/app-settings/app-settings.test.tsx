@@ -96,6 +96,8 @@ describe("SettingsView", () => {
     expect(source).toContain("the next time you start a chat.");
     expect(source).toContain('title="Chat defaults"');
     expect(source).toContain('title="Current plan"');
+    expect(source).toContain("billingStatusLabel(billing.status)");
+    expect(source).not.toContain("{billing.status}");
     expect(source).toContain("Activity counted in the current billing period.");
     expect(source).not.toContain("the next time you open Oppulence.");
     expect(source).not.toContain("Metered activity");

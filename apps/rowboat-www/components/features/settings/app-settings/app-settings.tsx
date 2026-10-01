@@ -33,6 +33,7 @@ import { DeleteAccountRow } from "@/components/features/account/delete-account-r
 import { CommunicationPrivacySettings } from "@/components/features/connectors/communication-privacy-settings/communication-privacy-settings";
 import { ConnectorSettings } from "@/components/features/connectors/connector-settings/connector-settings";
 import { capture, RevenueEvents, setAnalyticsConsent } from "@/lib/analytics/analytics";
+import { billingStatusLabel } from "@/lib/product/plan-label";
 import {
   patchConsolePreferences,
   type ConsolePreferences,
@@ -758,8 +759,8 @@ export function PlanSection({ session }: { session: SessionShape }) {
           </div>
           <div className="flex items-center gap-2">
             {billing?.status ? (
-              <Badge className="rounded-[2px] capitalize" variant="outline">
-                {billing.status}
+              <Badge className="rounded-[2px]" variant="outline">
+                {billingStatusLabel(billing.status)}
               </Badge>
             ) : null}
             {canUpgrade ? (
