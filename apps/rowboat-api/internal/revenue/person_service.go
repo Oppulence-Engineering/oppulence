@@ -83,13 +83,17 @@ func personNormalizedContains(term string) predicate.Person {
 			person.FieldOrgName,
 			person.FieldOrgDomain,
 		} {
-			parts = append(parts, sql.ExprP(
-				fmt.Sprintf(
-					"replace(replace(replace(lower(coalesce(%s, '')), '-', ' '), '_', ' '), '.', ' ') LIKE ? ESCAPE '\\'",
+			parts = append(parts, sql.P(func(b *sql.Builder) {
+				// Arg writes "?" on SQLite and "$n" on Postgres. A raw "?" is a
+				// JSON operator on Postgres, so ESCAPE is parsed as a type name
+				// and the search fails with "type escape does not exist".
+				b.WriteString(fmt.Sprintf(
+					"replace(replace(replace(lower(coalesce(%s, '')), '-', ' '), '_', ' '), '.', ' ') LIKE ",
 					s.C(field),
-				),
-				needle,
-			))
+				))
+				b.Arg(needle)
+				b.WriteString(" ESCAPE '!'")
+			}))
 		}
 		s.Where(sql.Or(parts...))
 	})
@@ -102,9 +106,9 @@ func normalizePersonSearch(value string) string {
 }
 
 func escapePersonSearchLike(value string) string {
-	value = strings.ReplaceAll(value, `\`, `\\`)
-	value = strings.ReplaceAll(value, `%`, `\%`)
-	return strings.ReplaceAll(value, `_`, `\_`)
+	value = strings.ReplaceAll(value, "!", "!!")
+	value = strings.ReplaceAll(value, "%", "!%")
+	return strings.ReplaceAll(value, "_", "!_")
 }
 
 // GetPerson returns one canonical person, following a merge tombstone so an old

@@ -1,8 +1,12 @@
 package revenue
 
 import (
+	"strings"
 	"testing"
 	"time"
+
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
@@ -436,6 +440,21 @@ func TestPersonSearchFindsTheCompanyTitle(t *testing.T) {
 	miss, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "zzzz-not-a-person"})
 	if err != nil || len(miss) != 0 {
 		t.Fatalf("unrelated search = %+v err=%v", miss, err)
+	}
+}
+
+func TestPersonSearchSQLUsesPostgresPlaceholders(t *testing.T) {
+	selector := sql.Dialect(dialect.Postgres).Select().From(sql.Table(person.Table))
+	personNormalizedContains("Dogfood Label")(selector)
+	query, args := selector.Query()
+	if strings.Contains(query, "?") {
+		t.Fatalf("postgres search still uses ?: %s", query)
+	}
+	if !strings.Contains(query, "ESCAPE '!'") || !strings.Contains(query, "$1") {
+		t.Fatalf("postgres search = %s", query)
+	}
+	if len(args) != 4 || args[0] != "%dogfood label%" {
+		t.Fatalf("args = %#v", args)
 	}
 }
 
