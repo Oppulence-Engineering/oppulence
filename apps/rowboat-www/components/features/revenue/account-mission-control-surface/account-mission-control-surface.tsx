@@ -68,6 +68,11 @@ export function commitmentTimelineStatus(
   return { label: "Open", variant: "amber" };
 }
 
+/** Promises past the overview preview, in the same words as the company record. */
+export function commitmentPreviewRemainder(hidden: number): string {
+  return hidden === 1 ? "Show the other 1 commitment" : `Show the other ${hidden} commitments`;
+}
+
 /** Maps live register rows into the Sim account timeline rows. */
 export function mapCommitmentsToAccountTimeline(
   commitments: RelationshipCommitment[],

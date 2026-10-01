@@ -509,6 +509,9 @@ describe("RelationshipsView", () => {
     expect(companyNextActionCopy({ openActions: 2 })).toBe("2 open actions");
     expect(source).toContain("companyDescriptionCopy(data.relationship)");
     expect(source).toContain("companyNextActionCopy(relationship)");
+    expect(source).toContain("commitmentPreviewRemainder(hiddenCommitments)");
+    expect(source).toContain("data.commitments.length,");
+    expect(source).not.toContain("mapCommitmentsToAccountTimeline(data.commitments, 8)");
     expect(source).not.toContain("relationship.stateReason");
     expect(source).toContain("No description yet");
     expect(source).not.toContain("Not on a list");

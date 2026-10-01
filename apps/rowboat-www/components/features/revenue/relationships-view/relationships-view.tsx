@@ -40,6 +40,7 @@ import { subscribeCompanyCreate } from "@/lib/dashboard/company-create-request";
 import {
   AccountMissionControlSurface,
   accountAttentionFromHealth,
+  commitmentPreviewRemainder,
   mapCommitmentsToAccountTimeline,
 } from "@/components/features/revenue/account-mission-control-surface/account-mission-control-surface";
 import {
@@ -2880,13 +2881,28 @@ export function RelationshipSheet({
               <div id={`${id}:overview`} className="flex scroll-mt-14 flex-col gap-6 px-5 py-5">
                 {(() => {
                   const attention = accountAttentionFromHealth(data.relationship.health);
+                  const preview = mapCommitmentsToAccountTimeline(data.commitments, 3);
+                  const hiddenCommitments = data.commitments.length - preview.length;
                   return (
-                    <AccountMissionControlSurface
-                      accountName={companyName(data.relationship)}
-                      attentionLabel={attention?.label}
-                      attentionVariant={attention?.variant}
-                      items={mapCommitmentsToAccountTimeline(data.commitments, 3)}
-                    />
+                    <>
+                      <AccountMissionControlSurface
+                        accountName={companyName(data.relationship)}
+                        attentionLabel={attention?.label}
+                        attentionVariant={attention?.variant}
+                        items={preview}
+                      />
+                      {hiddenCommitments > 0 ? (
+                        <Button
+                          className="mt-2"
+                          onClick={() => openSection("commitments")}
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                        >
+                          {commitmentPreviewRemainder(hiddenCommitments)}
+                        </Button>
+                      ) : null}
+                    </>
                   );
                 })()}
 
@@ -3415,7 +3431,10 @@ export function RelationshipSheet({
                     <AccountMissionControlSurface
                       accountName={companyName(data.relationship)}
                       className="mt-2"
-                      items={mapCommitmentsToAccountTimeline(data.commitments, 8)}
+                      items={mapCommitmentsToAccountTimeline(
+                        data.commitments,
+                        data.commitments.length,
+                      )}
                       showHeader={false}
                     />
                   </section>

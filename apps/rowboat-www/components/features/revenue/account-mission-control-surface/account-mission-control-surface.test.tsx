@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   AccountMissionControlSurface,
+  commitmentPreviewRemainder,
   commitmentTimelineLabel,
   commitmentTimelineStatus,
 } from "./account-mission-control-surface";
@@ -34,6 +35,11 @@ describe("AccountMissionControlSurface", () => {
     const surface = screen.getByRole("region", { name: "Acme" });
     expect(surface).toHaveAttribute("data-slot", "account-mission-control-surface");
     expect(screen.getByText("No commitments recorded for this company yet.")).toBeInTheDocument();
+  });
+
+  it("names the promises still off the overview", () => {
+    expect(commitmentPreviewRemainder(1)).toBe("Show the other 1 commitment");
+    expect(commitmentPreviewRemainder(6)).toBe("Show the other 6 commitments");
   });
 
   it("marks a past-due open promise at risk, and leaves a later one open", () => {
