@@ -10,7 +10,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ComponentProps } from "react";
 
-import { CommitmentQueue, REGISTER_VIEWS } from "./commitment-queue";
+import { CommitmentQueue, REGISTER_VIEWS, registerPartyLabels } from "./commitment-queue";
 import type {
   RegisterEntry,
   RelationshipSourceInventoryItem,
@@ -105,6 +105,36 @@ function props(overrides: Partial<ComponentProps<typeof CommitmentQueue>> = {}) 
 }
 
 describe("CommitmentQueue", () => {
+  it("names both sides of a mutual promise", async () => {
+    expect(
+      registerPartyLabels({ direction: "mutual", relationshipName: "Acme" }),
+    ).toEqual({ owner: "You and Acme", counterparty: "You and Acme" });
+    expect(
+      registerPartyLabels({ direction: "promised_by_me", relationshipName: "Acme" }),
+    ).toEqual({ owner: "You", counterparty: "Acme" });
+    expect(
+      registerPartyLabels({
+        direction: "promised_by_them",
+        relationshipName: "Acme",
+        counterpartyParticipantRef: "Morgan",
+      }),
+    ).toEqual({ owner: "Acme", counterparty: "You" });
+    const mutual = {
+      ...entries()[0],
+      id: "commitment-mutual",
+      direction: "mutual",
+      text: "Trade the redlines",
+      state: "open",
+      ownerParticipantRef: "",
+      counterpartyParticipantRef: "",
+    };
+    render(<CommitmentQueue {...props({ entries: [mutual] })} />);
+    expect(screen.getByText("You and Acme")).toBeVisible();
+    await userEvent.click(screen.getByText("Trade the redlines"));
+    expect(screen.getByText("Promised by")).toBeVisible();
+    expect(screen.getAllByText("You and Acme").length).toBeGreaterThan(1);
+  });
+
   it("asks for an account when that view has none selected", () => {
     expect(REGISTER_VIEWS.find((view) => view.id === "by_account")?.hint).toBe(
       "Every promise for one account.",

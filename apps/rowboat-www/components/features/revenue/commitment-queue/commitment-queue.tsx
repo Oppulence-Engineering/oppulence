@@ -211,18 +211,41 @@ function nextAction(
   return "Watch connected sources for fulfillment or a reply.";
 }
 
+/**
+ * A mutual promise has no single promiser. Without a named person, the
+ * register used to say the company promised it to the company.
+ */
+export function registerPartyLabels(entry: {
+  direction: string;
+  relationshipName?: string;
+  ownerParticipantRef?: string;
+  beneficiaryParticipantRef?: string;
+  counterpartyParticipantRef?: string;
+}): { owner: string; counterparty: string } {
+  const relationshipName = entry.relationshipName?.trim() || "Unknown company";
+  const namedOwner = entry.ownerParticipantRef?.trim() || "";
+  const namedBeneficiary = entry.beneficiaryParticipantRef?.trim() || "";
+  const namedCounterparty = entry.counterpartyParticipantRef?.trim() || "";
+  const both = `You and ${relationshipName}`;
+  if (entry.direction === "mutual") {
+    return {
+      owner: namedOwner || both,
+      counterparty: namedBeneficiary || namedCounterparty || both,
+    };
+  }
+  return {
+    owner: namedOwner || (entry.direction === "promised_by_me" ? "You" : relationshipName),
+    counterparty:
+      namedBeneficiary ||
+      (entry.direction === "promised_by_them" ? "You" : namedCounterparty || relationshipName),
+  };
+}
+
 function toQueueItems(entries: RegisterEntry[], now = new Date()): CommitmentQueueItem[] {
   return entries
     .map((entry): CommitmentQueueItem => {
       const relationshipName = entry.relationshipName || "Unknown company";
-      const owner =
-        entry.ownerParticipantRef ||
-        (entry.direction === "promised_by_me" ? "You" : relationshipName);
-      const counterparty =
-        entry.beneficiaryParticipantRef ||
-        (entry.direction === "promised_by_them"
-          ? "You"
-          : entry.counterpartyParticipantRef || relationshipName);
+      const { owner, counterparty } = registerPartyLabels(entry);
       const due = entry.dueAt ? new Date(entry.dueAt).getTime() : undefined;
       const closed = ["met", "waived", "cancelled", "superseded"].includes(entry.state);
       const urgency: CommitmentQueueItem["urgency"] = closed
