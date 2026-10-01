@@ -54,6 +54,32 @@ export function enumLabel(value?: string): string {
   return titleCase((value || "unknown").replaceAll("_", " "));
 }
 
+/**
+ * A company-sheet state change is a word or a short phrase. Stored enums
+ * become labels. Free text stays as written. Missing values stay "Unknown"
+ * instead of a quoted JSON token.
+ */
+export function relationshipDeltaValue(value: unknown): string {
+  if (value == null) return "Unknown";
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return "Unknown";
+    if (/^[a-z0-9_]+$/.test(trimmed)) return enumLabel(trimmed);
+    return trimmed;
+  }
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (Array.isArray(value)) {
+    const parts = value
+      .map((item) => relationshipDeltaValue(item))
+      .filter((item) => item !== "Unknown");
+    return parts.length > 0 ? parts.join(", ") : "None";
+  }
+  if (typeof value === "object" && "value" in value) {
+    return relationshipDeltaValue((value as { value: unknown }).value);
+  }
+  return "Unknown";
+}
+
 /** A scope id or URL becomes a short permission name. Known grants win. */
 export function scopeLabel(scope: string): string {
   const trimmed = scope.trim();

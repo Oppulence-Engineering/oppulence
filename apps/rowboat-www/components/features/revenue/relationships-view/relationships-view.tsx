@@ -171,6 +171,7 @@ import { planLabel } from "@/lib/product/plan-label";
 import {
   enumLabel as humanize,
   missingScopeLabels,
+  relationshipDeltaValue,
   sourceProductCopy,
 } from "@/lib/revenue/source-product-copy";
 import { cn } from "@/lib/utils";
@@ -3014,8 +3015,7 @@ export function RelationshipSheet({
                             {humanize(change.dimension)}
                           </p>
                           <p className="mt-1 text-xs text-primary/60">
-                            {JSON.stringify(change.before ?? "unknown")} →{" "}
-                            {JSON.stringify(change.after ?? "unknown")}
+                            {relationshipDeltaValue(change.before)} → {relationshipDeltaValue(change.after)}
                           </p>
                           {change.reason ? (
                             <p className="mt-1 text-[11px] text-primary/40">{change.reason}</p>

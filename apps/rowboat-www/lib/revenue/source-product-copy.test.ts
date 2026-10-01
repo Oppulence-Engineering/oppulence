@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { enumLabel, missingScopeLabels, scopeLabel, sourceProductCopy } from "./source-product-copy";
+import {
+  enumLabel,
+  missingScopeLabels,
+  relationshipDeltaValue,
+  scopeLabel,
+  sourceProductCopy,
+} from "./source-product-copy";
 
 describe("source product copy", () => {
   it("describes connected evidence sources without scope jargon", () => {
@@ -34,5 +40,17 @@ describe("source product copy", () => {
     expect(missingScopeLabels(["https://www.googleapis.com/auth/gmail.send", "chat:write"])).toBe(
       "Sending, Post a message",
     );
+  });
+
+  it("reads a state change as words", () => {
+    expect(relationshipDeltaValue("prospect")).toBe("Prospect");
+    expect(relationshipDeltaValue("needs_attention")).toBe("Needs Attention");
+    expect(relationshipDeltaValue(null)).toBe("Unknown");
+    expect(relationshipDeltaValue("")).toBe("Unknown");
+    expect(relationshipDeltaValue("Call them Friday")).toBe("Call them Friday");
+    expect(relationshipDeltaValue(["timeline", "budget hold"])).toBe("Timeline, budget hold");
+    expect(relationshipDeltaValue([])).toBe("None");
+    expect(relationshipDeltaValue({ value: "healthy" })).toBe("Healthy");
+    expect(relationshipDeltaValue({ other: true })).toBe("Unknown");
   });
 });
