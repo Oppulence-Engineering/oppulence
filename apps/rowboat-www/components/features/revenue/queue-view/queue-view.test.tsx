@@ -42,6 +42,7 @@ describe("QueueView", () => {
     expect(source).toContain("openCompanyCreate(onOpenCompanies)");
     expect(source).not.toContain("Relationships tab");
     expect(source).toContain("ACTION_TYPE_LABELS[t]");
+    expect(source).toContain('record.kind !== "person"');
     expect(source).toContain('errMessage(relationshipsQuery.error, "Could not load companies.")');
     expect(source).not.toContain("Could not load relationships.");
     expect(source).toContain('errMessage(actionsQuery.error, "Could not load recovery.")');

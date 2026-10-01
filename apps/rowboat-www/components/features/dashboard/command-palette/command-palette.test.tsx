@@ -183,6 +183,18 @@ describe("CommandPalette semantic mail search", () => {
     expect(onNavigateRelationship).toHaveBeenCalledWith("company-1");
   });
 
+  it("keeps a person out of company search", async () => {
+    const user = userEvent.setup();
+    fetchers.fetchRelationships.mockResolvedValue([
+      { id: "company-1", kind: "company", displayName: "acme harbor" },
+      { id: "person-1", kind: "person", displayName: "ada lovelace" },
+    ]);
+    renderPalette(requiredProps);
+    await user.type(screen.getByRole("textbox", { name: "Command search" }), "ada");
+    expect(await screen.findByRole("button", { name: "acme harbor" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "ada lovelace" })).toBeNull();
+  });
+
   it("fills the search box with the company a surface asked about", async () => {
     renderPalette({ ...requiredProps, querySeed: "Acme", seedNonce: 1 });
     expect(await screen.findByDisplayValue("Acme")).toBeVisible();

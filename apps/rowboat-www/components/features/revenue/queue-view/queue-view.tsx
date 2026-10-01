@@ -464,7 +464,9 @@ function CreateActionDialog({
   onOpenCompanies?: () => void;
 }) {
   const relationshipsQuery = useRelationships();
-  const relationships = relationshipsQuery.data ?? [];
+  const relationships = (relationshipsQuery.data ?? []).filter(
+    (record) => record.kind !== "person",
+  );
   const [relationshipId, setRelationshipId] = React.useState("");
   const createActionTypes = [
     "warm_follow_up",
