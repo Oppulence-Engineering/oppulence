@@ -36,6 +36,7 @@ import {
   reviewEvidenceKindLabel,
   mutualPlanStatusLabel,
   deletionReceiptStatusLabel,
+  rankingFactorLabel,
   recoveryClassificationLabel,
   recoveryExplanationCopy,
   evidencePublicationLabel,
@@ -353,6 +354,11 @@ describe("RelationshipsView", () => {
     expect(reviewEvidenceKindLabel("claim")).toBe("What was said");
     expect(mutualPlanStatusLabel("internally_approved")).toBe("Approved in this workspace");
     expect(deletionReceiptStatusLabel("partial")).toBe("Some copies are still there");
+    expect(rankingFactorLabel("commitment_due_state")).toBe("Due date");
+    expect(rankingFactorLabel("source_completeness")).toBe("Source coverage");
+    expect(rankingFactorLabel("outcome_learning")).toBe("Earlier outcomes");
+    expect(source).toContain("rankingFactorLabel(factor.factor)");
+    expect(source).not.toContain("humanize(factor.factor)");
     expect(source).toContain("reviewEvidenceKindLabel(item.kind)");
     expect(source).toContain("mutualPlanStatusLabel(plan.status)");
     expect(source).toContain("deletionReceiptStatusLabel(data.intelligence.deletionReceipts[0].status)");

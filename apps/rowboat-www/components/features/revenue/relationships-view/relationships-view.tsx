@@ -1782,6 +1782,20 @@ export function deletionReceiptStatusLabel(status: string): string {
   }
 }
 
+/** Ranking stores a factor key. The inspection list names what moved the score. */
+export function rankingFactorLabel(factor: string): string {
+  switch (factor) {
+    case "commitment_due_state":
+      return "Due date";
+    case "source_completeness":
+      return "Source coverage";
+    case "outcome_learning":
+      return "Earlier outcomes";
+    default:
+      return humanize(factor);
+  }
+}
+
 /**
  * Reconcile stores a classification token. The promise list names the
  * situation, and an older explanation that repeated the token is rewritten.
@@ -3055,7 +3069,7 @@ export function RelationshipSheet({
                         >
                           {evaluation.factors.map((factor) => (
                             <li key={factor.factor}>
-                              {humanize(factor.factor)}: {factor.contribution >= 0 ? "+" : ""}
+                              {rankingFactorLabel(factor.factor)}: {factor.contribution >= 0 ? "+" : ""}
                               {factor.contribution} · {factor.reason}
                             </li>
                           ))}
