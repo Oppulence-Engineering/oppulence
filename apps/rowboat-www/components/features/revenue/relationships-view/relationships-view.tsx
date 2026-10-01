@@ -2227,7 +2227,7 @@ export function RelationshipSheet({
                 <dl className="mt-5 grid grid-cols-[88px_minmax(0,1fr)] gap-x-3 gap-y-3 text-xs">
                   <dt className="text-primary/40">Domain</dt>
                   <dd className="truncate text-primary/75">
-                    {data.relationship.accountDomain || "Not detected"}
+                    {data.relationship.accountDomain || "Not filled in"}
                   </dd>
                   <dt className="text-primary/40">Company</dt>
                   {/* The name is whatever was saved. capitalize turned "acme harbor" into "Acme Harbor". */}

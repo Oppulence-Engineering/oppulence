@@ -320,6 +320,8 @@ describe("RelationshipsView", () => {
     expect(source).toContain("details have a source");
     expect(source).toContain("details come from a source you can open");
     expect(source).toContain("See where each detail came from");
+    expect(source).toContain('data.relationship.accountDomain || "Not filled in"');
+    expect(source).not.toContain("Not detected");
     expect(source).toContain("Not filled in");
     expect(source).toContain("No description yet");
     expect(source).not.toContain("Not on a list");
