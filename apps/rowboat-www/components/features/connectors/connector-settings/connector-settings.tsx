@@ -337,7 +337,11 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
       await fn();
       onChanged();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "That connection change did not go through.");
+      setError(
+        friendlyRevenueError(
+          caught instanceof Error ? caught.message : "That connection change did not go through.",
+        ),
+      );
     } finally {
       setBusy(false);
     }

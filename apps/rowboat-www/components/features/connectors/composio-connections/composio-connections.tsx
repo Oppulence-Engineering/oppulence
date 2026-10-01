@@ -14,6 +14,7 @@ import {
   startComposioConnection,
   type ComposioConnection,
 } from "@/lib/api/composio/client";
+import { friendlyRevenueError } from "@/lib/revenue/revenue";
 
 /**
  * Composio returns connection enums. A teammate should see the same kind of
@@ -124,7 +125,11 @@ export function ComposioConnections({
       awaitingConnection.current = true;
       window.open(link.redirectUrl, "_blank", "noopener,noreferrer");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not start the connection.");
+      setError(
+        friendlyRevenueError(
+          cause instanceof Error ? cause.message : "Could not start the connection.",
+        ),
+      );
     } finally {
       setBusy("");
     }
@@ -137,7 +142,9 @@ export function ComposioConnections({
       await disconnectComposio(connection.id);
       refreshLists();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not disconnect.");
+      setError(
+        friendlyRevenueError(cause instanceof Error ? cause.message : "Could not disconnect."),
+      );
     } finally {
       setBusy("");
     }
@@ -232,7 +239,7 @@ export function ComposioConnections({
           ))}
         </div>
       )}
-      {error ? <p className="p-4 pt-0 font-mono text-xs text-destructive">{error}</p> : null}
+      {error ? <p className="p-4 pt-0 text-sm text-destructive">{error}</p> : null}
     </div>
   );
 }

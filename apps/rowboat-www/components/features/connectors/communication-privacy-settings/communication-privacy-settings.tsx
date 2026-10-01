@@ -18,6 +18,7 @@ import { communicationKeys } from "@/hooks/queries/utils/communication-keys";
 import {
   createCommunicationPrivacyRule,
   deleteCommunicationPrivacyRule,
+  friendlyRevenueError,
   putCommunicationPolicy,
 } from "@/lib/revenue/revenue";
 import type { CommunicationPolicy, CommunicationPrivacyRule } from "@/lib/revenue/types";
@@ -65,7 +66,11 @@ export function CommunicationPrivacySettings() {
   React.useEffect(() => {
     if (policyQuery.error || rulesQuery.error) {
       const error = policyQuery.error || rulesQuery.error;
-      setStatus(error instanceof Error ? error.message : "Could not load mailbox policy.");
+      setStatus(
+        friendlyRevenueError(
+          error instanceof Error ? error.message : "Could not load mailbox policy.",
+        ),
+      );
     }
   }, [policyQuery.error, rulesQuery.error]);
 
@@ -86,7 +91,11 @@ export function CommunicationPrivacySettings() {
       setPolicy(saved);
       setStatus("Mailbox policy saved.");
     } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "Could not save mailbox policy.");
+      setStatus(
+        friendlyRevenueError(
+          error instanceof Error ? error.message : "Could not save mailbox policy.",
+        ),
+      );
     } finally {
       setBusy(false);
     }
@@ -102,7 +111,11 @@ export function CommunicationPrivacySettings() {
       await refresh();
       setStatus("Privacy rule added.");
     } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "Could not add privacy rule.");
+      setStatus(
+        friendlyRevenueError(
+          error instanceof Error ? error.message : "Could not add privacy rule.",
+        ),
+      );
     } finally {
       setBusy(false);
     }

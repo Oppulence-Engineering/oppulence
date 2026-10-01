@@ -83,6 +83,20 @@ describe("Composio connections", () => {
     );
   });
 
+  it("explains a connect failure that is only a status code", async () => {
+    mocks.startComposioConnection.mockRejectedValue(new Error("Composio request failed (429)"));
+    renderWithQuery(<ComposioConnections />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Connect Jira" }));
+
+    expect(
+      await screen.findByText(
+        "Too many requests were sent from this workspace. Wait a moment, then try again.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Composio request failed/)).toBeNull();
+  });
+
   it("offers disconnect for a linked product and reloads after it", async () => {
     mocks.listComposioConnections.mockResolvedValue([
       { id: "ca_1", toolkit: "jira", status: "ACTIVE", createdAt: "" },

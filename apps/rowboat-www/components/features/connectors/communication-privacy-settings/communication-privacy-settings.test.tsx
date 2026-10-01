@@ -12,13 +12,19 @@ import {
   privacyRuleLabel,
 } from "./communication-privacy-settings";
 
-vi.mock("@/lib/revenue/revenue", () => ({
-  getCommunicationPolicy: vi.fn(),
-  listCommunicationPrivacyRules: vi.fn(async () => []),
-  putCommunicationPolicy: vi.fn(),
-  createCommunicationPrivacyRule: vi.fn(),
-  deleteCommunicationPrivacyRule: vi.fn(),
-}));
+vi.mock("@/lib/revenue/revenue", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/revenue/revenue")>(
+    "@/lib/revenue/revenue",
+  );
+  return {
+    ...actual,
+    getCommunicationPolicy: vi.fn(),
+    listCommunicationPrivacyRules: vi.fn(async () => []),
+    putCommunicationPolicy: vi.fn(),
+    createCommunicationPrivacyRule: vi.fn(),
+    deleteCommunicationPrivacyRule: vi.fn(),
+  };
+});
 
 afterEach(() => {
   cleanup();
