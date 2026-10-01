@@ -9,6 +9,7 @@ import {
   relationshipDeltaValue,
   removePersonConfirmCopy,
   scopeLabel,
+  sourceConnectionLabel,
   sourceProductCopy,
 } from "./source-product-copy";
 
@@ -114,5 +115,15 @@ describe("source product copy", () => {
     expect(mailAccessReason("owner_private")).toBe("Kept private");
     expect(mailAccessReason("explicit_grant")).toBe("Shared with you");
     expect(mailAccessReason("mailbox_owner")).not.toContain("mailbox_owner");
+    expect(
+      sourceConnectionLabel({
+        source: "hubspot",
+        status: "reconnect_required",
+        completeness: "disconnected",
+      }),
+    ).toBe("Reconnect required");
+    expect(
+      sourceConnectionLabel({ source: "google", status: "live", completeness: "complete" }),
+    ).toBe("Active");
   });
 });

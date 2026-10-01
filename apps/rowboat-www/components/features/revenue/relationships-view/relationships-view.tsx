@@ -183,6 +183,7 @@ import {
   activityHeading,
   activitySourceLabel,
   enumLabel as humanize,
+  sourceConnectionLabel,
   mailAccessReason,
   missingScopeLabels,
   relationshipDeltaValue,
@@ -1174,7 +1175,7 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
           key={`${source.source}:${source.sourceAccountId}`}
           variant="outline"
           title={source.lastError || source.lastObservationAt || undefined}
-          className={`rounded-none font-normal capitalize ${
+          className={`rounded-none font-normal ${
             source.status === "live"
               ? "border-emerald-500/30"
               : ["connected", "backfilling"].includes(source.status)
@@ -1182,7 +1183,7 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
                 : "border-amber-500/30"
           }`}
         >
-          {source.source} · {source.status}
+          {activitySourceLabel(source.source)} · {sourceConnectionLabel(source)}
         </Badge>
       ))}
       {needsRepair > 0 ? (

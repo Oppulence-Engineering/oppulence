@@ -106,6 +106,36 @@ const ACTIVITY_EVENT_LABELS: Record<string, string> = {
   oppulence_action: "Action recorded",
 };
 
+/**
+ * The sources menu and the sources page share this badge. A stored status
+ * such as "live" or "reconnect_required" is not the label.
+ */
+export function sourceConnectionLabel(source: {
+  source: string;
+  status: string;
+  backfillPhase?: string;
+  completeness?: string;
+}): string {
+  const stopped = source.status === "reconnect_required" || source.status === "disconnected";
+  const syncing =
+    source.status === "backfilling" ||
+    source.status === "rebuilding" ||
+    source.backfillPhase === "queued" ||
+    source.backfillPhase === "running";
+  const supportsResync = ["google", "slack", "hubspot"].includes(source.source.toLowerCase());
+  const stale = supportsResync && !stopped && !syncing && source.status === "stale";
+  const incomplete =
+    supportsResync && !stopped && !syncing && !stale && source.completeness !== "complete";
+  if (stopped) {
+    return source.status === "reconnect_required" ? "Reconnect required" : "Disconnected";
+  }
+  if (syncing) return "Syncing";
+  if (stale) return "Out of date";
+  if (incomplete) return "Sync incomplete";
+  if (source.status === "live" || source.status === "connected") return "Active";
+  return enumLabel(source.status);
+}
+
 /** A stored connector slug becomes the name a person already sees elsewhere. */
 export function activitySourceLabel(source: string): string {
   const key = source.trim().toLowerCase();

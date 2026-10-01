@@ -30,7 +30,10 @@ import {
 } from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
 import { Field, errMessage } from "@/components/features/revenue/shared/shared";
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
-import { activitySourceLabel, enumLabel } from "@/lib/revenue/source-product-copy";
+import {
+  activitySourceLabel,
+  sourceConnectionLabel,
+} from "@/lib/revenue/source-product-copy";
 import { cn } from "@/lib/utils";
 import type { RelationshipSourceStatus, RevenueWorkspace } from "@/lib/revenue/types";
 
@@ -404,32 +407,7 @@ function SourceRow({
   );
 }
 
-/**
- * The badge used to print the stored status. "live" and "sync incomplete"
- * sat beside "Out of date", so a healthy source looked unfinished.
- */
-export function sourceConnectionLabel(
-  source: Pick<RelationshipSourceStatus, "source" | "status" | "backfillPhase" | "completeness">,
-): string {
-  const stopped = source.status === "reconnect_required" || source.status === "disconnected";
-  const syncing =
-    source.status === "backfilling" ||
-    source.status === "rebuilding" ||
-    source.backfillPhase === "queued" ||
-    source.backfillPhase === "running";
-  const supportsResync = ["google", "slack", "hubspot"].includes(source.source.toLowerCase());
-  const stale = supportsResync && !stopped && !syncing && source.status === "stale";
-  const incomplete =
-    supportsResync && !stopped && !syncing && !stale && source.completeness !== "complete";
-  if (stopped) {
-    return source.status === "reconnect_required" ? "Reconnect required" : "Disconnected";
-  }
-  if (syncing) return "Syncing";
-  if (stale) return "Out of date";
-  if (incomplete) return "Sync incomplete";
-  if (source.status === "live" || source.status === "connected") return "Active";
-  return enumLabel(source.status);
-}
+export { sourceConnectionLabel };
 
 /** The stored source is a lowercase provider name. The toast is a sentence. */
 export function sourceRefreshNotice(source: string): string {

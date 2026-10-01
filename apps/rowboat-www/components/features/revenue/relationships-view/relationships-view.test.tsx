@@ -425,6 +425,9 @@ describe("RelationshipsView", () => {
     expect(source).toContain("observation.normalizedFacts");
     expect(source).toContain("activityHeading(observation.source, observation.eventType)");
     expect(source).toContain("activitySourceLabel(item.source)");
+    expect(source).toContain("activitySourceLabel(source.source)");
+    expect(source).toContain("sourceConnectionLabel(source)");
+    expect(source).not.toContain("{source.source} · {source.status}");
     expect(source).toContain("mailAccessReason(item.access.reason)");
     expect(source).not.toContain("JSON.stringify(evidence[observation.id]");
     expect(source).toContain("removePersonConfirmCopy(participant.displayName)");
