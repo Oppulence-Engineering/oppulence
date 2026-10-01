@@ -759,6 +759,33 @@ func TestManualActionsWithoutDedupeKeyRemainDistinct(t *testing.T) {
 	}
 }
 
+func TestListActionsRecoverySkipsHigherPriorityTasks(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	task, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task",
+		Reason: "A task", PriorityScore: 90, DedupeKey: "task-crowd",
+	})
+	if err != nil {
+		t.Fatalf("task: %v", err)
+	}
+	email, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "warm_follow_up", Channel: "email",
+		Reason: "The email", PriorityScore: 10, DedupeKey: "email-behind-tasks",
+	})
+	if err != nil {
+		t.Fatalf("email: %v", err)
+	}
+	recovery, err := f.svc.ListActions(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 1, Surface: "recovery"})
+	if err != nil || len(recovery) != 1 || recovery[0].ID != email.ID {
+		t.Fatalf("recovery page = %+v err=%v, want the lower-priority email", recovery, err)
+	}
+	tasks, err := f.svc.ListActions(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 1, Surface: "task"})
+	if err != nil || len(tasks) != 1 || tasks[0].ID != task.ID {
+		t.Fatalf("task page = %+v err=%v", tasks, err)
+	}
+}
+
 // Tenancy: another user cannot read or mutate the owner's rows.
 func TestCrossTenantDenied(t *testing.T) {
 	f := newFixture(t)

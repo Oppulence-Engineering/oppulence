@@ -20,6 +20,7 @@ describe("QueueView", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function QueueView");
     expect(source).toContain("recoveryQueueActions(actionsQuery.data ?? [])");
+    expect(source).toContain('useRevenueActions(filter, 100, "recovery")');
     expect(source).not.toContain("ListFilter");
     expect(recoveryFilterName("open")).toBe("Recovery, Open");
     expect(recoveryFilterName("snoozed")).toBe("Recovery, Snoozed");

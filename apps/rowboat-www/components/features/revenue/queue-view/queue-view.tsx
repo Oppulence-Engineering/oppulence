@@ -174,8 +174,8 @@ export function QueueView({
   const [auditFor, setAuditFor] = React.useState<RevenueAction | null>(null);
   const [creating, setCreating] = React.useState(false);
   const queryClient = useQueryClient();
-  const actionsQueryKey = revenueActionKeys.list(filter, 50);
-  const actionsQuery = useRevenueActions(filter);
+  const actionsQueryKey = revenueActionKeys.list(filter, 100, "recovery");
+  const actionsQuery = useRevenueActions(filter, 100, "recovery");
   const actions = recoveryQueueActions(actionsQuery.data ?? []);
 
   React.useEffect(() => {

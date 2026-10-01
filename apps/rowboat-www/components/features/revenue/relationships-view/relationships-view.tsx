@@ -614,7 +614,7 @@ export function RelationshipsView({
   const pendingQuery = useIdentityCandidates("pending");
   const deferredQuery = useIdentityCandidates("deferred");
   const attentionQuery = useRelationshipAttention("open");
-  const openActionsQuery = useRevenueActions("open", 100);
+  const openActionsQuery = useRevenueActions("open", 100, "task");
   const rows = relationshipsQuery.data ?? [];
   const sources = sourcesQuery.data ?? [];
   const sourceInventory = inventoryQuery.data ?? [];

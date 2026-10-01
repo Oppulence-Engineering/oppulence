@@ -52,7 +52,7 @@ describe("ChatDashboardRoute", () => {
     expect(source).toContain('label: "overdue"');
     expect(source).toContain("recoveryPulseCount(");
     expect(source).toContain("atRiskPulseCount(");
-    expect(source).toContain('useRevenueActions("open", 100)');
+    expect(source).toContain('useRevenueActions("open", 100, "task")');
     expect(source).toContain("impact.overdueCommitments");
     expect(source).toContain('if (stat.tab === "commitments") requestDueCommitments();');
     expect(source).not.toContain('label: "commitments"');

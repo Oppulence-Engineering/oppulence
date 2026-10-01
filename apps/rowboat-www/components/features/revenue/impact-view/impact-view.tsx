@@ -106,7 +106,7 @@ export function ImpactView({
   const impactQuery = useImpactBundle();
   const relationshipsQuery = useRelationships();
   const attentionQuery = useRelationshipAttention("open");
-  const openActionsQuery = useRevenueActions("open", 100);
+  const openActionsQuery = useRevenueActions("open", 100, "task");
 
   React.useEffect(() => {
     if (impactQuery.error) {

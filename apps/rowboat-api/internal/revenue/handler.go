@@ -2746,6 +2746,10 @@ func (h *Handler) ListActions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	f := ListFilter{QueueStatus: r.URL.Query().Get("queueStatus")}
+	switch r.URL.Query().Get("surface") {
+	case "task", "recovery":
+		f.Surface = r.URL.Query().Get("surface")
+	}
 	if v := r.URL.Query().Get("limit"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			f.Limit = n

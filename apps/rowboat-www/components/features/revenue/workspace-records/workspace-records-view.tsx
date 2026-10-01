@@ -2008,7 +2008,7 @@ export function TasksView({
   onOpenCompany?: (relationshipId: string) => void;
 }) {
   const queryClient = useQueryClient();
-  const actionsQuery = useRevenueActions("open", 100);
+  const actionsQuery = useRevenueActions("open", 100, "task");
   const relationshipsQuery = useRelationships();
   const [creating, setCreating] = React.useState(false);
   const [filter, setFilter] = React.useState<"all" | "today" | "overdue">("all");

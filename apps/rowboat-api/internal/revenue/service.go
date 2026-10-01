@@ -993,9 +993,12 @@ func (s *Service) snapshotRevision(ctx context.Context, txc *ent.Client, action 
 // --- queue reads -------------------------------------------------------------
 
 // ListFilter bounds the queue listing.
+// Surface "task" keeps follow-up tasks. Surface "recovery" keeps every other
+// open action. An empty surface keeps the mixed queue.
 type ListFilter struct {
 	QueueStatus string
 	Limit       int
+	Surface     string
 }
 
 // ListActions returns the caller's queue ordered by priority. The default
@@ -1023,6 +1026,20 @@ func (s *Service) ListActions(ctx context.Context, u *ent.User, f ListFilter) ([
 	}
 	if status != "all" {
 		q = q.Where(revenueaction.QueueStatusEQ(status))
+	}
+	switch f.Surface {
+	case "task":
+		q = q.Where(
+			revenueaction.ActionTypeEQ("follow_up_task"),
+			revenueaction.ChannelEQ("task"),
+		)
+	case "recovery":
+		// A task is both of those fields. Excluding only one would drop a
+		// follow-up that happens to use the other value.
+		q = q.Where(revenueaction.Or(
+			revenueaction.ActionTypeNEQ("follow_up_task"),
+			revenueaction.ChannelNEQ("task"),
+		))
 	}
 	return q.WithRelationship().
 		Order(ent.Desc(revenueaction.FieldPriorityScore), ent.Asc(revenueaction.FieldCreatedAt)).

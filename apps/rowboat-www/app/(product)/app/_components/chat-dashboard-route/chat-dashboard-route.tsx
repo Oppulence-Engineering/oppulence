@@ -126,7 +126,7 @@ function PulseFigure({ failed, value }: { failed: boolean; value: number | null 
 
 function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
   const impactQuery = useImpact();
-  const openActionsQuery = useRevenueActions("open", 100);
+  const openActionsQuery = useRevenueActions("open", 100, "task");
   const attentionQuery = useRelationshipAttention("open");
   const impact = impactQuery.data ?? null;
   const failed = impactQuery.isError;
