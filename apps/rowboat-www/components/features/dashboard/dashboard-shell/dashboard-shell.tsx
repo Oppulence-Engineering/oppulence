@@ -157,9 +157,13 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
             onOpenChange={setPaletteOpen}
             onToggleSidebar={toggleSidebar}
             open={paletteOpen}
+            hasMoreSessions={chat.hasMoreSessions}
+            loadingMoreSessions={chat.loadingMoreSessions}
+            onLoadMoreSessions={chat.onLoadMoreSessions}
             querySeed={paletteSeed.text}
             seedNonce={paletteSeed.nonce}
             sessions={chat.sessions}
+            sessionsLoadError={chat.sessionsLoadError}
           />
           <AppTopBar
             onAsk={() => askOppulence()}

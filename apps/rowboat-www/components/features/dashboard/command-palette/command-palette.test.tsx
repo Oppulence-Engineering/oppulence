@@ -67,6 +67,7 @@ vi.mock("@oppulence/ui/components/command", () => ({
 
 import {
   CommandPalette,
+  paletteEarlierConversationsLabel,
   paletteMoreCompaniesLabel,
 } from "@/components/features/dashboard/command-palette/command-palette";
 
@@ -170,6 +171,28 @@ describe("CommandPalette semantic mail search", () => {
     renderPalette({ ...requiredProps, sessions });
     expect(screen.getByRole("button", { name: "Conversation 9" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Conversation 1" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: paletteEarlierConversationsLabel() })).toBeNull();
+  });
+
+  it("offers earlier conversations only when another page exists", async () => {
+    const user = userEvent.setup();
+    const onLoadMoreSessions = vi.fn();
+    const onOpenChange = vi.fn();
+    const sessions = [{ runId: "run-1", title: "Conversation 1", updatedAt: 1 }];
+    renderPalette({
+      ...requiredProps,
+      hasMoreSessions: true,
+      onLoadMoreSessions,
+      onOpenChange,
+      sessions,
+      sessionsLoadError: "Could not load earlier conversations.",
+    });
+    await user.click(screen.getByRole("button", { name: paletteEarlierConversationsLabel() }));
+    expect(onLoadMoreSessions).toHaveBeenCalledOnce();
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("button", { name: "Could not load earlier conversations." }),
+    ).toBeVisible();
   });
 
   it("names the company search instead of accounts", () => {

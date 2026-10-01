@@ -103,11 +103,20 @@ export function paletteMoreCompaniesLabel(): string {
   return "Show more companies";
 }
 
+/** Chat history is paged. The palette keeps going only when another conversation exists. */
+export function paletteEarlierConversationsLabel(): string {
+  return "Show earlier conversations";
+}
+
 export function CommandPalette({
   open,
   onOpenChange,
   agents,
   sessions,
+  hasMoreSessions = false,
+  loadingMoreSessions = false,
+  onLoadMoreSessions,
+  sessionsLoadError = null,
   onNewChat,
   onNavigateChat,
   onNavigateRelationship,
@@ -123,6 +132,11 @@ export function CommandPalette({
   onOpenChange: (open: boolean) => void;
   agents: readonly { slug: string; name: string }[];
   sessions: SessionMeta[];
+  /** True when a conversation exists past the pages already loaded. */
+  hasMoreSessions?: boolean;
+  loadingMoreSessions?: boolean;
+  onLoadMoreSessions?: () => void;
+  sessionsLoadError?: string | null;
   onNewChat: () => void;
   onNavigateChat: () => void;
   /** Opens one company record. Optional so the palette still renders in
@@ -383,7 +397,7 @@ export function CommandPalette({
             </CommandGroup>
           </>
         ) : null}
-        {sessions.length > 0 ? (
+        {sessions.length > 0 || hasMoreSessions || sessionsLoadError ? (
           <>
             <CommandSeparator />
             <CommandGroup heading="Conversations">
@@ -397,6 +411,20 @@ export function CommandPalette({
                   <Label className="truncate font-normal">{session.title}</Label>
                 </CommandItem>
               ))}
+              {hasMoreSessions ? (
+                <CommandItem
+                  disabled={loadingMoreSessions}
+                  onSelect={() => onLoadMoreSessions?.()}
+                  value={`${query} ${paletteEarlierConversationsLabel()}`}
+                >
+                  {loadingMoreSessions ? "Loading…" : paletteEarlierConversationsLabel()}
+                </CommandItem>
+              ) : null}
+              {sessionsLoadError ? (
+                <CommandItem disabled value={`${query} ${sessionsLoadError}`}>
+                  {sessionsLoadError}
+                </CommandItem>
+              ) : null}
             </CommandGroup>
           </>
         ) : null}
