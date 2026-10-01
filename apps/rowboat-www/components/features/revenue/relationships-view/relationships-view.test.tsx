@@ -14,6 +14,8 @@ import {
   companySheetPositionLabel,
   companyReviewCopy,
   companyDescriptionCopy,
+  companyEmailDetail,
+  companyEmailHref,
   companyNextActionCopy,
   companyStateAnswer,
   missionControlStateAnswer,
@@ -328,6 +330,21 @@ describe("RelationshipsView", () => {
     expect(source).toContain("details come from a source you can open");
     expect(source).toContain("See where each detail came from");
     expect(source).toContain('data.relationship.accountDomain || "Not filled in"');
+    expect(companyEmailHref("ada@acme.com")).toBe("mailto:ada@acme.com");
+    expect(companyEmailHref("  ada@acme.com  ")).toBe("mailto:ada@acme.com");
+    expect(companyEmailHref("ada@acme.com?bcc=evil@example.com")).toBeNull();
+    expect(companyEmailHref("javascript:alert(1)")).toBeNull();
+    expect(companyEmailHref("")).toBeNull();
+    expect(companyEmailDetail("")).toEqual({ text: "Not filled in" });
+    expect(companyEmailDetail("ada@acme.com")).toEqual({
+      text: "ada@acme.com",
+      href: "mailto:ada@acme.com",
+    });
+    expect(source).toContain("companyEmailDetail(data.relationship.primaryEmail)");
+    expect(source).toContain(
+      "companyEmailHref(primaryContact?.email || data.relationship.primaryEmail)",
+    );
+    expect(source).not.toContain("mailto:${primaryContact.email}");
     expect(source).not.toContain("Not detected");
     expect(source).toContain("Not filled in");
     expect(companyDescriptionCopy({})).toBe("No description yet");

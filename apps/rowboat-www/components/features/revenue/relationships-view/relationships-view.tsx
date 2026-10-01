@@ -1574,6 +1574,26 @@ export function missionControlStateAnswer(evidence: {
   return companyStateAnswer(lifecycle || "unknown", health || "unknown");
 }
 
+/**
+ * The create form stores a company email. A domain then replaces it under the
+ * title, so the address has to stay in the record. Only a plain address is a link.
+ */
+export function companyEmailHref(email: string | null | undefined): string | null {
+  const trimmed = email?.trim() ?? "";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return null;
+  return `mailto:${trimmed}`;
+}
+
+export function companyEmailDetail(email: string | null | undefined): {
+  text: string;
+  href?: string;
+} {
+  const trimmed = email?.trim() ?? "";
+  if (!trimmed) return { text: "Not filled in" };
+  const href = companyEmailHref(trimmed);
+  return href ? { text: trimmed, href } : { text: trimmed };
+}
+
 /** Record badges sit together. The dimension has to travel with the value. */
 export function recordDetailBadge(label: string, value: string): string {
   return `${label} · ${relationshipLabel(value)}`;
@@ -2141,6 +2161,10 @@ export function RelationshipSheet({
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   const primaryContact = data?.participants.find((participant) => participant.email);
+  const composeHref = data
+    ? companyEmailHref(primaryContact?.email || data.relationship.primaryEmail)
+    : null;
+  const companyEmail = data ? companyEmailDetail(data.relationship.primaryEmail) : null;
   const companySource = data
     ? Object.values(data.relationship.companyEnrichmentRefs ?? {})
         .flat()
@@ -2220,14 +2244,14 @@ export function RelationshipSheet({
                     </p>
                   </div>
                 </div>
-                {primaryContact?.email ? (
+                {composeHref ? (
                   <Button
                     asChild
                     size="sm"
                     variant="outline"
                     className="mt-4 w-full justify-center"
                   >
-                    <a href={`mailto:${primaryContact.email}`}>
+                    <a href={composeHref}>
                       <EnvelopeSimple /> Compose email
                     </a>
                   </Button>
@@ -2256,6 +2280,16 @@ export function RelationshipSheet({
                   <dt className="text-primary/40">Domain</dt>
                   <dd className="truncate text-primary/75">
                     {data.relationship.accountDomain || "Not filled in"}
+                  </dd>
+                  <dt className="text-primary/40">Email</dt>
+                  <dd className="truncate text-primary/75">
+                    {companyEmail?.href ? (
+                      <a className="underline-offset-2 hover:underline" href={companyEmail.href}>
+                        {companyEmail.text}
+                      </a>
+                    ) : (
+                      companyEmail?.text
+                    )}
                   </dd>
                   <dt className="text-primary/40">Company</dt>
                   {/* The name is whatever was saved. capitalize turned "acme harbor" into "Acme Harbor". */}
