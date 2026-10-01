@@ -5,6 +5,7 @@ import "client-only";
 import * as React from "react";
 import { EnvelopeSimple, MagnifyingGlass, Plugs, WarningDiamond } from "@/lib/icons";
 import { useImpactBundle } from "@/hooks/queries/use-impact";
+import { useRelationships } from "@/hooks/queries/use-relationships";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
 import { Badge } from "@oppulence/ui/components/badge";
@@ -54,6 +55,19 @@ export function overdueDirectionLines(impact: Pick<
   return lines;
 }
 
+/**
+ * Impact's relationship total counts People records too. The "of N accounts"
+ * line is about companies, so a person saved from People is not an account.
+ * Until that list has loaded, the impact total is the only number available.
+ */
+export function impactAccountTotal(
+  relationships: readonly { kind?: string }[] | undefined,
+  fallback: number,
+): number {
+  if (!relationships) return fallback;
+  return relationships.filter((record) => record.kind !== "person").length;
+}
+
 export function ImpactView({
   onError,
   onScan,
@@ -71,6 +85,7 @@ export function ImpactView({
   needsConnect?: boolean;
 }) {
   const impactQuery = useImpactBundle();
+  const relationshipsQuery = useRelationships();
 
   React.useEffect(() => {
     if (impactQuery.error) {
@@ -94,6 +109,10 @@ export function ImpactView({
     );
   }
   const { data, digest } = impactQuery.data;
+  const accountTotal = impactAccountTotal(
+    relationshipsQuery.isSuccess ? relationshipsQuery.data : undefined,
+    data.relationships,
+  );
 
   if (data.surfaced === 0 && data.atRiskRelationships === 0 && data.overdueCommitments === 0) {
     const auditLabel = auditLaunchLabel({
@@ -186,7 +205,7 @@ export function ImpactView({
               This score reflects missing data, not account behaviour.
             </AlertTitle>
             <AlertDescription className="text-[13px] text-primary/60">
-              {degradedCount} of {data.relationships} accounts are exposed because a connected
+              {degradedCount} of {accountTotal} accounts are exposed because a connected
               source stopped reporting. Reconnect it before reading these numbers as risk.
             </AlertDescription>
           </Alert>
@@ -194,7 +213,7 @@ export function ImpactView({
         <div className="grid grid-cols-2 divide-x divide-y divide-border md:grid-cols-4 md:divide-y-0">
           <Stat label="Portfolio risk score" value={`${data.portfolioRiskScore}/100`} />
           <Stat
-            label={`At-risk accounts of ${data.relationships}`}
+            label={`At-risk accounts of ${accountTotal}`}
             value={data.atRiskRelationships}
           />
           <Stat label="Critical accounts" value={data.criticalRelationships} />

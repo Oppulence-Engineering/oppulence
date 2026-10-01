@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { overdueDirectionLines } from "./impact-view";
+import { impactAccountTotal, overdueDirectionLines } from "./impact-view";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "impact-view.tsx"), "utf8");
 
@@ -38,5 +38,18 @@ describe("ImpactView", () => {
       { label: "Overdue from them", value: 1 },
       { label: "Overdue together", value: 1 },
     ]);
+  });
+
+  it("counts companies in the account total and leaves a person out", () => {
+    expect(
+      impactAccountTotal(
+        [
+          { kind: "company" },
+          { kind: "person" },
+        ],
+        2,
+      ),
+    ).toBe(1);
+    expect(impactAccountTotal(undefined, 2)).toBe(2);
   });
 });
