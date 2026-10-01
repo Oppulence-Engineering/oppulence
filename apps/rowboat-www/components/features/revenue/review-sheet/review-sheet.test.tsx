@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  executionFailureCopy,
   reconciliationErrorCopy,
   reconciliationStatusLabel,
 } from "@/components/features/revenue/review-sheet/review-sheet";
@@ -27,5 +28,24 @@ describe("ReviewSheet", () => {
     );
     expect(source).toContain("reconciliationStatusLabel(action.reconciliationStatus)");
     expect(source).not.toContain("{action.reconciliationStatus");
+  });
+
+  it("names why the last send attempt stopped", () => {
+    expect(executionFailureCopy("revenue: google is not connected for the assigned user")).toBe(
+      "Connect Google for the person who will send this, then try again.",
+    );
+    expect(executionFailureCopy("revenue: action has no proposed message")).toBe(
+      "Write the message before sending.",
+    );
+    expect(executionFailureCopy("gmail returned 403")).toBe(
+      "Google refused this send. Reconnect Gmail, then try again.",
+    );
+    expect(executionFailureCopy("revenue: something unexpected happened")).toBe(
+      "The last attempt did not send. Fix the draft, then try again.",
+    );
+    expect(executionFailureCopy("")).toBe("");
+    expect(source).toContain("executionFailureCopy(action.executionError)");
+    expect(source).toContain("The last attempt did not send");
+    expect(source).not.toContain("{action.executionError}");
   });
 });

@@ -9,6 +9,7 @@ import {
   CircleNotch,
   ClockCounterClockwise,
   EnvelopeSimple,
+  WarningCircle,
   PaperPlaneTilt,
   PencilSimple,
   Prohibit,
@@ -38,6 +39,7 @@ import {
   editAction,
   evaluateAction,
   executeAction,
+  friendlyRevenueError,
   getAction,
   getSourceBody,
   rejectAction,
@@ -73,6 +75,64 @@ export function reconciliationStatusLabel(status: string | null | undefined): st
     default:
       return "Still checking with the provider.";
   }
+}
+
+/**
+ * A definite send failure is stored, then the action returns to pending so it
+ * can be retried. The review sheet has to say why the last attempt stopped.
+ */
+export function executionFailureCopy(error: string | null | undefined): string {
+  const raw = (error ?? "").trim();
+  if (!raw) return "";
+  if (/no execution backend configured/i.test(raw)) {
+    return "Sending is not set up for this workspace yet.";
+  }
+  if (/no execution backend for channel/i.test(raw)) {
+    return "This channel cannot send yet.";
+  }
+  if (/execution backend for channel .+ is not configured/i.test(raw)) {
+    return "This channel is not set up to send yet.";
+  }
+  if (/has no recipient email/i.test(raw)) return "Add a recipient before sending.";
+  if (/has no proposed message/i.test(raw)) return "Write the message before sending.";
+  if (/Slack has no provider draft/i.test(raw)) {
+    return "Slack cannot save a draft. Switch this to send after you review it.";
+  }
+  if (/Google Calendar has no provider draft/i.test(raw)) {
+    return "Calendar cannot save a draft. Switch this to send after you review it.";
+  }
+  if (/HubSpot has no provider draft/i.test(raw)) {
+    return "HubSpot cannot save a draft. Switch this to send after you review it.";
+  }
+  if (/needs dueAt/i.test(raw)) return "Add a start time before creating the event.";
+  if (/Google Calendar executor is not configured/i.test(raw)) {
+    return "Calendar sending is not set up yet.";
+  }
+  if (/google is not connected/i.test(raw)) {
+    return "Connect Google for the person who will send this, then try again.";
+  }
+  if (/missing the .+ scope|reconnect Google/i.test(raw)) {
+    return "Google is missing permission for this send. Reconnect, then try again.";
+  }
+  if (/refresh token is invalid/i.test(raw)) {
+    return "Google stopped accepting the authorization. Reconnect, then try again.";
+  }
+  if (/could not obtain a google access token/i.test(raw)) {
+    return "Google could not authorize this send. Reconnect, then try again.";
+  }
+  if (/gmail returned 403|returned 403/i.test(raw)) {
+    return "Google refused this send. Reconnect Gmail, then try again.";
+  }
+  if (/Slack action needs target/i.test(raw)) return "Choose the Slack channel before sending.";
+  if (/HubSpot action needs a relationship resource ref/i.test(raw)) {
+    return "Link the HubSpot record before sending.";
+  }
+  const friendly = friendlyRevenueError(raw);
+  if (friendly !== raw) return friendly;
+  if (/^revenue:/i.test(raw)) {
+    return "The last attempt did not send. Fix the draft, then try again.";
+  }
+  return raw;
 }
 
 /** The bounded-retry sentence is the same fact as "needs a person". Hide that duplicate. */
@@ -151,6 +211,10 @@ export function ReviewSheet({
   const isEmail = action.channel === "email";
   const uncertain =
     action.executionStatus === "ambiguous" || action.reconciliationStatus === "manual_review";
+  const sendFailure =
+    action.executionStatus === "pending" || action.executionStatus === "failed"
+      ? executionFailureCopy(action.executionError)
+      : "";
   const linked = workspace?.mode === "linked" && workspace.status === "active";
   const dirty =
     subject !== (action.proposedSubject ?? "") || message !== (action.proposedMessage ?? "");
@@ -329,6 +393,14 @@ export function ReviewSheet({
             <Alert>
               <XCircle weight="fill" />
               <AlertDescription>This action was rejected.</AlertDescription>
+            </Alert>
+          ) : null}
+
+          {sendFailure && !uncertain ? (
+            <Alert>
+              <WarningCircle weight="fill" />
+              <AlertTitle>The last attempt did not send</AlertTitle>
+              <AlertDescription>{sendFailure}</AlertDescription>
             </Alert>
           ) : null}
 

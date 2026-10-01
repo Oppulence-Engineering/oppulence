@@ -68,7 +68,10 @@ import {
 } from "@/components/features/revenue/shared/shared";
 import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
-import { ReviewSheet } from "@/components/features/revenue/review-sheet/review-sheet";
+import {
+  executionFailureCopy,
+  ReviewSheet,
+} from "@/components/features/revenue/review-sheet/review-sheet";
 import { AuditSheet } from "@/components/features/revenue/audit-sheet/audit-sheet";
 import { companyName, recoveryQueueActions } from "@/lib/revenue/revenue-records";
 import type { RevenueAction, RevenueRelationship, RevenueWorkspace } from "@/lib/revenue/types";
@@ -378,6 +381,10 @@ function ActionCard({
   const tone = priorityTone(action.priorityScore);
   const recipient = action.recipientEmail || "Unknown recipient";
   const open = action.queueStatus === "open";
+  const sendFailure =
+    action.executionStatus === "pending" || action.executionStatus === "failed"
+      ? executionFailureCopy(action.executionError)
+      : "";
 
   const triage = async (kind: "snooze" | "dismiss") => {
     setBusy(kind);
@@ -415,6 +422,9 @@ function ActionCard({
           <p className="mt-1.5 line-clamp-2 text-sm text-[var(--text-secondary)]">
             {action.reason}
           </p>
+          {sendFailure ? (
+            <p className="mt-1.5 text-sm text-amber-700 dark:text-amber-300">{sendFailure}</p>
+          ) : null}
           {action.proposedSubject ? (
             <p className="mt-1 truncate text-xs text-[var(--text-muted)]">
               Draft subject: {action.proposedSubject}
