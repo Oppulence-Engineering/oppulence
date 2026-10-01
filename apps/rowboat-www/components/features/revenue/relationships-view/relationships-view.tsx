@@ -2238,7 +2238,7 @@ function MissionControlOverview({
                 <p className="mt-1 text-primary/40">
                   {item.evidence
                     .map(
-                      (ref) => `${relationshipLabel(ref.source)} · ${relativeTime(ref.observedAt)}`,
+                      (ref) => `${activitySourceLabel(ref.source)} · ${relativeTime(ref.observedAt)}`,
                     )
                     .join("; ")}
                 </p>

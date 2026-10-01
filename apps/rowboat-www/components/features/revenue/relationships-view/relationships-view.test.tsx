@@ -441,6 +441,8 @@ describe("RelationshipsView", () => {
     expect(detailSourceLabel("external_research", false)).toBe("Not filled in yet");
     expect(detailSourceLabel("source_fact", false)).toBe("Not filled in yet");
     expect(source).toContain('case "external_research":\n      return "Public research";');
+    expect(source).toContain("activitySourceLabel(ref.source)");
+    expect(source).not.toContain("relationshipLabel(ref.source)");
     expect(
       detailEvidenceCopy({
         supported: false,
