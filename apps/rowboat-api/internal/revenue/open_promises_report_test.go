@@ -214,6 +214,46 @@ func TestOpenPromisesReportIsHonestWhenEmpty(t *testing.T) {
 	}
 }
 
+func TestOpenPromisesReportUsesTheCompanyTitle(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	scanID := startedScan(t, f, 90)
+	rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "dogfood-label.example", AccountDomain: "dogfood-label.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	typed, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Billing @ Northwind", AccountDomain: "northwind.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	due := now.Add(10 * 24 * time.Hour)
+	seedReportCommitment(t, f, rel, "promised_by_me", "Send the domain title", "", &due, now.Add(-2*24*time.Hour))
+	seedReportCommitment(t, f, typed, "promised_by_me", "Keep the typed name", "", &due, now.Add(-2*24*time.Hour))
+
+	report, err := f.svc.OpenPromisesReport(f.ctx, f.user, mustParseUUID(t, scanID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	accounts := map[string]bool{}
+	for _, item := range report.Items {
+		accounts[item.Account] = true
+	}
+	if !accounts["Dogfood Label"] || accounts["dogfood-label.example"] {
+		t.Fatalf("domain account title = %#v", accounts)
+	}
+	if !accounts["Billing @ Northwind"] {
+		t.Fatalf("typed account title = %#v", accounts)
+	}
+	if !strings.Contains(report.Markdown(), "Dogfood Label") {
+		t.Fatalf("markdown kept the host:\n%s", report.Markdown())
+	}
+}
+
 func TestOpenPromisesReportNamesAMutualPromise(t *testing.T) {
 	f := newFixture(t)
 	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)

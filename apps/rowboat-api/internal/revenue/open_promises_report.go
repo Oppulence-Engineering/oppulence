@@ -3,14 +3,19 @@ package revenue
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 )
+
+var emailShapedAccount = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
 
 // The Open Promises report is the wedge (one-pager §11).
 //
@@ -103,7 +108,7 @@ func (s *Service) OpenPromisesReport(
 			SourceQuote:  row.SourcePhrase,
 		}
 		if rel, relErr := row.Edges.RelationshipOrErr(); relErr == nil && rel != nil {
-			item.Account = rel.DisplayName
+			item.Account = reportAccountTitle(rel)
 		}
 		if item.Account == "" {
 			item.Account = "Unattributed"
@@ -143,6 +148,41 @@ func (s *Service) OpenPromisesReport(
 		return a.Account < b.Account
 	})
 	return report, nil
+}
+
+// reportAccountTitle uses the same company title as the directory. A company
+// stored as dogfood-label.example is shown as Dogfood Label. A typed name,
+// including one that contains an @ sign, stays as it was written.
+func reportAccountTitle(rel *ent.Relationship) string {
+	name := strings.TrimSpace(rel.DisplayName)
+	domain := strings.TrimSpace(rel.AccountDomain)
+	if domain != "" && (strings.EqualFold(name, domain) || emailShapedAccount.MatchString(name)) {
+		if title := domainCompanyLabel(domain); title != "" {
+			return title
+		}
+	}
+	return name
+}
+
+func domainCompanyLabel(domain string) string {
+	host := domain
+	if dot := strings.IndexByte(host, '.'); dot >= 0 {
+		host = host[:dot]
+	}
+	parts := strings.FieldsFunc(host, func(r rune) bool { return r == '-' || r == '_' })
+	words := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		first, size := utf8.DecodeRuneInString(part)
+		if first == utf8.RuneError && size == 1 {
+			words = append(words, part)
+			continue
+		}
+		words = append(words, string(unicode.ToUpper(first))+part[size:])
+	}
+	return strings.Join(words, " ")
 }
 
 // Markdown renders the report as the document handed to a prospect.
