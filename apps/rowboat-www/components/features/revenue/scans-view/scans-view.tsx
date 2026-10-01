@@ -46,7 +46,7 @@ export function ScansView({
   needsReconnect?: boolean;
   /** No mailbox is connected, so `onScan` opens connections instead of a scan. */
   needsConnect?: boolean;
-  /** The history request stopped at a full page. Older audits are still stored. */
+  /** The server found another audit past the scans already loaded. */
   hasMoreAudits?: boolean;
   loadingEarlierAudits?: boolean;
   earlierAuditsError?: string | null;

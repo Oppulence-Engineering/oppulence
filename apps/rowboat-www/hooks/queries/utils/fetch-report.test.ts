@@ -1,11 +1,22 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { AUDIT_HISTORY_PAGE, auditHistoryHasMore, loadReportScans } from "./fetch-report";
+import type { RevenueLeakScan } from "@/lib/revenue/types";
+
+import {
+  AUDIT_HISTORY_PAGE,
+  type AuditHistoryPage,
+  auditPageHasMore,
+  auditRows,
+  loadReportScans,
+} from "./fetch-report";
 
 describe("loadReportScans", () => {
   it("asks for the next page by offset", async () => {
-    const request = vi.fn().mockResolvedValue({ scans: [] });
-    await loadReportScans(request, undefined, AUDIT_HISTORY_PAGE);
+    const request = vi.fn().mockResolvedValue({ scans: [], hasMore: true });
+    await expect(loadReportScans(request, undefined, AUDIT_HISTORY_PAGE)).resolves.toEqual({
+      scans: [],
+      hasMore: true,
+    });
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({ path: "/revenue-leak-scans?limit=10&offset=10" }),
     );
@@ -13,23 +24,28 @@ describe("loadReportScans", () => {
 
   it("keeps the first page at the history size", async () => {
     const request = vi.fn().mockResolvedValue({ scans: [] });
-    await loadReportScans(request);
+    await expect(loadReportScans(request)).resolves.toEqual({ scans: [], hasMore: false });
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({ path: "/revenue-leak-scans?limit=10" }),
     );
   });
 });
 
-describe("auditHistoryHasMore", () => {
-  it("treats a full page as unfinished history", () => {
-    expect(auditHistoryHasMore(10, 0, false)).toBe(true);
-    expect(auditHistoryHasMore(10, 10, false)).toBe(true);
+describe("auditPageHasMore", () => {
+  it("trusts the server flag on a full page", () => {
+    const scans = Array.from({ length: 10 }, (_, index) => ({
+      id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+    })) as RevenueLeakScan[];
+    const full = { scans, hasMore: false } as AuditHistoryPage;
+    expect(auditPageHasMore(full)).toBe(false);
+    expect(auditPageHasMore({ ...full, hasMore: true })).toBe(true);
+    expect(auditRows(full)).toHaveLength(10);
   });
 
-  it("stops when the last page is short or the list was exhausted", () => {
-    expect(auditHistoryHasMore(7, 0, false)).toBe(false);
-    expect(auditHistoryHasMore(10, 3, false)).toBe(false);
-    expect(auditHistoryHasMore(10, 0, true)).toBe(false);
-    expect(auditHistoryHasMore(0, 0, false)).toBe(false);
+  it("treats a bare list as having no further page", () => {
+    const scan = { id: "scan-1" } as RevenueLeakScan;
+    expect(auditPageHasMore([])).toBe(false);
+    expect(auditPageHasMore(undefined)).toBe(false);
+    expect(auditRows([scan])).toEqual([scan]);
   });
 });

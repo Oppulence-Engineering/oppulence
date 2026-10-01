@@ -4,6 +4,7 @@
 import { fetchCommitments } from "@/hooks/queries/utils/fetch-commitments";
 import { fetchDigest, fetchImpact } from "@/hooks/queries/utils/fetch-impact";
 import {
+  auditRows,
   fetchOpenPromisesReport,
   fetchReportScan,
   fetchReportScans,
@@ -310,7 +311,12 @@ export const startScan = (lookbackDays?: number) =>
 
 export const getScan = fetchReportScan;
 
-export const listScans = fetchReportScans;
+export async function listScans(
+  signal?: AbortSignal,
+  offset = 0,
+): Promise<RevenueLeakScan[]> {
+  return auditRows(await fetchReportScans(signal, offset));
+}
 
 export function latestCompletedScan(
   scans: Array<Pick<RevenueLeakScan, "id" | "status" | "threadsSeen">>,

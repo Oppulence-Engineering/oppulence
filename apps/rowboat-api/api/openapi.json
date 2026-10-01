@@ -26742,7 +26742,7 @@
     },
     "/v1/revenue-leak-scans": {
       "get": {
-        "description": "Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions.",
+        "description": "Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions. A full page is the end of the history when hasMore is false.",
         "operationId": "listRevenueLeakScans",
         "parameters": [
           {
@@ -26772,8 +26772,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "Audit history.",
+                  "description": "Audit history. A full page is the end of the history when hasMore is false.",
                   "properties": {
+                    "hasMore": {
+                      "description": "Another audit exists beyond this page.",
+                      "type": "boolean"
+                    },
                     "scans": {
                       "description": "Scans newest first.",
                       "items": {

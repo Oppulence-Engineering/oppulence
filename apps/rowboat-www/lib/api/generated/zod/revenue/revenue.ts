@@ -2242,7 +2242,7 @@ export const GetRevenueImpact401Response = zod
   );
 
 /**
- * Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions.
+ * Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions. A full page is the end of the history when hasMore is false.
  * @summary List revenue leak scans
  */
 export const listRevenueLeakScansQueryLimitMax = 100;
@@ -2267,6 +2267,7 @@ export const ListRevenueLeakScansQueryParams = zod.object({
 
 export const ListRevenueLeakScans200Response = zod
   .strictObject({
+    hasMore: zod.boolean().optional().describe("Another audit exists beyond this page."),
     scans: zod
       .array(
         zod
@@ -2311,7 +2312,7 @@ export const ListRevenueLeakScans200Response = zod
       )
       .describe("Scans newest first."),
   })
-  .describe("Audit history.");
+  .describe("Audit history. A full page is the end of the history when hasMore is false.");
 
 export const ListRevenueLeakScans400Response = zod
   .strictObject({

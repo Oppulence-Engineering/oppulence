@@ -1546,16 +1546,16 @@ func (h *Handler) ListScans(w http.ResponseWriter, r *http.Request) {
 			offset = value
 		}
 	}
-	scans, err := h.svc.ListScans(r.Context(), u, limit, offset)
+	page, err := h.svc.ListScans(r.Context(), u, limit, offset)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	out := make([]scanDTO, 0, len(scans))
-	for _, scan := range scans {
+	out := make([]scanDTO, 0, len(page.Scans))
+	for _, scan := range page.Scans {
 		out = append(out, scanToDTO(scan))
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"scans": out})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"scans": out, "hasMore": page.HasMore})
 }
 
 // StartScan starts a bounded historical scan.

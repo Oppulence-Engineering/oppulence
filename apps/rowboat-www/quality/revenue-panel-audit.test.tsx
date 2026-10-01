@@ -41,6 +41,10 @@ vi.mock("@/hooks/queries/utils/fetch-report", () => ({
   loadReportScans: mocks.listScans,
   loadReportScan: mocks.getScan,
   loadOpenPromisesReport: vi.fn(),
+  auditRows: (page: { scans?: unknown[] } | unknown[] | null | undefined) =>
+    Array.isArray(page) ? page : (page?.scans ?? []),
+  auditPageHasMore: (page: { hasMore?: boolean } | unknown[] | null | undefined) =>
+    Boolean(page && !Array.isArray(page) && page.hasMore),
 }));
 vi.mock("@/hooks/queries/utils/fetch-workspace", () => ({
   fetchWorkspace: mocks.getWorkspace,
