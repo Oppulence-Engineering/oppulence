@@ -680,6 +680,11 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 			return s.client.Relationship.Get(ctx, owner.ID)
 		}
 	}
+	// People added before this company existed already share its domain.
+	// Filing them here is what puts them on the company and in the directory.
+	if err := attachExistingPeopleToCompany(ctx, txc, ws, u, rel); err != nil {
+		return nil, err
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}

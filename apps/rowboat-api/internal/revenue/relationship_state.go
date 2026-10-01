@@ -1020,6 +1020,9 @@ func resolveObservationRelationship(
 	if err := bindRelationshipIdentities(ctx, client, ws, u, rel, signals, input.Source, input.ReceivedAt); err != nil {
 		return nil, false, err
 	}
+	if err := attachExistingPeopleToCompany(ctx, client, ws, u, rel); err != nil {
+		return nil, false, err
+	}
 	return rel, true, nil
 }
 

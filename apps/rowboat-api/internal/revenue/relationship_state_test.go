@@ -687,6 +687,58 @@ func TestPersonAtCompanyDomainIsNotAnIdentityCollision(t *testing.T) {
 	}
 }
 
+func TestPersonAddedBeforeTheCompanyIsListedOnIt(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	person, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "person", DisplayName: "Avery", PrimaryEmail: "avery@acme.example", AccountDomain: "acme.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		RelationshipID: person.ID,
+		DisplayName:    "Avery",
+		PrimaryEmail:   "avery@acme.example",
+		AccountDomain:  "acme.example",
+		Source:         "user",
+		ExternalID:     "person-added-avery-first",
+		EventType:      "person_added",
+		Summary:        "Avery added by the user",
+		OccurredAt:     now,
+		ReceivedAt:     now,
+		Participants: []RelationshipParticipantInput{{
+			DisplayName: "Avery", Email: "avery@acme.example", Role: "contact",
+		}},
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	before, err := f.client.Person.Query().Only(f.ctx)
+	if err != nil || before.OrgName != "" || before.RelationshipCount != 0 {
+		t.Fatalf("person has no company yet: org=%q companies=%d err=%v", before.OrgName, before.RelationshipCount, err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Acme", AccountDomain: "acme.example",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	company, err := f.client.Relationship.Query().
+		Where(relationship.KindEQ("company"), relationship.AccountDomainEQ("acme.example")).
+		WithParticipants().
+		Only(f.ctx)
+	if err != nil || len(company.Edges.Participants) != 1 || company.Edges.Participants[0].Email != "avery@acme.example" {
+		t.Fatalf("person added first should be listed on the company: %+v err=%v", company.Edges.Participants, err)
+	}
+	directory, err := f.client.Person.Query().Only(f.ctx)
+	if err != nil || directory.OrgName != "Acme" || directory.RelationshipCount != 1 {
+		t.Fatalf("directory company = %q companies = %d err=%v", directory.OrgName, directory.RelationshipCount, err)
+	}
+	candidates, err := f.client.RelationshipIdentityCandidate.Query().Count(f.ctx)
+	if err != nil || candidates != 0 {
+		t.Fatalf("linking the earlier person is not an identity review: count=%d err=%v", candidates, err)
+	}
+}
+
 func TestResourceRefLimitCountsUniqueAliases(t *testing.T) {
 	duplicates := make([]string, 51)
 	for i := range duplicates {
