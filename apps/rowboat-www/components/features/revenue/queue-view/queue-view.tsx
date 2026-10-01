@@ -70,7 +70,7 @@ import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
 import { ReviewSheet } from "@/components/features/revenue/review-sheet/review-sheet";
 import { AuditSheet } from "@/components/features/revenue/audit-sheet/audit-sheet";
-import { recoveryQueueActions } from "@/lib/revenue/revenue-records";
+import { companyName, recoveryQueueActions } from "@/lib/revenue/revenue-records";
 import type { RevenueAction, RevenueRelationship, RevenueWorkspace } from "@/lib/revenue/types";
 
 /**
@@ -545,8 +545,10 @@ function CreateActionDialog({
             <Select onValueChange={setRelationshipId} value={relationshipId || undefined}>
               <SelectTrigger
                 aria-label={recoveryCompanyName(
-                  relationships.find((item) => item.id === relationshipId)?.displayName ||
-                    "Choose a company",
+                  (() => {
+                    const selected = relationships.find((item) => item.id === relationshipId);
+                    return selected ? companyName(selected) : "Choose a company";
+                  })(),
                 )}
                 size="sm"
               >
@@ -555,7 +557,7 @@ function CreateActionDialog({
               <SelectContent className="app-shell rounded-[2px]">
                 {relationships.map((r) => (
                   <SelectItem key={r.id} value={r.id}>
-                    {r.displayName}
+                    {companyName(r)}
                     {r.primaryEmail ? ` · ${r.primaryEmail}` : ""}
                   </SelectItem>
                 ))}

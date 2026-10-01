@@ -1440,8 +1440,8 @@ function IdentityReviewInbox({
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
               <p className="text-sm font-medium text-primary">
-                {candidate.proposedRelationship.displayName} may match{" "}
-                {candidate.existingRelationship.displayName}
+                {companyName(candidate.proposedRelationship)} may match{" "}
+                {companyName(candidate.existingRelationship)}
               </p>
               <p className="mt-0.5 text-xs text-primary/55">{identityMatchDetail(candidate)}</p>
             </div>
@@ -1458,7 +1458,7 @@ function IdentityReviewInbox({
             ))}
           </div>
           <Input
-            aria-label={`Reason for identity decision about ${candidate.proposedRelationship.displayName}`}
+            aria-label={`Reason for identity decision about ${companyName(candidate.proposedRelationship)}`}
             value={reasons[candidate.id] ?? ""}
             onChange={(event) =>
               setReasons((current) => ({ ...current, [candidate.id]: event.target.value }))

@@ -1,3 +1,4 @@
+import { companyName } from "@/lib/revenue/revenue-records";
 import type { CommitmentRegisterFilter } from "@/lib/revenue/types";
 
 /** The five views of the commitment register. Each one is a different query. */
@@ -66,6 +67,7 @@ type RegisterAccountSource = {
   id?: string;
   kind?: string;
   displayName?: string;
+  accountDomain?: string | null;
 };
 
 type RegisterGraphAccountSource = {
@@ -89,7 +91,10 @@ export function registerAccountChoices(
 ): { id: string; label: string }[] {
   const listed = relationships.flatMap((item) => {
     const id = item.id?.trim() ?? "";
-    const label = item.displayName?.trim() ?? "";
+    const label = companyName({
+      displayName: item.displayName?.trim() ?? "",
+      accountDomain: item.accountDomain,
+    }).trim();
     if (!id || !label || item.kind === "person") return [];
     return [{ id, label }];
   });

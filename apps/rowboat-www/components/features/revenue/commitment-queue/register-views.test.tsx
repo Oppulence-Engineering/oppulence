@@ -99,6 +99,19 @@ describe("the five register views", () => {
       ),
     ).toEqual([{ id: "company-1", label: "Dogfood Harbor" }]);
     expect(
+      registerAccountChoices(
+        [
+          {
+            id: "company-domain",
+            kind: "company",
+            displayName: "northwind.example",
+            accountDomain: "northwind.example",
+          },
+        ],
+        [],
+      ),
+    ).toEqual([{ id: "company-domain", label: "Northwind" }]);
+    expect(
       registerAccountChoices([], [{ kind: "relationship", relationshipId: "graph-1", label: "Acme" }]),
     ).toEqual([{ id: "graph-1", label: "Acme" }]);
     expect(

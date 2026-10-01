@@ -9,6 +9,7 @@ import {
 } from "@oppulence/relationship-contract";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useConsoleResources } from "@/hooks/queries/use-console";
+import { companyName } from "@/lib/revenue/revenue-records";
 import { useRelationshipGraph } from "@/hooks/queries/use-relationships";
 import { consoleKeys } from "@/hooks/queries/utils/console-keys";
 import { relationshipKeys } from "@/hooks/queries/utils/relationship-keys";
@@ -1144,16 +1145,24 @@ export function RelationshipGraphWorkspace({
     graphEnabled,
   );
   const loadedGraph = graphEnabled ? (graphQuery.data ?? null) : null;
-  const graph = React.useMemo(
-    () =>
-      loadedGraph
-        ? {
-            ...loadedGraph,
-            ...withoutPersonDirectoryRecords(loadedGraph.nodes, loadedGraph.edges),
-          }
-        : null,
-    [loadedGraph],
-  );
+  const graph = React.useMemo(() => {
+    if (!loadedGraph) return null;
+    const visible = withoutPersonDirectoryRecords(loadedGraph.nodes, loadedGraph.edges);
+    const titles = new Map(
+      relationships
+        .filter((row) => row.kind !== "person")
+        .map((row) => [row.id, companyName(row)]),
+    );
+    return {
+      ...loadedGraph,
+      ...visible,
+      nodes: visible.nodes.map((node) => {
+        if (node.kind !== "relationship" || !node.relationshipId) return node;
+        const title = titles.get(node.relationshipId);
+        return title ? { ...node, label: title } : node;
+      }),
+    };
+  }, [loadedGraph, relationships]);
   const loading = graphEnabled && graphQuery.isPending;
   // The canvas already explains a failed load and offers Retry. Sending the
   // same failure to the page banner left it sitting on every other tab.
@@ -1497,8 +1506,12 @@ export function RelationshipGraphWorkspace({
                 aria-label={comboboxFilterName(
                   "Account",
                   graphAccountChoice(
-                    relationships.find((relationship) => relationship.id === viewState.relationshipId)
-                      ?.displayName,
+                    (() => {
+                      const selected = relationships.find(
+                        (relationship) => relationship.id === viewState.relationshipId,
+                      );
+                      return selected ? companyName(selected) : undefined;
+                    })(),
                   ),
                 )}
                 size="sm"
@@ -1509,7 +1522,7 @@ export function RelationshipGraphWorkspace({
               <SelectContent className="app-shell rounded-[2px]">
                 {relationships.map((relationship) => (
                   <SelectItem key={relationship.id} value={relationship.id}>
-                    {relationship.displayName}
+                    {companyName(relationship)}
                   </SelectItem>
                 ))}
               </SelectContent>

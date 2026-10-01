@@ -20,6 +20,7 @@ import {
 import { fetchRelationshipGraph, fetchRelationships } from "@/hooks/queries/utils/fetch-relationships";
 import { DashboardRequestError } from "@/lib/api/request-json";
 import { friendlyRevenueError, RevenueAPIError } from "@/lib/revenue/revenue";
+import { companyName } from "@/lib/revenue/revenue-records";
 
 function registerErrorMessage(reason: unknown): string {
   const status =
@@ -68,12 +69,23 @@ export function useCommitmentRegister(
         fetchRelationshipGraph({ scope: "portfolio", depth: 1 }, signal),
         fetchRelationships({}, signal),
       ]);
+      const relationshipRows =
+        relationships.status === "fulfilled" ? relationships.value : [];
+      const titles = new Map(
+        relationshipRows
+          .filter((row) => row.kind !== "person")
+          .map((row) => [row.id, companyName(row)]),
+      );
       const accounts = registerAccountChoices(
-        relationships.status === "fulfilled" ? relationships.value : [],
+        relationshipRows,
         graph.status === "fulfilled" ? graph.value.nodes : [],
       );
+      const rawEntries = entries.status === "fulfilled" ? entries.value : [];
       return {
-        entries: entries.status === "fulfilled" ? entries.value : [],
+        entries: rawEntries.map((entry) => {
+          const title = entry.relationshipId ? titles.get(entry.relationshipId) : undefined;
+          return title ? { ...entry, relationshipName: title } : entry;
+        }),
         registerError:
           entries.status === "rejected" ? registerErrorMessage(entries.reason) : undefined,
         sources: sources.status === "fulfilled" ? sources.value : [],

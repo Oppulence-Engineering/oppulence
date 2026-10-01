@@ -1575,8 +1575,11 @@ function NoteDialog({
               <SelectTrigger
                 id="note-relationship"
                 aria-label={linkedCompanyName(
-                  selectedRelationship?.displayName ||
-                    (relationships.length === 0 ? "No companies yet" : "Link a company"),
+                  selectedRelationship
+                    ? companyName(selectedRelationship)
+                    : relationships.length === 0
+                      ? "No companies yet"
+                      : "Link a company",
                 )}
                 className="h-auto max-w-56 border-0 bg-transparent p-0 text-[12px] text-primary underline shadow-none focus:ring-0"
               >
@@ -1718,8 +1721,11 @@ function NoteDialog({
                 )}
               >
                 <Note className="size-3.5" />
-                {selectedRelationship?.displayName ||
-                  (relationships.length === 0 ? "No companies yet" : "Link a company")}
+                {(selectedRelationship
+                  ? companyName(selectedRelationship)
+                  : relationships.length === 0
+                    ? "No companies yet"
+                    : "Link a company")}
               </Label>
             )}
             <Button
