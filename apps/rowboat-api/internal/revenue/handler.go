@@ -94,6 +94,7 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Get("/{relationshipId}/timeline", h.RelationshipTimeline)
 		r.Get("/{relationshipId}/communication-timeline", h.RelationshipCommunicationTimeline)
 		r.Get("/{relationshipId}/changes", h.RelationshipChanges)
+		r.Get("/{relationshipId}/conversation-review", h.RelationshipConversationReview)
 		r.Post("/{relationshipId}/acknowledgements", h.AcknowledgeMissionControl)
 		r.Get("/{relationshipId}/evidence/{evidenceId}", h.RelationshipEvidence)
 		r.Post("/{relationshipId}/corrections", h.CorrectRelationship)
@@ -2577,6 +2578,39 @@ func (h *Handler) RelationshipChanges(w http.ResponseWriter, r *http.Request) {
 		out = append(out, snapshotToDTO(snapshot))
 	}
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"snapshots": out, "hasMore": page.HasMore})
+}
+
+// RelationshipConversationReview returns focused review items and governance
+// receipts past the newest page of conversations.
+func (h *Handler) RelationshipConversationReview(w http.ResponseWriter, r *http.Request) {
+	if _, ok := h.viewer(w, r); !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	offset := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		if value > 0 {
+			offset = value
+		}
+	}
+	page, err := h.svc.RelationshipConversationReview(r.Context(), id, offset)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{
+		"reviewItems":        page.ReviewItems,
+		"governanceReceipts": page.GovernanceReceipts,
+		"hasMore":            page.ObservationPageHasMore,
+	})
 }
 
 // RelationshipEvidence returns a single evidence record and its source references.

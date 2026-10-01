@@ -108,6 +108,8 @@ import {
   getRelationship,
   getRelationshipBetaDiagnostics,
   getRelationshipChanges,
+  getRelationshipConversationReview,
+  INTELLIGENCE_OBSERVATION_PAGE,
   getRelationshipEvidence,
   getRelationshipCommunicationTimeline,
   getRelationshipTimelinePage,
@@ -2322,9 +2324,24 @@ export function earlierChangesLabel(): string {
   return "Show earlier changes";
 }
 
+/** Focused review says when the newest conversations are not the whole record. */
+export function focusedReviewTitle(count: number, hasMore: boolean): string {
+  return hasMore ? `Focused evidence review (${count}+)` : `Focused evidence review (${count})`;
+}
+
+export function earlierEvidenceLabel(): string {
+  return "Show earlier evidence";
+}
+
 function appendById<T extends { id: string }>(current: T[], next: T[]): T[] {
   const seen = new Set(current.map((item) => item.id));
   const added = next.filter((item) => !seen.has(item.id));
+  return added.length === 0 ? current : [...current, ...added];
+}
+
+function appendByKey<T>(current: T[], next: T[], key: (item: T) => string): T[] {
+  const seen = new Set(current.map(key));
+  const added = next.filter((item) => !seen.has(key(item)));
   return added.length === 0 ? current : [...current, ...added];
 }
 
@@ -2815,6 +2832,13 @@ export function RelationshipSheet({
   const [changes, setChanges] = React.useState<RelationshipStateSnapshot[]>([]);
   const [changesHasMore, setChangesHasMore] = React.useState(false);
   const [loadingEarlierChanges, setLoadingEarlierChanges] = React.useState(false);
+  const [extraReviewItems, setExtraReviewItems] = React.useState<ConversationReviewItem[]>([]);
+  const [extraReceipts, setExtraReceipts] = React.useState<
+    NonNullable<RelationshipDetail["intelligence"]>["governanceReceipts"]
+  >([]);
+  const [evidenceReviewHasMore, setEvidenceReviewHasMore] = React.useState(false);
+  const [evidenceReviewOffset, setEvidenceReviewOffset] = React.useState(0);
+  const [loadingEarlierEvidence, setLoadingEarlierEvidence] = React.useState(false);
   const [sheetDuplicates, setSheetDuplicates] = React.useState(emptySheetDuplicatePages);
   const [loadingSheetDuplicates, setLoadingSheetDuplicates] = React.useState(false);
   const sheetIdRef = React.useRef(id);
@@ -2849,6 +2873,8 @@ export function RelationshipSheet({
   const hasMoreSheetDuplicates =
     hasMoreSheetPending || hasMoreSheetDeferred || hasMoreSheetResolved;
   const identityCandidates = [...sheetPending, ...sheetDeferred, ...sheetResolved];
+  const sheetReviewItems = [...(data?.intelligence?.reviewItems ?? []), ...extraReviewItems];
+  const sheetReceipts = [...(data?.intelligence?.governanceReceipts ?? []), ...extraReceipts];
   const [busy, setBusy] = React.useState<string | null>(null);
   const [evidence, setEvidence] = React.useState<Record<string, unknown>>({});
   const [personAttributes, setPersonAttributes] = React.useState<
@@ -2872,6 +2898,11 @@ export function RelationshipSheet({
     setLoadError(null);
     setSheetDuplicates(emptySheetDuplicatePages());
     setLoadingSheetDuplicates(false);
+    setExtraReviewItems([]);
+    setExtraReceipts([]);
+    setEvidenceReviewHasMore(false);
+    setEvidenceReviewOffset(0);
+    setLoadingEarlierEvidence(false);
     try {
       const nextData = await getRelationship(id);
       setData(nextData);
@@ -2904,6 +2935,10 @@ export function RelationshipSheet({
       setCommunicationBefore(nextCommunicationTimeline.nextBefore);
       setChanges(nextChanges.snapshots);
       setChangesHasMore(nextChanges.hasMore);
+      setEvidenceReviewHasMore(Boolean(nextData.intelligence?.observationPageHasMore));
+      setEvidenceReviewOffset(
+        nextData.intelligence?.observationPageHasMore ? INTELLIGENCE_OBSERVATION_PAGE : 0,
+      );
       setSheetDuplicates({
         ...emptySheetDuplicatePages(),
         pending,
@@ -3031,6 +3066,27 @@ export function RelationshipSheet({
       onError(errMessage(error, "Could not load earlier changes."));
     } finally {
       setLoadingEarlierChanges(false);
+    }
+  };
+
+  const loadEarlierEvidence = async () => {
+    if (!evidenceReviewHasMore || loadingEarlierEvidence) return;
+    const requestedId = id;
+    const offset = evidenceReviewOffset;
+    setLoadingEarlierEvidence(true);
+    try {
+      const page = await getRelationshipConversationReview(id, offset);
+      if (sheetIdRef.current !== requestedId) return;
+      setExtraReviewItems((current) => appendById(current, page.reviewItems));
+      setExtraReceipts((current) =>
+        appendByKey(current, page.governanceReceipts, (receipt) => receipt.receiptId),
+      );
+      setEvidenceReviewHasMore(page.hasMore);
+      setEvidenceReviewOffset(offset + INTELLIGENCE_OBSERVATION_PAGE);
+    } catch (error) {
+      onError(errMessage(error, "Could not load earlier evidence."));
+    } finally {
+      if (sheetIdRef.current === requestedId) setLoadingEarlierEvidence(false);
     }
   };
 
@@ -3514,7 +3570,10 @@ export function RelationshipSheet({
 
                 {data.intelligence ? (
                   <CorrectionReview
-                    items={data.intelligence.reviewItems}
+                    items={sheetReviewItems}
+                    hasMore={evidenceReviewHasMore}
+                    loadingMore={loadingEarlierEvidence}
+                    onLoadMore={() => void loadEarlierEvidence()}
                     disabled={Boolean(busy)}
                     onCorrect={(item, correctedValue) =>
                       act(`review:${item.id}`, () =>
@@ -4190,15 +4249,15 @@ export function RelationshipSheet({
                   ) : null}
                 </section>
 
-                {data.intelligence?.governanceReceipts.length ? (
+                {sheetReceipts.length ? (
                   <section>
                     <SectionTitle
-                      title={`Consent and governance (${data.intelligence.governanceReceipts.length})`}
+                      title={`Consent and governance (${sheetReceipts.length})`}
                     />
                     <ul className="flex flex-col gap-2">
                       {(governanceExpanded
-                        ? data.intelligence.governanceReceipts
-                        : data.intelligence.governanceReceipts.slice(0, GOVERNANCE_RECEIPT_PAGE)
+                        ? sheetReceipts
+                        : sheetReceipts.slice(0, GOVERNANCE_RECEIPT_PAGE)
                       ).map((receipt) => (
                         <li
                           key={receipt.receiptId}
@@ -4224,10 +4283,7 @@ export function RelationshipSheet({
                     {(() => {
                       const hiddenReceipts = governanceExpanded
                         ? 0
-                        : Math.max(
-                            0,
-                            data.intelligence.governanceReceipts.length - GOVERNANCE_RECEIPT_PAGE,
-                          );
+                        : Math.max(0, sheetReceipts.length - GOVERNANCE_RECEIPT_PAGE);
                       return hiddenReceipts > 0 ? (
                         <Button
                           className="mt-2"
@@ -4358,11 +4414,17 @@ export function RelationshipSheet({
 
 function CorrectionReview({
   items,
+  hasMore = false,
+  loadingMore = false,
+  onLoadMore,
   disabled,
   onCorrect,
   onDecide,
 }: {
   items: ConversationReviewItem[];
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
   disabled: boolean;
   onCorrect: (item: ConversationReviewItem, correctedValue: string) => void;
   onDecide: (
@@ -4373,15 +4435,17 @@ function CorrectionReview({
   ) => void;
 }) {
   const [drafts, setDrafts] = React.useState<Record<string, string>>({});
-  if (items.length === 0) return null;
+  if (items.length === 0 && !hasMore) return null;
   return (
     <section
       className="rounded-none border border-amber-500/30 bg-amber-500/5 p-3"
       data-capability="conversation-review"
     >
-      <SectionTitle title={`Focused evidence review (${items.length})`} />
+      <SectionTitle title={focusedReviewTitle(items.length, hasMore)} />
       <p className="mb-3 text-xs text-primary/55">
-        Approve, correct, reject, or defer each proposed material change before it affects state.
+        {items.length === 0
+          ? "Older conversations may still need review."
+          : "Approve, correct, reject, or defer each proposed material change before it affects state."}
       </p>
       <ul className="flex flex-col gap-3">
         {items.map((item) => {
@@ -4458,6 +4522,18 @@ function CorrectionReview({
           );
         })}
       </ul>
+      {hasMore ? (
+        <Button
+          className="mt-2"
+          disabled={disabled || loadingMore}
+          onClick={onLoadMore}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          {loadingMore ? "Loading…" : earlierEvidenceLabel()}
+        </Button>
+      ) : null}
     </section>
   );
 }

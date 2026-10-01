@@ -104,6 +104,7 @@ import type {
   RelationshipSourceStatus,
   BetaDiagnostics,
   RelationshipGraph,
+  RelationshipIntelligence,
   RelationshipStateSnapshot,
   PersonDeletionReceipt,
   CompanyResearchOutcome,
@@ -716,6 +717,19 @@ export type RelationshipChangePage = {
   snapshots: RelationshipStateSnapshot[];
   hasMore: boolean;
 };
+
+export const INTELLIGENCE_OBSERVATION_PAGE = 200;
+
+export const getRelationshipConversationReview = (id: string, offset = 0) =>
+  call<{
+    reviewItems?: RelationshipIntelligence["reviewItems"];
+    governanceReceipts?: RelationshipIntelligence["governanceReceipts"];
+    hasMore?: boolean;
+  }>(`/relationships/${id}/conversation-review?offset=${offset}`).then((body) => ({
+    reviewItems: body.reviewItems ?? [],
+    governanceReceipts: body.governanceReceipts ?? [],
+    hasMore: Boolean(body.hasMore),
+  }));
 
 export const getRelationshipChanges = (id: string, offset = 0) =>
   call<{ snapshots?: RelationshipStateSnapshot[]; hasMore?: boolean }>(

@@ -11269,6 +11269,11 @@
             },
             "type": "array"
           },
+          "observationPageHasMore": {
+            "description": "An older conversation exists beyond this page of focused review.",
+            "example": true,
+            "type": "boolean"
+          },
           "recommendationEvaluations": {
             "description": "Immutable contextual ranking factors.",
             "items": {
@@ -24914,6 +24919,85 @@
           }
         ],
         "summary": "Update conversation policy",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/conversation-review": {
+      "get": {
+        "description": "Returns focused review items and governance receipts from conversations older than the newest page.",
+        "operationId": "getRelationshipConversationReview",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Observation offset. The first page is the newest 200 conversations.",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Focused review page.",
+                  "properties": {
+                    "governanceReceipts": {
+                      "description": "Governance receipts from this page of conversations.",
+                      "items": {
+                        "$ref": "#/components/schemas/ConversationGovernanceReceipt"
+                      },
+                      "type": "array"
+                    },
+                    "hasMore": {
+                      "description": "An older conversation exists beyond this page.",
+                      "example": false,
+                      "type": "boolean"
+                    },
+                    "reviewItems": {
+                      "description": "Review items from this page of conversations.",
+                      "items": {
+                        "$ref": "#/components/schemas/ConversationReviewItem"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["reviewItems", "governanceReceipts", "hasMore"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Conversation review page."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get earlier conversation review",
         "tags": ["Relationship Intelligence"]
       }
     },

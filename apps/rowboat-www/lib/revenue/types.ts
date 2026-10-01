@@ -839,6 +839,7 @@ export interface RelationshipIntelligence {
     sourceLayerIds: string[];
     resolvedAt: string;
   };
+  observationPageHasMore?: boolean;
   governanceDecisions: Array<{
     decisionId: string;
     checkpoint: string;

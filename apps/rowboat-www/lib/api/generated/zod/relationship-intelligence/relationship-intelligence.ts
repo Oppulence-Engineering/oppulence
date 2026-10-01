@@ -3840,6 +3840,10 @@ export const GetRelationship200Response = zod
         mutualActionPlans: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Mutual action plan."))
           .describe("Revision-bound bilateral plans."),
+        observationPageHasMore: zod
+          .boolean()
+          .optional()
+          .describe("An older conversation exists beyond this page of focused review."),
         recommendationEvaluations: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Recommendation evaluation."))
           .describe("Immutable contextual ranking factors."),
@@ -5433,6 +5437,10 @@ export const CorrectConversationEvidence201Response = zod
         mutualActionPlans: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Mutual action plan."))
           .describe("Revision-bound bilateral plans."),
+        observationPageHasMore: zod
+          .boolean()
+          .optional()
+          .describe("An older conversation exists beyond this page of focused review."),
         recommendationEvaluations: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Recommendation evaluation."))
           .describe("Immutable contextual ranking factors."),
@@ -5827,6 +5835,10 @@ export const DecideConversationChange201Response = zod
         mutualActionPlans: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Mutual action plan."))
           .describe("Revision-bound bilateral plans."),
+        observationPageHasMore: zod
+          .boolean()
+          .optional()
+          .describe("An older conversation exists beyond this page of focused review."),
         recommendationEvaluations: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Recommendation evaluation."))
           .describe("Immutable contextual ranking factors."),
@@ -6265,6 +6277,146 @@ export const PutConversationPolicy401Response = zod
   );
 
 export const PutConversationPolicy404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Returns focused review items and governance receipts from conversations older than the newest page.
+ * @summary Get earlier conversation review
+ */
+export const GetRelationshipConversationReviewParams = zod.object({
+  relationshipId: zod.uuid().describe("Relationship id."),
+});
+
+export const getRelationshipConversationReviewQueryOffsetMin = 0;
+
+export const GetRelationshipConversationReviewQueryParams = zod.object({
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(getRelationshipConversationReviewQueryOffsetMin)
+    .optional()
+    .describe("Observation offset. The first page is the newest 200 conversations."),
+});
+
+export const GetRelationshipConversationReview200Response = zod
+  .strictObject({
+    governanceReceipts: zod
+      .array(
+        zod
+          .strictObject({
+            capturePolicy: zod.string().describe("Capture policy in force."),
+            capturedAt: zod.iso.datetime({ offset: true }).describe("Capture time."),
+            deletionOutcome: zod.string().describe("Observed deletion outcome."),
+            evidenceClip: zod
+              .enum(["not_retained", "encrypted"])
+              .describe("Material audio evidence status; retained clips may only be encrypted."),
+            legalHold: zod.boolean().describe("Whether deletion is blocked by legal hold."),
+            participantDisclosure: zod.string().describe("Recorded participant disclosure status."),
+            receiptId: zod.string().describe("Receipt id."),
+            region: zod.string().describe("Processing region or boundary."),
+            retention: zod.string().describe("Retention policy."),
+            routing: zod.string().describe("Evidence routing path."),
+          })
+          .describe(
+            "Capture, routing, retention, disclosure, legal-hold, deletion, and evidence-clip receipt stored beside a transcript.",
+          ),
+      )
+      .describe("Governance receipts from this page of conversations."),
+    hasMore: zod.boolean().describe("An older conversation exists beyond this page."),
+    reviewItems: zod
+      .array(
+        zod
+          .strictObject({
+            baselineVersion: zod.int().optional().describe("Pinned relationship-state version."),
+            batchId: zod.string().optional().describe("Idempotent review batch id."),
+            before: zod
+              .record(zod.string(), zod.unknown())
+              .optional()
+              .describe("State pinned before conversation processing."),
+            caveats: zod
+              .array(zod.string().describe("Caveat."))
+              .optional()
+              .describe("Extraction and capture caveats."),
+            claimId: zod.string().optional().describe("Material claim id."),
+            confidence: zod.number().describe("Current confidence."),
+            currentValue: zod.string().describe("Current inferred value."),
+            dependentActionIds: zod
+              .array(zod.string().describe("Action id."))
+              .optional()
+              .describe("Actions invalidated by rejection or correction."),
+            exactQuote: zod.string().optional().describe("Exact words under review."),
+            id: zod.string().describe("Stable UUID primary key."),
+            kind: zod
+              .enum(["word", "speaker", "entity", "claim", "capture"])
+              .describe("Review kind."),
+            label: zod.string().describe("Review prompt."),
+            observationId: zod.uuid().describe("Supporting observation."),
+            proposedAfter: zod
+              .record(zod.string(), zod.unknown())
+              .optional()
+              .describe("Typed proposed value after this item."),
+            stateDimension: zod
+              .string()
+              .optional()
+              .describe("Canonical state dimension affected by correction."),
+            status: zod
+              .enum(["pending_review", "accepted", "corrected", "rejected", "deferred"])
+              .optional()
+              .describe(
+                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+              ),
+          })
+          .describe(
+            "One evidence-backed proposed change requiring approve, correct, reject, or defer review.",
+          ),
+      )
+      .describe("Review items from this page of conversations."),
+  })
+  .describe("Focused review page.");
+
+export const GetRelationshipConversationReview400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetRelationshipConversationReview401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetRelationshipConversationReview404Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),

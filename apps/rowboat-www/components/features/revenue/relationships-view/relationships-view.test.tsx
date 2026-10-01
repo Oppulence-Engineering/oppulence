@@ -41,6 +41,8 @@ import {
   earlierActivityLabel,
   relationshipChangeTitle,
   earlierChangesLabel,
+  focusedReviewTitle,
+  earlierEvidenceLabel,
   mailReplyLabel,
   reviewEvidenceKindLabel,
   mutualPlanStatusLabel,
@@ -554,6 +556,9 @@ describe("RelationshipsView", () => {
     expect(relationshipChangeTitle(2, true)).toBe("What changed (2+)");
     expect(relationshipChangeTitle(3, false)).toBe("What changed (3)");
     expect(earlierChangesLabel()).toBe("Show earlier changes");
+    expect(focusedReviewTitle(0, true)).toBe("Focused evidence review (0+)");
+    expect(focusedReviewTitle(1, false)).toBe("Focused evidence review (1)");
+    expect(earlierEvidenceLabel()).toBe("Show earlier evidence");
     expect(governanceReceiptRemainder(1)).toBe("Show the other 1 receipt");
     expect(governanceReceiptRemainder(4)).toBe("Show the other 4 receipts");
     expect(source).toContain(
@@ -565,6 +570,10 @@ describe("RelationshipsView", () => {
     expect(source).toContain("earlierActivityLabel()");
     expect(source).toContain("relationshipChangeTitle(changes.length, changesHasMore)");
     expect(source).toContain("earlierChangesLabel()");
+    expect(source).toContain("focusedReviewTitle(items.length, hasMore)");
+    expect(source).toContain("earlierEvidenceLabel()");
+    expect(source).toContain("onLoadMore={() => void loadEarlierEvidence()}");
+    expect(source).toContain("Could not load earlier evidence.");
     expect(source).toContain("Could not load earlier changes.");
     expect(source).toContain("onLoadMore={() => void loadMoreSheetDuplicates()}");
     expect(source).toContain("hasMore={hasMoreSheetDuplicates}");

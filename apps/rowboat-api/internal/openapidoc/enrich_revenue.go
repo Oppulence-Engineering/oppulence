@@ -394,6 +394,7 @@ func addRevenueSchemas(schemas obj) {
 		"effectivePolicy":           ref("ResolvedConversationPolicy"),
 		"governanceDecisions":       arraySchema("Immutable checkpoint decisions.", freeFormSchema("Governance decision.")),
 		"deletionReceipts":          arraySchema("Deletion status and verification.", ref("ConversationDeletionReceipt")),
+		"observationPageHasMore":    boolSchema("An older conversation exists beyond this page of focused review.", true),
 	}, "claims", "reviewItems", "governanceReceipts", "delta", "liveCues", "contradictionCases", "recoveryEvaluations", "recommendationEvaluations", "mutualActionPlans", "effectivePolicy", "governanceDecisions", "deletionReceipts")
 
 	schemas["RelationshipGraphNode"] = objectSchema("A versioned, typed relationship graph node. Meaning is explicit so clients can render status without relying on color alone.", obj{
@@ -834,6 +835,16 @@ func addRevenuePaths(paths obj) {
 			"snapshots": arraySchema("Snapshots.", ref("RelationshipStateSnapshot")),
 			"hasMore":   boolSchema("An older snapshot exists beyond this page.", true),
 		}, "snapshots", "hasMore"), nil),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+	})}
+	paths["/v1/relationships/{relationshipId}/conversation-review"] = obj{"get": operation("Relationship Intelligence", "Get earlier conversation review", "Returns focused review items and governance receipts from conversations older than the newest page.", "getRelationshipConversationReview", bearer(), append(append([]any{}, relationshipParam...), obj{"name": "offset", "in": "query", "required": false, "description": "Observation offset. The first page is the newest 200 conversations.", "schema": obj{"type": "integer", "minimum": 0}}), nil, obj{
+		"200": jsonResponse("Conversation review page.", objectSchema("Focused review page.", obj{
+			"reviewItems":        arraySchema("Review items from this page of conversations.", ref("ConversationReviewItem")),
+			"governanceReceipts": arraySchema("Governance receipts from this page of conversations.", ref("ConversationGovernanceReceipt")),
+			"hasMore":            boolSchema("An older conversation exists beyond this page.", false),
+		}, "reviewItems", "governanceReceipts", "hasMore"), nil),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),

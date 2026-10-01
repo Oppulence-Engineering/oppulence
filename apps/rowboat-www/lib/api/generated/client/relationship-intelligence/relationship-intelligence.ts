@@ -38,6 +38,8 @@ import type {
   GetRelationshipChanges200,
   GetRelationshipChangesParams,
   GetRelationshipCommunicationTimelineParams,
+  GetRelationshipConversationReview200,
+  GetRelationshipConversationReviewParams,
   GetRelationshipEvidence200,
   GetRelationshipGraphParams,
   GetRelationshipSourceInventory200,
@@ -2276,6 +2278,84 @@ export const putConversationPolicy = async (
 
   const data: putConversationPolicyResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as putConversationPolicyResponse;
+};
+
+export type getRelationshipConversationReviewResponse200 = {
+  data: GetRelationshipConversationReview200;
+  status: 200;
+};
+
+export type getRelationshipConversationReviewResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type getRelationshipConversationReviewResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getRelationshipConversationReviewResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type getRelationshipConversationReviewResponseSuccess =
+  getRelationshipConversationReviewResponse200 & {
+    headers: Headers;
+  };
+export type getRelationshipConversationReviewResponseError = (
+  | getRelationshipConversationReviewResponse400
+  | getRelationshipConversationReviewResponse401
+  | getRelationshipConversationReviewResponse404
+) & {
+  headers: Headers;
+};
+
+export type getRelationshipConversationReviewResponse =
+  getRelationshipConversationReviewResponseSuccess | getRelationshipConversationReviewResponseError;
+
+export const getGetRelationshipConversationReviewUrl = (
+  relationshipId: string,
+  params?: GetRelationshipConversationReviewParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/relationships/${relationshipId}/conversation-review?${stringifiedParams}`
+    : `/v1/relationships/${relationshipId}/conversation-review`;
+};
+
+/**
+ * Returns focused review items and governance receipts from conversations older than the newest page.
+ * @summary Get earlier conversation review
+ */
+export const getRelationshipConversationReview = async (
+  relationshipId: string,
+  params?: GetRelationshipConversationReviewParams,
+  options?: RequestInit,
+): Promise<getRelationshipConversationReviewResponse> => {
+  const res = await fetch(getGetRelationshipConversationReviewUrl(relationshipId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getRelationshipConversationReviewResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getRelationshipConversationReviewResponse;
 };
 
 export type correctRelationshipResponse201 = {

@@ -25,6 +25,7 @@ import type {
   GetPublicMutualActionPlan200,
   GetRelationship200,
   GetRelationshipChanges200,
+  GetRelationshipConversationReview200,
   GetRelationshipEvidence200,
   GetRelationshipSourceInventory200,
   GetRelationshipSourceStatuses200,
@@ -3096,6 +3097,7 @@ export const getGetRelationshipResponseMock = (
         { length: faker.number.int({ min: 1, max: 10 }) },
         (_, i) => i + 1,
       ).map(() => ({})),
+      observationPageHasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
       recommendationEvaluations: Array.from(
         { length: faker.number.int({ min: 1, max: 10 }) },
         (_, i) => i + 1,
@@ -4082,6 +4084,7 @@ export const getCorrectConversationEvidenceResponseMock = (
       { length: faker.number.int({ min: 1, max: 10 }) },
       (_, i) => i + 1,
     ).map(() => ({})),
+    observationPageHasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
     recommendationEvaluations: Array.from(
       { length: faker.number.int({ min: 1, max: 10 }) },
       (_, i) => i + 1,
@@ -4394,6 +4397,7 @@ export const getDecideConversationChangeResponseMock = (
       { length: faker.number.int({ min: 1, max: 10 }) },
       (_, i) => i + 1,
     ).map(() => ({})),
+    observationPageHasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
     recommendationEvaluations: Array.from(
       { length: faker.number.int({ min: 1, max: 10 }) },
       (_, i) => i + 1,
@@ -4620,6 +4624,79 @@ export const getRequestConversationDeletionResponseMock = (
 export const getGetConversationPolicyResponseMock = (): GetConversationPolicy200 => ({});
 
 export const getPutConversationPolicyResponseMock = (): PutConversationPolicy201 => ({});
+
+export const getGetRelationshipConversationReviewResponseMock = (
+  overrideResponse: Partial<Extract<GetRelationshipConversationReview200, object>> = {},
+): GetRelationshipConversationReview200 => ({
+  governanceReceipts: Array.from(
+    { length: faker.number.int({ min: 1, max: 10 }) },
+    (_, i) => i + 1,
+  ).map(() => ({
+    capturePolicy: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    capturedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+    deletionOutcome: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    evidenceClip: faker.helpers.arrayElement(["not_retained", "encrypted"] as const),
+    legalHold: faker.datatype.boolean(),
+    participantDisclosure: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    receiptId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    region: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    retention: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    routing: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  })),
+  hasMore: faker.datatype.boolean(),
+  reviewItems: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => ({
+      baselineVersion: faker.helpers.arrayElement([faker.number.int(), undefined]),
+      batchId: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      before: faker.helpers.arrayElement([{}, undefined]),
+      caveats: faker.helpers.arrayElement([
+        Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+        ),
+        undefined,
+      ]),
+      claimId: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      confidence: faker.number.float({ fractionDigits: 2 }),
+      currentValue: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      dependentActionIds: faker.helpers.arrayElement([
+        Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+        ),
+        undefined,
+      ]),
+      exactQuote: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      id: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      kind: faker.helpers.arrayElement(["word", "speaker", "entity", "claim", "capture"] as const),
+      label: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      observationId: faker.string.uuid(),
+      proposedAfter: faker.helpers.arrayElement([{}, undefined]),
+      stateDimension: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      status: faker.helpers.arrayElement([
+        faker.helpers.arrayElement([
+          "pending_review",
+          "accepted",
+          "corrected",
+          "rejected",
+          "deferred",
+        ] as const),
+        undefined,
+      ]),
+    }),
+  ),
+  ...overrideResponse,
+});
 
 export const getCorrectRelationshipResponseMock = (
   overrideResponse: Partial<Extract<RevenueRelationship, object>> = {},

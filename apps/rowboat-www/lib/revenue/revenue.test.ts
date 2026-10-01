@@ -9,6 +9,7 @@ import {
   explainedRevenueError,
   friendlyRevenueError,
   getRelationshipChanges,
+  getRelationshipConversationReview,
   getRelationshipCommunicationTimeline,
   getRelationshipGraph,
   getRelationshipTimelinePage,
@@ -297,6 +298,30 @@ describe("getRelationshipChanges", () => {
       hasMore: false,
     });
     expect(mockFetch.mock.calls[0]?.[0]).toBe("/relationships/rel-1/changes?limit=2&offset=2");
+  });
+});
+
+describe("getRelationshipConversationReview", () => {
+  it("asks for the conversations hidden behind the newest page", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          reviewItems: [{ id: "review-oldest", exactQuote: "Oldest sheet promise quote" }],
+          governanceReceipts: [{ receiptId: "receipt-oldest" }],
+          hasMore: false,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    await expect(getRelationshipConversationReview("rel-1", 200)).resolves.toEqual({
+      reviewItems: [{ id: "review-oldest", exactQuote: "Oldest sheet promise quote" }],
+      governanceReceipts: [{ receiptId: "receipt-oldest" }],
+      hasMore: false,
+    });
+    expect(mockFetch.mock.calls[0]?.[0]).toBe(
+      "/relationships/rel-1/conversation-review?offset=200",
+    );
   });
 });
 

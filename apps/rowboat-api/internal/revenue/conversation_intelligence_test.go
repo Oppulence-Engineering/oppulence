@@ -2,9 +2,12 @@ package revenue
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
@@ -457,5 +460,113 @@ func TestTypedContradictionPersistsAndResolutionReferencesEverySide(t *testing.T
 	).Count(f.ctx)
 	if err != nil || versions != 2 {
 		t.Fatalf("contradiction must retain open and resolved versions: %d err=%v", versions, err)
+	}
+}
+
+func TestConversationReviewReachesTheObservationPastTheNewestPage(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)
+	rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Evidence Co",
+		PrimaryEmail: "hello@evidence.example", AccountDomain: "evidence.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const hidden = intelligenceObservationPage + 1
+	for i := 1; i <= hidden; i++ {
+		facts := "{}"
+		if i == hidden {
+			facts = `{
+				"conversation_claim_candidates":[{
+					"candidateId":"oldest-promise",
+					"kind":"promise",
+					"normalizedValue":"Oldest sheet promise",
+					"displayValue":"Oldest sheet promise",
+					"evidence":[{"exactQuote":"Oldest sheet promise quote"}],
+					"stateDimension":"next_action",
+					"confidence":0.4,
+					"caveats":[]
+				}],
+				"conversation_review":{"batch_id":"batch-oldest","baseline_version":0},
+				"governance_receipt":{
+					"receiptId":"receipt-oldest",
+					"capturedAt":"2020-01-01T00:00:00Z",
+					"capturePolicy":"manual_capture",
+					"routing":"local_only",
+					"region":"oldest_sheet_vault",
+					"retention":"always",
+					"participantDisclosure":"not_recorded",
+					"legalHold":false,
+					"deletionOutcome":"not_applicable",
+					"evidenceClip":"not_retained"
+				}
+			}`
+		}
+		if _, err := f.client.RelationshipObservation.Create().
+			SetID(uuid.New()).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetRelationship(rel).
+			SetSource("meeting").
+			SetExternalID(fmt.Sprintf("evidence-%03d", i)).
+			SetEventType("note").
+			SetOccurredAt(now.Add(-time.Duration(i) * time.Second)).
+			SetReceivedAt(now).
+			SetSummary("filler").
+			SetNormalizedFactsJSON(facts).
+			SetContentHash(fmt.Sprintf("evidence-hash-%03d", i)).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	rel, err = f.svc.GetRelationship(f.ctx, rel.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, err := f.svc.RelationshipIntelligenceFor(f.ctx, rel)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !first.ObservationPageHasMore {
+		t.Fatal("newest page hid that an older conversation exists")
+	}
+	for _, item := range first.ReviewItems {
+		if item.ExactQuote == "Oldest sheet promise quote" {
+			t.Fatalf("oldest review item was included in the newest page: %#v", item)
+		}
+	}
+	for _, receipt := range first.GovernanceReceipts {
+		if receipt.ReceiptID == "receipt-oldest" {
+			t.Fatalf("oldest receipt was included in the newest page: %#v", receipt)
+		}
+	}
+	second, err := f.svc.RelationshipConversationReview(f.ctx, rel.ID, intelligenceObservationPage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.ObservationPageHasMore {
+		t.Fatal("the page after the newest 200 still claimed another page")
+	}
+	foundItem, foundReceipt := false, false
+	for _, item := range second.ReviewItems {
+		if item.ExactQuote == "Oldest sheet promise quote" && item.CurrentValue == "Oldest sheet promise" {
+			foundItem = true
+		}
+	}
+	for _, receipt := range second.GovernanceReceipts {
+		if receipt.ReceiptID == "receipt-oldest" && receipt.Region == "oldest_sheet_vault" {
+			foundReceipt = true
+		}
+	}
+	if !foundItem || !foundReceipt {
+		t.Fatalf("older page missing the hidden review item or receipt: items=%#v receipts=%#v", second.ReviewItems, second.GovernanceReceipts)
+	}
+	if _, err := f.svc.RelationshipConversationReview(f.ctx, rel.ID, -4); err != nil {
+		t.Fatalf("negative offset should clamp to the newest page: %v", err)
 	}
 }

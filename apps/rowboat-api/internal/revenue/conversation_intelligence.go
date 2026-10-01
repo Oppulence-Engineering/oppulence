@@ -248,7 +248,15 @@ type RelationshipIntelligence struct {
 	EffectivePolicy           ResolvedConversationPolicy       `json:"effectivePolicy"`
 	GovernanceDecisions       []ConversationGovernanceDecision `json:"governanceDecisions"`
 	DeletionReceipts          []ConversationDeletionReceipt    `json:"deletionReceipts"`
+	// ObservationPageHasMore reports that older conversations exist beyond
+	// this page. Review items and receipts are derived from one page of
+	// observations; omitting the flag hid every older item.
+	ObservationPageHasMore bool `json:"observationPageHasMore,omitempty"`
 }
+
+// intelligenceObservationPage is how many conversations one focused-review
+// page reads. The next page is the same size, addressed by offset.
+const intelligenceObservationPage = 200
 
 type commitmentUpdate struct {
 	CommitmentID string `json:"commitmentId"`
@@ -655,6 +663,34 @@ func (s *Service) RelationshipIntelligenceFor(
 	ctx context.Context,
 	rel *ent.Relationship,
 ) (RelationshipIntelligence, error) {
+	return s.relationshipIntelligenceAt(ctx, rel, 0)
+}
+
+// RelationshipConversationReview returns one page of focused review items and
+// governance receipts. Offset 0 is the newest conversations.
+func (s *Service) RelationshipConversationReview(
+	ctx context.Context,
+	relationshipID uuid.UUID,
+	offset int,
+) (RelationshipIntelligence, error) {
+	if offset < 0 {
+		offset = 0
+	}
+	rel, err := s.GetRelationship(ctx, relationshipID)
+	if err != nil {
+		return RelationshipIntelligence{}, err
+	}
+	return s.relationshipIntelligenceAt(ctx, rel, offset)
+}
+
+func (s *Service) relationshipIntelligenceAt(
+	ctx context.Context,
+	rel *ent.Relationship,
+	offset int,
+) (RelationshipIntelligence, error) {
+	if offset < 0 {
+		offset = 0
+	}
 	result := RelationshipIntelligence{
 		Claims:             []ConversationClaim{},
 		ReviewItems:        []ConversationReviewItem{},
@@ -674,36 +710,43 @@ func (s *Service) RelationshipIntelligenceFor(
 	}
 	observations, err := s.client.RelationshipObservation.Query().
 		Where(relationshipobservation.HasRelationshipWith(relationship.IDEQ(rel.ID))).
-		Order(ent.Desc(relationshipobservation.FieldOccurredAt)).
-		Limit(200).
+		Order(
+			ent.Desc(relationshipobservation.FieldOccurredAt),
+			ent.Desc(relationshipobservation.FieldID),
+		).
+		Limit(intelligenceObservationPage + 1).
+		Offset(offset).
+		All(ctx)
+	if err != nil {
+		return result, err
+	}
+	result.ObservationPageHasMore = len(observations) > intelligenceObservationPage
+	if result.ObservationPageHasMore {
+		observations = observations[:intelligenceObservationPage]
+	}
+	// A correction is newer than the conversation it fixes, so it can sit on
+	// an earlier page than the claim. Read those rows before this page so a
+	// resolved item does not reappear when the user asks for older evidence.
+	corrections, err := s.client.RelationshipObservation.Query().
+		Where(
+			relationshipobservation.HasRelationshipWith(relationship.IDEQ(rel.ID)),
+			relationshipobservation.Or(
+				relationshipobservation.NormalizedFactsJSONContains("review_correction"),
+				relationshipobservation.NormalizedFactsJSONContains("review_decision"),
+			),
+		).
+		Order(
+			ent.Desc(relationshipobservation.FieldOccurredAt),
+			ent.Desc(relationshipobservation.FieldID),
+		).
 		All(ctx)
 	if err != nil {
 		return result, err
 	}
 	resolved := map[string]conversationReviewCorrection{}
 	decisions := map[string]conversationReviewDecisionRecord{}
-	for _, observation := range observations {
-		facts := map[string]any{}
-		_ = json.Unmarshal([]byte(observation.NormalizedFactsJSON), &facts)
-		if correction, ok := facts["review_correction"].(map[string]any); ok {
-			if id, ok := correction["review_item_id"].(string); ok {
-				if _, alreadyResolved := resolved[id]; !alreadyResolved {
-					correctedValue, _ := correction["corrected_value"].(string)
-					resolved[id] = conversationReviewCorrection{
-						CorrectedValue: correctedValue,
-					}
-				}
-			}
-		}
-		if rawDecision, ok := facts["review_decision"]; ok {
-			var decision conversationReviewDecisionRecord
-			if decodeFact(map[string]any{"decision": rawDecision}, "decision", &decision) == nil && decision.ItemID != "" {
-				if _, alreadyDecided := decisions[decision.ItemID]; !alreadyDecided {
-					decisions[decision.ItemID] = decision
-				}
-			}
-		}
-	}
+	rememberConversationReview(corrections, resolved, decisions)
+	rememberConversationReview(observations, resolved, decisions)
 	for _, observation := range observations {
 		facts := map[string]any{}
 		_ = json.Unmarshal([]byte(observation.NormalizedFactsJSON), &facts)
@@ -953,6 +996,67 @@ func (s *Service) RelationshipIntelligenceFor(
 	return result, nil
 }
 
+// rememberConversationReview keeps the newest correction or decision for each
+// review item. Later calls do not replace a decision already recorded.
+func rememberConversationReview(
+	observations []*ent.RelationshipObservation,
+	resolved map[string]conversationReviewCorrection,
+	decisions map[string]conversationReviewDecisionRecord,
+) {
+	for _, observation := range observations {
+		facts := map[string]any{}
+		_ = json.Unmarshal([]byte(observation.NormalizedFactsJSON), &facts)
+		if correction, ok := facts["review_correction"].(map[string]any); ok {
+			if id, ok := correction["review_item_id"].(string); ok {
+				if _, alreadyResolved := resolved[id]; !alreadyResolved {
+					correctedValue, _ := correction["corrected_value"].(string)
+					resolved[id] = conversationReviewCorrection{CorrectedValue: correctedValue}
+				}
+			}
+		}
+		if rawDecision, ok := facts["review_decision"]; ok {
+			var decision conversationReviewDecisionRecord
+			if decodeFact(map[string]any{"decision": rawDecision}, "decision", &decision) == nil && decision.ItemID != "" {
+				if _, alreadyDecided := decisions[decision.ItemID]; !alreadyDecided {
+					decisions[decision.ItemID] = decision
+				}
+			}
+		}
+	}
+}
+
+// conversationReviewItem finds a focused review item on any observation page.
+// The first page is the newest conversations; an older quote still has to be
+// correctable after the reader opens it.
+func (s *Service) conversationReviewItem(
+	ctx context.Context,
+	rel *ent.Relationship,
+	itemID string,
+	requireBatch bool,
+) (ConversationReviewItem, error) {
+	offset := 0
+	for page := 0; page < 50; page++ {
+		intelligence, err := s.relationshipIntelligenceAt(ctx, rel, offset)
+		if err != nil {
+			return ConversationReviewItem{}, err
+		}
+		for _, item := range intelligence.ReviewItems {
+			if item.ID != itemID {
+				continue
+			}
+			if requireBatch && item.BatchID == "" {
+				continue
+			}
+			return item, nil
+		}
+		if !intelligence.ObservationPageHasMore {
+			break
+		}
+		offset += intelligenceObservationPage
+	}
+	return ConversationReviewItem{}, fmt.Errorf("%w: review item", ErrNotFound)
+}
+
 // ConversationReviewCorrectionInput contains a focused human correction to reviewed evidence.
 type ConversationReviewCorrectionInput struct {
 	ReviewItemID   string
@@ -978,21 +1082,9 @@ func (s *Service) CorrectConversationReview(
 	if err != nil {
 		return nil, RelationshipIntelligence{}, err
 	}
-	current, err := s.RelationshipIntelligenceFor(ctx, rel)
+	matchedItem, err := s.conversationReviewItem(ctx, rel, input.ReviewItemID, false)
 	if err != nil {
 		return nil, RelationshipIntelligence{}, err
-	}
-	found := false
-	var matchedItem ConversationReviewItem
-	for _, item := range current.ReviewItems {
-		if item.ID == input.ReviewItemID {
-			found = true
-			matchedItem = item
-			break
-		}
-	}
-	if !found {
-		return nil, RelationshipIntelligence{}, fmt.Errorf("%w: review item", ErrNotFound)
 	}
 	// The server owns the review item's kind and dimension. A client cannot turn a
 	// speaker-attribution correction into an arbitrary canonical-state mutation.
@@ -1192,21 +1284,9 @@ func (s *Service) DecideConversationReview(
 	if err != nil {
 		return nil, RelationshipIntelligence{}, err
 	}
-	intelligence, err := s.RelationshipIntelligenceFor(ctx, rel)
+	item, err := s.conversationReviewItem(ctx, rel, input.ReviewItemID, true)
 	if err != nil {
 		return nil, RelationshipIntelligence{}, err
-	}
-	var item ConversationReviewItem
-	found := false
-	for _, candidate := range intelligence.ReviewItems {
-		if candidate.ID == input.ReviewItemID && candidate.BatchID != "" {
-			item = candidate
-			found = true
-			break
-		}
-	}
-	if !found {
-		return nil, RelationshipIntelligence{}, fmt.Errorf("%w: review item", ErrNotFound)
 	}
 	if rel.StateVersion != item.BaselineVersion {
 		return nil, RelationshipIntelligence{}, fmt.Errorf(
