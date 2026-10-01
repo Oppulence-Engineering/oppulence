@@ -373,6 +373,30 @@ export function personEvidenceProvenance(
   return EVIDENCE_SOURCE_LABELS[attribute.source] ?? "Recorded in this workspace";
 }
 
+/** Stored person facts use dimension tokens. The sheet names the fact. */
+export function personEvidenceLabel(dimension: string): string {
+  const labels: Record<string, string> = {
+    display_name: "Name",
+    alias: "Also known as",
+    title: "Title",
+    org_name: "Company",
+    org_domain: "Company domain",
+    phone: "Phone",
+    timezone: "Time zone",
+    locale: "Locale",
+    seniority: "Seniority",
+    location: "Location",
+    linkedin_url: "LinkedIn",
+    department: "Department",
+    employment_status: "Employment",
+  };
+  const known = labels[dimension];
+  if (known) return known;
+  const words = dimension.replaceAll("_", " ").trim();
+  if (!words) return "Detail";
+  return words.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 export function PeopleView({ onError, onNotice }: ViewProps) {
   const queryClient = useQueryClient();
   const [query, setQuery] = React.useState("");
@@ -820,8 +844,8 @@ function PersonSheet({
               {evidence.map((attribute) => (
                 <li className="py-3" key={attribute.id}>
                   <div className="flex items-center justify-between gap-3">
-                    <Label className="text-sm font-medium capitalize text-primary">
-                      {attribute.dimension.replaceAll("_", " ")}
+                    <Label className="text-sm font-medium text-primary">
+                      {personEvidenceLabel(attribute.dimension)}
                     </Label>
                     <Badge className="rounded-none font-normal text-primary/40" variant="outline">
                       {Math.round(attribute.confidence * 100)}%

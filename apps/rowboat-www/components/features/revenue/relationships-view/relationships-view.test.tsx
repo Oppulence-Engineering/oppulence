@@ -38,6 +38,7 @@ import {
   identityMatchDetail,
   sourceListedOnConnectionsPage,
   identityMatchLabel,
+  recommendationStatusLabel,
   identitySupportLabel,
   liveCueCopy,
   liveCueVisible,
@@ -435,6 +436,13 @@ describe("RelationshipsView", () => {
       "Fill in 2 companies and 1 person for about $1.50? Only names, company domains, and known employers are sent.",
     );
     expect(enrichConfirmCopy(1, 2, 0.004)).toContain("1 company and 2 people for about less than a cent");
+    expect(recommendationStatusLabel("review_required")).toBe("Needs review");
+    expect(recommendationStatusLabel("approved")).toBe("Approved");
+    expect(recommendationStatusLabel("custom_hold")).toBe("Custom Hold");
+    expect(source).toContain("recommendationStatusLabel(action.policyStatus)");
+    expect(source).toContain("recommendationStatusLabel(action.approvalStatus)");
+    expect(source).not.toContain("{action.policyStatus}");
+    expect(source).not.toContain("{action.approvalStatus}");
     expect(source).not.toContain("window.confirm");
     expect(source).not.toContain('humanize(account?.status || "not_connected")');
     expect(source).not.toContain("humanize(account.completeness)");

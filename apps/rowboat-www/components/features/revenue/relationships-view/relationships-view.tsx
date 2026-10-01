@@ -266,6 +266,20 @@ export function companyDomainHref(domain: string | null | undefined): string | n
   return webAddressHref(domain);
 }
 
+/** A governed recommendation stores policy and approval as tokens. The card names the state. */
+export function recommendationStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    pending: "Pending",
+    passed: "Passed",
+    review_required: "Needs review",
+    blocked: "Blocked",
+    stale: "Out of date",
+    approved: "Approved",
+    rejected: "Rejected",
+  };
+  return labels[status] ?? humanize(status);
+}
+
 const formatResearchCost = (usd: number) =>
   usd < 0.01 ? "less than a cent" : `$${usd.toFixed(2)}`;
 
@@ -2843,7 +2857,7 @@ export function RelationshipSheet({
                           <div className="flex items-start justify-between gap-2">
                             <div>
                               <p className="text-sm font-medium text-primary">
-                                {ACTION_TYPE_LABELS[action.actionType] ?? action.actionType}
+                                {ACTION_TYPE_LABELS[action.actionType] ?? humanize(action.actionType)}
                               </p>
                               <p className="mt-1 text-xs text-primary/60">{action.reason}</p>
                             </div>
@@ -2856,8 +2870,8 @@ export function RelationshipSheet({
                             <Badge className="font-normal" variant="secondary">
                               priority {action.priorityScore}
                             </Badge>
-                            <Badge className="font-normal capitalize" variant="secondary">
-                              {action.policyStatus}
+                            <Badge className="font-normal" variant="secondary">
+                              {recommendationStatusLabel(action.policyStatus)}
                             </Badge>
                           </div>
                           {action.evidence.length > 0 ? (
@@ -2904,8 +2918,8 @@ export function RelationshipSheet({
                               </Button>
                             </div>
                           ) : (
-                            <Badge variant="secondary" className="mt-3 capitalize">
-                              {action.approvalStatus}
+                            <Badge variant="secondary" className="mt-3">
+                              {recommendationStatusLabel(action.approvalStatus)}
                             </Badge>
                           )}
                         </li>

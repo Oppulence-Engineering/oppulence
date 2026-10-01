@@ -100,6 +100,7 @@ import {
   enrichmentEvidence,
   personEnrichmentLabel,
   personEvidenceProvenance,
+  personEvidenceLabel,
   personAccountDomain,
   personSheetDetail,
   personSheetSubtitle,
@@ -537,6 +538,11 @@ describe("people directory labels", () => {
     );
     expect(personEvidenceProvenance({ extractor: "unknown", source: "gmail" })).toBe("Gmail");
     expect(personEvidenceProvenance({ extractor: "unknown", source: "user" })).toBe("Added by you");
+    expect(personEvidenceLabel("org_name")).toBe("Company");
+    expect(personEvidenceLabel("linkedin_url")).toBe("LinkedIn");
+    expect(personEvidenceLabel("employment_status")).toBe("Employment");
+    expect(personEvidenceLabel("org_name")).not.toContain("org_name");
+    expect(personEvidenceLabel("custom_fact")).toBe("Custom Fact");
   });
 });
 
@@ -675,6 +681,8 @@ describe("task due order", () => {
   );
 
   it("puts undated tasks after dated ones, and reverses when latest is requested", () => {
+    expect(source).toContain("personEvidenceLabel(attribute.dimension)");
+    expect(source).not.toContain('attribute.dimension.replaceAll("_", " ")');
     const tasks = [
       { id: "undated" },
       { id: "later", dueAt: "2026-10-02" },
