@@ -528,6 +528,7 @@ export interface RelationshipGraphRequest {
   depth?: 1 | 2 | 3;
   asOf?: string;
   offset?: number;
+  observationOffset?: number;
 }
 
 export async function getRelationshipGraph(

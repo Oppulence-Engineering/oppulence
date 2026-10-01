@@ -1013,6 +1013,17 @@ export function graphNextCompaniesLabel(): string {
   return "Show the next companies";
 }
 
+export const GRAPH_ACCOUNT_EVIDENCE_PAGE = 100;
+export const GRAPH_PORTFOLIO_EVIDENCE_PAGE = 500;
+
+export function graphEvidencePage(scope: "portfolio" | "relationship"): number {
+  return scope === "relationship" ? GRAPH_ACCOUNT_EVIDENCE_PAGE : GRAPH_PORTFOLIO_EVIDENCE_PAGE;
+}
+
+export function graphEarlierEvidenceLabel(): string {
+  return "Show earlier evidence";
+}
+
 export function graphCountLabel(count: number, singular: string, plural: string): string {
   return `${count} ${count === 1 ? singular : plural}`;
 }
@@ -1364,14 +1375,23 @@ export function RelationshipGraphWorkspace({
   const [laterCompanies, setLaterCompanies] = React.useState<RelationshipGraph[]>([]);
   const [laterHasMore, setLaterHasMore] = React.useState<boolean | null>(null);
   const [loadingLaterCompanies, setLoadingLaterCompanies] = React.useState(false);
+  const [laterEvidence, setLaterEvidence] = React.useState<RelationshipGraph[]>([]);
+  const [evidenceHasMore, setEvidenceHasMore] = React.useState<boolean | null>(null);
+  const [loadingEarlierEvidence, setLoadingEarlierEvidence] = React.useState(false);
   React.useEffect(() => {
     setLaterCompanies([]);
     setLaterHasMore(null);
     setLoadingLaterCompanies(false);
   }, [viewState.scope, viewState.relationshipId, viewState.asOf]);
+  React.useEffect(() => {
+    setLaterEvidence([]);
+    setEvidenceHasMore(null);
+    setLoadingEarlierEvidence(false);
+  }, [viewState.scope, viewState.relationshipId, viewState.asOf, laterCompanies.length]);
   const graph = React.useMemo(() => {
     if (!loadedGraph) return null;
-    const pages = [loadedGraph, ...laterCompanies];
+    const companyPages = [loadedGraph, ...laterCompanies];
+    const pages = [...companyPages, ...laterEvidence];
     const nodes = [
       ...new Map(pages.flatMap((page) => page.nodes).map((node) => [node.id, node])).values(),
     ];
@@ -1388,13 +1408,15 @@ export function RelationshipGraphWorkspace({
       ...loadedGraph,
       ...visible,
       hasMore: laterHasMore ?? loadedGraph.hasMore,
+      observationHasMore:
+        evidenceHasMore ?? companyPages.some((page) => page.observationHasMore),
       nodes: visible.nodes.map((node) => {
         if (node.kind !== "relationship" || !node.relationshipId) return node;
         const title = titles.get(node.relationshipId);
         return title ? { ...node, label: title } : node;
       }),
     };
-  }, [laterCompanies, laterHasMore, loadedGraph, relationships]);
+  }, [evidenceHasMore, laterCompanies, laterEvidence, laterHasMore, loadedGraph, relationships]);
   const loading = graphEnabled && graphQuery.isPending;
   const loadLaterCompanies = async () => {
     if (!graph?.hasMore || loadingLaterCompanies || viewState.scope !== "portfolio") return;
@@ -1412,6 +1434,38 @@ export function RelationshipGraphWorkspace({
       onError(errMessage(error, "Could not load the next companies."));
     } finally {
       setLoadingLaterCompanies(false);
+    }
+  };
+  const loadEarlierEvidence = async () => {
+    if (!graph?.observationHasMore || loadingEarlierEvidence) return;
+    setLoadingEarlierEvidence(true);
+    try {
+      const observationOffset =
+        (laterEvidence.length + 1) * graphEvidencePage(viewState.scope);
+      const base = {
+        scope: viewState.scope,
+        relationshipId: viewState.relationshipId,
+        depth: 2 as const,
+        asOf: viewState.asOf,
+        observationOffset,
+      };
+      const pages = await Promise.all([
+        getRelationshipGraph(base),
+        ...laterCompanies.map((_, index) =>
+          getRelationshipGraph({
+            ...base,
+            scope: "portfolio",
+            relationshipId: undefined,
+            offset: (index + 1) * GRAPH_COMPANY_PAGE,
+          }),
+        ),
+      ]);
+      setLaterEvidence((current) => [...current, ...pages]);
+      setEvidenceHasMore(pages.some((page) => page.observationHasMore));
+    } catch (error) {
+      onError(errMessage(error, "Could not load earlier evidence."));
+    } finally {
+      setLoadingEarlierEvidence(false);
     }
   };
   // The canvas already explains a failed load and offers Retry. Sending the
@@ -1787,6 +1841,17 @@ export function RelationshipGraphWorkspace({
               variant="outline"
             >
               {loadingLaterCompanies ? "Loading…" : graphNextCompaniesLabel()}
+            </Button>
+          ) : null}
+          {graph?.observationHasMore ? (
+            <Button
+              disabled={loadingEarlierEvidence}
+              onClick={() => void loadEarlierEvidence()}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {loadingEarlierEvidence ? "Loading…" : graphEarlierEvidenceLabel()}
             </Button>
           ) : null}
         </div>

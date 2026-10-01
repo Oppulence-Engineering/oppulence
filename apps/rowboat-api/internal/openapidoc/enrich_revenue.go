@@ -439,16 +439,17 @@ func addRevenueSchemas(schemas obj) {
 	}, "id", "source", "target", "kind", "label", "directed", "evidenceRefs")
 
 	schemas["RelationshipGraph"] = objectSchema("Shared read model for Account Graph and Portfolio Graph in web and desktop. Historical reads are bounded by asOf and every governed action remains permission-gated.", obj{
-		"contractVersion": stringSchema("Wire contract version.", "2026-08-01"),
-		"generatedAt":     stringSchema("Projection generation time.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
-		"asOf":            stringSchema("Historical evidence boundary.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
-		"historical":      boolSchema("Whether the response is an historical projection.", false),
-		"scope":           stringEnum("Graph scope.", "portfolio", "portfolio", "relationship"),
-		"relationshipId":  uuidSchema("Relationship id for account scope.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-		"depth":           obj{"type": "integer", "minimum": 1, "maximum": 3, "example": 2},
-		"nodes":           arraySchema("Typed nodes.", ref("RelationshipGraphNode")),
-		"edges":           arraySchema("Typed directed edges.", ref("RelationshipGraphEdge")),
-		"hasMore":         boolSchema("Another company exists beyond this page.", true),
+		"contractVersion":    stringSchema("Wire contract version.", "2026-08-01"),
+		"generatedAt":        stringSchema("Projection generation time.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
+		"asOf":               stringSchema("Historical evidence boundary.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
+		"historical":         boolSchema("Whether the response is an historical projection.", false),
+		"scope":              stringEnum("Graph scope.", "portfolio", "portfolio", "relationship"),
+		"relationshipId":     uuidSchema("Relationship id for account scope.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"depth":              obj{"type": "integer", "minimum": 1, "maximum": 3, "example": 2},
+		"nodes":              arraySchema("Typed nodes.", ref("RelationshipGraphNode")),
+		"edges":              arraySchema("Typed directed edges.", ref("RelationshipGraphEdge")),
+		"hasMore":            boolSchema("Another company exists beyond this page.", true),
+		"observationHasMore": boolSchema("An older conversation exists beyond this page.", true),
 		"permissions": objectSchema("Viewer capabilities for this projection.", obj{
 			"canView":       boolSchema("May view.", true),
 			"canContribute": boolSchema("May propose state or actions.", true),
@@ -798,6 +799,7 @@ func addRevenuePaths(paths obj) {
 			obj{"name": "depth", "in": "query", "required": false, "description": "Bounded graph expansion depth.", "schema": obj{"type": "integer", "minimum": 1, "maximum": 3, "default": 2}},
 			obj{"name": "asOf", "in": "query", "required": false, "description": "Historical evidence boundary; must not be in the future.", "schema": obj{"type": "string", "format": "date-time"}},
 			obj{"name": "offset", "in": "query", "required": false, "description": "Company offset. The first page is the 200 most recently updated companies.", "schema": obj{"type": "integer", "minimum": 0}},
+			obj{"name": "observationOffset", "in": "query", "required": false, "description": "Evidence offset. The first page is the newest conversations on each company.", "schema": obj{"type": "integer", "minimum": 0}},
 		},
 		nil,
 		obj{

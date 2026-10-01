@@ -2609,6 +2609,7 @@ export const getGetRelationshipGraphResponseMock = (
   })),
   generatedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   hasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
+  observationHasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
   historical: faker.datatype.boolean(),
   nodes: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
     approvalStatus: faker.helpers.arrayElement([

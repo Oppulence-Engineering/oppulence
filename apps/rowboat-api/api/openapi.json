@@ -10496,6 +10496,11 @@
             "example": true,
             "type": "boolean"
           },
+          "observationHasMore": {
+            "description": "An older conversation exists beyond this page.",
+            "example": true,
+            "type": "boolean"
+          },
           "historical": {
             "description": "Whether the response is an historical projection.",
             "example": false,
@@ -23652,6 +23657,16 @@
             "description": "Company offset. The first page is the 200 most recently updated companies.",
             "in": "query",
             "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Evidence offset. The first page is the newest conversations on each company.",
+            "in": "query",
+            "name": "observationOffset",
             "required": false,
             "schema": {
               "minimum": 0,

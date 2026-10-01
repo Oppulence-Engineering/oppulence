@@ -35,23 +35,35 @@ const relationshipGraphContractVersion = "2026-08-01"
 
 // RelationshipGraphFilter is a bounded read request for the shared graph projection.
 type RelationshipGraphFilter struct {
-	Scope          string
-	RelationshipID *uuid.UUID
-	Depth          int
-	AsOf           time.Time
-	Offset         int
+	Scope             string
+	RelationshipID    *uuid.UUID
+	Depth             int
+	AsOf              time.Time
+	Offset            int
+	ObservationOffset int
 }
 
 // RelationshipGraphAggregate is the authorized, eagerly loaded source for one graph response.
 type RelationshipGraphAggregate struct {
-	Relationships []*ent.Relationship
-	Sources       []*ent.RelationshipSourceStatus
-	Role          string
-	Scope         string
-	Depth         int
-	AsOf          time.Time
-	Historical    bool
-	HasMore       bool
+	Relationships      []*ent.Relationship
+	Sources            []*ent.RelationshipSourceStatus
+	Role               string
+	Scope              string
+	Depth              int
+	AsOf               time.Time
+	Historical         bool
+	HasMore            bool
+	ObservationHasMore bool
+}
+
+// graphObservationPage is one page of evidence on a company. Account graphs
+// show the newest 100 conversations; a portfolio graph shows 500 per company.
+// The next page uses the same size as an offset.
+func graphObservationPage(scope string) int {
+	if scope == "relationship" {
+		return 100
+	}
+	return 500
 }
 
 // RelationshipGraph returns a tenant-scoped graph aggregate. It filters time-bearing
@@ -136,15 +148,20 @@ func (s *Service) RelationshipGraph(
 			).Order(ent.Desc(relationshipreviewacknowledgement.FieldStateVersion))
 		})
 
+	observationOffset := filter.ObservationOffset
+	if observationOffset < 0 {
+		observationOffset = 0
+	}
+	observationPage := graphObservationPage(filter.Scope)
 	if filter.Depth >= 2 {
-		observationLimit := 500
-		if filter.Scope == "relationship" {
-			observationLimit = 100
-		}
 		q.WithObservations(func(q *ent.RelationshipObservationQuery) {
 			q.Where(relationshipobservation.OccurredAtLTE(filter.AsOf)).
-				Order(ent.Desc(relationshipobservation.FieldOccurredAt)).
-				Limit(observationLimit)
+				Order(
+					ent.Desc(relationshipobservation.FieldOccurredAt),
+					ent.Desc(relationshipobservation.FieldID),
+				).
+				Limit(observationPage + 1).
+				Offset(observationOffset)
 		})
 	}
 	if historical {
@@ -172,6 +189,16 @@ func (s *Service) RelationshipGraph(
 	if hasMore {
 		relationships = relationships[:relationshipListLimit]
 	}
+	observationHasMore := false
+	if filter.Depth >= 2 {
+		for _, rel := range relationships {
+			observations := rel.Edges.Observations
+			if len(observations) > observationPage {
+				observationHasMore = true
+				rel.Edges.Observations = observations[:observationPage]
+			}
+		}
+	}
 	if filter.Scope == "relationship" && len(relationships) == 0 {
 		return nil, ErrNotFound
 	}
@@ -188,14 +215,15 @@ func (s *Service) RelationshipGraph(
 	}
 
 	return &RelationshipGraphAggregate{
-		Relationships: relationships,
-		Sources:       sources,
-		Role:          role,
-		Scope:         filter.Scope,
-		Depth:         filter.Depth,
-		AsOf:          filter.AsOf,
-		Historical:    historical,
-		HasMore:       hasMore,
+		Relationships:      relationships,
+		Sources:            sources,
+		Role:               role,
+		Scope:              filter.Scope,
+		Depth:              filter.Depth,
+		AsOf:               filter.AsOf,
+		Historical:         historical,
+		HasMore:            hasMore,
+		ObservationHasMore: observationHasMore,
 	}, nil
 }
 
@@ -267,17 +295,18 @@ type relationshipGraphEdgeDTO struct {
 }
 
 type relationshipGraphDTO struct {
-	ContractVersion string                          `json:"contractVersion"`
-	GeneratedAt     time.Time                       `json:"generatedAt"`
-	AsOf            time.Time                       `json:"asOf"`
-	Historical      bool                            `json:"historical"`
-	Scope           string                          `json:"scope"`
-	RelationshipID  string                          `json:"relationshipId,omitempty"`
-	Depth           int                             `json:"depth"`
-	Nodes           []relationshipGraphNodeDTO      `json:"nodes"`
-	Edges           []relationshipGraphEdgeDTO      `json:"edges"`
-	Permissions     relationshipGraphPermissionsDTO `json:"permissions"`
-	HasMore         bool                            `json:"hasMore,omitempty"`
+	ContractVersion    string                          `json:"contractVersion"`
+	GeneratedAt        time.Time                       `json:"generatedAt"`
+	AsOf               time.Time                       `json:"asOf"`
+	Historical         bool                            `json:"historical"`
+	Scope              string                          `json:"scope"`
+	RelationshipID     string                          `json:"relationshipId,omitempty"`
+	Depth              int                             `json:"depth"`
+	Nodes              []relationshipGraphNodeDTO      `json:"nodes"`
+	Edges              []relationshipGraphEdgeDTO      `json:"edges"`
+	Permissions        relationshipGraphPermissionsDTO `json:"permissions"`
+	HasMore            bool                            `json:"hasMore,omitempty"`
+	ObservationHasMore bool                            `json:"observationHasMore,omitempty"`
 }
 
 type graphProjectionState struct {
@@ -665,7 +694,8 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 		ContractVersion: relationshipGraphContractVersion, GeneratedAt: generatedAt.UTC(),
 		AsOf: aggregate.AsOf, Historical: aggregate.Historical, Scope: aggregate.Scope,
 		Depth: aggregate.Depth, Nodes: nodeList, Edges: edgeList, Permissions: permissions,
-		HasMore: aggregate.HasMore,
+		HasMore:            aggregate.HasMore,
+		ObservationHasMore: aggregate.ObservationHasMore,
 	}
 	if aggregate.Scope == "relationship" && len(aggregate.Relationships) == 1 {
 		dto.RelationshipID = aggregate.Relationships[0].ID.String()
@@ -866,6 +896,16 @@ func (h *Handler) RelationshipGraph(w http.ResponseWriter, r *http.Request) {
 		}
 		if value > 0 {
 			filter.Offset = value
+		}
+	}
+	if rawObservations := strings.TrimSpace(r.URL.Query().Get("observationOffset")); rawObservations != "" {
+		value, err := strconv.Atoi(rawObservations)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid observationOffset", ErrInvalidInput))
+			return
+		}
+		if value > 0 {
+			filter.ObservationOffset = value
 		}
 	}
 	if rawID := strings.TrimSpace(r.URL.Query().Get("relationshipId")); rawID != "" {

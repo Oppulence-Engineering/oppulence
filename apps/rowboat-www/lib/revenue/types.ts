@@ -1005,6 +1005,7 @@ export const RelationshipGraphSchema = z.object({
   edges: z.array(RelationshipGraphEdgeSchema),
   permissions: RelationshipGraphPermissionsSchema,
   hasMore: z.boolean().optional(),
+  observationHasMore: z.boolean().optional(),
 });
 
 export const RelationshipGraphSavedViewStateSchema = z.object({

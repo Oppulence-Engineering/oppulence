@@ -250,3 +250,94 @@ func TestRelationshipGraphPagesPastTheNewestCompanies(t *testing.T) {
 		t.Fatalf("negative offset should match the newest page: %d hasMore=%v err=%v", len(clamped.Relationships), clamped.HasMore, err)
 	}
 }
+
+func TestRelationshipGraphPagesPastTheNewestEvidence(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	asOf := f.svc.now().UTC()
+	rel, err := f.client.Relationship.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetKind("company").
+		SetDisplayName("Evidence Graph Co").
+		SetResourceRefs([]string{}).
+		SetRisks([]string{}).
+		SetMilestones([]string{}).
+		SetCreatedAt(asOf.Add(-48 * time.Hour)).
+		SetUpdatedAt(asOf.Add(-time.Minute)).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const total = 101
+	for i := 1; i <= total; i++ {
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetRelationship(rel).
+			SetSource("meeting").
+			SetExternalID(fmt.Sprintf("graph-evidence-%03d", i)).
+			SetEventType("note").
+			SetOccurredAt(asOf.Add(-time.Duration(i) * time.Second)).
+			SetReceivedAt(asOf.Add(-time.Duration(i) * time.Second)).
+			SetSummary(fmt.Sprintf("Graph evidence %03d", i)).
+			SetContentHash(fmt.Sprintf("graph-evidence-hash-%03d", i)).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	first, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &rel.ID, Depth: 2, AsOf: asOf,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !first.ObservationHasMore || len(first.Relationships[0].Edges.Observations) != 100 {
+		t.Fatalf("newest evidence = %d hasMore=%v", len(first.Relationships[0].Edges.Observations), first.ObservationHasMore)
+	}
+	for _, observation := range first.Relationships[0].Edges.Observations {
+		if observation.Summary == "Graph evidence 101" {
+			t.Fatal("the oldest conversation was included in the newest page")
+		}
+	}
+	second, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &rel.ID, Depth: 2, AsOf: asOf, ObservationOffset: 100,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.ObservationHasMore {
+		t.Fatal("the page after the newest 100 still claimed another page")
+	}
+	found := false
+	for _, observation := range second.Relationships[0].Edges.Observations {
+		if observation.Summary == "Graph evidence 101" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("older page missing Graph evidence 101: %d conversations", len(second.Relationships[0].Edges.Observations))
+	}
+	dto := buildRelationshipGraphDTO(second, asOf)
+	if dto.ObservationHasMore {
+		t.Fatal("dto kept observationHasMore after the last page")
+	}
+	labeled := false
+	for _, node := range dto.Nodes {
+		if node.Kind == "evidence" && node.Label == "Graph evidence 101" {
+			labeled = true
+		}
+	}
+	if !labeled {
+		t.Fatal("older evidence did not become a graph node")
+	}
+	clamped, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &rel.ID, Depth: 2, AsOf: asOf, ObservationOffset: -3,
+	})
+	if err != nil || !clamped.ObservationHasMore || len(clamped.Relationships[0].Edges.Observations) != 100 {
+		t.Fatalf("negative evidence offset should match the newest page: err=%v", err)
+	}
+}

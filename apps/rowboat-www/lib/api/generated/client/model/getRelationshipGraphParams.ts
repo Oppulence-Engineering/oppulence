@@ -31,4 +31,9 @@ export type GetRelationshipGraphParams = {
    * @minimum 0
    */
   offset?: number;
+  /**
+   * Evidence offset. The first page is the newest conversations on each company.
+   * @minimum 0
+   */
+  observationOffset?: number;
 };

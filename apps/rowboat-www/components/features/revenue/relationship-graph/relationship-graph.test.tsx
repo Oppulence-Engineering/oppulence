@@ -18,6 +18,8 @@ import {
   graphNodeCap,
   graphCanvasCapLabel,
   graphNextCompaniesLabel,
+  graphEarlierEvidenceLabel,
+  graphEvidencePage,
   graphListRemainderLabel,
   graphLayoutLabel,
   graphAccountChoice,
@@ -60,6 +62,11 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphNextCompaniesLabel()).toBe("Show the next companies");
     expect(source).toContain("graphNextCompaniesLabel()");
     expect(source).toContain("Could not load the next companies.");
+    expect(graphEarlierEvidenceLabel()).toBe("Show earlier evidence");
+    expect(graphEvidencePage("relationship")).toBe(100);
+    expect(graphEvidencePage("portfolio")).toBe(500);
+    expect(source).toContain("graphEarlierEvidenceLabel()");
+    expect(source).toContain("Could not load earlier evidence.");
     expect(source).toContain("raise how many to show for more");
     expect(source).not.toContain("raise density");
     expect(source).not.toContain("No nodes match");

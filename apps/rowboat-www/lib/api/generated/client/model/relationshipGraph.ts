@@ -29,6 +29,8 @@ export interface RelationshipGraph {
   generatedAt: string;
   /** Another company exists beyond this page. */
   hasMore?: boolean;
+  /** An older conversation exists beyond this page. */
+  observationHasMore?: boolean;
   /** Whether the response is an historical projection. */
   historical: boolean;
   /** Typed nodes. */
