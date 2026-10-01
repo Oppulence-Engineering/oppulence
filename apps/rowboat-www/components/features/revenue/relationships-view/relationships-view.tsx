@@ -171,6 +171,7 @@ import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { planLabel } from "@/lib/product/plan-label";
 import { attentionWithoutTasks, workspaceTaskIds } from "@/lib/revenue/revenue-records";
 import {
+  activityEvidenceLines,
   enumLabel as humanize,
   missingScopeLabels,
   relationshipDeltaValue,
@@ -3257,7 +3258,7 @@ export function RelationshipSheet({
                           >
                             <div className="flex items-center justify-between gap-2">
                               <Label className="text-xs font-medium capitalize text-primary">
-                                {observation.source} · {humanize(observation.eventType)}
+                                {humanize(observation.source)} · {humanize(observation.eventType)}
                               </Label>
                               <Badge
                                 className="text-[11px] font-normal text-primary/35"
@@ -3271,9 +3272,14 @@ export function RelationshipSheet({
                             </p>
                           </Button>
                           {observation.id in evidence ? (
-                            <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap rounded-none bg-background-100 p-2 text-[11px] text-primary/60 dark:bg-background-200">
-                              {JSON.stringify(evidence[observation.id], null, 2)}
-                            </pre>
+                            <div className="mt-2 max-h-52 space-y-1 overflow-auto rounded-none bg-background-100 p-2 text-[11px] text-primary/60 dark:bg-background-200">
+                              {activityEvidenceLines(
+                                evidence[observation.id],
+                                observation.normalizedFacts,
+                              ).map((line, index) => (
+                                <p key={`${observation.id}:${index}`}>{line}</p>
+                              ))}
+                            </div>
                           ) : null}
                         </li>
                       ))}

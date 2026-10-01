@@ -371,6 +371,14 @@ describe("RelationshipsView", () => {
     expect(source).toContain("Save this transcript");
     expect(source).toContain("No mail or meetings yet.");
     expect(source).toContain("Activity history");
+    expect(source).toContain("activityEvidenceLines(");
+    expect(source).toContain("evidence[observation.id]");
+    expect(source).toContain("observation.normalizedFacts");
+    expect(source).toContain(
+      "{humanize(observation.source)} · {humanize(observation.eventType)}",
+    );
+    expect(source).not.toContain("JSON.stringify(evidence[observation.id]");
+    expect(source).not.toContain("{observation.source} · {humanize(observation.eventType)}");
     expect(source).not.toContain("Not enriched");
     expect(source).not.toContain("winning assertion");
     expect(source).not.toContain("state dimensions sourced");

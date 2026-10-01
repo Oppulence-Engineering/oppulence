@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  activityEvidenceLines,
   enumLabel,
   missingScopeLabels,
   relationshipDeltaValue,
@@ -52,5 +53,40 @@ describe("source product copy", () => {
     expect(relationshipDeltaValue([])).toBe("None");
     expect(relationshipDeltaValue({ value: "healthy" })).toBe("Healthy");
     expect(relationshipDeltaValue({ other: true })).toBe("Unknown");
+  });
+
+  it("reads a saved note instead of the empty payload", () => {
+    const facts = {
+      noteId: "note-1",
+      title: "Harbor follow-up",
+      body: "Ask about the sandbox login.",
+      content: [{ type: "p", children: [{ text: "Ask about the sandbox login." }] }],
+      meetingLinked: true,
+    };
+    expect(activityEvidenceLines(null, facts)).toEqual([
+      "Title: Harbor follow-up",
+      "Note: Ask about the sandbox login.",
+      "Marked as a meeting note.",
+    ]);
+    expect(activityEvidenceLines(null, facts).join("\n")).not.toContain("null");
+    expect(activityEvidenceLines(null, facts).join("\n")).not.toContain("note-1");
+    expect(activityEvidenceLines(null, facts).join("\n")).not.toContain('"type"');
+    expect(
+      activityEvidenceLines(
+        { subject: "Sandbox login", from: "ada@harbor.example" },
+        { body: "unused when the payload already has words" },
+      ),
+    ).toEqual(["Subject: Sandbox login", "From: ada@harbor.example"]);
+    expect(activityEvidenceLines("The original sentence.", null)).toEqual([
+      "The original sentence.",
+    ]);
+    expect(activityEvidenceLines(null, { noteId: "only-an-id" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(
+      activityEvidenceLines(null, {
+        content: [{ type: "p", children: [{ text: "Body lives in the editor." }] }],
+      }),
+    ).toEqual(["Note: Body lives in the editor."]);
   });
 });

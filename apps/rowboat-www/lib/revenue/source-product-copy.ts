@@ -80,6 +80,88 @@ export function relationshipDeltaValue(value: unknown): string {
   return "Unknown";
 }
 
+const HIDDEN_ACTIVITY_KEYS = new Set([
+  "noteId",
+  "content",
+  "meetingLinked",
+  "liveLinked",
+  "externalId",
+  "contentHash",
+]);
+
+const ACTIVITY_FACT_LABELS: Record<string, string> = {
+  title: "Title",
+  body: "Note",
+  subject: "Subject",
+  summary: "Summary",
+  from: "From",
+  to: "To",
+  snippet: "Preview",
+  text: "Text",
+  preview: "Preview",
+};
+
+function activityRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+function activityScalar(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (!Array.isArray(value)) return "";
+  return value
+    .map((item) => {
+      if (typeof item === "string") return item.trim();
+      if (item && typeof item === "object" && "text" in item) {
+        return String((item as { text: unknown }).text ?? "").trim();
+      }
+      if (item && typeof item === "object" && "children" in item) {
+        return activityScalar((item as { children: unknown }).children);
+      }
+      return "";
+    })
+    .filter(Boolean)
+    .join(" ");
+}
+
+function linesFromActivity(value: unknown): string[] {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed ? [trimmed] : [];
+  }
+  const record = activityRecord(value);
+  if (!record) return [];
+  const lines: string[] = [];
+  for (const [key, item] of Object.entries(record)) {
+    if (HIDDEN_ACTIVITY_KEYS.has(key)) continue;
+    const text = activityScalar(item);
+    if (!text) continue;
+    lines.push(`${ACTIVITY_FACT_LABELS[key] ?? enumLabel(key)}: ${text}`);
+  }
+  if (!lines.some((line) => line.startsWith("Note:")) && "content" in record) {
+    const text = activityScalar(record.content);
+    if (text) lines.push(`Note: ${text}`);
+  }
+  return lines;
+}
+
+/**
+ * Opening an activity used to print the decrypted payload. A saved note has
+ * no payload, so the sheet said null. The words already stored on the
+ * observation are the thing to read.
+ */
+export function activityEvidenceLines(
+  payload: unknown,
+  facts?: Record<string, unknown> | null,
+): string[] {
+  const fromPayload = linesFromActivity(payload);
+  const lines = fromPayload.length > 0 ? fromPayload : linesFromActivity(facts);
+  if (activityRecord(facts)?.meetingLinked === true) lines.push("Marked as a meeting note.");
+  if (lines.length === 0) return ["Nothing else was saved with this activity."];
+  return lines;
+}
+
 /** A scope id or URL becomes a short permission name. Known grants win. */
 export function scopeLabel(scope: string): string {
   const trimmed = scope.trim();
