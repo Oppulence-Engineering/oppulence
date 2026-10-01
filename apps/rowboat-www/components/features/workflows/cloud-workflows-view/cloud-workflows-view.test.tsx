@@ -32,6 +32,7 @@ import {
   runEventLabel,
   runReference,
   scheduleHealthLabel,
+  compileVisualWorkflow,
   scheduleMomentLabel,
   workflowListSummary,
   type CloudTask,
@@ -217,6 +218,32 @@ describe("CloudWorkflowsView", () => {
         },
       } as CloudTask),
     ).toBe("When company risk changes");
+    // Saving that trigger writes a 15-minute poll beside the workflow. The
+    // poll is not the schedule the library should print.
+    for (const kind of ["relationship-risk", "profile-change", "commitment-risk"] as const) {
+      const compiled = compileVisualWorkflow({
+        version: 1,
+        trigger: { kind },
+        actions: ["review-account"],
+      });
+      const expected =
+        kind === "relationship-risk"
+          ? "When company risk changes"
+          : kind === "profile-change"
+            ? "When a company or person is updated"
+            : "When a promise needs a follow-up";
+      expect(scheduleLabel({ triggers: compiled.triggers } as CloudTask)).toBe(expected);
+      expect(compiled.triggers).toMatchObject({ cronExpr: "*/15 * * * *" });
+    }
+    expect(
+      scheduleLabel({
+        triggers: compileVisualWorkflow({
+          version: 1,
+          trigger: { kind: "schedule", cronExpr: "0 9 * * 1-5" },
+          actions: ["review-account"],
+        }).triggers,
+      } as CloudTask),
+    ).toBe("Weekdays at 9:00 AM UTC");
     expect(
       scheduleLabel({
         triggers: {

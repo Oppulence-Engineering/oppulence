@@ -338,13 +338,11 @@ function runFailureCopy(run: CloudRun): string {
 }
 
 export function scheduleLabel(task: CloudTask): string {
-  const cron = taskCron(task);
-  const intervals: Record<string, string> = {
-    "*/15 * * * *": "Every 15 minutes",
-    "*/30 * * * *": "Every 30 minutes",
-  };
-  if (cron) return intervals[cron] ?? cronClockLabel(cron);
   const visual = taskVisualWorkflow(task);
+  // Risk and profile triggers are checked on a 15-minute poll. That cron is
+  // how the cloud wakes up; the library and settings still name the condition
+  // the teammate chose. A real schedule is the only trigger whose clock is
+  // the answer.
   switch (visual?.trigger.kind) {
     case "communication":
       return "When mail or a message arrives";
@@ -354,9 +352,21 @@ export function scheduleLabel(task: CloudTask): string {
       return "When company risk changes";
     case "commitment-risk":
       return "When a promise needs a follow-up";
-    default:
+    case "manual":
       return "Manual start";
+    default:
+      break;
   }
+  const cron =
+    visual?.trigger.kind === "schedule"
+      ? visual.trigger.cronExpr?.trim() || taskCron(task)
+      : taskCron(task);
+  const intervals: Record<string, string> = {
+    "*/15 * * * *": "Every 15 minutes",
+    "*/30 * * * *": "Every 30 minutes",
+  };
+  if (cron) return intervals[cron] ?? cronClockLabel(cron);
+  return "Manual start";
 }
 
 export function workflowForTask(
