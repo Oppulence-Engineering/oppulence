@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   fetchConsoleResources: vi.fn(),
   fetchWorkspaceNotes: vi.fn(),
+  ingestRelationshipObservations: vi.fn(),
 }));
 
 vi.mock("@/lib/console/console", () => ({
@@ -29,6 +30,7 @@ vi.mock("@/hooks/queries/utils/fetch-workspace-notes", () => ({
 }));
 vi.mock("@/lib/revenue/revenue", () => ({
   relativeTime: () => "now",
+  ingestRelationshipObservations: mocks.ingestRelationshipObservations,
 }));
 vi.mock("@/components/auth/auth-gate", () => ({
   useAuthSession: () => ({
@@ -144,15 +146,17 @@ describe("durable note templates and favorites", () => {
     await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
     await user.type(screen.getByLabelText("Note title"), "Call notes");
 
-    expect(screen.getByText(noteNeedsCompanyCopy("status"))).toBeInTheDocument();
-    expect(noteNeedsCompanyCopy("status")).toBe("Add a company to save this note.");
+    expect(screen.getByText(noteNeedsCompanyCopy("status", false))).toBeInTheDocument();
+    expect(noteNeedsCompanyCopy("status", false)).toBe("Add a company to save this note.");
     expect(screen.getByLabelText("Linked company, No companies yet")).toHaveTextContent(
       "No companies yet",
     );
 
     await user.click(screen.getByRole("button", { name: "Close note" }));
-    expect(onNotice).toHaveBeenCalledWith(noteNeedsCompanyCopy("notice"));
-    expect(noteNeedsCompanyCopy("notice")).toBe("Add a company before this note can be saved.");
+    expect(onNotice).toHaveBeenCalledWith(noteNeedsCompanyCopy("notice", false));
+    expect(noteNeedsCompanyCopy("notice", false)).toBe(
+      "Add a company before this note can be saved.",
+    );
 
     await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
     const writeText = vi.fn().mockResolvedValue(undefined);
@@ -165,6 +169,42 @@ describe("durable note templates and favorites", () => {
       "This note has not been saved, so there is no link to copy.",
     );
     expect(writeText).not.toHaveBeenCalled();
+  });
+
+  it("leaves a new note unlinked when companies already exist", async () => {
+    mocks.fetchWorkspaceNotes.mockResolvedValue({
+      notes: [],
+      relationships: [
+        { id: "relationship-1", kind: "organization", displayName: "Acme" },
+        { id: "relationship-2", kind: "organization", displayName: "Harbor" },
+      ],
+      failedTimelineCount: 0,
+    });
+    const onNotice = vi.fn();
+    const user = userEvent.setup();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <NotesView onError={vi.fn()} onNotice={onNotice} />
+      </QueryClientProvider>,
+    );
+
+    await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
+    expect(screen.getByLabelText("Linked company, Link a company")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Linked company, Acme")).toBeNull();
+
+    await user.type(screen.getByLabelText("Note title"), "Call notes");
+    expect(screen.getByText(noteNeedsCompanyCopy("status", true))).toBeInTheDocument();
+    expect(noteNeedsCompanyCopy("status", true)).toBe("Link a company to save this note.");
+
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    expect(mocks.ingestRelationshipObservations).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Close note" }));
+    expect(onNotice).toHaveBeenCalledWith(noteNeedsCompanyCopy("notice", true));
+    expect(noteNeedsCompanyCopy("notice", true)).toBe(
+      "Link a company before this note can be saved.",
+    );
   });
 
   it("opens New company from an empty note", async () => {

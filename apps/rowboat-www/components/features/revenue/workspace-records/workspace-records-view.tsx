@@ -1361,9 +1361,9 @@ function NoteDialog({
   const [title, setTitle] = React.useState(
     note?.title === "Untitled note" ? "" : note?.title || template?.payload.title || "",
   );
-  const [relationshipId, setRelationshipId] = React.useState(
-    note?.relationshipId || relationships[0]?.id || "",
-  );
+  // A new note is not already about the first company. Autosave would file
+  // it there before anyone chose.
+  const [relationshipId, setRelationshipId] = React.useState(note?.relationshipId || "");
   const [content, setContent] = React.useState<Value>(() => {
     if (template?.payload.content) return template.payload.content as Value;
     if (template?.payload.body) {
@@ -1446,7 +1446,7 @@ function NoteDialog({
     // draft, but the status line and this notice are the only signal that the
     // text was not written.
     if (dirty && noteHasDraftContent && !relationshipId) {
-      onNotice(noteNeedsCompanyCopy("notice"));
+      onNotice(noteNeedsCompanyCopy("notice", relationships.length > 0));
     }
     onClose();
     return true;
@@ -1697,7 +1697,7 @@ function NoteDialog({
               className="absolute right-5 bottom-3 text-[11px] font-normal text-destructive"
               role="status"
             >
-              {noteNeedsCompanyCopy("status")}
+              {noteNeedsCompanyCopy("status", relationships.length > 0)}
             </p>
           ) : saveState !== "saved" ? (
             <Label
@@ -1793,10 +1793,18 @@ export function linkedCompanyName(label: string): string {
 }
 
 /**
- * A note is stored on a company. This line only appears when the workspace has
- * none, so it has to say add — the company menu is disabled and cannot link one.
+ * A note is stored on a company. With no companies, the menu cannot link one.
+ * With companies, the note still starts unlinked so it is not filed on the first.
  */
-export function noteNeedsCompanyCopy(surface: "status" | "notice"): string {
+export function noteNeedsCompanyCopy(
+  surface: "status" | "notice",
+  hasCompanies: boolean,
+): string {
+  if (hasCompanies) {
+    return surface === "status"
+      ? "Link a company to save this note."
+      : "Link a company before this note can be saved.";
+  }
   return surface === "status"
     ? "Add a company to save this note."
     : "Add a company before this note can be saved.";

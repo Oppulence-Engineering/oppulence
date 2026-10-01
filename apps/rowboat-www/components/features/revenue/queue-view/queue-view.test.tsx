@@ -23,6 +23,8 @@ describe("QueueView", () => {
     expect(recoveryFilterName("snoozed")).toBe("Recovery, Snoozed");
     expect(source).toContain("aria-label={recoveryFilterName(filter)}");
     expect(source).toContain("aria-label={recoveryCompanyName(");
+    expect(source).toContain("value={relationshipId || undefined}");
+    expect(source).not.toContain("relationships[0]");
     expect(source).toContain("aria-label={recoveryFollowUpName(actionType)}");
     expect(recoveryCompanyName("Dogfood Harbor")).toBe("Company, Dogfood Harbor");
     expect(recoveryCompanyName("Choose a company")).toBe("Company, Choose a company");

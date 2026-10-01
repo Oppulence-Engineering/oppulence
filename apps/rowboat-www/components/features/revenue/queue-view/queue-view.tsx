@@ -489,10 +489,6 @@ function CreateActionDialog({
     }
   }, [onError, relationshipsQuery.error]);
 
-  React.useEffect(() => {
-    if (!relationshipId && relationships[0]) setRelationshipId(relationships[0].id);
-  }, [relationshipId, relationships]);
-
   const submit = async () => {
     if (!relationshipId || !reason.trim()) return;
     setBusy(true);
@@ -546,7 +542,7 @@ function CreateActionDialog({
           </Empty>
         ) : (
           <div className="flex flex-col gap-3">
-            <Select value={relationshipId} onValueChange={setRelationshipId}>
+            <Select onValueChange={setRelationshipId} value={relationshipId || undefined}>
               <SelectTrigger
                 aria-label={recoveryCompanyName(
                   relationships.find((item) => item.id === relationshipId)?.displayName ||
