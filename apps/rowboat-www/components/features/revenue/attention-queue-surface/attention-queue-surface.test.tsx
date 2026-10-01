@@ -1,10 +1,19 @@
 // @vitest-environment jsdom
 
+import fs from "node:fs";
+import path from "node:path";
+
 import "@testing-library/jest-dom/vitest";
 
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+const decideRelationshipAttention = vi.hoisted(() => vi.fn());
+
+vi.mock("@/lib/revenue/revenue", () => ({
+  decideRelationshipAttention,
+}));
 
 import {
   AttentionQueueSurface,
@@ -87,6 +96,37 @@ describe("AttentionQueueSurface", () => {
 
     expect(screen.getByText("No companies in this band.")).toBeInTheDocument();
     expect(screen.getByText("0 companies")).toBeInTheDocument();
+  });
+
+  it("asks for a dismiss reason on the queue", async () => {
+    const user = userEvent.setup();
+    const prompt = vi.spyOn(window, "prompt");
+    decideRelationshipAttention.mockResolvedValue(undefined);
+    const onChanged = vi.fn();
+    render(
+      <AttentionQueueSurface
+        items={[item("attn-risk", "Acme", "high", "No reply in 14 days")]}
+        onActionError={vi.fn()}
+        onChanged={onChanged}
+        onOpenRelationship={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Dismiss" }));
+    const reason = screen.getByRole("textbox", { name: "Why this should be dismissed" });
+    expect(reason).toHaveValue("Not relevant right now");
+    expect(prompt).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Confirm dismiss" }));
+    expect(decideRelationshipAttention).toHaveBeenCalledWith("attn-risk", {
+      decision: "dismiss",
+      reason: "Not relevant right now",
+      expectedVersion: 1,
+      snoozedUntil: undefined,
+    });
+    expect(onChanged).toHaveBeenCalledOnce();
+    const source = fs.readFileSync(path.join(import.meta.dirname, "attention-queue-surface.tsx"), "utf8");
+    expect(source).not.toContain("window.prompt");
+    prompt.mockRestore();
   });
 });
 

@@ -9,6 +9,7 @@ import * as React from "react";
 import { Check } from "@/lib/icons";
 
 import { Button } from "@oppulence/ui/components/button";
+import { Input } from "@oppulence/ui/components/input";
 import { Spinner } from "@oppulence/ui/components/spinner";
 import { cn } from "@oppulence/ui/lib/utils";
 import {
@@ -79,6 +80,8 @@ export function AttentionQueueSurface({
   const [busy, setBusy] = React.useState<string | null>(null);
   const [band, setBand] = React.useState<AttentionBand>("all");
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
+  const [dismissing, setDismissing] = React.useState(false);
+  const [dismissReason, setDismissReason] = React.useState("Not relevant right now");
   const visible = filterAttentionItems(items, band);
   const selected = visible.find((item) => item.id === selectedId) ?? visible[0] ?? null;
 
@@ -93,17 +96,21 @@ export function AttentionQueueSurface({
     }
   }, [band, items, selectedId]);
 
+  React.useEffect(() => {
+    setDismissing(false);
+  }, [selected?.id]);
+
   const decide = async (
     item: RelationshipAttentionItem,
     decision: "acknowledge" | "snooze" | "dismiss",
   ) => {
     const reason =
       decision === "dismiss"
-        ? window.prompt("Why should this attention item be dismissed?", "Not relevant right now")
+        ? dismissReason.trim()
         : decision === "acknowledge"
           ? "Reviewed from the portfolio attention queue."
           : "Snoozed from the portfolio attention queue.";
-    if (reason === null || (decision === "dismiss" && !reason.trim())) return;
+    if (decision === "dismiss" && !reason) return;
     setBusy(`${item.id}:${decision}`);
     try {
       await decideRelationshipAttention(item.id, {
@@ -116,6 +123,7 @@ export function AttentionQueueSurface({
             : undefined,
       });
       onChanged();
+      setDismissing(false);
     } catch (error) {
       onActionError(
         error instanceof Error ? error.message : "Could not update the attention item.",
@@ -268,15 +276,45 @@ export function AttentionQueueSurface({
             >
               Snooze 1d
             </Button>
-            <Button
-              disabled={busy !== null}
-              onClick={() => void decide(selected, "dismiss")}
-              size="sm"
-              type="button"
-              variant="ghost"
-            >
-              Dismiss
-            </Button>
+            {dismissing ? (
+              <>
+                <Input
+                  aria-label="Why this should be dismissed"
+                  className="h-8 max-w-xs rounded-none"
+                  value={dismissReason}
+                  onChange={(event) => setDismissReason(event.target.value)}
+                />
+                <Button
+                  disabled={busy !== null || !dismissReason.trim()}
+                  onClick={() => void decide(selected, "dismiss")}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  {busy === `${selected.id}:dismiss` ? <Spinner className="size-4" /> : null}{" "}
+                  Confirm dismiss
+                </Button>
+                <Button
+                  disabled={busy !== null}
+                  onClick={() => setDismissing(false)}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <Button
+                disabled={busy !== null}
+                onClick={() => setDismissing(true)}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                Dismiss
+              </Button>
+            )}
           </div>
         ) : null}
       </SimProductPanel>
