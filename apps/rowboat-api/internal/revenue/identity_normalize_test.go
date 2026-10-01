@@ -1,12 +1,14 @@
 package revenue
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -154,6 +156,62 @@ func TestListRelationshipsOffsetSkipsTheNewestRows(t *testing.T) {
 	all, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Offset: -4})
 	if err != nil || len(all) != 3 || all[0].DisplayName != "Newest Co" {
 		t.Fatalf("negative offset = %v err=%v", namesOf(all), err)
+	}
+}
+
+func TestListRelationshipsTiedUpdatedAtUsesID(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	touched := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	const total = relationshipListLimit + 1
+	for i := 1; i <= total; i++ {
+		name := "Tied Co"
+		if i == 1 {
+			name = "Tied Co Last"
+		}
+		if _, err := f.client.Relationship.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("a115c000-0000-4000-8000-%012x", i))).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetKind("company").
+			SetDisplayName(name).
+			SetResourceRefs([]string{}).
+			SetRisks([]string{}).
+			SetMilestones([]string{}).
+			SetCreatedAt(touched.Add(-48 * time.Hour)).
+			SetUpdatedAt(touched).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	first, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first) != relationshipListLimit {
+		t.Fatalf("newest page = %d", len(first))
+	}
+	for _, rel := range first {
+		if rel.DisplayName == "Tied Co Last" {
+			t.Fatal("the lowest id was included beside newer ids with the same touch time")
+		}
+	}
+	second, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Offset: relationshipListLimit})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(second) != 1 || second[0].DisplayName != "Tied Co Last" {
+		t.Fatalf("older id page = %v", namesOf(second))
+	}
+	seen := map[string]bool{}
+	for _, rel := range append(first, second...) {
+		if seen[rel.ID.String()] {
+			t.Fatalf("company %s appeared on both pages", rel.DisplayName)
+		}
+		seen[rel.ID.String()] = true
 	}
 }
 

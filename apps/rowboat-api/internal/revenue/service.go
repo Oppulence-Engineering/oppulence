@@ -714,7 +714,8 @@ type RelationshipListFilter struct {
 }
 
 // ListRelationshipsFiltered returns account mission-control rows with
-// explainable-state filters shared by web and desktop.
+// explainable-state filters shared by web and desktop. Companies that share a
+// touch time stay in id order, so the next page does not repeat or skip one.
 func (s *Service) ListRelationshipsFiltered(
 	ctx context.Context,
 	u *ent.User,
@@ -756,7 +757,10 @@ func (s *Service) ListRelationshipsFiltered(
 		WithParticipants().
 		WithMailThreads().
 		WithCommitments().
-		Order(ent.Desc(relationship.FieldUpdatedAt)).
+		Order(
+			ent.Desc(relationship.FieldUpdatedAt),
+			ent.Desc(relationship.FieldID),
+		).
 		Limit(relationshipListLimit).
 		Offset(filter.Offset).
 		All(ctx)
