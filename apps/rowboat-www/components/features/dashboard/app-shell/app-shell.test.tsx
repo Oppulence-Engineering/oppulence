@@ -41,6 +41,19 @@ describe("AppShellSidebar", () => {
     expect(source).not.toContain("Manage sessions");
   });
 
+  it("lets the closed sidebar collapse", () => {
+    const theme = fs.readFileSync(
+      path.join(import.meta.dirname, "../../../../app/(product)/product-sim-theme.css"),
+      "utf8",
+    );
+    const rule = theme.slice(
+      theme.indexOf('[data-slot="app-sidebar"]'),
+      theme.indexOf("[data-sidebar-nav]"),
+    );
+    expect(source).toContain('open ? "w-[var(--shell-sidebar-width,252px)]" : "w-0 border-r-0"');
+    expect(rule).not.toContain("width:");
+  });
+
   it("describes permissions and security without authorization jargon", () => {
     expect(source).toContain("Who you are and what this session can do.");
     expect(source).toContain("Review this session and what it can open.");

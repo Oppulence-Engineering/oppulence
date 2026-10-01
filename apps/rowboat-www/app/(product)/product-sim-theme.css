@@ -93,14 +93,10 @@ html:has([data-product-shell]) {
 }
 
 /* ── Sidebar rail (Sim chip row geometry) ────────────────────────────────── */
+/* Width is owned by the sidebar component so the closed rail can collapse. */
 [data-product-shell].sim-product-shell [data-slot="app-sidebar"] {
   border-color: var(--border);
   background: var(--surface-1);
-  width: var(--shell-sidebar-width);
-}
-
-[data-product-shell].sim-product-shell [data-slot="app-sidebar"] > div {
-  width: var(--shell-sidebar-width);
 }
 
 [data-product-shell].sim-product-shell [data-sidebar-nav] {
