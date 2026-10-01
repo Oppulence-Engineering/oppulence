@@ -6,7 +6,24 @@ import {
 import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
 import type { OpenPromisesReport, RevenueLeakScan } from "@/lib/revenue/types";
 
-const REPORT_SCAN_LIST_PATH = "/revenue-leak-scans?limit=10";
+/** One page of audit history. The next page uses the same size as an offset. */
+export const AUDIT_HISTORY_PAGE = 10;
+
+function auditHistoryPath(offset: number): string {
+  const params = new URLSearchParams({ limit: String(AUDIT_HISTORY_PAGE) });
+  if (offset > 0) params.set("offset", String(offset));
+  return `/revenue-leak-scans?${params.toString()}`;
+}
+
+/** A full page may have another page behind it. A short page is the end. */
+export function auditHistoryHasMore(
+  pageLength: number,
+  earlierLength: number,
+  exhausted: boolean,
+): boolean {
+  const loaded = pageLength + earlierLength;
+  return !exhausted && pageLength > 0 && loaded > 0 && loaded % AUDIT_HISTORY_PAGE === 0;
+}
 
 function reportScanPath(scanId: string): string {
   return `/revenue-leak-scans/${encodeURIComponent(scanId)}`;
@@ -19,9 +36,10 @@ function reportDocumentPath(scanId: string): string {
 export async function loadReportScans(
   request: RequestJsonFn,
   signal?: AbortSignal,
+  offset = 0,
 ): Promise<RevenueLeakScan[]> {
   const body = await request({
-    path: REPORT_SCAN_LIST_PATH,
+    path: auditHistoryPath(offset),
     schema: ListRevenueLeakScans200Response,
     signal,
   });
@@ -56,8 +74,11 @@ export async function loadOpenPromisesReport(
   } as OpenPromisesReport;
 }
 
-export function fetchReportScans(signal?: AbortSignal): Promise<RevenueLeakScan[]> {
-  return loadReportScans(requestJson, signal);
+export function fetchReportScans(
+  signal?: AbortSignal,
+  offset = 0,
+): Promise<RevenueLeakScan[]> {
+  return loadReportScans(requestJson, signal, offset);
 }
 
 export function fetchReportScan(scanId: string, signal?: AbortSignal): Promise<RevenueLeakScan> {

@@ -33,6 +33,10 @@ export function ScansView({
   scanning,
   needsReconnect = false,
   needsConnect = false,
+  hasMoreAudits = false,
+  loadingEarlierAudits = false,
+  earlierAuditsError = null,
+  onLoadEarlierAudits,
   onScan,
 }: {
   scans: RevenueLeakScan[];
@@ -42,6 +46,11 @@ export function ScansView({
   needsReconnect?: boolean;
   /** No mailbox is connected, so `onScan` opens connections instead of a scan. */
   needsConnect?: boolean;
+  /** The history request stopped at a full page. Older audits are still stored. */
+  hasMoreAudits?: boolean;
+  loadingEarlierAudits?: boolean;
+  earlierAuditsError?: string | null;
+  onLoadEarlierAudits?: () => void;
   onScan: () => void;
 }) {
   const rows = React.useMemo(() => {
@@ -133,6 +142,22 @@ export function ScansView({
               ))}
             </TableBody>
           </Table>
+          {hasMoreAudits ? (
+            <div className="border-t border-border px-3 py-3">
+              <Button
+                disabled={loadingEarlierAudits || !onLoadEarlierAudits}
+                onClick={onLoadEarlierAudits}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {loadingEarlierAudits ? "Loading…" : "Show earlier audits"}
+              </Button>
+              {earlierAuditsError ? (
+                <p className="mt-2 text-[13px] text-destructive">{earlierAuditsError}</p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       )}
     </div>

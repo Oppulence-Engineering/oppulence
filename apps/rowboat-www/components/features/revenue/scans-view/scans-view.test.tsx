@@ -20,6 +20,8 @@ describe("ScansView", () => {
     expect(source).toContain("Nothing is sent without approval");
     expect(source).toContain("auditFailureCopy(scan.error)");
     expect(source).not.toContain("{scan.error}");
+    expect(source).toContain("Show earlier audits");
+    expect(source).toContain("earlierAuditsError");
     expect(source).not.toContain("Promise Leak Audit explained");
     expect(source).not.toContain("How evidence becomes commitments");
   });

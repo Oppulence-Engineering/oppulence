@@ -103,6 +103,12 @@ function ReportBody() {
   const health = relationshipSourceHealth(sourcesQuery.data ?? []);
 
   const scansQuery = useReportScanList();
+  const {
+    earlierAuditsError,
+    hasMoreAudits,
+    loadEarlierAudits,
+    loadingEarlierAudits,
+  } = scansQuery;
   const effectiveScanId = scanId ?? latestCompletedScan(scansQuery.data ?? [])?.id ?? null;
 
   const scanQuery = useReportScan(effectiveScanId, {
@@ -218,25 +224,43 @@ function ReportBody() {
       </header>
 
       {(scansQuery.data?.length ?? 0) > 1 ? (
-        <Label className="flex items-center gap-3 text-xs text-primary/55">
-          Audit
-          <select
-            className="h-8 min-w-56 border border-border bg-background px-2 text-xs text-primary"
-            onChange={(event) => {
-              setScanId(event.target.value || null);
-            }}
-            value={effectiveScanId ?? ""}
-          >
-            {scansQuery.data?.map((scan) => (
-              <option key={scan.id} value={scan.id}>
-                {auditHistoryLabel(scan.status)} ·{" "}
-                {scan.completedAt || scan.startedAt
-                  ? new Date(scan.completedAt ?? scan.startedAt ?? "").toLocaleDateString()
-                  : scan.id}
-              </option>
-            ))}
-          </select>
-        </Label>
+        <div className="flex flex-col gap-2">
+          <Label className="flex items-center gap-3 text-xs text-primary/55">
+            Audit
+            <select
+              className="h-8 min-w-56 border border-border bg-background px-2 text-xs text-primary"
+              onChange={(event) => {
+                setScanId(event.target.value || null);
+              }}
+              value={effectiveScanId ?? ""}
+            >
+              {scansQuery.data?.map((scan) => (
+                <option key={scan.id} value={scan.id}>
+                  {auditHistoryLabel(scan.status)} ·{" "}
+                  {scan.completedAt || scan.startedAt
+                    ? new Date(scan.completedAt ?? scan.startedAt ?? "").toLocaleDateString()
+                    : scan.id}
+                </option>
+              ))}
+            </select>
+          </Label>
+          {hasMoreAudits ? (
+            <Button
+              disabled={loadingEarlierAudits}
+              onClick={() => {
+                void loadEarlierAudits();
+              }}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {loadingEarlierAudits ? "Loading…" : "Show earlier audits"}
+            </Button>
+          ) : null}
+          {earlierAuditsError ? (
+            <p className="text-[13px] text-destructive">{earlierAuditsError}</p>
+          ) : null}
+        </div>
       ) : null}
 
       {error ? (

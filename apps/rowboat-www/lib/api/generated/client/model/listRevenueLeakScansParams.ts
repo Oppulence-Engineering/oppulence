@@ -13,4 +13,9 @@ export type ListRevenueLeakScansParams = {
    * @maximum 100
    */
   limit?: number;
+  /**
+   * Page offset.
+   * @minimum 0
+   */
+  offset?: number;
 };

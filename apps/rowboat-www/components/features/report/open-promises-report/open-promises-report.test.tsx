@@ -42,6 +42,8 @@ describe("OpenPromisesReportClient", () => {
 
   it("names a past audit in the picker", () => {
     expect(source).toContain("auditHistoryLabel(scan.status)");
+    expect(source).toContain("Show earlier audits");
+    expect(source).toContain("earlierAuditsError");
     expect(source).not.toContain('scan.status === "completed" ? "Completed" : scan.status');
   });
 

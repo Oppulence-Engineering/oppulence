@@ -2247,6 +2247,8 @@ export const GetRevenueImpact401Response = zod
  */
 export const listRevenueLeakScansQueryLimitMax = 100;
 
+export const listRevenueLeakScansQueryOffsetMin = 0;
+
 export const ListRevenueLeakScansQueryParams = zod.object({
   limit: zod.coerce
     .number()
@@ -2255,6 +2257,12 @@ export const ListRevenueLeakScansQueryParams = zod.object({
     .max(listRevenueLeakScansQueryLimitMax)
     .optional()
     .describe("Maximum scans to return (default 10, max 100)."),
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(listRevenueLeakScansQueryOffsetMin)
+    .optional()
+    .describe("Page offset."),
 });
 
 export const ListRevenueLeakScans200Response = zod

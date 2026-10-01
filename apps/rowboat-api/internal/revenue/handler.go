@@ -1534,7 +1534,18 @@ func (h *Handler) ListScans(w http.ResponseWriter, r *http.Request) {
 		}
 		limit = value
 	}
-	scans, err := h.svc.ListScans(r.Context(), u, limit)
+	offset := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		if value > 0 {
+			offset = value
+		}
+	}
+	scans, err := h.svc.ListScans(r.Context(), u, limit, offset)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return

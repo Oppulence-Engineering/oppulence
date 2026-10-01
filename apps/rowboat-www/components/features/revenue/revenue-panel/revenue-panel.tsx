@@ -236,8 +236,12 @@ export function RevenuePanel({
 
   React.useEffect(() => {
     if (!scanListQuery.data) return;
-    setScans(scanListQuery.data);
-  }, [scanListQuery.data]);
+    setScans(() => {
+      const scansById = new Map(scanListQuery.data.map((scan) => [scan.id, scan]));
+      if (activeScan) scansById.set(activeScan.id, activeScan);
+      return [...scansById.values()];
+    });
+  }, [activeScan, scanListQuery.data]);
 
   // Reconcile query data into the existing panel state while this feature is
   // incrementally migrated from local state to query-owned server state.
@@ -462,6 +466,12 @@ export function RevenuePanel({
             scanning={scanning}
             needsConnect={connectBeforeAudit}
             needsReconnect={reconnectBeforeAudit}
+            hasMoreAudits={scanListQuery.hasMoreAudits}
+            loadingEarlierAudits={scanListQuery.loadingEarlierAudits}
+            earlierAuditsError={scanListQuery.earlierAuditsError}
+            onLoadEarlierAudits={() => {
+              void scanListQuery.loadEarlierAudits();
+            }}
             onScan={runScan}
           />
         ) : (
