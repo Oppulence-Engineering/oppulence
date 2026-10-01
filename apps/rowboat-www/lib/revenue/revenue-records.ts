@@ -105,6 +105,34 @@ export function localCalendarDay(instant: string | Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+/** A task is a follow-up stored for the Tasks page, not a recovery draft. */
+export function isWorkspaceTask(action: { actionType?: string; channel?: string }): boolean {
+  return action.actionType === "follow_up_task" && action.channel === "task";
+}
+
+/**
+ * Home's recovery number is open actions that are not tasks. Zero open actions
+ * needs no split. Until the action list arrives, the number stays unset so a
+ * task is not briefly counted as recovery.
+ */
+export function recoveryPulseCount(
+  openTotal: number | undefined,
+  actions: readonly { actionType?: string; channel?: string }[] | undefined,
+  actionsFailed = false,
+): number | null {
+  if (openTotal == null) return null;
+  if (openTotal === 0 || actionsFailed) return openTotal;
+  if (!actions) return null;
+  const tasks = actions.filter(isWorkspaceTask).length;
+  return Math.max(0, openTotal - tasks);
+}
+
+export function recoveryQueueActions<T extends { actionType?: string; channel?: string }>(
+  actions: readonly T[],
+): T[] {
+  return actions.filter((action) => !isWorkspaceTask(action));
+}
+
 export function taskIsDueToday(dueAt: string | null | undefined, today: string): boolean {
   if (!dueAt) return false;
   const day = localCalendarDay(dueAt);

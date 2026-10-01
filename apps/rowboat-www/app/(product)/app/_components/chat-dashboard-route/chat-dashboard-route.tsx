@@ -5,6 +5,7 @@ import "client-only";
 import dynamic from "next/dynamic";
 import { type ComponentPropsWithoutRef } from "react";
 import { useImpact } from "@/hooks/queries/use-impact";
+import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
 import { z } from "zod";
 import { FloppyDisk, LockSimple } from "@/lib/icons";
 
@@ -38,6 +39,7 @@ import {
 import type { AgentHistoryItem } from "@/lib/agents/agent-history";
 import { agentToolLabel } from "@/lib/agents/agent-tools";
 import { requestDueCommitments } from "@/lib/dashboard/commitment-due-request";
+import { recoveryPulseCount } from "@/lib/revenue/revenue-records";
 import type { RevenueTab } from "@/lib/dashboard/product-navigation";
 import type { RevenueImpact } from "@/lib/revenue/types";
 
@@ -116,8 +118,14 @@ function renderToolOutput(value: unknown): string {
 
 function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
   const impactQuery = useImpact();
+  const openActionsQuery = useRevenueActions("open");
   const impact = impactQuery.data ?? null;
   const failed = impactQuery.isError;
+  const recovery = recoveryPulseCount(
+    impact?.open,
+    openActionsQuery.isSuccess ? openActionsQuery.data : undefined,
+    openActionsQuery.isError,
+  );
 
   return (
     <footer
@@ -141,7 +149,17 @@ function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
             type="button"
           >
             <span className="font-mono tabular-nums text-[var(--text-secondary)]">
-              {impact ? (
+              {stat.label === "recovery" ? (
+                recovery == null ? (
+                  failed ? (
+                    "—"
+                  ) : (
+                    <Skeleton className="inline-block h-3 w-4" />
+                  )
+                ) : (
+                  recovery
+                )
+              ) : impact ? (
                 stat.read(impact)
               ) : failed ? (
                 "—"

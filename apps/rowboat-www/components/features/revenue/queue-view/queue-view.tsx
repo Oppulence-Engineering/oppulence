@@ -70,6 +70,7 @@ import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
 import { ReviewSheet } from "@/components/features/revenue/review-sheet/review-sheet";
 import { AuditSheet } from "@/components/features/revenue/audit-sheet/audit-sheet";
+import { recoveryQueueActions } from "@/lib/revenue/revenue-records";
 import type { RevenueAction, RevenueRelationship, RevenueWorkspace } from "@/lib/revenue/types";
 
 /**
@@ -151,7 +152,7 @@ export function QueueView({
   const queryClient = useQueryClient();
   const actionsQueryKey = revenueActionKeys.list(filter, 50);
   const actionsQuery = useRevenueActions(filter);
-  const actions = actionsQuery.data ?? [];
+  const actions = recoveryQueueActions(actionsQuery.data ?? []);
 
   React.useEffect(() => {
     if (actionsQuery.error) {

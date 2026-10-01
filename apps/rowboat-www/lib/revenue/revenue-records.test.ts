@@ -3,9 +3,12 @@ import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 import {
+  isWorkspaceTask,
   localCalendarDay,
   mapSettledWithConcurrency,
   promiseDueLabel,
+  recoveryPulseCount,
+  recoveryQueueActions,
   taskIsDueToday,
 } from "@/lib/revenue/revenue-records";
 
@@ -58,6 +61,18 @@ describe("local due dates", () => {
   it("keeps a task saved for 5pm local on that calendar day", () => {
     const picked = "2026-10-01";
     const stored = new Date(`${picked}T17:00:00`).toISOString();
+    expect(isWorkspaceTask({ actionType: "follow_up_task", channel: "task" })).toBe(true);
+    expect(isWorkspaceTask({ actionType: "warm_follow_up", channel: "email" })).toBe(false);
+    expect(isWorkspaceTask({ actionType: "follow_up_task", channel: "email" })).toBe(false);
+    const task = { actionType: "follow_up_task", channel: "task", reason: "Call the harbor" };
+    const draft = { actionType: "warm_follow_up", channel: "email", reason: "Send the note" };
+    expect(recoveryQueueActions([task, draft])).toEqual([draft]);
+    expect(recoveryPulseCount(undefined, [])).toBeNull();
+    expect(recoveryPulseCount(0, undefined)).toBe(0);
+    expect(recoveryPulseCount(1, undefined)).toBeNull();
+    expect(recoveryPulseCount(1, [task])).toBe(0);
+    expect(recoveryPulseCount(2, [task, draft])).toBe(1);
+    expect(recoveryPulseCount(1, undefined, true)).toBe(1);
     expect(taskIsDueToday(stored, picked)).toBe(true);
     expect(taskIsDueToday(undefined, picked)).toBe(false);
     expect(taskIsDueToday("not-a-date", picked)).toBe(false);

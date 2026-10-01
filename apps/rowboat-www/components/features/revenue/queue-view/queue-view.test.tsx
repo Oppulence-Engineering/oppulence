@@ -17,6 +17,7 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "queue-view.tsx"),
 describe("QueueView", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function QueueView");
+    expect(source).toContain("recoveryQueueActions(actionsQuery.data ?? [])");
     expect(source).not.toContain("ListFilter");
     expect(recoveryFilterName("open")).toBe("Recovery, Open");
     expect(recoveryFilterName("snoozed")).toBe("Recovery, Snoozed");

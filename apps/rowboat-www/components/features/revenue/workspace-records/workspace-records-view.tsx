@@ -100,6 +100,7 @@ import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { noteIdFromHash, workspaceNoteHref } from "@/lib/revenue/note-link";
 import {
   groupWorkspaceNotes,
+  isWorkspaceTask,
   plateText,
   taskIsDueToday,
   type WorkspaceNote,
@@ -1815,9 +1816,7 @@ export function TasksView({
   const [busy, setBusy] = React.useState<string | null>(null);
   const [now] = React.useState(() => Date.now());
   const tasks = sortTasksByDue(
-    (actionsQuery.data ?? []).filter(
-      (action) => action.actionType === "follow_up_task" && action.channel === "task",
-    ),
+    (actionsQuery.data ?? []).filter(isWorkspaceTask),
     soonestFirst,
   );
   const relationships = (relationshipsQuery.data ?? []).filter(
