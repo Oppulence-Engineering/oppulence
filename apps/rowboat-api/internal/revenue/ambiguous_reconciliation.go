@@ -103,7 +103,7 @@ func (s *Service) ReconcileAmbiguousAction(ctx context.Context, u *ent.User, id 
 	if manual {
 		status = "manual_review"
 		if errorMessage == "" {
-			errorMessage = "provider marker was not found after bounded reconciliation attempts"
+			errorMessage = "The provider could not confirm this send."
 		}
 	}
 	update := s.client.RevenueAction.Update().

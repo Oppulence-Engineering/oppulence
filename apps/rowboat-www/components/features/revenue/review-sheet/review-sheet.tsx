@@ -59,6 +59,35 @@ import {
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
 import type { RevenueAction, RevenueWorkspace } from "@/lib/revenue/types";
 
+/** An uncertain send stores a reconciliation token. The review says where that check stands. */
+export function reconciliationStatusLabel(status: string | null | undefined): string {
+  switch (status) {
+    case "found":
+      return "The provider confirmed this send.";
+    case "not_found":
+      return "The provider has no record of this send.";
+    case "error":
+      return "The provider check failed.";
+    case "manual_review":
+      return "This needs a person to check it.";
+    default:
+      return "Still checking with the provider.";
+  }
+}
+
+/** The bounded-retry sentence is the same fact as "needs a person". Hide that duplicate. */
+export function reconciliationErrorCopy(error: string | null | undefined): string {
+  const raw = (error ?? "").trim();
+  if (
+    !raw ||
+    raw === "provider marker was not found after bounded reconciliation attempts" ||
+    raw === "The provider could not confirm this send."
+  ) {
+    return "";
+  }
+  return raw;
+}
+
 function governedSourceLine(action: RevenueAction) {
   const evidence = action.evidence[0];
   if (!evidence) {
@@ -305,14 +334,13 @@ export function ReviewSheet({
               <ClockCounterClockwise weight="fill" />
               <AlertTitle>Provider result uncertain — do not retry</AlertTitle>
               <AlertDescription>
-                Oppulence is reconciling this write with read-only provider checks. Status:{" "}
-                {action.reconciliationStatus || "pending"}
+                {reconciliationStatusLabel(action.reconciliationStatus)}
                 {action.reconciliationAttempts
-                  ? ` after ${action.reconciliationAttempts} attempt${action.reconciliationAttempts === 1 ? "" : "s"}`
+                  ? ` Checked ${action.reconciliationAttempts} time${action.reconciliationAttempts === 1 ? "" : "s"}.`
                   : ""}
-                .{" "}
-                {action.reconciliationError ||
-                  "The item will move to manual review if the provider cannot confirm it."}
+                {reconciliationErrorCopy(action.reconciliationError)
+                  ? ` ${reconciliationErrorCopy(action.reconciliationError)}`
+                  : ""}
               </AlertDescription>
             </Alert>
           ) : null}
