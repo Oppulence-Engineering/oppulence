@@ -127,6 +127,7 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain("workflowName={taskTitle(task)}");
     expect(source).toContain('friendlyAgentError(message, "run")');
     expect(source.match(/setError\(shownWorkflowError\(cause,/g)).toHaveLength(8);
+    expect(source).toContain("friendlyAgentError(queryCause.message)");
     expect(source).toContain("cause instanceof Error ? cause.message : fallback");
   });
 

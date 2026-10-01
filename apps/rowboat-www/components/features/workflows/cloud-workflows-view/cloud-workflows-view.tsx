@@ -1473,7 +1473,7 @@ export function CloudWorkflowsView({
   const queryCause = tasksQuery.error ?? templatesQuery.error ?? runsQuery.error;
   const queryError =
     queryCause instanceof Error
-      ? queryCause.message
+      ? friendlyAgentError(queryCause.message)
       : queryCause
         ? "Could not load workflows"
         : null;
