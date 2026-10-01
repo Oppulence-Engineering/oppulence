@@ -32,6 +32,9 @@ import {
   governanceDisclosureLabel,
   governanceDeletionLabel,
   governanceExcerptLabel,
+  mailReplyLabel,
+  recoveryClassificationLabel,
+  recoveryExplanationCopy,
   evidencePublicationLabel,
   externalPlanShareLabel,
   conversationDeletionAvailable,
@@ -340,6 +343,27 @@ describe("RelationshipsView", () => {
       "Scheduled to be deleted after transcription",
     );
     expect(governanceExcerptLabel("not_retained")).toBe("No audio was kept");
+    expect(mailReplyLabel("needs_reply")).toBe("Needs a reply");
+    expect(mailReplyLabel("awaiting_reply")).toBe("Waiting on them");
+    expect(mailReplyLabel("quiet")).toBe("Quiet");
+    expect(recoveryClassificationLabel("unknown_stale_sources")).toBe("A source is out of date");
+    expect(recoveryClassificationLabel("forgotten")).toBe("This promise looks forgotten");
+    expect(
+      recoveryExplanationCopy(
+        "forgotten",
+        "Fresh evidence suggests forgotten; human review is required.",
+      ),
+    ).toBe("This promise looks forgotten. Review it before acting.");
+    expect(
+      recoveryExplanationCopy(
+        "unknown_stale_sources",
+        "Evidence is incomplete; stale sources: gmail.",
+      ),
+    ).toBe("A connected source is out of date, so this promise cannot be checked yet.");
+    expect(source).toContain("mailReplyLabel(thread.replyState)");
+    expect(source).toContain("recoveryClassificationLabel(evaluation.classification)");
+    expect(source).not.toContain("humanize(thread.replyState)");
+    expect(source).not.toContain("humanize(evaluation.classification)");
     expect(source).toContain("governancePlaceLabel(receipt.region)");
     expect(source).toContain("governanceRetentionLabel(receipt.retention)");
     expect(source).not.toContain("{receipt.region}");

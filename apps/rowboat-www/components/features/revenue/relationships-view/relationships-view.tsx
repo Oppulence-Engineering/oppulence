@@ -1716,6 +1716,59 @@ function governanceFallback(value: string): string {
   return humanize(split);
 }
 
+/** A Gmail thread stores who spoke last. The company sheet says what that means. */
+export function mailReplyLabel(state: string): string {
+  switch (state) {
+    case "needs_reply":
+      return "Needs a reply";
+    case "awaiting_reply":
+      return "Waiting on them";
+    case "quiet":
+      return "Quiet";
+    default:
+      return humanize(state);
+  }
+}
+
+/**
+ * Reconcile stores a classification token. The promise list names the
+ * situation, and an older explanation that repeated the token is rewritten.
+ */
+export function recoveryClassificationLabel(classification: string): string {
+  switch (classification) {
+    case "forgotten":
+      return "This promise looks forgotten";
+    case "unknown_stale_sources":
+      return "A source is out of date";
+    case "fulfilled":
+      return "The promise looks met";
+    case "likely_fulfilled":
+      return "The promise may already be met";
+    case "superseded":
+      return "Replaced by a later promise";
+    case "renegotiated":
+      return "The promise was renegotiated";
+    case "blocked":
+      return "The promise is blocked";
+    default:
+      return humanize(classification);
+  }
+}
+
+export function recoveryExplanationCopy(classification: string, explanation: string): string {
+  const raw = explanation.trim();
+  if (/unknown_stale_sources|stale sources:/i.test(raw)) {
+    return "A connected source is out of date, so this promise cannot be checked yet.";
+  }
+  const suggested = /^Fresh evidence suggests ([a-z0-9_]+); human review is required\.$/.exec(raw);
+  if (suggested) return `${recoveryClassificationLabel(suggested[1] ?? classification)}. Review it before acting.`;
+  if (raw === "Fresh explicit source evidence proves fulfillment.") {
+    return "A newer source shows this promise was met.";
+  }
+  if (!raw || raw.includes(classification)) return recoveryClassificationLabel(classification);
+  return raw;
+}
+
 /** A meeting receipt stores how the conversation was captured. */
 export function governanceCaptureLabel(capture: string): string {
   switch (capture) {
@@ -2701,8 +2754,8 @@ export function RelationshipSheet({
                             </p>
                           </div>
                           <div className="shrink-0 text-right">
-                            <p className="text-[11px] capitalize text-primary/55">
-                              {humanize(thread.replyState)}
+                            <p className="text-[11px] text-primary/55">
+                              {mailReplyLabel(thread.replyState)}
                             </p>
                             <p className="mt-1 text-[11px] text-primary/35">
                               {thread.lastActivityAt
@@ -2928,10 +2981,12 @@ export function RelationshipSheet({
                           key={evaluation.evaluationId}
                           className="border border-border p-3 text-xs"
                         >
-                          <p className="font-medium capitalize text-primary">
-                            {humanize(evaluation.classification)}
+                          <p className="font-medium text-primary">
+                            {recoveryClassificationLabel(evaluation.classification)}
                           </p>
-                          <p className="mt-1 text-primary/60">{evaluation.explanation}</p>
+                          <p className="mt-1 text-primary/60">
+                            {recoveryExplanationCopy(evaluation.classification, evaluation.explanation)}
+                          </p>
                         </li>
                       ))}
                     </ul>

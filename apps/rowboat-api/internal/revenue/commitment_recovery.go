@@ -140,6 +140,30 @@ func recoverySourceFreshness(
 	return float64(fresh) / float64(len(statuses)), stale, nil
 }
 
+// recoveryExplanation is what a person reads. The stored classification stays
+// a token; the sentence must not repeat it.
+func recoveryExplanation(classification string, stale []string) string {
+	if len(stale) > 0 {
+		return "A connected source is out of date, so this promise cannot be checked yet."
+	}
+	switch classification {
+	case "fulfilled":
+		return "A newer source shows this promise was met."
+	case "likely_fulfilled":
+		return "A newer source suggests this promise was met. Review it before closing it."
+	case "forgotten":
+		return "This promise is past due and nothing newer has closed it."
+	case "superseded":
+		return "A later promise replaced this one."
+	case "renegotiated":
+		return "This promise was renegotiated. Review the new terms."
+	case "blocked":
+		return "This promise is blocked. Review it before acting."
+	default:
+		return "Review this promise before acting on it."
+	}
+}
+
 func classifyRecovery(
 	row *ent.Commitment,
 	evidence []CommitmentRecoveryEvidence,
@@ -341,14 +365,7 @@ func (s *Service) ReconcileDueCommitments(
 			EvidenceRefs: refs, StaleSources: append([]string(nil), staleSources...),
 			RequiresReview: review, ProposedActionType: actionType, EvaluatedAt: now.Format(time.RFC3339),
 		}
-		switch {
-		case len(staleSources) > 0:
-			evaluation.Explanation = "Evidence is incomplete; stale sources: " + strings.Join(staleSources, ", ") + "."
-		case classification == "fulfilled":
-			evaluation.Explanation = "Fresh explicit source evidence proves fulfillment."
-		default:
-			evaluation.Explanation = "Fresh evidence suggests " + classification + "; human review is required."
-		}
+		evaluation.Explanation = recoveryExplanation(classification, staleSources)
 		if _, err := appendConversationArtifact(ctx, s.client, ws, u, rel, conversationArtifactInput{
 			Kind: "recovery_evaluation", StableID: evaluation.EvaluationID, Status: classification,
 			SubjectRef: row.ID.String(), EffectiveAt: now, EvidenceRefs: refs, Payload: evaluation,

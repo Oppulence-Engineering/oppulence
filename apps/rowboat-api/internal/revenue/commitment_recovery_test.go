@@ -1,6 +1,7 @@
 package revenue
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -9,6 +10,25 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 )
+
+func TestRecoveryExplanationOmitsTheStoredToken(t *testing.T) {
+	for _, classification := range []string{
+		"forgotten", "unknown_stale_sources", "fulfilled", "likely_fulfilled",
+		"superseded", "renegotiated", "blocked",
+	} {
+		got := recoveryExplanation(classification, nil)
+		if strings.Contains(got, "_") {
+			t.Fatalf("%s explanation %q still has a stored token", classification, got)
+		}
+		if strings.Contains(classification, "_") && strings.Contains(got, classification) {
+			t.Fatalf("%s explanation %q still names the token", classification, got)
+		}
+	}
+	stale := recoveryExplanation("unknown_stale_sources", []string{"gmail"})
+	if strings.Contains(stale, "unknown_stale_sources") || strings.Contains(stale, "gmail") {
+		t.Fatalf("stale explanation %q", stale)
+	}
+}
 
 func recoveryCommitment(t *testing.T, f *fixture, now time.Time) (*ent.Relationship, *ent.Commitment) {
 	t.Helper()
