@@ -638,6 +638,43 @@ func TestCorporateDomainDoesNotCollapsePersonRelationships(t *testing.T) {
 	}
 }
 
+func TestPersonAtCompanyDomainIsNotAnIdentityCollision(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Acme", AccountDomain: "acme.example",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	person, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "person", DisplayName: "Avery", PrimaryEmail: "avery@acme.example", AccountDomain: "acme.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	if _, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		RelationshipID: person.ID,
+		DisplayName:    "Avery",
+		PrimaryEmail:   "avery@acme.example",
+		AccountDomain:  "acme.example",
+		Source:         "user",
+		ExternalID:     "person-added-avery",
+		EventType:      "person_added",
+		Summary:        "Avery added by the user",
+		OccurredAt:     now,
+		ReceivedAt:     now,
+		Participants: []RelationshipParticipantInput{{
+			DisplayName: "Avery", Email: "avery@acme.example", Role: "contact",
+		}},
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	count, err := f.client.RelationshipIdentityCandidate.Query().Count(f.ctx)
+	if err != nil || count != 0 {
+		t.Fatalf("a person at a company domain is not a duplicate company: count=%d err=%v", count, err)
+	}
+}
+
 func TestResourceRefLimitCountsUniqueAliases(t *testing.T) {
 	duplicates := make([]string, 51)
 	for i := range duplicates {

@@ -1035,6 +1035,12 @@ func classifyRelationshipIdentitySignals(
 	safe := make([]relationshipIdentitySignal, 0, len(signals))
 	conflicts := make([]relationshipIdentityConflict, 0)
 	for _, signal := range dedupeRelationshipIdentitySignals(signals) {
+		// A corporate domain belongs to the company. Re-reading it off a person
+		// who works there is not a second claim on the account, and treating it
+		// as one parked the company in identity review.
+		if proposed.Kind != "company" && signal.Kind == "domain" {
+			continue
+		}
 		identity, err := client.RelationshipIdentity.Query().Where(
 			relationshipidentity.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
 			relationshipidentity.KeyHashEQ(signal.KeyHash),
@@ -1126,8 +1132,14 @@ func observationIdentitySignals(input RelationshipObservationInput, refs []strin
 }
 
 func relationshipIdentitySignals(rel *ent.Relationship) []relationshipIdentitySignal {
+	domain := rel.AccountDomain
+	if rel.Kind != "company" {
+		// The stored host is how we remember where a person works. It is not an
+		// anchor this person owns, so it must not be offered back as one.
+		domain = ""
+	}
 	return observationIdentitySignals(RelationshipObservationInput{
-		PrimaryEmail: rel.PrimaryEmail, AccountDomain: rel.AccountDomain,
+		PrimaryEmail: rel.PrimaryEmail, AccountDomain: domain,
 	}, rel.ResourceRefs)
 }
 
