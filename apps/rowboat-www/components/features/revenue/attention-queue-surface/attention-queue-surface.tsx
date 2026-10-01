@@ -48,6 +48,23 @@ export function companyCountLabel(count: number): string {
   return count === 1 ? "1 company" : `${count} companies`;
 }
 
+/** The first screen of the queue. The rest stay one click away. */
+export const ATTENTION_QUEUE_PAGE = 10;
+
+/**
+ * The header names every company in the band. When the table is still on its
+ * first screen, the count says so instead of implying those rows are all here.
+ */
+export function attentionQueueCountLabel(shown: number, total: number): string {
+  if (shown < total) return `${shown} of ${companyCountLabel(total)}`;
+  return companyCountLabel(total);
+}
+
+/** The companies past the first screen, in the same words as the header. */
+export function attentionQueueRemainderLabel(hidden: number): string {
+  return hidden === 1 ? "Show the other 1 company" : `Show the other ${hidden} companies`;
+}
+
 export function filterAttentionItems(
   items: readonly RelationshipAttentionItem[],
   band: AttentionBand,
@@ -79,10 +96,13 @@ export function AttentionQueueSurface({
 }: AttentionQueueSurfaceProps) {
   const [busy, setBusy] = React.useState<string | null>(null);
   const [band, setBand] = React.useState<AttentionBand>("all");
+  const [showAll, setShowAll] = React.useState(false);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [dismissing, setDismissing] = React.useState(false);
   const [dismissReason, setDismissReason] = React.useState("Not relevant right now");
   const visible = filterAttentionItems(items, band);
+  const shown = showAll ? visible : visible.slice(0, ATTENTION_QUEUE_PAGE);
+  const hidden = visible.length - shown.length;
   const selected = visible.find((item) => item.id === selectedId) ?? visible[0] ?? null;
 
   React.useEffect(() => {
@@ -152,7 +172,7 @@ export function AttentionQueueSurface({
               Attention queue
             </h2>
           }
-          actions={loading ? "Loading…" : companyCountLabel(visible.length)}
+          actions={loading ? "Loading…" : attentionQueueCountLabel(shown.length, visible.length)}
         />
         <SimProductToolbar>
           <select
@@ -209,7 +229,7 @@ export function AttentionQueueSurface({
                   </td>
                 </tr>
               ) : (
-                visible.slice(0, 10).map((item) => {
+                shown.map((item) => {
                   const health = healthBadge(item);
                   const isSelected = selected?.id === item.id;
                   return (
@@ -258,6 +278,14 @@ export function AttentionQueueSurface({
             </tbody>
           </table>
         </div>
+
+        {hidden > 0 ? (
+          <div className="border-[var(--border)] border-t px-3 py-2">
+            <Button onClick={() => setShowAll(true)} size="sm" type="button" variant="outline">
+              {attentionQueueRemainderLabel(hidden)}
+            </Button>
+          </div>
+        ) : null}
 
         {selected && !loading ? (
           <div className="border-[var(--border)] border-t px-3 py-2">

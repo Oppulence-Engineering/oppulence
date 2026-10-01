@@ -18,6 +18,8 @@ vi.mock("@/lib/revenue/revenue", () => ({
 import {
   AttentionQueueSurface,
   attentionBand,
+  attentionQueueCountLabel,
+  attentionQueueRemainderLabel,
   filterAttentionItems,
 } from "./attention-queue-surface";
 import type { RelationshipAttentionItem } from "@/lib/revenue/types";
@@ -143,6 +145,29 @@ describe("AttentionQueueSurface", () => {
     ).toHaveTextContent("within 7 days.");
   });
 
+  it("keeps companies past the first screen one click away", async () => {
+    const user = userEvent.setup();
+    const names = Array.from({ length: 11 }, (_, index) => `Queue Co ${index + 1}`);
+    render(
+      <AttentionQueueSurface
+        items={names.map((name, index) =>
+          item(`attn-${index + 1}`, name, "high", `Reason for ${name}`),
+        )}
+        onActionError={vi.fn()}
+        onChanged={vi.fn()}
+        onOpenRelationship={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("10 of 11 companies")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Queue Co 10" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Queue Co 11" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Show the other 1 company" }));
+    expect(screen.getByRole("button", { name: "Queue Co 11" })).toBeInTheDocument();
+    expect(screen.getByText("11 companies")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show the other 1 company" })).not.toBeInTheDocument();
+  });
+
   it("asks for a dismiss reason on the queue", async () => {
     const user = userEvent.setup();
     const prompt = vi.spyOn(window, "prompt");
@@ -200,6 +225,16 @@ function item(
     version: 1,
   };
 }
+
+describe("attention queue count", () => {
+  it("names a partial screen and the companies still hidden", () => {
+    expect(attentionQueueCountLabel(10, 11)).toBe("10 of 11 companies");
+    expect(attentionQueueCountLabel(11, 11)).toBe("11 companies");
+    expect(attentionQueueCountLabel(1, 1)).toBe("1 company");
+    expect(attentionQueueRemainderLabel(1)).toBe("Show the other 1 company");
+    expect(attentionQueueRemainderLabel(4)).toBe("Show the other 4 companies");
+  });
+});
 
 describe("attentionBand", () => {
   it("maps urgency onto the same bands the health badge shows", () => {
