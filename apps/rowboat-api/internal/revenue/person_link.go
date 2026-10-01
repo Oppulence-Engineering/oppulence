@@ -181,7 +181,14 @@ func attachAddedPersonToCompany(
 		if err := upsertRelationshipParticipant(ctx, client, ws, u, company, participant); err != nil {
 			return err
 		}
-		if _, err := linkParticipantPerson(ctx, client, ws, u, company, observation, input, participant); err != nil {
+		person, err := linkParticipantPerson(ctx, client, ws, u, company, observation, input, participant)
+		if err != nil {
+			return err
+		}
+		if person == nil {
+			continue
+		}
+		if err := refreshPersonInteractionRollup(ctx, client, person); err != nil {
 			return err
 		}
 	}

@@ -682,8 +682,8 @@ func TestPersonAtCompanyDomainIsNotAnIdentityCollision(t *testing.T) {
 		t.Fatalf("person should be listed on the company: %+v err=%v", company.Edges.Participants, err)
 	}
 	directory, err := f.client.Person.Query().Only(f.ctx)
-	if err != nil || directory.OrgName != "Acme" {
-		t.Fatalf("directory company = %q err=%v", directory.OrgName, err)
+	if err != nil || directory.OrgName != "Acme" || directory.RelationshipCount != 1 {
+		t.Fatalf("directory company = %q companies = %d err=%v", directory.OrgName, directory.RelationshipCount, err)
 	}
 }
 

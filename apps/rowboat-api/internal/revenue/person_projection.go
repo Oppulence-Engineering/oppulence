@@ -14,7 +14,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/google/uuid"
 )
 
 // Person enrichment projection.
@@ -460,7 +462,13 @@ func refreshPersonInteractionRollup(ctx context.Context, client *ent.Client, p *
 		return err
 	}
 	if len(stats) == 0 {
-		_, err = p.Update().ClearFirstInteractionAt().ClearLastInteractionAt().SetRelationshipCount(0).Save(ctx)
+		// No conversation yet. The Companies column still counts a company this
+		// person was added to, or a hand-added contact looks unaffiliated.
+		count, countErr := personCompanyMembershipCount(ctx, client, p)
+		if countErr != nil {
+			return countErr
+		}
+		_, err = p.Update().ClearFirstInteractionAt().ClearLastInteractionAt().SetRelationshipCount(count).Save(ctx)
 		return err
 	}
 	first, last := stats[0].FirstInteractionAt, stats[0].LastInteractionAt
@@ -478,6 +486,30 @@ func refreshPersonInteractionRollup(ctx context.Context, client *ent.Client, p *
 		SetRelationshipCount(len(stats)).
 		Save(ctx)
 	return err
+}
+
+// personCompanyMembershipCount is the number of companies this person is listed on.
+func personCompanyMembershipCount(ctx context.Context, client *ent.Client, p *ent.Person) (int, error) {
+	rows, err := client.RelationshipParticipant.Query().
+		Where(relationshipparticipant.HasPersonWith(person.IDEQ(p.ID))).
+		WithRelationship(func(q *ent.RelationshipQuery) {
+			q.Where(relationship.KindEQ("company"))
+		}).
+		All(ctx)
+	if err != nil {
+		return 0, err
+	}
+	companies := map[uuid.UUID]struct{}{}
+	for _, row := range rows {
+		rel, edgeErr := row.Edges.RelationshipOrErr()
+		if edgeErr != nil {
+			continue
+		}
+		if rel.Kind == "company" {
+			companies[rel.ID] = struct{}{}
+		}
+	}
+	return len(companies), nil
 }
 
 // channelForSource is the fallback when a caller does not state a channel.
