@@ -1594,12 +1594,21 @@ func (h *Handler) ListRelationships(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	rels, err := h.svc.ListRelationshipsFiltered(r.Context(), u, RelationshipListFilter{
+	filter := RelationshipListFilter{
 		Query:      r.URL.Query().Get("q"),
 		Lifecycle:  r.URL.Query().Get("lifecycle"),
 		Health:     r.URL.Query().Get("health"),
 		Engagement: r.URL.Query().Get("engagement"),
-	})
+	}
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		filter.Offset = n
+	}
+	rels, err := h.svc.ListRelationshipsFiltered(r.Context(), u, filter)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return

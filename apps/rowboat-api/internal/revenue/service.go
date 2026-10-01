@@ -693,9 +693,8 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 	return rel.Unwrap(), nil
 }
 
-// relationshipListLimit bounds the relationships listing (the queue, not the
-// CRM, is the product; a client that needs more should filter). Exposed so the
-// handler can document it.
+// relationshipListLimit is one page of the company directory. The next page
+// is the same filters with Offset set to how many rows are already on screen.
 const relationshipListLimit = 200
 
 // ListRelationships returns the workspace's relationships, newest touch first,
@@ -711,6 +710,7 @@ type RelationshipListFilter struct {
 	Lifecycle  string
 	Health     string
 	Engagement string
+	Offset     int
 }
 
 // ListRelationshipsFiltered returns account mission-control rows with
@@ -726,6 +726,9 @@ func (s *Service) ListRelationshipsFiltered(
 	}
 	if err := s.reopenDueSnoozes(ctx, ws.ID); err != nil {
 		return nil, err
+	}
+	if filter.Offset < 0 {
+		filter.Offset = 0
 	}
 	q := s.client.Relationship.Query().
 		Where(relationship.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)))
@@ -755,6 +758,7 @@ func (s *Service) ListRelationshipsFiltered(
 		WithCommitments().
 		Order(ent.Desc(relationship.FieldUpdatedAt)).
 		Limit(relationshipListLimit).
+		Offset(filter.Offset).
 		All(ctx)
 }
 

@@ -136,6 +136,7 @@ import {
   webAddressHref,
   interactionCountLabel,
   RevenueAPIError,
+  explainedRevenueError,
   relativeTime,
 } from "@/lib/revenue/revenue";
 import type {
@@ -165,6 +166,7 @@ import {
   useRelationshipSourceInventory,
   useRelationshipSourceStatuses,
 } from "@/hooks/queries/use-relationship-sources";
+import { fetchRelationships } from "@/hooks/queries/utils/fetch-relationships";
 import { relationshipKeys } from "@/hooks/queries/utils/relationship-keys";
 import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-source-keys";
 import { useQueryClient } from "@tanstack/react-query";
@@ -533,6 +535,17 @@ export function companyDirectoryTitle(input: {
   return { label: filtered ? "Filtered" : "All companies", filtered };
 }
 
+/** One directory request. The API refuses a larger page, so the rest is another offset. */
+export const COMPANY_DIRECTORY_PAGE = 200;
+
+export function companyDirectoryCount(shown: number, hasMore: boolean): string {
+  return hasMore ? `${shown}+` : String(shown);
+}
+
+export function companyDirectoryRemainderLabel(): string {
+  return "Show the next companies";
+}
+
 /**
  * A filtered directory can be empty because nothing matched. That is not the
  * same as a workspace that has never had a company.
@@ -545,8 +558,10 @@ export function companySheetPositionLabel(
   position: number,
   total: number,
   filtered: boolean,
+  hasMore = false,
 ): string {
-  return `${position} of ${total} in ${filtered ? "this filter" : "All companies"}`;
+  const count = hasMore ? `${total}+` : String(total);
+  return `${position} of ${count} in ${filtered ? "this filter" : "All companies"}`;
 }
 
 export function companyListEmptyCopy(input: {
@@ -609,13 +624,40 @@ export function RelationshipsView({
     lifecycle: lifecycle === "all" ? undefined : lifecycle,
   };
   const relationshipsQuery = useRelationships(filters);
+  const [extraCompanies, setExtraCompanies] = React.useState<RevenueRelationship[]>([]);
+  const [directoryExhausted, setDirectoryExhausted] = React.useState(false);
+  const [loadingMoreCompanies, setLoadingMoreCompanies] = React.useState(false);
+  const directoryScope = `${debouncedQuery}|${health}|${lifecycle}`;
+  const directoryScopeRef = React.useRef(directoryScope);
+  directoryScopeRef.current = directoryScope;
+  React.useEffect(() => {
+    setExtraCompanies([]);
+    setDirectoryExhausted(false);
+  }, [directoryScope]);
   const sourcesQuery = useRelationshipSourceStatuses();
   const inventoryQuery = useRelationshipSourceInventory();
   const pendingQuery = useIdentityCandidates("pending");
   const deferredQuery = useIdentityCandidates("deferred");
   const attentionQuery = useRelationshipAttention("open");
   const openActionsQuery = useRevenueActions("open", 100, "task");
-  const rows = relationshipsQuery.data ?? [];
+  const directoryPage = relationshipsQuery.data ?? [];
+  const directoryRows = React.useMemo(() => {
+    if (extraCompanies.length === 0) return directoryPage;
+    const seen = new Set(directoryPage.map((row) => row.id));
+    return [
+      ...directoryPage,
+      ...extraCompanies.filter((row) => {
+        if (seen.has(row.id)) return false;
+        seen.add(row.id);
+        return true;
+      }),
+    ];
+  }, [directoryPage, extraCompanies]);
+  const hasMoreCompanies =
+    !directoryExhausted &&
+    directoryPage.length > 0 &&
+    (directoryPage.length + extraCompanies.length) % COMPANY_DIRECTORY_PAGE === 0;
+  const rows = directoryRows;
   const sources = sourcesQuery.data ?? [];
   const sourceInventory = inventoryQuery.data ?? [];
   const identityCandidates = [...(pendingQuery.data ?? []), ...(deferredQuery.data ?? [])];
@@ -652,6 +694,32 @@ export function RelationshipsView({
     const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 180);
     return () => window.clearTimeout(timer);
   }, [query]);
+
+  const loadMoreCompanies = React.useCallback(async () => {
+    if (loadingMoreCompanies) return;
+    const requestedScope = directoryScope;
+    setLoadingMoreCompanies(true);
+    try {
+      const next = await fetchRelationships({
+        ...filters,
+        offset: directoryPage.length + extraCompanies.length,
+      });
+      if (directoryScopeRef.current !== requestedScope) return;
+      if (next.length < COMPANY_DIRECTORY_PAGE) setDirectoryExhausted(true);
+      setExtraCompanies((current) => [...current, ...next]);
+    } catch (reason) {
+      onError(explainedRevenueError(reason, "Could not load the next companies."));
+    } finally {
+      setLoadingMoreCompanies(false);
+    }
+  }, [
+    directoryPage.length,
+    directoryScope,
+    extraCompanies.length,
+    filters,
+    loadingMoreCompanies,
+    onError,
+  ]);
 
   React.useEffect(() => {
     if (new URLSearchParams(window.location.search).get("graph") !== "1") return;
@@ -726,7 +794,7 @@ export function RelationshipsView({
           >
             <Buildings /> {directoryTitle.label}{" "}
             <Badge className="font-normal text-primary/40" variant="secondary">
-              {companies.length}
+              {companyDirectoryCount(companies.length, hasMoreCompanies)}
             </Badge>
           </Button>
         ) : (
@@ -736,7 +804,7 @@ export function RelationshipsView({
           >
             <Buildings /> {directoryTitle.label}{" "}
             <Badge className="font-normal text-primary/40" variant="secondary">
-              {companies.length}
+              {companyDirectoryCount(companies.length, hasMoreCompanies)}
             </Badge>
           </Badge>
         )}
@@ -1179,6 +1247,18 @@ export function RelationshipsView({
                   ))}
                 </TableBody>
               </table>
+              {hasMoreCompanies ? (
+                <Button
+                  className="m-3"
+                  disabled={loadingMoreCompanies}
+                  onClick={() => void loadMoreCompanies()}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  {companyDirectoryRemainderLabel()}
+                </Button>
+              ) : null}
             </div>
           )}
         </>
@@ -1193,6 +1273,7 @@ export function RelationshipsView({
             companies.findIndex((relationship) => relationship.id === detail) + 1,
           )}
           filtered={directoryTitle.filtered}
+          hasMore={hasMoreCompanies}
           total={companies.length}
           onClose={closeDetail}
           onError={onError}
@@ -2497,6 +2578,7 @@ export function RelationshipSheet({
   position,
   total,
   filtered = false,
+  hasMore = false,
   onClose,
   onError,
   onChanged,
@@ -2506,6 +2588,7 @@ export function RelationshipSheet({
   position: number;
   total: number;
   filtered?: boolean;
+  hasMore?: boolean;
   onClose: () => void;
   onError: (m: string) => void;
   onChanged: () => void;
@@ -2703,7 +2786,9 @@ export function RelationshipSheet({
       >
         <SheetHeader className="min-h-12 flex-row items-center border-b border-border py-2 pl-14 pr-3">
           <SheetTitle className="text-xs font-normal text-primary/55">
-            {data || seed ? companySheetPositionLabel(position, total, filtered) : "Company"}
+            {data || seed
+              ? companySheetPositionLabel(position, total, filtered, hasMore)
+              : "Company"}
           </SheetTitle>
           <SheetDescription className="sr-only">
             {data?.relationship.primaryEmail}

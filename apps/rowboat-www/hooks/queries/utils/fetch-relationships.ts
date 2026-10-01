@@ -49,7 +49,8 @@ export type SemanticMatch = z.infer<typeof SemanticSearchSchema>["matches"][numb
 function relationshipsPath(filters: RelationshipListScope = {}): string {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(filters)) {
-    if (value) params.set(key, value);
+    if (value === undefined || value === "" || value === 0) continue;
+    params.set(key, String(value));
   }
   const query = params.size ? `?${params.toString()}` : "";
   return `/relationships${query}`;

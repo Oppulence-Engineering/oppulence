@@ -8,6 +8,8 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "relationships-vie
 import {
   companyDomainHref,
   companyName,
+  companyDirectoryCount,
+  companyDirectoryRemainderLabel,
   companyDirectoryTitle,
   companyHealthFilterName,
   companyListEmptyCopy,
@@ -107,7 +109,13 @@ describe("RelationshipsView", () => {
     expect(source).toContain("companyListEmptyCopy({");
     expect(companySheetPositionLabel(1, 4, false)).toBe("1 of 4 in All companies");
     expect(companySheetPositionLabel(1, 1, true)).toBe("1 of 1 in this filter");
-    expect(source).toContain("companySheetPositionLabel(position, total, filtered)");
+    expect(companySheetPositionLabel(1, 200, false, true)).toBe("1 of 200+ in All companies");
+    expect(source).toContain("companySheetPositionLabel(position, total, filtered, hasMore)");
+    expect(companyDirectoryCount(200, true)).toBe("200+");
+    expect(companyDirectoryCount(201, false)).toBe("201");
+    expect(companyDirectoryRemainderLabel()).toBe("Show the next companies");
+    expect(source).toContain("offset: directoryPage.length + extraCompanies.length");
+    expect(source).toContain("COMPANY_DIRECTORY_PAGE");
     expect(source).not.toContain("in All companies`");
   });
 

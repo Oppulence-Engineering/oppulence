@@ -3,6 +3,7 @@ export type RelationshipListScope = {
   lifecycle?: string;
   health?: string;
   engagement?: string;
+  offset?: number;
 };
 
 export type RelationshipGraphScope = {

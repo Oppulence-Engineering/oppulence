@@ -3,10 +3,12 @@ package revenue
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 )
@@ -119,6 +121,48 @@ func TestRelationshipSearchFindsTheCompanyTitle(t *testing.T) {
 	if err != nil || len(miss) != 0 {
 		t.Fatalf("unrelated search = %+v err=%v", miss, err)
 	}
+}
+
+func TestListRelationshipsOffsetSkipsTheNewestRows(t *testing.T) {
+	f := newFixture(t)
+	names := []string{"Oldest Co", "Middle Co", "Newest Co"}
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	for i, name := range names {
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.Relationship.UpdateOneID(rel.ID).
+			SetUpdatedAt(base.Add(time.Duration(i) * time.Hour)).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	page, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Offset: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(page) != 2 || page[0].DisplayName != "Middle Co" || page[1].DisplayName != "Oldest Co" {
+		t.Fatalf("offset page = %v", namesOf(page))
+	}
+	none, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Offset: 3})
+	if err != nil || len(none) != 0 {
+		t.Fatalf("past the end = %v err=%v", namesOf(none), err)
+	}
+	all, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Offset: -4})
+	if err != nil || len(all) != 3 || all[0].DisplayName != "Newest Co" {
+		t.Fatalf("negative offset = %v err=%v", namesOf(all), err)
+	}
+}
+
+func namesOf(rows []*ent.Relationship) []string {
+	names := make([]string, 0, len(rows))
+	for _, row := range rows {
+		names = append(names, row.DisplayName)
+	}
+	return names
 }
 
 func TestRelationshipSearchSQLUsesPostgresPlaceholders(t *testing.T) {

@@ -23431,6 +23431,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "How many relationships to skip. Each page is 200 rows, newest touch first.",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
         ],
         "responses": {
