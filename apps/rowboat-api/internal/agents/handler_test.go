@@ -2,6 +2,7 @@ package agents
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -105,6 +107,55 @@ func TestListSessionsOffsetSkipsTheNewest(t *testing.T) {
 	h.ListSessions(rec, httptest.NewRequest(http.MethodGet, "/v1/agent-sessions?offset=nope", nil).WithContext(ctx))
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("invalid offset = %d, want 400; body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestListSessionsExactPageIsNotAnotherPage(t *testing.T) {
+	h, u := setupHandler(t)
+	ctx := auth.WithUser(context.Background(), u)
+	when := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	for i := 1; i <= sessionListLimit; i++ {
+		row := h.client.AgentSession.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("a1165000-0000-4000-8000-%012d", i))).
+			SetUser(u).
+			SetSessionID(fmt.Sprintf("exact-chat-%03d", i)).
+			SetAgentSlug("assistant").
+			SetTitle("Exact Chat Last").
+			SaveX(ctx)
+		if i > 1 {
+			row = h.client.AgentSession.UpdateOne(row).SetTitle(fmt.Sprintf("Exact Chat %03d", i)).SaveX(ctx)
+		}
+		h.client.AgentSession.UpdateOne(row).SetUpdatedAt(when).SaveX(ctx)
+	}
+
+	rec := httptest.NewRecorder()
+	h.ListSessions(rec, httptest.NewRequest(http.MethodGet, "/v1/agent-sessions", nil).WithContext(ctx))
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || strings.Contains(body, `"hasMore":true`) || !strings.Contains(body, "exact-chat-001") {
+		t.Fatalf("exact page = %d %s", rec.Code, body)
+	}
+
+	extra := h.client.AgentSession.Create().
+		SetID(uuid.MustParse(fmt.Sprintf("a1165000-0000-4000-8000-%012d", sessionListLimit+1))).
+		SetUser(u).
+		SetSessionID("exact-chat-051").
+		SetAgentSlug("assistant").
+		SetTitle("Exact Chat Newest").
+		SaveX(ctx)
+	h.client.AgentSession.UpdateOne(extra).SetUpdatedAt(when).SaveX(ctx)
+
+	rec = httptest.NewRecorder()
+	h.ListSessions(rec, httptest.NewRequest(http.MethodGet, "/v1/agent-sessions", nil).WithContext(ctx))
+	body = rec.Body.String()
+	if rec.Code != http.StatusOK || !strings.Contains(body, `"hasMore":true`) || strings.Contains(body, "exact-chat-001") {
+		t.Fatalf("first page = %d %s", rec.Code, body)
+	}
+
+	rec = httptest.NewRecorder()
+	h.ListSessions(rec, httptest.NewRequest(http.MethodGet, "/v1/agent-sessions?offset=50", nil).WithContext(ctx))
+	body = rec.Body.String()
+	if rec.Code != http.StatusOK || strings.Contains(body, `"hasMore":true`) || !strings.Contains(body, "exact-chat-001") || strings.Contains(body, "exact-chat-002") {
+		t.Fatalf("second page = %d %s", rec.Code, body)
 	}
 }
 

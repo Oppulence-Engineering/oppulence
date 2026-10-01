@@ -1061,8 +1061,13 @@
         "type": "object"
       },
       "AgentSessionListResponse": {
-        "description": "Recent durable agent conversations.",
+        "description": "Recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.",
         "properties": {
+          "hasMore": {
+            "description": "Another conversation exists beyond this page.",
+            "example": false,
+            "type": "boolean"
+          },
           "sessions": {
             "description": "Sessions ordered by latest update.",
             "items": {
@@ -15850,7 +15855,7 @@
     },
     "/v1/agent-sessions": {
       "get": {
-        "description": "Returns the authenticated user's recent durable agent conversations.",
+        "description": "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.",
         "operationId": "listAgentSessions",
         "parameters": [
           {

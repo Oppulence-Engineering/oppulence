@@ -8,7 +8,7 @@
 import * as zod from "zod";
 
 /**
- * Returns the authenticated user's recent durable agent conversations.
+ * Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.
  * @summary List agent sessions
  */
 export const listAgentSessionsQueryOffsetMin = 0;
@@ -24,6 +24,7 @@ export const ListAgentSessionsQueryParams = zod.object({
 
 export const ListAgentSessions200Response = zod
   .strictObject({
+    hasMore: zod.boolean().optional().describe("Another conversation exists beyond this page."),
     sessions: zod
       .array(
         zod
@@ -58,7 +59,9 @@ export const ListAgentSessions200Response = zod
       )
       .describe("Sessions ordered by latest update."),
   })
-  .describe("Recent durable agent conversations.");
+  .describe(
+    "Recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.",
+  );
 
 export const ListAgentSessions401Response = zod
   .strictObject({

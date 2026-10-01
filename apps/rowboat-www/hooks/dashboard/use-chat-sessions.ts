@@ -4,7 +4,11 @@ import "client-only";
 
 import { useCallback, useEffect, useState } from "react";
 import { useRemoteChatSessions } from "@/hooks/queries/use-chat-sessions";
-import { CHAT_SESSION_PAGE, fetchChatSessions } from "@/hooks/queries/utils/fetch-chat-sessions";
+import {
+  chatSessionPageHasMore,
+  chatSessionRows,
+  fetchChatSessions,
+} from "@/hooks/queries/utils/fetch-chat-sessions";
 
 import {
   conversationFromAgentEvents,
@@ -54,21 +58,21 @@ export function useChatSessions({
 }: UseChatSessionsOptions) {
   const remoteSessionsQuery = useRemoteChatSessions();
   const [earlierSessions, setEarlierSessions] = useState<SessionMeta[]>([]);
-  const [earlierExhausted, setEarlierExhausted] = useState(false);
+  const [laterHasMore, setLaterHasMore] = useState<boolean | null>(null);
   const [loadingEarlierSessions, setLoadingEarlierSessions] = useState(false);
   const [earlierSessionsError, setEarlierSessionsError] = useState<string | null>(null);
-  const remoteSessions = remoteSessionsQuery.data ?? [];
+  const remoteSessions = chatSessionRows(remoteSessionsQuery.data);
   // The memory cache contains at most 30 entries, so deriving this projection
   // during render is safer than duplicating synchronized session-list state.
   const sessions = mergeSessionLists(listSessions(scope), remoteSessions, earlierSessions);
-  const loadedFromServer = remoteSessions.length + earlierSessions.length;
   const hasMoreSessions =
-    !earlierExhausted && loadedFromServer > 0 && loadedFromServer % CHAT_SESSION_PAGE === 0;
+    laterHasMore ??
+    (remoteSessions.length > 0 && chatSessionPageHasMore(remoteSessionsQuery.data));
   const remoteKey = remoteSessions.map((session) => session.runId).join("\n");
 
   useEffect(() => {
     setEarlierSessions([]);
-    setEarlierExhausted(false);
+    setLaterHasMore(null);
     setEarlierSessionsError(null);
   }, [remoteKey]);
 
@@ -138,15 +142,16 @@ export function useChatSessions({
         undefined,
         remoteSessions.length + earlierSessions.length,
       );
+      const rows = chatSessionRows(page);
       setEarlierSessions((current) => {
         const seen = new Set(current.map((session) => session.runId));
         const next = [...current];
-        for (const session of page) {
+        for (const session of rows) {
           if (!seen.has(session.runId)) next.push(session);
         }
         return next;
       });
-      if (page.length < CHAT_SESSION_PAGE) setEarlierExhausted(true);
+      setLaterHasMore(chatSessionPageHasMore(page));
     } catch {
       setEarlierSessionsError("Could not load earlier conversations.");
     } finally {

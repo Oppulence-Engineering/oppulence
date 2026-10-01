@@ -32,7 +32,8 @@ import (
 
 const maxBody = 1 << 20
 
-// sessionListLimit is one page of chat history. The next page stays one click away.
+// sessionListLimit is one page of chat history. The response looks one row
+// past it, so an exact page of 50 is not offered as a 51st conversation.
 const sessionListLimit = 50
 
 // Handler serves /v1/agents and /v1/agent-sessions.
@@ -237,7 +238,7 @@ func (h *Handler) ListSessions(w http.ResponseWriter, r *http.Request) {
 	}
 	rows, err := h.client.AgentSession.Query().
 		Order(agentsession.ByUpdatedAt(entsql.OrderDesc()), agentsession.ByID(entsql.OrderDesc())).
-		Limit(sessionListLimit).
+		Limit(sessionListLimit + 1).
 		Offset(offset).
 		All(r.Context())
 	if err != nil {
@@ -245,11 +246,15 @@ func (h *Handler) ListSessions(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, "could not list sessions", "internal_error")
 		return
 	}
+	hasMore := len(rows) > sessionListLimit
+	if hasMore {
+		rows = rows[:sessionListLimit]
+	}
 	sessions := make([]sessionView, 0, len(rows))
 	for _, row := range rows {
 		sessions = append(sessions, h.viewSession(row, u.ID.String()))
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"sessions": sessions})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"sessions": sessions, "hasMore": hasMore})
 }
 
 // SubmitTurn handles POST /v1/agent-sessions/{id}/turns.

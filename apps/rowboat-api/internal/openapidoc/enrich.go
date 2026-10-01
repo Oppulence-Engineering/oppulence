@@ -248,8 +248,9 @@ func addAgentSessionSchemas(schemas obj) {
 		"createdAt":         stringSchema("Session creation time.", "2026-09-02T15:00:00Z", obj{"format": "date-time"}),
 		"lastActivityAt":    stringSchema("Most recent activity time.", "2026-09-02T15:01:00Z", obj{"format": "date-time"}, nullable()),
 	}, "sessionId", "agent", "status", "channel", "turns", "llmCalls", "toolCalls", "costUnits", "continuationToken", "createdAt")
-	schemas["AgentSessionListResponse"] = objectSchema("Recent durable agent conversations.", obj{
+	schemas["AgentSessionListResponse"] = objectSchema("Recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.", obj{
 		"sessions": arraySchema("Sessions ordered by latest update.", ref("DurableAgentSessionView")),
+		"hasMore":  boolSchema("Another conversation exists beyond this page.", false),
 	}, "sessions")
 	schemas["DurableAgentSessionEvent"] = objectSchema("One ordered durable agent lifecycle or transcript event.", obj{
 		"seq":     intSchema("Stable session event sequence.", 4),
@@ -1053,7 +1054,7 @@ func addRuntimePaths(paths obj) {
 }
 
 func addAgentSessionPaths(paths obj) {
-	paths["/v1/agent-sessions"] = obj{"get": operation("Agent Sessions", "List agent sessions", "Returns the authenticated user's recent durable agent conversations.", "listAgentSessions", bearer(), nil, nil, obj{
+	paths["/v1/agent-sessions"] = obj{"get": operation("Agent Sessions", "List agent sessions", "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.", "listAgentSessions", bearer(), nil, nil, obj{
 		"200": jsonResponse("Recent agent conversations.", ref("AgentSessionListResponse"), obj{"sessions": []any{obj{"sessionId": "session_abc123", "agent": "assistant", "status": "active", "channel": "web", "title": "Review the Acme renewal", "turns": 2, "llmCalls": 3, "toolCalls": 1, "costUnits": 45, "continuationToken": "agt_example", "createdAt": "2026-09-02T15:00:00Z"}}}),
 		"401": responseRef("401"),
 		"500": responseRef("500"),
