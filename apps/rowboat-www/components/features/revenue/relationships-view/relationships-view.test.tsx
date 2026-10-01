@@ -256,7 +256,19 @@ describe("RelationshipsView", () => {
         lifecycle: { supported: true, value: "prospect" },
         health: { supported: false, value: "unknown" },
       }),
-    ).toBe("Lifecycle: Prospect · Health: Unknown");
+    ).toBe("Lifecycle: Prospect");
+    expect(
+      missionControlStateAnswer({
+        lifecycle: { supported: false, value: "prospect" },
+        health: { supported: true, value: "healthy" },
+      }),
+    ).toBe("Health: Healthy");
+    expect(
+      missionControlStateAnswer({
+        lifecycle: { supported: true, value: "prospect" },
+        health: { supported: true, value: "healthy" },
+      }),
+    ).toBe("Lifecycle: Prospect · Health: Healthy");
     expect(missionControlChangeAnswer([], "State changed")).toBe("State changed");
     expect(missionControlChangeAnswer([{ dimension: "evidence" }], "State changed")).toBe(
       "Supporting evidence changed.",

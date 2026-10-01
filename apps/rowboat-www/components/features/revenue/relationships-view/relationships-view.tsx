@@ -1591,8 +1591,12 @@ export function missionControlStateAnswer(evidence: {
   };
   const lifecycle = shown(evidence.lifecycle);
   const health = shown(evidence.health);
-  if (!lifecycle && !health) return "No supported answer yet.";
-  return companyStateAnswer(lifecycle || "unknown", health || "unknown");
+  const parts = [
+    lifecycle ? `Lifecycle: ${relationshipLabel(lifecycle)}` : "",
+    health ? `Health: ${relationshipLabel(health)}` : "",
+  ].filter(Boolean);
+  if (parts.length === 0) return "No supported answer yet.";
+  return parts.join(" · ");
 }
 
 /**
