@@ -46,6 +46,7 @@ type IdentityCandidateFilter struct {
 	Source         string
 	RelationshipID uuid.UUID
 	Limit          int
+	Offset         int
 }
 
 // IdentityDecisionInput is an optimistic, idempotent identity command.
@@ -290,6 +291,10 @@ func (s *Service) ListIdentityCandidates(ctx context.Context, u *ent.User, filte
 	if limit > 100 {
 		limit = 100
 	}
+	offset := filter.Offset
+	if offset < 0 {
+		offset = 0
+	}
 	q := s.client.RelationshipIdentityCandidate.Query().
 		Where(relationshipidentitycandidate.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID))).
 		WithProposedRelationship().WithExistingRelationship().WithLineageEvents().WithDecisions()
@@ -305,7 +310,11 @@ func (s *Service) ListIdentityCandidates(ctx context.Context, u *ent.User, filte
 			relationshipidentitycandidate.HasExistingRelationshipWith(relationship.IDEQ(filter.RelationshipID)),
 		))
 	}
-	return q.Order(ent.Desc(relationshipidentitycandidate.FieldCreatedAt)).Limit(limit).All(ctx)
+	// Created time can tie. The id keeps an offset from skipping or repeating a row.
+	return q.Order(
+		ent.Desc(relationshipidentitycandidate.FieldCreatedAt),
+		ent.Desc(relationshipidentitycandidate.FieldID),
+	).Limit(limit).Offset(offset).All(ctx)
 }
 
 // GetIdentityCandidate returns one tenant-scoped ambiguity with its impact,

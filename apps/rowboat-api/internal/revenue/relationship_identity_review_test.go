@@ -1,6 +1,7 @@
 package revenue
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 )
 
 func identityCollisionFixture(t *testing.T) (*fixture, *ent.Relationship, *ent.Relationship, *ent.RelationshipIdentityCandidate, *ent.RevenueAction) {
@@ -283,5 +285,62 @@ func TestSameDomainPeopleRemainDistinctUnderIdentityReview(t *testing.T) {
 	count, err := f.client.Relationship.Query().Where(relationship.KindEQ("person")).Count(f.ctx)
 	if err != nil || count != 2 {
 		t.Fatalf("person count=%d err=%v", count, err)
+	}
+}
+
+func TestListIdentityCandidatesOffsetSkipsTheNewest(t *testing.T) {
+	f := newFixture(t)
+	internal := auth.WithInternal(context.Background())
+	workspace, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatalf("workspace: %v", err)
+	}
+	existing := f.relationship(t)
+	oldestRel := f.relationship(t)
+	middleRel := f.relationship(t)
+	newestRel := f.relationship(t)
+	base := time.Date(2026, 4, 1, 12, 0, 0, 0, time.UTC)
+	oldest := f.client.RelationshipIdentityCandidate.Create().
+		SetWorkspace(workspace).SetUser(f.user).
+		SetProposedRelationship(oldestRel).SetExistingRelationship(existing).
+		SetDedupeKey("oldest").SetAnchorKind("domain").SetAnchorKeyHash("hash-oldest").
+		SetStatus("pending").SetCreatedAt(base).SaveX(internal)
+	middle := f.client.RelationshipIdentityCandidate.Create().
+		SetWorkspace(workspace).SetUser(f.user).
+		SetProposedRelationship(middleRel).SetExistingRelationship(existing).
+		SetDedupeKey("middle").SetAnchorKind("domain").SetAnchorKeyHash("hash-middle").
+		SetStatus("pending").SetCreatedAt(base.Add(time.Hour)).SaveX(internal)
+	f.client.RelationshipIdentityCandidate.Create().
+		SetWorkspace(workspace).SetUser(f.user).
+		SetProposedRelationship(newestRel).SetExistingRelationship(existing).
+		SetDedupeKey("newest").SetAnchorKind("domain").SetAnchorKeyHash("hash-newest").
+		SetStatus("pending").SetCreatedAt(base.Add(2 * time.Hour)).SaveX(internal)
+
+	page, err := f.svc.ListIdentityCandidates(f.ctx, f.user, IdentityCandidateFilter{
+		Status: "pending", Limit: 1, Offset: 1,
+	})
+	if err != nil {
+		t.Fatalf("offset page: %v", err)
+	}
+	if len(page) != 1 || page[0].ID != middle.ID {
+		t.Fatalf("offset page = %v, want the middle duplicate", page)
+	}
+	rest, err := f.svc.ListIdentityCandidates(f.ctx, f.user, IdentityCandidateFilter{
+		Status: "pending", Limit: 10, Offset: 2,
+	})
+	if err != nil {
+		t.Fatalf("last page: %v", err)
+	}
+	if len(rest) != 1 || rest[0].ID != oldest.ID {
+		t.Fatalf("last page = %v, want the oldest duplicate", rest)
+	}
+	neg, err := f.svc.ListIdentityCandidates(f.ctx, f.user, IdentityCandidateFilter{
+		Status: "pending", Limit: 10, Offset: -2,
+	})
+	if err != nil {
+		t.Fatalf("negative offset: %v", err)
+	}
+	if len(neg) != 3 || neg[2].ID != oldest.ID {
+		t.Fatalf("negative offset = %v, want every duplicate newest first", neg)
 	}
 }

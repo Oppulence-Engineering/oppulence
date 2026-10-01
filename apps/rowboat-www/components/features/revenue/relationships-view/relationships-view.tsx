@@ -168,8 +168,11 @@ import {
 } from "@/hooks/queries/use-relationship-sources";
 import {
   ATTENTION_PAGE_SIZE,
+  IDENTITY_CANDIDATE_PAGE,
+  fetchIdentityCandidates,
   fetchRelationshipAttention,
   fetchRelationships,
+  identityCandidateHasMore,
 } from "@/hooks/queries/utils/fetch-relationships";
 import { relationshipKeys } from "@/hooks/queries/utils/relationship-keys";
 import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-source-keys";
@@ -642,6 +645,11 @@ export function RelationshipsView({
   const inventoryQuery = useRelationshipSourceInventory();
   const pendingQuery = useIdentityCandidates("pending");
   const deferredQuery = useIdentityCandidates("deferred");
+  const [extraPending, setExtraPending] = React.useState<RelationshipIdentityCandidate[]>([]);
+  const [extraDeferred, setExtraDeferred] = React.useState<RelationshipIdentityCandidate[]>([]);
+  const [pendingExhausted, setPendingExhausted] = React.useState(false);
+  const [deferredExhausted, setDeferredExhausted] = React.useState(false);
+  const [loadingMoreDuplicates, setLoadingMoreDuplicates] = React.useState(false);
   const attentionQuery = useRelationshipAttention("open");
   const [extraAttention, setExtraAttention] = React.useState<RelationshipAttentionItem[]>([]);
   const [attentionExhausted, setAttentionExhausted] = React.useState(false);
@@ -667,7 +675,44 @@ export function RelationshipsView({
   const rows = directoryRows;
   const sources = sourcesQuery.data ?? [];
   const sourceInventory = inventoryQuery.data ?? [];
-  const identityCandidates = [...(pendingQuery.data ?? []), ...(deferredQuery.data ?? [])];
+  const pendingPage = pendingQuery.data ?? [];
+  const deferredPage = deferredQuery.data ?? [];
+  const pendingCandidates = React.useMemo(() => {
+    if (extraPending.length === 0) return pendingPage;
+    const seen = new Set(pendingPage.map((candidate) => candidate.id));
+    return [
+      ...pendingPage,
+      ...extraPending.filter((candidate) => {
+        if (seen.has(candidate.id)) return false;
+        seen.add(candidate.id);
+        return true;
+      }),
+    ];
+  }, [extraPending, pendingPage]);
+  const deferredCandidates = React.useMemo(() => {
+    if (extraDeferred.length === 0) return deferredPage;
+    const seen = new Set(deferredPage.map((candidate) => candidate.id));
+    return [
+      ...deferredPage,
+      ...extraDeferred.filter((candidate) => {
+        if (seen.has(candidate.id)) return false;
+        seen.add(candidate.id);
+        return true;
+      }),
+    ];
+  }, [deferredPage, extraDeferred]);
+  const hasMorePending = identityCandidateHasMore(
+    pendingPage.length,
+    extraPending.length,
+    pendingExhausted,
+  );
+  const hasMoreDeferred = identityCandidateHasMore(
+    deferredPage.length,
+    extraDeferred.length,
+    deferredExhausted,
+  );
+  const hasMoreDuplicates = hasMorePending || hasMoreDeferred;
+  const identityCandidates = [...pendingCandidates, ...deferredCandidates];
   const attentionPage = attentionQuery.data ?? [];
   const attention = React.useMemo(() => {
     if (extraAttention.length === 0) return attentionPage;
@@ -759,6 +804,10 @@ export function RelationshipsView({
   const load = React.useCallback(async () => {
     setExtraAttention([]);
     setAttentionExhausted(false);
+    setExtraPending([]);
+    setExtraDeferred([]);
+    setPendingExhausted(false);
+    setDeferredExhausted(false);
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: relationshipKeys.all }),
       queryClient.invalidateQueries({ queryKey: relationshipSourceKeys.all }),
@@ -781,6 +830,46 @@ export function RelationshipsView({
       setLoadingMoreAttention(false);
     }
   }, [attentionPage.length, extraAttention.length, hasMoreAttention, loadingMoreAttention, onError]);
+  const loadMoreDuplicates = React.useCallback(async () => {
+    if (loadingMoreDuplicates || !hasMoreDuplicates) return;
+    setLoadingMoreDuplicates(true);
+    try {
+      if (hasMorePending) {
+        const next = await fetchIdentityCandidates(
+          "pending",
+          undefined,
+          undefined,
+          pendingPage.length + extraPending.length,
+        );
+        if (next.length < IDENTITY_CANDIDATE_PAGE) setPendingExhausted(true);
+        setExtraPending((current) => [...current, ...next]);
+      }
+      if (hasMoreDeferred) {
+        const next = await fetchIdentityCandidates(
+          "deferred",
+          undefined,
+          undefined,
+          deferredPage.length + extraDeferred.length,
+        );
+        if (next.length < IDENTITY_CANDIDATE_PAGE) setDeferredExhausted(true);
+        setExtraDeferred((current) => [...current, ...next]);
+      }
+    } catch (reason) {
+      onError(explainedRevenueError(reason, "Could not load the next duplicates."));
+    } finally {
+      setLoadingMoreDuplicates(false);
+    }
+  }, [
+    deferredPage.length,
+    extraDeferred.length,
+    extraPending.length,
+    hasMoreDeferred,
+    hasMoreDuplicates,
+    hasMorePending,
+    loadingMoreDuplicates,
+    onError,
+    pendingPage.length,
+  ]);
 
   React.useEffect(() => {
     const error =
@@ -956,7 +1045,9 @@ export function RelationshipsView({
                 <Sparkle /> Sources
                 {companyAttention.length + identityCandidates.length > 0 ? (
                   <Badge variant="secondary">
-                    {companyAttention.length + identityCandidates.length}
+                    {hasMoreAttention || hasMoreDuplicates
+                      ? `${companyAttention.length + identityCandidates.length}+`
+                      : companyAttention.length + identityCandidates.length}
                   </Badge>
                 ) : null}
               </summary>
@@ -1004,6 +1095,11 @@ export function RelationshipsView({
                 />
                 <IdentityReviewInbox
                   candidates={identityCandidates}
+                  hasMore={hasMoreDuplicates}
+                  loadingMore={loadingMoreDuplicates}
+                  onLoadMore={() => {
+                    void loadMoreDuplicates();
+                  }}
                   onError={onError}
                   onChanged={() => {
                     onNotice("Review saved.");
@@ -1641,12 +1737,25 @@ export function identityDecisionLabel(decision: string): string {
   }
 }
 
+/** The inbox count says when the loaded page is not every duplicate. */
+export function duplicateInboxLabel(count: number, hasMore: boolean): string {
+  const noun = count === 1 ? "duplicate" : "duplicates";
+  const shown = hasMore ? `${count}+` : String(count);
+  return `${shown} possible ${noun}`;
+}
+
 function IdentityReviewInbox({
   candidates,
+  hasMore = false,
+  loadingMore = false,
+  onLoadMore,
   onChanged,
   onError,
 }: {
   candidates: RelationshipIdentityCandidate[];
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
   onChanged: () => void;
   onError: (message: string) => void;
 }) {
@@ -1686,8 +1795,7 @@ function IdentityReviewInbox({
             Review possible duplicates
           </h3>
           <p className="mt-0.5 text-xs text-primary/55">
-            {candidates.length} possible {candidates.length === 1 ? "duplicate" : "duplicates"}{" "}
-            cannot receive actions until reviewed.
+            {duplicateInboxLabel(candidates.length, hasMore)} cannot receive actions until reviewed.
           </p>
         </div>
         <Badge variant="outline" className="rounded-none border-amber-500/40">
@@ -1746,6 +1854,17 @@ function IdentityReviewInbox({
           </div>
         </article>
       ))}
+      {hasMore ? (
+        <Button
+          disabled={loadingMore || !onLoadMore}
+          onClick={onLoadMore}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          {loadingMore ? "Loading…" : "Show the next duplicates"}
+        </Button>
+      ) : null}
     </section>
   );
 }

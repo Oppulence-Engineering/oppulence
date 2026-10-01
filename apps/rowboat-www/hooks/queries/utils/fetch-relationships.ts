@@ -165,14 +165,32 @@ export async function loadRelationshipGraph(
   }
 }
 
+/** One page of the duplicate inbox. The next page uses the same size as an offset. */
+export const IDENTITY_CANDIDATE_PAGE = 50;
+
+/** A full page may have another duplicate behind it. A short page is the end. */
+export function identityCandidateHasMore(
+  pageLength: number,
+  earlierLength: number,
+  exhausted: boolean,
+): boolean {
+  const loaded = pageLength + earlierLength;
+  return !exhausted && pageLength > 0 && loaded > 0 && loaded % IDENTITY_CANDIDATE_PAGE === 0;
+}
+
 export async function loadIdentityCandidates(
   request: RequestJsonFn,
   status = "pending",
   relationshipId?: string,
   signal?: AbortSignal,
+  offset = 0,
 ): Promise<RelationshipIdentityCandidate[]> {
-  const params = new URLSearchParams({ status });
+  const params = new URLSearchParams({
+    status,
+    limit: String(IDENTITY_CANDIDATE_PAGE),
+  });
   if (relationshipId) params.set("relationshipId", relationshipId);
+  if (offset > 0) params.set("offset", String(offset));
   const body = await request({
     path: `/relationship-identity-candidates?${params.toString()}`,
     schema: IdentityListSchema,
@@ -234,8 +252,9 @@ export function fetchIdentityCandidates(
   status = "pending",
   relationshipId?: string,
   signal?: AbortSignal,
+  offset = 0,
 ): Promise<RelationshipIdentityCandidate[]> {
-  return loadIdentityCandidates(requestJson, status, relationshipId, signal);
+  return loadIdentityCandidates(requestJson, status, relationshipId, signal, offset);
 }
 
 export function fetchRelationshipAttention(

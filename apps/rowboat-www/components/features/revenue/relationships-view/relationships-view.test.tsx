@@ -67,6 +67,7 @@ import {
   identityMatchLabel,
   participantRoleLabel,
   recommendationStatusLabel,
+  duplicateInboxLabel,
   identitySupportLabel,
   liveCueCopy,
   liveCueVisible,
@@ -250,7 +251,8 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("approval-gated");
     expect(source).not.toContain("backfill ${progress}%");
     expect(source).not.toContain("ambiguous relationship");
-    expect(source).toContain("possible {candidates.length === 1 ? \"duplicate\" : \"duplicates\"}");
+    expect(source).toContain("duplicateInboxLabel(candidates.length, hasMore)");
+    expect(source).toContain("Show the next duplicates");
     expect(source).toContain("Review possible duplicates");
     expect(source).toContain("Needs your review");
     expect(source).toContain('placeholder="Why you made this choice (optional)"');
@@ -630,6 +632,9 @@ describe("RelationshipsView", () => {
   });
 
   it("names a possible duplicate in product language", () => {
+    expect(duplicateInboxLabel(50, true)).toBe("50+ possible duplicates");
+    expect(duplicateInboxLabel(51, false)).toBe("51 possible duplicates");
+    expect(duplicateInboxLabel(1, false)).toBe("1 possible duplicate");
     expect(identitySupportLabel(1)).toBe("1 supporting detail");
     expect(identitySupportLabel(3)).toBe("3 supporting details");
     expect(identityMatchLabel(0.42)).toBe("42% match");

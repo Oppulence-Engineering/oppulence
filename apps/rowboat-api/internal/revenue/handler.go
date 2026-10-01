@@ -2246,6 +2246,16 @@ func (h *Handler) ListIdentityCandidates(w http.ResponseWriter, r *http.Request)
 		}
 		filter.Limit = limit
 	}
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		if value > 0 {
+			filter.Offset = value
+		}
+	}
 	candidates, err := h.svc.ListIdentityCandidates(r.Context(), u, filter)
 	if err != nil {
 		h.writeServiceError(w, err)

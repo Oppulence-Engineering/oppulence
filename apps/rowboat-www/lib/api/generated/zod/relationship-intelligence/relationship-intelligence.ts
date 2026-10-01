@@ -608,11 +608,19 @@ export const GetRelationshipBetaDiagnostics403Response = zod
  * Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage.
  * @summary List identity review candidates
  */
+export const listRelationshipIdentityCandidatesQueryOffsetMin = 0;
+
 export const ListRelationshipIdentityCandidatesQueryParams = zod.object({
   status: zod.enum(["pending", "deferred", "resolving", "resolved", "undone"]).optional(),
   source: zod.string().optional(),
   relationshipId: zod.uuid().optional(),
   limit: zod.coerce.number().int().optional(),
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(listRelationshipIdentityCandidatesQueryOffsetMin)
+    .optional()
+    .describe("Page offset."),
 });
 
 export const ListRelationshipIdentityCandidates200Response = zod

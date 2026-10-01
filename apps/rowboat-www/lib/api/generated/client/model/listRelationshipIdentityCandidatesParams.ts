@@ -12,4 +12,9 @@ export type ListRelationshipIdentityCandidatesParams = {
   source?: string;
   relationshipId?: string;
   limit?: number;
+  /**
+   * Page offset.
+   * @minimum 0
+   */
+  offset?: number;
 };
