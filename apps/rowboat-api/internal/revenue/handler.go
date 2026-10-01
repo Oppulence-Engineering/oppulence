@@ -2475,16 +2475,26 @@ func (h *Handler) RelationshipTimeline(w http.ResponseWriter, r *http.Request) {
 			limit = parsed
 		}
 	}
-	observations, err := h.svc.RelationshipTimeline(r.Context(), id, limit)
+	var before *time.Time
+	if value := r.URL.Query().Get("before"); value != "" {
+		if parsed, err := time.Parse(time.RFC3339, value); err == nil {
+			before = &parsed
+		}
+	}
+	page, err := h.svc.relationshipObservationPage(r.Context(), id, limit, before)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	out := make([]observationDTO, 0, len(observations))
-	for _, observation := range observations {
+	out := make([]observationDTO, 0, len(page.observations))
+	for _, observation := range page.observations {
 		out = append(out, observationToDTO(observation))
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"observations": out})
+	payload := map[string]any{"observations": out, "hasMore": page.hasMore}
+	if page.nextBefore != nil {
+		payload["nextBefore"] = page.nextBefore.UTC()
+	}
+	httpx.WriteJSON(w, http.StatusOK, payload)
 }
 
 // RelationshipChanges returns projected state changes for a relationship.

@@ -605,11 +605,39 @@ export const deletePerson = (personId: string) =>
 export const acknowledgeMissionControl = (id: string, stateVersion: number, stateHash: string) =>
   viaRequest(() => fetchAcknowledgeMissionControl(id, { stateVersion, stateHash }));
 
-export const getRelationshipTimeline = (id: string, limit = 50, signal?: AbortSignal) =>
-  call<{ observations: RelationshipObservation[] }>(
-    `/relationships/${id}/timeline?limit=${limit}`,
+export type RelationshipTimelinePage = {
+  observations: RelationshipObservation[];
+  hasMore: boolean;
+  nextBefore?: string;
+};
+
+export type CommunicationTimelinePage = {
+  items: CommunicationTimelineItem[];
+  hasMore: boolean;
+  nextBefore?: string;
+};
+
+const emptyCommunicationPage = (): CommunicationTimelinePage => ({ items: [], hasMore: false });
+
+export const getRelationshipTimelinePage = (
+  id: string,
+  limit = 50,
+  before?: string,
+  signal?: AbortSignal,
+) =>
+  call<RelationshipTimelinePage>(
+    `/relationships/${id}/timeline?limit=${limit}${
+      before ? `&before=${encodeURIComponent(before)}` : ""
+    }`,
     { signal },
-  ).then((body) => body.observations ?? []);
+  ).then((body) => ({
+    observations: body.observations ?? [],
+    hasMore: Boolean(body.hasMore),
+    nextBefore: body.nextBefore,
+  }));
+
+export const getRelationshipTimeline = (id: string, limit = 50, signal?: AbortSignal) =>
+  getRelationshipTimelinePage(id, limit, undefined, signal).then((page) => page.observations);
 
 export const getRelationshipCommunicationTimeline = (
   id: string,
@@ -617,18 +645,22 @@ export const getRelationshipCommunicationTimeline = (
   before?: string,
   signal?: AbortSignal,
 ) =>
-  call<{ items: CommunicationTimelineItem[]; hasMore: boolean; nextBefore?: string }>(
+  call<CommunicationTimelinePage>(
     `/relationships/${id}/communication-timeline?limit=${limit}${
       before ? `&before=${encodeURIComponent(before)}` : ""
     }`,
     { signal },
   )
-    .then((body) => body.items ?? [])
+    .then((body) => ({
+      items: body.items ?? [],
+      hasMore: Boolean(body.hasMore),
+      nextBefore: body.nextBefore,
+    }))
     .catch((error) => {
       // Workspaces without communication intelligence, or an older API,
       // answer 404/409. The company sheet can still render without that pane.
       if (error instanceof RevenueAPIError && (error.status === 404 || error.status === 409)) {
-        return [] as CommunicationTimelineItem[];
+        return emptyCommunicationPage();
       }
       throw error;
     });

@@ -110,7 +110,7 @@ import {
   getRelationshipChanges,
   getRelationshipEvidence,
   getRelationshipCommunicationTimeline,
-  getRelationshipTimeline,
+  getRelationshipTimelinePage,
   ingestRelationshipObservations,
   listIdentityCandidates,
   disconnectRelationshipSource,
@@ -2039,6 +2039,39 @@ export function governanceDeletionLabel(outcome: string): string {
   }
 }
 
+export const GOVERNANCE_RECEIPT_PAGE = 5;
+
+/** Receipts past the first screen stay one click away. */
+export function governanceReceiptRemainder(hidden: number): string {
+  return hidden === 1 ? "Show the other 1 receipt" : `Show the other ${hidden} receipts`;
+}
+
+/** The mail heading says when the first page is not the whole timeline. */
+export function communicationTimelineTitle(shown: number, hasMore: boolean): string {
+  return hasMore
+    ? `Email & meeting timeline (${shown}+)`
+    : `Email & meeting timeline (${shown})`;
+}
+
+export function earlierMailLabel(): string {
+  return "Show earlier mail and meetings";
+}
+
+/** Activity history uses the same honest count as mail. */
+export function activityHistoryTitle(shown: number, hasMore: boolean): string {
+  return hasMore ? `Activity history (${shown}+)` : `Activity history (${shown})`;
+}
+
+export function earlierActivityLabel(): string {
+  return "Show earlier activity";
+}
+
+function appendById<T extends { id: string }>(current: T[], next: T[]): T[] {
+  const seen = new Set(current.map((item) => item.id));
+  const added = next.filter((item) => !seen.has(item.id));
+  return added.length === 0 ? current : [...current, ...added];
+}
+
 /** Whether any audio excerpt was saved with the receipt. */
 export function governanceExcerptLabel(clip: string): string {
   switch (clip) {
@@ -2482,6 +2515,12 @@ export function RelationshipSheet({
   const [communicationTimeline, setCommunicationTimeline] = React.useState<
     CommunicationTimelineItem[]
   >([]);
+  const [communicationHasMore, setCommunicationHasMore] = React.useState(false);
+  const [communicationBefore, setCommunicationBefore] = React.useState<string | undefined>();
+  const [timelineHasMore, setTimelineHasMore] = React.useState(false);
+  const [timelineBefore, setTimelineBefore] = React.useState<string | undefined>();
+  const [loadingEarlier, setLoadingEarlier] = React.useState<"mail" | "activity" | null>(null);
+  const [governanceExpanded, setGovernanceExpanded] = React.useState(false);
   const [changes, setChanges] = React.useState<RelationshipStateSnapshot[]>([]);
   const [identityCandidates, setIdentityCandidates] = React.useState<
     RelationshipIdentityCandidate[]
@@ -2513,15 +2552,27 @@ export function RelationshipSheet({
 
       const [nextTimeline, nextCommunicationTimeline, nextChanges, pending, deferred, resolved] =
         await Promise.all([
-          getRelationshipTimeline(id).catch(() => [] as RelationshipObservation[]),
-          getRelationshipCommunicationTimeline(id).catch(() => [] as CommunicationTimelineItem[]),
+          getRelationshipTimelinePage(id).catch(() => ({
+            observations: [] as RelationshipObservation[],
+            hasMore: false as boolean,
+            nextBefore: undefined as string | undefined,
+          })),
+          getRelationshipCommunicationTimeline(id).catch(() => ({
+            items: [] as CommunicationTimelineItem[],
+            hasMore: false as boolean,
+            nextBefore: undefined as string | undefined,
+          })),
           getRelationshipChanges(id).catch(() => [] as RelationshipStateSnapshot[]),
           listIdentityCandidates("pending", id).catch(() => [] as RelationshipIdentityCandidate[]),
           listIdentityCandidates("deferred", id).catch(() => [] as RelationshipIdentityCandidate[]),
           listIdentityCandidates("resolved", id).catch(() => [] as RelationshipIdentityCandidate[]),
         ]);
-      setTimeline(nextTimeline);
-      setCommunicationTimeline(nextCommunicationTimeline);
+      setTimeline(nextTimeline.observations);
+      setTimelineHasMore(nextTimeline.hasMore);
+      setTimelineBefore(nextTimeline.nextBefore);
+      setCommunicationTimeline(nextCommunicationTimeline.items);
+      setCommunicationHasMore(nextCommunicationTimeline.hasMore);
+      setCommunicationBefore(nextCommunicationTimeline.nextBefore);
       setChanges(nextChanges);
       setIdentityCandidates([...pending, ...deferred, ...resolved]);
       const people = nextData.participants
@@ -2553,6 +2604,7 @@ export function RelationshipSheet({
     setActiveSection("overview");
     setConfirmingPersonId(null);
     setConfirmingDeletion(false);
+    setGovernanceExpanded(false);
   }, [id]);
 
   const act = async (key: string, operation: () => Promise<unknown>): Promise<boolean> => {
@@ -2567,6 +2619,36 @@ export function RelationshipSheet({
       return false;
     } finally {
       setBusy(null);
+    }
+  };
+
+  const loadEarlier = async (kind: "mail" | "activity") => {
+    const cursor = kind === "mail" ? communicationBefore : timelineBefore;
+    if (!cursor || loadingEarlier) return;
+    setLoadingEarlier(kind);
+    try {
+      if (kind === "mail") {
+        const page = await getRelationshipCommunicationTimeline(id, 50, cursor);
+        setCommunicationTimeline((current) => appendById(current, page.items));
+        setCommunicationHasMore(page.hasMore);
+        setCommunicationBefore(page.nextBefore);
+      } else {
+        const page = await getRelationshipTimelinePage(id, 50, cursor);
+        setTimeline((current) => appendById(current, page.observations));
+        setTimelineHasMore(page.hasMore);
+        setTimelineBefore(page.nextBefore);
+      }
+    } catch (error) {
+      onError(
+        errMessage(
+          error,
+          kind === "mail"
+            ? "Could not load earlier mail and meetings."
+            : "Could not load earlier activity.",
+        ),
+      );
+    } finally {
+      setLoadingEarlier(null);
     }
   };
 
@@ -3681,9 +3763,14 @@ export function RelationshipSheet({
 
                 {data.intelligence?.governanceReceipts.length ? (
                   <section>
-                    <SectionTitle title="Consent and governance" />
+                    <SectionTitle
+                      title={`Consent and governance (${data.intelligence.governanceReceipts.length})`}
+                    />
                     <ul className="flex flex-col gap-2">
-                      {data.intelligence.governanceReceipts.slice(0, 5).map((receipt) => (
+                      {(governanceExpanded
+                        ? data.intelligence.governanceReceipts
+                        : data.intelligence.governanceReceipts.slice(0, GOVERNANCE_RECEIPT_PAGE)
+                      ).map((receipt) => (
                         <li
                           key={receipt.receiptId}
                           className="rounded-none border border-border p-3 text-xs text-primary/60"
@@ -3705,12 +3792,34 @@ export function RelationshipSheet({
                         </li>
                       ))}
                     </ul>
+                    {(() => {
+                      const hiddenReceipts = governanceExpanded
+                        ? 0
+                        : Math.max(
+                            0,
+                            data.intelligence.governanceReceipts.length - GOVERNANCE_RECEIPT_PAGE,
+                          );
+                      return hiddenReceipts > 0 ? (
+                        <Button
+                          className="mt-2"
+                          onClick={() => setGovernanceExpanded(true)}
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                        >
+                          {governanceReceiptRemainder(hiddenReceipts)}
+                        </Button>
+                      ) : null;
+                    })()}
                   </section>
                 ) : null}
 
                 <section>
                   <SectionTitle
-                    title={`Email & meeting timeline (${communicationTimeline.length})`}
+                    title={communicationTimelineTitle(
+                      communicationTimeline.length,
+                      communicationHasMore,
+                    )}
                   />
                   {communicationTimeline.length === 0 ? (
                     <EmptyText>No mail or meetings yet.</EmptyText>
@@ -3739,10 +3848,22 @@ export function RelationshipSheet({
                       ))}
                     </ul>
                   )}
+                  {communicationHasMore && communicationBefore ? (
+                    <Button
+                      className="mt-2"
+                      disabled={loadingEarlier !== null}
+                      onClick={() => void loadEarlier("mail")}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      {earlierMailLabel()}
+                    </Button>
+                  ) : null}
                 </section>
 
                 <section id={`${id}:history`} className="scroll-mt-16">
-                  <SectionTitle title={`Activity history (${timeline.length})`} />
+                  <SectionTitle title={activityHistoryTitle(timeline.length, timelineHasMore)} />
                   {timeline.length === 0 ? (
                     <EmptyText>Nothing recorded yet.</EmptyText>
                   ) : (
@@ -3784,6 +3905,18 @@ export function RelationshipSheet({
                       ))}
                     </ul>
                   )}
+                  {timelineHasMore && timelineBefore ? (
+                    <Button
+                      className="mt-2"
+                      disabled={loadingEarlier !== null}
+                      onClick={() => void loadEarlier("activity")}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      {earlierActivityLabel()}
+                    </Button>
+                  ) : null}
                 </section>
               </div>
             </div>

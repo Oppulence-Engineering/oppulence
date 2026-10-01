@@ -2275,12 +2275,36 @@ func (s *Service) RetractRelationshipAssertion(
 	return updated, nil
 }
 
-// RelationshipTimeline returns relationship observations in chronological order.
+// relationshipObservationPage is one cursor page of activity history.
+// NextBefore is the oldest occurred-at on this page when another page exists.
+type relationshipObservationPage struct {
+	observations []*ent.RelationshipObservation
+	hasMore      bool
+	nextBefore   *time.Time
+}
+
+// RelationshipTimeline returns the newest relationship observations.
 func (s *Service) RelationshipTimeline(
 	ctx context.Context,
 	relationshipID uuid.UUID,
 	limit int,
 ) ([]*ent.RelationshipObservation, error) {
+	page, err := s.relationshipObservationPage(ctx, relationshipID, limit, nil)
+	if err != nil {
+		return nil, err
+	}
+	return page.observations, nil
+}
+
+// relationshipObservationPage returns one page of activity and whether older
+// observations exist. Callers that only need the first page keep using
+// RelationshipTimeline.
+func (s *Service) relationshipObservationPage(
+	ctx context.Context,
+	relationshipID uuid.UUID,
+	limit int,
+	before *time.Time,
+) (*relationshipObservationPage, error) {
 	if limit <= 0 || limit > 200 {
 		limit = 50
 	}
@@ -2290,11 +2314,27 @@ func (s *Service) RelationshipTimeline(
 		}
 		return nil, err
 	}
-	return s.client.RelationshipObservation.Query().
+	q := s.client.RelationshipObservation.Query().
 		Where(relationshipobservation.HasRelationshipWith(relationship.IDEQ(relationshipID))).
 		Order(ent.Desc(relationshipobservation.FieldOccurredAt)).
-		Limit(limit).
-		All(ctx)
+		Limit(limit + 1)
+	if before != nil {
+		q = q.Where(relationshipobservation.OccurredAtLT(before.UTC()))
+	}
+	rows, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	hasMore := len(rows) > limit
+	if hasMore {
+		rows = rows[:limit]
+	}
+	page := &relationshipObservationPage{observations: rows, hasMore: hasMore}
+	if hasMore && len(rows) > 0 {
+		last := rows[len(rows)-1].OccurredAt.UTC()
+		page.nextBefore = &last
+	}
+	return page, nil
 }
 
 // RelationshipObservation returns one observation that belongs to a relationship.

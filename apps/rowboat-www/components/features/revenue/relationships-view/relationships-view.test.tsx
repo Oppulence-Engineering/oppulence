@@ -32,6 +32,11 @@ import {
   governanceDisclosureLabel,
   governanceDeletionLabel,
   governanceExcerptLabel,
+  governanceReceiptRemainder,
+  communicationTimelineTitle,
+  earlierMailLabel,
+  activityHistoryTitle,
+  earlierActivityLabel,
   mailReplyLabel,
   reviewEvidenceKindLabel,
   mutualPlanStatusLabel,
@@ -520,6 +525,22 @@ describe("RelationshipsView", () => {
     expect(source).toContain('placeholder="Why is this wrong?"');
     expect(source).toContain("Save this transcript");
     expect(source).toContain("No mail or meetings yet.");
+    expect(communicationTimelineTitle(2, true)).toBe("Email & meeting timeline (2+)");
+    expect(communicationTimelineTitle(3, false)).toBe("Email & meeting timeline (3)");
+    expect(earlierMailLabel()).toBe("Show earlier mail and meetings");
+    expect(activityHistoryTitle(50, true)).toBe("Activity history (50+)");
+    expect(activityHistoryTitle(51, false)).toBe("Activity history (51)");
+    expect(earlierActivityLabel()).toBe("Show earlier activity");
+    expect(governanceReceiptRemainder(1)).toBe("Show the other 1 receipt");
+    expect(governanceReceiptRemainder(4)).toBe("Show the other 4 receipts");
+    expect(source).toContain(
+      "communicationTimelineTitle(\n                      communicationTimeline.length,\n                      communicationHasMore,\n                    )",
+    );
+    expect(source).toContain("activityHistoryTitle(timeline.length, timelineHasMore)");
+    expect(source).toContain("governanceReceiptRemainder(hiddenReceipts)");
+    expect(source).toContain("earlierMailLabel()");
+    expect(source).toContain("earlierActivityLabel()");
+    expect(source).not.toContain("governanceReceipts.slice(0, 5)");
     expect(source).toContain("Activity history");
     expect(source).toContain("activityEvidenceLines(");
     expect(source).toContain("evidence[observation.id]");

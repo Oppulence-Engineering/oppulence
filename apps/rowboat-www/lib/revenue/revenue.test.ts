@@ -10,6 +10,7 @@ import {
   friendlyRevenueError,
   getRelationshipCommunicationTimeline,
   getRelationshipGraph,
+  getRelationshipTimelinePage,
   googleSourceHealth,
   interactionCountLabel,
   latestCompletedScan,
@@ -219,7 +220,50 @@ describe("getRelationshipCommunicationTimeline", () => {
       }),
     );
 
-    await expect(getRelationshipCommunicationTimeline("rel-1")).resolves.toEqual([]);
+    await expect(getRelationshipCommunicationTimeline("rel-1")).resolves.toEqual({
+      items: [],
+      hasMore: false,
+    });
+  });
+
+  it("keeps the cursor when an earlier page of mail exists", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          items: [{ id: "mail-1" }],
+          hasMore: true,
+          nextBefore: "2026-09-01T00:00:00Z",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    await expect(getRelationshipCommunicationTimeline("rel-1")).resolves.toEqual({
+      items: [{ id: "mail-1" }],
+      hasMore: true,
+      nextBefore: "2026-09-01T00:00:00Z",
+    });
+  });
+});
+
+describe("getRelationshipTimelinePage", () => {
+  it("keeps the cursor when older activity exists", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          observations: [{ id: "obs-1" }],
+          hasMore: true,
+          nextBefore: "2026-08-01T00:00:00Z",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    await expect(getRelationshipTimelinePage("rel-1")).resolves.toEqual({
+      observations: [{ id: "obs-1" }],
+      hasMore: true,
+      nextBefore: "2026-08-01T00:00:00Z",
+    });
   });
 });
 
