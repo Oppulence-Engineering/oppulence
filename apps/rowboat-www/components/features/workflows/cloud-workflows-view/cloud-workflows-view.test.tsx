@@ -186,6 +186,10 @@ describe("CloudWorkflowsView", () => {
     ).toBe("Recorded an update.");
     expect(runEventBody({ event: "Agent step 1." })).toBe("Step 1.");
     expect(source).toContain("runEventBody(event)");
+    expect(source).toContain("The transcript could not be loaded.");
+    expect(source).toContain("Loading the transcript…");
+    expect(source).toContain('transcriptStatus === "ready"');
+    expect(source).toContain("No transcript events yet.");
     expect(source).not.toContain("JSON.stringify(event.event");
     expect(runReference("sched-temporal-c9522e0b-4fc9-47a3-9fbf-434c9faf2262")).toBe("c9522e0b");
     expect(runReference("241dea88-95d9-4d7b-add0-075e93288cdd")).toBe("241dea88");

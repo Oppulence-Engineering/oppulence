@@ -789,6 +789,7 @@ function WorkflowLibrary({
 function RunInspector({
   run,
   events,
+  transcriptStatus,
   busy,
   workflowName,
   taskExecutionTarget,
@@ -797,6 +798,7 @@ function RunInspector({
 }: {
   run: CloudRun | null;
   events: CloudRunEvent[];
+  transcriptStatus: "loading" | "ready" | "error";
   busy: boolean;
   workflowName?: string;
   taskExecutionTarget?: "api" | "desktop";
@@ -910,7 +912,13 @@ function RunInspector({
                 </div>
               </li>
             ))}
-            {events.length === 0 ? (
+            {events.length === 0 && transcriptStatus === "loading" ? (
+              <li className="text-muted-foreground">Loading the transcript…</li>
+            ) : null}
+            {events.length === 0 && transcriptStatus === "error" ? (
+              <li className="text-muted-foreground">The transcript could not be loaded.</li>
+            ) : null}
+            {events.length === 0 && transcriptStatus === "ready" ? (
               <li className="text-muted-foreground">No transcript events yet.</li>
             ) : null}
           </ol>
@@ -924,6 +932,7 @@ function WorkflowRuns({
   runs,
   selectedRun,
   events,
+  transcriptStatus,
   busy,
   tasks,
   nextCursor,
@@ -941,6 +950,7 @@ function WorkflowRuns({
   runs: CloudRun[];
   selectedRun: CloudRun | null;
   events: CloudRunEvent[];
+  transcriptStatus: "loading" | "ready" | "error";
   busy: boolean;
   tasks: CloudTask[];
   nextCursor?: string;
@@ -1070,6 +1080,7 @@ function WorkflowRuns({
           onRetry={onRetry}
           run={selectedRun}
           taskExecutionTarget={selectedTask?.executionTarget}
+          transcriptStatus={transcriptStatus}
           workflowName={selectedRun ? runTitle(selectedRun, tasks) : undefined}
         />
       </ScrollArea>
@@ -1084,6 +1095,7 @@ function WorkflowEditor({
   runs,
   selectedRun,
   events,
+  transcriptStatus,
   busy,
   onBack,
   onRun,
@@ -1099,6 +1111,7 @@ function WorkflowEditor({
   runs: CloudRun[];
   selectedRun: CloudRun | null;
   events: CloudRunEvent[];
+  transcriptStatus: "loading" | "ready" | "error";
   busy: boolean;
   onBack: () => void;
   onRun: () => void;
@@ -1301,6 +1314,7 @@ function WorkflowEditor({
                 onRetry={onRetry}
                 run={selectedRun}
                 taskExecutionTarget={task.executionTarget}
+                transcriptStatus={transcriptStatus}
                 workflowName={taskTitle(task)}
               />
             </ScrollArea>
@@ -1449,6 +1463,10 @@ export function CloudWorkflowsView({
   const [selectedSlug, setSelectedSlug] = React.useState(initialSlug || "");
   const [selectedRun, setSelectedRun] = React.useState<CloudRun | null>(null);
   const [events, setEvents] = React.useState<CloudRunEvent[]>([]);
+  const [transcriptRunId, setTranscriptRunId] = React.useState<string | null>(null);
+  const [transcriptPhase, setTranscriptPhase] = React.useState<"loading" | "ready" | "error">(
+    "ready",
+  );
   const [schedule, setSchedule] = React.useState<CloudSchedule | null>(null);
   const [screen, setScreen] = React.useState<"library" | "editor" | "runs">(
     workflowOpeningScreen(focus, initialSlug, initialRunId),
@@ -1486,10 +1504,17 @@ export function CloudWorkflowsView({
   const selectedRunID = selectedRun?.runId;
   const selectedRunSlug = selectedRun?.slug;
   const selectedRunStatus = selectedRun?.status;
+  const transcriptStatus: "loading" | "ready" | "error" = !selectedRunID
+    ? "ready"
+    : transcriptRunId === selectedRunID
+      ? transcriptPhase
+      : "loading";
 
   const selectRun = React.useCallback((run: CloudRun | null) => {
     setSelectedRun(run);
     setEvents([]);
+    setTranscriptRunId(run?.runId ?? null);
+    setTranscriptPhase(run ? "loading" : "ready");
     if (run) setSelectedSlug(run.slug);
   }, []);
 
@@ -1564,9 +1589,15 @@ export function CloudWorkflowsView({
         if (!cancelled) {
           setEvents(nextEvents);
           setSelectedRun(nextRun);
+          setTranscriptRunId(selectedRunID);
+          setTranscriptPhase("ready");
         }
       } catch (cause) {
-        if (!cancelled) setError(shownWorkflowError(cause, "Could not refresh workflow run"));
+        if (!cancelled) {
+          setError(shownWorkflowError(cause, "Could not refresh workflow run"));
+          setTranscriptRunId(selectedRunID);
+          setTranscriptPhase("error");
+        }
       }
     };
     void load();
@@ -1648,6 +1679,7 @@ export function CloudWorkflowsView({
         <WorkflowRuns
           busy={busy}
           events={events}
+          transcriptStatus={transcriptStatus}
           executorFilter={executorFilter}
           nextCursor={nextCursor}
           onCancel={() =>
@@ -1679,6 +1711,7 @@ export function CloudWorkflowsView({
         <WorkflowEditor
           busy={busy}
           events={events}
+          transcriptStatus={transcriptStatus}
           templates={templates}
           key={`${selectedTask.id}:${selectedTask.revision}`}
           onBack={() => {
