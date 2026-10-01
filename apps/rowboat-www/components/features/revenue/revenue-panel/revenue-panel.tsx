@@ -10,6 +10,7 @@ import { useReportScan, useReportScanList } from "@/hooks/queries/use-report";
 import { useRelationshipSourceStatuses } from "@/hooks/queries/use-relationship-sources";
 import { useWorkspace } from "@/hooks/queries/use-workspace";
 import { commitmentKeys } from "@/hooks/queries/utils/commitment-keys";
+import { fetchCommitments } from "@/hooks/queries/utils/fetch-commitments";
 import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-source-keys";
 import { revenueActionKeys } from "@/hooks/queries/utils/revenue-action-keys";
 import { downloadMarkdown } from "@/lib/content/download-markdown";
@@ -20,7 +21,13 @@ import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/al
 import type { RevenueTab } from "@/components/features/dashboard/app-shell/app-shell";
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
 import {
+  overdueRegisterFilter,
+  REGISTER_PAGE_SIZE,
+  registerFilterFor,
+} from "@/lib/revenue/commitment-register-filter";
+import {
   appendCommitmentTransition,
+  explainedRevenueError,
   friendlyRevenueError,
   googleAuditLaunch,
   getCommitmentRecordMarkdown,
@@ -46,7 +53,7 @@ import {
 import { ScansView } from "@/components/features/revenue/scans-view/scans-view";
 import { WorkspaceView } from "@/components/features/revenue/workspace-view/workspace-view";
 import { ActionsView } from "@/components/features/actions/actions-view/actions-view";
-import type { RevenueLeakScan, RevenueWorkspace } from "@/lib/revenue/types";
+import type { RegisterEntry, RevenueLeakScan, RevenueWorkspace } from "@/lib/revenue/types";
 
 // The register's own failures, in words a customer can act on. A raw "not
 // found" from the proxy tells them nothing; worse, the old code showed no
@@ -128,6 +135,9 @@ export function RevenuePanel({
   // that count was opened, and it stays stable so the register does not refetch
   // on every render. Go's dueBefore parser rejects fractional seconds.
   const [overdueBefore, setOverdueBefore] = React.useState<string | null>(null);
+  const [extraEntries, setExtraEntries] = React.useState<RegisterEntry[]>([]);
+  const [registerExhausted, setRegisterExhausted] = React.useState(false);
+  const [loadingMorePromises, setLoadingMorePromises] = React.useState(false);
   React.useEffect(
     () =>
       subscribeDueCommitments(() => {
@@ -145,6 +155,69 @@ export function RevenuePanel({
     },
     { enabled: tab === "commitments" },
   );
+  const registerScope = `${registerView}|${registerAccountId}|${registerOwner}|${includeCandidates}|${overdueBefore ?? ""}`;
+  React.useEffect(() => {
+    setExtraEntries([]);
+    setRegisterExhausted(false);
+  }, [registerScope]);
+  const registerPage = commitmentQuery.data?.entries ?? [];
+  const registerEntries = React.useMemo(() => {
+    if (extraEntries.length === 0) return registerPage;
+    const seen = new Set(registerPage.map((entry) => entry.id));
+    return [
+      ...registerPage,
+      ...extraEntries.filter((entry) => {
+        if (seen.has(entry.id)) return false;
+        seen.add(entry.id);
+        return true;
+      }),
+    ];
+  }, [extraEntries, registerPage]);
+  const hasMorePromises =
+    !registerExhausted &&
+    registerPage.length > 0 &&
+    (registerPage.length + extraEntries.length) % REGISTER_PAGE_SIZE === 0;
+  const loadMorePromises = React.useCallback(async () => {
+    const filter = overdueBefore
+      ? overdueRegisterFilter(overdueBefore)
+      : registerFilterFor(registerView, {
+          relationshipId: registerAccountId,
+          owner: registerOwner,
+          includeCandidates,
+        });
+    if (!filter || loadingMorePromises) return;
+    setLoadingMorePromises(true);
+    try {
+      const next = await fetchCommitments({
+        ...filter,
+        offset: registerPage.length + extraEntries.length,
+        limit: REGISTER_PAGE_SIZE,
+      });
+      const titles = new Map(
+        (commitmentQuery.data?.accounts ?? []).map((account) => [account.id, account.label]),
+      );
+      const named = next.map((entry) => {
+        const title = entry.relationshipId ? titles.get(entry.relationshipId) : undefined;
+        return title ? { ...entry, relationshipName: title } : entry;
+      });
+      if (named.length < REGISTER_PAGE_SIZE) setRegisterExhausted(true);
+      setExtraEntries((current) => [...current, ...named]);
+    } catch (reason) {
+      setError(explainedRevenueError(reason, "Could not load the next promises."));
+    } finally {
+      setLoadingMorePromises(false);
+    }
+  }, [
+    commitmentQuery.data?.accounts,
+    extraEntries.length,
+    includeCandidates,
+    loadingMorePromises,
+    overdueBefore,
+    registerAccountId,
+    registerOwner,
+    registerPage.length,
+    registerView,
+  ]);
 
   React.useEffect(() => {
     const reason = workspaceQuery.error;
@@ -301,7 +374,10 @@ export function RevenuePanel({
 
         {tab === "commitments" ? (
           <CommitmentQueue
-            entries={commitmentQuery.data?.entries ?? []}
+            entries={registerEntries}
+            hasMorePromises={hasMorePromises}
+            loadingMorePromises={loadingMorePromises}
+            onLoadMorePromises={() => void loadMorePromises()}
             view={registerView}
             overdueOnly={Boolean(overdueBefore)}
             onLeaveOverdue={() => setOverdueBefore(null)}

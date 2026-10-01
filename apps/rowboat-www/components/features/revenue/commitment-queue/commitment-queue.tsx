@@ -174,6 +174,20 @@ export interface CommitmentQueueProps extends Omit<
     transition: CommitmentQueueTransition,
   ) => Promise<boolean>;
   onDraftRecovery: (relationshipId: string) => Promise<boolean>;
+  /** The loaded page filled the register limit and a later page may exist. */
+  hasMorePromises?: boolean;
+  loadingMorePromises?: boolean;
+  onLoadMorePromises?: () => void;
+}
+
+/** The header count says when this page is not the whole register. */
+export function registerCountLabel(shown: number, hasMore: boolean): string {
+  const noun = shown === 1 ? "commitment" : "commitments";
+  return hasMore ? `${shown}+ ${noun}` : `${shown} ${noun}`;
+}
+
+export function registerRemainderLabel(): string {
+  return "Show the next promises";
 }
 
 // The register already carries direction, owner, counterparty, the derived
@@ -465,6 +479,9 @@ export function CommitmentQueue({
   onOpenRecoveryQueue,
   onTransition,
   onDraftRecovery,
+  hasMorePromises = false,
+  loadingMorePromises = false,
+  onLoadMorePromises,
   ...props
 }: CommitmentQueueProps) {
   const [query, setQuery] = React.useState("");
@@ -550,7 +567,10 @@ export function CommitmentQueue({
     >
       <SimProductPanel className="mx-3 mt-3 flex min-h-0 flex-1 flex-col">
         <SimProductHeader
-          actions={`${filtered.length} commitment${filtered.length === 1 ? "" : "s"}`}
+          actions={registerCountLabel(
+            filtered.length,
+            hasMorePromises && filtered.length === items.length,
+          )}
           icon={TableIcon}
           title="Commitment register"
         />
@@ -1020,6 +1040,18 @@ export function CommitmentQueue({
                 })}
               </tbody>
             </table>
+            {hasMorePromises && onLoadMorePromises ? (
+              <Button
+                className="m-3"
+                disabled={loadingMorePromises}
+                onClick={onLoadMorePromises}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {registerRemainderLabel()}
+              </Button>
+            ) : null}
           </div>
         )}
       </SimProductPanel>

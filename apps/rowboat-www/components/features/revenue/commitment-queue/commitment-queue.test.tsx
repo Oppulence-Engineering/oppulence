@@ -16,6 +16,8 @@ import {
   missingEvidenceLabel,
   REGISTER_VIEWS,
   registerPartyLabels,
+  registerCountLabel,
+  registerRemainderLabel,
   urgencyLabel,
 } from "./commitment-queue";
 import type {
@@ -652,6 +654,17 @@ it("keeps the commitment filter and drops the chips that did nothing", () => {
   expect(screen.queryByRole("button", { name: "Filter" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Columns" })).not.toBeInTheDocument();
   expect(screen.getByRole("combobox", { name: "Commitments, Active" })).toBeInTheDocument();
+});
+
+it("keeps promises past the first register page one click away", () => {
+  expect(registerCountLabel(200, true)).toBe("200+ commitments");
+  expect(registerCountLabel(1, true)).toBe("1+ commitment");
+  expect(registerCountLabel(201, false)).toBe("201 commitments");
+  expect(registerRemainderLabel()).toBe("Show the next promises");
+  const source = fs.readFileSync(path.join(import.meta.dirname, "commitment-queue.tsx"), "utf8");
+  expect(source).toContain("registerCountLabel(");
+  expect(source).toContain("registerRemainderLabel()");
+  expect(source).toContain("onLoadMorePromises");
 });
 
 it("does not offer a meeting import that opens the company directory", () => {

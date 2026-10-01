@@ -4,6 +4,9 @@ import type { CommitmentRegisterFilter } from "@/lib/revenue/types";
 /** The five views of the commitment register. Each one is a different query. */
 export type RegisterView = "we_owe" | "they_owe" | "changed" | "by_account" | "by_owner";
 
+/** One register request stays bounded. The next page uses offset. */
+export const REGISTER_PAGE_SIZE = 200;
+
 /** The filter each view sends to the register. Kept beside the labels so the
  *  view and its query cannot drift apart. */
 export function registerFilterFor(
@@ -22,28 +25,28 @@ export function registerFilterFor(
         direction: "promised_by_me",
         state: ["open", "at_risk"],
         includeCandidates,
-        limit: 200,
+        limit: REGISTER_PAGE_SIZE,
       };
     case "they_owe":
       return {
         direction: "promised_by_them",
         state: ["open", "at_risk"],
         includeCandidates,
-        limit: 200,
+        limit: REGISTER_PAGE_SIZE,
       };
     case "changed":
       return {
         changedSince: options.since ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
         includeCandidates,
-        limit: 200,
+        limit: REGISTER_PAGE_SIZE,
       };
     case "by_account":
       return options.relationshipId
-        ? { relationshipId: options.relationshipId, includeCandidates, limit: 200 }
+        ? { relationshipId: options.relationshipId, includeCandidates, limit: REGISTER_PAGE_SIZE }
         : null;
     case "by_owner":
       return options.owner?.trim()
-        ? { owner: options.owner.trim(), includeCandidates, limit: 200 }
+        ? { owner: options.owner.trim(), includeCandidates, limit: REGISTER_PAGE_SIZE }
         : null;
   }
 }
@@ -59,7 +62,7 @@ export function overdueRegisterFilter(dueBefore: string): CommitmentRegisterFilt
   return {
     state: ["at_risk", "disputed"],
     dueBefore,
-    limit: 200,
+    limit: REGISTER_PAGE_SIZE,
   };
 }
 
