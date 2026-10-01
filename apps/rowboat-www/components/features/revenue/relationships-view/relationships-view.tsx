@@ -2123,6 +2123,8 @@ export function detailSourceLabel(authority: string | undefined, supported: bool
       return "From a workspace rule";
     case "ai_inference":
       return "Suggested";
+    case "external_research":
+      return "Public research";
     default:
       return authority ? relationshipLabel(authority) : "Not filled in yet";
   }

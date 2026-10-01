@@ -437,7 +437,10 @@ describe("RelationshipsView", () => {
     expect(completenessProductLabel("complete")).toBe("Details are current");
     expect(completenessProductLabel("custom_status")).toBe("Custom Status");
     expect(detailSourceLabel("ai_inference", true)).toBe("Suggested");
+    expect(detailSourceLabel("external_research", true)).toBe("Public research");
+    expect(detailSourceLabel("external_research", false)).toBe("Not filled in yet");
     expect(detailSourceLabel("source_fact", false)).toBe("Not filled in yet");
+    expect(source).toContain('case "external_research":\n      return "Public research";');
     expect(
       detailEvidenceCopy({
         supported: false,
