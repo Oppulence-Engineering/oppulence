@@ -39,7 +39,11 @@ func (d *Digest) Empty() bool { return d.OpenCount == 0 }
 // Digest composes the summary for one user: the top open loops by priority
 // plus the running impact counts.
 func (s *Service) Digest(ctx context.Context, u *ent.User) (*Digest, error) {
-	actions, err := s.ListActions(ctx, u, ListFilter{QueueStatus: QueueOpen, Limit: digestTopN})
+	// A saved task is not an inbox loop. The highlight list is only five rows,
+	// so five tasks used to hide every follow-up behind them.
+	actions, err := s.ListActions(ctx, u, ListFilter{
+		QueueStatus: QueueOpen, Limit: digestTopN, Surface: "recovery",
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -47,6 +51,10 @@ func (s *Service) Digest(ctx context.Context, u *ent.User) (*Digest, error) {
 		Where(
 			revenueaction.HasUserWith(user.IDEQ(u.ID)),
 			revenueaction.QueueStatusEQ(QueueOpen),
+			revenueaction.Or(
+				revenueaction.ActionTypeNEQ("follow_up_task"),
+				revenueaction.ChannelNEQ("task"),
+			),
 		).
 		Count(ctx)
 	if err != nil {

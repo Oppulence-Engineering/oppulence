@@ -3,6 +3,7 @@ package revenue
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -85,6 +86,32 @@ func TestDigestComposeAndRender(t *testing.T) {
 	_, htmlBody2, _ := RenderDigest(dg, "https://oppulence.io")
 	if strings.Contains(htmlBody2, "<script>x</script>") {
 		t.Fatal("recipient must be HTML-escaped in the digest")
+	}
+}
+
+func TestDigestSkipsSavedTasks(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	for n := 0; n < 5; n++ {
+		if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+			RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task",
+			Reason: "Pack the booth crate", PriorityScore: 90, DedupeKey: fmt.Sprintf("digest-task-%d", n),
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "warm_follow_up", Channel: "email",
+		Reason: "Send the harbor note", PriorityScore: 10, DedupeKey: "digest-email",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	dg, err := f.svc.Digest(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dg.OpenCount != 1 || len(dg.Top) != 1 || dg.Top[0].Reason != "Send the harbor note" {
+		t.Fatalf("digest = open %d top %+v, want the email only", dg.OpenCount, dg.Top)
 	}
 }
 

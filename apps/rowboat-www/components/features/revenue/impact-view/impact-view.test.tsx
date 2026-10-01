@@ -24,6 +24,9 @@ describe("ImpactView", () => {
     expect(source).toContain("data.atRiskRelationships");
     expect(source).not.toContain("atRiskPulseCount(");
     expect(source).not.toContain("recoveryPulseCount(");
+    expect(source).toContain("digest?.top ?? []");
+    expect(source).toContain("digest?.openCount");
+    expect(source).not.toContain("digestWithoutTasks(");
     expect(source).toContain("digestTop.map(");
     expect(source).toContain("riskReasons.map(");
     expect(source).not.toContain("digestTop.slice(0, 3)");

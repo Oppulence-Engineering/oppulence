@@ -5,7 +5,6 @@ import "client-only";
 import * as React from "react";
 import { EnvelopeSimple, MagnifyingGlass, Plugs, WarningDiamond } from "@/lib/icons";
 import { useImpactBundle } from "@/hooks/queries/use-impact";
-import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
 import { useRelationships } from "@/hooks/queries/use-relationships";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
@@ -31,11 +30,7 @@ import {
 } from "@oppulence/ui/components/table";
 
 import { attentionReasonLabel, auditLaunchLabel } from "@/lib/revenue/revenue";
-import {
-  detectorsWithoutTasks,
-  digestWithoutTasks,
-  recoveryOpenCount,
-} from "@/lib/revenue/revenue-records";
+import { detectorsWithoutTasks, recoveryOpenCount } from "@/lib/revenue/revenue-records";
 import type { RevenueImpact } from "@/lib/revenue/types";
 import { EmptyBlock, errMessage, ListSkeleton } from "@/components/features/revenue/shared/shared";
 import { cn } from "@/lib/utils";
@@ -102,7 +97,6 @@ export function ImpactView({
 }) {
   const impactQuery = useImpactBundle();
   const relationshipsQuery = useRelationships();
-  const openActionsQuery = useRevenueActions("open", 100, "task");
 
   React.useEffect(() => {
     if (impactQuery.error) {
@@ -137,11 +131,8 @@ export function ImpactView({
   const recoveryOpen = recoveryOpenCount(data.open, taskCount);
   const surfacedShown = Math.max(0, data.surfaced - taskCount);
   const openShown = recoveryOpen;
-  const digestTop = digestWithoutTasks(
-    digest?.top,
-    openActionsQuery.isSuccess ? openActionsQuery.data : undefined,
-  );
-  const digestOpen = Math.max(0, (digest?.openCount ?? 0) - taskCount);
+  const digestTop = digest?.top ?? [];
+  const digestOpen = Math.max(0, digest?.openCount ?? 0);
 
   if (
     surfacedShown === 0 &&
