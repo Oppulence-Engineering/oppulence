@@ -103,6 +103,7 @@ import {
   isWorkspaceTask,
   plateText,
   taskIsDueToday,
+  taskIsOverdue,
   type WorkspaceNote,
 } from "@/lib/revenue/revenue-records";
 import {
@@ -1887,7 +1888,7 @@ export function TasksView({
   const visible = tasks.filter((task) => {
     // Stored as 5pm local, which is already the next UTC date west of UTC.
     if (filter === "today") return taskIsDueToday(task.dueAt, today);
-    if (filter === "overdue") return Boolean(task.dueAt && new Date(task.dueAt).getTime() < now);
+    if (filter === "overdue") return taskIsOverdue(task.dueAt, now);
     return true;
   });
   const complete = async (task: RevenueAction) => {
@@ -2010,7 +2011,7 @@ export function TasksView({
       ) : (
         <ul className="divide-y divide-border">
           {visible.map((task) => {
-            const overdue = Boolean(task.dueAt && new Date(task.dueAt).getTime() < now);
+            const overdue = taskIsOverdue(task.dueAt, now);
             return (
               <li
                 key={task.id}

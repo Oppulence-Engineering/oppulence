@@ -598,6 +598,8 @@ describe("task due order", () => {
     expect(source).toContain("aria-label={taskFilterName(filter)}");
     expect(source).toContain("taskListEmptyCopy(filter)");
     expect(source).toContain("taskIsDueToday(task.dueAt, today)");
+    expect(source).toContain("taskIsOverdue(task.dueAt, now)");
+    expect(source).not.toContain("new Date(task.dueAt).getTime() < now");
     expect(source).not.toContain("task.dueAt?.slice(0, 10) === today");
     expect(source).toContain("Show all tasks");
     expect(source).toContain("No tasks yet! Create your first");

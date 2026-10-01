@@ -16,6 +16,7 @@ import {
   recoveryPulseCount,
   recoveryQueueActions,
   taskIsDueToday,
+  taskIsOverdue,
 } from "@/lib/revenue/revenue-records";
 
 describe("mapSettledWithConcurrency", () => {
@@ -120,6 +121,12 @@ describe("local due dates", () => {
       ),
     ).toEqual([]);
     expect(taskIsDueToday(stored, picked)).toBe(true);
+    const evening = new Date(`${picked}T18:30:00`).getTime();
+    expect(taskIsOverdue(stored, evening)).toBe(false);
+    expect(taskIsOverdue(stored, new Date(`${picked}T10:00:00`).getTime())).toBe(false);
+    expect(taskIsOverdue(stored, new Date("2026-10-02T09:00:00").getTime())).toBe(true);
+    expect(taskIsOverdue(undefined, evening)).toBe(false);
+    expect(taskIsOverdue("not-a-date", evening)).toBe(false);
     expect(taskIsDueToday(undefined, picked)).toBe(false);
     expect(taskIsDueToday("not-a-date", picked)).toBe(false);
     expect(localCalendarDay(stored)).toBe(picked);

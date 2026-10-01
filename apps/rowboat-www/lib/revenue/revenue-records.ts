@@ -247,6 +247,18 @@ export function taskIsDueToday(dueAt: string | null | undefined, today: string):
   return day !== "" && day === today;
 }
 
+/**
+ * A task is saved at 5pm on the chosen day, and the list only prints that
+ * day. Overdue means the day has passed. 6pm on the due date is still that day.
+ */
+export function taskIsOverdue(dueAt: string | null | undefined, now: number | Date): boolean {
+  if (!dueAt) return false;
+  const dueDay = localCalendarDay(dueAt);
+  const today = localCalendarDay(now instanceof Date ? now : new Date(now));
+  if (!dueDay || !today) return false;
+  return dueDay < today;
+}
+
 /** Open promises used to print the UTC date prefix. The reader sees their own day. */
 export function promiseDueLabel(dueAt: string | null | undefined): string {
   if (!dueAt) return "due unspecified";
