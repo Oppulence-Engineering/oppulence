@@ -126,6 +126,8 @@ describe("CloudWorkflowsView", () => {
     expect(source).not.toContain("{readableEnum(run.trigger)}");
     expect(source).toContain("workflowName={taskTitle(task)}");
     expect(source).toContain('friendlyAgentError(message, "run")');
+    expect(source.match(/setError\(shownWorkflowError\(cause,/g)).toHaveLength(8);
+    expect(source).toContain("cause instanceof Error ? cause.message : fallback");
   });
 
   it("names schedule health and transcript events", () => {
@@ -172,15 +174,13 @@ describe("CloudWorkflowsView", () => {
         },
       }),
     ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
-    expect(runEventBody({ type: "runtime.unknown", event: { prompt_version: "cloud-runtime-v1" } })).toBe(
-      "Recorded an update.",
-    );
+    expect(
+      runEventBody({ type: "runtime.unknown", event: { prompt_version: "cloud-runtime-v1" } }),
+    ).toBe("Recorded an update.");
     expect(runEventBody({ event: "Agent step 1." })).toBe("Step 1.");
     expect(source).toContain("runEventBody(event)");
     expect(source).not.toContain("JSON.stringify(event.event");
-    expect(runReference("sched-temporal-c9522e0b-4fc9-47a3-9fbf-434c9faf2262")).toBe(
-      "c9522e0b",
-    );
+    expect(runReference("sched-temporal-c9522e0b-4fc9-47a3-9fbf-434c9faf2262")).toBe("c9522e0b");
     expect(runReference("241dea88-95d9-4d7b-add0-075e93288cdd")).toBe("241dea88");
     expect(runReference("api-trigger-9f")).toBe("9f");
     expect(runReference("retry-1")).toBe("1");
@@ -275,9 +275,7 @@ describe("CloudWorkflowsView", () => {
           },
         ],
       ),
-    ).toBe(
-      "Summarize what is new for each company, including open promises.",
-    );
+    ).toBe("Summarize what is new for each company, including open promises.");
     expect(
       workflowListSummary(
         {
@@ -361,10 +359,7 @@ describe("CloudWorkflowsView", () => {
     expect(workflowLastRunAt({ lastRunAt: null }, undefined)).toBeNull();
     expect(workflowLastRunAt({}, "2026-09-30T18:15:00Z")).toBe("2026-09-30T18:15:00Z");
     expect(
-      workflowLastRunAt(
-        { lastRunAt: "2026-09-30T09:00:00Z" },
-        "2026-09-30T18:15:00.252Z",
-      ),
+      workflowLastRunAt({ lastRunAt: "2026-09-30T09:00:00Z" }, "2026-09-30T18:15:00.252Z"),
     ).toBe("2026-09-30T18:15:00.252Z");
     expect(
       workflowLastRunAt({ lastRunAt: "2026-09-30T18:15:00.558Z" }, "2026-09-30T18:00:00Z"),
@@ -432,9 +427,9 @@ describe("CloudWorkflowsView", () => {
       settled: true,
       hasMore: true,
     });
-    expect(
-      workflowRunsForEditor("oppulence-post-meeting-processor", account, null).runs,
-    ).toEqual(account);
+    expect(workflowRunsForEditor("oppulence-post-meeting-processor", account, null).runs).toEqual(
+      account,
+    );
     expect(source).toContain("useWorkflowRuns({ slug: task.slug })");
     expect(source).toContain('taskRunsSettled ? "No runs yet." : "Loading runs…"');
     const runsAt = source.indexOf('value="runs"');
@@ -509,7 +504,7 @@ describe("CloudWorkflowsView", () => {
           taskSlug: "oppulence-meeting-pre-brief",
           description: "Prepare evidence-linked context for upcoming customer meetings.",
         },
-      ]    ).objective,
+      ]).objective,
     ).toBe("Get the promises, risks, and goals ready before a meeting.");
   });
 

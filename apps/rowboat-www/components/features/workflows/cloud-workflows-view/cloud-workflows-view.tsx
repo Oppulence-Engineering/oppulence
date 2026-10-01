@@ -329,6 +329,10 @@ function StatusIcon({ status }: { status: string }) {
   return <Pause className="size-4" />;
 }
 
+function shownWorkflowError(cause: unknown, fallback: string): string {
+  return friendlyAgentError(cause instanceof Error ? cause.message : fallback);
+}
+
 function runFailureCopy(run: CloudRun): string {
   const message = run.error ?? "";
   const friendly = friendlyAgentError(message, "run");
@@ -458,7 +462,7 @@ function CreateWorkflowDialog({
       setName("");
       setObjective("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not create workflow");
+      setError(shownWorkflowError(cause, "Could not create workflow"));
     } finally {
       setBusy(false);
     }
@@ -472,7 +476,7 @@ function CreateWorkflowDialog({
       onCreated(task);
       setOpen(false);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not add template");
+      setError(shownWorkflowError(cause, "Could not add template"));
     } finally {
       setBusy(false);
     }
@@ -535,7 +539,10 @@ function CreateWorkflowDialog({
                   .map((template) => {
                     const name = workflowProductName(template.slug, template.name);
                     return (
-                      <div className="flex items-start justify-between gap-4 p-3" key={template.slug}>
+                      <div
+                        className="flex items-start justify-between gap-4 p-3"
+                        key={template.slug}
+                      >
                         <div>
                           <p className="text-[13px] font-medium">{name}</p>
                           <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
@@ -1122,13 +1129,16 @@ function WorkflowEditor({
   const scopedRuns = scopedRunsQuery.isSuccess
     ? (scopedRunsQuery.data.pages.flatMap((page) => page.runs) as CloudRun[])
     : null;
-  const { runs: taskRuns, settled: taskRunsSettled, hasMore: taskRunsHasMore } =
-    workflowRunsForEditor(
-      task.slug,
-      runs,
-      scopedRuns,
-      scopedRunsQuery.isSuccess && scopedRunsQuery.hasNextPage,
-    );
+  const {
+    runs: taskRuns,
+    settled: taskRunsSettled,
+    hasMore: taskRunsHasMore,
+  } = workflowRunsForEditor(
+    task.slug,
+    runs,
+    scopedRuns,
+    scopedRunsQuery.isSuccess && scopedRunsQuery.hasNextPage,
+  );
 
   const save = async () => {
     const compiled = compileVisualWorkflow(workflow);
@@ -1489,16 +1499,14 @@ export function CloudWorkflowsView({
       await ensureFirstPartyWorkflows();
       await queryClient.invalidateQueries({ queryKey: workflowKeys.all });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not load workflows");
+      setError(shownWorkflowError(cause, "Could not load workflows"));
     }
   }, [queryClient]);
 
   React.useEffect(() => {
     void ensureFirstPartyWorkflows()
       .then(() => queryClient.invalidateQueries({ queryKey: workflowKeys.tasks() }))
-      .catch((cause) =>
-        setError(cause instanceof Error ? cause.message : "Could not load workflows"),
-      );
+      .catch((cause) => setError(shownWorkflowError(cause, "Could not load workflows")));
   }, [queryClient]);
 
   React.useEffect(() => {
@@ -1522,8 +1530,7 @@ export function CloudWorkflowsView({
         if (!cancelled) selectRun(run);
       })
       .catch((cause) => {
-        if (!cancelled)
-          setError(cause instanceof Error ? cause.message : "Could not load workflow run");
+        if (!cancelled) setError(shownWorkflowError(cause, "Could not load workflow run"));
       });
     return () => {
       cancelled = true;
@@ -1538,8 +1545,7 @@ export function CloudWorkflowsView({
         if (!cancelled) setSchedule(value);
       })
       .catch((cause) => {
-        if (!cancelled)
-          setError(cause instanceof Error ? cause.message : "Could not load schedule");
+        if (!cancelled) setError(shownWorkflowError(cause, "Could not load schedule"));
       });
     return () => {
       cancelled = true;
@@ -1560,8 +1566,7 @@ export function CloudWorkflowsView({
           setSelectedRun(nextRun);
         }
       } catch (cause) {
-        if (!cancelled)
-          setError(cause instanceof Error ? cause.message : "Could not refresh workflow run");
+        if (!cancelled) setError(shownWorkflowError(cause, "Could not refresh workflow run"));
       }
     };
     void load();
@@ -1585,7 +1590,7 @@ export function CloudWorkflowsView({
     try {
       await action();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Workflow operation failed");
+      setError(shownWorkflowError(cause, "Workflow operation failed"));
     } finally {
       setBusy(false);
     }

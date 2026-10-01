@@ -32,6 +32,9 @@ export function friendlyAgentError(message: string, subject: "agent" | "run" = "
   if (/status 401|missing authentication header|invalid api key|invalid_api_key/i.test(message)) {
     return "The AI provider rejected the API key for this workspace. Nothing was charged.";
   }
+  if (/\brate limit\b|too many requests|\(429\)/i.test(message)) {
+    return "Too many requests were sent from this workspace. Wait a moment, then try again.";
+  }
   if (/activity error|scheduledEventID|startedEventID/i.test(message)) {
     return subject === "run"
       ? "This run could not finish. Please try again."

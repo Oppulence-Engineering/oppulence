@@ -19,6 +19,9 @@ describe("AgentsView", () => {
     expect(source).not.toMatch(/>\s*Instructions\s*</);
     expect(source).toMatch(/>\s*Purpose\s*</);
     expect(source).toContain("{agentToolLabel(tool)}");
+    expect(source).toContain(
+      'friendlyAgentError(\n          agentsQuery.error instanceof Error ? agentsQuery.error.message : "Could not load agents",\n        )',
+    );
     expect(source).not.toContain("title={tool}");
   });
 });

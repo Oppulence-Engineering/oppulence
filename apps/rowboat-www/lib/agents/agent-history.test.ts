@@ -39,6 +39,12 @@ it("hides provider and workflow details from agent failures", () => {
     "This run could not finish. Please try again.",
   );
   expect(friendlyAgentError("The agent was canceled.")).toBe("The agent was canceled.");
+  expect(friendlyAgentError("rate limit exceeded")).toBe(
+    "Too many requests were sent from this workspace. Wait a moment, then try again.",
+  );
+  expect(friendlyAgentError("Could not delete agent (429)")).toBe(
+    "Too many requests were sent from this workspace. Wait a moment, then try again.",
+  );
 });
 
 describe("conversationFromAgentEvents", () => {
