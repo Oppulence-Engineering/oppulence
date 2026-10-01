@@ -48,4 +48,10 @@ describe("ReviewSheet", () => {
     expect(source).toContain("The last attempt did not send");
     expect(source).not.toContain("{action.executionError}");
   });
+
+  it("names a dismissal and a snooze on the review sheet", () => {
+    expect(source).toContain("dismissReasonLabel(action.dismissReason)");
+    expect(source).toContain("snoozeWakeCopy(action.snoozedUntil)");
+    expect(source).toContain("<AlertTitle>Dismissed</AlertTitle>");
+  });
 });

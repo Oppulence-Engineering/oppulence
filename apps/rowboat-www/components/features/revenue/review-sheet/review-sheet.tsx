@@ -36,6 +36,7 @@ import {
   approveAction,
   DETECTOR_LABELS,
   dismissAction,
+  dismissReasonLabel,
   editAction,
   evaluateAction,
   executeAction,
@@ -44,6 +45,7 @@ import {
   getSourceBody,
   rejectAction,
   RevenueAPIError,
+  snoozeWakeCopy,
   startCheckout,
 } from "@/lib/revenue/revenue";
 import {
@@ -215,6 +217,9 @@ export function ReviewSheet({
     action.executionStatus === "pending" || action.executionStatus === "failed"
       ? executionFailureCopy(action.executionError)
       : "";
+  const dismissal =
+    action.queueStatus === "dismissed" ? dismissReasonLabel(action.dismissReason) : "";
+  const snooze = action.queueStatus === "snoozed" ? snoozeWakeCopy(action.snoozedUntil) : "";
   const linked = workspace?.mode === "linked" && workspace.status === "active";
   const dirty =
     subject !== (action.proposedSubject ?? "") || message !== (action.proposedMessage ?? "");
@@ -393,6 +398,18 @@ export function ReviewSheet({
             <Alert>
               <XCircle weight="fill" />
               <AlertDescription>This action was rejected.</AlertDescription>
+            </Alert>
+          ) : null}
+
+          {dismissal ? (
+            <Alert>
+              <AlertTitle>Dismissed</AlertTitle>
+              <AlertDescription>{dismissal}</AlertDescription>
+            </Alert>
+          ) : null}
+          {snooze ? (
+            <Alert>
+              <AlertDescription>{snooze}</AlertDescription>
             </Alert>
           ) : null}
 

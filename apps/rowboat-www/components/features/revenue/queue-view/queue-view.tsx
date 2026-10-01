@@ -55,7 +55,9 @@ import {
   createAction,
   DETECTOR_LABELS,
   dismissAction,
+  dismissReasonLabel,
   QUEUE_FILTERS,
+  snoozeWakeCopy,
   snoozeAction,
   type CreateActionInput,
 } from "@/lib/revenue/revenue";
@@ -385,6 +387,9 @@ function ActionCard({
     action.executionStatus === "pending" || action.executionStatus === "failed"
       ? executionFailureCopy(action.executionError)
       : "";
+  const dismissal =
+    action.queueStatus === "dismissed" ? dismissReasonLabel(action.dismissReason) : "";
+  const snooze = action.queueStatus === "snoozed" ? snoozeWakeCopy(action.snoozedUntil) : "";
 
   const triage = async (kind: "snooze" | "dismiss") => {
     setBusy(kind);
@@ -425,6 +430,10 @@ function ActionCard({
           {sendFailure ? (
             <p className="mt-1.5 text-sm text-amber-700 dark:text-amber-300">{sendFailure}</p>
           ) : null}
+          {dismissal ? (
+            <p className="mt-1.5 text-sm text-[var(--text-secondary)]">Dismissed: {dismissal}</p>
+          ) : null}
+          {snooze ? <p className="mt-1.5 text-sm text-[var(--text-secondary)]">{snooze}</p> : null}
           {action.proposedSubject ? (
             <p className="mt-1 truncate text-xs text-[var(--text-muted)]">
               Draft subject: {action.proposedSubject}

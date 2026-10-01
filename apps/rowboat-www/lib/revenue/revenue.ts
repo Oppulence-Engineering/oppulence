@@ -966,6 +966,36 @@ export function priorityComponentLabel(key: string): string {
   return words.replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+/** A dismissal reason is often a stored slug. The dismissed queue names it. */
+export function dismissReasonLabel(reason: string | null | undefined): string {
+  const raw = (reason ?? "").trim();
+  if (!raw) return "";
+  const known: Record<string, string> = {
+    not_relevant: "Not relevant",
+    already_handled: "Already handled",
+    resolved_by_new_evidence: "Newer evidence arrived",
+    changed_my_mind: "Changed my mind",
+  };
+  const named = known[raw];
+  if (named) return named;
+  if (/^[a-z0-9_]+$/.test(raw)) {
+    return raw
+      .split("_")
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  }
+  return raw;
+}
+
+/** A snoozed action stores a wake time. The queue says when it returns. */
+export function snoozeWakeCopy(until: string | null | undefined): string {
+  const when = relativeTime(until);
+  if (!when) return "";
+  if (when.endsWith("ago")) return `Snooze ended ${when}.`;
+  return `Comes back ${when}.`;
+}
+
 export function relativeTime(iso?: string | null): string {
   if (!iso) return "";
   const then = new Date(iso).getTime();

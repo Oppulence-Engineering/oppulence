@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { dismissReasonLabel, snoozeWakeCopy } from "@/lib/revenue/revenue";
 import {
   recoveryEmptyDescription,
   recoveryFilterName,
@@ -74,5 +75,18 @@ describe("QueueView", () => {
     expect(source).not.toContain("confirmed commitments");
     expect(source).toContain('placeholder="Why this follow-up is needed"');
     expect(source).not.toContain("Why now? (reason)");
+    expect(dismissReasonLabel("resolved_by_new_evidence")).toBe("Newer evidence arrived");
+    expect(dismissReasonLabel("not_relevant")).toBe("Not relevant");
+    expect(dismissReasonLabel("already handled by hand")).toBe("already handled by hand");
+    expect(snoozeWakeCopy("")).toBe("");
+    expect(snoozeWakeCopy(new Date(Date.now() - 2 * 86_400_000).toISOString())).toMatch(
+      /^Snooze ended \d+ days ago\.$/,
+    );
+    expect(snoozeWakeCopy(new Date(Date.now() + 7 * 86_400_000).toISOString())).toMatch(
+      /^Comes back \d+ days from now\.$/,
+    );
+    expect(source).toContain("dismissReasonLabel(action.dismissReason)");
+    expect(source).toContain("snoozeWakeCopy(action.snoozedUntil)");
+    expect(source).not.toContain("{action.dismissReason}");
   });
 });
