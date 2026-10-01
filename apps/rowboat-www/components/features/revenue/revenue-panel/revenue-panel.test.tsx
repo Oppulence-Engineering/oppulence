@@ -20,4 +20,8 @@ describe("RevenuePanel", () => {
     expect(source).toContain("overdueOnly={Boolean(overdueBefore)}");
     expect(source).toContain("dueBefore: overdueBefore ?? \"\"");
   });
+
+  it("opens the company named on a note", () => {
+    expect(source).toContain("onOpenCompany={onOpenCompany}");
+  });
 });

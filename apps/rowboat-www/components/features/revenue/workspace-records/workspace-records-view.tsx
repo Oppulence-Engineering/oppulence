@@ -829,7 +829,8 @@ export function NotesView({
   onError,
   onNotice,
   onOpenCompanies,
-}: ViewProps & { onOpenCompanies?: () => void }) {
+  onOpenCompany,
+}: ViewProps & { onOpenCompanies?: () => void; onOpenCompany?: (relationshipId: string) => void }) {
   const queryClient = useQueryClient();
   const author = useNoteAuthor();
   const notesQuery = useWorkspaceNotes();
@@ -1179,7 +1180,27 @@ export function NotesView({
                     <CardHeader className="flex-1 gap-1 px-4 pb-0 pt-4">
                       <div className="flex items-center gap-2 text-[12px] text-primary/65">
                         <Note className="size-3.5" />
-                        <Label className="font-normal underline">{note.relationshipName}</Label>
+                        {onOpenCompany ? (
+                          <Button
+                            aria-label={noteCompanyLabel(note.relationshipName)}
+                            className="h-auto rounded-none px-0 py-0 text-[12px] font-normal text-primary/65 underline hover:bg-transparent hover:text-primary"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onOpenCompany(note.relationshipId);
+                            }}
+                            type="button"
+                            variant="ghost"
+                          >
+                            {note.relationshipName}
+                          </Button>
+                        ) : (
+                          <Label className="font-normal">{note.relationshipName}</Label>
+                        )}
+                        {note.meetingLinked ? (
+                          <Badge className="font-normal" variant="outline">
+                            Meeting note
+                          </Badge>
+                        ) : null}
                       </div>
                       <CardTitle className="mt-3 text-[15px] text-primary">
                         {note.title || "Untitled note"}
@@ -1829,6 +1850,12 @@ export function taskFilterName(filter: "all" | "today" | "overdue"): string {
 /** The note's company menu shows the choice inside the control. The name has to repeat it. */
 export function linkedCompanyName(label: string): string {
   return comboboxFilterName("Linked company", label);
+}
+
+/** The company on a note card is a link to that company, not another way to open the note. */
+export function noteCompanyLabel(name: string): string {
+  const company = name.trim() || "company";
+  return `Open company ${company}`;
 }
 
 /**

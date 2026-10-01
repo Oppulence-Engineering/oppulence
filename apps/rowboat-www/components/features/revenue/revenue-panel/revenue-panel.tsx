@@ -76,10 +76,12 @@ export function RevenuePanel({
   tab,
   onTabChange,
   onOpenConnectors,
+  onOpenCompany,
 }: {
   tab: RevenueTab;
   onTabChange: (tab: RevenueTab) => void;
   onOpenConnectors?: () => void;
+  onOpenCompany?: (companyId: string) => void;
 }) {
   const [workspaceOverride, setWorkspace] = React.useState<RevenueWorkspace | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -358,6 +360,7 @@ export function RevenuePanel({
             onError={setBanner}
             onNotice={setNoticeMsg}
             onOpenCompanies={() => onTabChange("relationships")}
+            onOpenCompany={onOpenCompany}
           />
         ) : tab === "people" ? (
           <PeopleView onError={setBanner} onNotice={setNoticeMsg} />

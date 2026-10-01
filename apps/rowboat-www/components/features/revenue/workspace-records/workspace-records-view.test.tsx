@@ -61,6 +61,7 @@ import {
   personSheetSubtitle,
   sortTasksByDue,
   linkedCompanyName,
+  noteCompanyLabel,
   noteNeedsCompanyCopy,
   taskFilterName,
   taskListEmptyCopy,
@@ -210,6 +211,40 @@ describe("durable note templates and favorites", () => {
     expect(noteNeedsCompanyCopy("notice", true)).toBe(
       "Link a company before this note can be saved.",
     );
+  });
+
+  it("opens the company named on a meeting note", async () => {
+    mocks.fetchWorkspaceNotes.mockResolvedValue({
+      notes: [
+        {
+          externalId: "note-1",
+          title: "Harbor follow-up",
+          body: "Ask about the sandbox login.",
+          meetingLinked: true,
+          relationshipId: "relationship-1",
+          relationshipName: "Acme",
+          occurredAt: "2026-09-17T12:00:00Z",
+          eventType: "note",
+        },
+      ],
+      relationships: [{ id: "relationship-1", kind: "organization", displayName: "Acme" }],
+      failedTimelineCount: 0,
+    });
+    const onOpenCompany = vi.fn();
+    const user = userEvent.setup();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <NotesView onError={vi.fn()} onNotice={vi.fn()} onOpenCompany={onOpenCompany} />
+      </QueryClientProvider>,
+    );
+
+    expect(noteCompanyLabel("Acme")).toBe("Open company Acme");
+    expect(noteCompanyLabel("  ")).toBe("Open company company");
+    expect(await screen.findByText("Meeting note")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Open company Acme" }));
+    expect(onOpenCompany).toHaveBeenCalledWith("relationship-1");
+    expect(screen.queryByLabelText("Note title")).toBeNull();
   });
 
   it("opens New company from an empty note", async () => {
