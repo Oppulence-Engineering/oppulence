@@ -77,6 +77,12 @@ export function revisionChannelLabel(channel: string): string {
   return CHANNEL_LABELS[channel] ?? (titledSlug(channel) || "Channel");
 }
 
+/** A policy reason code is a facade slug. History names what it blocked. */
+export function policyReasonLabel(code: string): string {
+  if (code === "suppression.opted_out") return "This person opted out";
+  return titledSlug(code) || "Policy reason";
+}
+
 /** An outcome source is where the result was seen. The row names that place. */
 export function outcomeSourceLabel(source: string): string {
   switch (source) {
@@ -211,9 +217,13 @@ export function AuditSheet({
                           </div>
                           {d.reasonCodes && d.reasonCodes.length > 0 ? (
                             <div className="mt-2 flex flex-wrap gap-1">
-                              {d.reasonCodes.map((c) => (
-                                <Badge key={c} variant="outline" className="font-mono text-[10px]">
-                                  {c}
+                              {d.reasonCodes.map((code) => (
+                                <Badge
+                                  key={code}
+                                  variant="outline"
+                                  className="font-normal text-[10px]"
+                                >
+                                  {policyReasonLabel(code)}
                                 </Badge>
                               ))}
                             </div>

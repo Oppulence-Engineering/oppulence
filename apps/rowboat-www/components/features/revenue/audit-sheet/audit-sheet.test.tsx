@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   outcomeKindLabel,
   outcomeSourceLabel,
+  policyReasonLabel,
   revisionActionLabel,
   revisionChannelLabel,
 } from "@/components/features/revenue/audit-sheet/audit-sheet";
@@ -39,5 +40,14 @@ describe("AuditSheet", () => {
     expect(source).toContain("revisionChannelLabel(r.channel)");
     expect(source).not.toContain("{r.actionType}");
     expect(source).not.toContain("{r.channel}");
+  });
+
+  it("names a policy reason instead of the facade code", () => {
+    expect(policyReasonLabel("suppression.opted_out")).toBe("This person opted out");
+    expect(policyReasonLabel("verification.mailbox_mismatch")).toBe(
+      "Verification Mailbox Mismatch",
+    );
+    expect(source).toContain("policyReasonLabel(code)");
+    expect(source).not.toContain("font-mono text-[10px]");
   });
 });
