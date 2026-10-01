@@ -6,7 +6,7 @@ import * as React from "react";
 import { EnvelopeSimple, MagnifyingGlass, Plugs, WarningDiamond } from "@/lib/icons";
 import { useImpactBundle } from "@/hooks/queries/use-impact";
 import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
-import { useRelationshipAttention, useRelationships } from "@/hooks/queries/use-relationships";
+import { useRelationships } from "@/hooks/queries/use-relationships";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
 import { Badge } from "@oppulence/ui/components/badge";
@@ -32,11 +32,8 @@ import {
 
 import { attentionReasonLabel, auditLaunchLabel } from "@/lib/revenue/revenue";
 import {
-  atRiskPulseCount,
   detectorsWithoutTasks,
   digestWithoutTasks,
-  exposureReasons,
-  exposureRiskScore,
   recoveryOpenCount,
 } from "@/lib/revenue/revenue-records";
 import type { RevenueImpact } from "@/lib/revenue/types";
@@ -105,7 +102,6 @@ export function ImpactView({
 }) {
   const impactQuery = useImpactBundle();
   const relationshipsQuery = useRelationships();
-  const attentionQuery = useRelationshipAttention("open");
   const openActionsQuery = useRevenueActions("open", 100, "task");
 
   React.useEffect(() => {
@@ -134,19 +130,9 @@ export function ImpactView({
     relationshipsQuery.isSuccess ? relationshipsQuery.data : undefined,
     data.relationships,
   );
-  const atRisk = atRiskPulseCount(
-    data.atRiskRelationships,
-    attentionQuery.isSuccess ? attentionQuery.data : undefined,
-    openActionsQuery.isSuccess ? openActionsQuery.data : undefined,
-    attentionQuery.isError || openActionsQuery.isError,
-  );
-  const atRiskShown = atRisk ?? data.atRiskRelationships;
-  const riskScore = exposureRiskScore(data.portfolioRiskScore, atRisk);
-  const riskReasons = exposureReasons(
-    data.riskReasons,
-    attentionQuery.isSuccess ? attentionQuery.data : undefined,
-    openActionsQuery.isSuccess ? openActionsQuery.data : undefined,
-  );
+  const atRiskShown = data.atRiskRelationships;
+  const riskScore = data.portfolioRiskScore;
+  const riskReasons = data.riskReasons ?? [];
   const taskCount = Math.max(0, data.openTasks);
   const recoveryOpen = recoveryOpenCount(data.open, taskCount);
   const surfacedShown = Math.max(0, data.surfaced - taskCount);

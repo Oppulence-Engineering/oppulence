@@ -160,6 +160,20 @@ func (s *Service) Impact(ctx context.Context, u *ent.User) (*Impact, error) {
 	if err != nil {
 		return nil, err
 	}
+	// The attention list is paged in the client. A saved task opens an item, and
+	// counting from the first page leaves every later task looking like risk.
+	taskActionIDs, err := s.client.RevenueAction.Query().Where(
+		revenueaction.HasUserWith(user.IDEQ(uid)),
+		revenueaction.ActionTypeEQ("follow_up_task"),
+		revenueaction.ChannelEQ("task"),
+	).IDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	taskIDs := make(map[string]struct{}, len(taskActionIDs))
+	for _, id := range taskActionIDs {
+		taskIDs[id.String()] = struct{}{}
+	}
 	maxScore := map[string]int{}
 	critical := map[string]struct{}{}
 	byReason := map[string]map[string]struct{}{}
@@ -167,6 +181,11 @@ func (s *Service) Impact(ctx context.Context, u *ent.User) (*Impact, error) {
 		rel := item.Edges.Relationship
 		if rel == nil {
 			continue
+		}
+		if item.RecommendationID != nil {
+			if _, task := taskIDs[item.RecommendationID.String()]; task {
+				continue
+			}
 		}
 		id := rel.ID.String()
 		maxScore[id] = max(maxScore[id], item.RankScore)

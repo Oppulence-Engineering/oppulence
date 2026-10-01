@@ -459,6 +459,10 @@ func (s *Service) RefreshRelationshipAttention(ctx context.Context, u *ent.User)
 			if action.QueueStatus != QueueOpen || action.ExecutionStatus == ExecSent || action.ExecutionStatus == ExecCancelled {
 				continue
 			}
+			// A saved task is the task itself. It is not a company that needs attention.
+			if action.ActionType == "follow_up_task" && action.Channel == "task" {
+				continue
+			}
 			factors := map[string]int{}
 			_ = json.Unmarshal([]byte(action.PriorityComponentsJSON), &factors)
 			candidates = append(candidates, attentionCandidate{

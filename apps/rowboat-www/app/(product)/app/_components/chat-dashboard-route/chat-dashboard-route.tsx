@@ -5,8 +5,6 @@ import "client-only";
 import dynamic from "next/dynamic";
 import { type ComponentPropsWithoutRef } from "react";
 import { useImpact } from "@/hooks/queries/use-impact";
-import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
-import { useRelationshipAttention } from "@/hooks/queries/use-relationships";
 import { z } from "zod";
 import { FloppyDisk, LockSimple } from "@/lib/icons";
 
@@ -40,7 +38,7 @@ import {
 import type { AgentHistoryItem } from "@/lib/agents/agent-history";
 import { agentToolLabel, approvalTrustCopy } from "@/lib/agents/agent-tools";
 import { requestDueCommitments } from "@/lib/dashboard/commitment-due-request";
-import { atRiskPulseCount, recoveryOpenCount } from "@/lib/revenue/revenue-records";
+import { recoveryOpenCount } from "@/lib/revenue/revenue-records";
 import type { RevenueTab } from "@/lib/dashboard/product-navigation";
 import type { RevenueImpact } from "@/lib/revenue/types";
 
@@ -126,18 +124,9 @@ function PulseFigure({ failed, value }: { failed: boolean; value: number | null 
 
 function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
   const impactQuery = useImpact();
-  const openActionsQuery = useRevenueActions("open", 100, "task");
-  const attentionQuery = useRelationshipAttention("open");
   const impact = impactQuery.data ?? null;
   const failed = impactQuery.isError;
-  const listsFailed = openActionsQuery.isError || attentionQuery.isError;
   const recovery = impact ? recoveryOpenCount(impact.open, impact.openTasks) : null;
-  const atRisk = atRiskPulseCount(
-    impact?.atRiskRelationships,
-    attentionQuery.isSuccess ? attentionQuery.data : undefined,
-    openActionsQuery.isSuccess ? openActionsQuery.data : undefined,
-    listsFailed,
-  );
 
   return (
     <footer
@@ -166,11 +155,9 @@ function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
                 value={
                   stat.label === "recovery"
                     ? recovery
-                    : stat.label === "at risk"
-                      ? atRisk
-                      : impact
-                        ? stat.read(impact)
-                        : null
+                    : impact
+                      ? stat.read(impact)
+                      : null
                 }
               />
             </span>
