@@ -2187,6 +2187,9 @@ export const GetRevenueImpact200Response = zod
       .describe("Meeting rate = meetings \/ executed; null with no denominator."),
     meetingsBooked: zod.int().optional().describe("Meetings booked."),
     open: zod.int().describe("Actions currently open."),
+    openTasks: zod
+      .int()
+      .describe("Open follow-up tasks. These are saved work, not recovery follow-ups."),
     outcomes: zod
       .record(zod.string(), zod.unknown())
       .optional()

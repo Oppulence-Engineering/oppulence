@@ -12786,6 +12786,11 @@
             "example": 8,
             "type": "integer"
           },
+          "openTasks": {
+            "description": "Open follow-up tasks. These are saved work, not recovery follow-ups.",
+            "example": 3,
+            "type": "integer"
+          },
           "outcomes": {
             "additionalProperties": true,
             "description": "Raw outcome-kind counts.",
@@ -12867,6 +12872,7 @@
         "required": [
           "surfaced",
           "open",
+          "openTasks",
           "handled",
           "approved",
           "executed",

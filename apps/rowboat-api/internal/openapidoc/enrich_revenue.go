@@ -520,6 +520,7 @@ func addRevenueSchemas(schemas obj) {
 	schemas["RevenueImpact"] = objectSchema("Aggregate ROI picture for the caller's revenue queue: how many open loops were surfaced, how they were triaged, how many were acted on, and what came back.", obj{
 		"surfaced":              intSchema("Total actions ever surfaced.", 42),
 		"open":                  intSchema("Actions currently open.", 8),
+		"openTasks":             intSchema("Open follow-up tasks. These are saved work, not recovery follow-ups.", 3),
 		"handled":               intSchema("Actions marked handled.", 20),
 		"snoozed":               intSchema("Actions snoozed.", 3),
 		"dismissed":             intSchema("Actions dismissed.", 11),
@@ -549,7 +550,7 @@ func addRevenueSchemas(schemas obj) {
 			"surfaced": intSchema("Surfaced by this detector.", 12),
 			"handled":  intSchema("Handled from this detector.", 7),
 		})),
-	}, "surfaced", "open", "handled", "approved", "executed", "relationships", "atRiskRelationships", "criticalRelationships", "portfolioRiskScore", "overdueCommitments", "overdueByUs", "overdueByThem", "longestOverdueDays", "riskReasons")
+	}, "surfaced", "open", "openTasks", "handled", "approved", "executed", "relationships", "atRiskRelationships", "criticalRelationships", "portfolioRiskScore", "overdueCommitments", "overdueByUs", "overdueByThem", "longestOverdueDays", "riskReasons")
 
 	schemas["RevenueDigest"] = objectSchema("The proactive digest content: the top open loops plus running impact counts. This is what the scheduled digest email is built from.", obj{
 		"generatedAt":    stringSchema("When composed.", "2026-07-23T09:00:00Z", obj{"format": "date-time"}),

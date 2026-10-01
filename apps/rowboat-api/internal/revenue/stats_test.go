@@ -85,3 +85,29 @@ func TestImpactAggregates(t *testing.T) {
 		t.Fatalf("cross-tenant leak: other user surfaced = %d", oimp.Surfaced)
 	}
 }
+
+func TestImpactOpenTasksStayOutOfTheRecoveryCount(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	for _, task := range []ActionInput{
+		{RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task", Reason: "Task", PriorityScore: 90, DedupeKey: "impact-task-high"},
+		{RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task", Reason: "Task", PriorityScore: 10, DedupeKey: "impact-task-low"},
+	} {
+		if _, err := f.svc.CreateAction(f.ctx, f.user, task); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "warm_follow_up", Channel: "email",
+		Reason: "The email", PriorityScore: 40, DedupeKey: "impact-email",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	imp, err := f.svc.Impact(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if imp.Open != 3 || imp.OpenTasks != 2 || imp.Open-imp.OpenTasks != 1 {
+		t.Fatalf("open=%d openTasks=%d, want 3 tasks-and-email with 2 tasks", imp.Open, imp.OpenTasks)
+	}
+}

@@ -203,6 +203,15 @@ export function recoveryPulseCount(
   return Math.max(0, openTotal - tasks);
 }
 
+/**
+ * Recovery is the open queue minus saved tasks. The task list is paged, so a
+ * count taken from its first page treats every later task as a follow-up.
+ */
+export function recoveryOpenCount(openTotal: number, openTasks: number): number {
+  const tasks = Number.isFinite(openTasks) ? Math.max(0, openTasks) : 0;
+  return Math.max(0, openTotal - tasks);
+}
+
 export function recoveryQueueActions<T extends { actionType?: string; channel?: string }>(
   actions: readonly T[],
 ): T[] {

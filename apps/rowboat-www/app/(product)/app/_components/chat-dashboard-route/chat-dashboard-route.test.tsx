@@ -50,7 +50,7 @@ describe("ChatDashboardRoute", () => {
   it("names a tool call with the product label", () => {
     const source = fs.readFileSync(path.join(import.meta.dirname, "chat-dashboard-route.tsx"), "utf8");
     expect(source).toContain('label: "overdue"');
-    expect(source).toContain("recoveryPulseCount(");
+    expect(source).toContain("recoveryOpenCount(impact.open, impact.openTasks)");
     expect(source).toContain("atRiskPulseCount(");
     expect(source).toContain('useRevenueActions("open", 100, "task")');
     expect(source).toContain("impact.overdueCommitments");

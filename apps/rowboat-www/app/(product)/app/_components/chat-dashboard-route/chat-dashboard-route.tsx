@@ -40,7 +40,7 @@ import {
 import type { AgentHistoryItem } from "@/lib/agents/agent-history";
 import { agentToolLabel, approvalTrustCopy } from "@/lib/agents/agent-tools";
 import { requestDueCommitments } from "@/lib/dashboard/commitment-due-request";
-import { atRiskPulseCount, recoveryPulseCount } from "@/lib/revenue/revenue-records";
+import { atRiskPulseCount, recoveryOpenCount } from "@/lib/revenue/revenue-records";
 import type { RevenueTab } from "@/lib/dashboard/product-navigation";
 import type { RevenueImpact } from "@/lib/revenue/types";
 
@@ -131,11 +131,7 @@ function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
   const impact = impactQuery.data ?? null;
   const failed = impactQuery.isError;
   const listsFailed = openActionsQuery.isError || attentionQuery.isError;
-  const recovery = recoveryPulseCount(
-    impact?.open,
-    openActionsQuery.isSuccess ? openActionsQuery.data : undefined,
-    openActionsQuery.isError,
-  );
+  const recovery = impact ? recoveryOpenCount(impact.open, impact.openTasks) : null;
   const atRisk = atRiskPulseCount(
     impact?.atRiskRelationships,
     attentionQuery.isSuccess ? attentionQuery.data : undefined,

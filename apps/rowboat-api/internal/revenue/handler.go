@@ -1315,6 +1315,7 @@ func (h *Handler) SetWorkspaceFeatureControl(w http.ResponseWriter, r *http.Requ
 type impactDTO struct {
 	Surfaced  int `json:"surfaced"`
 	Open      int `json:"open"`
+	OpenTasks int `json:"openTasks"`
 	Handled   int `json:"handled"`
 	Snoozed   int `json:"snoozed"`
 	Dismissed int `json:"dismissed"`
@@ -1374,6 +1375,7 @@ func (h *Handler) Impact(w http.ResponseWriter, r *http.Request) {
 	dto := impactDTO{
 		Surfaced:    imp.Surfaced,
 		Open:        imp.Open,
+		OpenTasks:   imp.OpenTasks,
 		Handled:     imp.Handled,
 		Snoozed:     imp.Snoozed,
 		Dismissed:   imp.Dismissed,

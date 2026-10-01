@@ -37,7 +37,7 @@ import {
   digestWithoutTasks,
   exposureReasons,
   exposureRiskScore,
-  recoveryPulseCount,
+  recoveryOpenCount,
 } from "@/lib/revenue/revenue-records";
 import type { RevenueImpact } from "@/lib/revenue/types";
 import { EmptyBlock, errMessage, ListSkeleton } from "@/components/features/revenue/shared/shared";
@@ -147,14 +147,10 @@ export function ImpactView({
     attentionQuery.isSuccess ? attentionQuery.data : undefined,
     openActionsQuery.isSuccess ? openActionsQuery.data : undefined,
   );
-  const recoveryOpen = recoveryPulseCount(
-    data.open,
-    openActionsQuery.isSuccess ? openActionsQuery.data : undefined,
-    openActionsQuery.isError,
-  );
-  const taskCount = recoveryOpen == null ? 0 : Math.max(0, data.open - recoveryOpen);
+  const taskCount = Math.max(0, data.openTasks);
+  const recoveryOpen = recoveryOpenCount(data.open, taskCount);
   const surfacedShown = Math.max(0, data.surfaced - taskCount);
-  const openShown = recoveryOpen ?? data.open;
+  const openShown = recoveryOpen;
   const digestTop = digestWithoutTasks(
     digest?.top,
     openActionsQuery.isSuccess ? openActionsQuery.data : undefined,

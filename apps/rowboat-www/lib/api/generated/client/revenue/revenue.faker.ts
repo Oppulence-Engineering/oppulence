@@ -1818,6 +1818,7 @@ export const getGetRevenueImpactResponseMock = (
   ]),
   meetingsBooked: faker.helpers.arrayElement([faker.number.int(), undefined]),
   open: faker.number.int(),
+  openTasks: faker.number.int(),
   outcomes: faker.helpers.arrayElement([{}, undefined]),
   overdueByThem: faker.number.int(),
   overdueByUs: faker.number.int(),

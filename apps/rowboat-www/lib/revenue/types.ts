@@ -881,6 +881,7 @@ export type DigestAction = NonNullable<RevenueDigest["top"]>[number];
 export const RevenueImpactSchema = z.object({
   surfaced: z.number(),
   open: z.number(),
+  openTasks: z.number(),
   handled: z.number(),
   snoozed: z.number(),
   dismissed: z.number(),

@@ -68,6 +68,7 @@ vi.mock("@/hooks/queries/utils/fetch-impact", () => ({
   loadDigest: mocks.getDigest,
 }));
 vi.mock("@/hooks/queries/utils/fetch-revenue-actions", () => ({
+  ACTION_QUEUE_PAGE: 100,
   fetchRevenueActions: (filter: string, limit?: number, signal?: AbortSignal) =>
     mocks.listActions(filter, limit, signal),
   loadRevenueActions: (request: unknown, filter: string, limit?: number, signal?: AbortSignal) =>
@@ -80,7 +81,8 @@ vi.mock("@/lib/analytics/analytics", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/analytics/analytics")>()),
   capture: vi.fn(),
 }));
-vi.mock("@/components/features/revenue/review-sheet/review-sheet", () => ({
+vi.mock("@/components/features/revenue/review-sheet/review-sheet", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/features/revenue/review-sheet/review-sheet")>()),
   ReviewSheet: () => null,
 }));
 vi.mock("@/components/features/revenue/audit-sheet/audit-sheet", () => ({
@@ -157,6 +159,7 @@ const action: RevenueAction = {
 const impact: RevenueImpact = {
   surfaced: 1,
   open: 1,
+  openTasks: 0,
   handled: 0,
   snoozed: 0,
   dismissed: 0,

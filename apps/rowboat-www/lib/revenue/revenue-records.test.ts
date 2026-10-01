@@ -17,6 +17,7 @@ import {
   digestWithoutTasks,
   exposureReasons,
   exposureRiskScore,
+  recoveryOpenCount,
   recoveryPulseCount,
   recoveryQueueActions,
   taskIsDueToday,
@@ -132,6 +133,9 @@ describe("local due dates", () => {
     expect(recoveryPulseCount(1, [task])).toBe(0);
     expect(recoveryPulseCount(2, [task, draft])).toBe(1);
     expect(recoveryPulseCount(1, undefined, true)).toBe(1);
+    expect(recoveryOpenCount(101, 101)).toBe(0);
+    expect(recoveryOpenCount(102, 101)).toBe(1);
+    expect(recoveryOpenCount(1, 0)).toBe(1);
     const taskAttention = {
       relationshipId: "company-1",
       recommendationId: "task-1",
