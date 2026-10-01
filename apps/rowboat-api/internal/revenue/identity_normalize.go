@@ -46,10 +46,20 @@ func normalizeEmail(raw string) string {
 	if trimmed == "" {
 		return ""
 	}
-	if closeAngle := strings.LastIndexByte(trimmed, '>'); closeAngle == len(trimmed)-1 {
-		if openAngle := strings.LastIndexByte(trimmed[:closeAngle], '<'); openAngle >= 0 {
-			trimmed = strings.TrimSpace(trimmed[openAngle+1 : closeAngle])
+	for {
+		next := trimmed
+		if closeAngle := strings.LastIndexByte(next, '>'); closeAngle == len(next)-1 {
+			if openAngle := strings.LastIndexByte(next[:closeAngle], '<'); openAngle >= 0 {
+				next = strings.TrimSpace(next[openAngle+1 : closeAngle])
+			}
 		}
+		if strings.HasPrefix(strings.ToLower(next), "mailto:") {
+			next = strings.TrimSpace(next[len("mailto:"):])
+		}
+		if next == trimmed {
+			break
+		}
+		trimmed = next
 	}
 	return strings.ToLower(trimmed)
 }
@@ -137,6 +147,10 @@ func hostFromWebAddress(raw string) string {
 		return ""
 	}
 	return parsed.Hostname()
+}
+
+func cleanAccountDomain(domain string) bool {
+	return domain != "" && !strings.ContainsAny(domain, " <>")
 }
 
 func stripLeadingWWW(host string) string {

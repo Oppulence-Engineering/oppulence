@@ -624,10 +624,17 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 		SetUser(u).
 		SetKind(in.Kind).
 		SetDisplayName(strings.TrimSpace(in.DisplayName))
-	if in.PrimaryEmail != "" {
-		create.SetPrimaryEmail(strings.ToLower(strings.TrimSpace(in.PrimaryEmail)))
+	email := normalizeEmail(in.PrimaryEmail)
+	domain := companyAccountDomain(in.AccountDomain)
+	// A copied "Name <addr>" or mailto link leaves the domain half as
+	// "example>" . Keep the host from the address instead of that fragment.
+	if !cleanAccountDomain(domain) {
+		domain = accountDomain(email)
 	}
-	if domain := companyAccountDomain(in.AccountDomain); domain != "" {
+	if email != "" {
+		create.SetPrimaryEmail(email)
+	}
+	if domain != "" {
 		create.SetAccountDomain(domain)
 	}
 	if in.Summary != "" {

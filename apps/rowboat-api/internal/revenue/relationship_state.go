@@ -1109,7 +1109,7 @@ type relationshipIdentitySignal struct {
 }
 
 func observationIdentitySignals(input RelationshipObservationInput, refs []string) []relationshipIdentitySignal {
-	email := strings.ToLower(strings.TrimSpace(input.PrimaryEmail))
+	email := normalizeEmail(input.PrimaryEmail)
 	domain := strings.ToLower(strings.TrimSpace(input.AccountDomain))
 	out := make([]relationshipIdentitySignal, 0, len(refs)+2)
 	if email != "" {
@@ -1273,12 +1273,15 @@ func mergeRelationshipIdentityFields(
 	if changed {
 		update.SetResourceRefs(mergedRefs)
 	}
-	email := strings.ToLower(strings.TrimSpace(input.PrimaryEmail))
+	email := normalizeEmail(input.PrimaryEmail)
 	if rel.PrimaryEmail == "" && email != "" {
 		update.SetPrimaryEmail(email)
 		changed = true
 	}
-	domain := strings.ToLower(strings.TrimSpace(input.AccountDomain))
+	domain := companyAccountDomain(input.AccountDomain)
+	if !cleanAccountDomain(domain) {
+		domain = accountDomain(email)
+	}
 	if rel.AccountDomain == "" && domain != "" && !isPublicMailboxDomain(domain) {
 		update.SetAccountDomain(domain)
 		changed = true

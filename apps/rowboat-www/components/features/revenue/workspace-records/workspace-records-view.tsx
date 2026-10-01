@@ -609,6 +609,22 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
   );
 }
 
+/** The domain half of an address, after a copied mailto link or "Name <addr>" wrapper. */
+export function personAccountDomain(email: string): string | undefined {
+  let value = email.trim().replace(/^mailto:/i, "");
+  const wrapped = value.match(/<([^<>]+)>/);
+  if (wrapped?.[1]) value = wrapped[1].trim().replace(/^mailto:/i, "");
+  const at = value.lastIndexOf("@");
+  if (at < 1 || at === value.length - 1) return undefined;
+  const domain = value
+    .slice(at + 1)
+    .trim()
+    .replace(/\.+$/, "")
+    .toLowerCase();
+  if (!domain || /[\s<>]/.test(domain)) return undefined;
+  return domain;
+}
+
 function CreatePersonDialog({
   onClose,
   onCreated,
@@ -629,7 +645,7 @@ function CreatePersonDialog({
         kind: "person",
         displayName: name.trim(),
         primaryEmail: email.trim() || undefined,
-        accountDomain: email.includes("@") ? email.split("@")[1] : undefined,
+        accountDomain: personAccountDomain(email),
       });
       const now = new Date().toISOString();
       await ingestRelationshipObservations([
