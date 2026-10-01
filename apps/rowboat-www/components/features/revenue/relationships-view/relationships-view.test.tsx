@@ -25,6 +25,13 @@ import {
   completenessExplanationCopy,
   privacyDecisionCopy,
   capturePolicyLabel,
+  governanceCaptureLabel,
+  governanceRouteLabel,
+  governancePlaceLabel,
+  governanceRetentionLabel,
+  governanceDisclosureLabel,
+  governanceDeletionLabel,
+  governanceExcerptLabel,
   evidencePublicationLabel,
   externalPlanShareLabel,
   conversationDeletionAvailable,
@@ -321,6 +328,24 @@ describe("RelationshipsView", () => {
     expect(capturePolicyLabel("require_consent")).toBe("Ask before capturing");
     expect(capturePolicyLabel("deny")).toBe("Do not capture");
     expect(capturePolicyLabel("allow")).toBe("Capture is allowed");
+    expect(governanceCaptureLabel("manual_capture")).toBe("Captured by hand");
+    expect(governanceRouteLabel("local_transcription_to_oppulence")).toBe(
+      "Transcribed on this device, then saved here",
+    );
+    expect(governancePlaceLabel("local_device")).toBe("On this device");
+    expect(governanceRetentionLabel("untilTranscribed")).toBe("Kept until it is transcribed");
+    expect(governanceRetentionLabel("until_transcribed")).toBe("Kept until it is transcribed");
+    expect(governanceDisclosureLabel("not_recorded")).toBe("People were not told");
+    expect(governanceDeletionLabel("scheduled_after_transcription")).toBe(
+      "Scheduled to be deleted after transcription",
+    );
+    expect(governanceExcerptLabel("not_retained")).toBe("No audio was kept");
+    expect(source).toContain("governancePlaceLabel(receipt.region)");
+    expect(source).toContain("governanceRetentionLabel(receipt.retention)");
+    expect(source).not.toContain("{receipt.region}");
+    expect(source).not.toContain("{receipt.retention}");
+    expect(source).not.toContain("humanize(receipt.capturePolicy)");
+    expect(source).not.toContain("humanize(receipt.evidenceClip)");
     expect(evidencePublicationLabel(true)).toBe("Shared excerpts: on");
     expect(evidencePublicationLabel(false)).toBe("Shared excerpts: off");
     expect(externalPlanShareLabel(true)).toBe("Plan sharing outside this workspace: allowed");

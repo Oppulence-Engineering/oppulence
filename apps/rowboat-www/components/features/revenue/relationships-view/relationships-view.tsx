@@ -1708,6 +1708,117 @@ export function capturePolicyLabel(capture: string): string {
   }
 }
 
+function governanceFallback(value: string): string {
+  const split = value
+    .replaceAll(/[_./]+/g, " ")
+    .replaceAll(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .trim();
+  return humanize(split);
+}
+
+/** A meeting receipt stores how the conversation was captured. */
+export function governanceCaptureLabel(capture: string): string {
+  switch (capture) {
+    case "manual_capture":
+      return "Captured by hand";
+    case "explicit_upload":
+      return "Uploaded on purpose";
+    case "provider_import":
+      return "Imported from the provider";
+    case "calendar_prompt_or_manual":
+      return "Started from the calendar or by hand";
+    case "deny":
+    case "require_consent":
+    case "allow":
+      return capturePolicyLabel(capture);
+    default:
+      return governanceFallback(capture);
+  }
+}
+
+/** Where the transcript traveled before it was saved. */
+export function governanceRouteLabel(routing: string): string {
+  switch (routing) {
+    case "local_transcription_to_oppulence":
+      return "Transcribed on this device, then saved here";
+    case "local_only":
+      return "Stays on this device";
+    default: {
+      const imported = /^([a-z0-9]+)_to_oppulence$/.exec(routing);
+      if (imported?.[1]) return `Imported from ${humanize(imported[1])}, then saved here`;
+      return governanceFallback(routing);
+    }
+  }
+}
+
+/** The receipt's region is a boundary, not a machine name. */
+export function governancePlaceLabel(region: string): string {
+  switch (region) {
+    case "local_device":
+      return "On this device";
+    case "provider_managed":
+      return "At the provider";
+    default:
+      return governanceFallback(region);
+  }
+}
+
+/** How long the captured audio or transcript is kept. */
+export function governanceRetentionLabel(retention: string): string {
+  switch (retention) {
+    case "untilTranscribed":
+    case "until_transcribed":
+      return "Kept until it is transcribed";
+    case "always":
+      return "Kept";
+    case "provider_policy_plus_oppulence_evidence":
+      return "The provider's policy, plus the evidence saved here";
+    default:
+      return governanceFallback(retention);
+  }
+}
+
+/** Whether the people in the conversation were told it was captured. */
+export function governanceDisclosureLabel(disclosure: string): string {
+  switch (disclosure) {
+    case "not_recorded":
+      return "People were not told";
+    case "provider_reported":
+      return "The provider says people were told";
+    default:
+      return governanceFallback(disclosure);
+  }
+}
+
+/** What happened to the recording after it was used. */
+export function governanceDeletionLabel(outcome: string): string {
+  if (outcome.startsWith("deleted:")) return "Deleted";
+  switch (outcome) {
+    case "scheduled_after_transcription":
+      return "Scheduled to be deleted after transcription";
+    case "retained_by_user_policy":
+      return "Kept because of your settings";
+    case "not_applicable":
+      return "Nothing to delete";
+    case "retained":
+      return "Kept";
+    default:
+      return governanceFallback(outcome);
+  }
+}
+
+/** Whether any audio excerpt was saved with the receipt. */
+export function governanceExcerptLabel(clip: string): string {
+  switch (clip) {
+    case "not_retained":
+      return "No audio was kept";
+    case "encrypted":
+      return "The audio that was kept is encrypted";
+    default:
+      return governanceFallback(clip);
+  }
+}
+
 /** publishEvidence is whether shared excerpts can be published. It is not a save switch. */
 export function evidencePublicationLabel(enabled: boolean): string {
   return enabled ? "Shared excerpts: on" : "Shared excerpts: off";
@@ -3323,16 +3434,18 @@ export function RelationshipSheet({
                           className="rounded-none border border-border p-3 text-xs text-primary/60"
                         >
                           <p>
-                            {humanize(receipt.capturePolicy)} · {humanize(receipt.routing)}
+                            {governanceCaptureLabel(receipt.capturePolicy)} ·{" "}
+                            {governanceRouteLabel(receipt.routing)}
                           </p>
                           <p className="mt-1 text-[11px] text-primary/40">
-                            {receipt.region} · retention {receipt.retention} · disclosure{" "}
-                            {humanize(receipt.participantDisclosure)} ·{" "}
-                            {humanize(receipt.deletionOutcome)}
+                            {governancePlaceLabel(receipt.region)} ·{" "}
+                            {governanceRetentionLabel(receipt.retention)} ·{" "}
+                            {governanceDisclosureLabel(receipt.participantDisclosure)} ·{" "}
+                            {governanceDeletionLabel(receipt.deletionOutcome)}
                           </p>
                           <p className="mt-1 text-[11px] text-primary/40">
-                            Legal hold {receipt.legalHold ? "on" : "off"} · saved excerpt{" "}
-                            {humanize(receipt.evidenceClip)}
+                            Legal hold {receipt.legalHold ? "on" : "off"} ·{" "}
+                            {governanceExcerptLabel(receipt.evidenceClip)}
                           </p>
                         </li>
                       ))}
