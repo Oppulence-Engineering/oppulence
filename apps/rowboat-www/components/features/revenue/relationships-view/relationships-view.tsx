@@ -239,6 +239,17 @@ const COMPANY_FIELD_LABELS: Record<string, string> = {
   social_urls: "Social profiles",
 };
 
+/**
+ * The company list opens the website. A domain is stored without a scheme, and
+ * a pasted address may already include one. Prefixing https:// again sends the
+ * browser to a host named "https".
+ */
+export function companyDomainHref(domain: string): string {
+  const trimmed = domain.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 const companyName = (relationship: RevenueRelationship) => {
   if (
     relationship.accountDomain &&
@@ -1005,7 +1016,7 @@ export function RelationshipsView({
                         {relationship.accountDomain ? (
                           <a
                             className="text-primary/65 underline-offset-2 hover:text-primary hover:underline"
-                            href={`https://${relationship.accountDomain}`}
+                            href={companyDomainHref(relationship.accountDomain)}
                             rel="noreferrer"
                             target="_blank"
                           >

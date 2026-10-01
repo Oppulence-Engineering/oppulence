@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 const source = fs.readFileSync(path.join(import.meta.dirname, "relationships-view.tsx"), "utf8");
 
 import {
+  companyDomainHref,
   companyDirectoryTitle,
   companyHealthFilterName,
   companyListEmptyCopy,
@@ -122,6 +123,11 @@ describe("RelationshipsView", () => {
     expect(source).toContain("Delete shared conversation evidence for this company?");
     expect(source).not.toContain("for this relationship?");
     expect(source).toContain('companyAttention.length === 1 ? "company" : "companies"');
+    expect(companyDomainHref("acme.com")).toBe("https://acme.com");
+    expect(companyDomainHref("  https://acme.com/about  ")).toBe("https://acme.com/about");
+    expect(companyDomainHref("http://acme.com")).toBe("http://acme.com");
+    expect(source).toContain("companyDomainHref(relationship.accountDomain)");
+    expect(source).not.toContain("href={`https://${relationship.accountDomain}`}");
     expect(source).toContain('aria-label="Company domain"');
     expect(source).toContain('placeholder="Company domain (optional)"');
     expect(source).toContain("Mail and meetings can fill in its people and activity later.");
