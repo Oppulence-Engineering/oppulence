@@ -786,6 +786,37 @@ func TestListActionsRecoverySkipsHigherPriorityTasks(t *testing.T) {
 	}
 }
 
+func TestListActionsOffsetSkipsHigherPriority(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	high, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task",
+		Reason: "High", PriorityScore: 90, DedupeKey: "offset-high",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	low, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task",
+		Reason: "Low", PriorityScore: 10, DedupeKey: "offset-low",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	page, err := f.svc.ListActions(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 1, Offset: 1, Surface: "task"})
+	if err != nil || len(page) != 1 || page[0].ID != low.ID {
+		t.Fatalf("offset page = %+v err=%v", page, err)
+	}
+	none, err := f.svc.ListActions(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 1, Offset: 2, Surface: "task"})
+	if err != nil || len(none) != 0 {
+		t.Fatalf("past the end = %d err=%v", len(none), err)
+	}
+	all, err := f.svc.ListActions(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 10, Offset: -3, Surface: "task"})
+	if err != nil || len(all) != 2 || all[0].ID != high.ID {
+		t.Fatalf("negative offset = %+v err=%v", all, err)
+	}
+}
+
 // Tenancy: another user cannot read or mutate the owner's rows.
 func TestCrossTenantDenied(t *testing.T) {
 	f := newFixture(t)

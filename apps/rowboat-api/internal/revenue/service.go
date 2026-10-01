@@ -1002,6 +1002,7 @@ func (s *Service) snapshotRevision(ctx context.Context, txc *ent.Client, action 
 type ListFilter struct {
 	QueueStatus string
 	Limit       int
+	Offset      int
 	Surface     string
 }
 
@@ -1014,6 +1015,9 @@ func (s *Service) ListActions(ctx context.Context, u *ent.User, f ListFilter) ([
 	}
 	if limit > 100 {
 		limit = 100
+	}
+	if f.Offset < 0 {
+		f.Offset = 0
 	}
 	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceView)
 	if err != nil {
@@ -1048,6 +1052,7 @@ func (s *Service) ListActions(ctx context.Context, u *ent.User, f ListFilter) ([
 	return q.WithRelationship().
 		Order(ent.Desc(revenueaction.FieldPriorityScore), ent.Asc(revenueaction.FieldCreatedAt)).
 		Limit(limit).
+		Offset(f.Offset).
 		All(ctx)
 }
 

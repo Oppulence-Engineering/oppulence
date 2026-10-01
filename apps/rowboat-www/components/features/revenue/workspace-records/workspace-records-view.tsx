@@ -36,6 +36,10 @@ import { useAuthSession } from "@/components/auth/auth-gate";
 import { useWorkspaceLabel } from "@/components/features/dashboard/app-shell/app-shell";
 import { useConsoleResources } from "@/hooks/queries/use-console";
 import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
+import {
+  ACTION_QUEUE_PAGE,
+  fetchRevenueActions,
+} from "@/hooks/queries/utils/fetch-revenue-actions";
 import { usePersons, useRelationships } from "@/hooks/queries/use-relationships";
 import { useWorkspaceNotes } from "@/hooks/queries/use-workspace";
 import { consoleKeys } from "@/hooks/queries/utils/console-keys";
@@ -1969,6 +1973,10 @@ export function taskFilterName(filter: "all" | "today" | "overdue"): string {
   return comboboxFilterName("Tasks", TASK_FILTER_LABEL[filter]);
 }
 
+export function taskRemainderLabel(): string {
+  return "Show the next tasks";
+}
+
 /** The note's company menu shows the choice inside the control. The name has to repeat it. */
 export function linkedCompanyName(label: string): string {
   return comboboxFilterName("Linked company", label);
@@ -2008,27 +2016,72 @@ export function TasksView({
   onOpenCompany?: (relationshipId: string) => void;
 }) {
   const queryClient = useQueryClient();
-  const actionsQuery = useRevenueActions("open", 100, "task");
+  const actionsQuery = useRevenueActions("open", ACTION_QUEUE_PAGE, "task");
   const relationshipsQuery = useRelationships();
   const [creating, setCreating] = React.useState(false);
   const [filter, setFilter] = React.useState<"all" | "today" | "overdue">("all");
   const [soonestFirst, setSoonestFirst] = React.useState(true);
   const [busy, setBusy] = React.useState<string | null>(null);
   const [now] = React.useState(() => Date.now());
-  const tasks = sortTasksByDue(
-    (actionsQuery.data ?? []).filter(isWorkspaceTask),
-    soonestFirst,
-  );
+  const [extraTasks, setExtraTasks] = React.useState<RevenueAction[]>([]);
+  const [moreTasks, setMoreTasks] = React.useState(false);
+  const [loadingMoreTasks, setLoadingMoreTasks] = React.useState(false);
+  const loadedTaskCount = React.useRef(0);
+  const primedTasks = React.useRef("");
+  const taskPage = actionsQuery.data ?? [];
+  const taskRows = React.useMemo(() => {
+    if (extraTasks.length === 0) return taskPage;
+    const seen = new Set(taskPage.map((task) => task.id));
+    return [
+      ...taskPage,
+      ...extraTasks.filter((task) => {
+        if (seen.has(task.id)) return false;
+        seen.add(task.id);
+        return true;
+      }),
+    ];
+  }, [extraTasks, taskPage]);
+  React.useEffect(() => {
+    if (!actionsQuery.isSuccess || primedTasks.current === "open") return;
+    primedTasks.current = "open";
+    loadedTaskCount.current = actionsQuery.data?.length ?? 0;
+    setMoreTasks(loadedTaskCount.current === ACTION_QUEUE_PAGE);
+  }, [actionsQuery.data, actionsQuery.isSuccess]);
+  const tasks = sortTasksByDue(taskRows.filter(isWorkspaceTask), soonestFirst);
   const relationships = (relationshipsQuery.data ?? []).filter(
     (record) => record.kind !== "person",
   );
   const loading = actionsQuery.isPending || relationshipsQuery.isPending;
   const load = React.useCallback(async () => {
+    setExtraTasks([]);
+    setMoreTasks(false);
+    primedTasks.current = "";
+    loadedTaskCount.current = 0;
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: revenueActionKeys.all }),
       queryClient.invalidateQueries({ queryKey: relationshipKeys.all }),
     ]);
   }, [queryClient]);
+  const loadMoreTasks = React.useCallback(async () => {
+    if (loadingMoreTasks || !moreTasks) return;
+    setLoadingMoreTasks(true);
+    try {
+      const next = await fetchRevenueActions(
+        "open",
+        ACTION_QUEUE_PAGE,
+        undefined,
+        "task",
+        loadedTaskCount.current,
+      );
+      loadedTaskCount.current += next.length;
+      if (next.length < ACTION_QUEUE_PAGE) setMoreTasks(false);
+      setExtraTasks((current) => [...current, ...next]);
+    } catch (reason) {
+      onError(explainedRevenueError(reason, "Could not load the next tasks."));
+    } finally {
+      setLoadingMoreTasks(false);
+    }
+  }, [loadingMoreTasks, moreTasks, onError]);
 
   React.useEffect(() => {
     const error = actionsQuery.error ?? relationshipsQuery.error;
@@ -2127,7 +2180,17 @@ export function TasksView({
       ) : visible.length === 0 ? (
         <WorkspaceEmptyState
           action={
-            filter === "all" ? (
+            moreTasks ? (
+              <Button
+                disabled={loadingMoreTasks}
+                onClick={() => void loadMoreTasks()}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {taskRemainderLabel()}
+              </Button>
+            ) : filter === "all" ? (
               <Button
                 className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
                 onClick={() => setCreating(true)}
@@ -2162,6 +2225,7 @@ export function TasksView({
           title="Tasks"
         />
       ) : (
+        <>
         <ul className="divide-y divide-border">
           {visible.map((task) => {
             const overdue = taskIsOverdue(task.dueAt, now);
@@ -2219,6 +2283,19 @@ export function TasksView({
             );
           })}
         </ul>
+        {moreTasks ? (
+          <Button
+            className="m-3"
+            disabled={loadingMoreTasks}
+            onClick={() => void loadMoreTasks()}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            {taskRemainderLabel()}
+          </Button>
+        ) : null}
+        </>
       )}
       {creating ? (
         <TaskCreateDialog

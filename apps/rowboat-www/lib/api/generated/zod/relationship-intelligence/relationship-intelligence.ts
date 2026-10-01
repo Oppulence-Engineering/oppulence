@@ -1995,17 +1995,7 @@ export const ApproveRelationshipRecommendation200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Why this action was proposed."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -2166,17 +2156,7 @@ export const RejectRelationshipRecommendation200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Why this action was proposed."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -2957,11 +2937,19 @@ export const DisconnectRelationshipSource403Response = zod
  * Lists canonical relationship state with optional text, lifecycle, health, and engagement filters.
  * @summary List relationships
  */
+export const listRelationshipsQueryOffsetMin = 0;
+
 export const ListRelationshipsQueryParams = zod.object({
   q: zod.string().optional().describe("Account, domain, or contact search."),
   lifecycle: zod.string().optional().describe("Lifecycle filter."),
   health: zod.string().optional().describe("Health filter."),
   engagement: zod.string().optional().describe("Engagement filter."),
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(listRelationshipsQueryOffsetMin)
+    .optional()
+    .describe("How many relationships to skip. Each page is 200 rows, newest touch first."),
 });
 
 export const ListRelationships200Response = zod
@@ -3584,17 +3572,7 @@ export const GetRelationship200Response = zod
             queueStatus: zod
               .enum(["open", "snoozed", "dismissed", "handled"])
               .describe("Operator triage state."),
-            reason: zod
-              .enum([
-                "llm_call",
-                "llm_call_reserve",
-                "llm_settle",
-                "voice_tts",
-                "exa_search",
-                "grant",
-                "refund",
-              ])
-              .describe("Reason code for the ledger entry."),
+            reason: zod.string().describe("Why this action was proposed."),
             recipientEmail: zod.string().optional().describe("Recipient email address."),
             reconciliationAttempts: zod
               .int()
@@ -4172,17 +4150,7 @@ export const GetRelationship200Response = zod
             queueStatus: zod
               .enum(["open", "snoozed", "dismissed", "handled"])
               .describe("Operator triage state."),
-            reason: zod
-              .enum([
-                "llm_call",
-                "llm_call_reserve",
-                "llm_settle",
-                "voice_tts",
-                "exa_search",
-                "grant",
-                "refund",
-              ])
-              .describe("Reason code for the ledger entry."),
+            reason: zod.string().describe("Why this action was proposed."),
             recipientEmail: zod.string().optional().describe("Recipient email address."),
             reconciliationAttempts: zod
               .int()

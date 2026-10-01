@@ -7,6 +7,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { openCompanyCreate } from "@/lib/dashboard/company-create-request";
 import { useRelationships } from "@/hooks/queries/use-relationships";
 import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
+import {
+  ACTION_QUEUE_PAGE,
+  fetchRevenueActions,
+} from "@/hooks/queries/utils/fetch-revenue-actions";
 import { revenueActionKeys } from "@/hooks/queries/utils/revenue-action-keys";
 import {
   Alarm,
@@ -56,6 +60,7 @@ import {
   DETECTOR_LABELS,
   dismissAction,
   dismissReasonLabel,
+  explainedRevenueError,
   QUEUE_FILTERS,
   snoozeWakeCopy,
   snoozeAction,
@@ -82,9 +87,14 @@ import type { RevenueAction, RevenueRelationship, RevenueWorkspace } from "@/lib
  * A non-empty filter says how many rows match. Zero is the empty state below
  * the header, so "0 shown" would read as if rows were hidden.
  */
-export function recoveryShownLabel(count: number): string | null {
+export function recoveryShownLabel(count: number, hasMore = false): string | null {
   if (count <= 0) return null;
-  return count === 1 ? "1 shown" : `${count} shown`;
+  const shown = hasMore ? `${count}+` : String(count);
+  return `${shown} shown`;
+}
+
+export function recoveryRemainderLabel(): string {
+  return "Show the next follow-ups";
 }
 
 /**
@@ -174,9 +184,39 @@ export function QueueView({
   const [auditFor, setAuditFor] = React.useState<RevenueAction | null>(null);
   const [creating, setCreating] = React.useState(false);
   const queryClient = useQueryClient();
-  const actionsQueryKey = revenueActionKeys.list(filter, 100, "recovery");
-  const actionsQuery = useRevenueActions(filter, 100, "recovery");
-  const actions = recoveryQueueActions(actionsQuery.data ?? []);
+  const actionsQueryKey = revenueActionKeys.list(filter, ACTION_QUEUE_PAGE, "recovery");
+  const actionsQuery = useRevenueActions(filter, ACTION_QUEUE_PAGE, "recovery");
+  const [extraActions, setExtraActions] = React.useState<RevenueAction[]>([]);
+  const [moreRecovery, setMoreRecovery] = React.useState(false);
+  const [loadingMoreRecovery, setLoadingMoreRecovery] = React.useState(false);
+  const loadedRecoveryCount = React.useRef(0);
+  const primedRecovery = React.useRef("");
+  const recoveryPage = actionsQuery.data ?? [];
+  const recoveryRows = React.useMemo(() => {
+    if (extraActions.length === 0) return recoveryPage;
+    const seen = new Set(recoveryPage.map((action) => action.id));
+    return [
+      ...recoveryPage,
+      ...extraActions.filter((action) => {
+        if (seen.has(action.id)) return false;
+        seen.add(action.id);
+        return true;
+      }),
+    ];
+  }, [extraActions, recoveryPage]);
+  const actions = recoveryQueueActions(recoveryRows);
+  React.useEffect(() => {
+    setExtraActions([]);
+    setMoreRecovery(false);
+    primedRecovery.current = "";
+    loadedRecoveryCount.current = 0;
+  }, [filter]);
+  React.useEffect(() => {
+    if (!actionsQuery.isSuccess || primedRecovery.current === filter) return;
+    primedRecovery.current = filter;
+    loadedRecoveryCount.current = actionsQuery.data?.length ?? 0;
+    setMoreRecovery(loadedRecoveryCount.current === ACTION_QUEUE_PAGE);
+  }, [actionsQuery.data, actionsQuery.isSuccess, filter]);
 
   React.useEffect(() => {
     if (actionsQuery.error) {
@@ -184,11 +224,33 @@ export function QueueView({
     }
   }, [actionsQuery.error, onError]);
 
+  const loadMoreRecovery = React.useCallback(async () => {
+    if (loadingMoreRecovery || !moreRecovery) return;
+    setLoadingMoreRecovery(true);
+    try {
+      const next = await fetchRevenueActions(
+        filter,
+        ACTION_QUEUE_PAGE,
+        undefined,
+        "recovery",
+        loadedRecoveryCount.current,
+      );
+      loadedRecoveryCount.current += next.length;
+      if (next.length < ACTION_QUEUE_PAGE) setMoreRecovery(false);
+      setExtraActions((current) => [...current, ...next]);
+    } catch (reason) {
+      onError(explainedRevenueError(reason, "Could not load the next follow-ups."));
+    } finally {
+      setLoadingMoreRecovery(false);
+    }
+  }, [filter, loadingMoreRecovery, moreRecovery, onError]);
+
   const removeFromQueue = React.useCallback(
     (id: string) => {
       queryClient.setQueryData<RevenueAction[]>(actionsQueryKey, (current = []) =>
         current.filter((action) => action.id !== id),
       );
+      setExtraActions((current) => current.filter((action) => action.id !== id));
       setSelected((cur) => (cur?.id === id ? null : cur));
     },
     [actionsQueryKey, queryClient],
@@ -197,6 +259,9 @@ export function QueueView({
   const patchAction = React.useCallback(
     (updated: RevenueAction) => {
       queryClient.setQueryData<RevenueAction[]>(actionsQueryKey, (current = []) =>
+        current.map((action) => (action.id === updated.id ? updated : action)),
+      );
+      setExtraActions((current) =>
         current.map((action) => (action.id === updated.id ? updated : action)),
       );
       setSelected((cur) => (cur?.id === updated.id ? updated : cur));
@@ -216,7 +281,10 @@ export function QueueView({
   return (
     <div className="flex min-h-full w-full min-w-0 flex-col p-3" data-slot="queue-view">
       <SimProductPanel className="flex min-h-0 flex-1 flex-col">
-        <SimProductHeader actions={recoveryShownLabel(actions.length)} title="Recovery queue" />
+        <SimProductHeader
+          actions={recoveryShownLabel(actions.length, moreRecovery)}
+          title="Recovery queue"
+        />
         <SimProductToolbar>
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger
@@ -306,6 +374,7 @@ export function QueueView({
             />
           )
         ) : (
+          <>
           <ul className="flex flex-col gap-3 p-3">
             {actions.map((action) => (
               <li key={action.id}>
@@ -322,6 +391,19 @@ export function QueueView({
               </li>
             ))}
           </ul>
+          {moreRecovery ? (
+            <Button
+              className="m-3"
+              disabled={loadingMoreRecovery}
+              onClick={() => void loadMoreRecovery()}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {recoveryRemainderLabel()}
+            </Button>
+          ) : null}
+          </>
         )}
       </SimProductPanel>
 

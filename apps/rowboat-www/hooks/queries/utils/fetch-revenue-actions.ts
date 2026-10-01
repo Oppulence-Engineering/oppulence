@@ -5,12 +5,21 @@ import type { RevenueAction } from "@/lib/revenue/types";
 
 export type RevenueActionSurface = "task" | "recovery";
 
+/** The queue refuses a larger page. The next rows use this same size as an offset. */
+export const ACTION_QUEUE_PAGE = 100;
+
 function revenueActionsPath(
   queueStatus: string,
   limit: number,
   surface?: RevenueActionSurface,
+  offset = 0,
 ): string {
-  return withQueryString("/revenue-actions", { queueStatus, limit, surface });
+  return withQueryString("/revenue-actions", {
+    queueStatus,
+    limit,
+    surface,
+    ...(offset > 0 ? { offset } : {}),
+  });
 }
 
 export async function loadRevenueActions(
@@ -19,9 +28,10 @@ export async function loadRevenueActions(
   limit = 25,
   signal?: AbortSignal,
   surface?: RevenueActionSurface,
+  offset = 0,
 ): Promise<RevenueAction[]> {
   const body = await request({
-    path: revenueActionsPath(queueStatus, limit, surface),
+    path: revenueActionsPath(queueStatus, limit, surface, offset),
     schema: ListRevenueActions200Response,
     signal,
   });
@@ -33,6 +43,7 @@ export function fetchRevenueActions(
   limit = 25,
   signal?: AbortSignal,
   surface?: RevenueActionSurface,
+  offset = 0,
 ): Promise<RevenueAction[]> {
-  return loadRevenueActions(requestJson, queueStatus, limit, signal, surface);
+  return loadRevenueActions(requestJson, queueStatus, limit, signal, surface, offset);
 }

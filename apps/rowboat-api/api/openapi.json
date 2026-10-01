@@ -25407,6 +25407,26 @@
             "schema": {
               "type": "integer"
             }
+          },
+          {
+            "description": "How many actions to skip. Pages stay in priority order.",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "description": "task keeps follow-up tasks. recovery keeps every other action.",
+            "in": "query",
+            "name": "surface",
+            "required": false,
+            "schema": {
+              "enum": ["task", "recovery"],
+              "type": "string"
+            }
           }
         ],
         "responses": {

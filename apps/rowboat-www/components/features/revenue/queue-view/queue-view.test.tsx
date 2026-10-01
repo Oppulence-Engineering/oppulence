@@ -9,6 +9,7 @@ import {
   recoveryFilterName,
   recoveryFollowUpName,
   recoveryCompanyName,
+  recoveryRemainderLabel,
   recoveryShownLabel,
   recoveryStatusLabel,
   newActionIntro,
@@ -19,8 +20,9 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "queue-view.tsx"),
 describe("QueueView", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function QueueView");
-    expect(source).toContain("recoveryQueueActions(actionsQuery.data ?? [])");
-    expect(source).toContain('useRevenueActions(filter, 100, "recovery")');
+    expect(source).toContain("recoveryQueueActions(recoveryRows)");
+    expect(source).toContain('useRevenueActions(filter, ACTION_QUEUE_PAGE, "recovery")');
+    expect(source).toContain("loadedRecoveryCount.current");
     expect(source).not.toContain("ListFilter");
     expect(recoveryFilterName("open")).toBe("Recovery, Open");
     expect(recoveryFilterName("snoozed")).toBe("Recovery, Snoozed");
@@ -56,6 +58,9 @@ describe("QueueView", () => {
     expect(recoveryShownLabel(0)).toBeNull();
     expect(recoveryShownLabel(1)).toBe("1 shown");
     expect(recoveryShownLabel(4)).toBe("4 shown");
+    expect(recoveryShownLabel(100, true)).toBe("100+ shown");
+    expect(recoveryShownLabel(101, false)).toBe("101 shown");
+    expect(recoveryRemainderLabel()).toBe("Show the next follow-ups");
     expect(recoveryEmptyDescription("all")).toBe("No recovery drafts right now.");
     expect(recoveryEmptyDescription("snoozed")).toBe("Nothing is snoozed right now.");
     expect(recoveryEmptyDescription("handled")).toBe("Nothing has been handled yet.");

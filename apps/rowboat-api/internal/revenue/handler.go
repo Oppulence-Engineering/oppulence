@@ -2764,6 +2764,14 @@ func (h *Handler) ListActions(w http.ResponseWriter, r *http.Request) {
 			f.Limit = n
 		}
 	}
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		f.Offset = n
+	}
 	actions, err := h.svc.ListActions(r.Context(), u, f)
 	if err != nil {
 		h.writeServiceError(w, err)

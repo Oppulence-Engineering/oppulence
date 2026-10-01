@@ -728,6 +728,9 @@ describe("task due order", () => {
     expect(source).not.toContain("new Date(task.dueAt).getTime() < now");
     expect(source).not.toContain("task.dueAt?.slice(0, 10) === today");
     expect(source).toContain("Show all tasks");
+    expect(source).toContain("Show the next tasks");
+    expect(source).toContain('useRevenueActions("open", ACTION_QUEUE_PAGE, "task")');
+    expect(source).toContain("loadedTaskCount.current");
     expect(source).toContain("No tasks yet! Create your first");
     expect(source).toContain("onOpenCompany(task.relationshipId)");
   });

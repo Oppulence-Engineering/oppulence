@@ -11,12 +11,24 @@ import * as zod from "zod";
  * Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions.
  * @summary List the action queue
  */
+export const listRevenueActionsQueryOffsetMin = 0;
+
 export const ListRevenueActionsQueryParams = zod.object({
   queueStatus: zod
     .enum(["open", "snoozed", "dismissed", "handled", "all"])
     .optional()
     .describe("Queue status filter, or all."),
   limit: zod.coerce.number().int().optional().describe("Page size (max 100, default 10)."),
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(listRevenueActionsQueryOffsetMin)
+    .optional()
+    .describe("How many actions to skip. Pages stay in priority order."),
+  surface: zod
+    .enum(["task", "recovery"])
+    .optional()
+    .describe("task keeps follow-up tasks. recovery keeps every other action."),
 });
 
 export const ListRevenueActions200Response = zod
