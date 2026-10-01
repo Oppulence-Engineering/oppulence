@@ -10,6 +10,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useConsoleResources } from "@/hooks/queries/use-console";
 import { companyName } from "@/lib/revenue/revenue-records";
+import { enumLabel } from "@/lib/revenue/source-product-copy";
 import { useRelationshipGraph } from "@/hooks/queries/use-relationships";
 import { consoleKeys } from "@/hooks/queries/utils/console-keys";
 import { relationshipKeys } from "@/hooks/queries/utils/relationship-keys";
@@ -714,8 +715,7 @@ function Inspector({
       {node.changedSinceReview ? (
         <div className="mt-3 border border-oppulence-orange/25 bg-oppulence-orange/5 p-2 text-xs text-primary/65">
           <ClockCounterClockwise className="mr-1 inline size-4 text-oppulence-orange" />
-          Changed since your last review
-          {node.changedDimensions.length ? `: ${node.changedDimensions.join(", ")}` : "."}
+          {graphChangedDetail(node.changedDimensions)}
         </div>
       ) : null}
 
@@ -946,6 +946,13 @@ export function graphAsOfLabel(asOf: string): string {
   const parsed = new Date(asOf);
   const when = Number.isNaN(parsed.getTime()) ? asOf : parsed.toLocaleString();
   return `As of ${when}`;
+}
+
+/** A review note names the fields that moved. Stored tokens are not those names. */
+export function graphChangedDetail(dimensions: readonly string[]): string {
+  const labels = dimensions.map((dimension) => enumLabel(dimension)).filter((label) => label !== "Unknown");
+  if (!labels.length) return "Changed since your last review.";
+  return `Changed since your last review: ${labels.join(", ")}.`;
 }
 
 /**

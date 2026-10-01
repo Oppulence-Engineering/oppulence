@@ -8,6 +8,7 @@ import {
   graphCanvasEmptyState,
   graphInspectorPrompt,
   graphAsOfLabel,
+  graphChangedDetail,
   graphCountLabel,
   graphLayoutLabel,
   graphAccountChoice,
@@ -63,6 +64,13 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).not.toContain("graph?.historical");
     expect(graphAsOfLabel("not-a-date")).toBe("As of not-a-date");
     expect(graphAsOfLabel("2026-09-30T13:00:00.000Z")).toMatch(/^As of /);
+    expect(graphChangedDetail(["next_action", "health"])).toBe(
+      "Changed since your last review: Next Action, Health.",
+    );
+    expect(graphChangedDetail([])).toBe("Changed since your last review.");
+    expect(graphChangedDetail(["next_action"])).not.toContain("next_action");
+    expect(source).toContain("graphChangedDetail(node.changedDimensions)");
+    expect(source).not.toContain("node.changedDimensions.join");
     expect(source).toContain('aria-label="Ask this graph"');
     expect(source).not.toContain("Ask graph");
     expect(source).toContain("disabled={\n              !graphAskChanges(queryDraft,");
