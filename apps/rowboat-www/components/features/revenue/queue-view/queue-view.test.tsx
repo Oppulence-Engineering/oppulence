@@ -9,6 +9,7 @@ import {
   recoveryFollowUpName,
   recoveryCompanyName,
   recoveryShownLabel,
+  recoveryStatusLabel,
   newActionIntro,
 } from "@/components/features/revenue/queue-view/queue-view";
 
@@ -57,6 +58,12 @@ describe("QueueView", () => {
     expect(recoveryEmptyDescription("snoozed")).toBe("Nothing is snoozed right now.");
     expect(recoveryEmptyDescription("handled")).toBe("Nothing has been handled yet.");
     expect(recoveryEmptyDescription("dismissed")).toBe("Nothing has been dismissed.");
+    expect(recoveryStatusLabel("open")).toBe("Held");
+    expect(recoveryStatusLabel("snoozed")).toBe("Snoozed");
+    expect(recoveryStatusLabel("handled")).toBe("Handled");
+    expect(recoveryStatusLabel("dismissed")).toBe("Dismissed");
+    expect(source).toContain("recoveryStatusLabel(action.queueStatus)");
+    expect(source).not.toContain('open ? "Held" : action.queueStatus');
     expect(source).toContain("recoveryEmptyDescription(filter)");
     expect(source).not.toContain("Nothing in the ${filter}");
     expect(source).toContain("Run Promise Leak Audit");

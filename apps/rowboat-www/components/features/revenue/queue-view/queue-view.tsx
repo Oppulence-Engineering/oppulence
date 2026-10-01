@@ -103,6 +103,25 @@ export function recoveryFollowUpName(actionType: string): string {
   return comboboxFilterName("Follow-up", label ?? actionType.replaceAll("_", " "));
 }
 
+/** Open recovery is "Held". The other stored statuses already have filter names. */
+export function recoveryStatusLabel(status: string): string {
+  switch (status) {
+    case "open":
+      return "Held";
+    case "snoozed":
+      return "Snoozed";
+    case "handled":
+      return "Handled";
+    case "dismissed":
+      return "Dismissed";
+    default: {
+      const words = status.replaceAll("_", " ").trim();
+      if (!words) return status;
+      return words.charAt(0).toUpperCase() + words.slice(1);
+    }
+  }
+}
+
 export function recoveryEmptyDescription(filter: string): string {
   switch (filter) {
     case "snoozed":
@@ -391,7 +410,7 @@ function ActionCard({
             <Label className="truncate text-sm font-medium text-[var(--text-primary)]">
               {recipient}
             </Label>
-            <Chip className="ml-auto">{open ? "Held" : action.queueStatus}</Chip>
+            <Chip className="ml-auto">{recoveryStatusLabel(action.queueStatus)}</Chip>
           </div>
           <p className="mt-1.5 line-clamp-2 text-sm text-[var(--text-secondary)]">
             {action.reason}
