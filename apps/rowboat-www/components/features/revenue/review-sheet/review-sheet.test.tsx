@@ -22,6 +22,9 @@ describe("ReviewSheet", () => {
     expect(
       reconciliationErrorCopy("provider marker was not found after bounded reconciliation attempts"),
     ).toBe("");
+    expect(reconciliationErrorCopy("execution idempotency key is missing")).toBe(
+      "This send has no receipt to check.",
+    );
     expect(source).toContain("reconciliationStatusLabel(action.reconciliationStatus)");
     expect(source).not.toContain("{action.reconciliationStatus");
   });

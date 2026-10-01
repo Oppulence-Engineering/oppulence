@@ -85,6 +85,9 @@ export function reconciliationErrorCopy(error: string | null | undefined): strin
   ) {
     return "";
   }
+  if (raw === "execution idempotency key is missing" || raw === "This send has no receipt to check.") {
+    return "This send has no receipt to check.";
+  }
   return raw;
 }
 
