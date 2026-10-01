@@ -45,6 +45,7 @@ describe("HomeAgentSurface", () => {
     expect(component).toHaveAttribute("data-slot", "home-agent-surface");
     expect(screen.getByText("What should we get done, Morgan?")).toBeVisible();
     expect(resolveGreetingName("Ada Lovelace")).toBe("Ada Lovelace");
+    expect(resolveGreetingName("Ada @ Northwind")).toBe("Ada @ Northwind");
     expect(resolveGreetingName("dev")).toBe("Dev");
     expect(resolveGreetingName("")).toBe("there");
     expect(component).toHaveTextContent("Acme · Revenue operator");
@@ -100,7 +101,9 @@ describe("HomeAgentSurface", () => {
     );
     expect(onSelectPrompt).not.toHaveBeenCalledWith(expect.stringContaining("Trace the signals"));
     expect(screen.queryByRole("button", { name: "Review an at-risk relationship" })).toBeNull();
-    expect(screen.getAllByRole("button", { name: "Prioritize what we owe" }).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("button", { name: "Prioritize what we owe" }).length,
+    ).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "Sequence open obligations" })).toBeNull();
   });
 
@@ -119,14 +122,8 @@ describe("HomeAgentSurface", () => {
     await user.click(screen.getAllByRole("button", { name: "Find a slipping promise" })[0]!);
     await user.click(screen.getAllByRole("button", { name: "Prioritize what we owe" })[0]!);
 
-    expect(onSelectPrompt).toHaveBeenNthCalledWith(
-      1,
-      expect.not.stringContaining("intervention"),
-    );
+    expect(onSelectPrompt).toHaveBeenNthCalledWith(1, expect.not.stringContaining("intervention"));
     expect(onSelectPrompt).toHaveBeenNthCalledWith(1, expect.not.stringContaining("evidence"));
-    expect(onSelectPrompt).toHaveBeenNthCalledWith(
-      2,
-      expect.not.stringContaining("obligations"),
-    );
+    expect(onSelectPrompt).toHaveBeenNthCalledWith(2, expect.not.stringContaining("obligations"));
   });
 });

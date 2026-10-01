@@ -28,6 +28,12 @@ describe("workspace label", () => {
     ).toBe("dev");
     expect(workspaceLabel({ preferenceName: "", userName: "" })).toBe("Workspace");
   });
+
+  it("keeps a saved name that contains an @ sign", () => {
+    expect(
+      workspaceLabel({ preferenceName: "Ada @ Northwind", userName: "dev@solomon-ai.co" }),
+    ).toBe("Ada @ Northwind");
+  });
 });
 
 describe("sidebar trial banner", () => {
@@ -131,9 +137,7 @@ describe("audit reconnect guard", () => {
     ).toBe(false);
     expect(googleAuditLaunch([])).toBe("connect");
     expect(
-      googleAuditLaunch([
-        { source: "slack", status: "connected" } as RelationshipSourceStatus,
-      ]),
+      googleAuditLaunch([{ source: "slack", status: "connected" } as RelationshipSourceStatus]),
     ).toBe("connect");
   });
 

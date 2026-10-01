@@ -38,13 +38,17 @@ export type HomeAgentSurfaceProps = ComponentPropsWithoutRef<"section"> & {
 
 /**
  * The greeting receives the same account label as the sidebar. A saved display
- * name is used whole. An email, or the bare local part left when no name is
- * saved, becomes a short given name.
+ * name is used whole, including a name that contains an @ sign. An email, or
+ * the bare local part left when no name is saved, becomes a short given name.
  */
+function looksLikeEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 export function resolveGreetingName(userName?: string) {
   const trimmed = userName?.trim() ?? "";
   if (!trimmed) return "there";
-  if (trimmed.includes("@")) {
+  if (looksLikeEmail(trimmed)) {
     const local = trimmed.split("@")[0] ?? trimmed;
     const token = local.split(/[.+_-]/)[0] ?? local;
     if (!token) return "there";

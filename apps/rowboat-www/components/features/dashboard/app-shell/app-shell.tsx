@@ -153,7 +153,8 @@ export const SETTINGS_SECTIONS: {
     label: "Customization",
     icon: Folder,
     group: "global",
-    description: "Branding and layout are not separate settings. Theme and language are in Appearance.",
+    description:
+      "Branding and layout are not separate settings. Theme and language are in Appearance.",
   },
   {
     key: "appearance",
@@ -228,6 +229,10 @@ export type ShellBilling = {
   trialExpiresAt?: string | null;
 };
 
+function looksLikeEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 /**
  * Label for the account menu. Settings saves a cross-device display name and
  * tells the user it replaces the email in the sidebar. That value lives on
@@ -241,7 +246,7 @@ export function workspaceLabel(input: {
   userName: string;
 }) {
   const displayName = input.preferenceName?.trim() || input.deviceName?.trim() || input.userName;
-  const label = displayName.includes("@") ? displayName.split("@")[0] : displayName;
+  const label = looksLikeEmail(displayName) ? displayName.split("@")[0] : displayName;
   return label || "Workspace";
 }
 
@@ -1156,7 +1161,10 @@ export function AppShellSidebar({
                 </DropdownMenuLabel>
                 {/* This session has one workspace. A menu item here accepted the
                     click and left the menu open. */}
-                <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-primary" data-current-workspace>
+                <div
+                  className="flex items-center gap-2 px-2 py-1.5 text-sm text-primary"
+                  data-current-workspace
+                >
                   <Avatar aria-hidden="true" className="size-4 rounded-none" size="sm">
                     <AvatarImage
                       alt=""
