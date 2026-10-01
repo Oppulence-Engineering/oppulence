@@ -221,7 +221,7 @@ function GraphNodeCard({ data, selected }: NodeProps<FlowNode>) {
   return (
     <div
       className={`w-44 border bg-background/95 px-3 py-2 text-left shadow-sm backdrop-blur ${nodeShape(node.kind)} ${nodeTone(node)} ${selected ? "ring-2 ring-oppulence-orange/60" : ""}`}
-      aria-label={`${KIND_LABEL[node.kind]}: ${node.label}. ${badges.join(", ")}`}
+      aria-label={`${KIND_LABEL[node.kind]}: ${node.label}. ${badges.map((badge) => graphDetailLabel(String(badge))).join(", ")}`}
     >
       <div className="flex items-start gap-2">
         <ItemMedia
@@ -251,10 +251,10 @@ function GraphNodeCard({ data, selected }: NodeProps<FlowNode>) {
           {badges.slice(0, 2).map((badge) => (
             <Badge
               key={badge}
-              className="rounded-none bg-primary/6 px-1.5 py-0.5 text-[9px] capitalize font-normal text-primary/55"
+              className="rounded-none bg-primary/6 px-1.5 py-0.5 text-[9px] font-normal text-primary/55"
               variant="outline"
             >
-              {String(badge).replaceAll("_", " ")}
+              {graphDetailLabel(String(badge))}
             </Badge>
           ))}
         </div>
@@ -725,8 +725,8 @@ function Inspector({
               <dt className="font-mono text-[9px] uppercase tracking-wide text-primary/35">
                 {label}
               </dt>
-              <dd className="mt-0.5 capitalize text-primary/70">
-                {String(value).replaceAll("_", " ")}
+              <dd className="mt-0.5 text-primary/70">
+                {graphDetailLabel(String(value))}
               </dd>
             </div>
           ))}
@@ -930,14 +930,14 @@ function GraphTable({
                 </Button>
               </TableCell>
               <TableCell className="px-3 py-2 text-primary/55">{KIND_LABEL[node.kind]}</TableCell>
-              <TableCell className="px-3 py-2 capitalize text-primary/55">
-                {(
+              <TableCell className="px-3 py-2 text-primary/55">
+                {graphDetailLabel(
                   node.health ||
-                  node.status ||
-                  node.approvalStatus ||
-                  node.freshness ||
-                  "—"
-                ).replaceAll("_", " ")}
+                    node.status ||
+                    node.approvalStatus ||
+                    node.freshness ||
+                    "—",
+                )}
               </TableCell>
               <TableCell className="px-3 py-2 text-primary/45">
                 {edges.filter((edge) => edge.source === node.id || edge.target === node.id).length}
@@ -966,6 +966,22 @@ export function graphAsOfLabel(asOf: string): string {
   const parsed = new Date(asOf);
   const when = Number.isNaN(parsed.getTime()) ? asOf : parsed.toLocaleString();
   return `As of ${when}`;
+}
+
+/** A graph field is a stored token. A date before the record existed is not a status. */
+export function graphDetailLabel(value: string): string {
+  switch (value) {
+    case "historical_unknown":
+      return "Not recorded for this date";
+    case "review_required":
+      return "Needs review";
+    case "needs_attention":
+      return "Needs attention";
+    case "stale":
+      return "Out of date";
+    default:
+      return enumLabel(value);
+  }
 }
 
 /** A review note names the fields that moved. Stored tokens are not those names. */

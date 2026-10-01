@@ -178,6 +178,7 @@ import {
 } from "@/lib/revenue/revenue-records";
 
 export { companyName };
+import { personEvidenceLabel } from "@/components/features/revenue/workspace-records/workspace-records-view";
 import {
   activityEvidenceLines,
   activityHeading,
@@ -2985,11 +2986,8 @@ export function RelationshipSheet({
                                     <ul className="mt-1 space-y-1 border-l border-border pl-2">
                                       {cited.map((attribute) => (
                                         <li key={attribute.id}>
-                                          <Badge
-                                            className="capitalize font-normal"
-                                            variant="outline"
-                                          >
-                                            {humanize(attribute.dimension)}
+                                          <Badge className="font-normal" variant="outline">
+                                            {personEvidenceLabel(attribute.dimension)}
                                           </Badge>
                                           : {attribute.value}
                                           {` · ${Math.round(attribute.confidence * 100)}% confidence`}

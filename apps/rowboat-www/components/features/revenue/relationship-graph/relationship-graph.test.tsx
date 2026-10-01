@@ -9,6 +9,7 @@ import {
   graphInspectorPrompt,
   graphAsOfLabel,
   graphChangedDetail,
+  graphDetailLabel,
   graphStateFromSearch,
   graphCountLabel,
   graphLayoutLabel,
@@ -70,6 +71,12 @@ describe("RelationshipGraphWorkspace", () => {
     );
     expect(graphChangedDetail([])).toBe("Changed since your last review.");
     expect(graphChangedDetail(["next_action"])).not.toContain("next_action");
+    expect(graphDetailLabel("historical_unknown")).toBe("Not recorded for this date");
+    expect(graphDetailLabel("review_required")).toBe("Needs review");
+    expect(graphDetailLabel("needs_attention")).toBe("Needs attention");
+    expect(graphDetailLabel("stale")).toBe("Out of date");
+    expect(graphDetailLabel("historical_unknown")).not.toContain("historical_unknown");
+    expect(source).toContain("graphDetailLabel(String(value))");
     expect(source).toContain("graphChangedDetail(node.changedDimensions)");
     expect(source).not.toContain("node.changedDimensions.join");
     expect(source).toContain('aria-label="Ask this graph"');

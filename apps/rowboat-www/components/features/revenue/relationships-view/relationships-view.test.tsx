@@ -442,6 +442,7 @@ describe("RelationshipsView", () => {
     expect(source).toContain("recommendationStatusLabel(action.policyStatus)");
     expect(source).toContain("recommendationStatusLabel(action.approvalStatus)");
     expect(source).toContain("attentionReasonLabel(action.detector)");
+    expect(source).toContain("personEvidenceLabel(attribute.dimension)");
     expect(source).not.toContain("{action.policyStatus}");
     expect(source).not.toContain("{action.approvalStatus}");
     expect(source).not.toContain("window.confirm");
