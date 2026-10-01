@@ -32,6 +32,7 @@ import {
   identityMatchLabel,
   identitySupportLabel,
   liveCueCopy,
+  liveCueVisible,
 } from "@/components/features/revenue/relationships-view/relationships-view";
 
 describe("RelationshipsView", () => {
@@ -308,6 +309,10 @@ describe("RelationshipsView", () => {
       title: "No next step",
       detail: "Add an owner and a date for what happens next.",
     });
+    expect(liveCueVisible({ kind: "missing_next_step" }, "prospect")).toBe(false);
+    expect(liveCueVisible({ kind: "missing_next_step" }, "evaluation")).toBe(true);
+    expect(liveCueVisible({ kind: "overdue_commitment" }, "prospect")).toBe(true);
+    expect(source).toContain("liveCueVisible(cue, data?.relationship.lifecycle ?? \"\")");
     expect(source).toContain("Suggestions (");
     expect(source).not.toContain("Live cue cards");
     expect(source).not.toContain("before the meeting ends");

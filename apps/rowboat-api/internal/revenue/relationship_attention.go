@@ -290,7 +290,7 @@ func (s *Service) RefreshRelationshipAttention(ctx context.Context, u *ent.User)
 			})
 		}
 		if capabilities["missing_next_step"] && strings.TrimSpace(rel.NextAction) == "" &&
-			(rel.Lifecycle == "evaluation" || rel.Lifecycle == "contracting" || rel.Lifecycle == "onboarding" || rel.Lifecycle == "renewal") && len(degradedDependencies) == 0 {
+			relationshipNeedsDatedNextStep(rel.Lifecycle) && len(degradedDependencies) == 0 {
 			score := 68
 			if rel.Lifecycle == "contracting" || rel.Lifecycle == "renewal" {
 				score = 80

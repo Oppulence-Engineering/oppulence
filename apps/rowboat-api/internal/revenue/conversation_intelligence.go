@@ -212,6 +212,18 @@ type RelationshipDelta struct {
 	RecommendationReason string                      `json:"recommendationReason,omitempty"`
 }
 
+// relationshipNeedsDatedNextStep is true for the stages where an empty next
+// step is a gap. A new company stays a prospect until a deal is underway, so
+// an empty next step there is not a suggestion.
+func relationshipNeedsDatedNextStep(lifecycle string) bool {
+	switch lifecycle {
+	case "evaluation", "contracting", "onboarding", "renewal":
+		return true
+	default:
+		return false
+	}
+}
+
 // RelationshipLiveCue is an evidence-backed prompt for an active or upcoming meeting.
 type RelationshipLiveCue struct {
 	ID         string `json:"id"`
@@ -919,7 +931,10 @@ func (s *Service) RelationshipIntelligenceFor(
 			Detail: rel.Summary, Severity: "attention",
 		})
 	}
-	if strings.TrimSpace(rel.NextAction) == "" {
+	// A blank company is a prospect with no next step yet. That is not a missed
+	// meeting. The same stages the attention queue uses are the ones where a
+	// dated owner is actually part of the work.
+	if strings.TrimSpace(rel.NextAction) == "" && relationshipNeedsDatedNextStep(rel.Lifecycle) {
 		result.LiveCues = append(result.LiveCues, RelationshipLiveCue{
 			ID: "missing-next:" + rel.ID.String(), Kind: "missing_next_step",
 			Title: "No next step", Detail: "Agree on an owner and a dated next step before the meeting ends.", Severity: "attention",

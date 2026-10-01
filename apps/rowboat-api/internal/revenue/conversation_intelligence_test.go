@@ -11,6 +11,19 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 )
 
+func TestRelationshipNeedsDatedNextStep(t *testing.T) {
+	for _, lifecycle := range []string{"evaluation", "contracting", "onboarding", "renewal"} {
+		if !relationshipNeedsDatedNextStep(lifecycle) {
+			t.Fatalf("%s should ask for a dated next step", lifecycle)
+		}
+	}
+	for _, lifecycle := range []string{"prospect", "active_customer", "churned", "former_customer", ""} {
+		if relationshipNeedsDatedNextStep(lifecycle) {
+			t.Fatalf("%s should not invent a next-step suggestion", lifecycle)
+		}
+	}
+}
+
 func compiledConversationInput(now time.Time, externalID, version string) RelationshipObservationInput {
 	riskQuote := "We are concerned the security review will delay the renewal."
 	commitmentQuote := "I will send the security packet by Friday."

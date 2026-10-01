@@ -1622,6 +1622,22 @@ export function completenessExplanationCopy(explanation: string): string {
  * Cue text is stored with the company. A missing next step is not a meeting,
  * so the sheet does not tell you to finish one.
  */
+/** Stages where an empty next step is a real gap. A new company is a prospect. */
+export function relationshipNeedsDatedNextStep(lifecycle: string): boolean {
+  return (
+    lifecycle === "evaluation" ||
+    lifecycle === "contracting" ||
+    lifecycle === "onboarding" ||
+    lifecycle === "renewal"
+  );
+}
+
+/** A stored cue can still describe a blank company. Hide that one. */
+export function liveCueVisible(cue: { kind: string }, lifecycle: string): boolean {
+  if (cue.kind !== "missing_next_step") return true;
+  return relationshipNeedsDatedNextStep(lifecycle);
+}
+
 export function liveCueCopy(cue: { kind: string; title: string; detail: string }): {
   title: string;
   detail: string;
@@ -2005,6 +2021,9 @@ export function RelationshipSheet({
   >("overview");
   const askOppulence = useAskOppulence();
   const askedCompany = data?.relationship ?? seed;
+  const liveCues = (data?.intelligence?.liveCues ?? []).filter((cue) =>
+    liveCueVisible(cue, data?.relationship.lifecycle ?? ""),
+  );
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -2489,11 +2508,11 @@ export function RelationshipSheet({
                   />
                 ) : null}
 
-                {data.intelligence?.liveCues.length ? (
+                {liveCues.length ? (
                   <section>
-                    <SectionTitle title={`Suggestions (${data.intelligence.liveCues.length})`} />
+                    <SectionTitle title={`Suggestions (${liveCues.length})`} />
                     <ul className="grid gap-2 sm:grid-cols-2">
-                      {data.intelligence.liveCues.map((cue) => {
+                      {liveCues.map((cue) => {
                         const copy = liveCueCopy(cue);
                         return (
                           <li
