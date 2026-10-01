@@ -1730,6 +1730,58 @@ export function mailReplyLabel(state: string): string {
   }
 }
 
+/** Focused review stores the kind of doubt. The badge says what to check. */
+export function reviewEvidenceKindLabel(kind: string): string {
+  switch (kind) {
+    case "claim":
+      return "What was said";
+    case "speaker":
+      return "Who said it";
+    case "entity":
+      return "Who this is";
+    case "word":
+      return "The wording";
+    default:
+      return humanize(kind);
+  }
+}
+
+/** A shared plan stores an internal status. The heading says where it stands. */
+export function mutualPlanStatusLabel(status: string): string {
+  switch (status) {
+    case "draft":
+      return "Draft";
+    case "revised":
+      return "Revised";
+    case "internally_approved":
+      return "Approved in this workspace";
+    case "counterparty_responded":
+      return "They responded";
+    case "completed":
+      return "Finished";
+    case "cancelled":
+      return "Cancelled";
+    default:
+      return humanize(status);
+  }
+}
+
+/** A deletion receipt status is how far the delete got, not a one-word token. */
+export function deletionReceiptStatusLabel(status: string): string {
+  switch (status) {
+    case "pending":
+      return "Deletion is still running";
+    case "blocked":
+      return "Deletion is blocked";
+    case "partial":
+      return "Some copies are still there";
+    case "verified":
+      return "Deletion is finished";
+    default:
+      return humanize(status);
+  }
+}
+
 /**
  * Reconcile stores a classification token. The promise list names the
  * situation, and an older explanation that repeated the token is rewritten.
@@ -2899,7 +2951,7 @@ export function RelationshipSheet({
                       </p>
                       {data.intelligence.deletionReceipts[0] ? (
                         <p className="mt-1">
-                          Last deletion: {humanize(data.intelligence.deletionReceipts[0].status)}
+                          Last deletion: {deletionReceiptStatusLabel(data.intelligence.deletionReceipts[0].status)}
                         </p>
                       ) : null}
                     </details>
@@ -3330,8 +3382,8 @@ export function RelationshipSheet({
                     <ul className="space-y-2">
                       {data.intelligence.mutualActionPlans.map((plan) => (
                         <li key={plan.planId} className="border border-border p-3 text-xs">
-                          <p className="font-medium capitalize text-primary">
-                            {humanize(plan.status)} · revision {plan.currentRevision.version}
+                          <p className="font-medium text-primary">
+                            {mutualPlanStatusLabel(plan.status)} · revision {plan.currentRevision.version}
                           </p>
                           <ul className="mt-1 list-disc pl-4 text-primary/60">
                             {plan.currentRevision.items.map((item) => (
@@ -3629,7 +3681,7 @@ function CorrectionReview({
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-medium text-primary">{item.label}</p>
                 <Badge className="text-[11px] font-normal text-primary/40" variant="secondary">
-                  {Math.round(item.confidence * 100)}% · {item.kind}
+                  {Math.round(item.confidence * 100)}% · {reviewEvidenceKindLabel(item.kind)}
                 </Badge>
               </div>
               {item.exactQuote ? (

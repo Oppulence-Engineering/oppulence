@@ -33,6 +33,9 @@ import {
   governanceDeletionLabel,
   governanceExcerptLabel,
   mailReplyLabel,
+  reviewEvidenceKindLabel,
+  mutualPlanStatusLabel,
+  deletionReceiptStatusLabel,
   recoveryClassificationLabel,
   recoveryExplanationCopy,
   evidencePublicationLabel,
@@ -346,6 +349,16 @@ describe("RelationshipsView", () => {
     expect(mailReplyLabel("needs_reply")).toBe("Needs a reply");
     expect(mailReplyLabel("awaiting_reply")).toBe("Waiting on them");
     expect(mailReplyLabel("quiet")).toBe("Quiet");
+    expect(reviewEvidenceKindLabel("speaker")).toBe("Who said it");
+    expect(reviewEvidenceKindLabel("claim")).toBe("What was said");
+    expect(mutualPlanStatusLabel("internally_approved")).toBe("Approved in this workspace");
+    expect(deletionReceiptStatusLabel("partial")).toBe("Some copies are still there");
+    expect(source).toContain("reviewEvidenceKindLabel(item.kind)");
+    expect(source).toContain("mutualPlanStatusLabel(plan.status)");
+    expect(source).toContain("deletionReceiptStatusLabel(data.intelligence.deletionReceipts[0].status)");
+    expect(source).not.toContain("{item.kind}");
+    expect(source).not.toContain("humanize(plan.status)");
+    expect(source).not.toContain("humanize(data.intelligence.deletionReceipts[0].status)");
     expect(recoveryClassificationLabel("unknown_stale_sources")).toBe("A source is out of date");
     expect(recoveryClassificationLabel("forgotten")).toBe("This promise looks forgotten");
     expect(
