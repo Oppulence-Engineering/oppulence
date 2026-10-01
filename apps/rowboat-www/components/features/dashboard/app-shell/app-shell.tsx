@@ -570,7 +570,9 @@ function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen
       type="button"
       variant="ghost"
     >
-      <Label className="text-[15px] font-normal">{health.label}</Label>
+      <Label className="block whitespace-normal text-left text-[15px] font-normal leading-5">
+        {health.label}
+      </Label>
       {sourceMeterVisible(total, connected) &&
       typeof total === "number" &&
       typeof connected === "number" ? (

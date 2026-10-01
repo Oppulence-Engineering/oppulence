@@ -56,6 +56,9 @@ describe("AppShellSidebar", () => {
 
   it("explains a failed sidebar load with the same sentences as the rest of the app", () => {
     expect(source).toContain('sidebarQueryError(sources.error, "Source status unavailable")');
+    expect(source).toContain(
+      'className="block whitespace-normal text-left text-[15px] font-normal leading-5"',
+    );
     expect(source).toContain('sidebarQueryError(agentsQuery.error, "Could not load agents")');
     expect(source).toContain('sidebarQueryError(tasksQuery.error, "Could not load schedules")');
     expect(source).toContain('sidebarQueryError(runsQuery.error, "Could not load runs")');
