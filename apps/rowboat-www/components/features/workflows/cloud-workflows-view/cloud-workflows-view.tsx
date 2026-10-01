@@ -70,6 +70,7 @@ import {
   compileVisualWorkflow,
   cronClockLabel,
   createCloudTask,
+  deleteCloudTask,
   ensureFirstPartyWorkflows,
   getCloudRun,
   getCloudSchedule,
@@ -412,6 +413,12 @@ export function workflowSettingsIntro(editable: boolean): string {
 /** This dialog only asks for a name and an objective. The schedule and steps are on the next screen. */
 export function createWorkflowIntro(): string {
   return "Name the workflow and what it should accomplish. The schedule and the steps come next.";
+}
+
+/** A workspace workflow can be removed. A maintained one can only be paused. */
+export function deleteWorkflowConfirmCopy(name: string): string {
+  const title = name.trim() || "this workflow";
+  return `Remove ${title} and its runs? This cannot be undone.`;
 }
 
 export function workflowStepLabel(task: CloudTask): string {
@@ -1077,6 +1084,7 @@ function WorkflowEditor({
   onCancel,
   onRetry,
   onUpdate,
+  onDelete,
 }: {
   task: CloudTask;
   templates: CloudTaskTemplate[];
@@ -1096,8 +1104,10 @@ function WorkflowEditor({
     name?: string;
     triggers?: Record<string, unknown>;
   }) => Promise<void>;
+  onDelete: () => Promise<void>;
 }) {
   const editable = !task.systemManaged;
+  const [confirmingDelete, setConfirmingDelete] = React.useState(false);
   const original = workflowForTask(task, templates);
   // The editor remounts when the task revision changes. Run now updates that
   // revision after it selects the new run, which was throwing the user back
@@ -1362,6 +1372,50 @@ function WorkflowEditor({
                   >
                     Save settings
                   </Button>
+                </div>
+              ) : null}
+              {editable ? (
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+                  <p className="max-w-md text-[12px] text-muted-foreground">
+                    {confirmingDelete
+                      ? deleteWorkflowConfirmCopy(taskTitle(task))
+                      : "Remove this workflow and its runs."}
+                  </p>
+                  {confirmingDelete ? (
+                    <div className="flex gap-2">
+                      <Button
+                        className="rounded-none"
+                        disabled={busy}
+                        onClick={() => setConfirmingDelete(false)}
+                        size="sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        className="rounded-none"
+                        disabled={busy}
+                        onClick={() => void onDelete()}
+                        size="sm"
+                        type="button"
+                        variant="destructive"
+                      >
+                        Confirm remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      className="rounded-none"
+                      disabled={busy}
+                      onClick={() => setConfirmingDelete(true)}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      Remove workflow
+                    </Button>
+                  )}
                 </div>
               ) : null}
             </div>
@@ -1654,6 +1708,18 @@ export function CloudWorkflowsView({
           onUpdate={(patch) =>
             perform(async () => {
               replaceTask(await updateCloudTask(selectedTask, patch));
+            })
+          }
+          onDelete={() =>
+            perform(async () => {
+              await deleteCloudTask(selectedTask);
+              queryClient.setQueryData(workflowKeys.tasks(), (current: CloudTask[] | undefined) =>
+                (current ?? []).filter((item) => item.id !== selectedTask.id),
+              );
+              selectRun(null);
+              setSchedule(null);
+              setSelectedSlug("");
+              setScreen("library");
             })
           }
           runs={runs}

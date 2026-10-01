@@ -22,6 +22,7 @@ import {
   maintainedWorkflowNotice,
   workflowSettingsIntro,
   createWorkflowIntro,
+  deleteWorkflowConfirmCopy,
   workflowStepLabel,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
@@ -316,6 +317,14 @@ describe("CloudWorkflowsView", () => {
     expect(createWorkflowIntro()).toBe(
       "Name the workflow and what it should accomplish. The schedule and the steps come next.",
     );
+    expect(deleteWorkflowConfirmCopy("Follow up")).toBe(
+      "Remove Follow up and its runs? This cannot be undone.",
+    );
+    expect(source).toContain("deleteWorkflowConfirmCopy(taskTitle(task))");
+    expect(source).toContain("deleteCloudTask(selectedTask)");
+    expect(source).toContain("Remove workflow");
+    expect(source).toContain("Confirm remove");
+    expect(source).not.toContain("window.confirm");
     expect(source).not.toContain("You can choose when it starts and what it does next.");
     expect(source).toContain("Create workflow");
     expect(source).not.toContain("Create draft");

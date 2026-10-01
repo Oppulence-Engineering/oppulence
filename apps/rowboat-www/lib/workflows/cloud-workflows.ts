@@ -549,6 +549,26 @@ export async function updateCloudTask(
   });
 }
 
+/** DELETE returns no body. A maintained workflow stays; the API refuses it. */
+export async function deleteCloudTask(task: Pick<CloudTask, "slug" | "revision">): Promise<void> {
+  const response = await dashboardFetch(
+    toDashboardAPIPath(
+      `/background-tasks/${encodeURIComponent(task.slug)}?revision=${encodeURIComponent(String(task.revision))}`,
+    ),
+    { method: "DELETE" },
+  );
+  if (response.status === 204) return;
+  const body = await response.json().catch(() => null);
+  const message =
+    body && typeof body === "object" && "message" in body && typeof body.message === "string"
+      ? body.message
+      : "";
+  if (response.status === 409 && message === "revision conflict") {
+    throw new Error("This workflow changed. Open it again, then remove it.");
+  }
+  throw new Error(message || `Could not remove the workflow (${response.status}).`);
+}
+
 export type RunFilters = {
   status?: CloudRunStatus | "all";
   trigger?: CloudRunTrigger | "all";
