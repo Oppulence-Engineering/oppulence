@@ -21,6 +21,12 @@ describe("ActionsView", () => {
     expect(source).not.toContain("anything executes");
     expect(source).not.toContain("Approve & execute");
     expect(source).toContain("this action cannot run yet");
+    expect(source).toContain("actionFailure(proposalsQuery.error");
+    expect(source).toContain("actionFailure(e, \"Could not approve the action.\")");
+    expect(source).toContain("actionFailure(e, \"Execution failed.\")");
+    expect(source).toContain("actionFailure(e, \"Could not reject the action.\")");
+    expect(source).toContain("return friendlyRevenueError(errMessage(error, fallback))");
+    expect(source).toContain("actionStatusLabel(status)");
     expect(source).not.toContain("scoped token");
     expect(source).not.toContain("Act seam");
     expect(source).not.toContain("Closed-loop");

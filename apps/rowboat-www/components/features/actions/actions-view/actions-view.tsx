@@ -32,34 +32,39 @@ import { useQueryClient } from "@tanstack/react-query";
 import { usePendingActionProposals } from "@/hooks/queries/use-action-proposals";
 import { actionProposalKeys } from "@/hooks/queries/utils/action-proposal-keys";
 import { capture, ActionEvents } from "@/lib/analytics/analytics";
-import { ActionAPIError, approve, execute, reject } from "@/lib/actions/actions";
+import { ActionAPIError, actionStatusLabel, approve, execute, reject } from "@/lib/actions/actions";
 import { DashboardRequestError } from "@/lib/api/request-json";
 import {
   errMessage,
   ListSkeleton,
   WorkspaceEmptyState,
 } from "@/components/features/revenue/shared/shared";
+import { friendlyRevenueError } from "@/lib/revenue/revenue";
 import { ActionAuditSheet } from "@/components/features/actions/audit-sheet/audit-sheet";
 import type { ActionProposal, ActionStatus } from "@/lib/actions/types";
+
+function actionFailure(error: unknown, fallback: string) {
+  return friendlyRevenueError(errMessage(error, fallback));
+}
 
 function StatusBadge({ status }: { status: ActionStatus }) {
   const map: Record<
     ActionStatus,
-    { label: string; variant: "secondary" | "outline" | "destructive"; icon?: React.ReactNode }
+    { variant: "secondary" | "outline" | "destructive"; icon?: React.ReactNode }
   > = {
-    pending: { label: "Awaiting approval", variant: "secondary" },
-    approved: { label: "Approved", variant: "outline", icon: <ShieldCheck weight="fill" /> },
-    executed: { label: "Executed", variant: "outline", icon: <CheckCircle weight="fill" /> },
-    executed_unconfirmed: { label: "Executed · unconfirmed", variant: "secondary" },
-    rejected: { label: "Rejected", variant: "destructive" },
-    failed: { label: "Failed", variant: "destructive" },
-    expired: { label: "Expired", variant: "secondary" },
+    pending: { variant: "secondary" },
+    approved: { variant: "outline", icon: <ShieldCheck weight="fill" /> },
+    executed: { variant: "outline", icon: <CheckCircle weight="fill" /> },
+    executed_unconfirmed: { variant: "secondary" },
+    rejected: { variant: "destructive" },
+    failed: { variant: "destructive" },
+    expired: { variant: "secondary" },
   };
-  const m = map[status] ?? { label: status, variant: "outline" as const };
+  const m = map[status] ?? { variant: "outline" as const };
   return (
     <Badge variant={m.variant} className="gap-1">
       {m.icon}
-      {m.label}
+      {actionStatusLabel(status)}
     </Badge>
   );
 }
@@ -101,7 +106,7 @@ export function ActionsView() {
 
   React.useEffect(() => {
     if (!proposalsQuery.error || unavailable) return;
-    setError(errMessage(proposalsQuery.error, "Could not load action proposals."));
+    setError(actionFailure(proposalsQuery.error, "Could not load action proposals."));
   }, [proposalsQuery.error, unavailable]);
 
   const load = React.useCallback(async () => {
@@ -138,7 +143,7 @@ export function ActionsView() {
           "This financial action needs recent re-authentication. Sign in again, then approve.",
         );
       } else {
-        setError(errMessage(e, "Could not approve the action."));
+        setError(actionFailure(e, "Could not approve the action."));
       }
       void load();
     } finally {
@@ -159,7 +164,7 @@ export function ActionsView() {
           "Approved, but this action cannot run yet. The approval is saved — try again once execution is available.",
         );
       } else {
-        setError(errMessage(e, "Execution failed."));
+        setError(actionFailure(e, "Execution failed."));
       }
       void load();
     } finally {
@@ -177,7 +182,7 @@ export function ActionsView() {
       capture(ActionEvents.ProposalRejected, { kind: p.kind });
       replace(done);
     } catch (e) {
-      setError(errMessage(e, "Could not reject the action."));
+      setError(actionFailure(e, "Could not reject the action."));
     } finally {
       setRowBusy(p.id, null);
     }
