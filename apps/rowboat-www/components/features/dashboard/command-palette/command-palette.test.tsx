@@ -12,6 +12,8 @@ const fetchers = vi.hoisted(() => ({
   fetchRelationships: vi.fn(),
   relationshipRows: (page: { relationships?: unknown[] } | unknown[] | undefined) =>
     Array.isArray(page) ? page : (page?.relationships ?? []),
+  relationshipPageHasMore: (page: { hasMore?: boolean } | unknown[] | undefined) =>
+    Boolean(page && !Array.isArray(page) && page.hasMore),
   fetchSemanticSearch: vi.fn(),
   fetchIdentityCandidates: vi.fn(),
   fetchRelationshipAttention: vi.fn(),
@@ -63,7 +65,10 @@ vi.mock("@oppulence/ui/components/command", () => ({
   CommandShortcut: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
 }));
 
-import { CommandPalette } from "@/components/features/dashboard/command-palette/command-palette";
+import {
+  CommandPalette,
+  paletteMoreCompaniesLabel,
+} from "@/components/features/dashboard/command-palette/command-palette";
 
 function renderPalette(props: ComponentProps<typeof CommandPalette>) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -203,6 +208,29 @@ describe("CommandPalette semantic mail search", () => {
     renderPalette(requiredProps);
     await user.type(screen.getByRole("textbox", { name: "Command search" }), "acme");
     expect(await screen.findByText("Search is temporarily unavailable.")).toBeVisible();
+  });
+
+  it("offers another page only when the server says more companies match", async () => {
+    const user = userEvent.setup();
+    fetchers.fetchRelationships.mockImplementation(async (filters: { offset?: number }) => {
+      if (filters?.offset) {
+        return {
+          relationships: [{ id: "company-extra", kind: "company", displayName: "Search Extra" }],
+          hasMore: false,
+        };
+      }
+      return {
+        relationships: [{ id: "company-1", kind: "company", displayName: "Search Co" }],
+        hasMore: true,
+      };
+    });
+    renderPalette(requiredProps);
+    await user.type(screen.getByRole("textbox", { name: "Command search" }), "Search");
+    expect(await screen.findByRole("button", { name: "Search Co" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Search Extra" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: paletteMoreCompaniesLabel() }));
+    expect(await screen.findByRole("button", { name: "Search Extra" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: paletteMoreCompaniesLabel() })).toBeNull();
   });
 
   it("lists every company the search returned", async () => {

@@ -37,10 +37,15 @@ import { Button } from "@oppulence/ui/components/button";
 import { Label } from "@oppulence/ui/components/label";
 import { Spinner } from "@oppulence/ui/components/spinner";
 import { useRelationships, useSemanticSearch } from "@/hooks/queries/use-relationships";
-import { relationshipRows } from "@/hooks/queries/utils/fetch-relationships";
+import {
+  fetchRelationships,
+  relationshipPageHasMore,
+  relationshipRows,
+} from "@/hooks/queries/utils/fetch-relationships";
 import { explainedRevenueError } from "@/lib/revenue/revenue";
 import type { SessionMeta } from "@/lib/agents/chat-sessions";
 import type { SemanticMatch } from "@/lib/revenue/revenue";
+import type { RevenueRelationship } from "@/lib/revenue/types";
 import { companyName } from "@/lib/revenue/revenue-records";
 
 /** Mail search is about messages, not an evidence store. */
@@ -93,6 +98,11 @@ export function settingsCommandLabel(section: { key: string; label: string }): s
   return `Settings · ${section.label}`;
 }
 
+/** The directory page is 200 companies. Search keeps going only when another match exists. */
+export function paletteMoreCompaniesLabel(): string {
+  return "Show more companies";
+}
+
 export function CommandPalette({
   open,
   onOpenChange,
@@ -137,8 +147,46 @@ export function CommandPalette({
   const searchEnabled = open && term.length >= 2;
   const accountsQuery = useRelationships({ q: term }, searchEnabled && searchMode === "accounts");
   const mailQuery = useSemanticSearch(term, searchEnabled && searchMode === "mail");
-  const accounts = relationshipRows(accountsQuery.data).filter((account) => account.kind !== "person");
+  const [extraCompanies, setExtraCompanies] = React.useState<RevenueRelationship[]>([]);
+  const [laterCompanyHasMore, setLaterCompanyHasMore] = React.useState<boolean | null>(null);
+  const [loadingMoreCompanies, setLoadingMoreCompanies] = React.useState(false);
+  const [moreCompanyError, setMoreCompanyError] = React.useState("");
+  const accountPage = relationshipRows(accountsQuery.data);
+  const accounts = React.useMemo(() => {
+    const page = accountPage.filter((account) => account.kind !== "person");
+    if (extraCompanies.length === 0) return page;
+    const seen = new Set(page.map((account) => account.id));
+    return [
+      ...page,
+      ...extraCompanies.filter((account) => account.kind !== "person" && !seen.has(account.id)),
+    ];
+  }, [accountPage, extraCompanies]);
+  const hasMoreCompanies =
+    laterCompanyHasMore ??
+    (accountPage.length > 0 && relationshipPageHasMore(accountsQuery.data));
   const mailMatches: SemanticMatch[] = (mailQuery.data?.matches ?? []).slice(0, 6);
+  React.useEffect(() => {
+    setExtraCompanies([]);
+    setLaterCompanyHasMore(null);
+    setMoreCompanyError("");
+  }, [term, searchMode]);
+  const loadMoreCompanies = async () => {
+    if (loadingMoreCompanies || !hasMoreCompanies) return;
+    setLoadingMoreCompanies(true);
+    setMoreCompanyError("");
+    try {
+      const next = await fetchRelationships({
+        q: term,
+        offset: accountPage.length + extraCompanies.length,
+      });
+      setLaterCompanyHasMore(relationshipPageHasMore(next));
+      setExtraCompanies((current) => [...current, ...relationshipRows(next)]);
+    } catch (error) {
+      setMoreCompanyError(explainedRevenueError(error, "Could not load more companies."));
+    } finally {
+      setLoadingMoreCompanies(false);
+    }
+  };
   const semanticAvailable = mailQuery.data?.available ?? null;
   const searchError = accountsQuery.isError || mailQuery.isError;
   const searching = accountsQuery.isFetching || mailQuery.isFetching;
@@ -248,7 +296,7 @@ export function CommandPalette({
             <CommandSeparator />
           </>
         ) : null}
-        {accounts.length > 0 ? (
+        {accounts.length > 0 || hasMoreCompanies ? (
           <>
             <CommandGroup heading="Companies">
               {accounts.map((account) => (
@@ -264,6 +312,20 @@ export function CommandPalette({
                   {companyName(account)}
                 </CommandItem>
               ))}
+              {hasMoreCompanies ? (
+                <CommandItem
+                  disabled={loadingMoreCompanies}
+                  onSelect={() => void loadMoreCompanies()}
+                  value={`${query} ${paletteMoreCompaniesLabel()}`}
+                >
+                  {loadingMoreCompanies ? "Loading…" : paletteMoreCompaniesLabel()}
+                </CommandItem>
+              ) : null}
+              {moreCompanyError ? (
+                <CommandItem disabled value={`${query} ${moreCompanyError}`}>
+                  {moreCompanyError}
+                </CommandItem>
+              ) : null}
             </CommandGroup>
             <CommandSeparator />
           </>
