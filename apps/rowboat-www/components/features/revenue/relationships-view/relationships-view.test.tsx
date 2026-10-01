@@ -52,6 +52,9 @@ import {
   detailSourceLabel,
   enrichmentAvailabilityCopy,
   enrichConfirmCopy,
+  identityAnchorKindLabel,
+  identityDecisionLabel,
+  identityImpactLabel,
   identityMatchDetail,
   sourceListedOnConnectionsPage,
   identityMatchLabel,
@@ -600,5 +603,24 @@ describe("RelationshipsView", () => {
     expect(identityMatchDetail({ anchorKind: "domain", anchorPreview: "  " })).toBe(
       "Matched on Domain: not shown",
     );
+    expect(
+      identityMatchDetail({
+        anchorKind: "resource_ref",
+        anchorProvider: "hubspot",
+        anchorPreview: "hubspot:company:123",
+      }),
+    ).toBe("Matched on a linked record from HubSpot: hubspot:company:123");
+    expect(identityAnchorKindLabel("resource_ref")).toBe("a linked record");
+    expect(identityImpactLabel("assertions", 1)).toBe("1 saved detail");
+    expect(identityImpactLabel("observations", 2)).toBe("2 recorded events");
+    expect(identityImpactLabel("participants", 1)).toBe("1 person");
+    expect(identityImpactLabel("evidence", 2)).toBe("2 supporting records");
+    expect(identityDecisionLabel("keep_separate")).toBe("Keep separate");
+    expect(identityDecisionLabel("move_evidence")).toBe("Move the evidence");
+    expect(identityDecisionLabel("defer")).toBe("Decide later");
+    expect(source).toContain("identityImpactLabel(kind, Number(count))");
+    expect(source).toContain("identityDecisionLabel(decision)");
+    expect(source).not.toContain("{count} {humanize(kind)}");
+    expect(source).not.toContain("relationshipLabel(decision)");
   });
 });

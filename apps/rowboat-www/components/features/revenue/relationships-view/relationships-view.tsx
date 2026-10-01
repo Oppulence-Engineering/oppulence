@@ -1456,16 +1456,72 @@ export function identityMatchLabel(confidence: number): string {
  * Two company records that share an email or domain.
  * The shared value may be hidden, so the line still names the kind of match.
  */
+/** A duplicate match stores an anchor token. The inbox says what was shared. */
+export function identityAnchorKindLabel(kind: string): string {
+  switch (kind.trim().toLowerCase()) {
+    case "email":
+      return "Email";
+    case "domain":
+      return "Domain";
+    case "resource_ref":
+      return "a linked record";
+    default:
+      return humanize(kind);
+  }
+}
+
 export function identityMatchDetail(candidate: {
   anchorKind: string;
   anchorProvider?: string | null;
   anchorPreview?: string | null;
 }): string {
-  const kind = humanize(candidate.anchorKind);
+  const kind = identityAnchorKindLabel(candidate.anchorKind);
   const provider = candidate.anchorProvider?.trim() ?? "";
-  const from = provider ? ` from ${provider.charAt(0).toUpperCase()}${provider.slice(1)}` : "";
+  const from = provider ? ` from ${activitySourceLabel(provider)}` : "";
   const preview = candidate.anchorPreview?.trim() || "not shown";
   return `Matched on ${kind}${from}: ${preview}`;
+}
+
+/** Impact counts are store names. The badge says what a merge would move. */
+export function identityImpactLabel(kind: string, count: number): string {
+  const total = Number.isFinite(count) ? Math.max(0, Math.round(count)) : 0;
+  const noun = (one: string, many: string) => (total === 1 ? `1 ${one}` : `${total} ${many}`);
+  switch (kind) {
+    case "observations":
+      return noun("recorded event", "recorded events");
+    case "assertions":
+      return noun("saved detail", "saved details");
+    case "participants":
+      return noun("person", "people");
+    case "commitments":
+      return noun("commitment", "commitments");
+    case "actions":
+      return noun("action", "actions");
+    case "evidence":
+      return noun("supporting record", "supporting records");
+    default:
+      return `${total} ${humanize(kind)}`;
+  }
+}
+
+/** Review actions are stored decisions. The button says what the person is choosing. */
+export function identityDecisionLabel(decision: string): string {
+  switch (decision) {
+    case "merge":
+      return "Merge";
+    case "keep_separate":
+      return "Keep separate";
+    case "move_evidence":
+      return "Move the evidence";
+    case "defer":
+      return "Decide later";
+    case "split":
+      return "Split";
+    case "undo":
+      return "Undo";
+    default:
+      return humanize(decision);
+  }
 }
 
 function IdentityReviewInbox({
@@ -1537,11 +1593,13 @@ function IdentityReviewInbox({
             </Badge>
           </div>
           <div className="flex flex-wrap gap-1.5 text-[11px] text-primary/55">
-            {Object.entries(candidate.impact).map(([kind, count]) => (
-              <Badge className="font-normal" key={kind} variant="outline">
-                {count} {humanize(kind)}
-              </Badge>
-            ))}
+            {Object.entries(candidate.impact)
+              .filter(([, count]) => Number(count) > 0)
+              .map(([kind, count]) => (
+                <Badge className="font-normal" key={kind} variant="outline">
+                  {identityImpactLabel(kind, Number(count))}
+                </Badge>
+              ))}
           </div>
           <Input
             aria-label={`Reason for identity decision about ${companyName(candidate.proposedRelationship)}`}
@@ -1565,7 +1623,7 @@ function IdentityReviewInbox({
                 onClick={() => void decide(candidate, decision)}
               >
                 {busy === `${candidate.id}:${decision}` ? <Spinner className="size-4" /> : null}
-                {relationshipLabel(decision)}
+                {identityDecisionLabel(decision)}
               </Button>
             ))}
           </div>
