@@ -203,6 +203,21 @@ describe("CommandPalette semantic mail search", () => {
     expect(await screen.findByText("Search is temporarily unavailable.")).toBeVisible();
   });
 
+  it("lists every company the search returned", async () => {
+    const user = userEvent.setup();
+    fetchers.fetchRelationships.mockResolvedValue(
+      Array.from({ length: 7 }, (_, index) => ({
+        id: `company-${index + 1}`,
+        kind: "company",
+        displayName: `Search Co ${index + 1}`,
+      })),
+    );
+    renderPalette(requiredProps);
+    await user.type(screen.getByRole("textbox", { name: "Command search" }), "Search Co");
+    expect(await screen.findByRole("button", { name: "Search Co 7" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Search Co 1" })).toBeVisible();
+  });
+
   it("opens the company that the search found", async () => {
     const user = userEvent.setup();
     const onNavigateRelationship = vi.fn();

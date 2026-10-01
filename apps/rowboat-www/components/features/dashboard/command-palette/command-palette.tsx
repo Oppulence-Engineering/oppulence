@@ -136,9 +136,7 @@ export function CommandPalette({
   const searchEnabled = open && term.length >= 2;
   const accountsQuery = useRelationships({ q: term }, searchEnabled && searchMode === "accounts");
   const mailQuery = useSemanticSearch(term, searchEnabled && searchMode === "mail");
-  const accounts = (accountsQuery.data ?? [])
-    .filter((account) => account.kind !== "person")
-    .slice(0, 6);
+  const accounts = (accountsQuery.data ?? []).filter((account) => account.kind !== "person");
   const mailMatches: SemanticMatch[] = (mailQuery.data?.matches ?? []).slice(0, 6);
   const semanticAvailable = mailQuery.data?.available ?? null;
   const searchError = accountsQuery.isError || mailQuery.isError;
