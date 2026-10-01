@@ -1,12 +1,14 @@
 package revenue
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
@@ -469,6 +471,49 @@ func TestListPersonsOffsetSkipsEarlierNames(t *testing.T) {
 	all, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Limit: 10, Offset: -2})
 	if err != nil || len(all) != 3 || all[0].DisplayName != "Ada Offset" {
 		t.Fatalf("negative offset = %+v err=%v", all, err)
+	}
+}
+
+func TestListPersonsTiedNameUsesID(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const total = 3
+	for i := 1; i <= total; i++ {
+		email := fmt.Sprintf("tied-%d@example.com", i)
+		if i == total {
+			email = "last@tied.example"
+		}
+		if _, err := f.client.Person.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("a115e000-0000-4000-8000-%012x", i))).
+			SetDisplayName("Tied Person").
+			SetPrimaryEmail(email).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	first, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Limit: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first) != 2 {
+		t.Fatalf("first page = %d", len(first))
+	}
+	for _, row := range first {
+		if row.PrimaryEmail == "last@tied.example" {
+			t.Fatal("the highest id was included beside lower ids with the same name")
+		}
+	}
+	second, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Limit: 2, Offset: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(second) != 1 || second[0].PrimaryEmail != "last@tied.example" {
+		t.Fatalf("later id page = %+v", second)
 	}
 }
 

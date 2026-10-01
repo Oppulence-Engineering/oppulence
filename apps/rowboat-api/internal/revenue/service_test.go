@@ -16,6 +16,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	appcrypto "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/google/uuid"
 )
 
 // --- fixtures ----------------------------------------------------------------
@@ -814,6 +815,64 @@ func TestListActionsOffsetSkipsHigherPriority(t *testing.T) {
 	all, err := f.svc.ListActions(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 10, Offset: -3, Surface: "task"})
 	if err != nil || len(all) != 2 || all[0].ID != high.ID {
 		t.Fatalf("negative offset = %+v err=%v", all, err)
+	}
+}
+
+func TestListActionsTiedPriorityUsesID(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel := f.relationship(t)
+	touched := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	const total = 101
+	for i := 1; i <= total; i++ {
+		reason := "Tied Task"
+		if i == total {
+			reason = "Tied Task Last"
+		}
+		if _, err := f.client.RevenueAction.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("a115d000-0000-4000-8000-%012x", i))).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetRelationship(rel).
+			SetActionType("follow_up_task").
+			SetChannel("task").
+			SetDetector("manual").
+			SetDedupeKey(fmt.Sprintf("tied-task-%03d", i)).
+			SetRevisionHash(fmt.Sprintf("tied-task-hash-%03d", i)).
+			SetReason(reason).
+			SetPriorityScore(40).
+			SetCreatedAt(touched).
+			SetUpdatedAt(touched).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	first, err := f.svc.ListActions(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 100, Surface: "task"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first) != 100 {
+		t.Fatalf("newest page = %d", len(first))
+	}
+	for _, action := range first {
+		if action.Reason == "Tied Task Last" {
+			t.Fatal("the highest id was included beside lower ids with the same priority")
+		}
+	}
+	second, err := f.svc.ListActions(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 100, Offset: 100, Surface: "task"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(second) != 1 || second[0].Reason != "Tied Task Last" {
+		t.Fatalf("later id page = %d %q", len(second), func() string {
+			if len(second) == 0 {
+				return ""
+			}
+			return second[0].Reason
+		}())
 	}
 }
 

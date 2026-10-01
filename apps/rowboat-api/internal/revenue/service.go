@@ -1010,8 +1010,9 @@ type ListFilter struct {
 	Surface     string
 }
 
-// ListActions returns the caller's queue ordered by priority. The default
-// page is the RFC's top-ten open actions, not every possible reminder.
+// ListActions returns the caller's queue ordered by priority, then oldest
+// first. Actions that share both stay in id order, so the next page does not
+// repeat one and skip another.
 func (s *Service) ListActions(ctx context.Context, u *ent.User, f ListFilter) ([]*ent.RevenueAction, error) {
 	limit := f.Limit
 	if limit <= 0 {
@@ -1054,7 +1055,11 @@ func (s *Service) ListActions(ctx context.Context, u *ent.User, f ListFilter) ([
 		))
 	}
 	return q.WithRelationship().
-		Order(ent.Desc(revenueaction.FieldPriorityScore), ent.Asc(revenueaction.FieldCreatedAt)).
+		Order(
+			ent.Desc(revenueaction.FieldPriorityScore),
+			ent.Asc(revenueaction.FieldCreatedAt),
+			ent.Asc(revenueaction.FieldID),
+		).
 		Limit(limit).
 		Offset(f.Offset).
 		All(ctx)

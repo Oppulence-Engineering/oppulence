@@ -29,7 +29,9 @@ type PersonFilter struct {
 
 const defaultPersonLimit = 100
 
-// ListPersons returns the workspace's canonical people, most recently active first.
+// ListPersons returns the workspace's canonical people, most recently active
+// first. People who share that moment and the same name stay in id order, so
+// the next page does not repeat one and skip another.
 func (s *Service) ListPersons(
 	ctx context.Context, u *ent.User, filter PersonFilter,
 ) ([]*ent.Person, error) {
@@ -69,6 +71,7 @@ func (s *Service) ListPersons(
 		Order(
 			person.ByLastInteractionAt(sql.OrderDesc(), sql.OrderNullsLast()),
 			person.ByDisplayName(),
+			person.ByID(),
 		).
 		Limit(limit).
 		Offset(filter.Offset).
