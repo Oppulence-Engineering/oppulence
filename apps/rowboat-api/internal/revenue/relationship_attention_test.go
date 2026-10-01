@@ -151,3 +151,36 @@ func TestRelationshipAttentionDecisionUsesOptimisticVersioningAndBoundedSnooze(t
 		t.Fatalf("stale decision should conflict: %v", err)
 	}
 }
+
+func TestAttentionExplanationsReadAsSentences(t *testing.T) {
+	if got := quietAccountExplanation("prospect", 60, 30); got != "No recorded interaction for 60 days. Prospects are usually contacted again within 30 days." {
+		t.Fatalf("quiet prospect = %q", got)
+	}
+	if got := quietAccountExplanation("contracting", 10, 7); got != "No recorded interaction for 10 days. Companies in contracting are usually contacted again within 7 days." {
+		t.Fatalf("quiet contracting = %q", got)
+	}
+	if got := quietAccountExplanation("active_customer", 21, 21); got != "No recorded interaction for 21 days. Active customers are usually contacted again within 21 days." {
+		t.Fatalf("quiet active = %q", got)
+	}
+	if got := unresolvedRiskExplanation(1, "needs_attention"); got != "1 unresolved risk. This company needs attention." {
+		t.Fatalf("needs attention = %q", got)
+	}
+	if got := unresolvedRiskExplanation(2, "critical"); got != "2 unresolved risks. This company is critical." {
+		t.Fatalf("critical = %q", got)
+	}
+	if got := missingNextStepExplanation("contracting"); got != "This company is in Contracting and has no next step." {
+		t.Fatalf("contracting next step = %q", got)
+	}
+	if got := missingNextStepExplanation("active_customer"); got != "This company is an active customer and has no next step." {
+		t.Fatalf("active next step = %q", got)
+	}
+	if got := actionOutcomeExplanation("email", ExecAmbiguous, "manual_review"); got != "The email action may have gone through. Review it before trying again." {
+		t.Fatalf("ambiguous action = %q", got)
+	}
+	if got := actionOutcomeExplanation("email", ExecFailed, ""); got != "The email action failed. Review it before trying again." {
+		t.Fatalf("failed action = %q", got)
+	}
+	if got := sourceDegradationExplanation([]string{"google", "slack"}); got != "Google and Slack evidence is incomplete, stale, rebuilding, or missing a required permission." {
+		t.Fatalf("degraded sources = %q", got)
+	}
+}

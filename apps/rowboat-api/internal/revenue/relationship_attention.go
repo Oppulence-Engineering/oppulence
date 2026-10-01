@@ -115,6 +115,131 @@ func lifecycleQuietCooldown(lifecycle string) time.Duration {
 	}
 }
 
+// quietAccountExplanation says how long the company has been quiet and which
+// stage usually hears back sooner. The stored cooldown is not the sentence.
+func quietAccountExplanation(lifecycle string, quietDays, usualDays int) string {
+	return fmt.Sprintf(
+		"No recorded interaction for %d days. %s are usually contacted again within %d days.",
+		quietDays, quietAccountCohort(lifecycle), usualDays,
+	)
+}
+
+func quietAccountCohort(lifecycle string) string {
+	switch lifecycle {
+	case "prospect":
+		return "Prospects"
+	case "active_customer":
+		return "Active customers"
+	case "former_customer":
+		return "Former customers"
+	case "churned":
+		return "Churned companies"
+	case "evaluation":
+		return "Companies in evaluation"
+	case "contracting":
+		return "Companies in contracting"
+	case "onboarding":
+		return "Companies in onboarding"
+	case "renewal":
+		return "Companies in renewal"
+	default:
+		return "Companies"
+	}
+}
+
+func unresolvedRiskExplanation(count int, health string) string {
+	noun := "risks"
+	if count == 1 {
+		noun = "risk"
+	}
+	switch health {
+	case "critical":
+		return fmt.Sprintf("%d unresolved %s. This company is critical.", count, noun)
+	case "needs_attention":
+		return fmt.Sprintf("%d unresolved %s. This company needs attention.", count, noun)
+	default:
+		return fmt.Sprintf("%d unresolved %s. Health is %s.", count, noun, attentionTokenLabel(health))
+	}
+}
+
+func missingNextStepExplanation(lifecycle string) string {
+	switch lifecycle {
+	case "prospect":
+		return "This company is a prospect and has no next step."
+	case "active_customer":
+		return "This company is an active customer and has no next step."
+	case "former_customer":
+		return "This company is a former customer and has no next step."
+	default:
+		return fmt.Sprintf("This company is in %s and has no next step.", attentionTokenLabel(lifecycle))
+	}
+}
+
+func sourceDegradationExplanation(sources []string) string {
+	labels := make([]string, 0, len(sources))
+	for _, source := range sources {
+		labels = append(labels, attentionSourceLabel(source))
+	}
+	return fmt.Sprintf(
+		"%s evidence is incomplete, stale, rebuilding, or missing a required permission.",
+		joinAttentionLabels(labels),
+	)
+}
+
+func actionOutcomeExplanation(channel, executionStatus, reconciliationStatus string) string {
+	kind := strings.ToLower(attentionTokenLabel(channel))
+	switch {
+	case executionStatus == ExecFailed:
+		return fmt.Sprintf("The %s action failed. Review it before trying again.", kind)
+	case executionStatus == ExecAmbiguous:
+		return fmt.Sprintf("The %s action may have gone through. Review it before trying again.", kind)
+	case reconciliationStatus == "manual_review":
+		return fmt.Sprintf("The %s action needs a manual review before it can be tried again.", kind)
+	default:
+		return fmt.Sprintf("The %s action needs review before any retry.", kind)
+	}
+}
+
+func attentionSourceLabel(source string) string {
+	switch strings.ToLower(strings.TrimSpace(source)) {
+	case "google", "gmail", "calendar":
+		return "Google"
+	case "slack":
+		return "Slack"
+	case "hubspot", "crm":
+		return "HubSpot"
+	default:
+		return attentionTokenLabel(source)
+	}
+}
+
+func attentionTokenLabel(value string) string {
+	parts := strings.Fields(strings.NewReplacer("_", " ", ".", " ").Replace(strings.TrimSpace(value)))
+	for i, part := range parts {
+		if part == "" {
+			continue
+		}
+		parts[i] = strings.ToUpper(part[:1]) + strings.ToLower(part[1:])
+	}
+	if len(parts) == 0 {
+		return "Unknown"
+	}
+	return strings.Join(parts, " ")
+}
+
+func joinAttentionLabels(labels []string) string {
+	switch len(labels) {
+	case 0:
+		return "Source"
+	case 1:
+		return labels[0]
+	case 2:
+		return labels[0] + " and " + labels[1]
+	default:
+		return strings.Join(labels[:len(labels)-1], ", ") + ", and " + labels[len(labels)-1]
+	}
+}
+
 func (s *Service) attentionCapabilityEnabled(ctx context.Context, ws *ent.RevenueWorkspace, capability string) (bool, error) {
 	err := s.requireWorkspaceFeature(ctx, ws, capability)
 	if err == nil {
@@ -210,7 +335,7 @@ func (s *Service) RefreshRelationshipAttention(ctx context.Context, u *ent.User)
 				days := int(age.Hours() / 24)
 				score := min(88, 45+days/2)
 				reasonCode := "quiet_account"
-				explanation := fmt.Sprintf("No recorded interaction for %d days; the %s lifecycle cooldown is %d days.", days, strings.ReplaceAll(rel.Lifecycle, "_", " "), int(cooldown.Hours()/24))
+				explanation := quietAccountExplanation(rel.Lifecycle, days, int(cooldown.Hours()/24))
 				// A departed contact explains the silence, and changes what the
 				// user should do about it. "Follow up" is the wrong instruction
 				// when there is nobody left to follow up with, and repeating it
@@ -284,7 +409,7 @@ func (s *Service) RefreshRelationshipAttention(ctx context.Context, u *ent.User)
 			}
 			candidates = append(candidates, attentionCandidate{
 				Relationship: rel, ReasonCode: "unresolved_risk",
-				Explanation:         fmt.Sprintf("%d unresolved risk signal%s keep this relationship at %s health.", len(rel.Risks), map[bool]string{true: "", false: "s"}[len(rel.Risks) == 1], strings.ReplaceAll(rel.Health, "_", " ")),
+				Explanation:         unresolvedRiskExplanation(len(rel.Risks), rel.Health),
 				TriggeringObjectRef: "relationship-state:" + rel.ID.String(), RankScore: score, UrgencyBand: urgencyBand(score),
 				RankFactors: map[string]int{"health_severity": score - min(20, len(rel.Risks)*5), "risk_count": min(20, len(rel.Risks)*5)},
 			})
@@ -297,7 +422,7 @@ func (s *Service) RefreshRelationshipAttention(ctx context.Context, u *ent.User)
 			}
 			candidates = append(candidates, attentionCandidate{
 				Relationship: rel, ReasonCode: "missing_next_step",
-				Explanation:         fmt.Sprintf("The relationship is in %s with no evidence-backed next step.", strings.ReplaceAll(rel.Lifecycle, "_", " ")),
+				Explanation:         missingNextStepExplanation(rel.Lifecycle),
 				TriggeringObjectRef: "relationship-state:" + rel.ID.String(), RankScore: score, UrgencyBand: urgencyBand(score),
 				RankFactors: map[string]int{"lifecycle_urgency": score, "source_uncertainty": 0}, SourceRequirements: dependencies,
 			})
@@ -307,7 +432,7 @@ func (s *Service) RefreshRelationshipAttention(ctx context.Context, u *ent.User)
 			score := min(82, 55+len(affected)*9)
 			candidates = append(candidates, attentionCandidate{
 				Relationship: rel, ReasonCode: "source_degradation",
-				Explanation:         fmt.Sprintf("%s evidence is incomplete, stale, rebuilding, or missing required permission.", strings.Join(affected, ", ")),
+				Explanation:         sourceDegradationExplanation(affected),
 				TriggeringObjectRef: "source-status:" + strings.Join(affected, "+"), RankScore: score, UrgencyBand: urgencyBand(score),
 				RankFactors: map[string]int{"degraded_sources": len(affected) * 10, "state_uncertainty": 45}, SourceRequirements: affected,
 			})
@@ -324,7 +449,7 @@ func (s *Service) RefreshRelationshipAttention(ctx context.Context, u *ent.User)
 				}
 				candidates = append(candidates, attentionCandidate{
 					Relationship: rel, ReasonCode: "action_outcome_review",
-					Explanation:         fmt.Sprintf("The %s action has a %s provider result and needs review before any retry.", strings.ReplaceAll(action.Channel, "_", " "), strings.ReplaceAll(action.ExecutionStatus, "_", " ")),
+					Explanation:         actionOutcomeExplanation(action.Channel, action.ExecutionStatus, action.ReconciliationStatus),
 					TriggeringObjectRef: "revenue-action:" + action.ID.String(), EvidenceRefs: evidenceRefs,
 					RankScore: score, UrgencyBand: urgencyBand(score), RankFactors: map[string]int{"provider_uncertainty": score},
 					RecommendationID: &action.ID, RecommendationRevision: action.Revision, OwnerID: action.AssignedUserID,
