@@ -136,7 +136,10 @@ describe("RelationshipsView", () => {
     expect(companyDomainHref("acme.com")).toBe("https://acme.com");
     expect(companyDomainHref("  https://acme.com/about  ")).toBe("https://acme.com/about");
     expect(companyDomainHref("http://acme.com")).toBe("http://acme.com");
+    expect(companyDomainHref("javascript:alert(1)")).toBeNull();
+    expect(companyDomainHref("")).toBeNull();
     expect(source).toContain("companyDomainHref(relationship.accountDomain)");
+    expect(source).toContain("companyDomainHref(data.relationship.accountDomain)");
     expect(source).not.toContain("href={`https://${relationship.accountDomain}`}");
     expect(source).toContain('aria-label="Company domain"');
     expect(source).toContain('placeholder="Company domain (optional)"');
@@ -329,7 +332,7 @@ describe("RelationshipsView", () => {
     expect(source).toContain("details have a source");
     expect(source).toContain("details come from a source you can open");
     expect(source).toContain("See where each detail came from");
-    expect(source).toContain('data.relationship.accountDomain || "Not filled in"');
+    expect(source).toContain('data.relationship.accountDomain?.trim() || "Not filled in"');
     expect(companyEmailHref("ada@acme.com")).toBe("mailto:ada@acme.com");
     expect(companyEmailHref("  ada@acme.com  ")).toBe("mailto:ada@acme.com");
     expect(companyEmailHref("ada@acme.com?bcc=evil@example.com")).toBeNull();

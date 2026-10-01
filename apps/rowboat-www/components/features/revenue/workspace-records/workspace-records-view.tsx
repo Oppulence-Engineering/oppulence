@@ -306,6 +306,11 @@ export function personSheetDetail(
     if (href) return { text: "View profile", href };
     return { text: "Not known" };
   }
+  if (label === "Domain") {
+    const trimmed = value?.trim() ?? "";
+    const href = webAddressHref(trimmed);
+    if (href) return { text: trimmed, href };
+  }
   const text = value?.trim() ?? "";
   return { text: text || "Not known" };
 }

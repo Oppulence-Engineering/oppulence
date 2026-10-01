@@ -425,6 +425,14 @@ describe("people directory labels", () => {
     });
     expect(personSheetDetail("LinkedIn", "javascript:alert(1)")).toEqual({ text: "Not known" });
     expect(personSheetDetail("LinkedIn", "")).toEqual({ text: "Not known" });
+    expect(personSheetDetail("Domain", "acme.com")).toEqual({
+      text: "acme.com",
+      href: "https://acme.com",
+    });
+    expect(personSheetDetail("Domain", "javascript:alert(1)")).toEqual({
+      text: "javascript:alert(1)",
+    });
+    expect(personSheetDetail("Domain", "")).toEqual({ text: "Not known" });
     expect(personSheetDetail("Role", "")).toEqual({ text: "Not known" });
     expect(personSheetDetail("Role", "Founder")).toEqual({ text: "Founder" });
     expect(

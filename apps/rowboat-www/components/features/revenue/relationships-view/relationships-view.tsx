@@ -248,10 +248,8 @@ const COMPANY_FIELD_LABELS: Record<string, string> = {
  * a pasted address may already include one. Prefixing https:// again sends the
  * browser to a host named "https".
  */
-export function companyDomainHref(domain: string): string {
-  const trimmed = domain.trim();
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  return `https://${trimmed}`;
+export function companyDomainHref(domain: string | null | undefined): string | null {
+  return webAddressHref(domain);
 }
 
 const companyName = (relationship: RevenueRelationship) => {
@@ -1023,15 +1021,17 @@ export function RelationshipsView({
                         </Badge>
                       </TableCell>
                       <TableCell className="truncate border-r px-3 text-[13px]">
-                        {relationship.accountDomain ? (
+                        {companyDomainHref(relationship.accountDomain) ? (
                           <a
                             className="text-primary/65 underline-offset-2 hover:text-primary hover:underline"
-                            href={companyDomainHref(relationship.accountDomain)}
+                            href={companyDomainHref(relationship.accountDomain) ?? undefined}
                             rel="noreferrer"
                             target="_blank"
                           >
                             {relationship.accountDomain}
                           </a>
+                        ) : relationship.accountDomain ? (
+                          <span className="text-primary/65">{relationship.accountDomain}</span>
                         ) : (
                           <Badge className="font-normal text-primary/35" variant="ghost">
                             —
@@ -2238,9 +2238,20 @@ export function RelationshipSheet({
                       {companyName(data.relationship)}
                     </h2>
                     <p className="truncate text-xs text-primary/45">
-                      {data.relationship.accountDomain ||
+                      {companyDomainHref(data.relationship.accountDomain) ? (
+                        <a
+                          className="underline-offset-2 hover:underline"
+                          href={companyDomainHref(data.relationship.accountDomain) ?? undefined}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          {data.relationship.accountDomain}
+                        </a>
+                      ) : (
+                        data.relationship.accountDomain ||
                         data.relationship.primaryEmail ||
-                        "Company"}
+                        "Company"
+                      )}
                     </p>
                   </div>
                 </div>
@@ -2279,7 +2290,18 @@ export function RelationshipSheet({
                 <dl className="mt-5 grid grid-cols-[88px_minmax(0,1fr)] gap-x-3 gap-y-3 text-xs">
                   <dt className="text-primary/40">Domain</dt>
                   <dd className="truncate text-primary/75">
-                    {data.relationship.accountDomain || "Not filled in"}
+                    {companyDomainHref(data.relationship.accountDomain) ? (
+                      <a
+                        className="underline-offset-2 hover:underline"
+                        href={companyDomainHref(data.relationship.accountDomain) ?? undefined}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        {data.relationship.accountDomain}
+                      </a>
+                    ) : (
+                      data.relationship.accountDomain?.trim() || "Not filled in"
+                    )}
                   </dd>
                   <dt className="text-primary/40">Email</dt>
                   <dd className="truncate text-primary/75">
