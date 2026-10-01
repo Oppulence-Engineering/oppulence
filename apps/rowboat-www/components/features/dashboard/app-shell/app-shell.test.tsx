@@ -54,6 +54,14 @@ describe("AppShellSidebar", () => {
     expect(rule).not.toContain("width:");
   });
 
+  it("explains a failed sidebar load with the same sentences as the rest of the app", () => {
+    expect(source).toContain('sidebarQueryError(sources.error, "Source status unavailable")');
+    expect(source).toContain('sidebarQueryError(agentsQuery.error, "Could not load agents")');
+    expect(source).toContain('sidebarQueryError(tasksQuery.error, "Could not load schedules")');
+    expect(source).toContain('sidebarQueryError(runsQuery.error, "Could not load runs")');
+    expect(source).not.toContain('label: "Source status unavailable"');
+  });
+
   it("describes permissions and security without authorization jargon", () => {
     expect(source).toContain("Who you are and what this session can do.");
     expect(source).toContain("Review this session and what it can open.");

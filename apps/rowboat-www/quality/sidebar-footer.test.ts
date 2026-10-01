@@ -5,6 +5,7 @@ import {
   googleNeedsReconnect,
   revenueTabFromParam,
   revenueTabSearch,
+  sidebarQueryError,
   sourceHealth,
   sourceMeterVisible,
   trialDaysRemaining,
@@ -95,6 +96,21 @@ describe("sidebar source status", () => {
   // The status card's meter reads "connected / total". A source that needs
   // reconnecting delivers nothing, so counting it would show a full meter over
   // a dead grant.
+  it("explains a rate limit instead of calling the source list unavailable", () => {
+    expect(sidebarQueryError(new Error("Request failed (429)"), "Source status unavailable")).toBe(
+      "Too many requests were sent from this workspace. Wait a moment, then try again.",
+    );
+    expect(sidebarQueryError(new Error("Request failed (503)"), "Could not load runs")).toBe(
+      "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.",
+    );
+    expect(sidebarQueryError(new Error("Request failed (500)"), "Could not load agents")).toBe(
+      "Could not load agents",
+    );
+    expect(sidebarQueryError(new Error("  "), "Source status unavailable")).toBe(
+      "Source status unavailable",
+    );
+  });
+
   it("does not count a source that stopped reporting as connected", () => {
     expect(
       connectedSourceCount([

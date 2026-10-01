@@ -6,6 +6,8 @@ import * as React from "react";
 import { useTheme } from "next-themes";
 import { useConsolePreferences } from "@/hooks/queries/use-console";
 import { sidebarShortcutTitle } from "@/lib/a11y/sidebar-shortcut";
+import { friendlyAgentError } from "@/lib/agents/agent-history";
+import { friendlyRevenueError } from "@/lib/revenue/revenue";
 import { useRelationshipSourceStatuses } from "@/hooks/queries/use-relationship-sources";
 import {
   useSidebarAgents,
@@ -505,6 +507,21 @@ const SOURCE_TONE_CARD: Record<SourceHealth["tone"], string> = {
 export { connectedSourceCount, googleNeedsReconnect };
 
 /**
+ * A sidebar query failure is not the same as an empty list. Rate limits and
+ * a down API already have sentences; anything else stays the short fallback
+ * so a raw status code does not land in the rail.
+ */
+export function sidebarQueryError(error: unknown, fallback: string): string {
+  const message = error instanceof Error ? error.message.trim() : "";
+  if (!message) return fallback;
+  const agent = friendlyAgentError(message);
+  if (agent !== message) return agent;
+  const revenue = friendlyRevenueError(message);
+  if (revenue !== message) return revenue;
+  return fallback;
+}
+
+/**
  * The meter is a ratio of sources that are still delivering. An empty workspace
  * is not a ratio: "0 / 0" under "No sources connected" reads as a broken meter.
  */
@@ -539,7 +556,7 @@ function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen
   const trialDaysLeft = trialDaysRemaining(billing);
   if (sources.isPending) return null;
   const health: SourceHealth = sources.isError
-    ? { tone: "idle", label: "Source status unavailable" }
+    ? { tone: "idle", label: sidebarQueryError(sources.error, "Source status unavailable") }
     : sourceHealth(sources.data);
   const connected = sources.isError ? undefined : connectedSourceCount(sources.data);
   const total = sources.isError ? undefined : sources.data.length;
@@ -784,9 +801,15 @@ export function AppShellSidebar({
     runs: runsQuery.isPending,
   };
   const groupErrors: Partial<Record<string, string>> = {
-    ...(agentsQuery.isError ? { agents: "Could not load agents" } : {}),
-    ...(tasksQuery.isError ? { scheduled: "Could not load schedules" } : {}),
-    ...(runsQuery.isError ? { runs: "Could not load runs" } : {}),
+    ...(agentsQuery.isError
+      ? { agents: sidebarQueryError(agentsQuery.error, "Could not load agents") }
+      : {}),
+    ...(tasksQuery.isError
+      ? { scheduled: sidebarQueryError(tasksQuery.error, "Could not load schedules") }
+      : {}),
+    ...(runsQuery.isError
+      ? { runs: sidebarQueryError(runsQuery.error, "Could not load runs") }
+      : {}),
   };
   const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>({});
   const { theme, setTheme: handleTheme } = useThemePreference();
