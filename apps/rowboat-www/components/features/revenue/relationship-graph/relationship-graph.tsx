@@ -212,16 +212,16 @@ type FlowEdge = Edge<{ graphEdge: RelationshipGraphEdge }, "typedEdge">;
 function GraphNodeCard({ data, selected }: NodeProps<FlowNode>) {
   const node = data.graphNode;
   const badges = [
-    node.health,
-    node.approvalStatus,
-    node.freshness,
-    node.confidence === undefined ? undefined : `${Math.round(node.confidence * 100)}%`,
+    node.health ? graphNodeFieldLabel(node.kind, "health", node.health) : "",
+    node.approvalStatus ? graphNodeFieldLabel(node.kind, "approval", node.approvalStatus) : "",
+    node.freshness ? graphNodeFieldLabel(node.kind, "freshness", node.freshness) : "",
+    node.confidence === undefined ? "" : `${Math.round(node.confidence * 100)}%`,
   ].filter(Boolean);
 
   return (
     <div
       className={`w-44 border bg-background/95 px-3 py-2 text-left shadow-sm backdrop-blur ${nodeShape(node.kind)} ${nodeTone(node)} ${selected ? "ring-2 ring-oppulence-orange/60" : ""}`}
-      aria-label={`${KIND_LABEL[node.kind]}: ${node.label}. ${badges.map((badge) => graphDetailLabel(String(badge))).join(", ")}`}
+      aria-label={`${KIND_LABEL[node.kind]}: ${node.label}. ${badges.join(", ")}`}
     >
       <div className="flex items-start gap-2">
         <ItemMedia
@@ -254,7 +254,7 @@ function GraphNodeCard({ data, selected }: NodeProps<FlowNode>) {
               className="rounded-none bg-primary/6 px-1.5 py-0.5 text-[9px] font-normal text-primary/55"
               variant="outline"
             >
-              {graphDetailLabel(String(badge))}
+              {badge}
             </Badge>
           ))}
         </div>
@@ -706,27 +706,33 @@ function Inspector({
         </p>
       </div>
       <dl className="mt-4 grid grid-cols-2 gap-2 text-xs">
-        {[
-          ["Status", node.status],
-          ["Health", node.health],
-          ["Lifecycle", node.lifecycle],
-          ["Approval", node.approvalStatus],
-          ["Policy", node.policyStatus],
-          ["Freshness", node.freshness],
+        {(
           [
-            "Confidence",
-            node.confidence === undefined ? undefined : `${Math.round(node.confidence * 100)}%`,
-          ],
-          ["Due", node.dueAt ? new Date(node.dueAt).toLocaleDateString() : undefined],
-        ]
-          .filter((entry) => entry[1])
-          .map(([label, value]) => (
+            ["Status", "status", node.status],
+            ["Health", "health", node.health],
+            ["Lifecycle", "lifecycle", node.lifecycle],
+            ["Approval", "approval", node.approvalStatus],
+            ["Policy", "policy", node.policyStatus],
+            ["Execution", "execution", graphExecutionLabel(node.executionStatus)],
+            ["Freshness", "freshness", node.freshness],
+            [
+              "Confidence",
+              "other",
+              node.confidence === undefined ? undefined : `${Math.round(node.confidence * 100)}%`,
+            ],
+            ["Due", "other", node.dueAt ? new Date(node.dueAt).toLocaleDateString() : undefined],
+          ] as const
+        )
+          .filter((entry) => entry[2])
+          .map(([label, field, value]) => (
             <div key={label} className="border border-border bg-background px-2 py-2">
               <dt className="font-mono text-[9px] uppercase tracking-wide text-primary/35">
                 {label}
               </dt>
               <dd className="mt-0.5 text-primary/70">
-                {graphDetailLabel(String(value))}
+                {field === "other" || field === "execution"
+                  ? value
+                  : graphNodeFieldLabel(node.kind, field, String(value))}
               </dd>
             </div>
           ))}
@@ -931,13 +937,7 @@ function GraphTable({
               </TableCell>
               <TableCell className="px-3 py-2 text-primary/55">{KIND_LABEL[node.kind]}</TableCell>
               <TableCell className="px-3 py-2 text-primary/55">
-                {graphDetailLabel(
-                  node.health ||
-                    node.status ||
-                    node.approvalStatus ||
-                    node.freshness ||
-                    "—",
-                )}
+                {graphNodeSummaryLabel(node)}
               </TableCell>
               <TableCell className="px-3 py-2 text-primary/45">
                 {edges.filter((edge) => edge.source === node.id || edge.target === node.id).length}
@@ -982,6 +982,107 @@ export function graphDetailLabel(value: string): string {
     default:
       return enumLabel(value);
   }
+}
+
+type GraphField = "status" | "health" | "lifecycle" | "approval" | "policy" | "freshness";
+
+/**
+ * The same stored token means different things on different nodes. An open
+ * promise is still open. An open follow-up is held, and a passed policy is
+ * cleared — the words the recovery queue already uses.
+ */
+export function graphNodeFieldLabel(kind: string, field: GraphField, value: string): string {
+  if (kind === "action" && field === "status") {
+    switch (value) {
+      case "open":
+        return "Held";
+      case "snoozed":
+        return "Snoozed";
+      case "handled":
+        return "Handled";
+      case "dismissed":
+        return "Dismissed";
+      default:
+        break;
+    }
+  }
+  if (kind === "action" && field === "policy") {
+    switch (value) {
+      case "passed":
+        return "Cleared";
+      case "review_required":
+        return "Review required";
+      case "blocked":
+        return "Blocked";
+      case "stale":
+        return "Re-check needed";
+      case "pending":
+        return "Not checked";
+      default:
+        break;
+    }
+  }
+  if (kind === "action" && field === "approval") {
+    switch (value) {
+      case "pending":
+        return "Awaiting approval";
+      case "approved":
+        return "Approved";
+      case "rejected":
+        return "Rejected";
+      default:
+        break;
+    }
+  }
+  if (field === "freshness") {
+    switch (value) {
+      case "current":
+        return "Up to date";
+      case "aging":
+        return "Getting old";
+      case "unknown":
+        return "Not known";
+      default:
+        break;
+    }
+  }
+  return graphDetailLabel(value);
+}
+
+/** A send that has not started yet stays off the inspector. Pending is the default. */
+export function graphExecutionLabel(status: string | undefined): string | undefined {
+  switch (status) {
+    case undefined:
+    case "":
+    case "pending":
+      return undefined;
+    case "requested":
+      return "Sending…";
+    case "sent":
+      return "Sent";
+    case "failed":
+      return "Failed";
+    case "ambiguous":
+      return "Needs reconcile";
+    case "cancelled":
+      return "Cancelled";
+    default:
+      return graphDetailLabel(status);
+  }
+}
+
+export function graphNodeSummaryLabel(node: {
+  kind: string;
+  health?: string;
+  status?: string;
+  approvalStatus?: string;
+  freshness?: string;
+}): string {
+  if (node.health) return graphNodeFieldLabel(node.kind, "health", node.health);
+  if (node.status) return graphNodeFieldLabel(node.kind, "status", node.status);
+  if (node.approvalStatus) return graphNodeFieldLabel(node.kind, "approval", node.approvalStatus);
+  if (node.freshness) return graphNodeFieldLabel(node.kind, "freshness", node.freshness);
+  return "—";
 }
 
 /** A review note names the fields that moved. Stored tokens are not those names. */

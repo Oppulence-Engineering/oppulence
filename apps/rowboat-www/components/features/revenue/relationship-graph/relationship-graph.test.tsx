@@ -10,6 +10,9 @@ import {
   graphAsOfLabel,
   graphChangedDetail,
   graphDetailLabel,
+  graphExecutionLabel,
+  graphNodeFieldLabel,
+  graphNodeSummaryLabel,
   graphStateFromSearch,
   graphCountLabel,
   graphLayoutLabel,
@@ -76,7 +79,29 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphDetailLabel("needs_attention")).toBe("Needs attention");
     expect(graphDetailLabel("stale")).toBe("Out of date");
     expect(graphDetailLabel("historical_unknown")).not.toContain("historical_unknown");
-    expect(source).toContain("graphDetailLabel(String(value))");
+    expect(graphDetailLabel("open")).toBe("Open");
+    expect(graphNodeFieldLabel("commitment", "status", "open")).toBe("Open");
+    expect(graphNodeFieldLabel("action", "status", "open")).toBe("Held");
+    expect(graphNodeFieldLabel("action", "status", "snoozed")).toBe("Snoozed");
+    expect(graphNodeFieldLabel("action", "policy", "passed")).toBe("Cleared");
+    expect(graphNodeFieldLabel("action", "policy", "pending")).toBe("Not checked");
+    expect(graphNodeFieldLabel("action", "policy", "review_required")).toBe("Review required");
+    expect(graphNodeFieldLabel("action", "approval", "pending")).toBe("Awaiting approval");
+    expect(graphNodeFieldLabel("evidence", "freshness", "aging")).toBe("Getting old");
+    expect(graphNodeFieldLabel("evidence", "freshness", "current")).toBe("Up to date");
+    expect(graphNodeFieldLabel("evidence", "freshness", "stale")).toBe("Out of date");
+    expect(graphExecutionLabel("pending")).toBeUndefined();
+    expect(graphExecutionLabel("ambiguous")).toBe("Needs reconcile");
+    expect(graphExecutionLabel("failed")).toBe("Failed");
+    expect(
+      graphNodeSummaryLabel({ kind: "action", status: "open", approvalStatus: "pending" }),
+    ).toBe("Held");
+    expect(
+      graphNodeSummaryLabel({ kind: "commitment", status: "open" }),
+    ).toBe("Open");
+    expect(source).toContain("graphNodeFieldLabel(node.kind, field, String(value))");
+    expect(source).toContain("graphNodeSummaryLabel(node)");
+    expect(source).not.toContain("graphDetailLabel(String(value))");
     expect(source).toContain("graphChangedDetail(node.changedDimensions)");
     expect(source).not.toContain("node.changedDimensions.join");
     expect(source).toContain('aria-label="Ask this graph"');
