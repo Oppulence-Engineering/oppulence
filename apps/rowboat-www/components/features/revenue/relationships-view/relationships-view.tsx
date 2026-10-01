@@ -1267,8 +1267,13 @@ function SourceConnectionCards({
             >
               <div className="flex items-start justify-between gap-2">
                 <h4 className="text-sm font-medium text-primary">{item.displayName}</h4>
-                <Badge variant="outline" className="rounded-none capitalize">
-                  {humanize(account?.status || "not_connected")}
+                <Badge variant="outline" className="rounded-none">
+                  {sourceConnectionLabel({
+                    source: item.source,
+                    status: account?.status || "not_connected",
+                    backfillPhase: account?.backfillPhase,
+                    completeness: account?.completeness,
+                  })}
                 </Badge>
               </div>
               <p className="text-xs text-primary/55">{copy.explanation}</p>
@@ -1286,7 +1291,7 @@ function SourceConnectionCards({
               {account ? (
                 <div className="space-y-1 text-[11px] text-primary/50">
                   <p>
-                    {humanize(account.completeness)}
+                    {completenessProductLabel(account.completeness)}
                     {progress !== null ? ` · ${progress}% of history synced` : ""}
                     {account.lagSeconds ? ` · ${Math.round(account.lagSeconds / 60)}m lag` : ""}
                   </p>

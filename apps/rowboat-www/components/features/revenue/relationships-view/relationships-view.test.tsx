@@ -427,6 +427,10 @@ describe("RelationshipsView", () => {
     expect(source).toContain("activitySourceLabel(item.source)");
     expect(source).toContain("activitySourceLabel(source.source)");
     expect(source).toContain("sourceConnectionLabel(source)");
+    expect(source).toContain("sourceConnectionLabel({\n                    source: item.source,");
+    expect(source).toContain("completenessProductLabel(account.completeness)");
+    expect(source).not.toContain('humanize(account?.status || "not_connected")');
+    expect(source).not.toContain("humanize(account.completeness)");
     expect(source).not.toContain("{source.source} · {source.status}");
     expect(source).toContain("mailAccessReason(item.access.reason)");
     expect(source).not.toContain("JSON.stringify(evidence[observation.id]");
