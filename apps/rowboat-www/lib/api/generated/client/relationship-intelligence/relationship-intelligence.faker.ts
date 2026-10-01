@@ -3947,6 +3947,10 @@ export const getGetRelationshipCommunicationTimelineResponseMock = (
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
   ]),
+  nextBeforeId: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.uuid(), null]),
+    undefined,
+  ]),
   ...overrideResponse,
 });
 
@@ -4853,8 +4857,17 @@ export const getShareMutualActionPlanResponseMock = (): ShareMutualActionPlan200
 export const getGetRelationshipTimelineResponseMock = (
   overrideResponse: Partial<Extract<GetRelationshipTimeline200, object>> = {},
 ): GetRelationshipTimeline200 => ({
-  observations: faker.helpers.arrayElement([
-    Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+  hasMore: faker.datatype.boolean(),
+  nextBefore: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+    undefined,
+  ]),
+  nextBeforeId: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.uuid(), null]),
+    undefined,
+  ]),
+  observations: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => ({
       contentHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
       eventType: faker.string.alpha({ length: { min: 10, max: 20 } }),
       externalId: faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -4872,9 +4885,8 @@ export const getGetRelationshipTimelineResponseMock = (
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
       ]),
-    })),
-    undefined,
-  ]),
+    }),
+  ),
   ...overrideResponse,
 });
 

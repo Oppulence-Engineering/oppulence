@@ -14,6 +14,7 @@ import (
 
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
@@ -2277,10 +2278,13 @@ func (s *Service) RetractRelationshipAssertion(
 
 // relationshipObservationPage is one cursor page of activity history.
 // NextBefore is the oldest occurred-at on this page when another page exists.
+// NextBeforeID is that row's id, so a later page can keep every other row that
+// happened at the same time.
 type relationshipObservationPage struct {
 	observations []*ent.RelationshipObservation
 	hasMore      bool
 	nextBefore   *time.Time
+	nextBeforeID *uuid.UUID
 }
 
 // RelationshipTimeline returns the newest relationship observations.
@@ -2289,7 +2293,7 @@ func (s *Service) RelationshipTimeline(
 	relationshipID uuid.UUID,
 	limit int,
 ) ([]*ent.RelationshipObservation, error) {
-	page, err := s.relationshipObservationPage(ctx, relationshipID, limit, nil)
+	page, err := s.relationshipObservationPage(ctx, relationshipID, limit, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2304,6 +2308,7 @@ func (s *Service) relationshipObservationPage(
 	relationshipID uuid.UUID,
 	limit int,
 	before *time.Time,
+	beforeID *uuid.UUID,
 ) (*relationshipObservationPage, error) {
 	if limit <= 0 || limit > 200 {
 		limit = 50
@@ -2316,10 +2321,13 @@ func (s *Service) relationshipObservationPage(
 	}
 	q := s.client.RelationshipObservation.Query().
 		Where(relationshipobservation.HasRelationshipWith(relationship.IDEQ(relationshipID))).
-		Order(ent.Desc(relationshipobservation.FieldOccurredAt)).
+		Order(
+			ent.Desc(relationshipobservation.FieldOccurredAt),
+			ent.Desc(relationshipobservation.FieldID),
+		).
 		Limit(limit + 1)
 	if before != nil {
-		q = q.Where(relationshipobservation.OccurredAtLT(before.UTC()))
+		q = q.Where(observationBefore(before.UTC(), beforeID))
 	}
 	rows, err := q.All(ctx)
 	if err != nil {
@@ -2331,10 +2339,28 @@ func (s *Service) relationshipObservationPage(
 	}
 	page := &relationshipObservationPage{observations: rows, hasMore: hasMore}
 	if hasMore && len(rows) > 0 {
-		last := rows[len(rows)-1].OccurredAt.UTC()
-		page.nextBefore = &last
+		last := rows[len(rows)-1]
+		at := last.OccurredAt.UTC()
+		id := last.ID
+		page.nextBefore = &at
+		page.nextBeforeID = &id
 	}
 	return page, nil
+}
+
+// observationBefore keeps every row that shares the boundary time. A time-only
+// cursor still returns rows strictly earlier than that time.
+func observationBefore(before time.Time, beforeID *uuid.UUID) predicate.RelationshipObservation {
+	if beforeID == nil || *beforeID == uuid.Nil {
+		return relationshipobservation.OccurredAtLT(before)
+	}
+	return relationshipobservation.Or(
+		relationshipobservation.OccurredAtLT(before),
+		relationshipobservation.And(
+			relationshipobservation.OccurredAtEQ(before),
+			relationshipobservation.IDLT(*beforeID),
+		),
+	)
 }
 
 // RelationshipObservation returns one observation that belongs to a relationship.

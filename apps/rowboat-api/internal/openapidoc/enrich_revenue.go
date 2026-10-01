@@ -620,9 +620,10 @@ func addRevenueSchemas(schemas obj) {
 		"access":          ref("CommunicationAccess"),
 	}, "id", "source", "interactionType", "occurredAt", "visibility", "ownerId", "bodyLocked", "access")
 	schemas["CommunicationTimelinePage"] = objectSchema("Paginated communication timeline.", obj{
-		"items":      arraySchema("Timeline items.", ref("CommunicationTimelineItem")),
-		"hasMore":    boolSchema("More pages exist.", false),
-		"nextBefore": stringSchema("Cursor for the next page.", "2026-09-06T12:00:00Z", obj{"format": "date-time"}, nullable()),
+		"items":        arraySchema("Timeline items.", ref("CommunicationTimelineItem")),
+		"hasMore":      boolSchema("More pages exist.", false),
+		"nextBefore":   stringSchema("Cursor for the next page.", "2026-09-06T12:00:00Z", obj{"format": "date-time"}, nullable()),
+		"nextBeforeId": stringSchema("Id of the last item on this page. Send it with nextBefore so rows that share that time stay on the next page.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5", obj{"format": "uuid"}, nullable()),
 	}, "items", "hasMore")
 }
 
@@ -824,13 +825,20 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/relationships/{relationshipId}/timeline"] = obj{"get": operation("Relationship Intelligence", "Get evidence timeline", "Returns the latest immutable observations for a relationship.", "getRelationshipTimeline", bearer(), append(relationshipParam, obj{"name": "limit", "in": "query", "required": false, "description": "Maximum observations (1-100).", "schema": obj{"type": "integer"}}), nil, obj{
-		"200": jsonResponse("Evidence timeline.", objectSchema("Observation list.", obj{"observations": arraySchema("Observations.", ref("RelationshipObservation"))}), nil),
+	paths["/v1/relationships/{relationshipId}/timeline"] = obj{"get": operation("Relationship Intelligence", "Get evidence timeline", "Returns the latest immutable observations for a relationship. Rows that share a time stay in id order, so the next page does not skip them.", "getRelationshipTimeline", bearer(), append(relationshipParam, obj{"name": "limit", "in": "query", "required": false, "description": "Maximum observations (1-100).", "schema": obj{"type": "integer"}}, obj{"name": "before", "in": "query", "required": false, "description": "Return observations before this RFC3339 timestamp.", "schema": obj{"type": "string", "format": "date-time"}}, obj{"name": "beforeId", "in": "query", "required": false, "description": "With before, also return observations at that time whose id sorts earlier.", "schema": obj{"type": "string", "format": "uuid"}}), nil, obj{
+		"200": jsonResponse("Evidence timeline.", objectSchema("Observation page.", obj{
+			"observations": arraySchema("Observations.", ref("RelationshipObservation")),
+			"hasMore":      boolSchema("An older observation exists beyond this page.", true),
+			"nextBefore":   stringSchema("Occurred-at cursor for the next page.", "2026-06-01T00:00:00Z", obj{"format": "date-time"}, nullable()),
+			"nextBeforeId": stringSchema("Id cursor for the next page. Send it with nextBefore.", "a1160000-0000-4000-8000-000000000002", obj{"format": "uuid"}, nullable()),
+		}, "observations", "hasMore"), nil),
+		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/relationships/{relationshipId}/communication-timeline"] = obj{"get": operation("Relationship Intelligence", "Get communication timeline", "Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship.", "getRelationshipCommunicationTimeline", bearer(), append(relationshipParam, obj{"name": "limit", "in": "query", "required": false, "description": "Maximum items (1-100).", "schema": obj{"type": "integer"}}, obj{"name": "before", "in": "query", "required": false, "description": "Return items before this RFC3339 timestamp.", "schema": obj{"type": "string", "format": "date-time"}}), nil, obj{
+	paths["/v1/relationships/{relationshipId}/communication-timeline"] = obj{"get": operation("Relationship Intelligence", "Get communication timeline", "Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship. Rows that share a time stay in id order, so the next page does not skip them.", "getRelationshipCommunicationTimeline", bearer(), append(relationshipParam, obj{"name": "limit", "in": "query", "required": false, "description": "Maximum items (1-100).", "schema": obj{"type": "integer"}}, obj{"name": "before", "in": "query", "required": false, "description": "Return items before this RFC3339 timestamp.", "schema": obj{"type": "string", "format": "date-time"}}, obj{"name": "beforeId", "in": "query", "required": false, "description": "With before, also return items at that time whose id sorts earlier.", "schema": obj{"type": "string", "format": "uuid"}}), nil, obj{
 		"200": jsonResponse("Communication timeline.", ref("CommunicationTimelinePage"), nil),
+		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}

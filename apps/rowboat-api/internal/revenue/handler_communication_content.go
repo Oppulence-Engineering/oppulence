@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 )
@@ -69,13 +68,12 @@ func (h *Handler) RelationshipCommunicationTimeline(w http.ResponseWriter, r *ht
 			limit = parsed
 		}
 	}
-	var before *time.Time
-	if value := r.URL.Query().Get("before"); value != "" {
-		if parsed, err := time.Parse(time.RFC3339, value); err == nil {
-			before = &parsed
-		}
+	before, beforeID, cursorErr := timelineBeforeCursor(r)
+	if cursorErr != nil {
+		h.writeServiceError(w, cursorErr)
+		return
 	}
-	page, err := h.svc.RelationshipCommunicationTimeline(r.Context(), u, relationshipID, before, limit)
+	page, err := h.svc.RelationshipCommunicationTimeline(r.Context(), u, relationshipID, before, beforeID, limit)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return

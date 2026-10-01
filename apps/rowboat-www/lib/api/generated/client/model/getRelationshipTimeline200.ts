@@ -8,9 +8,21 @@
 import type { RelationshipObservation } from "./relationshipObservation";
 
 /**
- * Observation list.
+ * Observation page.
  */
 export type GetRelationshipTimeline200 = {
+  /** An older observation exists beyond this page. */
+  hasMore: boolean;
+  /**
+   * Occurred-at cursor for the next page.
+   * @nullable
+   */
+  nextBefore?: string | null;
+  /**
+   * Id cursor for the next page. Send it with nextBefore.
+   * @nullable
+   */
+  nextBeforeId?: string | null;
   /** Observations. */
-  observations?: RelationshipObservation[];
+  observations: RelationshipObservation[];
 };

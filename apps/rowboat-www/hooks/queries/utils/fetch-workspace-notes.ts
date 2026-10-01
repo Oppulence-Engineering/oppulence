@@ -1,6 +1,6 @@
 import { loadRelationships } from "@/hooks/queries/utils/fetch-relationships";
 import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
-import { getRelationshipTimelinePage } from "@/lib/revenue/revenue";
+import { getRelationshipTimelinePage, type TimelinePageCursor } from "@/lib/revenue/revenue";
 import {
   collapseWorkspaceNotes,
   mapSettledWithConcurrency,
@@ -14,6 +14,7 @@ export const NOTE_SOURCE_PAGE = 200;
 export type NoteTimelineCursor = {
   relationshipId: string;
   before: string;
+  beforeId?: string;
 };
 
 export type WorkspaceNotesBundle = {
@@ -34,7 +35,7 @@ export type MoreWorkspaceNotesInput = {
 async function notesFromCompanies(
   request: RequestJsonFn,
   companies: RevenueRelationship[],
-  beforeById: ReadonlyMap<string, string>,
+  beforeById: ReadonlyMap<string, TimelinePageCursor>,
   signal?: AbortSignal,
 ): Promise<{
   notes: WorkspaceNote[];
@@ -54,13 +55,23 @@ async function notesFromCompanies(
     if (result.status !== "fulfilled") {
       failedTimelineCount += 1;
       const before = beforeById.get(company.id);
-      if (before) timelineCursors.push({ relationshipId: company.id, before });
+      if (before?.before) {
+        timelineCursors.push({
+          relationshipId: company.id,
+          before: before.before,
+          beforeId: before.beforeId,
+        });
+      }
       return;
     }
     successfulCompanies.push(company);
     timelines.push(result.value.observations);
     if (result.value.hasMore && result.value.nextBefore) {
-      timelineCursors.push({ relationshipId: company.id, before: result.value.nextBefore });
+      timelineCursors.push({
+        relationshipId: company.id,
+        before: result.value.nextBefore,
+        beforeId: result.value.nextBeforeId,
+      });
     }
   });
   return {
@@ -94,7 +105,10 @@ export async function loadMoreWorkspaceNotes(
   const continuedIds = new Set(input.timelineCursors.map((cursor) => cursor.relationshipId));
   const known = input.relationships.filter((relationship) => continuedIds.has(relationship.id));
   const beforeById = new Map(
-    input.timelineCursors.map((cursor) => [cursor.relationshipId, cursor.before]),
+    input.timelineCursors.map((cursor) => [
+      cursor.relationshipId,
+      { before: cursor.before, beforeId: cursor.beforeId },
+    ]),
   );
   const moreRows =
     input.nextRelationshipOffset === undefined

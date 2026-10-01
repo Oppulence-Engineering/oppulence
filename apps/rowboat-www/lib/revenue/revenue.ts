@@ -608,35 +608,48 @@ export const deletePerson = (personId: string) =>
 export const acknowledgeMissionControl = (id: string, stateVersion: number, stateHash: string) =>
   viaRequest(() => fetchAcknowledgeMissionControl(id, { stateVersion, stateHash }));
 
+export type TimelinePageCursor = {
+  before?: string;
+  beforeId?: string;
+};
+
 export type RelationshipTimelinePage = {
   observations: RelationshipObservation[];
   hasMore: boolean;
   nextBefore?: string;
+  nextBeforeId?: string;
 };
 
 export type CommunicationTimelinePage = {
   items: CommunicationTimelineItem[];
   hasMore: boolean;
   nextBefore?: string;
+  nextBeforeId?: string;
 };
 
 const emptyCommunicationPage = (): CommunicationTimelinePage => ({ items: [], hasMore: false });
 
+function timelineQuery(limit: number, cursor?: string | TimelinePageCursor): string {
+  const page: TimelinePageCursor = typeof cursor === "string" ? { before: cursor } : { ...cursor };
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (page.before) params.set("before", page.before);
+  if (page.beforeId) params.set("beforeId", page.beforeId);
+  return params.toString();
+}
+
 export const getRelationshipTimelinePage = (
   id: string,
   limit = 50,
-  before?: string,
+  before?: string | TimelinePageCursor,
   signal?: AbortSignal,
 ) =>
-  call<RelationshipTimelinePage>(
-    `/relationships/${id}/timeline?limit=${limit}${
-      before ? `&before=${encodeURIComponent(before)}` : ""
-    }`,
-    { signal },
-  ).then((body) => ({
+  call<RelationshipTimelinePage>(`/relationships/${id}/timeline?${timelineQuery(limit, before)}`, {
+    signal,
+  }).then((body) => ({
     observations: body.observations ?? [],
     hasMore: Boolean(body.hasMore),
     nextBefore: body.nextBefore,
+    nextBeforeId: body.nextBeforeId,
   }));
 
 export const getRelationshipTimeline = (id: string, limit = 50, signal?: AbortSignal) =>
@@ -645,19 +658,18 @@ export const getRelationshipTimeline = (id: string, limit = 50, signal?: AbortSi
 export const getRelationshipCommunicationTimeline = (
   id: string,
   limit = 50,
-  before?: string,
+  before?: string | TimelinePageCursor,
   signal?: AbortSignal,
 ) =>
   call<CommunicationTimelinePage>(
-    `/relationships/${id}/communication-timeline?limit=${limit}${
-      before ? `&before=${encodeURIComponent(before)}` : ""
-    }`,
+    `/relationships/${id}/communication-timeline?${timelineQuery(limit, before)}`,
     { signal },
   )
     .then((body) => ({
       items: body.items ?? [],
       hasMore: Boolean(body.hasMore),
       nextBefore: body.nextBefore,
+      nextBeforeId: body.nextBeforeId,
     }))
     .catch((error) => {
       // Workspaces without communication intelligence, or an older API,

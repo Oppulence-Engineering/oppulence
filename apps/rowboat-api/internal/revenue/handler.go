@@ -2517,13 +2517,12 @@ func (h *Handler) RelationshipTimeline(w http.ResponseWriter, r *http.Request) {
 			limit = parsed
 		}
 	}
-	var before *time.Time
-	if value := r.URL.Query().Get("before"); value != "" {
-		if parsed, err := time.Parse(time.RFC3339, value); err == nil {
-			before = &parsed
-		}
+	before, beforeID, cursorErr := timelineBeforeCursor(r)
+	if cursorErr != nil {
+		h.writeServiceError(w, cursorErr)
+		return
 	}
-	page, err := h.svc.relationshipObservationPage(r.Context(), id, limit, before)
+	page, err := h.svc.relationshipObservationPage(r.Context(), id, limit, before, beforeID)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
@@ -2536,7 +2535,32 @@ func (h *Handler) RelationshipTimeline(w http.ResponseWriter, r *http.Request) {
 	if page.nextBefore != nil {
 		payload["nextBefore"] = page.nextBefore.UTC()
 	}
+	if page.nextBeforeID != nil {
+		payload["nextBeforeId"] = page.nextBeforeID.String()
+	}
 	httpx.WriteJSON(w, http.StatusOK, payload)
+}
+
+// timelineBeforeCursor reads the activity and mail page cursor. beforeId is
+// only valid together with a parsed before time, so a partial id cannot replay
+// the first page.
+func timelineBeforeCursor(r *http.Request) (*time.Time, *uuid.UUID, error) {
+	var before *time.Time
+	if value := strings.TrimSpace(r.URL.Query().Get("before")); value != "" {
+		parsed, err := time.Parse(time.RFC3339, value)
+		if err == nil {
+			before = &parsed
+		}
+	}
+	rawID := strings.TrimSpace(r.URL.Query().Get("beforeId"))
+	if rawID == "" {
+		return before, nil, nil
+	}
+	parsedID, err := uuid.Parse(rawID)
+	if err != nil || before == nil {
+		return nil, nil, fmt.Errorf("%w: invalid beforeId", ErrInvalidInput)
+	}
+	return before, &parsedID, nil
 }
 
 // RelationshipChanges returns projected state changes for a relationship.

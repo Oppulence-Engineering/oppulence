@@ -98,6 +98,7 @@ import {
   acknowledgeMissionControl,
   decideIdentityCandidate,
   type DecideRelationshipIdentityCandidateInput,
+  type TimelinePageCursor,
   approveRecommendation,
   correctConversationReview,
   decideConversationReview,
@@ -2315,6 +2316,14 @@ export function earlierActivityLabel(): string {
   return "Show earlier activity";
 }
 
+function pageCursor(page: {
+  nextBefore?: string;
+  nextBeforeId?: string;
+}): TimelinePageCursor | undefined {
+  if (!page.nextBefore) return undefined;
+  return { before: page.nextBefore, beforeId: page.nextBeforeId };
+}
+
 /** The change list says when the two newest snapshots are not the whole history. */
 export function relationshipChangeTitle(shown: number, hasMore: boolean): string {
   return hasMore ? `What changed (${shown}+)` : `What changed (${shown})`;
@@ -2824,9 +2833,11 @@ export function RelationshipSheet({
     CommunicationTimelineItem[]
   >([]);
   const [communicationHasMore, setCommunicationHasMore] = React.useState(false);
-  const [communicationBefore, setCommunicationBefore] = React.useState<string | undefined>();
+  const [communicationCursor, setCommunicationCursor] = React.useState<
+    TimelinePageCursor | undefined
+  >();
   const [timelineHasMore, setTimelineHasMore] = React.useState(false);
-  const [timelineBefore, setTimelineBefore] = React.useState<string | undefined>();
+  const [timelineCursor, setTimelineCursor] = React.useState<TimelinePageCursor | undefined>();
   const [loadingEarlier, setLoadingEarlier] = React.useState<"mail" | "activity" | null>(null);
   const [governanceExpanded, setGovernanceExpanded] = React.useState(false);
   const [changes, setChanges] = React.useState<RelationshipStateSnapshot[]>([]);
@@ -2929,10 +2940,10 @@ export function RelationshipSheet({
         ]);
       setTimeline(nextTimeline.observations);
       setTimelineHasMore(nextTimeline.hasMore);
-      setTimelineBefore(nextTimeline.nextBefore);
+      setTimelineCursor(pageCursor(nextTimeline));
       setCommunicationTimeline(nextCommunicationTimeline.items);
       setCommunicationHasMore(nextCommunicationTimeline.hasMore);
-      setCommunicationBefore(nextCommunicationTimeline.nextBefore);
+      setCommunicationCursor(pageCursor(nextCommunicationTimeline));
       setChanges(nextChanges.snapshots);
       setChangesHasMore(nextChanges.hasMore);
       setEvidenceReviewHasMore(Boolean(nextData.intelligence?.observationPageHasMore));
@@ -3091,20 +3102,20 @@ export function RelationshipSheet({
   };
 
   const loadEarlier = async (kind: "mail" | "activity") => {
-    const cursor = kind === "mail" ? communicationBefore : timelineBefore;
-    if (!cursor || loadingEarlier) return;
+    const cursor = kind === "mail" ? communicationCursor : timelineCursor;
+    if (!cursor?.before || loadingEarlier) return;
     setLoadingEarlier(kind);
     try {
       if (kind === "mail") {
         const page = await getRelationshipCommunicationTimeline(id, 50, cursor);
         setCommunicationTimeline((current) => appendById(current, page.items));
         setCommunicationHasMore(page.hasMore);
-        setCommunicationBefore(page.nextBefore);
+        setCommunicationCursor(pageCursor(page));
       } else {
         const page = await getRelationshipTimelinePage(id, 50, cursor);
         setTimeline((current) => appendById(current, page.observations));
         setTimelineHasMore(page.hasMore);
-        setTimelineBefore(page.nextBefore);
+        setTimelineCursor(pageCursor(page));
       }
     } catch (error) {
       onError(
@@ -4333,7 +4344,7 @@ export function RelationshipSheet({
                       ))}
                     </ul>
                   )}
-                  {communicationHasMore && communicationBefore ? (
+                  {communicationHasMore && communicationCursor?.before ? (
                     <Button
                       className="mt-2"
                       disabled={loadingEarlier !== null}
@@ -4390,7 +4401,7 @@ export function RelationshipSheet({
                       ))}
                     </ul>
                   )}
-                  {timelineHasMore && timelineBefore ? (
+                  {timelineHasMore && timelineCursor?.before ? (
                     <Button
                       className="mt-2"
                       disabled={loadingEarlier !== null}

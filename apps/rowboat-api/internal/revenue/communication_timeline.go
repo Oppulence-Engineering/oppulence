@@ -9,6 +9,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
@@ -32,9 +33,10 @@ type CommunicationTimelineItem struct {
 
 // CommunicationTimelinePage is one cursor page of relationship communications.
 type CommunicationTimelinePage struct {
-	Items      []CommunicationTimelineItem `json:"items"`
-	HasMore    bool                        `json:"hasMore"`
-	NextBefore *time.Time                  `json:"nextBefore,omitempty"`
+	Items        []CommunicationTimelineItem `json:"items"`
+	HasMore      bool                        `json:"hasMore"`
+	NextBefore   *time.Time                  `json:"nextBefore,omitempty"`
+	NextBeforeID *uuid.UUID                  `json:"nextBeforeId,omitempty"`
 }
 
 // ResolveCommunicationRelationship links one synced interaction to a single
@@ -100,6 +102,7 @@ func (s *Service) RelationshipCommunicationTimeline(
 	actor *ent.User,
 	relationshipID uuid.UUID,
 	before *time.Time,
+	beforeID *uuid.UUID,
 	limit int,
 ) (*CommunicationTimelinePage, error) {
 	if _, err := s.requireCommunicationIntelligence(ctx, actor); err != nil {
@@ -124,10 +127,13 @@ func (s *Service) RelationshipCommunicationTimeline(
 		WithRelationship().
 		WithParticipants().
 		WithAttachments().
-		Order(ent.Desc(communicationinteraction.FieldOccurredAt)).
+		Order(
+			ent.Desc(communicationinteraction.FieldOccurredAt),
+			ent.Desc(communicationinteraction.FieldID),
+		).
 		Limit(limit + 1)
 	if before != nil {
-		q = q.Where(communicationinteraction.OccurredAtLT(before.UTC()))
+		q = q.Where(communicationBefore(before.UTC(), beforeID))
 	}
 	rows, err := q.All(ctx)
 	if err != nil {
@@ -147,10 +153,28 @@ func (s *Service) RelationshipCommunicationTimeline(
 	}
 	page := &CommunicationTimelinePage{Items: items, HasMore: hasMore}
 	if hasMore && len(items) > 0 {
-		last := items[len(items)-1].OccurredAt
-		page.NextBefore = &last
+		last := items[len(items)-1]
+		at := last.OccurredAt
+		id := last.ID
+		page.NextBefore = &at
+		page.NextBeforeID = &id
 	}
 	return page, nil
+}
+
+// communicationBefore keeps every item that shares the boundary time. A
+// time-only cursor still returns items strictly earlier than that time.
+func communicationBefore(before time.Time, beforeID *uuid.UUID) predicate.CommunicationInteraction {
+	if beforeID == nil || *beforeID == uuid.Nil {
+		return communicationinteraction.OccurredAtLT(before)
+	}
+	return communicationinteraction.Or(
+		communicationinteraction.OccurredAtLT(before),
+		communicationinteraction.And(
+			communicationinteraction.OccurredAtEQ(before),
+			communicationinteraction.IDLT(*beforeID),
+		),
+	)
 }
 
 func (s *Service) communicationTimelineItem(

@@ -1839,6 +1839,11 @@ export type getRelationshipCommunicationTimelineResponse200 = {
   status: 200;
 };
 
+export type getRelationshipCommunicationTimelineResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
 export type getRelationshipCommunicationTimelineResponse401 = {
   data: N401Response;
   status: 401;
@@ -1854,7 +1859,9 @@ export type getRelationshipCommunicationTimelineResponseSuccess =
     headers: Headers;
   };
 export type getRelationshipCommunicationTimelineResponseError = (
-  getRelationshipCommunicationTimelineResponse401 | getRelationshipCommunicationTimelineResponse404
+  | getRelationshipCommunicationTimelineResponse400
+  | getRelationshipCommunicationTimelineResponse401
+  | getRelationshipCommunicationTimelineResponse404
 ) & {
   headers: Headers;
 };
@@ -1883,7 +1890,7 @@ export const getGetRelationshipCommunicationTimelineUrl = (
 };
 
 /**
- * Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship.
+ * Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship. Rows that share a time stay in id order, so the next page does not skip them.
  * @summary Get communication timeline
  */
 export const getRelationshipCommunicationTimeline = async (
@@ -2727,6 +2734,11 @@ export type getRelationshipTimelineResponse200 = {
   status: 200;
 };
 
+export type getRelationshipTimelineResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
 export type getRelationshipTimelineResponse401 = {
   data: N401Response;
   status: 401;
@@ -2741,7 +2753,9 @@ export type getRelationshipTimelineResponseSuccess = getRelationshipTimelineResp
   headers: Headers;
 };
 export type getRelationshipTimelineResponseError = (
-  getRelationshipTimelineResponse401 | getRelationshipTimelineResponse404
+  | getRelationshipTimelineResponse400
+  | getRelationshipTimelineResponse401
+  | getRelationshipTimelineResponse404
 ) & {
   headers: Headers;
 };
@@ -2769,7 +2783,7 @@ export const getGetRelationshipTimelineUrl = (
 };
 
 /**
- * Returns the latest immutable observations for a relationship.
+ * Returns the latest immutable observations for a relationship. Rows that share a time stay in id order, so the next page does not skip them.
  * @summary Get evidence timeline
  */
 export const getRelationshipTimeline = async (

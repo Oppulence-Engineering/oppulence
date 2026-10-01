@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
@@ -788,6 +790,74 @@ func TestIdentityFirstSeenTracksEarliestObservation(t *testing.T) {
 		Where(relationshipidentity.ProviderEQ("hubspot")).Only(f.ctx)
 	if err != nil || !identity.FirstSeenAt.Equal(later.Add(-24*time.Hour)) || !identity.LastSeenAt.Equal(later) {
 		t.Fatalf("identity observation times not preserved: identity=%+v err=%v", identity, err)
+	}
+}
+
+func TestActivityHistoryKeepsTiedOccurredAt(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel, err := f.client.Relationship.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetKind("company").
+		SetDisplayName("Activity Tie Co").
+		SetResourceRefs([]string{}).
+		SetRisks([]string{}).
+		SetMilestones([]string{}).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	occurred := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	for i := 1; i <= 3; i++ {
+		summary := fmt.Sprintf("Tied Activity %03d", i)
+		if i == 1 {
+			summary = "Tied Activity Last"
+		}
+		if _, err := f.client.RelationshipObservation.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("a1160000-0000-4000-8000-%012x", i))).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetRelationship(rel).
+			SetSource("user").
+			SetExternalID(fmt.Sprintf("tied-activity-%03d", i)).
+			SetEventType("note").
+			SetOccurredAt(occurred).
+			SetReceivedAt(occurred).
+			SetSummary(summary).
+			SetContentHash(fmt.Sprintf("tied-activity-hash-%03d", i)).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	first, err := f.svc.relationshipObservationPage(f.ctx, rel.ID, 2, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !first.hasMore || len(first.observations) != 2 || first.observations[0].Summary != "Tied Activity 003" {
+		t.Fatalf("newest page = %d %q hasMore=%v", len(first.observations), first.observations[0].Summary, first.hasMore)
+	}
+	for _, row := range first.observations {
+		if row.Summary == "Tied Activity Last" {
+			t.Fatal("the lowest id was included in the newest page")
+		}
+	}
+	if first.nextBefore == nil || !first.nextBefore.Equal(occurred) || first.nextBeforeID == nil {
+		t.Fatalf("cursor = %v %v", first.nextBefore, first.nextBeforeID)
+	}
+	second, err := f.svc.relationshipObservationPage(f.ctx, rel.ID, 2, first.nextBefore, first.nextBeforeID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.hasMore || len(second.observations) != 1 || second.observations[0].Summary != "Tied Activity Last" {
+		summaries := make([]string, 0, len(second.observations))
+		for _, row := range second.observations {
+			summaries = append(summaries, row.Summary)
+		}
+		t.Fatalf("older page = %v hasMore=%v", summaries, second.hasMore)
 	}
 }
 

@@ -5103,7 +5103,7 @@ export const AppendCommitmentTransition409Response = zod
   );
 
 /**
- * Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship.
+ * Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship. Rows that share a time stay in id order, so the next page does not skip them.
  * @summary Get communication timeline
  */
 export const GetRelationshipCommunicationTimelineParams = zod.object({
@@ -5116,6 +5116,10 @@ export const GetRelationshipCommunicationTimelineQueryParams = zod.object({
     .datetime({ offset: true })
     .optional()
     .describe("Return items before this RFC3339 timestamp."),
+  beforeId: zod
+    .uuid()
+    .optional()
+    .describe("With before, also return items at that time whose id sorts earlier."),
 });
 
 export const GetRelationshipCommunicationTimeline200Response = zod
@@ -5161,8 +5165,29 @@ export const GetRelationshipCommunicationTimeline200Response = zod
       )
       .describe("Timeline items."),
     nextBefore: zod.iso.datetime({ offset: true }).nullish().describe("Cursor for the next page."),
+    nextBeforeId: zod
+      .uuid()
+      .nullish()
+      .describe(
+        "Id of the last item on this page. Send it with nextBefore so rows that share that time stay on the next page.",
+      ),
   })
   .describe("Paginated communication timeline.");
+
+export const GetRelationshipCommunicationTimeline400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
 
 export const GetRelationshipCommunicationTimeline401Response = zod
   .strictObject({
@@ -6987,7 +7012,7 @@ export const ShareMutualActionPlan409Response = zod
   );
 
 /**
- * Returns the latest immutable observations for a relationship.
+ * Returns the latest immutable observations for a relationship. Rows that share a time stay in id order, so the next page does not skip them.
  * @summary Get evidence timeline
  */
 export const GetRelationshipTimelineParams = zod.object({
@@ -6996,10 +7021,27 @@ export const GetRelationshipTimelineParams = zod.object({
 
 export const GetRelationshipTimelineQueryParams = zod.object({
   limit: zod.coerce.number().int().optional().describe("Maximum observations (1-100)."),
+  before: zod.iso
+    .datetime({ offset: true })
+    .optional()
+    .describe("Return observations before this RFC3339 timestamp."),
+  beforeId: zod
+    .uuid()
+    .optional()
+    .describe("With before, also return observations at that time whose id sorts earlier."),
 });
 
 export const GetRelationshipTimeline200Response = zod
   .strictObject({
+    hasMore: zod.boolean().describe("An older observation exists beyond this page."),
+    nextBefore: zod.iso
+      .datetime({ offset: true })
+      .nullish()
+      .describe("Occurred-at cursor for the next page."),
+    nextBeforeId: zod
+      .uuid()
+      .nullish()
+      .describe("Id cursor for the next page. Send it with nextBefore."),
     observations: zod
       .array(
         zod
@@ -7020,10 +7062,24 @@ export const GetRelationshipTimeline200Response = zod
           })
           .describe("Immutable, idempotent provider evidence used to project relationship state."),
       )
-      .optional()
       .describe("Observations."),
   })
-  .describe("Observation list.");
+  .describe("Observation page.");
+
+export const GetRelationshipTimeline400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
 
 export const GetRelationshipTimeline401Response = zod
   .strictObject({

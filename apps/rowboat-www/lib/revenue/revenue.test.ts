@@ -235,6 +235,7 @@ describe("getRelationshipCommunicationTimeline", () => {
           items: [{ id: "mail-1" }],
           hasMore: true,
           nextBefore: "2026-09-01T00:00:00Z",
+          nextBeforeId: "a1162000-0000-4000-8000-000000000002",
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       ),
@@ -244,6 +245,7 @@ describe("getRelationshipCommunicationTimeline", () => {
       items: [{ id: "mail-1" }],
       hasMore: true,
       nextBefore: "2026-09-01T00:00:00Z",
+      nextBeforeId: "a1162000-0000-4000-8000-000000000002",
     });
   });
 });
@@ -256,6 +258,7 @@ describe("getRelationshipTimelinePage", () => {
           observations: [{ id: "obs-1" }],
           hasMore: true,
           nextBefore: "2026-08-01T00:00:00Z",
+          nextBeforeId: "a1160000-0000-4000-8000-000000000002",
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       ),
@@ -265,7 +268,25 @@ describe("getRelationshipTimelinePage", () => {
       observations: [{ id: "obs-1" }],
       hasMore: true,
       nextBefore: "2026-08-01T00:00:00Z",
+      nextBeforeId: "a1160000-0000-4000-8000-000000000002",
     });
+  });
+
+  it("asks for rows that share the boundary time", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ observations: [], hasMore: false }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await getRelationshipTimelinePage("rel-1", 50, {
+      before: "2026-06-01T00:00:00Z",
+      beforeId: "a1160000-0000-4000-8000-000000000002",
+    });
+    expect(mockFetch.mock.calls[0]?.[0]).toBe(
+      "/relationships/rel-1/timeline?limit=50&before=2026-06-01T00%3A00%3A00Z&beforeId=a1160000-0000-4000-8000-000000000002",
+    );
   });
 });
 
