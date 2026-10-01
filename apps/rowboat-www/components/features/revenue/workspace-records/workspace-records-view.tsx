@@ -116,6 +116,7 @@ import {
 } from "@/lib/console/console-resources";
 import {
   createRelationship,
+  deletePerson,
   dismissAction,
   getPersonAttributes,
   ingestRelationshipObservations,
@@ -352,6 +353,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
   const [creating, setCreating] = React.useState(false);
   const [selected, setSelected] = React.useState<RelationshipPerson | null>(null);
   const [attributes, setAttributes] = React.useState<RelationshipPersonAttribute[]>([]);
+  const [removing, setRemoving] = React.useState(false);
   const peopleQuery = usePersons(debouncedQuery);
   const people = peopleQuery.data ?? [];
   const loading = peopleQuery.isPending;
@@ -378,6 +380,21 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
       setAttributes(await getPersonAttributes(person.id));
     } catch (error) {
       onError(errMessage(error, "Could not load this profile."));
+    }
+  };
+
+  const removeSelectedPerson = async () => {
+    if (!selected) return;
+    setRemoving(true);
+    try {
+      await deletePerson(selected.id);
+      setSelected(null);
+      onNotice("Person removed.");
+      await load();
+    } catch (error) {
+      onError(errMessage(error, "Could not remove this person."));
+    } finally {
+      setRemoving(false);
     }
   };
 
@@ -555,7 +572,13 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
         />
       ) : null}
       {selected ? (
-        <PersonSheet person={selected} attributes={attributes} onClose={() => setSelected(null)} />
+        <PersonSheet
+          attributes={attributes}
+          onClose={() => setSelected(null)}
+          onRemove={() => void removeSelectedPerson()}
+          person={selected}
+          removing={removing}
+        />
       ) : null}
     </div>
   );
@@ -646,10 +669,14 @@ function PersonSheet({
   person,
   attributes,
   onClose,
+  onRemove,
+  removing,
 }: {
   person: RelationshipPerson;
   attributes: RelationshipPersonAttribute[];
   onClose: () => void;
+  onRemove: () => void;
+  removing: boolean;
 }) {
   const evidence = enrichmentEvidence(attributes);
   return (
@@ -681,6 +708,26 @@ function PersonSheet({
               </React.Fragment>
             ))}
           </dl>
+          <div className="mt-6 border-t border-border pt-4">
+            <Button
+              disabled={removing}
+              onClick={() => {
+                if (
+                  !window.confirm(
+                    `Remove ${person.displayName} and everything derived from them? Their address is suppressed, so a later sync will not recreate them. This cannot be undone.`,
+                  )
+                ) {
+                  return;
+                }
+                onRemove();
+              }}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {removing ? <Spinner className="size-4" /> : null} Remove
+            </Button>
+          </div>
           <h3 className="mt-8 border-b border-border pb-2 text-xs font-medium uppercase tracking-wide text-primary/45">
             Where details came from
           </h3>

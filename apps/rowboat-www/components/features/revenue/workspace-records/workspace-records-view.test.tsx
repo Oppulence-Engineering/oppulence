@@ -603,6 +603,9 @@ describe("people directory copy", () => {
     expect(source).not.toContain("Add prompts or a reusable note structure");
     expect(source).not.toContain("Quarterly account review");
     expect(source).toContain('errMessage(error, "Could not load this profile.")');
+    expect(source).toContain("deletePerson(selected.id)");
+    expect(source).toContain('errMessage(error, "Could not remove this person.")');
+    expect(source).toContain("later sync will not recreate them");
     expect(source).not.toContain("Could not load profile evidence.");
   });
 });
