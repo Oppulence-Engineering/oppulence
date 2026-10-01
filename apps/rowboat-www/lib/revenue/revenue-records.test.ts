@@ -8,6 +8,7 @@ import {
   personCompanyTitle,
   localCalendarDay,
   mapSettledWithConcurrency,
+  mergeWorkspaceNotes,
   promiseDirectionLabel,
   promiseDueLabel,
   atRiskPulseCount,
@@ -21,6 +22,26 @@ import {
   taskIsDueToday,
   taskIsOverdue,
 } from "@/lib/revenue/revenue-records";
+
+describe("workspace notes from later timeline pages", () => {
+  it("keeps the newer copy when an earlier page repeats a note", () => {
+    const current = {
+      externalId: "note-1",
+      title: "Newer",
+      body: "",
+      relationshipId: "company-1",
+      relationshipName: "Queue Page Co",
+      occurredAt: "2026-10-02T00:00:00Z",
+      eventType: "note",
+    };
+    const older = { ...current, title: "Older", occurredAt: "2026-09-01T00:00:00Z" };
+    const added = { ...current, externalId: "note-2", title: "Earlier desk note" };
+    expect(mergeWorkspaceNotes([current], [older, added]).map((note) => note.title)).toEqual([
+      "Newer",
+      "Earlier desk note",
+    ]);
+  });
+});
 
 describe("company titles shared with people and attention", () => {
   it("titles a domain-stored company and keeps a typed name", () => {

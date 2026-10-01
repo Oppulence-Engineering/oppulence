@@ -148,6 +148,19 @@ export function collapseWorkspaceNotes(
     .sort((left, right) => right.occurredAt.localeCompare(left.occurredAt));
 }
 
+/** A later edit of the same note replaces the copy already on screen. */
+export function mergeWorkspaceNotes(
+  current: readonly WorkspaceNote[],
+  next: readonly WorkspaceNote[],
+): WorkspaceNote[] {
+  const latest = new Map(current.map((note) => [note.externalId, note]));
+  for (const note of next) {
+    const existing = latest.get(note.externalId);
+    if (!existing || note.occurredAt > existing.occurredAt) latest.set(note.externalId, note);
+  }
+  return [...latest.values()];
+}
+
 export type WorkspaceNoteDay = "today" | "yesterday" | "earlier";
 
 const DAY_MS = 24 * 60 * 60 * 1000;

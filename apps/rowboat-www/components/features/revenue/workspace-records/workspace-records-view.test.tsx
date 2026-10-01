@@ -110,6 +110,8 @@ import {
   linkedCompanyName,
   noteCompanyLabel,
   noteNeedsCompanyCopy,
+  noteCountLabel,
+  earlierNotesLabel,
   taskFilterName,
   taskListEmptyCopy,
 } from "@/components/features/revenue/workspace-records/workspace-records-view";
@@ -729,6 +731,10 @@ describe("task due order", () => {
     expect(source).not.toContain("task.dueAt?.slice(0, 10) === today");
     expect(source).toContain("Show all tasks");
     expect(source).toContain("Show the next tasks");
+    expect(noteCountLabel(1, true)).toBe("1+");
+    expect(noteCountLabel(2, false)).toBe("2");
+    expect(earlierNotesLabel()).toBe("Show earlier notes");
+    expect(source).toContain("fetchMoreWorkspaceNotes");
     expect(source).toContain('useRevenueActions("open", ACTION_QUEUE_PAGE, "task")');
     expect(source).toContain("loadedTaskCount.current");
     expect(source).toContain("No tasks yet! Create your first");

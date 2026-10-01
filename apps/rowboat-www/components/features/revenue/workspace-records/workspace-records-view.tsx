@@ -42,6 +42,10 @@ import {
 } from "@/hooks/queries/utils/fetch-revenue-actions";
 import { usePersons, useRelationships } from "@/hooks/queries/use-relationships";
 import { useWorkspaceNotes } from "@/hooks/queries/use-workspace";
+import {
+  fetchMoreWorkspaceNotes,
+  type NoteTimelineCursor,
+} from "@/hooks/queries/utils/fetch-workspace-notes";
 import { consoleKeys } from "@/hooks/queries/utils/console-keys";
 import { relationshipKeys } from "@/hooks/queries/utils/relationship-keys";
 import { revenueActionKeys } from "@/hooks/queries/utils/revenue-action-keys";
@@ -108,6 +112,7 @@ import {
   personCompanyTitle,
   groupWorkspaceNotes,
   isWorkspaceTask,
+  mergeWorkspaceNotes,
   plateText,
   taskIsDueToday,
   taskIsOverdue,
@@ -941,6 +946,14 @@ const todayValue = () => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
 
+export function noteCountLabel(shown: number, hasMore: boolean): string {
+  return hasMore ? `${shown}+` : String(shown);
+}
+
+export function earlierNotesLabel(): string {
+  return "Show earlier notes";
+}
+
 export function NotesView({
   onError,
   onNotice,
@@ -950,8 +963,37 @@ export function NotesView({
   const queryClient = useQueryClient();
   const author = useNoteAuthor();
   const notesQuery = useWorkspaceNotes();
-  const notes = notesQuery.data?.notes ?? [];
-  const relationships = notesQuery.data?.relationships ?? [];
+  const notesPage = notesQuery.data;
+  const [extraNotes, setExtraNotes] = React.useState<WorkspaceNote[]>([]);
+  const [extraRelationships, setExtraRelationships] = React.useState<RevenueRelationship[]>([]);
+  const [timelineCursors, setTimelineCursors] = React.useState<NoteTimelineCursor[]>([]);
+  const [nextRelationshipOffset, setNextRelationshipOffset] = React.useState<number | undefined>();
+  const [moreNotes, setMoreNotes] = React.useState(false);
+  const [loadingMoreNotes, setLoadingMoreNotes] = React.useState(false);
+  const primedNotes = React.useRef<number | null>(null);
+  React.useEffect(() => {
+    if (!notesQuery.isSuccess || !notesPage) return;
+    if (primedNotes.current === notesQuery.dataUpdatedAt) return;
+    primedNotes.current = notesQuery.dataUpdatedAt;
+    setExtraNotes([]);
+    setExtraRelationships([]);
+    setTimelineCursors(notesPage.timelineCursors ?? []);
+    setNextRelationshipOffset(notesPage.nextRelationshipOffset);
+    setMoreNotes(Boolean(notesPage.hasMoreNotes));
+  }, [notesPage, notesQuery.dataUpdatedAt, notesQuery.isSuccess]);
+  const notes = mergeWorkspaceNotes(notesPage?.notes ?? [], extraNotes);
+  const relationships = React.useMemo(() => {
+    const seen = new Set((notesPage?.relationships ?? []).map((relationship) => relationship.id));
+    return [
+      ...(notesPage?.relationships ?? []),
+      ...extraRelationships.filter((relationship) => {
+        if (seen.has(relationship.id)) return false;
+        seen.add(relationship.id);
+        return true;
+      }),
+    ];
+  }, [extraRelationships, notesPage?.relationships]);
+  const hasMoreNotes = primedNotes.current === null ? Boolean(notesPage?.hasMoreNotes) : moreNotes;
   const loading = notesQuery.isPending;
   const [editing, setEditing] = React.useState<
     WorkspaceNote | { template?: NoteTemplateResource } | null
@@ -976,8 +1018,42 @@ export function NotesView({
     onError: (error) => onError(errMessage(error, "Could not update the favorite.")),
   });
   const load = React.useCallback(async () => {
+    primedNotes.current = null;
     await queryClient.invalidateQueries({ queryKey: workspaceKeys.notes() });
   }, [queryClient]);
+  const loadEarlierNotes = React.useCallback(async () => {
+    if (loadingMoreNotes || !hasMoreNotes) return;
+    setLoadingMoreNotes(true);
+    try {
+      const next = await fetchMoreWorkspaceNotes({
+        relationships,
+        timelineCursors,
+        nextRelationshipOffset,
+      });
+      setExtraNotes((current) => mergeWorkspaceNotes(current, next.notes));
+      setExtraRelationships((current) => [...current, ...next.relationships]);
+      setTimelineCursors(next.timelineCursors);
+      setNextRelationshipOffset(next.nextRelationshipOffset);
+      setMoreNotes(next.hasMoreNotes);
+      if (next.failedTimelineCount > 0) {
+        onNotice(
+          `Loaded available notes, but ${String(next.failedTimelineCount)} company timeline${next.failedTimelineCount === 1 ? "" : "s"} could not be read.`,
+        );
+      }
+    } catch (reason) {
+      onError(explainedRevenueError(reason, "Could not load earlier notes."));
+    } finally {
+      setLoadingMoreNotes(false);
+    }
+  }, [
+    hasMoreNotes,
+    loadingMoreNotes,
+    nextRelationshipOffset,
+    onError,
+    onNotice,
+    relationships,
+    timelineCursors,
+  ]);
 
   React.useEffect(() => {
     if (notesQuery.error) {
@@ -1043,7 +1119,7 @@ export function NotesView({
           >
             <Note className="size-4" /> Notes{" "}
             <Badge className="font-normal text-primary/40" variant="secondary">
-              {notes.length}
+              {noteCountLabel(notes.length, hasMoreNotes)}
             </Badge>
           </TabsTrigger>
           <TabsTrigger
@@ -1201,20 +1277,36 @@ export function NotesView({
       ) : visible.length === 0 ? (
         <WorkspaceEmptyState
           action={
-            <Button
-              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-              onClick={() => setEditing({})}
-              size="sm"
-            >
-              <Plus /> New note
-            </Button>
+            hasMoreNotes ? (
+              <Button
+                disabled={loadingMoreNotes}
+                onClick={() => void loadEarlierNotes()}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {earlierNotesLabel()}
+              </Button>
+            ) : (
+              <Button
+                className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+                onClick={() => setEditing({})}
+                size="sm"
+              >
+                <Plus /> New note
+              </Button>
+            )
           }
           description={
-            <>
-              No notes yet! Create your first
-              <br />
-              note to get started.
-            </>
+            hasMoreNotes ? (
+              "Earlier notes are still on these companies."
+            ) : (
+              <>
+                No notes yet! Create your first
+                <br />
+                note to get started.
+              </>
+            )
           }
           image="notes"
           learnMore={[
@@ -1369,6 +1461,18 @@ export function NotesView({
               </div>
             </div>
           ))}
+          {hasMoreNotes ? (
+            <Button
+              className="m-3"
+              disabled={loadingMoreNotes}
+              onClick={() => void loadEarlierNotes()}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {earlierNotesLabel()}
+            </Button>
+          ) : null}
         </div>
       )}
       {editing ? (
