@@ -103,7 +103,7 @@ import {
   correctRelationship,
   createRelationship,
   deletePerson,
-  DETECTOR_LABELS,
+  attentionReasonLabel,
   getRelationship,
   getRelationshipBetaDiagnostics,
   getRelationshipChanges,
@@ -2865,7 +2865,7 @@ export function RelationshipSheet({
                           </div>
                           <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-primary/40">
                             <Badge className="font-normal" variant="outline">
-                              {DETECTOR_LABELS[action.detector] ?? action.detector}
+                              {attentionReasonLabel(action.detector)}
                             </Badge>
                             <Badge className="font-normal" variant="secondary">
                               priority {action.priorityScore}

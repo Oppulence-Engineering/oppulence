@@ -441,6 +441,7 @@ describe("RelationshipsView", () => {
     expect(recommendationStatusLabel("custom_hold")).toBe("Custom Hold");
     expect(source).toContain("recommendationStatusLabel(action.policyStatus)");
     expect(source).toContain("recommendationStatusLabel(action.approvalStatus)");
+    expect(source).toContain("attentionReasonLabel(action.detector)");
     expect(source).not.toContain("{action.policyStatus}");
     expect(source).not.toContain("{action.approvalStatus}");
     expect(source).not.toContain("window.confirm");
