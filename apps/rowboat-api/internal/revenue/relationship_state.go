@@ -502,6 +502,9 @@ func (s *Service) ingestRelationshipObservation(
 			return RelationshipObservationResult{}, err
 		}
 	}
+	if err := attachAddedPersonToCompany(ctx, client, ws, u, rel, observation, input); err != nil {
+		return RelationshipObservationResult{}, err
+	}
 	for _, assertionInput := range input.Assertions {
 		if assertionInput.ValidFrom.IsZero() {
 			assertionInput.ValidFrom = input.OccurredAt

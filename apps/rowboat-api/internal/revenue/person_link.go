@@ -7,6 +7,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 )
 
 // linkParticipantPerson connects one participant row to its canonical person and
@@ -92,6 +93,19 @@ func linkParticipantPerson(
 			ObservedAt: input.OccurredAt, ExternalID: input.ExternalID,
 		})
 	}
+	// The company row is the name we already have for this account. A signature
+	// or a correction still outranks it; this only fills a blank company.
+	if rel.Kind == "company" {
+		if name := strings.TrimSpace(rel.DisplayName); name != "" {
+			attributes = append(attributes, PersonAttributeInput{
+				Dimension: "org_name", Value: name,
+				SourceType: "deterministic", Source: input.Source,
+				Extractor: "display_name_header", Confidence: 0.65,
+				Reason:     "Name of the company that owns this domain.",
+				ObservedAt: input.OccurredAt, ExternalID: input.ExternalID,
+			})
+		}
+	}
 
 	// A departure observation is the mail system telling us this person no longer
 	// works where we last saw them — a hard bounce naming their address, or an
@@ -127,6 +141,51 @@ func linkParticipantPerson(
 		return nil, err
 	}
 	return p, nil
+}
+
+// attachAddedPersonToCompany files a hand-added person onto the one company that
+// already owns their email domain. The person record stays its own relationship.
+// Sharing a domain means they work there, so the company lists them and their
+// directory row can name that company.
+func attachAddedPersonToCompany(
+	ctx context.Context,
+	client *ent.Client,
+	ws *ent.RevenueWorkspace,
+	u *ent.User,
+	rel *ent.Relationship,
+	observation *ent.RelationshipObservation,
+	input RelationshipObservationInput,
+) error {
+	if input.EventType != "person_added" || rel.Kind != "person" {
+		return nil
+	}
+	domain := strings.ToLower(strings.TrimSpace(rel.AccountDomain))
+	if domain == "" || isPublicMailboxDomain(domain) {
+		return nil
+	}
+	companies, err := client.Relationship.Query().
+		Where(
+			relationship.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+			relationship.KindEQ("company"),
+			relationship.AccountDomainEQ(domain),
+		).
+		All(ctx)
+	if err != nil {
+		return err
+	}
+	if len(companies) != 1 || companies[0].ID == rel.ID {
+		return nil
+	}
+	company := companies[0]
+	for _, participant := range input.Participants {
+		if err := upsertRelationshipParticipant(ctx, client, ws, u, company, participant); err != nil {
+			return err
+		}
+		if _, err := linkParticipantPerson(ctx, client, ws, u, company, observation, input, participant); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // countParticipantInteraction records one interaction for an already-linked person.

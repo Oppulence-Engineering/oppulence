@@ -13,6 +13,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
@@ -672,6 +673,17 @@ func TestPersonAtCompanyDomainIsNotAnIdentityCollision(t *testing.T) {
 	count, err := f.client.RelationshipIdentityCandidate.Query().Count(f.ctx)
 	if err != nil || count != 0 {
 		t.Fatalf("a person at a company domain is not a duplicate company: count=%d err=%v", count, err)
+	}
+	company, err := f.client.Relationship.Query().
+		Where(relationship.KindEQ("company"), relationship.AccountDomainEQ("acme.example")).
+		WithParticipants().
+		Only(f.ctx)
+	if err != nil || len(company.Edges.Participants) != 1 || company.Edges.Participants[0].Email != "avery@acme.example" {
+		t.Fatalf("person should be listed on the company: %+v err=%v", company.Edges.Participants, err)
+	}
+	directory, err := f.client.Person.Query().Only(f.ctx)
+	if err != nil || directory.OrgName != "Acme" {
+		t.Fatalf("directory company = %q err=%v", directory.OrgName, err)
 	}
 }
 

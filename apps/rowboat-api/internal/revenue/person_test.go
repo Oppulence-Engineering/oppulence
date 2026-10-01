@@ -74,6 +74,9 @@ func TestIngestCreatesCanonicalPersonWithAnchors(t *testing.T) {
 	if p.OrgDomain != "acme.example" {
 		t.Fatalf("org domain = %q", p.OrgDomain)
 	}
+	if p.OrgName != "Acme" {
+		t.Fatalf("org name = %q, want the company this domain belongs to", p.OrgName)
+	}
 	if p.ProjectedAt == nil {
 		t.Fatal("person was never projected")
 	}
@@ -336,8 +339,8 @@ func TestPersonAttributesCollapseHistoricalDuplicateFact(t *testing.T) {
 	if err != nil {
 		t.Fatalf("attributes: %v", err)
 	}
-	if raw != 4 || len(attributes) != 3 {
-		t.Fatalf("raw attributes = %d, visible attributes = %d; want 4 and 3", raw, len(attributes))
+	if raw != 5 || len(attributes) != 4 {
+		t.Fatalf("raw attributes = %d, visible attributes = %d; want 5 and 4", raw, len(attributes))
 	}
 }
 
