@@ -18,6 +18,7 @@ import {
   companyEmailHref,
   companyNextActionCopy,
   companyStateAnswer,
+  missionControlChangeAnswer,
   missionControlStateAnswer,
   recordDetailBadge,
   completenessExplanationCopy,
@@ -256,6 +257,17 @@ describe("RelationshipsView", () => {
         health: { supported: false, value: "unknown" },
       }),
     ).toBe("Lifecycle: Prospect · Health: Unknown");
+    expect(missionControlChangeAnswer([], "State changed")).toBe("State changed");
+    expect(missionControlChangeAnswer([{ dimension: "evidence" }], "State changed")).toBe(
+      "Supporting evidence changed.",
+    );
+    expect(
+      missionControlChangeAnswer(
+        [{ dimension: "lifecycle" }, { dimension: "evidence" }],
+        "State changed",
+      ),
+    ).toBe("Lifecycle, Supporting evidence");
+    expect(source).toContain("missionControlChangeAnswer(model.changes, \"State changed\")");
     expect(source).toContain("missionControlStateAnswer(model.evidence)");
     expect(source).not.toContain("String(model.evidence.lifecycle?.value ?? \"unknown\")");
     expect(recordDetailBadge("Sentiment", "unknown")).toBe("Sentiment · Unknown");

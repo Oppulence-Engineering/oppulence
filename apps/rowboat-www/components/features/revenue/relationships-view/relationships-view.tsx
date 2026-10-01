@@ -1562,6 +1562,25 @@ export function companyStateAnswer(lifecycle: string, health: string): string {
  * A new company stores lifecycle as "prospect" before any source exists.
  * That default is not what is true now. Only a supported value is an answer.
  */
+/**
+ * A projection with no dimension change is recorded as "evidence".
+ * The question asks what changed, so that token has to say the evidence moved.
+ */
+export function missionControlChangeAnswer(
+  changes: readonly { dimension: string }[],
+  unchanged: string,
+): string {
+  if (changes.length === 0) return unchanged;
+  const labels = changes.map((change) => {
+    if (change.dimension === "evidence") return "Supporting evidence";
+    return RELATIONSHIP_DIMENSION_LABELS[change.dimension] ?? relationshipLabel(change.dimension);
+  });
+  if (labels.length === 1 && labels[0] === "Supporting evidence") {
+    return "Supporting evidence changed.";
+  }
+  return labels.join(", ");
+}
+
 export function missionControlStateAnswer(evidence: {
   lifecycle?: { supported?: boolean; value?: unknown };
   health?: { supported?: boolean; value?: unknown };
@@ -1811,13 +1830,7 @@ function MissionControlOverview({
             answer = missionControlStateAnswer(model.evidence);
           } else if (question.key === "change") {
             answer = model.changedSinceReview
-              ? model.changes
-                  .map(
-                    (change) =>
-                      RELATIONSHIP_DIMENSION_LABELS[change.dimension] ??
-                      relationshipLabel(change.dimension),
-                  )
-                  .join(", ") || "State changed"
+              ? missionControlChangeAnswer(model.changes, "State changed")
               : reviewCopy.change;
           } else if (question.key === "evidence") {
             answer = `${supported} of ${total} details come from a source you can open.`;
