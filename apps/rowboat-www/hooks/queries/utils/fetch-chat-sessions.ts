@@ -4,6 +4,9 @@ import type { SessionMeta } from "@/lib/agents/chat-sessions";
 
 const CHAT_SESSIONS_PATH = "/agent-sessions";
 
+/** One page of chat history. The sidebar asks for the next page explicitly. */
+export const CHAT_SESSION_PAGE = 50;
+
 function sessionTitle(session: {
   agent: string;
   title?: string | null;
@@ -19,10 +22,14 @@ function sessionTitle(session: {
 export async function loadChatSessions(
   request: RequestJsonFn,
   signal?: AbortSignal,
+  offset = 0,
 ): Promise<SessionMeta[]> {
+  const query = new URLSearchParams();
+  if (offset > 0) query.set("offset", String(offset));
+  const path = query.size > 0 ? `${CHAT_SESSIONS_PATH}?${query}` : CHAT_SESSIONS_PATH;
   try {
     const data = await request({
-      path: CHAT_SESSIONS_PATH,
+      path,
       schema: ListAgentSessions200Response,
       signal,
     });
@@ -38,6 +45,6 @@ export async function loadChatSessions(
   }
 }
 
-export function fetchChatSessions(signal?: AbortSignal): Promise<SessionMeta[]> {
-  return loadChatSessions(requestJson, signal);
+export function fetchChatSessions(signal?: AbortSignal, offset = 0): Promise<SessionMeta[]> {
+  return loadChatSessions(requestJson, signal, offset);
 }

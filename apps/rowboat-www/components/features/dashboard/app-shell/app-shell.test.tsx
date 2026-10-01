@@ -54,6 +54,12 @@ describe("AppShellSidebar", () => {
     expect(rule).not.toContain("width:");
   });
 
+  it("offers the conversations past the first page of history", () => {
+    expect(source).toContain("Show earlier conversations");
+    expect(source).toContain("onLoadMoreSessions");
+    expect(source).toContain("sessionsLoadError");
+  });
+
   it("explains a failed sidebar load with the same sentences as the rest of the app", () => {
     expect(source).toContain('sidebarQueryError(sources.error, "Source status unavailable")');
     expect(source).toContain(

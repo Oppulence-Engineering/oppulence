@@ -764,6 +764,10 @@ export function AppShellSidebar({
   activeRunId = null,
   onOpenSession,
   onNewChat,
+  hasMoreSessions = false,
+  loadingMoreSessions = false,
+  onLoadMoreSessions,
+  sessionsLoadError = null,
   overlayContainer = null,
 }: {
   open: boolean;
@@ -788,6 +792,10 @@ export function AppShellSidebar({
   activeRunId?: string | null;
   onOpenSession?: (runId: string) => void;
   onNewChat?: () => void;
+  hasMoreSessions?: boolean;
+  loadingMoreSessions?: boolean;
+  onLoadMoreSessions?: () => void;
+  sessionsLoadError?: string | null;
   overlayContainer?: HTMLElement | null;
 }) {
   const agentsQuery = useSidebarAgents();
@@ -1048,6 +1056,18 @@ export function AppShellSidebar({
                 />
               ))
             )}
+            {hasMoreSessions ? (
+              <Button
+                className="h-auto w-full justify-start rounded-lg px-4 py-1.5 text-left text-[13px] font-normal text-[var(--text-secondary)]"
+                disabled={loadingMoreSessions}
+                onClick={onLoadMoreSessions}
+                type="button"
+                variant="ghost"
+              >
+                {loadingMoreSessions ? "Loading…" : "Show earlier conversations"}
+              </Button>
+            ) : null}
+            {sessionsLoadError ? <SidebarEmptyHint>{sessionsLoadError}</SidebarEmptyHint> : null}
           </nav>
         )}
 

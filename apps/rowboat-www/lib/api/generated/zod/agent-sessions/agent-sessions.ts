@@ -11,6 +11,17 @@ import * as zod from "zod";
  * Returns the authenticated user's recent durable agent conversations.
  * @summary List agent sessions
  */
+export const listAgentSessionsQueryOffsetMin = 0;
+
+export const ListAgentSessionsQueryParams = zod.object({
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(listAgentSessionsQueryOffsetMin)
+    .optional()
+    .describe("Page offset."),
+});
+
 export const ListAgentSessions200Response = zod
   .strictObject({
     sessions: zod

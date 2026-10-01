@@ -83,6 +83,10 @@ export type DashboardChatController = {
   activeRunId: string | null;
   empty: boolean;
   sessions: SessionMeta[];
+  hasMoreSessions?: boolean;
+  loadingMoreSessions?: boolean;
+  onLoadMoreSessions?: () => void;
+  sessionsLoadError?: string | null;
   selectedResource: SelectedResource | null;
   clearSelectedResource: () => void;
   onAgentsChanged: () => Promise<void>;
@@ -313,7 +317,14 @@ export function ChatRouteProvider({ children, className, ...props }: ChatRoutePr
     },
     [setSelectedAgent, startNewChat],
   );
-  const { openSession: loadSession, sessions } = useChatSessions({
+  const {
+    earlierSessionsError,
+    hasMoreSessions,
+    loadEarlierSessions,
+    loadingEarlierSessions,
+    openSession: loadSession,
+    sessions,
+  } = useChatSessions({
     activeRunId: run.runId,
     conversation: run.conversation,
     onBeginOpen: run.beginOpenRun,
@@ -391,6 +402,10 @@ export function ChatRouteProvider({ children, className, ...props }: ChatRoutePr
       activeRunId: run.runId,
       empty: run.conversation.length === 0,
       sessions,
+      hasMoreSessions,
+      loadingMoreSessions: loadingEarlierSessions,
+      onLoadMoreSessions: () => void loadEarlierSessions(),
+      sessionsLoadError: earlierSessionsError,
       selectedResource,
       clearSelectedResource,
       onAgentsChanged: refreshAgents,

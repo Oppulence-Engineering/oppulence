@@ -194,8 +194,12 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
                   navigateWithoutResource(() => openWorkflows("scheduled"))
                 }
                 onNewChat={chat.onNewChat}
+                onLoadMoreSessions={chat.onLoadMoreSessions}
                 onOpenSession={chat.onOpenSession}
                 onOpenSettings={openSettings}
+                hasMoreSessions={chat.hasMoreSessions}
+                loadingMoreSessions={chat.loadingMoreSessions}
+                sessionsLoadError={chat.sessionsLoadError}
                 onSelectResource={chat.onOpenResource}
                 onToggle={toggleSidebar}
                 open={sidebarOpen}

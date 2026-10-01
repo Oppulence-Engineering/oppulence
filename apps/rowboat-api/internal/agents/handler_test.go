@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentregistry"
@@ -71,6 +72,39 @@ func TestListAgentsIncludesBuiltins(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), "assistant") {
 		t.Fatalf("ListAgents body missing built-in 'assistant': %s", rec.Body.String())
+	}
+}
+
+func TestListSessionsOffsetSkipsTheNewest(t *testing.T) {
+	h, u := setupHandler(t)
+	ctx := auth.WithUser(context.Background(), u)
+	older := h.client.AgentSession.Create().SetUser(u).SetSessionID("older").SetAgentSlug("assistant").SaveX(ctx)
+	newer := h.client.AgentSession.Create().SetUser(u).SetSessionID("newer").SetAgentSlug("assistant").SaveX(ctx)
+	h.client.AgentSession.UpdateOne(older).SetUpdatedAt(time.Now().Add(-time.Hour)).SaveX(ctx)
+	h.client.AgentSession.UpdateOne(newer).SetUpdatedAt(time.Now()).SaveX(ctx)
+
+	rec := httptest.NewRecorder()
+	h.ListSessions(rec, httptest.NewRequest(http.MethodGet, "/v1/agent-sessions?offset=1", nil).WithContext(ctx))
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"sessionId":"older"`) ||
+		strings.Contains(rec.Body.String(), "newer") {
+		t.Fatalf("offset session list = %d %s", rec.Code, rec.Body.String())
+	}
+
+	rec = httptest.NewRecorder()
+	h.ListSessions(rec, httptest.NewRequest(http.MethodGet, "/v1/agent-sessions?offset=-4", nil).WithContext(ctx))
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "newer") ||
+		!strings.Contains(rec.Body.String(), "older") {
+		t.Fatalf("negative offset = %d %s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if strings.Index(body, "newer") > strings.Index(body, "older") {
+		t.Fatalf("negative offset listed the older session first: %s", body)
+	}
+
+	rec = httptest.NewRecorder()
+	h.ListSessions(rec, httptest.NewRequest(http.MethodGet, "/v1/agent-sessions?offset=nope", nil).WithContext(ctx))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("invalid offset = %d, want 400; body=%s", rec.Code, rec.Body.String())
 	}
 }
 

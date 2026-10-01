@@ -32,6 +32,9 @@ import (
 
 const maxBody = 1 << 20
 
+// sessionListLimit is one page of chat history. The next page stays one click away.
+const sessionListLimit = 50
+
 // Handler serves /v1/agents and /v1/agent-sessions.
 type Handler struct {
 	client      *ent.Client
@@ -221,9 +224,21 @@ func (h *Handler) ListSessions(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
 		return
 	}
+	offset := 0
+	if raw := r.URL.Query().Get("offset"); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil {
+			httpx.Error(w, http.StatusBadRequest, "invalid offset", "bad_request")
+			return
+		}
+		if n > 0 {
+			offset = n
+		}
+	}
 	rows, err := h.client.AgentSession.Query().
-		Order(agentsession.ByUpdatedAt(entsql.OrderDesc())).
-		Limit(50).
+		Order(agentsession.ByUpdatedAt(entsql.OrderDesc()), agentsession.ByID(entsql.OrderDesc())).
+		Limit(sessionListLimit).
+		Offset(offset).
 		All(r.Context())
 	if err != nil {
 		h.log.Error("list agent sessions", zap.Error(err))
