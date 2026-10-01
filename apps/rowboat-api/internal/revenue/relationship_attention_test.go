@@ -81,7 +81,7 @@ func TestRelationshipAttentionProjectionIsDeterministicAndMaterialChangesReopenT
 	if err := f.svc.RefreshRelationshipAttention(f.ctx, f.user); err != nil {
 		t.Fatal(err)
 	}
-	items, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "all", 100)
+	items, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "all", 100, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +133,7 @@ func TestRelationshipAttentionDecisionUsesOptimisticVersioningAndBoundedSnooze(t
 	if err := f.svc.RefreshRelationshipAttention(f.ctx, f.user); err != nil {
 		t.Fatal(err)
 	}
-	items, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 20)
+	items, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 20, 0)
 	if err != nil || len(items) == 0 {
 		t.Fatalf("missing projected item: count=%d err=%v", len(items), err)
 	}
@@ -182,5 +182,40 @@ func TestAttentionExplanationsReadAsSentences(t *testing.T) {
 	}
 	if got := sourceDegradationExplanation([]string{"google", "slack"}); got != "Google and Slack evidence is incomplete, stale, rebuilding, or missing a required permission." {
 		t.Fatalf("degraded sources = %q", got)
+	}
+}
+
+func TestListRelationshipAttentionOffsetSkipsTheNextRank(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	for _, company := range []struct{ name, domain string }{
+		{"Ada Queue", "ada-queue.example"},
+		{"Bea Queue", "bea-queue.example"},
+		{"Cara Queue", "cara-queue.example"},
+	} {
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: company.name, AccountDomain: company.domain,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		rel.Update().SetLifecycle("contracting").SaveX(f.ctx)
+	}
+	all, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 10, 0)
+	if err != nil || len(all) != 3 {
+		t.Fatalf("queue = %d err=%v", len(all), err)
+	}
+	page, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 1, 1)
+	if err != nil || len(page) != 1 || page[0].ID != all[1].ID {
+		t.Fatalf("offset page = %+v err=%v", page, err)
+	}
+	none, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 1, 3)
+	if err != nil || len(none) != 0 {
+		t.Fatalf("past the end = %d err=%v", len(none), err)
+	}
+	neg, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 10, -4)
+	if err != nil || len(neg) != 3 || neg[0].ID != all[0].ID {
+		t.Fatalf("negative offset = %d err=%v", len(neg), err)
 	}
 }

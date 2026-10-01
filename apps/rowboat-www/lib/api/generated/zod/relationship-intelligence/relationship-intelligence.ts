@@ -293,11 +293,19 @@ export const RespondPublicMutualActionPlan404Response = zod
  * Returns deterministic relationship-native attention ordered by explicit factor contributions.
  * @summary List portfolio attention
  */
+export const listRelationshipAttentionQueryOffsetMin = 0;
+
 export const ListRelationshipAttentionQueryParams = zod.object({
   status: zod
     .enum(["open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved", "all"])
     .optional(),
   limit: zod.coerce.number().int().optional(),
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(listRelationshipAttentionQueryOffsetMin)
+    .optional()
+    .describe("Page offset."),
 });
 
 export const ListRelationshipAttention200Response = zod

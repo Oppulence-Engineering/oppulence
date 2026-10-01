@@ -181,13 +181,22 @@ export async function loadIdentityCandidates(
   return (body.candidates ?? []) as RelationshipIdentityCandidate[];
 }
 
+/** The attention API caps a page at 100 and defaults to 50. The queue asks for that default, then the next offset. */
+export const ATTENTION_PAGE_SIZE = 50;
+
 export async function loadRelationshipAttention(
   request: RequestJsonFn,
   status = "open",
   signal?: AbortSignal,
+  offset = 0,
 ): Promise<RelationshipAttentionItem[]> {
+  const params = new URLSearchParams({
+    status,
+    limit: String(ATTENTION_PAGE_SIZE),
+  });
+  if (offset > 0) params.set("offset", String(offset));
   const body = await request({
-    path: `/relationship-attention?status=${encodeURIComponent(status)}`,
+    path: `/relationship-attention?${params.toString()}`,
     schema: AttentionListSchema,
     signal,
   });
@@ -232,8 +241,9 @@ export function fetchIdentityCandidates(
 export function fetchRelationshipAttention(
   status = "open",
   signal?: AbortSignal,
+  offset = 0,
 ): Promise<RelationshipAttentionItem[]> {
-  return loadRelationshipAttention(requestJson, status, signal);
+  return loadRelationshipAttention(requestJson, status, signal, offset);
 }
 
 export function fetchSemanticSearch(

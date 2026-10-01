@@ -55,9 +55,18 @@ export const ATTENTION_QUEUE_PAGE = 10;
  * The header names every company in the band. When the table is still on its
  * first screen, the count says so instead of implying those rows are all here.
  */
-export function attentionQueueCountLabel(shown: number, total: number): string {
+export function attentionQueueCountLabel(shown: number, total: number, hasMore = false): string {
+  if (hasMore) {
+    if (shown < total) return `${shown} of ${total}+`;
+    return `${total}+`;
+  }
   if (shown < total) return `${shown} of ${companyCountLabel(total)}`;
   return companyCountLabel(total);
+}
+
+/** Companies past the loaded page of the queue. */
+export function attentionNextPageLabel(): string {
+  return "Show the next companies in the queue";
 }
 
 /** The companies past the first screen, in the same words as the header. */
@@ -78,7 +87,10 @@ export type AttentionQueueSurfaceProps = Omit<
   "children"
 > & {
   items: RelationshipAttentionItem[];
+  hasMore?: boolean;
   loading?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
   onOpenRelationship: (relationshipId: string) => void;
   onChanged: () => void;
   onActionError: (message: string) => void;
@@ -88,7 +100,10 @@ export type AttentionQueueSurfaceProps = Omit<
 export function AttentionQueueSurface({
   className,
   items,
+  hasMore = false,
   loading = false,
+  loadingMore = false,
+  onLoadMore,
   onOpenRelationship,
   onChanged,
   onActionError,
@@ -172,7 +187,9 @@ export function AttentionQueueSurface({
               Attention queue
             </h2>
           }
-          actions={loading ? "Loading…" : attentionQueueCountLabel(shown.length, visible.length)}
+          actions={
+            loading ? "Loading…" : attentionQueueCountLabel(shown.length, visible.length, hasMore)
+          }
         />
         <SimProductToolbar>
           <select
@@ -279,11 +296,24 @@ export function AttentionQueueSurface({
           </table>
         </div>
 
-        {hidden > 0 ? (
-          <div className="border-[var(--border)] border-t px-3 py-2">
-            <Button onClick={() => setShowAll(true)} size="sm" type="button" variant="outline">
-              {attentionQueueRemainderLabel(hidden)}
-            </Button>
+        {hidden > 0 || hasMore ? (
+          <div className="flex flex-wrap gap-2 border-[var(--border)] border-t px-3 py-2">
+            {hidden > 0 ? (
+              <Button onClick={() => setShowAll(true)} size="sm" type="button" variant="outline">
+                {attentionQueueRemainderLabel(hidden)}
+              </Button>
+            ) : null}
+            {hasMore ? (
+              <Button
+                disabled={loadingMore}
+                onClick={onLoadMore}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {attentionNextPageLabel()}
+              </Button>
+            ) : null}
           </div>
         ) : null}
 

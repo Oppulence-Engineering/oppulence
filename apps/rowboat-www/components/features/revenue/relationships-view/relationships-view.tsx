@@ -166,7 +166,11 @@ import {
   useRelationshipSourceInventory,
   useRelationshipSourceStatuses,
 } from "@/hooks/queries/use-relationship-sources";
-import { fetchRelationships } from "@/hooks/queries/utils/fetch-relationships";
+import {
+  ATTENTION_PAGE_SIZE,
+  fetchRelationshipAttention,
+  fetchRelationships,
+} from "@/hooks/queries/utils/fetch-relationships";
 import { relationshipKeys } from "@/hooks/queries/utils/relationship-keys";
 import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-source-keys";
 import { useQueryClient } from "@tanstack/react-query";
@@ -639,6 +643,9 @@ export function RelationshipsView({
   const pendingQuery = useIdentityCandidates("pending");
   const deferredQuery = useIdentityCandidates("deferred");
   const attentionQuery = useRelationshipAttention("open");
+  const [extraAttention, setExtraAttention] = React.useState<RelationshipAttentionItem[]>([]);
+  const [attentionExhausted, setAttentionExhausted] = React.useState(false);
+  const [loadingMoreAttention, setLoadingMoreAttention] = React.useState(false);
   const openActionsQuery = useRevenueActions("open", 100, "task");
   const directoryPage = relationshipsQuery.data ?? [];
   const directoryRows = React.useMemo(() => {
@@ -661,7 +668,23 @@ export function RelationshipsView({
   const sources = sourcesQuery.data ?? [];
   const sourceInventory = inventoryQuery.data ?? [];
   const identityCandidates = [...(pendingQuery.data ?? []), ...(deferredQuery.data ?? [])];
-  const attention = attentionQuery.data ?? [];
+  const attentionPage = attentionQuery.data ?? [];
+  const attention = React.useMemo(() => {
+    if (extraAttention.length === 0) return attentionPage;
+    const seen = new Set(attentionPage.map((item) => item.id));
+    return [
+      ...attentionPage,
+      ...extraAttention.filter((item) => {
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      }),
+    ];
+  }, [attentionPage, extraAttention]);
+  const hasMoreAttention =
+    !attentionExhausted &&
+    attentionPage.length > 0 &&
+    (attentionPage.length + extraAttention.length) % ATTENTION_PAGE_SIZE === 0;
   const loading =
     relationshipsQuery.isPending ||
     sourcesQuery.isPending ||
@@ -732,11 +755,30 @@ export function RelationshipsView({
   React.useEffect(() => subscribeCompanyCreate(() => setCreating(true)), []);
 
   const load = React.useCallback(async () => {
+    setExtraAttention([]);
+    setAttentionExhausted(false);
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: relationshipKeys.all }),
       queryClient.invalidateQueries({ queryKey: relationshipSourceKeys.all }),
     ]);
   }, [queryClient]);
+  const loadMoreAttention = React.useCallback(async () => {
+    if (loadingMoreAttention || !hasMoreAttention) return;
+    setLoadingMoreAttention(true);
+    try {
+      const next = await fetchRelationshipAttention(
+        "open",
+        undefined,
+        attentionPage.length + extraAttention.length,
+      );
+      if (next.length < ATTENTION_PAGE_SIZE) setAttentionExhausted(true);
+      setExtraAttention((current) => [...current, ...next]);
+    } catch (reason) {
+      onError(explainedRevenueError(reason, "Could not load the next companies in the queue."));
+    } finally {
+      setLoadingMoreAttention(false);
+    }
+  }, [attentionPage.length, extraAttention.length, hasMoreAttention, loadingMoreAttention, onError]);
 
   React.useEffect(() => {
     const error =
@@ -930,7 +972,7 @@ export function RelationshipsView({
                 </div>
                 {companyAttention.length > 0 ? (
                   <p className="text-[12px] text-primary/55">
-                    {companyAttention.length}{" "}
+                    {hasMoreAttention ? `${companyAttention.length}+` : companyAttention.length}{" "}
                     {companyAttention.length === 1 ? "company" : "companies"} in the{" "}
                     <button
                       className="underline hover:text-primary"
@@ -984,10 +1026,13 @@ export function RelationshipsView({
           {companyAttention.length > 0 ? (
             <div className="shrink-0 border-b border-border p-3">
               <AttentionQueueSurface
+                hasMore={hasMoreAttention}
                 items={companyAttention}
                 loading={loading}
+                loadingMore={loadingMoreAttention}
                 onActionError={onError}
                 onChanged={() => void load()}
+                onLoadMore={() => void loadMoreAttention()}
                 onOpenRelationship={openDetail}
               />
             </div>

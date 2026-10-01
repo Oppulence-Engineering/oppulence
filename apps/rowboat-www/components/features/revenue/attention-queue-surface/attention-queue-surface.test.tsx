@@ -18,6 +18,7 @@ vi.mock("@/lib/revenue/revenue", () => ({
 import {
   AttentionQueueSurface,
   attentionBand,
+  attentionNextPageLabel,
   attentionQueueCountLabel,
   attentionQueueRemainderLabel,
   filterAttentionItems,
@@ -233,6 +234,9 @@ describe("attention queue count", () => {
     expect(attentionQueueCountLabel(1, 1)).toBe("1 company");
     expect(attentionQueueRemainderLabel(1)).toBe("Show the other 1 company");
     expect(attentionQueueRemainderLabel(4)).toBe("Show the other 4 companies");
+    expect(attentionQueueCountLabel(10, 50, true)).toBe("10 of 50+");
+    expect(attentionQueueCountLabel(50, 50, true)).toBe("50+");
+    expect(attentionNextPageLabel()).toBe("Show the next companies in the queue");
   });
 });
 

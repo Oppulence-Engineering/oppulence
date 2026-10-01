@@ -115,6 +115,10 @@ describe("RelationshipsView", () => {
     expect(companyDirectoryCount(201, false)).toBe("201");
     expect(companyDirectoryRemainderLabel()).toBe("Show the next companies");
     expect(source).toContain("offset: directoryPage.length + extraCompanies.length");
+    expect(source).toContain(
+      'fetchRelationshipAttention(\n        "open",\n        undefined,\n        attentionPage.length + extraAttention.length,',
+    );
+    expect(source).toContain("ATTENTION_PAGE_SIZE");
     expect(source).toContain("COMPANY_DIRECTORY_PAGE");
     expect(source).not.toContain("in All companies`");
   });

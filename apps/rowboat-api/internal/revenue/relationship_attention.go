@@ -629,7 +629,7 @@ func (s *Service) persistAttentionCandidates(ctx context.Context, ws *ent.Revenu
 
 // ListRelationshipAttention returns the current tenant-scoped portfolio queue
 // in deterministic priority order.
-func (s *Service) ListRelationshipAttention(ctx context.Context, u *ent.User, status string, limit int) ([]*ent.RelationshipAttentionItem, error) {
+func (s *Service) ListRelationshipAttention(ctx context.Context, u *ent.User, status string, limit int, offset int) ([]*ent.RelationshipAttentionItem, error) {
 	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceView)
 	if err != nil {
 		return nil, err
@@ -643,6 +643,9 @@ func (s *Service) ListRelationshipAttention(ctx context.Context, u *ent.User, st
 	if limit > 100 {
 		limit = 100
 	}
+	if offset < 0 {
+		offset = 0
+	}
 	q := s.client.RelationshipAttentionItem.Query().Where(
 		relationshipattentionitem.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
 	).WithRelationship()
@@ -652,7 +655,12 @@ func (s *Service) ListRelationshipAttention(ctx context.Context, u *ent.User, st
 	if status != "all" {
 		q.Where(relationshipattentionitem.StatusEQ(status))
 	}
-	return q.Order(ent.Desc(relationshipattentionitem.FieldRankScore), ent.Asc(relationshipattentionitem.FieldCreatedAt)).Limit(limit).All(ctx)
+	// Rank and time can tie. The id keeps an offset from skipping or repeating a row.
+	return q.Order(
+		ent.Desc(relationshipattentionitem.FieldRankScore),
+		ent.Asc(relationshipattentionitem.FieldCreatedAt),
+		ent.Asc(relationshipattentionitem.FieldID),
+	).Limit(limit).Offset(offset).All(ctx)
 }
 
 // DecideRelationshipAttention applies an optimistic, actor-attributed queue

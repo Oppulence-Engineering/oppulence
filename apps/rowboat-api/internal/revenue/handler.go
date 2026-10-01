@@ -2326,7 +2326,16 @@ func (h *Handler) ListRelationshipAttention(w http.ResponseWriter, r *http.Reque
 		}
 		limit = value
 	}
-	items, err := h.svc.ListRelationshipAttention(r.Context(), u, r.URL.Query().Get("status"), limit)
+	offset := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		offset = value
+	}
+	items, err := h.svc.ListRelationshipAttention(r.Context(), u, r.URL.Query().Get("status"), limit, offset)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return

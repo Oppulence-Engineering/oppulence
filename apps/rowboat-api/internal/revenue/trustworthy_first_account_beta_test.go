@@ -226,7 +226,7 @@ func TestTrustworthyFirstAccountGoldenJourney(t *testing.T) {
 	if err := f.svc.RefreshRelationshipAttention(f.ctx, f.user); err != nil {
 		t.Fatal(err)
 	}
-	attention, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 100)
+	attention, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 100, 0)
 	if err != nil || len(attention) == 0 {
 		t.Fatalf("open relationship-native attention item: count=%d err=%v", len(attention), err)
 	}
