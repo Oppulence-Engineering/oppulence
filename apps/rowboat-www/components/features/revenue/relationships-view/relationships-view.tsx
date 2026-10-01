@@ -536,10 +536,12 @@ export function RelationshipsView({
   const [health, setHealth] = React.useState("all");
   const [lifecycle, setLifecycle] = React.useState("all");
   const [surface, setSurface] = React.useState<"list" | "graph">("list");
+  // Research columns stay empty until public research runs. Health, people,
+  // and the next action are known for every company, so they open first.
   const [optionalColumns, setOptionalColumns] = React.useState<OptionalCompanyColumn[]>([
-    "headquarters",
-    "employees",
-    "funding",
+    "health",
+    "people",
+    "nextAction",
   ]);
   const filters = {
     q: debouncedQuery || undefined,

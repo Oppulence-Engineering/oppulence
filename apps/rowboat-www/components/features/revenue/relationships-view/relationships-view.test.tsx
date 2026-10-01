@@ -38,6 +38,8 @@ import {
 describe("RelationshipsView", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function RelationshipsView");
+    expect(source).toContain('"health",\n    "people",\n    "nextAction",');
+    expect(source).not.toContain('"headquarters",\n    "employees",\n    "funding",');
     expect(source).toContain("subscribeCompanyCreate(() => setCreating(true))");
     expect(source).toContain("aria-label={`Connect ${item.displayName}`}");
     expect(source).toContain("aria-label={`Permissions for ${item.displayName}`}");
