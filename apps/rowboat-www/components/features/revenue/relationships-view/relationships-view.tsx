@@ -703,11 +703,13 @@ export function RelationshipsView({
     setHealth("all");
     setLifecycle("all");
   };
+  const personIds = new Set(
+    rows.filter((relationship) => relationship.kind === "person").map((relationship) => relationship.id),
+  );
+  // The directory is paged. A company past this page still belongs in the queue.
   const companyAttention = attentionWithCompanyTitles(
     attentionWithoutTasks(
-      attention.filter((item) =>
-        companies.some((relationship) => relationship.id === item.relationshipId),
-      ),
+      attention.filter((item) => !personIds.has(item.relationshipId)),
       openActionsQuery.isSuccess ? workspaceTaskIds(openActionsQuery.data) : new Set(),
     ),
     companies,

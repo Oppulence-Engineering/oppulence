@@ -80,6 +80,10 @@ describe("RelationshipsView", () => {
     expect(source).toContain("subscribeCompanyCreate(() => setCreating(true))");
     expect(source).toContain("relationshipDeltaValue(change.before)");
     expect(source).toContain("attentionWithoutTasks(");
+    expect(source).toContain("!personIds.has(item.relationshipId)");
+    expect(source).not.toContain(
+      "companies.some((relationship) => relationship.id === item.relationshipId)",
+    );
     expect(source).not.toContain("JSON.stringify(change.before");
     expect(source).toContain("aria-label={`Connect ${item.displayName}`}");
     expect(source).toContain("aria-label={`Permissions for ${item.displayName}`}");
