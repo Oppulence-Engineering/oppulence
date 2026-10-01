@@ -55,6 +55,7 @@ import {
   identityMatchDetail,
   sourceListedOnConnectionsPage,
   identityMatchLabel,
+  participantRoleLabel,
   recommendationStatusLabel,
   identitySupportLabel,
   liveCueCopy,
@@ -529,6 +530,15 @@ describe("RelationshipsView", () => {
     expect(source).toContain("recommendationStatusLabel(action.policyStatus)");
     expect(source).toContain("recommendationStatusLabel(action.approvalStatus)");
     expect(source).toContain("attentionReasonLabel(action.detector)");
+    expect(participantRoleLabel("decision_maker")).toBe("Decision maker");
+    expect(participantRoleLabel("executive_sponsor")).toBe("Executive sponsor");
+    expect(participantRoleLabel("primary_contact")).toBe("Primary contact");
+    expect(participantRoleLabel("former_contact")).toBe("Former contact");
+    expect(participantRoleLabel("champion")).toBe("Champion");
+    expect(source).toContain("participantRoleLabel(participant.role)");
+    expect(source).toContain("personSeniorityLabel(person.seniority)");
+    expect(source).toContain("personFactValue(attribute.dimension, attribute.value)");
+    expect(source).not.toContain("${participant.role}");
     expect(source).toContain("personEvidenceLabel(attribute.dimension)");
     expect(source).not.toContain("{action.policyStatus}");
     expect(source).not.toContain("{action.approvalStatus}");

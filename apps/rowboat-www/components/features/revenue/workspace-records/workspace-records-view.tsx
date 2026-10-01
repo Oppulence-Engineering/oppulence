@@ -397,6 +397,50 @@ export function personEvidenceLabel(dimension: string): string {
   return words.replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+const SENIORITY_LABELS: Record<string, string> = {
+  ic: "Individual contributor",
+  manager: "Manager",
+  director: "Director",
+  vp: "VP",
+  executive: "Executive",
+  founder: "Founder",
+};
+
+const EMPLOYMENT_LABELS: Record<string, string> = {
+  active: "Current",
+  departed: "Left the company",
+  unknown: "Not known",
+};
+
+function titledToken(value: string): string {
+  return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+/** Research stores a seniority band. The directory says the band in words. */
+export function personSeniorityLabel(value?: string): string {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) return "";
+  const known = SENIORITY_LABELS[trimmed];
+  if (known) return known;
+  if (/^[a-z0-9_]+$/.test(trimmed)) return titledToken(trimmed);
+  return trimmed;
+}
+
+/**
+ * Free-text facts stay as written. Seniority and employment are closed sets,
+ * and those tokens are what a reader would otherwise see.
+ */
+export function personFactValue(dimension: string, value: string): string {
+  const trimmed = value.trim();
+  if (dimension === "seniority") return personSeniorityLabel(trimmed) || value;
+  if (dimension === "employment_status") {
+    const known = EMPLOYMENT_LABELS[trimmed];
+    if (known) return known;
+    if (/^[a-z0-9_]+$/.test(trimmed)) return titledToken(trimmed);
+  }
+  return value;
+}
+
 export function PeopleView({ onError, onNotice }: ViewProps) {
   const queryClient = useQueryClient();
   const [query, setQuery] = React.useState("");
@@ -572,7 +616,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                     {personCompanyTitle(person) || "—"}
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
-                    {person.title || person.seniority || "—"}
+                    {person.title || personSeniorityLabel(person.seniority) || "—"}
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
                     {person.department || "—"}
@@ -763,7 +807,7 @@ function PersonSheet({
               ["Company", personCompanyTitle(person) || undefined],
               ["Domain", person.orgDomain],
               ["Role", person.title],
-              ["Seniority", person.seniority],
+              ["Seniority", personSeniorityLabel(person.seniority)],
               ["Department", person.department],
               ["Location", person.location],
               ["LinkedIn", person.linkedinUrl],
@@ -851,7 +895,9 @@ function PersonSheet({
                       {Math.round(attribute.confidence * 100)}%
                     </Badge>
                   </div>
-                  <p className="mt-1 text-sm text-primary/65">{attribute.value}</p>
+                  <p className="mt-1 text-sm text-primary/65">
+                    {personFactValue(attribute.dimension, attribute.value)}
+                  </p>
                   <p className="mt-1 text-[11px] text-primary/40">
                     {personEvidenceProvenance(attribute)} · {relativeTime(attribute.observedAt)}
                   </p>

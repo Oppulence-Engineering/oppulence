@@ -178,7 +178,11 @@ import {
 } from "@/lib/revenue/revenue-records";
 
 export { companyName };
-import { personEvidenceLabel } from "@/components/features/revenue/workspace-records/workspace-records-view";
+import {
+  personEvidenceLabel,
+  personFactValue,
+  personSeniorityLabel,
+} from "@/components/features/revenue/workspace-records/workspace-records-view";
 import {
   activityEvidenceLines,
   activityHeading,
@@ -279,6 +283,21 @@ export function recommendationStatusLabel(status: string): string {
     rejected: "Rejected",
   };
   return labels[status] ?? humanize(status);
+}
+
+/** A person on a company stores a role token. The row names the role. */
+export function participantRoleLabel(role: string): string {
+  const labels: Record<string, string> = {
+    contact: "Contact",
+    primary_contact: "Primary contact",
+    champion: "Champion",
+    decision_maker: "Decision maker",
+    blocker: "Blocker",
+    executive_sponsor: "Executive sponsor",
+    owner: "Owner",
+    former_contact: "Former contact",
+  };
+  return labels[role] ?? humanize(role);
 }
 
 const formatResearchCost = (usd: number) =>
@@ -3225,7 +3244,7 @@ export function RelationshipSheet({
                           const profile = [
                             person?.title || participant.title,
                             person ? personCompanyTitle(person) : undefined,
-                            person?.seniority,
+                            person ? personSeniorityLabel(person.seniority) : undefined,
                             person?.location,
                           ].filter(Boolean);
                           const cited = (personAttributes[person?.id ?? ""] ?? []).filter(
@@ -3241,7 +3260,9 @@ export function RelationshipSheet({
                               <div className={`min-w-0 ${departed ? "text-primary/50" : ""}`}>
                                 <p className="font-medium text-primary">
                                   {participant.displayName}
-                                  {participant.role ? ` · ${participant.role}` : ""}
+                                  {participant.role
+                                    ? ` · ${participantRoleLabel(participant.role)}`
+                                    : ""}
                                   {departed ? (
                                     <Badge variant="secondary" className="ml-2">
                                       Left the company
@@ -3268,7 +3289,7 @@ export function RelationshipSheet({
                                           <Badge className="font-normal" variant="outline">
                                             {personEvidenceLabel(attribute.dimension)}
                                           </Badge>
-                                          : {attribute.value}
+                                          : {personFactValue(attribute.dimension, attribute.value)}
                                           {` · ${Math.round(attribute.confidence * 100)}% confidence`}
                                           {(attribute.citations ?? []).map((citation, index) => {
                                             const href = safeResearchCitationURL(citation.url);

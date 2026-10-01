@@ -101,6 +101,8 @@ import {
   personEnrichmentLabel,
   personEvidenceProvenance,
   personEvidenceLabel,
+  personFactValue,
+  personSeniorityLabel,
   personAccountDomain,
   personSheetDetail,
   personSheetSubtitle,
@@ -543,6 +545,15 @@ describe("people directory labels", () => {
     expect(personEvidenceLabel("employment_status")).toBe("Employment");
     expect(personEvidenceLabel("org_name")).not.toContain("org_name");
     expect(personEvidenceLabel("custom_fact")).toBe("Custom Fact");
+    expect(personSeniorityLabel("vp")).toBe("VP");
+    expect(personSeniorityLabel("ic")).toBe("Individual contributor");
+    expect(personSeniorityLabel("executive")).toBe("Executive");
+    expect(personSeniorityLabel("Vice President")).toBe("Vice President");
+    expect(personSeniorityLabel("")).toBe("");
+    expect(personFactValue("seniority", "vp")).toBe("VP");
+    expect(personFactValue("employment_status", "departed")).toBe("Left the company");
+    expect(personFactValue("employment_status", "active")).toBe("Current");
+    expect(personFactValue("location", "Berlin")).toBe("Berlin");
   });
 });
 
@@ -776,6 +787,10 @@ describe("people directory copy", () => {
     expect(source).toContain("Fill in their role and company");
     expect(source).not.toContain("Enrich profiles with evidence");
     expect(source).toContain(">Companies</TableHead>");
+    expect(source).toContain("personSeniorityLabel(person.seniority)");
+    expect(source).toContain("personFactValue(attribute.dimension, attribute.value)");
+    expect(source).not.toContain("{person.seniority}");
+    expect(source).not.toContain("{attribute.value}");
     expect(source).toContain("{personCompanyTitle(person) || \"—\"}");
     expect(source).toContain('["Company", personCompanyTitle(person) || undefined]');
     expect(source).not.toContain("{person.orgName || \"—\"}");
