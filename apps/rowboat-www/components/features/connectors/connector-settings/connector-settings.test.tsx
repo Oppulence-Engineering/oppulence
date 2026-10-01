@@ -259,11 +259,11 @@ describe("hosted connector settings", () => {
     const row = await screen.findByTestId("connector-google");
     await userEvent.click(within(row).getByRole("button", { name: "Connect Google" }));
 
-    expect(
-      await within(row).findByText(
-        "This address isn't allowed to finish the connection. Nothing was saved.",
-      ),
-    ).toBeVisible();
+    const failure = await within(row).findByText(
+      "This address isn't allowed to finish the connection. Nothing was saved.",
+    );
+    expect(failure).toBeVisible();
+    expect(failure).not.toHaveClass("font-mono");
     expect(
       within(row).queryByText("The connection could not be completed. Nothing was saved."),
     ).not.toBeInTheDocument();
@@ -281,7 +281,9 @@ describe("hosted connector settings", () => {
 
     const row = await screen.findByTestId("connector-google");
     expect(within(row).getByRole("button", { name: "Connect Google" })).toBeDisabled();
-    expect(within(row).getByText("This connection is not set up for this workspace yet.")).toBeVisible();
+    const reason = within(row).getByText("This connection is not set up for this workspace yet.");
+    expect(reason).toBeVisible();
+    expect(reason).not.toHaveClass("font-mono");
     expect(within(row).queryByText("provider_configuration_missing")).toBeNull();
   });
 

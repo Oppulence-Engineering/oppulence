@@ -271,7 +271,7 @@ function GoogleConnectionSettings() {
             {account.accountId}
           </p>
         ))}
-        {error ? <p className="mt-1 font-mono text-xs text-destructive">{error}</p> : null}
+        {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}
       </div>
       {confirming ? (
         <div className="flex max-w-xs flex-col items-end gap-2">
@@ -445,7 +445,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
           ) : null}
           {connector.connectionReason ? (
             <Badge
-              className="mt-1 block font-mono text-[11px] font-normal text-oppulence-orange"
+              className="mt-1 block text-[11px] font-normal text-oppulence-orange"
               id={`connector-support-${connector.name}`}
               variant="outline"
             >
@@ -544,7 +544,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
           />
           {unsupportedReason && !connector.connectionReason ? (
             <p
-              className="font-mono text-xs text-oppulence-orange"
+              className="text-xs text-oppulence-orange"
               id={`connector-support-${connector.name}`}
             >
               {unsupportedReason}
@@ -577,7 +577,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
           </Button>
         </div>
       ) : null}
-      {error ? <p className="font-mono text-xs text-destructive">{error}</p> : null}
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
   );
 }
