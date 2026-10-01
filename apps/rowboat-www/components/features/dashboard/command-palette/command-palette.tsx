@@ -326,7 +326,7 @@ export function CommandPalette({
           <>
             <CommandSeparator />
             <CommandGroup heading="Conversations">
-              {sessions.slice(0, 8).map((session) => (
+              {sessions.map((session) => (
                 <CommandItem
                   key={session.runId}
                   onSelect={runAnd(() => onOpenSession(session.runId))}

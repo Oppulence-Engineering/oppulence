@@ -154,6 +154,17 @@ describe("CommandPalette semantic mail search", () => {
     ).toBeVisible();
   });
 
+  it("keeps a conversation past the first eight in the list", () => {
+    const sessions = Array.from({ length: 9 }, (_, index) => ({
+      runId: `run-${index + 1}`,
+      title: `Conversation ${index + 1}`,
+      updatedAt: index,
+    }));
+    renderPalette({ ...requiredProps, sessions });
+    expect(screen.getByRole("button", { name: "Conversation 9" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Conversation 1" })).toBeVisible();
+  });
+
   it("names the company search instead of accounts", () => {
     renderPalette(requiredProps);
     expect(screen.getByRole("button", { name: "Companies" })).toBeVisible();
