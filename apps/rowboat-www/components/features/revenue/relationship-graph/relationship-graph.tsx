@@ -1016,6 +1016,61 @@ export function accountGraphPrompt(companyCount: number): string {
   return "Choose an account to build its graph.";
 }
 
+function graphNodeRelationshipIDs(node: RelationshipGraphNode): string[] {
+  const ids = new Set<string>();
+  if (node.relationshipId) ids.add(node.relationshipId);
+  for (const id of node.relationshipIds) {
+    if (id) ids.add(id);
+  }
+  return [...ids];
+}
+
+/**
+ * People added from the directory are stored as relationships with
+ * metadata.kind "person". The graph labels every relationship node "Company",
+ * so those records draw a second company with the person's name. Drop that
+ * cluster. A person who also belongs to a real company stays.
+ */
+export function withoutPersonDirectoryRecords(
+  nodes: RelationshipGraphNode[],
+  edges: RelationshipGraphEdge[],
+): { nodes: RelationshipGraphNode[]; edges: RelationshipGraphEdge[] } {
+  const personDirectoryIDs = new Set<string>();
+  for (const node of nodes) {
+    if (node.kind !== "relationship" || node.metadata.kind !== "person") continue;
+    personDirectoryIDs.add(node.id);
+    for (const id of graphNodeRelationshipIDs(node)) personDirectoryIDs.add(id);
+  }
+  if (personDirectoryIDs.size === 0) return { nodes, edges };
+
+  const onlyPersonDirectory = (node: RelationshipGraphNode) => {
+    if (node.kind === "relationship" && node.metadata.kind === "person") return true;
+    const ids = graphNodeRelationshipIDs(node);
+    return ids.length > 0 && ids.every((id) => personDirectoryIDs.has(id));
+  };
+
+  const removedIDs = new Set(nodes.filter(onlyPersonDirectory).map((node) => node.id));
+  let kept = nodes.filter((node) => !removedIDs.has(node.id));
+  const keptIDs = new Set(kept.map((node) => node.id));
+  let keptEdges = edges.filter((edge) => keptIDs.has(edge.source) && keptIDs.has(edge.target));
+  const connected = new Set<string>();
+  for (const edge of keptEdges) {
+    connected.add(edge.source);
+    connected.add(edge.target);
+  }
+  kept = kept.filter((node) => {
+    if (node.kind === "relationship" || connected.has(node.id)) return true;
+    return !edges.some(
+      (edge) =>
+        (edge.source === node.id && removedIDs.has(edge.target)) ||
+        (edge.target === node.id && removedIDs.has(edge.source)),
+    );
+  });
+  const finalIDs = new Set(kept.map((node) => node.id));
+  keptEdges = keptEdges.filter((edge) => finalIDs.has(edge.source) && finalIDs.has(edge.target));
+  return { nodes: kept, edges: keptEdges };
+}
+
 /**
  * An empty canvas means two different things. Zero nodes in the payload means
  * the workspace has nothing to draw. Nodes that exist but are hidden were
@@ -1088,7 +1143,17 @@ export function RelationshipGraphWorkspace({
     },
     graphEnabled,
   );
-  const graph = graphEnabled ? (graphQuery.data ?? null) : null;
+  const loadedGraph = graphEnabled ? (graphQuery.data ?? null) : null;
+  const graph = React.useMemo(
+    () =>
+      loadedGraph
+        ? {
+            ...loadedGraph,
+            ...withoutPersonDirectoryRecords(loadedGraph.nodes, loadedGraph.edges),
+          }
+        : null,
+    [loadedGraph],
+  );
   const loading = graphEnabled && graphQuery.isPending;
   // The canvas already explains a failed load and offers Retry. Sending the
   // same failure to the page banner left it sitting on every other tab.

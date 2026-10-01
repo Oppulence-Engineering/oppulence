@@ -17,7 +17,12 @@ import {
   graphQueryAnswer,
   graphQueryFilterLabel,
   searchWithoutCompanyGraph,
+  withoutPersonDirectoryRecords,
 } from "@/components/features/revenue/relationship-graph/relationship-graph";
+import type {
+  RelationshipGraphEdge,
+  RelationshipGraphNode,
+} from "@/lib/revenue/types";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "relationship-graph.tsx"), "utf8");
 
@@ -187,6 +192,87 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain("Save view");
   });
 
+  it("hides a person directory record from the company graph", () => {
+    const company = graphNode({
+      id: "relationship:company",
+      kind: "relationship",
+      label: "Acme",
+      relationshipId: "company",
+      relationshipIds: ["company"],
+      metadata: { kind: "company" },
+    });
+    const personRecord = graphNode({
+      id: "relationship:person-record",
+      kind: "relationship",
+      label: "Ada Lovelace",
+      relationshipId: "person-record",
+      relationshipIds: ["person-record"],
+      metadata: { kind: "person" },
+    });
+    const directoryPerson = graphNode({
+      id: "person:ada",
+      kind: "person",
+      label: "Ada Lovelace",
+      relationshipId: "person-record",
+      relationshipIds: ["person-record"],
+    });
+    const sharedPerson = graphNode({
+      id: "person:shared",
+      kind: "person",
+      label: "Grace Hopper",
+      relationshipId: "person-record",
+      relationshipIds: ["person-record", "company"],
+    });
+    const evidence = graphNode({
+      id: "evidence:added",
+      kind: "evidence",
+      label: "Ada Lovelace added by the user",
+      relationshipId: "person-record",
+      relationshipIds: ["person-record"],
+    });
+    const userSource = graphNode({
+      id: "source:user",
+      kind: "source",
+      label: "user",
+      relationshipIds: [],
+    });
+    const untouched = graphNode({
+      id: "note:loose",
+      kind: "note",
+      label: "Loose note",
+      relationshipIds: [],
+    });
+    const unlabeled = graphNode({
+      id: "relationship:legacy",
+      kind: "relationship",
+      label: "Legacy Co",
+      relationshipId: "legacy",
+      relationshipIds: ["legacy"],
+    });
+    const edges: RelationshipGraphEdge[] = [
+      graphEdge("e1", "person:ada", "relationship:person-record"),
+      graphEdge("e2", "evidence:added", "relationship:person-record"),
+      graphEdge("e3", "evidence:added", "source:user"),
+      graphEdge("e4", "person:shared", "relationship:person-record"),
+      graphEdge("e5", "person:shared", "relationship:company"),
+    ];
+    const filtered = withoutPersonDirectoryRecords(
+      [company, personRecord, directoryPerson, sharedPerson, evidence, userSource, untouched, unlabeled],
+      edges,
+    );
+
+    expect(filtered.nodes.map((node) => node.id).sort()).toEqual([
+      "note:loose",
+      "person:shared",
+      "relationship:company",
+      "relationship:legacy",
+    ]);
+    expect(filtered.edges.map((edge) => edge.id)).toEqual(["e5"]);
+    expect(source).toContain(
+      "withoutPersonDirectoryRecords(loadedGraph.nodes, loadedGraph.edges)",
+    );
+  });
+
   it("drops graph parameters when the company list is the current view", () => {
     expect(
       searchWithoutCompanyGraph(
@@ -197,3 +283,29 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain("searchWithoutCompanyGraph(url.search)");
   });
 });
+
+function graphNode(
+  overrides: Pick<RelationshipGraphNode, "id" | "kind" | "label"> &
+    Partial<RelationshipGraphNode>,
+): RelationshipGraphNode {
+  return {
+    relationshipIds: [],
+    changedSinceReview: false,
+    changedDimensions: [],
+    evidenceRefs: [],
+    metadata: {},
+    ...overrides,
+  };
+}
+
+function graphEdge(id: string, from: string, to: string): RelationshipGraphEdge {
+  return {
+    id,
+    source: from,
+    target: to,
+    kind: "supports",
+    label: "supports",
+    directed: true,
+    evidenceRefs: [],
+  };
+}
