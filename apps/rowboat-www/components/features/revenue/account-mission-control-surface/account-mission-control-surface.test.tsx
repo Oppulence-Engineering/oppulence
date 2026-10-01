@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   AccountMissionControlSurface,
+  commitmentTimelineLabel,
   commitmentTimelineStatus,
 } from "./account-mission-control-surface";
 import type { RelationshipCommitment } from "@/lib/revenue/types";
@@ -61,5 +62,11 @@ describe("AccountMissionControlSurface", () => {
       ).label,
     ).toBe("Review");
     expect(commitmentTimelineStatus(promise({ status: "fulfilled" }), now).label).toBe("Kept");
+  });
+
+  it("names a mutual promise as mutual", () => {
+    expect(commitmentTimelineLabel("mutual")).toBe("Mutual promise");
+    expect(commitmentTimelineLabel("promised_by_me")).toBe("Outbound promise");
+    expect(commitmentTimelineLabel("promised_by_them")).toBe("Inbound promise");
   });
 });

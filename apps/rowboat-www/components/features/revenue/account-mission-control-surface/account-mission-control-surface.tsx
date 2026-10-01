@@ -30,9 +30,10 @@ export type AccountMissionControlSurfaceProps = Omit<
   showHeader?: boolean;
 };
 
-function commitmentLabel(direction: string) {
+export function commitmentTimelineLabel(direction: string) {
   if (direction === "promised_by_me") return "Outbound promise";
   if (direction === "promised_by_them") return "Inbound promise";
+  if (direction === "mutual") return "Mutual promise";
   return "Commitment";
 }
 
@@ -77,7 +78,7 @@ export function mapCommitmentsToAccountTimeline(
     const status = commitmentTimelineStatus(commitment, now);
     return {
       id: commitment.id,
-      label: commitmentLabel(commitment.direction),
+      label: commitmentTimelineLabel(commitment.direction),
       detail: commitment.text,
       statusLabel: status.label,
       statusVariant: status.variant,
