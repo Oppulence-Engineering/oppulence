@@ -921,6 +921,12 @@ export const OUTCOME_LABELS: Record<string, string> = {
   lost: "Lost",
   dismissed: "Dismissed",
   bad_recommendation: "Bad recommendation",
+  deal_advanced: "Deal moved forward",
+  onboarding_progressed: "Onboarding moved forward",
+  renewed: "Renewed",
+  escalated: "Escalated",
+  churned: "Churned",
+  corrected: "Corrected",
 };
 
 // Outcomes an operator can log by hand from the audit view.

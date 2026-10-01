@@ -36,7 +36,33 @@ import {
 } from "@/lib/revenue/revenue";
 import { errMessage, PolicyBadge } from "@/components/features/revenue/shared/shared";
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
+import { activitySourceLabel } from "@/lib/revenue/source-product-copy";
 import type { ActionAudit, RevenueAction } from "@/lib/revenue/types";
+
+/** An outcome kind is a stored slug. The history badge names the result. */
+export function outcomeKindLabel(kind: string): string {
+  const known = OUTCOME_LABELS[kind];
+  if (known) return known;
+  const words = kind.replaceAll("_", " ").trim();
+  if (!words) return "Outcome";
+  return words.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+/** An outcome source is where the result was seen. The row names that place. */
+export function outcomeSourceLabel(source: string): string {
+  switch (source) {
+    case "user":
+      return "Logged by you";
+    case "outbound":
+      return "Sent from here";
+    case "task":
+      return "A task";
+    case "crm":
+      return "The CRM";
+    default:
+      return activitySourceLabel(source);
+  }
+}
 
 export function AuditSheet({
   action,
@@ -178,10 +204,10 @@ export function AuditSheet({
                       <Card className="gap-0 py-2" key={o.id}>
                         <CardContent className="flex items-center justify-between px-3 text-xs">
                           <Badge className="font-medium text-primary/80" variant="outline">
-                            {OUTCOME_LABELS[o.kind] ?? o.kind}
+                            {outcomeKindLabel(o.kind)}
                           </Badge>
                           <Label className="font-normal text-primary/45">
-                            {o.source} · {relativeTime(o.occurredAt)}
+                            {outcomeSourceLabel(o.source)} · {relativeTime(o.occurredAt)}
                           </Label>
                         </CardContent>
                       </Card>
