@@ -400,6 +400,45 @@ func TestPersonMultiMatchNeverMergesAutomatically(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsTheCompanyTitle(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "dogfood-label.example", AccountDomain: "dogfood-label.example",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	personRel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "person", DisplayName: "Ada", PrimaryEmail: "ada@dogfood-label.example", AccountDomain: "dogfood-label.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		RelationshipID: personRel.ID,
+		Source:         "user",
+		ExternalID:     "person-added-ada-search",
+		EventType:      "person_added",
+		Summary:        "Ada added by the user",
+		OccurredAt:     now,
+		ReceivedAt:     now,
+		Participants: []RelationshipParticipantInput{{
+			DisplayName: "Ada", Email: "ada@dogfood-label.example", Role: "contact",
+		}},
+	}}); err != nil {
+		t.Fatal(err)
+	}
+
+	found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "Dogfood Label"})
+	if err != nil || len(found) != 1 || found[0].DisplayName != "Ada" {
+		t.Fatalf("title search = %+v err=%v", found, err)
+	}
+	miss, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "zzzz-not-a-person"})
+	if err != nil || len(miss) != 0 {
+		t.Fatalf("unrelated search = %+v err=%v", miss, err)
+	}
+}
+
 func withRole(in RelationshipParticipantInput, role string) RelationshipParticipantInput {
 	in.Role = role
 	return in

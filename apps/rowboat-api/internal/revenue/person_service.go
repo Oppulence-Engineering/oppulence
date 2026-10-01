@@ -15,6 +15,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 )
 
@@ -57,6 +58,7 @@ func (s *Service) ListPersons(
 			person.PrimaryEmailContainsFold(term),
 			person.OrgNameContainsFold(term),
 			person.OrgDomainContainsFold(term),
+			personNormalizedContains(term),
 		))
 	}
 	return q.
@@ -66,6 +68,43 @@ func (s *Service) ListPersons(
 		).
 		Limit(limit).
 		All(ctx)
+}
+
+// personNormalizedContains matches the company title a teammate sees. A domain
+// stored as dogfood-label.example is shown as "Dogfood Label", and that phrase
+// has to find the person even though the stored value uses a hyphen and a dot.
+func personNormalizedContains(term string) predicate.Person {
+	needle := "%" + escapePersonSearchLike(normalizePersonSearch(term)) + "%"
+	return predicate.Person(func(s *sql.Selector) {
+		parts := make([]*sql.Predicate, 0, 4)
+		for _, field := range []string{
+			person.FieldDisplayName,
+			person.FieldPrimaryEmail,
+			person.FieldOrgName,
+			person.FieldOrgDomain,
+		} {
+			parts = append(parts, sql.ExprP(
+				fmt.Sprintf(
+					"replace(replace(replace(lower(coalesce(%s, '')), '-', ' '), '_', ' '), '.', ' ') LIKE ? ESCAPE '\\'",
+					s.C(field),
+				),
+				needle,
+			))
+		}
+		s.Where(sql.Or(parts...))
+	})
+}
+
+func normalizePersonSearch(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	value = strings.NewReplacer("-", " ", "_", " ", ".", " ").Replace(value)
+	return strings.Join(strings.Fields(value), " ")
+}
+
+func escapePersonSearchLike(value string) string {
+	value = strings.ReplaceAll(value, `\`, `\\`)
+	value = strings.ReplaceAll(value, `%`, `\%`)
+	return strings.ReplaceAll(value, `_`, `\_`)
 }
 
 // GetPerson returns one canonical person, following a merge tombstone so an old
