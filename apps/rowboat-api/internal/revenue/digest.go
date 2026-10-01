@@ -68,7 +68,7 @@ func (s *Service) Digest(ctx context.Context, u *ent.User) (*Digest, error) {
 	}
 	for _, a := range actions {
 		d.Top = append(d.Top, DigestAction{
-			Detector:  detectorDisplay[a.Detector],
+			Detector:  detectorLabel(a.Detector),
 			Recipient: a.RecipientEmail,
 			Reason:    a.Reason,
 			Priority:  a.PriorityScore,
@@ -86,7 +86,22 @@ var detectorDisplay = map[string]string{
 	"dormant_warm_opportunity":  "Dormant opportunity",
 	"neglected_referral":        "Neglected referral",
 	"former_customer_reconnect": "Former customer",
+	"conversation_action_pack":  "Conversation action pack",
+	"commitment_due":            "Commitment due",
 	"manual":                    "Manual",
+}
+
+// detectorLabel is the name a digest shows. A missing map entry used to
+// send an empty badge, so a due promise and a conversation pack had no signal.
+func detectorLabel(key string) string {
+	if label, ok := detectorDisplay[key]; ok && strings.TrimSpace(label) != "" {
+		return label
+	}
+	parts := strings.Fields(strings.ReplaceAll(strings.TrimSpace(key), "_", " "))
+	for i, part := range parts {
+		parts[i] = strings.ToUpper(part[:1]) + part[1:]
+	}
+	return strings.Join(parts, " ")
 }
 
 // RenderDigest builds the subject and HTML/plain bodies for a digest email.

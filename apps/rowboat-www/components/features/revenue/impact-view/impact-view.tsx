@@ -30,7 +30,7 @@ import {
   TableRow,
 } from "@oppulence/ui/components/table";
 
-import { attentionReasonLabel, auditLaunchLabel, DETECTOR_LABELS } from "@/lib/revenue/revenue";
+import { attentionReasonLabel, auditLaunchLabel } from "@/lib/revenue/revenue";
 import {
   atRiskPulseCount,
   detectorsWithoutTasks,
@@ -74,6 +74,17 @@ export function impactAccountTotal(
 ): number {
   if (!relationships) return fallback;
   return relationships.filter((record) => record.kind !== "person").length;
+}
+
+/**
+ * The digest email already names a signal. A stored token, or a name the
+ * API left blank, is not what the preview badge should print.
+ */
+export function digestSignalLabel(detector: string): string {
+  const value = detector.trim();
+  if (!value) return "";
+  if (/^[a-z0-9_]+$/.test(value)) return attentionReasonLabel(value);
+  return value;
 }
 
 export function ImpactView({
@@ -302,22 +313,27 @@ export function ImpactView({
           </CardHeader>
           <CardContent className="px-4">
             <ul className="flex flex-col gap-1.5">
-              {digestTop.slice(0, 3).map((a, i) => (
-                <li key={i} className="flex items-center justify-between gap-3 text-sm">
-                  <Label className="truncate font-normal text-primary/75">
-                    <Badge className="mr-1 font-normal text-primary/45" variant="outline">
-                      {a.detector}
+              {digestTop.slice(0, 3).map((a, i) => {
+                const signal = digestSignalLabel(a.detector);
+                return (
+                  <li key={i} className="flex items-center justify-between gap-3 text-sm">
+                    <Label className="truncate font-normal text-primary/75">
+                      {signal ? (
+                        <Badge className="mr-1 font-normal text-primary/45" variant="outline">
+                          {signal}
+                        </Badge>
+                      ) : null}
+                      {a.reason}
+                    </Label>
+                    <Badge
+                      className="shrink-0 tabular-nums font-normal text-primary/40"
+                      variant="secondary"
+                    >
+                      {a.priority}
                     </Badge>
-                    {a.reason}
-                  </Label>
-                  <Badge
-                    className="shrink-0 tabular-nums font-normal text-primary/40"
-                    variant="secondary"
-                  >
-                    {a.priority}
-                  </Badge>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
             {digestOpen > digestTop.length ? (
               <CardDescription className="mt-2 text-xs text-primary/45">
@@ -416,7 +432,7 @@ export function ImpactView({
                   .map((d) => (
                     <TableRow key={d.detector}>
                       <TableCell className="text-primary/80">
-                        {DETECTOR_LABELS[d.detector] ?? d.detector}
+                        {attentionReasonLabel(d.detector)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-primary/70">
                         {d.surfaced}

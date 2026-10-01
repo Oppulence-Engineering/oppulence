@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { impactAccountTotal, overdueDirectionLines } from "./impact-view";
+import { digestSignalLabel, impactAccountTotal, overdueDirectionLines } from "./impact-view";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "impact-view.tsx"), "utf8");
 
@@ -17,6 +17,10 @@ describe("ImpactView", () => {
     expect(source).toContain("Company exposure");
     expect(source).toContain("No active company risks.");
     expect(source).toContain("attentionReasonLabel(risk.reason)");
+    expect(source).toContain("attentionReasonLabel(d.detector)");
+    expect(source).toContain("digestSignalLabel(a.detector)");
+    expect(source).not.toContain("{a.detector}");
+    expect(source).not.toContain("DETECTOR_LABELS[d.detector]");
     expect(source).not.toContain('risk.reason.replaceAll("_", " ")');
     expect(source).toContain("Your companies and people were not changed.");
     expect(source).not.toContain("Measure portfolio risk");
@@ -40,6 +44,13 @@ describe("ImpactView", () => {
       { label: "Overdue from them", value: 1 },
       { label: "Overdue together", value: 1 },
     ]);
+  });
+
+  it("names a digest signal that arrived as a stored token", () => {
+    expect(digestSignalLabel("commitment_due")).toBe("Commitment due");
+    expect(digestSignalLabel("conversation_action_pack")).toBe("Conversation action pack");
+    expect(digestSignalLabel("Follow-up due")).toBe("Follow-up due");
+    expect(digestSignalLabel("")).toBe("");
   });
 
   it("counts companies in the account total and leaves a person out", () => {

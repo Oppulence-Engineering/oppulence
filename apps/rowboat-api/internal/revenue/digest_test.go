@@ -29,6 +29,31 @@ func (f *fakeEmail) Send(_ context.Context, m email.Message) error {
 }
 func (f *fakeEmail) Enabled() bool { return f.enabled }
 
+func TestDetectorLabelNamesEveryActionDetector(t *testing.T) {
+	for _, key := range []string{
+		"requested_follow_up_due",
+		"unanswered_proposal",
+		"waiting_on_me",
+		"dormant_warm_opportunity",
+		"neglected_referral",
+		"former_customer_reconnect",
+		"conversation_action_pack",
+		"commitment_due",
+		"manual",
+	} {
+		label := detectorLabel(key)
+		if label == "" || strings.Contains(label, "_") {
+			t.Fatalf("detector %q labeled %q", key, label)
+		}
+	}
+	if detectorLabel("commitment_due") != "Commitment due" {
+		t.Fatalf("commitment_due labeled %q", detectorLabel("commitment_due"))
+	}
+	if detectorLabel("conversation_action_pack") != "Conversation action pack" {
+		t.Fatalf("conversation_action_pack labeled %q", detectorLabel("conversation_action_pack"))
+	}
+}
+
 func TestDigestComposeAndRender(t *testing.T) {
 	f := newFixture(t)
 	// Two open actions.
