@@ -54,7 +54,10 @@ describe("AttentionQueueSurface", () => {
     const surface = screen.getByRole("region", { name: "Attention queue" });
     expect(surface).toHaveAttribute("data-slot", "attention-queue-surface");
     expect(screen.getAllByText("Acme").length).toBeGreaterThan(0);
-    expect(screen.getByText("No reply in 14 days")).toBeInTheDocument();
+    expect(screen.getAllByText("No reply in 14 days").length).toBeGreaterThan(1);
+    expect(
+      screen.getByText("No reply in 14 days", { selector: "[data-slot=attention-reason]" }),
+    ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Filter" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Open items" })).not.toBeInTheDocument();
   });
@@ -75,7 +78,7 @@ describe("AttentionQueueSurface", () => {
 
     await user.selectOptions(screen.getByRole("combobox", { name: "Attention band" }), "watch");
 
-    expect(screen.getByText("Renewal in 30 days")).toBeInTheDocument();
+    expect(screen.getAllByText("Renewal in 30 days").length).toBeGreaterThan(1);
     expect(screen.queryByText("No reply in 14 days")).not.toBeInTheDocument();
     expect(screen.getByText("1 company")).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Company" })).toBeInTheDocument();
@@ -96,6 +99,23 @@ describe("AttentionQueueSurface", () => {
 
     expect(screen.getByText("No companies in this band.")).toBeInTheDocument();
     expect(screen.getByText("0 companies")).toBeInTheDocument();
+  });
+
+  it("keeps the full reason next to the decision", () => {
+    const reason =
+      "No recorded interaction for 12 days. Companies in contracting are usually contacted again within 7 days.";
+    render(
+      <AttentionQueueSurface
+        items={[item("attn-quiet", "Dogfood Label", "normal", reason)]}
+        onActionError={vi.fn()}
+        onChanged={vi.fn()}
+        onOpenRelationship={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByText(reason, { selector: "[data-slot=attention-reason]" }),
+    ).toHaveTextContent("within 7 days.");
   });
 
   it("asks for a dismiss reason on the queue", async () => {
@@ -124,7 +144,10 @@ describe("AttentionQueueSurface", () => {
       snoozedUntil: undefined,
     });
     expect(onChanged).toHaveBeenCalledOnce();
-    const source = fs.readFileSync(path.join(import.meta.dirname, "attention-queue-surface.tsx"), "utf8");
+    const source = fs.readFileSync(
+      path.join(import.meta.dirname, "attention-queue-surface.tsx"),
+      "utf8",
+    );
     expect(source).not.toContain("window.prompt");
     prompt.mockRestore();
   });

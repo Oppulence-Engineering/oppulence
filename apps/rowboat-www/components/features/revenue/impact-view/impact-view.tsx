@@ -30,7 +30,7 @@ import {
   TableRow,
 } from "@oppulence/ui/components/table";
 
-import { auditLaunchLabel, DETECTOR_LABELS } from "@/lib/revenue/revenue";
+import { attentionReasonLabel, auditLaunchLabel, DETECTOR_LABELS } from "@/lib/revenue/revenue";
 import {
   atRiskPulseCount,
   detectorsWithoutTasks,
@@ -48,10 +48,9 @@ import { cn } from "@/lib/utils";
  * different, closed state. A mutual promise is in the total and in neither
  * side, so it gets its own line when that remainder is real.
  */
-export function overdueDirectionLines(impact: Pick<
-  RevenueImpact,
-  "overdueCommitments" | "overdueByUs" | "overdueByThem"
->): { label: string; value: number }[] {
+export function overdueDirectionLines(
+  impact: Pick<RevenueImpact, "overdueCommitments" | "overdueByUs" | "overdueByThem">,
+): { label: string; value: number }[] {
   const together = Math.max(
     0,
     impact.overdueCommitments - impact.overdueByUs - impact.overdueByThem,
@@ -151,7 +150,12 @@ export function ImpactView({
   );
   const digestOpen = Math.max(0, (digest?.openCount ?? 0) - taskCount);
 
-  if (surfacedShown === 0 && atRiskShown === 0 && data.overdueCommitments === 0 && openShown === 0) {
+  if (
+    surfacedShown === 0 &&
+    atRiskShown === 0 &&
+    data.overdueCommitments === 0 &&
+    openShown === 0
+  ) {
     const auditLabel = auditLaunchLabel({
       needsReconnect,
       needsConnect,
@@ -207,8 +211,7 @@ export function ImpactView({
   // risk reason that is about our own plumbing rather than the relationship.
   const degradedCount =
     data.riskReasons?.find((risk) => risk.reason === "source_degradation")?.relationships ?? 0;
-  const sourceDegradationDominates =
-    degradedCount > 0 && degradedCount >= Math.max(1, atRiskShown);
+  const sourceDegradationDominates = degradedCount > 0 && degradedCount >= Math.max(1, atRiskShown);
 
   return (
     <div className="flex min-h-full w-full min-w-0 flex-col gap-6" data-slot="impact-view">
@@ -242,8 +245,8 @@ export function ImpactView({
               This score reflects missing data, not account behaviour.
             </AlertTitle>
             <AlertDescription className="text-[13px] text-primary/60">
-              {degradedCount} of {accountTotal} accounts are exposed because a connected
-              source stopped reporting. Reconnect it before reading these numbers as risk.
+              {degradedCount} of {accountTotal} accounts are exposed because a connected source
+              stopped reporting. Reconnect it before reading these numbers as risk.
             </AlertDescription>
           </Alert>
         ) : null}
@@ -267,7 +270,7 @@ export function ImpactView({
                 {riskReasons.slice(0, 5).map((risk) => (
                   <li className="flex items-center justify-between gap-3" key={risk.reason}>
                     <Label className="font-normal text-primary/60">
-                      {DETECTOR_LABELS[risk.reason] ?? risk.reason.replaceAll("_", " ")}
+                      {attentionReasonLabel(risk.reason)}
                     </Label>
                     <Badge
                       className="rounded-none tabular-nums font-normal text-primary/80"

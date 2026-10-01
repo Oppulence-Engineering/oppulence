@@ -253,68 +253,73 @@ export function AttentionQueueSurface({
         </div>
 
         {selected && !loading ? (
-          <div className="flex flex-wrap items-center gap-2 border-[var(--border)] border-t px-3 py-2">
-            <span className="mr-1 text-sm text-[var(--text-secondary)]">
-              {selected.relationshipName}
-            </span>
-            <Button
-              disabled={busy !== null}
-              onClick={() => void decide(selected, "acknowledge")}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              {busy === `${selected.id}:acknowledge` ? <Spinner className="size-4" /> : <Check />}{" "}
-              Review
-            </Button>
-            <Button
-              disabled={busy !== null}
-              onClick={() => void decide(selected, "snooze")}
-              size="sm"
-              type="button"
-              variant="ghost"
-            >
-              Snooze 1d
-            </Button>
-            {dismissing ? (
-              <>
-                <Input
-                  aria-label="Why this should be dismissed"
-                  className="h-8 max-w-xs rounded-none"
-                  value={dismissReason}
-                  onChange={(event) => setDismissReason(event.target.value)}
-                />
-                <Button
-                  disabled={busy !== null || !dismissReason.trim()}
-                  onClick={() => void decide(selected, "dismiss")}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  {busy === `${selected.id}:dismiss` ? <Spinner className="size-4" /> : null}{" "}
-                  Confirm dismiss
-                </Button>
-                <Button
-                  disabled={busy !== null}
-                  onClick={() => setDismissing(false)}
-                  size="sm"
-                  type="button"
-                  variant="ghost"
-                >
-                  Cancel
-                </Button>
-              </>
-            ) : (
+          <div className="border-[var(--border)] border-t px-3 py-2">
+            <p className="text-sm text-[var(--text-primary)]" data-slot="attention-reason">
+              {selected.explanation || relationshipLabel(selected.reasonCode)}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="mr-1 text-sm text-[var(--text-secondary)]">
+                {selected.relationshipName}
+              </span>
               <Button
                 disabled={busy !== null}
-                onClick={() => setDismissing(true)}
+                onClick={() => void decide(selected, "acknowledge")}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {busy === `${selected.id}:acknowledge` ? <Spinner className="size-4" /> : <Check />}{" "}
+                Review
+              </Button>
+              <Button
+                disabled={busy !== null}
+                onClick={() => void decide(selected, "snooze")}
                 size="sm"
                 type="button"
                 variant="ghost"
               >
-                Dismiss
+                Snooze 1d
               </Button>
-            )}
+              {dismissing ? (
+                <>
+                  <Input
+                    aria-label="Why this should be dismissed"
+                    className="h-8 max-w-xs rounded-none"
+                    value={dismissReason}
+                    onChange={(event) => setDismissReason(event.target.value)}
+                  />
+                  <Button
+                    disabled={busy !== null || !dismissReason.trim()}
+                    onClick={() => void decide(selected, "dismiss")}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    {busy === `${selected.id}:dismiss` ? <Spinner className="size-4" /> : null}{" "}
+                    Confirm dismiss
+                  </Button>
+                  <Button
+                    disabled={busy !== null}
+                    onClick={() => setDismissing(false)}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  disabled={busy !== null}
+                  onClick={() => setDismissing(true)}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  Dismiss
+                </Button>
+              )}
+            </div>
           </div>
         ) : null}
       </SimProductPanel>

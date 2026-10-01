@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { dashboardRequest } from "@/lib/auth/dashboard-fetch";
 import {
+  attentionReasonLabel,
   auditFailureCopy,
   companyLinkedInAction,
   companyLinkedInURL,
@@ -26,6 +27,18 @@ vi.mock("@/lib/auth/dashboard-fetch", () => ({
 const mockFetch = vi.mocked(dashboardRequest);
 
 beforeEach(() => mockFetch.mockReset());
+
+describe("attention reason labels", () => {
+  it("names an exposure reason instead of the stored code", () => {
+    expect(attentionReasonLabel("quiet_account")).toBe("Quiet account");
+    expect(attentionReasonLabel("source_degradation")).toBe("Source needs reconnecting");
+    expect(attentionReasonLabel("missing_next_step")).toBe("No next step");
+    expect(attentionReasonLabel("unresolved_risk")).toBe("Unresolved risk");
+    expect(attentionReasonLabel("requested_follow_up_due")).toBe("Follow-up due");
+    expect(attentionReasonLabel("custom_signal")).toBe("Custom Signal");
+    expect(attentionReasonLabel("source_degradation")).not.toBe("source degradation");
+  });
+});
 
 describe("getRelationshipGraph", () => {
   it("returns an empty portfolio for a legacy API with no relationships", async () => {

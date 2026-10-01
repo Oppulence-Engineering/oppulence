@@ -16,6 +16,8 @@ describe("ImpactView", () => {
     expect(source).toContain("needsConnect");
     expect(source).toContain("Company exposure");
     expect(source).toContain("No active company risks.");
+    expect(source).toContain("attentionReasonLabel(risk.reason)");
+    expect(source).not.toContain('risk.reason.replaceAll("_", " ")');
     expect(source).toContain("Your companies and people were not changed.");
     expect(source).not.toContain("Measure portfolio risk");
     expect(source).not.toContain("Relationship exposure");
@@ -41,15 +43,7 @@ describe("ImpactView", () => {
   });
 
   it("counts companies in the account total and leaves a person out", () => {
-    expect(
-      impactAccountTotal(
-        [
-          { kind: "company" },
-          { kind: "person" },
-        ],
-        2,
-      ),
-    ).toBe(1);
+    expect(impactAccountTotal([{ kind: "company" }, { kind: "person" }], 2)).toBe(1);
     expect(impactAccountTotal(undefined, 2)).toBe(2);
   });
 });

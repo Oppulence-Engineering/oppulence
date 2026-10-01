@@ -832,6 +832,30 @@ export const recordOutcome = (actionId: string, input: RecordOutcomeInput) =>
 
 // --- display helpers ---------------------------------------------------------
 
+const ATTENTION_REASON_LABELS: Record<string, string> = {
+  quiet_account: "Quiet account",
+  contact_departed: "Contact left",
+  external_trigger: "Outside event",
+  overdue_commitment: "Overdue promise",
+  unresolved_risk: "Unresolved risk",
+  missing_next_step: "No next step",
+  source_degradation: "Source needs reconnecting",
+  action_outcome_review: "Action needs review",
+  recommendation: "Suggested follow-up",
+};
+
+/** Impact lists attention reason codes. The queue already has a sentence. */
+export function attentionReasonLabel(reason: string): string {
+  const known = ATTENTION_REASON_LABELS[reason] ?? DETECTOR_LABELS[reason];
+  if (known) return known;
+  return reason
+    .replaceAll(/[._]+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 export const DETECTOR_LABELS: Record<string, string> = {
   requested_follow_up_due: "Follow-up due",
   unanswered_proposal: "Unanswered proposal",
