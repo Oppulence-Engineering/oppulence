@@ -3,7 +3,7 @@
 import "client-only";
 
 import { ArrowRight, Buildings, FileText, ListBullets } from "@/lib/icons";
-import { useEffect, useState, type ComponentPropsWithoutRef, type ReactNode } from "react";
+import { type ComponentPropsWithoutRef, type ReactNode } from "react";
 
 import { cn } from "@oppulence/ui/lib/utils";
 
@@ -70,16 +70,7 @@ export function HomeAgentSurface({
   onSelectPrompt,
   ...props
 }: HomeAgentSurfaceProps) {
-  const [motionReduced, setMotionReduced] = useState(false);
   const greetingName = resolveGreetingName(userName);
-
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const syncMotion = () => setMotionReduced(media.matches);
-    syncMotion();
-    media.addEventListener("change", syncMotion);
-    return () => media.removeEventListener("change", syncMotion);
-  }, []);
 
   return (
     <section
@@ -139,29 +130,20 @@ export function HomeAgentSurface({
             </div>
           </div>
 
-          <div className="mt-5 sm:hidden">
-            {motionReduced ? (
-              <div className="flex flex-col gap-2">
-                {STARTING_POINTS.map((startingPoint) => (
-                  <button
-                    className="rounded-[10px] border border-[var(--border)] px-3 py-2 text-left text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)]"
-                    key={startingPoint.title}
-                    onClick={() => onSelectPrompt(startingPoint.prompt)}
-                    type="button"
-                  >
-                    {startingPoint.title}
-                  </button>
-                ))}
-              </div>
-            ) : (
+          <div
+            className="mt-5 flex flex-col gap-2 sm:hidden"
+            data-slot="home-suggested-actions-mobile"
+          >
+            {STARTING_POINTS.map((startingPoint) => (
               <button
-                className="w-full rounded-[10px] border border-[var(--border)] px-3 py-2 text-left text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)]"
-                onClick={() => onSelectPrompt(STARTING_POINTS[0].prompt)}
+                className="rounded-[10px] border border-[var(--border)] px-3 py-2 text-left text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)]"
+                key={startingPoint.title}
+                onClick={() => onSelectPrompt(startingPoint.prompt)}
                 type="button"
               >
-                {STARTING_POINTS[0].title}
+                {startingPoint.title}
               </button>
-            )}
+            ))}
           </div>
 
           <p className="mt-8 text-center font-mono text-[10px] tracking-[0.08em] text-[var(--text-muted)]">

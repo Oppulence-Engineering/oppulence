@@ -51,6 +51,36 @@ describe("HomeAgentSurface", () => {
     expect(screen.getByText("3 promises at risk")).toBeVisible();
   });
 
+  it("offers every suggested action on a phone", () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
+    );
+    render(
+      <HomeAgentSurface
+        activeAgent="Revenue operator"
+        onSelectPrompt={onSelectPrompt}
+        promptInput={<label>Operator brief</label>}
+        signalPanel={null}
+        workspace="Acme"
+      />,
+    );
+
+    const mobile = document.querySelector("[data-slot=home-suggested-actions-mobile]");
+    expect(mobile).not.toBeNull();
+    for (const title of [
+      "Find a slipping promise",
+      "Review an at-risk company",
+      "Prioritize what we owe",
+    ]) {
+      expect(mobile?.textContent).toContain(title);
+    }
+  });
+
   it("offers suggested actions to reduced-motion users on mobile", async () => {
     const user = userEvent.setup();
     render(
