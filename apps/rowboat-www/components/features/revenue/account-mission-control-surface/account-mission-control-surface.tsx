@@ -36,18 +36,33 @@ function commitmentLabel(direction: string) {
   return "Commitment";
 }
 
-function commitmentStatus(commitment: RelationshipCommitment): {
+/** Same window the register uses. At risk is a fact about the clock, not a stored status. */
+const AT_RISK_WINDOW_MS = 72 * 60 * 60 * 1000;
+
+export function commitmentTimelineStatus(
+  commitment: RelationshipCommitment,
+  now = Date.now(),
+): {
   label: string;
   variant: AccountTimelineItem["statusVariant"];
 } {
   if (["met", "fulfilled", "waived"].includes(commitment.status)) {
     return { label: "Kept", variant: "green" };
   }
-  if (["at_risk", "missed", "disputed"].includes(commitment.status)) {
+  // "at_risk" is never stored. A disputed promise keeps status "open" and
+  // records the dispute on acceptance, so both have to be read here.
+  if (
+    ["at_risk", "missed", "disputed"].includes(commitment.status) ||
+    commitment.acceptance === "disputed"
+  ) {
     return { label: "At risk", variant: "red" };
   }
   if (commitment.acceptance === "candidate") {
     return { label: "Review", variant: "amber" };
+  }
+  const due = commitment.dueAt ? Date.parse(commitment.dueAt) : Number.NaN;
+  if (Number.isFinite(due) && due < now + AT_RISK_WINDOW_MS) {
+    return { label: "At risk", variant: "red" };
   }
   return { label: "Open", variant: "amber" };
 }
@@ -56,9 +71,10 @@ function commitmentStatus(commitment: RelationshipCommitment): {
 export function mapCommitmentsToAccountTimeline(
   commitments: RelationshipCommitment[],
   limit = 5,
+  now = Date.now(),
 ): AccountTimelineItem[] {
   return commitments.slice(0, limit).map((commitment) => {
-    const status = commitmentStatus(commitment);
+    const status = commitmentTimelineStatus(commitment, now);
     return {
       id: commitment.id,
       label: commitmentLabel(commitment.direction),
