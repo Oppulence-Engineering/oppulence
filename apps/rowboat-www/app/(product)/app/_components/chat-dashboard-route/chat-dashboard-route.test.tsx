@@ -57,6 +57,8 @@ describe("ChatDashboardRoute", () => {
     expect(source).toContain('if (stat.tab === "commitments") requestDueCommitments();');
     expect(source).not.toContain('label: "commitments"');
     expect(source).toContain("agentToolLabel(item.name)");
+    expect(source).toContain("approvalTrustCopy(item.trustTier)");
+    expect(source).not.toContain('Trust tier: {item.trustTier.replaceAll("_", " ")}');
     expect(source).not.toContain("title={item.name}");
     expect(source).not.toContain("Approval required: {item.name}");
   });

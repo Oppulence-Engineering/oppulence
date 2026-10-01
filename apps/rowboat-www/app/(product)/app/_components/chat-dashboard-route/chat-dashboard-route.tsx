@@ -38,7 +38,7 @@ import {
   ToolOutput,
 } from "@/components/ai-elements/tool";
 import type { AgentHistoryItem } from "@/lib/agents/agent-history";
-import { agentToolLabel } from "@/lib/agents/agent-tools";
+import { agentToolLabel, approvalTrustCopy } from "@/lib/agents/agent-tools";
 import { requestDueCommitments } from "@/lib/dashboard/commitment-due-request";
 import { atRiskPulseCount, recoveryPulseCount } from "@/lib/revenue/revenue-records";
 import type { RevenueTab } from "@/lib/dashboard/product-navigation";
@@ -276,7 +276,7 @@ export function ChatDashboardRoute({ className, ...props }: ChatDashboardRoutePr
                       Approval required: {agentToolLabel(item.name)}
                     </AlertTitle>
                     <AlertDescription className="text-xs text-primary/55">
-                      Trust tier: {item.trustTier.replaceAll("_", " ")}
+                      {approvalTrustCopy(item.trustTier)}
                     </AlertDescription>
                     <div className="col-start-2 mt-3">
                       <ToolInput input={item.input} />

@@ -199,6 +199,20 @@ const GRANTED_TOOL_LABELS: Record<string, string> = {
   "connector.write.composio_tool_execute": "Run another tool after you approve it",
 };
 
+const APPROVAL_TRUST_COPY: Record<string, string> = {
+  read: "This only looks things up.",
+  write: "This can change a record.",
+  act: "This can take an action.",
+  "money-moving": "This can spend money or send something you cannot undo.",
+};
+
+/** The approval card says what the action can do. The stored tier is not the sentence. */
+export function approvalTrustCopy(tier: string): string {
+  return (
+    APPROVAL_TRUST_COPY[tier.trim().toLowerCase()] ?? "This needs your approval before it runs."
+  );
+}
+
 export function agentToolLabel(name: string): string {
   const catalog = AGENT_TOOL_CATALOG.find((tool) => tool.name === name);
   if (catalog) return catalog.label;

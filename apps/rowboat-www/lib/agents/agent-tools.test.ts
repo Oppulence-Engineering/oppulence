@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { agentToolLabel } from "@/lib/agents/agent-tools";
+import { agentToolLabel, approvalTrustCopy } from "@/lib/agents/agent-tools";
 
 describe("agent tool labels", () => {
   it("names granted tools the way the product talks", () => {
@@ -33,5 +33,13 @@ describe("agent tool labels", () => {
     expect(agentToolLabel("commitment.export")).toBe("Export promises");
     expect(agentToolLabel("commitment.unblock")).toBe("Unblock a promise");
     expect(agentToolLabel("partner.custom_action")).toBe("Partner custom action");
+    expect(approvalTrustCopy("read")).toBe("This only looks things up.");
+    expect(approvalTrustCopy("write")).toBe("This can change a record.");
+    expect(approvalTrustCopy("act")).toBe("This can take an action.");
+    expect(approvalTrustCopy("money-moving")).toBe(
+      "This can spend money or send something you cannot undo.",
+    );
+    expect(approvalTrustCopy("custom_tier")).toBe("This needs your approval before it runs.");
+    expect(approvalTrustCopy("money-moving")).not.toContain("money-moving");
   });
 });
