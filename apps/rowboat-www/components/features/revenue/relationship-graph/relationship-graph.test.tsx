@@ -15,6 +15,8 @@ import {
   graphNodeSummaryLabel,
   graphStateFromSearch,
   graphCountLabel,
+  graphNodeCap,
+  graphCanvasCapLabel,
   graphListRemainderLabel,
   graphLayoutLabel,
   graphAccountChoice,
@@ -47,6 +49,13 @@ describe("RelationshipGraphWorkspace", () => {
       message: "Nothing matches this view.",
       offerReset: true,
     });
+    expect(graphNodeCap(0.72)).toBe(170);
+    expect(graphNodeCap(1)).toBeNull();
+    expect(graphCanvasCapLabel(170, 400)).toBe(
+      "Showing 170 of 400 · raise how many to show for more",
+    );
+    expect(source).toContain("graphNodeCap(viewState.density)");
+    expect(source).toContain("graphCanvasCapLabel(visible.nodes.length, graph.nodes.length)");
     expect(source).toContain("raise how many to show for more");
     expect(source).not.toContain("raise density");
     expect(source).not.toContain("No nodes match");

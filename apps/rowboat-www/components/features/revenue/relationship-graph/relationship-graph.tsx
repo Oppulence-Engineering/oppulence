@@ -992,6 +992,19 @@ function GraphTable({
 }
 
 /** One item reads differently from many. The canvas count is the only place this is shown. */
+/**
+ * Lower settings keep the canvas readable. The top setting shows every node
+ * the graph already returned, instead of stopping at 220 and asking for more.
+ */
+export function graphNodeCap(density: number): number | null {
+  if (density >= 1) return null;
+  return Math.round(40 + density * 180);
+}
+
+export function graphCanvasCapLabel(shown: number, total: number): string {
+  return `Showing ${shown} of ${total} · raise how many to show for more`;
+}
+
 export function graphCountLabel(count: number, singular: string, plural: string): string {
   return `${count} ${count === 1 ? singular : plural}`;
 }
@@ -1515,8 +1528,8 @@ export function RelationshipGraphWorkspace({
     const available = new Set(nodes.map((node) => node.id));
     edges = edges.filter((edge) => available.has(edge.source) && available.has(edge.target));
 
-    const maxNodes = Math.round(40 + viewState.density * 180);
-    if (nodes.length > maxNodes) {
+    const maxNodes = graphNodeCap(viewState.density);
+    if (maxNodes != null && nodes.length > maxNodes) {
       nodes = [...nodes]
         .sort((left, right) => {
           const score = (node: RelationshipGraphNode) =>
@@ -2040,7 +2053,7 @@ export function RelationshipGraphWorkspace({
             </div>
           ) : graph && graph.nodes.length > visible.nodes.length ? (
             <div className="absolute bottom-3 right-3 border border-border bg-background/90 px-2 py-1 text-[10px] text-primary/45">
-              Showing {visible.nodes.length} of {graph.nodes.length} · raise how many to show for more
+              {graphCanvasCapLabel(visible.nodes.length, graph.nodes.length)}
             </div>
           ) : null}
         </div>
