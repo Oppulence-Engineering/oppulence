@@ -83,19 +83,23 @@ func personNormalizedContains(term string) predicate.Person {
 			person.FieldOrgName,
 			person.FieldOrgDomain,
 		} {
-			parts = append(parts, sql.P(func(b *sql.Builder) {
-				// Arg writes "?" on SQLite and "$n" on Postgres. A raw "?" is a
-				// JSON operator on Postgres, so ESCAPE is parsed as a type name
-				// and the search fails with "type escape does not exist".
-				b.WriteString(fmt.Sprintf(
-					"replace(replace(replace(lower(coalesce(%s, '')), '-', ' '), '_', ' '), '.', ' ') LIKE ",
-					s.C(field),
-				))
-				b.Arg(needle)
-				b.WriteString(" ESCAPE '!'")
-			}))
+			parts = append(parts, normalizedSearchLike(s, field, needle))
 		}
 		s.Where(sql.Or(parts...))
+	})
+}
+
+// normalizedSearchLike compares a stored name after hyphens, underscores, and
+// dots become spaces. Arg writes "?" on SQLite and "$n" on Postgres. A raw
+// "?" is a JSON operator on Postgres, so ESCAPE is parsed as a type name.
+func normalizedSearchLike(s *sql.Selector, field, needle string) *sql.Predicate {
+	return sql.P(func(b *sql.Builder) {
+		b.WriteString(fmt.Sprintf(
+			"replace(replace(replace(lower(coalesce(%s, '')), '-', ' '), '_', ' '), '.', ' ') LIKE ",
+			s.C(field),
+		))
+		b.Arg(needle)
+		b.WriteString(" ESCAPE '!'")
 	})
 }
 

@@ -9,12 +9,14 @@ import (
 	"strings"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
@@ -741,6 +743,7 @@ func (s *Service) ListRelationshipsFiltered(
 			relationship.DisplayNameContainsFold(value),
 			relationship.AccountDomainContainsFold(value),
 			relationship.PrimaryEmailContainsFold(value),
+			relationshipNormalizedContains(value),
 		))
 	}
 	return q.
@@ -753,6 +756,25 @@ func (s *Service) ListRelationshipsFiltered(
 		Order(ent.Desc(relationship.FieldUpdatedAt)).
 		Limit(relationshipListLimit).
 		All(ctx)
+}
+
+// relationshipNormalizedContains matches the company title on the directory.
+// A domain stored as dogfood-label.example is shown as "Dogfood Label", and
+// that phrase has to find the company even though the stored value uses a
+// hyphen and a dot.
+func relationshipNormalizedContains(term string) predicate.Relationship {
+	needle := "%" + escapePersonSearchLike(normalizePersonSearch(term)) + "%"
+	return predicate.Relationship(func(s *sql.Selector) {
+		parts := make([]*sql.Predicate, 0, 3)
+		for _, field := range []string{
+			relationship.FieldDisplayName,
+			relationship.FieldAccountDomain,
+			relationship.FieldPrimaryEmail,
+		} {
+			parts = append(parts, normalizedSearchLike(s, field, needle))
+		}
+		s.Where(sql.Or(parts...))
+	})
 }
 
 // GetRelationship returns one relationship with its actions and commitments.

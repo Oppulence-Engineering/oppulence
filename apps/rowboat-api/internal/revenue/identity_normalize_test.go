@@ -1,8 +1,13 @@
 package revenue
 
 import (
+	"strings"
 	"testing"
 
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
+
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 )
 
@@ -96,5 +101,37 @@ func TestCreateRelationshipStoresAPlainEmail(t *testing.T) {
 	}
 	if anchor.NormalizedValue != "hello@northwind.example" {
 		t.Fatalf("email anchor = %q", anchor.NormalizedValue)
+	}
+}
+
+func TestRelationshipSearchFindsTheCompanyTitle(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "dogfood-label.example", AccountDomain: "dogfood-label.example",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Dogfood Label"})
+	if err != nil || len(found) != 1 || found[0].AccountDomain != "dogfood-label.example" {
+		t.Fatalf("title search = %+v err=%v", found, err)
+	}
+	miss, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "zzzz-not-a-company"})
+	if err != nil || len(miss) != 0 {
+		t.Fatalf("unrelated search = %+v err=%v", miss, err)
+	}
+}
+
+func TestRelationshipSearchSQLUsesPostgresPlaceholders(t *testing.T) {
+	selector := sql.Dialect(dialect.Postgres).Select().From(sql.Table(relationship.Table))
+	relationshipNormalizedContains("Dogfood Label")(selector)
+	query, args := selector.Query()
+	if strings.Contains(query, "?") {
+		t.Fatalf("postgres search still uses ?: %s", query)
+	}
+	if !strings.Contains(query, "ESCAPE '!'") || !strings.Contains(query, "$1") {
+		t.Fatalf("postgres search = %s", query)
+	}
+	if len(args) != 3 || args[0] != "%dogfood label%" {
+		t.Fatalf("args = %#v", args)
 	}
 }
