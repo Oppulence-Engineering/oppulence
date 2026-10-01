@@ -11,6 +11,7 @@ import {
   gmailDraftsAvailable,
   localModeNotice,
   sendingCheckLabel,
+  sourceConnectionLabel,
   sourceRefreshNotice,
   WorkspaceView,
   workspaceMetadataValue,
@@ -122,8 +123,11 @@ describe("WorkspaceView", () => {
     const onNotice = vi.fn();
     renderWorkspace({ onNotice });
 
-    expect(await screen.findByText("sync incomplete")).toBeInTheDocument();
-    expect(screen.getByText("live")).toBeInTheDocument();
+    expect(await screen.findByText("Sync incomplete")).toBeInTheDocument();
+    expect(screen.getAllByText("Active").length).toBeGreaterThan(0);
+    expect(screen.getByText("A note")).toBeInTheDocument();
+    expect(screen.queryByText("live")).not.toBeInTheDocument();
+    expect(screen.queryByText("desktop_note")).not.toBeInTheDocument();
     expect(
       screen.getByText(/connection works, but its history is not fully synced/i),
     ).toBeVisible();
@@ -134,9 +138,10 @@ describe("WorkspaceView", () => {
     await waitFor(() =>
       expect(resyncRelationshipSource).toHaveBeenCalledWith("google", "owner@example.com"),
     );
-    expect(await screen.findByText("syncing")).toBeInTheDocument();
+    expect(await screen.findByText("Syncing")).toBeInTheDocument();
     expect(onNotice).toHaveBeenCalledWith("Google refresh queued.");
     expect(sourceRefreshNotice("slack")).toBe("Slack refresh queued.");
+    expect(sourceRefreshNotice("desktop_note")).toBe("A note refresh queued.");
   });
 
   it("distinguishes stale freshness from an incomplete history sync", async () => {
@@ -152,7 +157,7 @@ describe("WorkspaceView", () => {
       screen.getByText(/no successful update arrived on schedule/i),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Refresh now" })).toBeEnabled();
-    expect(screen.queryByText("sync incomplete")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sync incomplete")).not.toBeInTheDocument();
   });
 
   it.each([
@@ -172,6 +177,26 @@ describe("WorkspaceView", () => {
       expect(fetchRelationshipRefreshBlocker).toHaveBeenCalled();
     },
   );
+
+  it("names a source connection instead of the stored status", () => {
+    expect(sourceConnectionLabel(incomplete)).toBe("Sync incomplete");
+    expect(
+      sourceConnectionLabel({
+        ...incomplete,
+        source: "hubspot",
+        status: "reconnect_required",
+        completeness: "disconnected",
+      }),
+    ).toBe("Reconnect required");
+    expect(
+      sourceConnectionLabel({
+        ...incomplete,
+        source: "desktop_note",
+        status: "live",
+        completeness: "complete",
+      }),
+    ).toBe("Active");
+  });
 
   it("names a workspace that needs repair instead of showing the stored slug", () => {
     expect(workspaceMetadataValue("repair_required")).toBe("Needs repair");

@@ -30,6 +30,7 @@ import {
 } from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
 import { Field, errMessage } from "@/components/features/revenue/shared/shared";
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
+import { activitySourceLabel, enumLabel } from "@/lib/revenue/source-product-copy";
 import { cn } from "@/lib/utils";
 import type { RelationshipSourceStatus, RevenueWorkspace } from "@/lib/revenue/types";
 
@@ -328,15 +329,7 @@ function SourceRow({
   const stale = supportsResync && !stopped && !syncing && source.status === "stale";
   const incomplete =
     supportsResync && !stopped && !syncing && !stale && source.completeness !== "complete";
-  const label = stopped
-    ? source.status.replaceAll("_", " ")
-    : syncing
-      ? "syncing"
-      : stale
-        ? "Out of date"
-        : incomplete
-          ? "sync incomplete"
-          : source.status.replaceAll("_", " ");
+  const label = sourceConnectionLabel(source);
   const canResync = stale || incomplete;
 
   const retry = async () => {
@@ -356,8 +349,8 @@ function SourceRow({
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">
       <div className="min-w-0">
-        <div className="font-normal capitalize text-[var(--text-primary)]">
-          {source.source}
+        <div className="font-normal text-[var(--text-primary)]">
+          {activitySourceLabel(source.source)}
           {source.sourceAccountId && source.sourceAccountId !== "default" ? (
             // The row title-cases the provider slug. The account id is often an
             // email, and that same transform would rewrite owner@example.com.
@@ -411,9 +404,36 @@ function SourceRow({
   );
 }
 
+/**
+ * The badge used to print the stored status. "live" and "sync incomplete"
+ * sat beside "Out of date", so a healthy source looked unfinished.
+ */
+export function sourceConnectionLabel(
+  source: Pick<RelationshipSourceStatus, "source" | "status" | "backfillPhase" | "completeness">,
+): string {
+  const stopped = source.status === "reconnect_required" || source.status === "disconnected";
+  const syncing =
+    source.status === "backfilling" ||
+    source.status === "rebuilding" ||
+    source.backfillPhase === "queued" ||
+    source.backfillPhase === "running";
+  const supportsResync = ["google", "slack", "hubspot"].includes(source.source.toLowerCase());
+  const stale = supportsResync && !stopped && !syncing && source.status === "stale";
+  const incomplete =
+    supportsResync && !stopped && !syncing && !stale && source.completeness !== "complete";
+  if (stopped) {
+    return source.status === "reconnect_required" ? "Reconnect required" : "Disconnected";
+  }
+  if (syncing) return "Syncing";
+  if (stale) return "Out of date";
+  if (incomplete) return "Sync incomplete";
+  if (source.status === "live" || source.status === "connected") return "Active";
+  return enumLabel(source.status);
+}
+
 /** The stored source is a lowercase provider name. The toast is a sentence. */
 export function sourceRefreshNotice(source: string): string {
-  const name = source ? source.charAt(0).toUpperCase() + source.slice(1) : "Source";
+  const name = source.trim() ? activitySourceLabel(source) : "Source";
   return `${name} refresh queued.`;
 }
 
