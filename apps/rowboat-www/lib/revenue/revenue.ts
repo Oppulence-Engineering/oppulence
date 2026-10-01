@@ -519,7 +519,8 @@ export async function listRelationships(
   filters: RelationshipFilters = {},
   signal?: AbortSignal,
 ): Promise<RevenueRelationship[]> {
-  return viaRequest(() => fetchRelationships(filters as RelationshipListScope, signal));
+  const page = await viaRequest(() => fetchRelationships(filters as RelationshipListScope, signal));
+  return page.relationships;
 }
 
 export interface RelationshipGraphRequest {

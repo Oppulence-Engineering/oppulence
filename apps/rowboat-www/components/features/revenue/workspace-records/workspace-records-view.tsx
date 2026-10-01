@@ -41,6 +41,7 @@ import {
   fetchRevenueActions,
 } from "@/hooks/queries/utils/fetch-revenue-actions";
 import { usePersons, useRelationships } from "@/hooks/queries/use-relationships";
+import { relationshipRows } from "@/hooks/queries/utils/fetch-relationships";
 import {
   fetchPersons,
   PERSON_PAGE_SIZE,
@@ -2228,7 +2229,7 @@ export function TasksView({
     setMoreTasks(loadedTaskCount.current === ACTION_QUEUE_PAGE);
   }, [actionsQuery.data, actionsQuery.isSuccess]);
   const tasks = sortTasksByDue(taskRows.filter(isWorkspaceTask), soonestFirst);
-  const relationships = (relationshipsQuery.data ?? []).filter(
+  const relationships = relationshipRows(relationshipsQuery.data).filter(
     (record) => record.kind !== "person",
   );
   const loading = actionsQuery.isPending || relationshipsQuery.isPending;

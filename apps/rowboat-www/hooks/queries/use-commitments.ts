@@ -17,7 +17,11 @@ import {
   registerFilterFor,
   type RegisterView,
 } from "@/lib/revenue/commitment-register-filter";
-import { fetchRelationshipGraph, fetchRelationships } from "@/hooks/queries/utils/fetch-relationships";
+import {
+  fetchRelationshipGraph,
+  fetchRelationships,
+  relationshipRows,
+} from "@/hooks/queries/utils/fetch-relationships";
 import { DashboardRequestError } from "@/lib/api/request-json";
 import { friendlyRevenueError, RevenueAPIError } from "@/lib/revenue/revenue";
 import { companyName } from "@/lib/revenue/revenue-records";
@@ -69,15 +73,15 @@ export function useCommitmentRegister(
         fetchRelationshipGraph({ scope: "portfolio", depth: 1 }, signal),
         fetchRelationships({}, signal),
       ]);
-      const relationshipRows =
-        relationships.status === "fulfilled" ? relationships.value : [];
+      const loadedRelationships =
+        relationships.status === "fulfilled" ? relationshipRows(relationships.value) : [];
       const titles = new Map(
-        relationshipRows
+        loadedRelationships
           .filter((row) => row.kind !== "person")
           .map((row) => [row.id, companyName(row)]),
       );
       const accounts = registerAccountChoices(
-        relationshipRows,
+        loadedRelationships,
         graph.status === "fulfilled" ? graph.value.nodes : [],
       );
       const rawEntries = entries.status === "fulfilled" ? entries.value : [];

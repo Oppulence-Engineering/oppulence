@@ -1202,7 +1202,7 @@ export const getListRelationshipsUrl = (params?: ListRelationshipsParams) => {
 };
 
 /**
- * Lists canonical relationship state with optional text, lifecycle, health, and engagement filters.
+ * Lists canonical relationship state with optional text, lifecycle, health, and engagement filters. A full page of 200 is the end of the list when hasMore is false.
  * @summary List relationships
  */
 export const listRelationships = async (

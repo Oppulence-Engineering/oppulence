@@ -1,4 +1,4 @@
-import { loadRelationships } from "@/hooks/queries/utils/fetch-relationships";
+import { loadRelationships, relationshipRows } from "@/hooks/queries/utils/fetch-relationships";
 import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
 import { getRelationshipTimelinePage, type TimelinePageCursor } from "@/lib/revenue/revenue";
 import {
@@ -85,10 +85,11 @@ export async function loadWorkspaceNotes(
   request: RequestJsonFn,
   signal?: AbortSignal,
 ): Promise<WorkspaceNotesBundle> {
-  const rows = await loadRelationships(request, {}, signal);
+  const directory = await loadRelationships(request, {}, signal);
+  const rows = relationshipRows(directory);
   const relationships = rows.filter((relationship) => relationship.kind !== "person");
   const page = await notesFromCompanies(request, relationships, new Map(), signal);
-  const nextRelationshipOffset = rows.length === NOTE_SOURCE_PAGE ? rows.length : undefined;
+  const nextRelationshipOffset = directory.hasMore ? rows.length : undefined;
   return {
     ...page,
     relationships,
@@ -110,10 +111,11 @@ export async function loadMoreWorkspaceNotes(
       { before: cursor.before, beforeId: cursor.beforeId },
     ]),
   );
-  const moreRows =
+  const moreDirectory =
     input.nextRelationshipOffset === undefined
-      ? []
+      ? undefined
       : await loadRelationships(request, { offset: input.nextRelationshipOffset }, signal);
+  const moreRows = relationshipRows(moreDirectory);
   const moreCompanies = moreRows.filter(
     (relationship) => relationship.kind !== "person" && !continuedIds.has(relationship.id),
   );
@@ -121,10 +123,9 @@ export async function loadMoreWorkspaceNotes(
     notesFromCompanies(request, known, beforeById, signal),
     notesFromCompanies(request, moreCompanies, new Map(), signal),
   ]);
-  const nextRelationshipOffset =
-    moreRows.length === NOTE_SOURCE_PAGE
-      ? (input.nextRelationshipOffset ?? 0) + moreRows.length
-      : undefined;
+  const nextRelationshipOffset = moreDirectory?.hasMore
+    ? (input.nextRelationshipOffset ?? 0) + moreRows.length
+    : undefined;
   const timelineCursors = [...continued.timelineCursors, ...added.timelineCursors];
   return {
     notes: [...continued.notes, ...added.notes],

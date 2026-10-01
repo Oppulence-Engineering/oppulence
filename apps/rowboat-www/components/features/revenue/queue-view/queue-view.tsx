@@ -6,6 +6,7 @@ import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { openCompanyCreate } from "@/lib/dashboard/company-create-request";
 import { useRelationships } from "@/hooks/queries/use-relationships";
+import { relationshipRows } from "@/hooks/queries/utils/fetch-relationships";
 import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
 import {
   ACTION_QUEUE_PAGE,
@@ -585,7 +586,7 @@ function CreateActionDialog({
   onOpenCompanies?: () => void;
 }) {
   const relationshipsQuery = useRelationships();
-  const relationships = (relationshipsQuery.data ?? []).filter(
+  const relationships = relationshipRows(relationshipsQuery.data).filter(
     (record) => record.kind !== "person",
   );
   const [relationshipId, setRelationshipId] = React.useState("");

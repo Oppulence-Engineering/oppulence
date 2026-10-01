@@ -10,6 +10,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const fetchers = vi.hoisted(() => ({
   fetchRelationships: vi.fn(),
+  relationshipRows: (page: { relationships?: unknown[] } | unknown[] | undefined) =>
+    Array.isArray(page) ? page : (page?.relationships ?? []),
   fetchSemanticSearch: vi.fn(),
   fetchIdentityCandidates: vi.fn(),
   fetchRelationshipAttention: vi.fn(),

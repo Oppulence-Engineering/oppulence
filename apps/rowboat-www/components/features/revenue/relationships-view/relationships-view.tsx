@@ -175,6 +175,8 @@ import {
   fetchIdentityCandidates,
   fetchRelationshipAttention,
   fetchRelationships,
+  relationshipPageHasMore,
+  relationshipRows,
   identityCandidateHasMore,
 } from "@/hooks/queries/utils/fetch-relationships";
 import { relationshipKeys } from "@/hooks/queries/utils/relationship-keys";
@@ -635,14 +637,13 @@ export function RelationshipsView({
   };
   const relationshipsQuery = useRelationships(filters);
   const [extraCompanies, setExtraCompanies] = React.useState<RevenueRelationship[]>([]);
-  const [directoryExhausted, setDirectoryExhausted] = React.useState(false);
   const [loadingMoreCompanies, setLoadingMoreCompanies] = React.useState(false);
   const directoryScope = `${debouncedQuery}|${health}|${lifecycle}`;
   const directoryScopeRef = React.useRef(directoryScope);
   directoryScopeRef.current = directoryScope;
   React.useEffect(() => {
     setExtraCompanies([]);
-    setDirectoryExhausted(false);
+    setLaterDirectoryHasMore(null);
   }, [directoryScope]);
   const sourcesQuery = useRelationshipSourceStatuses();
   const inventoryQuery = useRelationshipSourceInventory();
@@ -658,7 +659,8 @@ export function RelationshipsView({
   const [attentionExhausted, setAttentionExhausted] = React.useState(false);
   const [loadingMoreAttention, setLoadingMoreAttention] = React.useState(false);
   const openActionsQuery = useRevenueActions("open", 100, "task");
-  const directoryPage = relationshipsQuery.data ?? [];
+  const directoryPage = relationshipRows(relationshipsQuery.data);
+  const [laterDirectoryHasMore, setLaterDirectoryHasMore] = React.useState<boolean | null>(null);
   const directoryRows = React.useMemo(() => {
     if (extraCompanies.length === 0) return directoryPage;
     const seen = new Set(directoryPage.map((row) => row.id));
@@ -672,9 +674,8 @@ export function RelationshipsView({
     ];
   }, [directoryPage, extraCompanies]);
   const hasMoreCompanies =
-    !directoryExhausted &&
-    directoryPage.length > 0 &&
-    (directoryPage.length + extraCompanies.length) % COMPANY_DIRECTORY_PAGE === 0;
+    laterDirectoryHasMore ??
+    (directoryPage.length > 0 && relationshipPageHasMore(relationshipsQuery.data));
   const rows = directoryRows;
   const sources = sourcesQuery.data ?? [];
   const sourceInventory = inventoryQuery.data ?? [];
@@ -778,8 +779,8 @@ export function RelationshipsView({
         offset: directoryPage.length + extraCompanies.length,
       });
       if (directoryScopeRef.current !== requestedScope) return;
-      if (next.length < COMPANY_DIRECTORY_PAGE) setDirectoryExhausted(true);
-      setExtraCompanies((current) => [...current, ...next]);
+      setLaterDirectoryHasMore(relationshipPageHasMore(next));
+      setExtraCompanies((current) => [...current, ...relationshipRows(next)]);
     } catch (reason) {
       onError(explainedRevenueError(reason, "Could not load the next companies."));
     } finally {

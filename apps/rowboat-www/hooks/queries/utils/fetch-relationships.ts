@@ -68,17 +68,40 @@ function graphPath(input: RelationshipGraphScope): string {
   return `/relationships/graph?${params.toString()}`;
 }
 
+export type RelationshipDirectoryPage = {
+  relationships: RevenueRelationship[];
+  hasMore: boolean;
+};
+
+/** Older callers and tests still hand back a bare list. A page object is the live API. */
+export function relationshipRows(
+  page: RelationshipDirectoryPage | readonly RevenueRelationship[] | undefined,
+): RevenueRelationship[] {
+  if (!page) return [];
+  return Array.isArray(page) ? [...page] : page.relationships;
+}
+
+export function relationshipPageHasMore(
+  page: RelationshipDirectoryPage | readonly RevenueRelationship[] | undefined,
+): boolean {
+  if (!page || Array.isArray(page)) return false;
+  return page.hasMore;
+}
+
 export async function loadRelationships(
   request: RequestJsonFn,
   filters: RelationshipListScope = {},
   signal?: AbortSignal,
-): Promise<RevenueRelationship[]> {
+): Promise<RelationshipDirectoryPage> {
   const body = await request({
     path: relationshipsPath(filters),
     schema: ListRelationships200Response,
     signal,
   });
-  return (body.relationships ?? []) as RevenueRelationship[];
+  return {
+    relationships: (body.relationships ?? []) as RevenueRelationship[],
+    hasMore: Boolean(body.hasMore),
+  };
 }
 
 async function requestGraph(
@@ -112,7 +135,7 @@ export async function loadRelationshipGraph(
       /relationshipId/i.test(error.message);
     if (!legacyPortfolioEndpoint) throw error;
 
-    const relationships = await loadRelationships(request, {}, signal);
+    const relationships = relationshipRows(await loadRelationships(request, {}, signal));
     const graphResults = await mapSettledWithConcurrency(relationships, 4, (relationship) =>
       requestGraph(
         request,
@@ -241,7 +264,7 @@ export async function loadSemanticSearch(
 export function fetchRelationships(
   filters: RelationshipListScope = {},
   signal?: AbortSignal,
-): Promise<RevenueRelationship[]> {
+): Promise<RelationshipDirectoryPage> {
   return loadRelationships(requestJson, filters, signal);
 }
 

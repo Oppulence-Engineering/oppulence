@@ -701,7 +701,11 @@ const relationshipListLimit = 200
 // each with its open queue actions eager-loaded so the caller can report
 // open-loop counts.
 func (s *Service) ListRelationships(ctx context.Context, u *ent.User) ([]*ent.Relationship, error) {
-	return s.ListRelationshipsFiltered(ctx, u, RelationshipListFilter{})
+	page, err := s.ListRelationshipsFiltered(ctx, u, RelationshipListFilter{})
+	if err != nil {
+		return nil, err
+	}
+	return page.Relationships, nil
 }
 
 // RelationshipListFilter controls relationship list search, paging, and state filters.
@@ -713,6 +717,14 @@ type RelationshipListFilter struct {
 	Offset     int
 }
 
+// RelationshipListPage is one directory page. HasMore is true only when
+// another row exists past this page, so an exact page of 200 is not offered
+// as if a 201st company were waiting.
+type RelationshipListPage struct {
+	Relationships []*ent.Relationship
+	HasMore       bool
+}
+
 // ListRelationshipsFiltered returns account mission-control rows with
 // explainable-state filters shared by web and desktop. Companies that share a
 // touch time stay in id order, so the next page does not repeat or skip one.
@@ -720,7 +732,7 @@ func (s *Service) ListRelationshipsFiltered(
 	ctx context.Context,
 	u *ent.User,
 	filter RelationshipListFilter,
-) ([]*ent.Relationship, error) {
+) (*RelationshipListPage, error) {
 	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceView)
 	if err != nil {
 		return nil, err
@@ -750,7 +762,7 @@ func (s *Service) ListRelationshipsFiltered(
 			relationshipNormalizedContains(value),
 		))
 	}
-	return q.
+	rows, err := q.
 		WithActions(func(q *ent.RevenueActionQuery) {
 			q.Where(revenueaction.QueueStatusEQ(QueueOpen))
 		}).
@@ -761,9 +773,17 @@ func (s *Service) ListRelationshipsFiltered(
 			ent.Desc(relationship.FieldUpdatedAt),
 			ent.Desc(relationship.FieldID),
 		).
-		Limit(relationshipListLimit).
+		Limit(relationshipListLimit + 1).
 		Offset(filter.Offset).
 		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	hasMore := len(rows) > relationshipListLimit
+	if hasMore {
+		rows = rows[:relationshipListLimit]
+	}
+	return &RelationshipListPage{Relationships: rows, HasMore: hasMore}, nil
 }
 
 // relationshipNormalizedContains matches the company title on the directory.

@@ -1622,16 +1622,16 @@ func (h *Handler) ListRelationships(w http.ResponseWriter, r *http.Request) {
 		}
 		filter.Offset = n
 	}
-	rels, err := h.svc.ListRelationshipsFiltered(r.Context(), u, filter)
+	page, err := h.svc.ListRelationshipsFiltered(r.Context(), u, filter)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	out := make([]relationshipDTO, 0, len(rels))
-	for _, rel := range rels {
+	out := make([]relationshipDTO, 0, len(page.Relationships))
+	for _, rel := range page.Relationships {
 		out = append(out, relationshipToDTOWithOpen(rel))
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"relationships": out})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"relationships": out, "hasMore": page.HasMore})
 }
 
 // CreateRelationship records a relationship.

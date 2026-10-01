@@ -767,13 +767,17 @@ func addRevenuePaths(paths obj) {
 	})}
 
 	paths["/v1/relationships"] = obj{
-		"get": operation("Relationship Intelligence", "List relationships", "Lists canonical relationship state with optional text, lifecycle, health, and engagement filters.", "listRelationships", bearer(), []any{
+		"get": operation("Relationship Intelligence", "List relationships", "Lists canonical relationship state with optional text, lifecycle, health, and engagement filters. A full page of 200 is the end of the list when hasMore is false.", "listRelationships", bearer(), []any{
 			obj{"name": "q", "in": "query", "required": false, "description": "Account, domain, or contact search.", "schema": obj{"type": "string"}},
 			obj{"name": "lifecycle", "in": "query", "required": false, "description": "Lifecycle filter.", "schema": obj{"type": "string"}},
 			obj{"name": "health", "in": "query", "required": false, "description": "Health filter.", "schema": obj{"type": "string"}},
 			obj{"name": "engagement", "in": "query", "required": false, "description": "Engagement filter.", "schema": obj{"type": "string"}},
+			obj{"name": "offset", "in": "query", "required": false, "description": "How many relationships to skip. Each page is 200 rows, newest touch first.", "schema": obj{"type": "integer", "minimum": 0}},
 		}, nil, obj{
-			"200": jsonResponse("Relationships.", objectSchema("Relationship list.", obj{"relationships": arraySchema("Relationships.", ref("RevenueRelationship"))}), nil),
+			"200": jsonResponse("Relationships.", objectSchema("Relationship list.", obj{
+				"relationships": arraySchema("Relationships.", ref("RevenueRelationship")),
+				"hasMore":       boolSchema("Another company exists beyond this page.", false),
+			}, "relationships"), nil),
 			"401": responseRef("401"),
 		}),
 		"post": operation("Relationship Intelligence", "Create a relationship", "Records a canonical relationship in the caller's workspace.", "createRelationship", bearer(), nil, jsonRequest("Relationship.", objectSchema("Create request.", obj{

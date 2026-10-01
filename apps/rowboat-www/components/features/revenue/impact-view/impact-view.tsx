@@ -6,6 +6,7 @@ import * as React from "react";
 import { EnvelopeSimple, MagnifyingGlass, Plugs, WarningDiamond } from "@/lib/icons";
 import { useImpactBundle } from "@/hooks/queries/use-impact";
 import { useRelationships } from "@/hooks/queries/use-relationships";
+import { relationshipRows } from "@/hooks/queries/utils/fetch-relationships";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
 import { Badge } from "@oppulence/ui/components/badge";
@@ -121,7 +122,7 @@ export function ImpactView({
   }
   const { data, digest } = impactQuery.data;
   const accountTotal = impactAccountTotal(
-    relationshipsQuery.isSuccess ? relationshipsQuery.data : undefined,
+    relationshipsQuery.isSuccess ? relationshipRows(relationshipsQuery.data) : undefined,
     data.relationships,
   );
   const atRiskShown = data.atRiskRelationships;

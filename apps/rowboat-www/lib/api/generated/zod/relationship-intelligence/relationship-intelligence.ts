@@ -2950,7 +2950,7 @@ export const DisconnectRelationshipSource403Response = zod
   );
 
 /**
- * Lists canonical relationship state with optional text, lifecycle, health, and engagement filters.
+ * Lists canonical relationship state with optional text, lifecycle, health, and engagement filters. A full page of 200 is the end of the list when hasMore is false.
  * @summary List relationships
  */
 export const listRelationshipsQueryOffsetMin = 0;
@@ -2970,6 +2970,7 @@ export const ListRelationshipsQueryParams = zod.object({
 
 export const ListRelationships200Response = zod
   .strictObject({
+    hasMore: zod.boolean().optional().describe("Another company exists beyond this page."),
     relationships: zod
       .array(
         zod

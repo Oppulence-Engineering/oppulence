@@ -116,11 +116,11 @@ func TestRelationshipSearchFindsTheCompanyTitle(t *testing.T) {
 		t.Fatal(err)
 	}
 	found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Dogfood Label"})
-	if err != nil || len(found) != 1 || found[0].AccountDomain != "dogfood-label.example" {
+	if err != nil || len(found.Relationships) != 1 || found.Relationships[0].AccountDomain != "dogfood-label.example" {
 		t.Fatalf("title search = %+v err=%v", found, err)
 	}
 	miss, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "zzzz-not-a-company"})
-	if err != nil || len(miss) != 0 {
+	if err != nil || len(miss.Relationships) != 0 {
 		t.Fatalf("unrelated search = %+v err=%v", miss, err)
 	}
 }
@@ -146,16 +146,16 @@ func TestListRelationshipsOffsetSkipsTheNewestRows(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(page) != 2 || page[0].DisplayName != "Middle Co" || page[1].DisplayName != "Oldest Co" {
-		t.Fatalf("offset page = %v", namesOf(page))
+	if page.HasMore || len(page.Relationships) != 2 || page.Relationships[0].DisplayName != "Middle Co" || page.Relationships[1].DisplayName != "Oldest Co" {
+		t.Fatalf("offset page = %v hasMore=%v", namesOf(page.Relationships), page.HasMore)
 	}
 	none, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Offset: 3})
-	if err != nil || len(none) != 0 {
-		t.Fatalf("past the end = %v err=%v", namesOf(none), err)
+	if err != nil || none.HasMore || len(none.Relationships) != 0 {
+		t.Fatalf("past the end = %v hasMore=%v err=%v", namesOf(none.Relationships), none.HasMore, err)
 	}
 	all, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Offset: -4})
-	if err != nil || len(all) != 3 || all[0].DisplayName != "Newest Co" {
-		t.Fatalf("negative offset = %v err=%v", namesOf(all), err)
+	if err != nil || all.HasMore || len(all.Relationships) != 3 || all.Relationships[0].DisplayName != "Newest Co" {
+		t.Fatalf("negative offset = %v hasMore=%v err=%v", namesOf(all.Relationships), all.HasMore, err)
 	}
 }
 
@@ -191,10 +191,10 @@ func TestListRelationshipsTiedUpdatedAtUsesID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(first) != relationshipListLimit {
-		t.Fatalf("newest page = %d", len(first))
+	if !first.HasMore || len(first.Relationships) != relationshipListLimit {
+		t.Fatalf("newest page = %d hasMore=%v", len(first.Relationships), first.HasMore)
 	}
-	for _, rel := range first {
+	for _, rel := range first.Relationships {
 		if rel.DisplayName == "Tied Co Last" {
 			t.Fatal("the lowest id was included beside newer ids with the same touch time")
 		}
@@ -203,11 +203,11 @@ func TestListRelationshipsTiedUpdatedAtUsesID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(second) != 1 || second[0].DisplayName != "Tied Co Last" {
-		t.Fatalf("older id page = %v", namesOf(second))
+	if second.HasMore || len(second.Relationships) != 1 || second.Relationships[0].DisplayName != "Tied Co Last" {
+		t.Fatalf("older id page = %v hasMore=%v", namesOf(second.Relationships), second.HasMore)
 	}
 	seen := map[string]bool{}
-	for _, rel := range append(first, second...) {
+	for _, rel := range append(first.Relationships, second.Relationships...) {
 		if seen[rel.ID.String()] {
 			t.Fatalf("company %s appeared on both pages", rel.DisplayName)
 		}

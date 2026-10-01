@@ -23453,7 +23453,7 @@
     },
     "/v1/relationships": {
       "get": {
-        "description": "Lists canonical relationship state with optional text, lifecycle, health, and engagement filters.",
+        "description": "Lists canonical relationship state with optional text, lifecycle, health, and engagement filters. A full page of 200 is the end of the list when hasMore is false.",
         "operationId": "listRelationships",
         "parameters": [
           {
@@ -23510,6 +23510,11 @@
                 "schema": {
                   "description": "Relationship list.",
                   "properties": {
+                    "hasMore": {
+                      "description": "Another company exists beyond this page.",
+                      "example": false,
+                      "type": "boolean"
+                    },
                     "relationships": {
                       "description": "Relationships.",
                       "items": {

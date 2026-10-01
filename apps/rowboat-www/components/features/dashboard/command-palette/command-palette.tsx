@@ -37,6 +37,7 @@ import { Button } from "@oppulence/ui/components/button";
 import { Label } from "@oppulence/ui/components/label";
 import { Spinner } from "@oppulence/ui/components/spinner";
 import { useRelationships, useSemanticSearch } from "@/hooks/queries/use-relationships";
+import { relationshipRows } from "@/hooks/queries/utils/fetch-relationships";
 import { explainedRevenueError } from "@/lib/revenue/revenue";
 import type { SessionMeta } from "@/lib/agents/chat-sessions";
 import type { SemanticMatch } from "@/lib/revenue/revenue";
@@ -136,7 +137,7 @@ export function CommandPalette({
   const searchEnabled = open && term.length >= 2;
   const accountsQuery = useRelationships({ q: term }, searchEnabled && searchMode === "accounts");
   const mailQuery = useSemanticSearch(term, searchEnabled && searchMode === "mail");
-  const accounts = (accountsQuery.data ?? []).filter((account) => account.kind !== "person");
+  const accounts = relationshipRows(accountsQuery.data).filter((account) => account.kind !== "person");
   const mailMatches: SemanticMatch[] = (mailQuery.data?.matches ?? []).slice(0, 6);
   const semanticAvailable = mailQuery.data?.available ?? null;
   const searchError = accountsQuery.isError || mailQuery.isError;
