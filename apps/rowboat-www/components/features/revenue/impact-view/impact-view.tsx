@@ -278,7 +278,7 @@ export function ImpactView({
             <p className="mb-2 text-xs font-medium text-primary/55">Why accounts are exposed</p>
             {riskReasons.length ? (
               <ul className="space-y-1.5 text-sm">
-                {riskReasons.slice(0, 5).map((risk) => (
+                {riskReasons.map((risk) => (
                   <li className="flex items-center justify-between gap-3" key={risk.reason}>
                     <Label className="font-normal text-primary/60">
                       {attentionReasonLabel(risk.reason)}
@@ -313,7 +313,7 @@ export function ImpactView({
           </CardHeader>
           <CardContent className="px-4">
             <ul className="flex flex-col gap-1.5">
-              {digestTop.slice(0, 3).map((a, i) => {
+              {digestTop.map((a, i) => {
                 const signal = digestSignalLabel(a.detector);
                 return (
                   <li key={i} className="flex items-center justify-between gap-3 text-sm">

@@ -19,6 +19,10 @@ describe("ImpactView", () => {
     expect(source).toContain("attentionReasonLabel(risk.reason)");
     expect(source).toContain("attentionReasonLabel(d.detector)");
     expect(source).toContain("digestSignalLabel(a.detector)");
+    expect(source).toContain("digestTop.map(");
+    expect(source).toContain("riskReasons.map(");
+    expect(source).not.toContain("digestTop.slice(0, 3)");
+    expect(source).not.toContain("riskReasons.slice(0, 5)");
     expect(source).not.toContain("{a.detector}");
     expect(source).not.toContain("DETECTOR_LABELS[d.detector]");
     expect(source).not.toContain('risk.reason.replaceAll("_", " ")');
