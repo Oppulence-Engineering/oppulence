@@ -19,7 +19,12 @@ import {
   TableHeader,
   TableRow,
 } from "@oppulence/ui/components/table";
-import { auditLaunchLabel, relativeTime, REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue/revenue";
+import {
+  auditFailureCopy,
+  auditLaunchLabel,
+  relativeTime,
+  REVENUE_EVIDENCE_LOOKBACK_LABEL,
+} from "@/lib/revenue/revenue";
 import type { RevenueLeakScan } from "@/lib/revenue/types";
 
 export function ScansView({
@@ -171,8 +176,11 @@ function ScanRow({ scan }: { scan: RevenueLeakScan }) {
             </Badge>
           </div>
           {scan.error ? (
-            <p className="mt-1 truncate text-[12px] text-primary/45" title={scan.error}>
-              {scan.error}
+            <p
+              className="mt-1 truncate text-[12px] text-primary/45"
+              title={auditFailureCopy(scan.error)}
+            >
+              {auditFailureCopy(scan.error)}
             </p>
           ) : null}
         </div>

@@ -106,12 +106,14 @@ function props(overrides: Partial<ComponentProps<typeof CommitmentQueue>> = {}) 
 
 describe("CommitmentQueue", () => {
   it("names both sides of a mutual promise", async () => {
-    expect(
-      registerPartyLabels({ direction: "mutual", relationshipName: "Acme" }),
-    ).toEqual({ owner: "You and Acme", counterparty: "You and Acme" });
-    expect(
-      registerPartyLabels({ direction: "promised_by_me", relationshipName: "Acme" }),
-    ).toEqual({ owner: "You", counterparty: "Acme" });
+    expect(registerPartyLabels({ direction: "mutual", relationshipName: "Acme" })).toEqual({
+      owner: "You and Acme",
+      counterparty: "You and Acme",
+    });
+    expect(registerPartyLabels({ direction: "promised_by_me", relationshipName: "Acme" })).toEqual({
+      owner: "You",
+      counterparty: "Acme",
+    });
     expect(
       registerPartyLabels({
         direction: "promised_by_them",
@@ -154,9 +156,7 @@ describe("CommitmentQueue", () => {
         })}
       />,
     );
-    expect(
-      screen.getByText("Select one account to see every promise for it."),
-    ).toBeVisible();
+    expect(screen.getByText("Select one account to see every promise for it.")).toBeVisible();
     expect(screen.getByRole("combobox", { name: "Account, Choose an account" })).toBeVisible();
     expect(screen.queryByText(/one relationship/)).toBeNull();
   });
@@ -176,9 +176,7 @@ describe("CommitmentQueue", () => {
 
   it("opens the recovery queue from the empty register without claiming an approval", async () => {
     const onOpenRecoveryQueue = vi.fn();
-    render(
-      <CommitmentQueue {...props({ entries: [], onOpenRecoveryQueue })} />,
-    );
+    render(<CommitmentQueue {...props({ entries: [], onOpenRecoveryQueue })} />);
     expect(screen.getByText("What you can do")).toBeVisible();
     expect(screen.queryByText("Learn more")).toBeNull();
     expect(
@@ -469,6 +467,12 @@ describe("when the register is empty for a reason", () => {
     );
 
     expect(screen.getByText("The last audit did not finish")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Google could not finish reading your mail. Try the audit again in a few minutes.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Backend Error/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Run the audit again/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Reconnect Google/ })).not.toBeInTheDocument();
   });
@@ -618,7 +622,10 @@ it("shows the past-due promise home counted, including one we are owed", () => {
     />,
   );
   expect(screen.getByRole("tab", { name: "Overdue" })).toHaveAttribute("aria-selected", "true");
-  expect(screen.getByRole("tab", { name: "What we owe" })).toHaveAttribute("aria-selected", "false");
+  expect(screen.getByRole("tab", { name: "What we owe" })).toHaveAttribute(
+    "aria-selected",
+    "false",
+  );
   expect(screen.getByText("Send the sandbox login")).toBeInTheDocument();
   expect(screen.queryByText("Ship the packet next week")).not.toBeInTheDocument();
 });

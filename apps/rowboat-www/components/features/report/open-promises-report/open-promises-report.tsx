@@ -30,6 +30,7 @@ import {
   type GoogleOAuthClaimResult,
 } from "@/components/features/connectors/google-oauth-return-handler/google-oauth-return-handler";
 import {
+  auditFailureCopy,
   friendlyRevenueError,
   getOpenPromisesReportMarkdown,
   latestCompletedScan,
@@ -479,7 +480,9 @@ function ScanningStep({
     return (
       <section className="border border-destructive/40 bg-destructive/5 p-5">
         <h2 className="text-[15px] font-medium text-destructive">The scan did not finish</h2>
-        <p className="mt-1.5 text-[13px] text-primary/70">{reason || "No reason was recorded."}</p>
+        <p className="mt-1.5 text-[13px] text-primary/70">
+          {reason ? auditFailureCopy(reason) : "No reason was recorded."}
+        </p>
         <Button className="mt-4" onClick={onRetry} type="button" variant="outline">
           Try again
         </Button>

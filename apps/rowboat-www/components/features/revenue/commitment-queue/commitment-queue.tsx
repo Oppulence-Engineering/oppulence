@@ -31,7 +31,7 @@ import { Spinner } from "@oppulence/ui/components/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
 import type { AppendCommitmentTransitionInput } from "@/hooks/queries/utils/mutate-append-commitment-transition";
 import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
-import { REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue/revenue";
+import { auditFailureCopy, REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue/revenue";
 import {
   Dialog,
   DialogContent,
@@ -305,7 +305,7 @@ function scanFailure(scan: RevenueLeakScan | null | undefined, sourceStillBroken
       ? "Google stopped accepting the authorization, so we could not read your mail. Reconnect to run the audit again."
       : wasAuthFailure
         ? "The last audit could not read your mail. The connection looks healthy now, so running it again should work."
-        : scan.error,
+        : auditFailureCopy(scan.error),
   };
 }
 
@@ -1123,219 +1123,220 @@ export function CommitmentQueue({
                 </TabsTrigger>
               </TabsList>
               <TabsContent className="mx-auto w-full max-w-4xl p-6" value="overview">
-              <h3 className="text-sm font-medium text-primary/60">Highlights</h3>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                <DetailCard
-                  label="Urgency"
-                  value={
-                    selected.urgency === "due_soon"
-                      ? "Due within 72h"
-                      : statusLabel(selected.urgency)
-                  }
-                />
-                <DetailCard label="Promise status" value={statusLabel(selected.state)} />
-                <DetailCard label="Acceptance" value={acceptanceLabel(selected.acceptance)} />
-                <DetailCard
-                  label="Evidence completeness"
-                  value={
-                    selected.missingEvidence.length
-                      ? `${selected.missingEvidence.length} items missing`
-                      : "Complete"
-                  }
-                />
-                <DetailCard label="Owner" value={selected.owner} />
-                <DetailCard label="Recipient" value={selected.counterparty} />
-                <DetailCard
-                  label="Due"
-                  value={
-                    selected.dueAt ? new Date(selected.dueAt).toLocaleDateString() : "Not confirmed"
-                  }
-                />
-              </div>
-              <section className="mt-8">
-                <h3 className="text-sm font-medium text-primary/60">Next action</h3>
-                <Card className="mt-3 gap-3 py-4">
-                  <CardContent className="px-4 text-[14px] text-primary">
-                    {selected.nextAction}
-                  </CardContent>
-                  {selected.missingEvidence.length > 0 ? (
-                    <p className="mt-2 flex items-center gap-1.5 text-[12px] text-amber-400">
-                      <Warning /> Missing {selected.missingEvidence.join(", ")}
-                    </p>
-                  ) : null}
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {selected.acceptance === "candidate" ? (
-                      <ActionButton
-                        busy={busy === `${selected.id}:internally_confirmed`}
-                        disabled={busy !== null}
-                        onClick={() => void transition(selected, "internally_confirmed")}
-                      >
-                        <Check /> Confirm promise
-                      </ActionButton>
+                <h3 className="text-sm font-medium text-primary/60">Highlights</h3>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  <DetailCard
+                    label="Urgency"
+                    value={
+                      selected.urgency === "due_soon"
+                        ? "Due within 72h"
+                        : statusLabel(selected.urgency)
+                    }
+                  />
+                  <DetailCard label="Promise status" value={statusLabel(selected.state)} />
+                  <DetailCard label="Acceptance" value={acceptanceLabel(selected.acceptance)} />
+                  <DetailCard
+                    label="Evidence completeness"
+                    value={
+                      selected.missingEvidence.length
+                        ? `${selected.missingEvidence.length} items missing`
+                        : "Complete"
+                    }
+                  />
+                  <DetailCard label="Owner" value={selected.owner} />
+                  <DetailCard label="Recipient" value={selected.counterparty} />
+                  <DetailCard
+                    label="Due"
+                    value={
+                      selected.dueAt
+                        ? new Date(selected.dueAt).toLocaleDateString()
+                        : "Not confirmed"
+                    }
+                  />
+                </div>
+                <section className="mt-8">
+                  <h3 className="text-sm font-medium text-primary/60">Next action</h3>
+                  <Card className="mt-3 gap-3 py-4">
+                    <CardContent className="px-4 text-[14px] text-primary">
+                      {selected.nextAction}
+                    </CardContent>
+                    {selected.missingEvidence.length > 0 ? (
+                      <p className="mt-2 flex items-center gap-1.5 text-[12px] text-amber-400">
+                        <Warning /> Missing {selected.missingEvidence.join(", ")}
+                      </p>
                     ) : null}
-                    {["internally_confirmed", "offered", "disputed"].includes(
-                      selected.acceptance,
-                    ) ? (
-                      <ActionButton
-                        busy={busy === `${selected.id}:accepted`}
-                        disabled={busy !== null}
-                        onClick={() => void transition(selected, "accepted")}
-                      >
-                        <Check /> Mark accepted
-                      </ActionButton>
-                    ) : null}
-                    {selected.acceptance === "accepted" || selected.acceptance === "offered" ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={busy !== null}
-                        onClick={() => void transition(selected, "disputed")}
-                      >
-                        Mark disputed
-                      </Button>
-                    ) : null}
-                    {selected.acceptance === "accepted" ? (
-                      blocking ? (
-                        <>
-                          <Input
-                            aria-label="What is blocking this commitment"
-                            className="h-8 max-w-xs rounded-none"
-                            placeholder="Waiting on legal review"
-                            value={blockerText}
-                            onChange={(event) => setBlockerText(event.target.value)}
-                          />
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {selected.acceptance === "candidate" ? (
+                        <ActionButton
+                          busy={busy === `${selected.id}:internally_confirmed`}
+                          disabled={busy !== null}
+                          onClick={() => void transition(selected, "internally_confirmed")}
+                        >
+                          <Check /> Confirm promise
+                        </ActionButton>
+                      ) : null}
+                      {["internally_confirmed", "offered", "disputed"].includes(
+                        selected.acceptance,
+                      ) ? (
+                        <ActionButton
+                          busy={busy === `${selected.id}:accepted`}
+                          disabled={busy !== null}
+                          onClick={() => void transition(selected, "accepted")}
+                        >
+                          <Check /> Mark accepted
+                        </ActionButton>
+                      ) : null}
+                      {selected.acceptance === "accepted" || selected.acceptance === "offered" ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={busy !== null}
+                          onClick={() => void transition(selected, "disputed")}
+                        >
+                          Mark disputed
+                        </Button>
+                      ) : null}
+                      {selected.acceptance === "accepted" ? (
+                        blocking ? (
+                          <>
+                            <Input
+                              aria-label="What is blocking this commitment"
+                              className="h-8 max-w-xs rounded-none"
+                              placeholder="Waiting on legal review"
+                              value={blockerText}
+                              onChange={(event) => setBlockerText(event.target.value)}
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={busy !== null || !blockerText.trim()}
+                              onClick={() => {
+                                const blocker = blockerText.trim();
+                                if (!blocker) return;
+                                void transition(selected, "blocked", { blocker }).then((saved) => {
+                                  if (!saved) return;
+                                  setSelected((current) =>
+                                    current && current.id === selected.id
+                                      ? {
+                                          ...current,
+                                          blocker,
+                                          currentEventVersion: current.currentEventVersion + 1,
+                                          nextAction:
+                                            "Resolve the blocker or renegotiate the promise.",
+                                        }
+                                      : current,
+                                  );
+                                  setBlocking(false);
+                                  setBlockerText("");
+                                });
+                              }}
+                            >
+                              Confirm blocked
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              disabled={busy !== null}
+                              onClick={() => {
+                                setBlocking(false);
+                                setBlockerText("");
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
                           <Button
                             type="button"
                             size="sm"
                             variant="outline"
-                            disabled={busy !== null || !blockerText.trim()}
+                            disabled={busy !== null}
                             onClick={() => {
-                              const blocker = blockerText.trim();
-                              if (!blocker) return;
-                              void transition(selected, "blocked", { blocker }).then((saved) => {
-                                if (!saved) return;
-                                setSelected((current) =>
-                                  current && current.id === selected.id
-                                    ? {
-                                        ...current,
-                                        blocker,
-                                        currentEventVersion: current.currentEventVersion + 1,
-                                        nextAction:
-                                          "Resolve the blocker or renegotiate the promise.",
-                                      }
-                                    : current,
-                                );
-                                setBlocking(false);
-                                setBlockerText("");
-                              });
+                              setFulfilling(false);
+                              setBlocking(true);
                             }}
                           >
-                            Confirm blocked
+                            Mark blocked
                           </Button>
+                        )
+                      ) : null}
+                      {selected.blocker ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={busy !== null}
+                          onClick={() => void transition(selected, "unblocked")}
+                        >
+                          Unblock
+                        </Button>
+                      ) : null}
+                      {selected.state !== "met" &&
+                      (["internally_confirmed", "accepted"].includes(selected.acceptance) ||
+                        selected.blocker) ? (
+                        fulfilling ? (
+                          <>
+                            <p className="w-full text-[13px] text-primary/70">
+                              Mark this commitment fulfilled?
+                            </p>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={busy !== null}
+                              onClick={() => {
+                                void transition(selected, "fulfilled").then((saved) => {
+                                  if (!saved) return;
+                                  setSelected((current) =>
+                                    current && current.id === selected.id
+                                      ? {
+                                          ...current,
+                                          state: "met",
+                                          urgency: "closed",
+                                          blocker: undefined,
+                                          currentEventVersion: current.currentEventVersion + 1,
+                                          nextAction: "Closed from observed or confirmed evidence.",
+                                        }
+                                      : current,
+                                  );
+                                  setFulfilling(false);
+                                });
+                              }}
+                            >
+                              Confirm fulfilled
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              disabled={busy !== null}
+                              onClick={() => setFulfilling(false)}
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
                           <Button
                             type="button"
                             size="sm"
-                            variant="ghost"
+                            variant="outline"
                             disabled={busy !== null}
                             onClick={() => {
                               setBlocking(false);
                               setBlockerText("");
+                              setFulfilling(true);
                             }}
                           >
-                            Cancel
+                            Mark fulfilled
                           </Button>
-                        </>
-                      ) : (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          disabled={busy !== null}
-                          onClick={() => {
-                            setFulfilling(false);
-                            setBlocking(true);
-                          }}
-                        >
-                          Mark blocked
-                        </Button>
-                      )
-                    ) : null}
-                    {selected.blocker ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={busy !== null}
-                        onClick={() => void transition(selected, "unblocked")}
-                      >
-                        Unblock
-                      </Button>
-                    ) : null}
-                    {selected.state !== "met" &&
-                    (["internally_confirmed", "accepted"].includes(selected.acceptance) ||
-                      selected.blocker) ? (
-                      fulfilling ? (
-                        <>
-                          <p className="w-full text-[13px] text-primary/70">
-                            Mark this commitment fulfilled?
-                          </p>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            disabled={busy !== null}
-                            onClick={() => {
-                              void transition(selected, "fulfilled").then((saved) => {
-                                if (!saved) return;
-                                setSelected((current) =>
-                                  current && current.id === selected.id
-                                    ? {
-                                        ...current,
-                                        state: "met",
-                                        urgency: "closed",
-                                        blocker: undefined,
-                                        currentEventVersion: current.currentEventVersion + 1,
-                                        nextAction:
-                                          "Closed from observed or confirmed evidence.",
-                                      }
-                                    : current,
-                                );
-                                setFulfilling(false);
-                              });
-                            }}
-                          >
-                            Confirm fulfilled
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            disabled={busy !== null}
-                            onClick={() => setFulfilling(false)}
-                          >
-                            Cancel
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          disabled={busy !== null}
-                          onClick={() => {
-                            setBlocking(false);
-                            setBlockerText("");
-                            setFulfilling(true);
-                          }}
-                        >
-                          Mark fulfilled
-                        </Button>
-                      )
-                    ) : null}
-                  </div>
-                </Card>
-              </section>
+                        )
+                      ) : null}
+                    </div>
+                  </Card>
+                </section>
               </TabsContent>
               <TabsContent className="mx-auto w-full max-w-4xl p-6" value="evidence">
                 <section>

@@ -193,6 +193,25 @@ export function friendlyRevenueError(message: string) {
   return message;
 }
 
+/**
+ * A failed audit stores the provider error. The audits list, the empty
+ * commitments view, and the report's scanning step all show that string.
+ */
+export function auditFailureCopy(message: string): string {
+  const friendly = friendlyRevenueError(message);
+  if (friendly !== message) return friendly;
+  if (/invalid authentication|invalid_grant|unauthorized|returned 40[13]/i.test(message)) {
+    return "Google stopped accepting the authorization. Reconnect, then run the audit again.";
+  }
+  if (/scan abandoned|scan aborted/i.test(message)) {
+    return "The audit stopped before it finished. Run it again.";
+  }
+  if (/google api|gmail|backend error|returned 5\d\d|deadline exceeded/i.test(message)) {
+    return "Google could not finish reading your mail. Try the audit again in a few minutes.";
+  }
+  return friendly;
+}
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await dashboardRequest(toDashboardAPIPath(path), {
     ...init,
@@ -428,8 +447,7 @@ export function companyLinkedInAction(
   const refs = resourceRefs ?? [];
   const href = companyLinkedInURL(displayName, [...refs], linkedinURL ?? undefined);
   const saved =
-    Boolean(webAddressHref(linkedinURL)) ||
-    refs.some((ref) => ref.startsWith("linkedin:company:"));
+    Boolean(webAddressHref(linkedinURL)) || refs.some((ref) => ref.startsWith("linkedin:company:"));
   return { href, label: saved ? "View profile" : "Find profile" };
 }
 

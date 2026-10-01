@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { dashboardRequest } from "@/lib/auth/dashboard-fetch";
 import {
+  auditFailureCopy,
   companyLinkedInAction,
   companyLinkedInURL,
   friendlyRevenueError,
@@ -219,6 +220,25 @@ describe("friendlyRevenueError", () => {
       "Too many requests were sent from this workspace. Wait a moment, then try again.",
     );
   });
+
+  it("explains a failed audit without the provider payload", () => {
+    expect(auditFailureCopy("google api /gmail returned 503: Backend Error")).toBe(
+      "Google could not finish reading your mail. Try the audit again in a few minutes.",
+    );
+    expect(auditFailureCopy("scan abandoned (process restart)")).toBe(
+      "The audit stopped before it finished. Run it again.",
+    );
+    expect(
+      auditFailureCopy(
+        "revenue: gmail thread sweep: google api returned 401: Request had invalid authentication credentials.",
+      ),
+    ).toBe("Google stopped accepting the authorization. Reconnect, then run the audit again.");
+    expect(
+      auditFailureCopy(
+        "revenue: gmail thread sweep: gmail threads.list: google api returned 429: User-rate limit exceeded",
+      ),
+    ).toContain("try the audit again in about 15 minutes");
+  });
 });
 
 describe("companyLinkedInURL", () => {
@@ -244,9 +264,9 @@ describe("companyLinkedInURL", () => {
     expect(companyLinkedInAction("Acme", ["linkedin:company:acme"], null).label).toBe(
       "View profile",
     );
-    expect(
-      companyLinkedInAction("Acme", [], "https://www.linkedin.com/company/acme").label,
-    ).toBe("View profile");
+    expect(companyLinkedInAction("Acme", [], "https://www.linkedin.com/company/acme").label).toBe(
+      "View profile",
+    );
   });
 });
 

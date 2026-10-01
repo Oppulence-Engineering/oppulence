@@ -11,11 +11,11 @@ describe("OpenPromisesReportClient", () => {
   });
 
   it("waits for a settled source list before painting the connect step", () => {
-    expect(source).toContain(
-      "sourcesQuery.isPending || (!scanId && scansQuery.isPending)",
-    );
+    expect(source).toContain("sourcesQuery.isPending || (!scanId && scansQuery.isPending)");
     expect(source).not.toContain("sourcesQuery.isLoading || (!scanId && scansQuery.isLoading)");
-    expect(source).toContain('title={reconnect ? "Reconnect Google" : "Connect Gmail and Calendar"}');
+    expect(source).toContain(
+      'title={reconnect ? "Reconnect Google" : "Connect Gmail and Calendar"}',
+    );
     expect(source).toContain('title="Find promises in your mail"');
     expect(source).not.toContain('title="Open promises"');
     expect(source).toContain("See the message each promise came from");
@@ -25,6 +25,8 @@ describe("OpenPromisesReportClient", () => {
     expect(source).not.toContain("complete ledger");
     expect(source).not.toContain("no evidence of fulfillment");
     expect(source).toContain("The first read has not started yet.");
+    expect(source).toContain("auditFailureCopy(reason)");
+    expect(source).not.toContain('{reason || "No reason was recorded."}');
     expect(source).toContain("conversations read.");
     expect(source).not.toContain("evidence records");
     expect(source).not.toContain("evidence backfill");
