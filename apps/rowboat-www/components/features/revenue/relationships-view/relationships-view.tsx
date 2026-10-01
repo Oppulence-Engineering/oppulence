@@ -1076,11 +1076,7 @@ export function RelationshipsView({
                       ) : null}
                       {optionalColumns.includes("nextAction") ? (
                         <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
-                          {relationship.nextAction ||
-                            relationship.stateReason ||
-                            (relationship.openActions
-                              ? `${relationship.openActions} open action${relationship.openActions === 1 ? "" : "s"}`
-                              : "No open action")}
+                          {companyNextActionCopy(relationship)}
                         </TableCell>
                       ) : null}
                       {optionalColumns.includes("headquarters") ? (
@@ -1524,6 +1520,29 @@ export function companyReviewCopy(model: {
     change: "Nothing changed since your last review.",
     footer: "Nothing new since your last review.",
   };
+}
+
+/**
+ * A correction reason explains a health or stage change. It is not the
+ * company description, and it is not the next action.
+ */
+export function companyDescriptionCopy(record: {
+  companyDescription?: string;
+  summary?: string;
+}): string {
+  const description = record.companyDescription?.trim() || record.summary?.trim();
+  return description || "No description yet";
+}
+
+export function companyNextActionCopy(record: {
+  nextAction?: string;
+  openActions?: number;
+}): string {
+  const next = record.nextAction?.trim();
+  if (next) return next;
+  const open = record.openActions ?? 0;
+  if (open > 0) return `${open} open action${open === 1 ? "" : "s"}`;
+  return "No open action";
 }
 
 /** Lifecycle and health are stored tokens. The sheet names which is which. */
@@ -2241,10 +2260,7 @@ export function RelationshipSheet({
                   </dd>
                   <dt className="text-primary/40">Description</dt>
                   <dd className="text-primary/75">
-                    {data.relationship.companyDescription ||
-                      data.relationship.summary ||
-                      data.relationship.stateReason ||
-                      "No description yet"}
+                    {companyDescriptionCopy(data.relationship)}
                   </dd>
                   <dt className="text-primary/40">LinkedIn</dt>
                   <dd className="text-primary/75">

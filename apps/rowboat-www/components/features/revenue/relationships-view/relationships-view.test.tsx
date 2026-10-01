@@ -13,6 +13,8 @@ import {
   companyStageFilterName,
   companySheetPositionLabel,
   companyReviewCopy,
+  companyDescriptionCopy,
+  companyNextActionCopy,
   companyStateAnswer,
   missionControlStateAnswer,
   recordDetailBadge,
@@ -327,6 +329,19 @@ describe("RelationshipsView", () => {
     expect(source).toContain('data.relationship.accountDomain || "Not filled in"');
     expect(source).not.toContain("Not detected");
     expect(source).toContain("Not filled in");
+    expect(companyDescriptionCopy({})).toBe("No description yet");
+    expect(companyDescriptionCopy({ summary: "  " })).toBe("No description yet");
+    expect(companyDescriptionCopy({ summary: "Builds boats" })).toBe("Builds boats");
+    expect(
+      companyDescriptionCopy({ companyDescription: "A harbor company", summary: "Builds boats" }),
+    ).toBe("A harbor company");
+    expect(companyNextActionCopy({})).toBe("No open action");
+    expect(companyNextActionCopy({ nextAction: "Send the packet" })).toBe("Send the packet");
+    expect(companyNextActionCopy({ openActions: 1 })).toBe("1 open action");
+    expect(companyNextActionCopy({ openActions: 2 })).toBe("2 open actions");
+    expect(source).toContain("companyDescriptionCopy(data.relationship)");
+    expect(source).toContain("companyNextActionCopy(relationship)");
+    expect(source).not.toContain("relationship.stateReason");
     expect(source).toContain("No description yet");
     expect(source).not.toContain("Not on a list");
     expect(source).not.toContain(">Lists<");
