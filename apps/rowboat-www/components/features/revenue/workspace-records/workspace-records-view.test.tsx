@@ -584,6 +584,10 @@ describe("people directory copy", () => {
     expect(source).toContain("Fill in their role and company");
     expect(source).not.toContain("Enrich profiles with evidence");
     expect(source).toContain(">Companies</TableHead>");
+    expect(source).toContain("{person.orgName || \"—\"}");
+    expect(source).toContain('["Company", person.orgName]');
+    expect(source).toContain('["Domain", person.orgDomain]');
+    expect(source).not.toContain("person.orgName || person.orgDomain");
     expect(source).toContain("company timeline");
     expect(source).not.toContain("relationship-aware");
     expect(source).not.toContain(">Relationships</TableHead>");

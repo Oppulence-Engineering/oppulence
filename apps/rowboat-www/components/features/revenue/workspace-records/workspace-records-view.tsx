@@ -501,7 +501,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                     </Button>
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
-                    {person.orgName || person.orgDomain || "—"}
+                    {person.orgName || "—"}
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
                     {person.title || person.seniority || "—"}
@@ -662,7 +662,8 @@ function PersonSheet({
         <div className="overflow-y-auto p-4">
           <dl className="grid grid-cols-[120px_minmax(0,1fr)] gap-x-3 gap-y-3 text-sm">
             {[
-              ["Company", person.orgName || person.orgDomain],
+              ["Company", person.orgName],
+              ["Domain", person.orgDomain],
               ["Role", person.title],
               ["Seniority", person.seniority],
               ["Department", person.department],
