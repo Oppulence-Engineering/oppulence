@@ -27,6 +27,7 @@ import {
   externalPlanShareLabel,
   conversationDeletionAvailable,
   conversationNoteCount,
+  deleteConversationConfirmCopy,
   completenessProductLabel,
   detailEvidenceCopy,
   detailSourceLabel,
@@ -131,6 +132,14 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("Allow cited enrichment");
     expect(source).not.toContain("Relationship enrichment");
     expect(source).toContain("Delete shared conversation evidence for this company?");
+    expect(deleteConversationConfirmCopy()).toContain(
+      "Delete shared conversation evidence for this company?",
+    );
+    expect(source).toContain("deleteConversationConfirmCopy()");
+    expect(source).toContain("Confirm delete");
+    expect(source).not.toContain(
+      'window.confirm(\n                              "Delete shared conversation evidence',
+    );
     expect(source).not.toContain("for this relationship?");
     expect(source).toContain('companyAttention.length === 1 ? "company" : "companies"');
     expect(companyDomainHref("acme.com")).toBe("https://acme.com");

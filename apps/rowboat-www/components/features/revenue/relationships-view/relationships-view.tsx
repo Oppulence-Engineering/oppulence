@@ -1661,6 +1661,11 @@ export function conversationNoteCount(sources: readonly string[]): number {
   return sources.filter((source) => CONVERSATION_NOTE_SOURCES.has(source)).length;
 }
 
+/** Deleting conversation evidence is permanent for this workspace. Ask on the sheet. */
+export function deleteConversationConfirmCopy(): string {
+  return "Delete shared conversation evidence for this company? Device and provider copies will remain pending until separately confirmed.";
+}
+
 export function completenessExplanationCopy(explanation: string): string {
   if (explanation.trim() === "No source connection has completed its first useful sync.") {
     return "Connect a source before these details can fill in.";
@@ -2065,6 +2070,7 @@ export function RelationshipSheet({
     Record<string, RelationshipPersonAttribute[]>
   >({});
   const [confirmingPersonId, setConfirmingPersonId] = React.useState<string | null>(null);
+  const [confirmingDeletion, setConfirmingDeletion] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [loadError, setLoadError] = React.useState<string | null>(null);
   const [activeSection, setActiveSection] = React.useState<
@@ -2124,6 +2130,7 @@ export function RelationshipSheet({
   React.useEffect(() => {
     setActiveSection("overview");
     setConfirmingPersonId(null);
+    setConfirmingDeletion(false);
   }, [id]);
 
   const act = async (key: string, operation: () => Promise<unknown>): Promise<boolean> => {
@@ -2658,26 +2665,48 @@ export function RelationshipSheet({
                       commitments: data.commitments.length,
                       conversationNotes: conversationNoteCount(timeline.map((item) => item.source)),
                     }) ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="mt-3"
-                        disabled={busy === "delete-conversation"}
-                        onClick={() => {
-                          if (
-                            !window.confirm(
-                              "Delete shared conversation evidence for this company? Device and provider copies will remain pending until separately confirmed.",
-                            )
-                          )
-                            return;
-                          void act("delete-conversation", () =>
-                            requestConversationDeletion(id, crypto.randomUUID()),
-                          );
-                        }}
-                      >
-                        Delete conversation data
-                      </Button>
+                      confirmingDeletion ? (
+                        <div className="mt-3 space-y-2">
+                          <p className="text-[12px] text-primary/70">
+                            {deleteConversationConfirmCopy()}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={busy === "delete-conversation"}
+                              onClick={() => {
+                                void act("delete-conversation", () =>
+                                  requestConversationDeletion(id, crypto.randomUUID()),
+                                ).then(() => setConfirmingDeletion(false));
+                              }}
+                            >
+                              Confirm delete
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              disabled={busy !== null}
+                              onClick={() => setConfirmingDeletion(false)}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="mt-3"
+                          disabled={busy !== null}
+                          onClick={() => setConfirmingDeletion(true)}
+                        >
+                          Delete conversation data
+                        </Button>
+                      )
                     ) : (
                       <p className="mt-3 text-[11px] text-primary/45">No mail or meeting data to delete.</p>
                     )}
