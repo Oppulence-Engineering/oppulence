@@ -600,6 +600,27 @@ describe("workspace record notes", () => {
     });
   });
 
+  it("names a domain-stored company the same way the companies page does", () => {
+    const notes = collapseWorkspaceNotes(
+      [
+        {
+          id: "relationship-domain",
+          displayName: "northwind.example",
+          accountDomain: "northwind.example",
+        } as RevenueRelationship,
+      ],
+      [
+        [
+          observation("event-domain", "2026-09-05T12:00:00Z", "note", {
+            noteId: "note-domain",
+            title: "Renewal",
+          }),
+        ],
+      ],
+    );
+    expect(notes[0]?.relationshipName).toBe("Northwind");
+  });
+
   it("keeps Plate blocks readable in note previews", () => {
     expect(
       plateText([
@@ -681,6 +702,7 @@ describe("task due order", () => {
     expect(source).toContain("aria-label={taskFilterName(filter)}");
     expect(source).toContain("taskListEmptyCopy(filter)");
     expect(source).toContain("taskIsDueToday(task.dueAt, today)");
+    expect(source).toContain("companyName(relationship)");
     expect(source).toContain("taskIsOverdue(task.dueAt, now)");
     expect(source).not.toContain("new Date(task.dueAt).getTime() < now");
     expect(source).not.toContain("task.dueAt?.slice(0, 10) === today");

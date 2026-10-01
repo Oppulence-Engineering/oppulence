@@ -169,7 +169,13 @@ import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-sourc
 import { useQueryClient } from "@tanstack/react-query";
 import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { planLabel } from "@/lib/product/plan-label";
-import { attentionWithoutTasks, workspaceTaskIds } from "@/lib/revenue/revenue-records";
+import {
+  attentionWithoutTasks,
+  companyName,
+  workspaceTaskIds,
+} from "@/lib/revenue/revenue-records";
+
+export { companyName };
 import {
   activityEvidenceLines,
   enumLabel as humanize,
@@ -252,40 +258,6 @@ const COMPANY_FIELD_LABELS: Record<string, string> = {
  */
 export function companyDomainHref(domain: string | null | undefined): string | null {
   return webAddressHref(domain);
-}
-
-/** A copied address is not a company name. "Billing @ Northwind" is. */
-function emailShapedCompanyName(value: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
-function domainCompanyLabel(domain: string): string {
-  return domain
-    .split(".")[0]
-    .split(/[-_]/)
-    .filter(Boolean)
-    .map((word) => word[0]?.toUpperCase() + word.slice(1))
-    .join(" ");
-}
-
-/**
- * A company stored under its domain, or under the address that created it,
- * reads as that host. Any other typed name, including one with an @ sign,
- * stays as the teammate wrote it.
- */
-export function companyName(relationship: {
-  displayName: string;
-  accountDomain?: string | null;
-}): string {
-  const domain = relationship.accountDomain?.trim() ?? "";
-  const name = relationship.displayName.trim();
-  if (
-    domain &&
-    (name.toLowerCase() === domain.toLowerCase() || emailShapedCompanyName(name))
-  ) {
-    return domainCompanyLabel(domain);
-  }
-  return relationship.displayName;
 }
 
 const formatResearchCost = (usd: number) =>

@@ -39,6 +39,7 @@ import { Spinner } from "@oppulence/ui/components/spinner";
 import { useRelationships, useSemanticSearch } from "@/hooks/queries/use-relationships";
 import type { SessionMeta } from "@/lib/agents/chat-sessions";
 import type { SemanticMatch } from "@/lib/revenue/revenue";
+import { companyName } from "@/lib/revenue/revenue-records";
 
 /** Mail search is about messages, not an evidence store. */
 export function mailSearchPlaceholder(mode: "accounts" | "mail"): string {
@@ -253,11 +254,11 @@ export function CommandPalette({
                   // cmdk filters on value; the server already matched, so keep
                   // the typed query as the value to stop it filtering results
                   // the API deliberately returned.
-                  value={`${query} ${account.displayName}`}
+                  value={`${query} ${companyName(account)} ${account.displayName}`}
                   onSelect={runAnd(() => onNavigateRelationship?.(account.id))}
                 >
                   <Buildings />
-                  {account.displayName}
+                  {companyName(account)}
                 </CommandItem>
               ))}
             </CommandGroup>

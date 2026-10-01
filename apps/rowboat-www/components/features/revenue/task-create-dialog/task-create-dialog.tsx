@@ -17,6 +17,7 @@ import {
 import { Link, ListChecks, Loader, User } from "@sim/emcn/icons";
 
 import { errMessage } from "@/components/features/revenue/shared/shared";
+import { companyName } from "@/lib/revenue/revenue-records";
 import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { createAction } from "@/lib/revenue/revenue";
 import type { RevenueRelationship } from "@/lib/revenue/types";
@@ -73,7 +74,7 @@ export function TaskCreateDialog({
     () =>
       relationships.map((relationship) => ({
         value: relationship.id,
-        label: relationship.displayName,
+        label: companyName(relationship),
       })),
     [relationships],
   );

@@ -100,6 +100,7 @@ import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { noteIdFromHash, workspaceNoteHref } from "@/lib/revenue/note-link";
 import { removePersonConfirmCopy } from "@/lib/revenue/source-product-copy";
 import {
+  companyName,
   groupWorkspaceNotes,
   isWorkspaceTask,
   plateText,
@@ -1586,7 +1587,7 @@ function NoteDialog({
               <SelectContent className="app-shell rounded-none">
                 {relationships.map((relationship) => (
                   <SelectItem key={relationship.id} value={relationship.id}>
-                    {relationship.displayName}
+                    {companyName(relationship)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -1953,7 +1954,7 @@ export function TasksView({
     if (error) onError(errMessage(error, "Could not load tasks."));
   }, [actionsQuery.error, onError, relationshipsQuery.error]);
   const names = new Map(
-    relationships.map((relationship) => [relationship.id, relationship.displayName]),
+    relationships.map((relationship) => [relationship.id, companyName(relationship)]),
   );
   const today = todayValue();
   const visible = tasks.filter((task) => {

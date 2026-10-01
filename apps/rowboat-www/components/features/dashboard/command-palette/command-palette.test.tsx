@@ -183,6 +183,21 @@ describe("CommandPalette semantic mail search", () => {
     expect(onNavigateRelationship).toHaveBeenCalledWith("company-1");
   });
 
+  it("titles a company stored as its domain", async () => {
+    const user = userEvent.setup();
+    fetchers.fetchRelationships.mockResolvedValue([
+      {
+        id: "company-domain",
+        kind: "company",
+        displayName: "northwind.example",
+        accountDomain: "northwind.example",
+      },
+    ]);
+    renderPalette(requiredProps);
+    await user.type(screen.getByRole("textbox", { name: "Command search" }), "north");
+    expect(await screen.findByRole("button", { name: "Northwind" })).toBeVisible();
+  });
+
   it("keeps a person out of company search", async () => {
     const user = userEvent.setup();
     fetchers.fetchRelationships.mockResolvedValue([

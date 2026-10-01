@@ -1,5 +1,35 @@
 import type { RelationshipObservation, RevenueRelationship } from "@/lib/revenue/types";
 
+function emailShapedCompanyName(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function domainCompanyLabel(domain: string): string {
+  return domain
+    .split(".")[0]
+    .split(/[-_]/)
+    .filter(Boolean)
+    .map((word) => word[0]?.toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+/**
+ * A company stored under its domain, or under the address that created it,
+ * reads as that host. Any other typed name, including one with an @ sign,
+ * stays as the teammate wrote it.
+ */
+export function companyName(relationship: {
+  displayName: string;
+  accountDomain?: string | null;
+}): string {
+  const domain = relationship.accountDomain?.trim() ?? "";
+  const name = relationship.displayName.trim();
+  if (domain && (name.toLowerCase() === domain.toLowerCase() || emailShapedCompanyName(name))) {
+    return domainCompanyLabel(domain);
+  }
+  return relationship.displayName;
+}
+
 export type WorkspaceNote = {
   externalId: string;
   title: string;
@@ -74,7 +104,7 @@ export function collapseWorkspaceNotes(
         meetingLinked: Boolean(observation.normalizedFacts.meetingLinked),
         liveLinked: Boolean(observation.normalizedFacts.liveLinked),
         relationshipId: relationships[index].id,
-        relationshipName: relationships[index].displayName,
+        relationshipName: companyName(relationships[index]),
         occurredAt: observation.occurredAt,
         eventType: observation.eventType,
       });
