@@ -98,6 +98,7 @@ import {
 } from "@oppulence/ui/components/sheet";
 import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { noteIdFromHash, workspaceNoteHref } from "@/lib/revenue/note-link";
+import { removePersonConfirmCopy } from "@/lib/revenue/source-product-copy";
 import {
   groupWorkspaceNotes,
   isWorkspaceTask,
@@ -702,6 +703,10 @@ function PersonSheet({
   onRemove: () => void;
   removing: boolean;
 }) {
+  const [confirmingRemove, setConfirmingRemove] = React.useState(false);
+  React.useEffect(() => {
+    setConfirmingRemove(false);
+  }, [person.id]);
   const evidence = enrichmentEvidence(attributes);
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
@@ -749,24 +754,43 @@ function PersonSheet({
             })}
           </dl>
           <div className="mt-6 border-t border-border pt-4">
-            <Button
-              disabled={removing}
-              onClick={() => {
-                if (
-                  !window.confirm(
-                    `Remove ${person.displayName} and everything derived from them? Their address is suppressed, so a later sync will not recreate them. This cannot be undone.`,
-                  )
-                ) {
-                  return;
-                }
-                onRemove();
-              }}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              {removing ? <Spinner className="size-4" /> : null} Remove
-            </Button>
+            {confirmingRemove ? (
+              <div className="space-y-3">
+                <p className="text-sm text-primary/70">
+                  {removePersonConfirmCopy(person.displayName)}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    disabled={removing}
+                    onClick={onRemove}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    {removing ? <Spinner className="size-4" /> : null} Confirm remove
+                  </Button>
+                  <Button
+                    disabled={removing}
+                    onClick={() => setConfirmingRemove(false)}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                disabled={removing}
+                onClick={() => setConfirmingRemove(true)}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                Remove
+              </Button>
+            )}
           </div>
           <h3 className="mt-8 border-b border-border pb-2 text-xs font-medium uppercase tracking-wide text-primary/45">
             Where details came from

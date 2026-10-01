@@ -5,11 +5,19 @@ import {
   enumLabel,
   missingScopeLabels,
   relationshipDeltaValue,
+  removePersonConfirmCopy,
   scopeLabel,
   sourceProductCopy,
 } from "./source-product-copy";
 
 describe("source product copy", () => {
+  it("asks before a person is removed", () => {
+    expect(removePersonConfirmCopy("Morgan Hale")).toBe(
+      "Remove Morgan Hale and everything derived from them? Their address is suppressed, so a later sync will not recreate them. This cannot be undone.",
+    );
+    expect(removePersonConfirmCopy("  ")).toContain("Remove this person");
+  });
+
   it("describes connected evidence sources without scope jargon", () => {
     const google = sourceProductCopy(
       "google",

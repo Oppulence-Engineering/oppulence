@@ -185,6 +185,12 @@ export function sourceProductCopy(
   };
 }
 
+/** Removing a person suppresses their address. The question stays on the page. */
+export function removePersonConfirmCopy(name: string): string {
+  const person = name.trim() || "this person";
+  return `Remove ${person} and everything derived from them? Their address is suppressed, so a later sync will not recreate them. This cannot be undone.`;
+}
+
 export function missingScopeLabels(scopes: readonly string[]): string {
   const labels = [...new Set(scopes.map((scope) => scopeLabel(scope)).filter(Boolean))];
   return labels.join(", ");

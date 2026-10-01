@@ -175,6 +175,7 @@ import {
   enumLabel as humanize,
   missingScopeLabels,
   relationshipDeltaValue,
+  removePersonConfirmCopy,
   sourceProductCopy,
 } from "@/lib/revenue/source-product-copy";
 import { cn } from "@/lib/utils";
@@ -2063,6 +2064,7 @@ export function RelationshipSheet({
   const [personAttributes, setPersonAttributes] = React.useState<
     Record<string, RelationshipPersonAttribute[]>
   >({});
+  const [confirmingPersonId, setConfirmingPersonId] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [loadError, setLoadError] = React.useState<string | null>(null);
   const [activeSection, setActiveSection] = React.useState<
@@ -2121,6 +2123,7 @@ export function RelationshipSheet({
 
   React.useEffect(() => {
     setActiveSection("overview");
+    setConfirmingPersonId(null);
   }, [id]);
 
   const act = async (key: string, operation: () => Promise<unknown>): Promise<boolean> => {
@@ -2903,27 +2906,49 @@ export function RelationshipSheet({
                                 ) : null}
                               </div>
                               {person?.id ? (
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="ghost"
-                                  className="shrink-0"
-                                  disabled={busy === `delete-person:${person.id}`}
-                                  onClick={() => {
-                                    const personId = person.id;
-                                    if (
-                                      !window.confirm(
-                                        `Remove ${participant.displayName} and everything derived from them? Their address is suppressed, so a later sync will not recreate them. This cannot be undone.`,
-                                      )
-                                    )
-                                      return;
-                                    void act(`delete-person:${personId}`, () =>
-                                      deletePerson(personId),
-                                    );
-                                  }}
-                                >
-                                  Remove
-                                </Button>
+                                confirmingPersonId === person.id ? (
+                                  <div className="flex max-w-xs shrink-0 flex-col items-end gap-2">
+                                    <p className="text-right text-[12px] text-primary/70">
+                                      {removePersonConfirmCopy(participant.displayName)}
+                                    </p>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={busy === `delete-person:${person.id}`}
+                                        onClick={() => {
+                                          const personId = person.id;
+                                          void act(`delete-person:${personId}`, () =>
+                                            deletePerson(personId),
+                                          ).then(() => setConfirmingPersonId(null));
+                                        }}
+                                      >
+                                        Confirm remove
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        disabled={busy !== null}
+                                        onClick={() => setConfirmingPersonId(null)}
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    className="shrink-0"
+                                    disabled={busy !== null}
+                                    onClick={() => setConfirmingPersonId(person.id)}
+                                  >
+                                    Remove
+                                  </Button>
+                                )
                               ) : null}
                             </li>
                           );

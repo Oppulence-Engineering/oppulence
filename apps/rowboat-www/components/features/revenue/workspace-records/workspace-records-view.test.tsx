@@ -14,6 +14,20 @@ const mocks = vi.hoisted(() => ({
   fetchConsoleResources: vi.fn(),
   fetchWorkspaceNotes: vi.fn(),
   ingestRelationshipObservations: vi.fn(),
+  deletePerson: vi.fn(async () => undefined),
+  getPersonAttributes: vi.fn(async () => []),
+}));
+
+const records = vi.hoisted(() => ({
+  people: [] as Array<{
+    id: string;
+    displayName: string;
+    aliases: string[];
+    status: string;
+    relationshipCount: number;
+    attributesVersion: number;
+    primaryEmail?: string;
+  }>,
 }));
 
 vi.mock("@/lib/console/console", () => ({
@@ -34,6 +48,8 @@ vi.mock("@/lib/revenue/revenue", async (importOriginal) => {
     ...actual,
     relativeTime: () => "now",
     ingestRelationshipObservations: mocks.ingestRelationshipObservations,
+    deletePerson: mocks.deletePerson,
+    getPersonAttributes: mocks.getPersonAttributes,
   };
 });
 vi.mock("@/hooks/queries/use-revenue-actions", () => ({
@@ -58,7 +74,7 @@ vi.mock("@/hooks/queries/use-relationships", () => ({
     isPending: false,
     error: null,
   }),
-  usePersons: () => ({ data: [], isPending: false, error: null }),
+  usePersons: () => ({ data: records.people, isPending: false, error: null }),
 }));
 vi.mock("@/components/auth/auth-gate", () => ({
   useAuthSession: () => ({
@@ -74,8 +90,10 @@ vi.mock("@oppulence/ui/components/dialog", () => ({
   DialogTitle: ({ children }: React.PropsWithChildren) => <h2>{children}</h2>,
 }));
 
+import { removePersonConfirmCopy } from "@/lib/revenue/source-product-copy";
 import {
   NotesView,
+  PeopleView,
   TasksView,
   personDirectoryTitle,
   peopleListEmptyCopy,
@@ -746,7 +764,44 @@ describe("people directory copy", () => {
     expect(source).toContain('errMessage(error, "Could not load this profile.")');
     expect(source).toContain("deletePerson(selected.id)");
     expect(source).toContain('errMessage(error, "Could not remove this person.")');
-    expect(source).toContain("later sync will not recreate them");
+    expect(source).toContain("removePersonConfirmCopy(person.displayName)");
+    expect(source).not.toContain("window.confirm");
+    expect(removePersonConfirmCopy("Morgan Hale")).toContain(
+      "later sync will not recreate them",
+    );
     expect(source).not.toContain("Could not load profile evidence.");
+  });
+
+  it("asks to remove a person on the sheet instead of a browser confirm", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    records.people = [
+      {
+        id: "person-1",
+        displayName: "Morgan Hale",
+        aliases: [],
+        status: "active",
+        relationshipCount: 0,
+        attributesVersion: 0,
+        primaryEmail: "morgan@harbor.example",
+      },
+    ];
+    mocks.deletePerson.mockClear();
+    const user = userEvent.setup();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <PeopleView onError={vi.fn()} onNotice={vi.fn()} />
+      </QueryClientProvider>,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Open Morgan Hale" }));
+    expect(screen.queryByText(/everything derived from them/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Remove" }));
+    expect(screen.getByText(removePersonConfirmCopy("Morgan Hale"))).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Confirm remove" }));
+    await waitFor(() => expect(mocks.deletePerson).toHaveBeenCalledWith("person-1"));
+    expect(confirm).not.toHaveBeenCalled();
+    confirm.mockRestore();
+    records.people = [];
   });
 });

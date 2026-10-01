@@ -378,6 +378,9 @@ describe("RelationshipsView", () => {
       "{humanize(observation.source)} · {humanize(observation.eventType)}",
     );
     expect(source).not.toContain("JSON.stringify(evidence[observation.id]");
+    expect(source).toContain("removePersonConfirmCopy(participant.displayName)");
+    expect(source).toContain("Confirm remove");
+    expect(source).not.toContain("window.confirm(\n                                        `Remove ${participant.displayName}");
     expect(source).not.toContain("{observation.source} · {humanize(observation.eventType)}");
     expect(source).not.toContain("Not enriched");
     expect(source).not.toContain("winning assertion");
