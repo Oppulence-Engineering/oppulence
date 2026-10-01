@@ -14,4 +14,10 @@ describe("RevenuePanel", () => {
     expect(source).toContain('"Could not load commitments."');
     expect(source).not.toContain("Commitment Queue");
   });
+
+  it("opens the home overdue count as its own slice", () => {
+    expect(source).toContain("subscribeDueCommitments");
+    expect(source).toContain("overdueOnly={Boolean(overdueBefore)}");
+    expect(source).toContain("dueBefore: overdueBefore ?? \"\"");
+  });
 });

@@ -134,7 +134,7 @@ function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
           <button
             className="inline-flex items-baseline gap-1.5 font-normal transition-colors hover:text-[var(--text-secondary)]"
             onClick={() => {
-              // The count is past-due promises, so the register opens on that filter.
+              // The count is past-due promises in every direction, so the register opens on that slice.
               if (stat.tab === "commitments") requestDueCommitments();
               onOpenTab(stat.tab);
             }}

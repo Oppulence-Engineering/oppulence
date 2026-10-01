@@ -3,7 +3,11 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { registerAccountChoices, registerFilterFor } from "@/lib/revenue/commitment-register-filter";
+import {
+  overdueRegisterFilter,
+  registerAccountChoices,
+  registerFilterFor,
+} from "@/lib/revenue/commitment-register-filter";
 import { REGISTER_VIEWS } from "./commitment-queue";
 
 // One-pager §3: the register has five views. Each must be one query against
@@ -74,6 +78,14 @@ describe("the five register views", () => {
     ]) {
       expect(filter?.limit).toBeGreaterThan(0);
     }
+  });
+
+  it("opens home's overdue count across directions, without promises that are only due soon", () => {
+    const filter = overdueRegisterFilter("2026-10-01T00:00:00Z");
+    expect(filter.direction).toBeUndefined();
+    expect(filter.state).toEqual(["at_risk", "disputed"]);
+    expect(filter.dueBefore).toBe("2026-10-01T00:00:00Z");
+    expect(filter.limit).toBe(200);
   });
 
   it("lists a saved company even when the graph has not projected it", () => {

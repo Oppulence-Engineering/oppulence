@@ -496,6 +496,38 @@ it("does not offer a new row that cannot be added", () => {
   expect(screen.queryByText("New row")).not.toBeInTheDocument();
 });
 
+it("shows the past-due promise home counted, including one we are owed", () => {
+  const past = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const soon = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const row = entries()[0];
+  render(
+    <CommitmentQueue
+      {...props({
+        overdueOnly: true,
+        entries: [
+          {
+            ...row,
+            id: "they",
+            direction: "promised_by_them",
+            text: "Send the sandbox login",
+            dueAt: past,
+          },
+          {
+            ...row,
+            id: "soon",
+            text: "Ship the packet next week",
+            dueAt: soon,
+          },
+        ],
+      })}
+    />,
+  );
+  expect(screen.getByRole("tab", { name: "Overdue" })).toHaveAttribute("aria-selected", "true");
+  expect(screen.getByRole("tab", { name: "What we owe" })).toHaveAttribute("aria-selected", "false");
+  expect(screen.getByText("Send the sandbox login")).toBeInTheDocument();
+  expect(screen.queryByText("Ship the packet next week")).not.toBeInTheDocument();
+});
+
 it("keeps the commitment filter and drops the chips that did nothing", () => {
   render(<CommitmentQueue {...props()} />);
   expect(screen.queryByRole("button", { name: "Filter" })).not.toBeInTheDocument();
@@ -512,7 +544,8 @@ it("does not offer a meeting import that opens the company directory", () => {
   expect(source).not.toContain("two-sided");
   expect(source).toContain("Add a company");
   expect(source).toContain("openCompanyCreate(onOpenAccounts)");
-  expect(source).toContain('subscribeDueCommitments(() => setFilter("due"))');
+  expect(source).toContain('if (filter === "overdue" && item.urgency !== "overdue") return false;');
+  expect(source).not.toContain('subscribeDueCommitments(() => setFilter("due"))');
   expect(source).toContain(
     "data-[state=active]:bg-background-200 data-[state=active]:text-primary",
   );

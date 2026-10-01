@@ -11,7 +11,12 @@ import {
   type CommitmentRegisterScope,
 } from "@/hooks/queries/utils/commitment-keys";
 import { fetchRelationshipSources } from "@/hooks/queries/utils/fetch-relationship-sources";
-import { registerAccountChoices, registerFilterFor, type RegisterView } from "@/lib/revenue/commitment-register-filter";
+import {
+  overdueRegisterFilter,
+  registerAccountChoices,
+  registerFilterFor,
+  type RegisterView,
+} from "@/lib/revenue/commitment-register-filter";
 import { fetchRelationshipGraph, fetchRelationships } from "@/hooks/queries/utils/fetch-relationships";
 import { DashboardRequestError } from "@/lib/api/request-json";
 import { friendlyRevenueError, RevenueAPIError } from "@/lib/revenue/revenue";
@@ -50,11 +55,13 @@ export function useCommitmentRegister(
   return useQuery({
     queryKey: commitmentKeys.register(scope),
     queryFn: async ({ signal }) => {
-      const filter = registerFilterFor(scope.view as RegisterView, {
-        relationshipId: scope.accountId,
-        owner: scope.owner,
-        includeCandidates: scope.includeCandidates,
-      });
+      const filter = scope.dueBefore
+        ? overdueRegisterFilter(scope.dueBefore)
+        : registerFilterFor(scope.view as RegisterView, {
+            relationshipId: scope.accountId,
+            owner: scope.owner,
+            includeCandidates: scope.includeCandidates,
+          });
       const [entries, sources, graph, relationships] = await Promise.allSettled([
         filter ? fetchCommitments(filter, signal) : Promise.resolve([]),
         fetchRelationshipSources(signal),

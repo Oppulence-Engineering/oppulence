@@ -4,7 +4,6 @@ import "client-only";
 
 import * as React from "react";
 import { openCompanyCreate } from "@/lib/dashboard/company-create-request";
-import { subscribeDueCommitments } from "@/lib/dashboard/commitment-due-request";
 import {
   ArrowClockwise,
   Check,
@@ -140,6 +139,13 @@ export interface CommitmentQueueProps extends Omit<
   entries: RegisterEntry[];
   view?: RegisterView;
   onViewChange?: (view: RegisterView) => void;
+  /**
+   * Home asked for the past-due count. That count is every direction, and it
+   * does not include promises that are only due soon, so none of the five
+   * register views is the right selection while this is on.
+   */
+  overdueOnly?: boolean;
+  onLeaveOverdue?: () => void;
   /** Fetches the Markdown record a user forwards. */
   onExport?: (item: CommitmentQueueItem) => Promise<void>;
   /** Accounts in the workspace, for the "no accounts yet" empty state. */
@@ -340,6 +346,7 @@ function localDateTime(iso?: string) {
 const COMMITMENT_FILTER_LABEL: Record<string, string> = {
   active: "Active",
   review: "Needs review",
+  overdue: "Overdue",
   due: "Due soon or overdue",
   closed: "Closed",
   all: "All",
@@ -381,6 +388,8 @@ export function CommitmentQueue({
   entries,
   view = "we_owe",
   onViewChange,
+  overdueOnly = false,
+  onLeaveOverdue,
   onExport,
   relationshipCount = 0,
   accounts = [],
@@ -411,8 +420,11 @@ export function CommitmentQueue({
   const [editing, setEditing] = React.useState<CommitmentQueueItem | null>(null);
   const [correctedText, setCorrectedText] = React.useState("");
   const [correctedDueAt, setCorrectedDueAt] = React.useState("");
-  // Home can ask for past-due promises before this register mounts.
-  React.useEffect(() => subscribeDueCommitments(() => setFilter("due")), []);
+  // Home's count is past due only. "Due soon or overdue" would add rows the
+  // number did not include.
+  React.useEffect(() => {
+    if (overdueOnly) setFilter("overdue");
+  }, [overdueOnly]);
   const items = React.useMemo(() => toQueueItems(entries), [entries]);
   // An empty select cannot be "chosen". That case is a missing company, not a
   // prompt to pick one.
@@ -421,6 +433,7 @@ export function CommitmentQueue({
     (view === "by_account" && !noAccounts && !accountId) || (view === "by_owner" && !owner.trim());
   const filtered = items.filter((item) => {
     if (filter === "review" && item.missingEvidence.length === 0) return false;
+    if (filter === "overdue" && item.urgency !== "overdue") return false;
     if (filter === "due" && item.urgency !== "overdue" && item.urgency !== "due_soon") return false;
     if (filter === "closed" && item.urgency !== "closed") return false;
     if (filter === "active" && item.urgency === "closed") return false;
@@ -479,12 +492,27 @@ export function CommitmentQueue({
           title="Commitment register"
         />
         <SimProductToolbar aria-label="Register views" role="tablist">
+          {overdueOnly ? (
+            <Chip
+              active
+              aria-selected
+              role="tab"
+              title="Past-due promises, whoever made them."
+              type="button"
+            >
+              Overdue
+            </Chip>
+          ) : null}
           {REGISTER_VIEWS.map((registerView) => (
             <Chip
-              active={view === registerView.id}
-              aria-selected={view === registerView.id}
+              active={!overdueOnly && view === registerView.id}
+              aria-selected={!overdueOnly && view === registerView.id}
               key={registerView.id}
-              onClick={() => onViewChange?.(registerView.id)}
+              onClick={() => {
+                setFilter("active");
+                onLeaveOverdue?.();
+                onViewChange?.(registerView.id);
+              }}
               role="tab"
               title={registerView.hint}
               type="button"
@@ -536,6 +564,7 @@ export function CommitmentQueue({
             onValueChange={(value) => {
               setFilter(value);
               onIncludeCandidatesChange?.(value === "review");
+              if (overdueOnly && value !== "overdue") onLeaveOverdue?.();
             }}
             value={filter}
           >
@@ -545,6 +574,7 @@ export function CommitmentQueue({
             <SelectContent className="app-shell rounded-none">
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="review">Needs review</SelectItem>
+              <SelectItem value="overdue">Overdue</SelectItem>
               <SelectItem value="due">Due soon or overdue</SelectItem>
               <SelectItem value="closed">Closed</SelectItem>
               <SelectItem value="all">All</SelectItem>

@@ -4,9 +4,9 @@ const listeners = new Set<Listener>();
 let pending = false;
 
 /**
- * Home's overdue count is past-due promises. The register is usually
- * unmounted when that count is clicked, so the "Due soon or overdue"
- * filter has to be waiting when the register mounts.
+ * Home's overdue count is past-due promises in every direction. The register
+ * is usually unmounted when that count is clicked, so the overdue slice has
+ * to be waiting when the register mounts.
  */
 export function requestDueCommitments(): void {
   if (listeners.size === 0) {

@@ -47,6 +47,21 @@ export function registerFilterFor(
   }
 }
 
+/**
+ * Home's overdue count is every confirmed open promise whose due time has
+ * passed, in any direction. "What we owe" cannot show that number, and
+ * "Due soon or overdue" adds promises that are not in the count yet.
+ * Past-due open promises read as at risk, except a disputed one, which keeps
+ * its own state. Both belong in the slice the count describes.
+ */
+export function overdueRegisterFilter(dueBefore: string): CommitmentRegisterFilter {
+  return {
+    state: ["at_risk", "disputed"],
+    dueBefore,
+    limit: 200,
+  };
+}
+
 type RegisterAccountSource = {
   id?: string;
   kind?: string;

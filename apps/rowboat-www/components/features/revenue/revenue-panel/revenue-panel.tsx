@@ -13,6 +13,7 @@ import { commitmentKeys } from "@/hooks/queries/utils/commitment-keys";
 import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-source-keys";
 import { revenueActionKeys } from "@/hooks/queries/utils/revenue-action-keys";
 import { downloadMarkdown } from "@/lib/content/download-markdown";
+import { subscribeDueCommitments } from "@/lib/dashboard/commitment-due-request";
 import { DashboardRequestError } from "@/lib/api/request-json";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
@@ -121,12 +122,24 @@ export function RevenuePanel({
   const [registerAccountId, setRegisterAccountId] = React.useState("");
   const [registerOwner, setRegisterOwner] = React.useState("");
   const [includeCandidates, setIncludeCandidates] = React.useState(false);
+  // Home counts past-due promises in every direction. The stamp is the moment
+  // that count was opened, and it stays stable so the register does not refetch
+  // on every render. Go's dueBefore parser rejects fractional seconds.
+  const [overdueBefore, setOverdueBefore] = React.useState<string | null>(null);
+  React.useEffect(
+    () =>
+      subscribeDueCommitments(() => {
+        setOverdueBefore(new Date().toISOString().replace(/\.\d{3}Z$/, "Z"));
+      }),
+    [],
+  );
   const commitmentQuery = useCommitmentRegister(
     {
       view: registerView,
       accountId: registerAccountId,
       owner: registerOwner,
       includeCandidates,
+      dueBefore: overdueBefore ?? "",
     },
     { enabled: tab === "commitments" },
   );
@@ -288,7 +301,12 @@ export function RevenuePanel({
           <CommitmentQueue
             entries={commitmentQuery.data?.entries ?? []}
             view={registerView}
-            onViewChange={setRegisterView}
+            overdueOnly={Boolean(overdueBefore)}
+            onLeaveOverdue={() => setOverdueBefore(null)}
+            onViewChange={(next) => {
+              setOverdueBefore(null);
+              setRegisterView(next);
+            }}
             onExport={exportRecord}
             relationshipCount={commitmentQuery.data?.relationshipCount ?? 0}
             accounts={commitmentQuery.data?.accounts ?? []}
