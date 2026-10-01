@@ -385,6 +385,12 @@ describe("people directory labels", () => {
     expect(personEvidenceProvenance({ extractor: "email_signature", source: "gmail" })).toBe(
       "From their email signature",
     );
+    expect(personEvidenceProvenance({ extractor: "email_header", source: "gmail" })).toBe(
+      "From an email header",
+    );
+    expect(personEvidenceProvenance({ extractor: "email_header", source: "user" })).toBe(
+      "Added by you",
+    );
     expect(personEvidenceProvenance({ extractor: "unknown", source: "gmail" })).toBe("Gmail");
     expect(personEvidenceProvenance({ extractor: "unknown", source: "user" })).toBe("Added by you");
   });

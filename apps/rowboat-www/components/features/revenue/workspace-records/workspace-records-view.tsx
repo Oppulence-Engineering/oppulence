@@ -332,10 +332,14 @@ const EVIDENCE_SOURCE_LABELS: Record<string, string> = {
   web: "The web",
 };
 
-/** Prefer the extractor phrase. The raw source token is only a fallback. */
+/**
+ * Prefer the extractor phrase. A fact the user typed still says so, even when
+ * the directory stored it with an email-header extractor.
+ */
 export function personEvidenceProvenance(
   attribute: Pick<RelationshipPersonAttribute, "extractor" | "source">,
 ): string {
+  if (attribute.source === "user") return "Added by you";
   const extractor = EVIDENCE_EXTRACTOR_LABELS[attribute.extractor];
   if (extractor) return extractor;
   return EVIDENCE_SOURCE_LABELS[attribute.source] ?? "Recorded in this workspace";
