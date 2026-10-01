@@ -259,6 +259,16 @@ export function taskIsOverdue(dueAt: string | null | undefined, now: number | Da
   return dueDay < today;
 }
 
+/**
+ * The report used to call every promise that was not inbound "we owe them".
+ * A mutual promise is one both sides made.
+ */
+export function promiseDirectionLabel(direction: string | null | undefined): string {
+  if (direction === "promised_by_them") return "they owe us";
+  if (direction === "mutual") return "we both owe";
+  return "we owe them";
+}
+
 /** Open promises used to print the UTC date prefix. The reader sees their own day. */
 export function promiseDueLabel(dueAt: string | null | undefined): string {
   if (!dueAt) return "due unspecified";

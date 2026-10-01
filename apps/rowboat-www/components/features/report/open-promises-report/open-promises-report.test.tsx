@@ -32,6 +32,14 @@ describe("OpenPromisesReportClient", () => {
     expect(source).not.toContain("fulfilment");
   });
 
+  it("names a mutual promise as shared", () => {
+    expect(source).toContain("{promiseDirectionLabel(item.direction)}");
+    expect(source).toContain('Stat label="We both promised"');
+    expect(source).not.toContain(
+      'item.direction === "promised_by_them" ? "they owe us" : "we owe them"',
+    );
+  });
+
   it("prints a promise due date on the reader's calendar", () => {
     expect(source).toContain("{promiseDueLabel(item.dueAt)}");
     expect(source).not.toContain("item.dueAt.slice(0, 10)");

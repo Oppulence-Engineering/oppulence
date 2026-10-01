@@ -115,9 +115,12 @@ func (s *Service) OpenPromisesReport(
 			item.OccurredAt = &evidence.OccurredAt
 		}
 		report.ByAccount[item.Account]++
-		if row.Direction == "promised_by_them" {
+		switch row.Direction {
+		case "promised_by_them":
 			report.InboundCount++
-		} else {
+		case "mutual":
+			// A shared promise is neither one we made nor one made to us.
+		default:
 			report.OutboundCount++
 		}
 		report.Items = append(report.Items, item)
@@ -150,6 +153,9 @@ func (r *OpenPromisesReport) Markdown() string {
 		r.LookbackDays)
 	fmt.Fprintf(&b, "- **%d** promises we made\n", r.OutboundCount)
 	fmt.Fprintf(&b, "- **%d** promises made to us\n", r.InboundCount)
+	if shared := sharedPromiseCount(r.Items); shared > 0 {
+		fmt.Fprintf(&b, "- **%d** promises we share\n", shared)
+	}
 	fmt.Fprintf(&b, "- **%d** conversations read\n\n", r.ThreadsSeen)
 	if r.Truncated {
 		b.WriteString("This report shows the first 200 open promises. Open the register for the complete ledger.\n\n")
@@ -173,10 +179,7 @@ func (r *OpenPromisesReport) Markdown() string {
 	b.WriteString("\n## The promises\n\n")
 
 	for _, item := range r.Items {
-		owed := "We owe"
-		if item.Direction == "promised_by_them" {
-			owed = "They owe"
-		}
+		owed := promiseOwesLabel(item.Direction)
 		fmt.Fprintf(&b, "### %s — %s\n\n", item.Account, item.Text)
 		fmt.Fprintf(&b, "%s · state **%s**", owed, registerStateLabel(item.State))
 		switch {
@@ -206,4 +209,25 @@ func (r *OpenPromisesReport) Markdown() string {
 	fmt.Fprintf(&b, "\n---\n\nGenerated %s. Every promise above includes the source evidence available at scan time.\n",
 		r.GeneratedAt.Format(time.RFC3339))
 	return b.String()
+}
+
+func promiseOwesLabel(direction string) string {
+	switch direction {
+	case "promised_by_them":
+		return "They owe"
+	case "mutual":
+		return "We both owe"
+	default:
+		return "We owe"
+	}
+}
+
+func sharedPromiseCount(items []ReportItem) int {
+	count := 0
+	for _, item := range items {
+		if item.Direction == "mutual" {
+			count++
+		}
+	}
+	return count
 }

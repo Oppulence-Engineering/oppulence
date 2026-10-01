@@ -39,7 +39,7 @@ import {
   safeResearchCitationURL,
   startScan,
 } from "@/lib/revenue/revenue";
-import { promiseDueLabel } from "@/lib/revenue/revenue-records";
+import { promiseDirectionLabel, promiseDueLabel } from "@/lib/revenue/revenue-records";
 import type { OpenPromisesReport, RelationshipSourceStatus } from "@/lib/revenue/types";
 
 export function OpenPromisesReportClient() {
@@ -531,11 +531,18 @@ function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string
     );
   }
 
+  const sharedCount = report.items.filter((item) => item.direction === "mutual").length;
+
   return (
     <>
-      <section className="grid grid-cols-3 gap-3">
+      <section
+        className={
+          sharedCount > 0 ? "grid grid-cols-2 gap-3 sm:grid-cols-4" : "grid grid-cols-3 gap-3"
+        }
+      >
         <Stat label="We promised" value={report.outboundCount} />
         <Stat label="They promised us" value={report.inboundCount} />
+        {sharedCount > 0 ? <Stat label="We both promised" value={sharedCount} /> : null}
         <Stat label="Conversations read" value={report.threadsSeen} />
       </section>
 
@@ -569,7 +576,7 @@ function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <Label className="text-[13px] font-medium text-primary">{item.account}</Label>
               <Label className="text-[12px] font-normal text-primary/45">
-                {item.direction === "promised_by_them" ? "they owe us" : "we owe them"}
+                {promiseDirectionLabel(item.direction)}
               </Label>
               {item.state === "at_risk" ? (
                 <Badge

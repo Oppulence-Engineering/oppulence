@@ -214,6 +214,31 @@ func TestOpenPromisesReportIsHonestWhenEmpty(t *testing.T) {
 	}
 }
 
+func TestOpenPromisesReportNamesAMutualPromise(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	scanID := startedScan(t, f, 90)
+	rel := f.relationship(t)
+	due := now.Add(10 * 24 * time.Hour)
+	seedReportCommitment(t, f, rel, "mutual", "Trade the redlines", "", &due, now.Add(-2*24*time.Hour))
+
+	report, err := f.svc.OpenPromisesReport(f.ctx, f.user, mustParseUUID(t, scanID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.OutboundCount != 0 || report.InboundCount != 0 || len(report.Items) != 1 {
+		t.Fatalf("a mutual promise was counted as one side's: out=%d in=%d items=%d", report.OutboundCount, report.InboundCount, len(report.Items))
+	}
+	doc := report.Markdown()
+	if !strings.Contains(doc, "We both owe ·") || !strings.Contains(doc, "promises we share") {
+		t.Fatalf("mutual promise was labeled as one side's:\n%s", doc)
+	}
+	if strings.Contains(doc, "We owe ·") {
+		t.Fatalf("mutual promise was also called something we owe:\n%s", doc)
+	}
+}
+
 func mustParseUUID(t *testing.T, raw string) uuid.UUID {
 	t.Helper()
 	id, err := uuid.Parse(raw)

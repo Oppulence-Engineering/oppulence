@@ -6,6 +6,7 @@ import {
   isWorkspaceTask,
   localCalendarDay,
   mapSettledWithConcurrency,
+  promiseDirectionLabel,
   promiseDueLabel,
   atRiskPulseCount,
   attentionWithoutTasks,
@@ -135,6 +136,10 @@ describe("local due dates", () => {
       day: "numeric",
       year: "numeric",
     });
+    expect(promiseDirectionLabel("promised_by_me")).toBe("we owe them");
+    expect(promiseDirectionLabel("promised_by_them")).toBe("they owe us");
+    expect(promiseDirectionLabel("mutual")).toBe("we both owe");
+    expect(promiseDirectionLabel(undefined)).toBe("we owe them");
     expect(promiseDueLabel(stored)).toBe(`due ${shown}`);
     expect(promiseDueLabel(undefined)).toBe("due unspecified");
     expect(promiseDueLabel("not-a-date")).toBe("due unspecified");
