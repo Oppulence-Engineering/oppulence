@@ -294,6 +294,23 @@ export function personSheetSubtitle(person: Pick<RelationshipPerson, "primaryEma
 }
 
 /**
+ * The people list opens a saved LinkedIn page. The sheet has to do the same,
+ * and it must not print an address that is not a web link.
+ */
+export function personSheetDetail(
+  label: string,
+  value: string | undefined,
+): { text: string; href?: string } {
+  if (label === "LinkedIn") {
+    const href = webAddressHref(value);
+    if (href) return { text: "View profile", href };
+    return { text: "Not known" };
+  }
+  const text = value?.trim() ?? "";
+  return { text: text || "Not known" };
+}
+
+/**
  * Creating a person writes display_name and alias so the directory can find
  * them. Those rows are the name the user typed, not enrichment evidence.
  */
@@ -702,12 +719,28 @@ function PersonSheet({
                 "Last interaction",
                 person.lastInteractionAt ? relativeTime(person.lastInteractionAt) : undefined,
               ],
-            ].map(([label, value]) => (
-              <React.Fragment key={label}>
-                <dt className="text-primary/40">{label}</dt>
-                <dd className="text-primary/75">{value || "Not known"}</dd>
-              </React.Fragment>
-            ))}
+            ].map(([label, value]) => {
+              const detail = personSheetDetail(label, value);
+              return (
+                <React.Fragment key={label}>
+                  <dt className="text-primary/40">{label}</dt>
+                  <dd className="text-primary/75">
+                    {detail.href ? (
+                      <a
+                        className="underline-offset-2 hover:underline"
+                        href={detail.href}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        {detail.text}
+                      </a>
+                    ) : (
+                      detail.text
+                    )}
+                  </dd>
+                </React.Fragment>
+              );
+            })}
           </dl>
           <div className="mt-6 border-t border-border pt-4">
             <Button

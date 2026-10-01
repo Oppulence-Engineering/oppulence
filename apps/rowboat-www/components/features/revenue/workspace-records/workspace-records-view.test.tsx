@@ -28,10 +28,14 @@ vi.mock("@/hooks/queries/utils/fetch-console", () => ({
 vi.mock("@/hooks/queries/utils/fetch-workspace-notes", () => ({
   fetchWorkspaceNotes: mocks.fetchWorkspaceNotes,
 }));
-vi.mock("@/lib/revenue/revenue", () => ({
-  relativeTime: () => "now",
-  ingestRelationshipObservations: mocks.ingestRelationshipObservations,
-}));
+vi.mock("@/lib/revenue/revenue", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/revenue/revenue")>();
+  return {
+    ...actual,
+    relativeTime: () => "now",
+    ingestRelationshipObservations: mocks.ingestRelationshipObservations,
+  };
+});
 vi.mock("@/components/auth/auth-gate", () => ({
   useAuthSession: () => ({
     user: { email: "ada@example.com", workosUserId: "user_ada" },
@@ -53,6 +57,7 @@ import {
   enrichmentEvidence,
   personEnrichmentLabel,
   personEvidenceProvenance,
+  personSheetDetail,
   personSheetSubtitle,
   sortTasksByDue,
   linkedCompanyName,
@@ -414,6 +419,14 @@ describe("people directory labels", () => {
   it("does not present a typed name as enrichment", () => {
     expect(personSheetSubtitle({})).toBe("No email");
     expect(personSheetSubtitle({ primaryEmail: "ada@acme.com" })).toBe("ada@acme.com");
+    expect(personSheetDetail("LinkedIn", "https://www.linkedin.com/in/ada")).toEqual({
+      text: "View profile",
+      href: "https://www.linkedin.com/in/ada",
+    });
+    expect(personSheetDetail("LinkedIn", "javascript:alert(1)")).toEqual({ text: "Not known" });
+    expect(personSheetDetail("LinkedIn", "")).toEqual({ text: "Not known" });
+    expect(personSheetDetail("Role", "")).toEqual({ text: "Not known" });
+    expect(personSheetDetail("Role", "Founder")).toEqual({ text: "Founder" });
     expect(
       enrichmentEvidence([
         { dimension: "display_name", status: "active" },
@@ -626,6 +639,8 @@ describe("people directory copy", () => {
     expect(source).toContain(">Companies</TableHead>");
     expect(source).toContain("{person.orgName || \"—\"}");
     expect(source).toContain('["Company", person.orgName]');
+    expect(source).toContain("personSheetDetail(label, value)");
+    expect(source).not.toContain('{value || "Not known"}');
     expect(source).toContain('["Domain", person.orgDomain]');
     expect(source).not.toContain("person.orgName || person.orgDomain");
     expect(source).toContain("company timeline");
