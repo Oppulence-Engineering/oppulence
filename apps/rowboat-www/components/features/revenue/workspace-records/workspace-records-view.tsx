@@ -905,7 +905,6 @@ function PersonSheet({
                   {(attribute.citations ?? [])
                     .map((citation) => safeResearchCitationURL(citation.url))
                     .filter((url): url is string => Boolean(url))
-                    .slice(0, 2)
                     .map((url, index) => (
                       <a
                         className="mr-3 mt-1 inline-block text-[11px] text-primary/55 underline-offset-2 hover:underline"
