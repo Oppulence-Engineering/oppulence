@@ -37,6 +37,9 @@ import {
   mutualPlanStatusLabel,
   deletionReceiptStatusLabel,
   rankingFactorLabel,
+  relationshipChangeLabel,
+  contradictionSourceLabel,
+  contradictionReasonCopy,
   recoveryClassificationLabel,
   recoveryExplanationCopy,
   evidencePublicationLabel,
@@ -354,6 +357,22 @@ describe("RelationshipsView", () => {
     expect(reviewEvidenceKindLabel("claim")).toBe("What was said");
     expect(mutualPlanStatusLabel("internally_approved")).toBe("Approved in this workspace");
     expect(deletionReceiptStatusLabel("partial")).toBe("Some copies are still there");
+    expect(relationshipChangeLabel("next_action")).toBe("Next action");
+    expect(relationshipChangeLabel("risks")).toBe("Risks");
+    expect(contradictionSourceLabel("desktop_note")).toBe("A note");
+    expect(contradictionSourceLabel("gmail")).toBe("Gmail");
+    expect(contradictionSourceLabel("ai_inference")).toBe("A suggestion");
+    expect(contradictionReasonCopy("deterministic assertion authority selected the current value")).toBe(
+      "A stronger source already chose the current value.",
+    );
+    expect(contradictionReasonCopy("Selected desktop_note as current evidence.")).toBe(
+      "You chose the value from A note.",
+    );
+    expect(source).toContain("contradictionSourceLabel(side.source)");
+    expect(source).toContain("contradictionReasonCopy(item.reason)");
+    expect(source).toContain("relationshipChangeLabel(change.dimension)");
+    expect(source).toContain("relationshipDeltaValue(side.value)");
+    expect(source).not.toContain("(side) => side.source)");
     expect(rankingFactorLabel("commitment_due_state")).toBe("Due date");
     expect(rankingFactorLabel("source_completeness")).toBe("Source coverage");
     expect(rankingFactorLabel("outcome_learning")).toBe("Earlier outcomes");

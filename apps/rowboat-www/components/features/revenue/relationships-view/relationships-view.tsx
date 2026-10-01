@@ -1782,6 +1782,53 @@ export function deletionReceiptStatusLabel(status: string): string {
   }
 }
 
+/** A projection names the field that moved. Plural snapshot keys stay plural. */
+export function relationshipChangeLabel(dimension: string): string {
+  switch (dimension) {
+    case "evidence":
+      return "Supporting evidence";
+    case "risks":
+      return "Risks";
+    case "milestones":
+      return "Milestones";
+    default:
+      return RELATIONSHIP_DIMENSION_LABELS[dimension] ?? humanize(dimension);
+  }
+}
+
+/** A contradiction side stores a source slug or an authority token. */
+export function contradictionSourceLabel(source: string): string {
+  switch (source.trim().toLowerCase()) {
+    case "user_correction":
+      return "Your correction";
+    case "source_fact":
+      return "A connected source";
+    case "deterministic":
+      return "A rule";
+    case "ai_inference":
+      return "A suggestion";
+    default:
+      return activitySourceLabel(source);
+  }
+}
+
+/** Older contradiction rows stored the ranking rule. The sheet says who won. */
+export function contradictionReasonCopy(reason: string): string {
+  const raw = reason.trim();
+  if (raw === "deterministic assertion authority selected the current value") {
+    return "A stronger source already chose the current value.";
+  }
+  if (raw === "equally authoritative typed evidence overlaps with different values") {
+    return "Two sources disagree. Choose which value is current.";
+  }
+  if (raw === "User selected the current value from a focused contradiction case.") {
+    return "You chose the current value.";
+  }
+  const selected = /^Selected ([a-z0-9_]+) as current evidence\.$/.exec(raw);
+  if (selected?.[1]) return `You chose the value from ${contradictionSourceLabel(selected[1])}.`;
+  return raw;
+}
+
 /** Ranking stores a factor key. The inspection list names what moved the score. */
 export function rankingFactorLabel(factor: string): string {
   switch (factor) {
@@ -3453,8 +3500,8 @@ export function RelationshipSheet({
                           key={change.dimension}
                           className="rounded-none border border-border p-3"
                         >
-                          <p className="text-xs font-medium capitalize text-primary">
-                            {humanize(change.dimension)}
+                          <p className="text-xs font-medium text-primary">
+                            {relationshipChangeLabel(change.dimension)}
                           </p>
                           <p className="mt-1 text-xs text-primary/60">
                             {relationshipDeltaValue(change.before)} → {relationshipDeltaValue(change.after)}
@@ -3470,14 +3517,14 @@ export function RelationshipSheet({
                     <ul className="mb-3 space-y-2 rounded-none border border-amber-500/30 p-3 text-xs text-primary/60">
                       {data.intelligence.contradictionCases.map((item) => (
                         <li key={item.caseId}>
-                          <Label className="font-medium capitalize text-primary">
-                            {humanize(item.dimension)}:
+                          <Label className="font-medium text-primary">
+                            {relationshipChangeLabel(item.dimension)}:
                           </Label>{" "}
                           {item.status === "open"
                             ? `Choose the current value from ${item.sides.length} sources.`
-                            : item.reason}
+                            : contradictionReasonCopy(item.reason)}
                           <Badge className="ml-1 font-normal text-primary/40" variant="secondary">
-                            ({item.sides.map((side) => side.source).join(" vs ")})
+                            ({item.sides.map((side) => contradictionSourceLabel(side.source)).join(" vs ")})
                           </Badge>
                           {item.status === "open" ? (
                             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -3492,13 +3539,12 @@ export function RelationshipSheet({
                                     void act(item.caseId, () =>
                                       resolveRelationshipContradiction(id, item.caseId, {
                                         selectedAssertionId: side.assertionId,
-                                        reason: `Selected ${side.source} as current evidence.`,
+                                        reason: `You chose the value from ${contradictionSourceLabel(side.source)}.`,
                                       }),
                                     )
                                   }
                                 >
-                                  Use{" "}
-                                  {String("value" in side.value ? side.value.value : side.source)}
+                                  Use {relationshipDeltaValue(side.value)}
                                 </Button>
                               ))}
                             </div>
@@ -3533,7 +3579,7 @@ export function RelationshipSheet({
                           <ClockCounterClockwise className="mt-0.5 size-4 shrink-0 text-primary/35" />
                           <div>
                             <p className="text-xs text-primary/70">
-                              {snapshot.changedDimensions.map(humanize).join(", ")}
+                              {snapshot.changedDimensions.map(relationshipChangeLabel).join(", ")}
                             </p>
                             <p className="text-[11px] text-primary/35">
                               v{snapshot.version} · {relativeTime(snapshot.createdAt)}
