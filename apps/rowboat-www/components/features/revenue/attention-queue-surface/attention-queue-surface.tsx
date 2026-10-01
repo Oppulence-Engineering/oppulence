@@ -209,31 +209,38 @@ export function AttentionQueueSurface({
                   </td>
                 </tr>
               ) : (
-                visible.slice(0, 10).map((item, index) => {
+                visible.slice(0, 10).map((item) => {
                   const health = healthBadge(item);
                   const isSelected = selected?.id === item.id;
                   return (
                     <tr
                       className={cn(
                         "h-[37px] cursor-pointer border-[var(--border)] border-b transition-colors hover:bg-[var(--surface-hover)]",
-                        (index === 0 || isSelected) && "bg-[var(--surface-3)]",
+                        isSelected && "bg-[var(--surface-3)]",
                       )}
                       key={item.id}
-                      onClick={() => {
-                        setSelectedId(item.id);
-                        onOpenRelationship(item.relationshipId);
-                      }}
+                      onClick={() => setSelectedId(item.id)}
                       onKeyDown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault();
                           setSelectedId(item.id);
-                          onOpenRelationship(item.relationshipId);
                         }
                       }}
                       tabIndex={0}
                     >
                       <td className="border-[var(--border)] border-r px-2.5 font-medium text-[var(--text-primary)]">
-                        {item.relationshipName}
+                        <Button
+                          className="h-auto justify-start px-0 text-left font-medium text-[var(--text-primary)] hover:bg-transparent hover:underline"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedId(item.id);
+                            onOpenRelationship(item.relationshipId);
+                          }}
+                          type="button"
+                          variant="ghost"
+                        >
+                          {item.relationshipName}
+                        </Button>
                       </td>
                       <td className="border-[var(--border)] border-r px-2.5">
                         <Badge variant={health.variant}>{health.label}</Badge>

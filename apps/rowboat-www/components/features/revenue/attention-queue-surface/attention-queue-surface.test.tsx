@@ -101,6 +101,31 @@ describe("AttentionQueueSurface", () => {
     expect(screen.getByText("0 companies")).toBeInTheDocument();
   });
 
+  it("selects a reason without opening the company", async () => {
+    const user = userEvent.setup();
+    const onOpenRelationship = vi.fn();
+    render(
+      <AttentionQueueSurface
+        items={[
+          item("attn-risk", "Acme", "high", "No reply in 14 days"),
+          item("attn-watch", "Northwind", "normal", "Renewal in 30 days"),
+        ]}
+        onActionError={vi.fn()}
+        onChanged={vi.fn()}
+        onOpenRelationship={onOpenRelationship}
+      />,
+    );
+
+    await user.click(screen.getByText("Renewal in 30 days"));
+    expect(onOpenRelationship).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("Renewal in 30 days", { selector: "[data-slot=attention-reason]" }),
+    ).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Northwind" }));
+    expect(onOpenRelationship).toHaveBeenCalledWith("attn-watch");
+  });
+
   it("keeps the full reason next to the decision", () => {
     const reason =
       "No recorded interaction for 12 days. Companies in contracting are usually contacted again within 7 days.";
