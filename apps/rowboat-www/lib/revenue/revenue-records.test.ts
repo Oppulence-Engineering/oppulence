@@ -3,7 +3,9 @@ import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 import {
+  attentionWithCompanyTitles,
   isWorkspaceTask,
+  personCompanyTitle,
   localCalendarDay,
   mapSettledWithConcurrency,
   promiseDirectionLabel,
@@ -19,6 +21,34 @@ import {
   taskIsDueToday,
   taskIsOverdue,
 } from "@/lib/revenue/revenue-records";
+
+describe("company titles shared with people and attention", () => {
+  it("titles a domain-stored company and keeps a typed name", () => {
+    expect(
+      personCompanyTitle({
+        orgName: "dogfood-label.example",
+        orgDomain: "dogfood-label.example",
+      }),
+    ).toBe("Dogfood Label");
+    expect(personCompanyTitle({ orgName: "Dogfood Order Co", orgDomain: "dogfood-order.example" })).toBe(
+      "Dogfood Order Co",
+    );
+    expect(personCompanyTitle({ orgName: "", orgDomain: "northwind.example" })).toBe("");
+    expect(
+      attentionWithCompanyTitles(
+        [{ relationshipId: "company-1", relationshipName: "northwind.example" }],
+        [
+          {
+            id: "company-1",
+            kind: "company",
+            displayName: "northwind.example",
+            accountDomain: "northwind.example",
+          },
+        ],
+      ),
+    ).toEqual([{ relationshipId: "company-1", relationshipName: "Northwind" }]);
+  });
+});
 
 describe("mapSettledWithConcurrency", () => {
   it("bounds fan-out, preserves order, and retains partial failures", async () => {

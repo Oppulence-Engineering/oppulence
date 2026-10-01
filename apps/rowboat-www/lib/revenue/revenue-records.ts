@@ -30,6 +30,39 @@ export function companyName(relationship: {
   return relationship.displayName;
 }
 
+/** The directory names the company the same way the companies page does. */
+export function personCompanyTitle(person: {
+  orgName?: string | null;
+  orgDomain?: string | null;
+}): string {
+  const name = person.orgName?.trim() ?? "";
+  if (!name) return "";
+  return companyName({ displayName: name, accountDomain: person.orgDomain });
+}
+
+/** Attention rows carry the stored company name. The queue should show its title. */
+export function attentionWithCompanyTitles<
+  T extends { relationshipId: string; relationshipName: string },
+>(
+  items: readonly T[],
+  companies: readonly {
+    id: string;
+    displayName: string;
+    accountDomain?: string | null;
+    kind?: string | null;
+  }[],
+): T[] {
+  const titles = new Map(
+    companies
+      .filter((row) => row.kind !== "person")
+      .map((row) => [row.id, companyName(row)]),
+  );
+  return items.map((item) => {
+    const title = titles.get(item.relationshipId);
+    return title ? { ...item, relationshipName: title } : item;
+  });
+}
+
 export type WorkspaceNote = {
   externalId: string;
   title: string;

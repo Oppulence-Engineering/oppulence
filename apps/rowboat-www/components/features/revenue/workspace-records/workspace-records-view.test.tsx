@@ -768,8 +768,9 @@ describe("people directory copy", () => {
     expect(source).toContain("Fill in their role and company");
     expect(source).not.toContain("Enrich profiles with evidence");
     expect(source).toContain(">Companies</TableHead>");
-    expect(source).toContain("{person.orgName || \"—\"}");
-    expect(source).toContain('["Company", person.orgName]');
+    expect(source).toContain("{personCompanyTitle(person) || \"—\"}");
+    expect(source).toContain('["Company", personCompanyTitle(person) || undefined]');
+    expect(source).not.toContain("{person.orgName || \"—\"}");
     expect(source).toContain("personSheetDetail(label, value)");
     expect(source).not.toContain('{value || "Not known"}');
     expect(source).toContain('["Domain", person.orgDomain]');

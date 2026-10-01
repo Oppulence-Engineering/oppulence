@@ -170,8 +170,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { planLabel } from "@/lib/product/plan-label";
 import {
+  attentionWithCompanyTitles,
   attentionWithoutTasks,
   companyName,
+  personCompanyTitle,
   workspaceTaskIds,
 } from "@/lib/revenue/revenue-records";
 
@@ -571,11 +573,14 @@ export function RelationshipsView({
     setHealth("all");
     setLifecycle("all");
   };
-  const companyAttention = attentionWithoutTasks(
-    attention.filter((item) =>
-      companies.some((relationship) => relationship.id === item.relationshipId),
+  const companyAttention = attentionWithCompanyTitles(
+    attentionWithoutTasks(
+      attention.filter((item) =>
+        companies.some((relationship) => relationship.id === item.relationshipId),
+      ),
+      openActionsQuery.isSuccess ? workspaceTaskIds(openActionsQuery.data) : new Set(),
     ),
-    openActionsQuery.isSuccess ? workspaceTaskIds(openActionsQuery.data) : new Set(),
+    companies,
   );
 
   React.useEffect(() => {
@@ -2878,7 +2883,7 @@ export function RelationshipSheet({
                           const departed = person?.employmentStatus === "departed";
                           const profile = [
                             person?.title || participant.title,
-                            person?.orgName,
+                            person ? personCompanyTitle(person) : undefined,
                             person?.seniority,
                             person?.location,
                           ].filter(Boolean);

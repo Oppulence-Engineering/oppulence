@@ -101,6 +101,7 @@ import { noteIdFromHash, workspaceNoteHref } from "@/lib/revenue/note-link";
 import { removePersonConfirmCopy } from "@/lib/revenue/source-product-copy";
 import {
   companyName,
+  personCompanyTitle,
   groupWorkspaceNotes,
   isWorkspaceTask,
   plateText,
@@ -544,7 +545,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                     </Button>
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
-                    {person.orgName || "—"}
+                    {personCompanyTitle(person) || "—"}
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
                     {person.title || person.seniority || "—"}
@@ -735,7 +736,7 @@ function PersonSheet({
         <div className="overflow-y-auto p-4">
           <dl className="grid grid-cols-[120px_minmax(0,1fr)] gap-x-3 gap-y-3 text-sm">
             {[
-              ["Company", person.orgName],
+              ["Company", personCompanyTitle(person) || undefined],
               ["Domain", person.orgDomain],
               ["Role", person.title],
               ["Seniority", person.seniority],
