@@ -2257,13 +2257,13 @@ func (h *Handler) ListIdentityCandidates(w http.ResponseWriter, r *http.Request)
 			filter.Offset = value
 		}
 	}
-	candidates, err := h.svc.ListIdentityCandidates(r.Context(), u, filter)
+	page, err := h.svc.ListIdentityCandidates(r.Context(), u, filter)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	out := make([]identityCandidateDTO, 0, len(candidates))
-	for _, candidate := range candidates {
+	out := make([]identityCandidateDTO, 0, len(page.Candidates))
+	for _, candidate := range page.Candidates {
 		dto, err := identityCandidateToDTO(candidate)
 		if err != nil {
 			h.writeServiceError(w, err)
@@ -2271,7 +2271,7 @@ func (h *Handler) ListIdentityCandidates(w http.ResponseWriter, r *http.Request)
 		}
 		out = append(out, dto)
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"candidates": out})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"candidates": out, "hasMore": page.HasMore})
 }
 
 // GetIdentityCandidate returns one tenant-scoped identity ambiguity and lineage.

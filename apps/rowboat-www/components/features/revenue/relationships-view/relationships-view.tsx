@@ -171,13 +171,13 @@ import {
 } from "@/hooks/queries/use-relationship-sources";
 import {
   ATTENTION_PAGE_SIZE,
-  IDENTITY_CANDIDATE_PAGE,
   fetchIdentityCandidates,
   fetchRelationshipAttention,
   fetchRelationships,
+  identityCandidatePageHasMore,
+  identityCandidateRows,
   relationshipPageHasMore,
   relationshipRows,
-  identityCandidateHasMore,
 } from "@/hooks/queries/utils/fetch-relationships";
 import { relationshipKeys } from "@/hooks/queries/utils/relationship-keys";
 import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-source-keys";
@@ -651,8 +651,8 @@ export function RelationshipsView({
   const deferredQuery = useIdentityCandidates("deferred");
   const [extraPending, setExtraPending] = React.useState<RelationshipIdentityCandidate[]>([]);
   const [extraDeferred, setExtraDeferred] = React.useState<RelationshipIdentityCandidate[]>([]);
-  const [pendingExhausted, setPendingExhausted] = React.useState(false);
-  const [deferredExhausted, setDeferredExhausted] = React.useState(false);
+  const [laterPendingHasMore, setLaterPendingHasMore] = React.useState<boolean | null>(null);
+  const [laterDeferredHasMore, setLaterDeferredHasMore] = React.useState<boolean | null>(null);
   const [loadingMoreDuplicates, setLoadingMoreDuplicates] = React.useState(false);
   const attentionQuery = useRelationshipAttention("open");
   const [extraAttention, setExtraAttention] = React.useState<RelationshipAttentionItem[]>([]);
@@ -679,8 +679,8 @@ export function RelationshipsView({
   const rows = directoryRows;
   const sources = sourcesQuery.data ?? [];
   const sourceInventory = inventoryQuery.data ?? [];
-  const pendingPage = pendingQuery.data ?? [];
-  const deferredPage = deferredQuery.data ?? [];
+  const pendingPage = identityCandidateRows(pendingQuery.data);
+  const deferredPage = identityCandidateRows(deferredQuery.data);
   const pendingCandidates = React.useMemo(() => {
     if (extraPending.length === 0) return pendingPage;
     const seen = new Set(pendingPage.map((candidate) => candidate.id));
@@ -705,16 +705,12 @@ export function RelationshipsView({
       }),
     ];
   }, [deferredPage, extraDeferred]);
-  const hasMorePending = identityCandidateHasMore(
-    pendingPage.length,
-    extraPending.length,
-    pendingExhausted,
-  );
-  const hasMoreDeferred = identityCandidateHasMore(
-    deferredPage.length,
-    extraDeferred.length,
-    deferredExhausted,
-  );
+  const hasMorePending =
+    laterPendingHasMore ??
+    (pendingPage.length > 0 && identityCandidatePageHasMore(pendingQuery.data));
+  const hasMoreDeferred =
+    laterDeferredHasMore ??
+    (deferredPage.length > 0 && identityCandidatePageHasMore(deferredQuery.data));
   const hasMoreDuplicates = hasMorePending || hasMoreDeferred;
   const identityCandidates = [...pendingCandidates, ...deferredCandidates];
   const attentionPage = attentionQuery.data ?? [];
@@ -810,8 +806,8 @@ export function RelationshipsView({
     setAttentionExhausted(false);
     setExtraPending([]);
     setExtraDeferred([]);
-    setPendingExhausted(false);
-    setDeferredExhausted(false);
+    setLaterPendingHasMore(null);
+    setLaterDeferredHasMore(null);
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: relationshipKeys.all }),
       queryClient.invalidateQueries({ queryKey: relationshipSourceKeys.all }),
@@ -845,8 +841,8 @@ export function RelationshipsView({
           undefined,
           pendingPage.length + extraPending.length,
         );
-        if (next.length < IDENTITY_CANDIDATE_PAGE) setPendingExhausted(true);
-        setExtraPending((current) => [...current, ...next]);
+        setLaterPendingHasMore(identityCandidatePageHasMore(next));
+        setExtraPending((current) => [...current, ...identityCandidateRows(next)]);
       }
       if (hasMoreDeferred) {
         const next = await fetchIdentityCandidates(
@@ -855,8 +851,8 @@ export function RelationshipsView({
           undefined,
           deferredPage.length + extraDeferred.length,
         );
-        if (next.length < IDENTITY_CANDIDATE_PAGE) setDeferredExhausted(true);
-        setExtraDeferred((current) => [...current, ...next]);
+        setLaterDeferredHasMore(identityCandidatePageHasMore(next));
+        setExtraDeferred((current) => [...current, ...identityCandidateRows(next)]);
       }
     } catch (reason) {
       onError(explainedRevenueError(reason, "Could not load the next duplicates."));
@@ -2362,9 +2358,9 @@ type SheetDuplicatePages = {
   extraPending: RelationshipIdentityCandidate[];
   extraDeferred: RelationshipIdentityCandidate[];
   extraResolved: RelationshipIdentityCandidate[];
-  pendingExhausted: boolean;
-  deferredExhausted: boolean;
-  resolvedExhausted: boolean;
+  pendingHasMore: boolean;
+  deferredHasMore: boolean;
+  resolvedHasMore: boolean;
 };
 
 function emptySheetDuplicatePages(): SheetDuplicatePages {
@@ -2375,9 +2371,9 @@ function emptySheetDuplicatePages(): SheetDuplicatePages {
     extraPending: [],
     extraDeferred: [],
     extraResolved: [],
-    pendingExhausted: false,
-    deferredExhausted: false,
-    resolvedExhausted: false,
+    pendingHasMore: false,
+    deferredHasMore: false,
+    resolvedHasMore: false,
   };
 }
 
@@ -2867,21 +2863,9 @@ export function RelationshipSheet({
     () => mergeIdentityPages(sheetDuplicates.resolved, sheetDuplicates.extraResolved),
     [sheetDuplicates.extraResolved, sheetDuplicates.resolved],
   );
-  const hasMoreSheetPending = identityCandidateHasMore(
-    sheetDuplicates.pending.length,
-    sheetDuplicates.extraPending.length,
-    sheetDuplicates.pendingExhausted,
-  );
-  const hasMoreSheetDeferred = identityCandidateHasMore(
-    sheetDuplicates.deferred.length,
-    sheetDuplicates.extraDeferred.length,
-    sheetDuplicates.deferredExhausted,
-  );
-  const hasMoreSheetResolved = identityCandidateHasMore(
-    sheetDuplicates.resolved.length,
-    sheetDuplicates.extraResolved.length,
-    sheetDuplicates.resolvedExhausted,
-  );
+  const hasMoreSheetPending = sheetDuplicates.pendingHasMore;
+  const hasMoreSheetDeferred = sheetDuplicates.deferredHasMore;
+  const hasMoreSheetResolved = sheetDuplicates.resolvedHasMore;
   const hasMoreSheetDuplicates =
     hasMoreSheetPending || hasMoreSheetDeferred || hasMoreSheetResolved;
   const identityCandidates = [...sheetPending, ...sheetDeferred, ...sheetResolved];
@@ -2919,6 +2903,7 @@ export function RelationshipSheet({
       const nextData = await getRelationship(id);
       setData(nextData);
 
+      const emptyIdentityPage = { candidates: [] as RelationshipIdentityCandidate[], hasMore: false };
       const [nextTimeline, nextCommunicationTimeline, nextChanges, pending, deferred, resolved] =
         await Promise.all([
           getRelationshipTimelinePage(id).catch(() => ({
@@ -2935,9 +2920,9 @@ export function RelationshipSheet({
             snapshots: [] as RelationshipStateSnapshot[],
             hasMore: false,
           })),
-          listIdentityCandidates("pending", id).catch(() => [] as RelationshipIdentityCandidate[]),
-          listIdentityCandidates("deferred", id).catch(() => [] as RelationshipIdentityCandidate[]),
-          listIdentityCandidates("resolved", id).catch(() => [] as RelationshipIdentityCandidate[]),
+          listIdentityCandidates("pending", id).catch(() => emptyIdentityPage),
+          listIdentityCandidates("deferred", id).catch(() => emptyIdentityPage),
+          listIdentityCandidates("resolved", id).catch(() => emptyIdentityPage),
         ]);
       setTimeline(nextTimeline.observations);
       setTimelineHasMore(nextTimeline.hasMore);
@@ -2953,9 +2938,12 @@ export function RelationshipSheet({
       );
       setSheetDuplicates({
         ...emptySheetDuplicatePages(),
-        pending,
-        deferred,
-        resolved,
+        pending: identityCandidateRows(pending),
+        deferred: identityCandidateRows(deferred),
+        resolved: identityCandidateRows(resolved),
+        pendingHasMore: identityCandidatePageHasMore(pending),
+        deferredHasMore: identityCandidatePageHasMore(deferred),
+        resolvedHasMore: identityCandidatePageHasMore(resolved),
       });
       const people = nextData.participants
         .map((participant) => participant.person?.id)
@@ -3017,7 +3005,7 @@ export function RelationshipSheet({
               undefined,
               sheetDuplicates.pending.length + sheetDuplicates.extraPending.length,
             )
-          : Promise.resolve([] as RelationshipIdentityCandidate[]),
+          : Promise.resolve({ candidates: [] as RelationshipIdentityCandidate[], hasMore: false }),
         hasMoreSheetDeferred
           ? fetchIdentityCandidates(
               "deferred",
@@ -3025,7 +3013,7 @@ export function RelationshipSheet({
               undefined,
               sheetDuplicates.deferred.length + sheetDuplicates.extraDeferred.length,
             )
-          : Promise.resolve([] as RelationshipIdentityCandidate[]),
+          : Promise.resolve({ candidates: [] as RelationshipIdentityCandidate[], hasMore: false }),
         hasMoreSheetResolved
           ? fetchIdentityCandidates(
               "resolved",
@@ -3033,32 +3021,29 @@ export function RelationshipSheet({
               undefined,
               sheetDuplicates.resolved.length + sheetDuplicates.extraResolved.length,
             )
-          : Promise.resolve([] as RelationshipIdentityCandidate[]),
+          : Promise.resolve({ candidates: [] as RelationshipIdentityCandidate[], hasMore: false }),
       ]);
       if (sheetIdRef.current !== requestedId) return;
       setSheetDuplicates((current) => ({
         ...current,
         extraPending: hasMoreSheetPending
-          ? appendById(current.extraPending, nextPending)
+          ? appendById(current.extraPending, identityCandidateRows(nextPending))
           : current.extraPending,
         extraDeferred: hasMoreSheetDeferred
-          ? appendById(current.extraDeferred, nextDeferred)
+          ? appendById(current.extraDeferred, identityCandidateRows(nextDeferred))
           : current.extraDeferred,
         extraResolved: hasMoreSheetResolved
-          ? appendById(current.extraResolved, nextResolved)
+          ? appendById(current.extraResolved, identityCandidateRows(nextResolved))
           : current.extraResolved,
-        pendingExhausted:
-          hasMoreSheetPending && nextPending.length < IDENTITY_CANDIDATE_PAGE
-            ? true
-            : current.pendingExhausted,
-        deferredExhausted:
-          hasMoreSheetDeferred && nextDeferred.length < IDENTITY_CANDIDATE_PAGE
-            ? true
-            : current.deferredExhausted,
-        resolvedExhausted:
-          hasMoreSheetResolved && nextResolved.length < IDENTITY_CANDIDATE_PAGE
-            ? true
-            : current.resolvedExhausted,
+        pendingHasMore: hasMoreSheetPending
+          ? identityCandidatePageHasMore(nextPending)
+          : current.pendingHasMore,
+        deferredHasMore: hasMoreSheetDeferred
+          ? identityCandidatePageHasMore(nextDeferred)
+          : current.deferredHasMore,
+        resolvedHasMore: hasMoreSheetResolved
+          ? identityCandidatePageHasMore(nextResolved)
+          : current.resolvedHasMore,
       }));
     } catch (error) {
       onError(errMessage(error, "Could not load the next duplicates."));

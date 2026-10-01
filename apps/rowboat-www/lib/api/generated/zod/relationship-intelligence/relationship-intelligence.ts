@@ -605,7 +605,7 @@ export const GetRelationshipBetaDiagnostics403Response = zod
   );
 
 /**
- * Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage.
+ * Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage. A full page is the end of the inbox when hasMore is false.
  * @summary List identity review candidates
  */
 export const listRelationshipIdentityCandidatesQueryOffsetMin = 0;
@@ -966,8 +966,9 @@ export const ListRelationshipIdentityCandidates200Response = zod
           .describe("Durable, optimistic-versioned exact-anchor ambiguity review."),
       )
       .describe("Candidates."),
+    hasMore: zod.boolean().optional().describe("Another duplicate exists beyond this page."),
   })
-  .describe("Identity candidate list.");
+  .describe("Identity candidate list. A full page is the end of the inbox when hasMore is false.");
 
 export const ListRelationshipIdentityCandidates400Response = zod
   .strictObject({

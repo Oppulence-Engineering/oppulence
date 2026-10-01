@@ -543,7 +543,7 @@ export const getListRelationshipIdentityCandidatesUrl = (
 };
 
 /**
- * Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage.
+ * Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage. A full page is the end of the inbox when hasMore is false.
  * @summary List identity review candidates
  */
 export const listRelationshipIdentityCandidates = async (

@@ -18,6 +18,7 @@ import type {
 
 const IdentityListSchema = z.object({
   candidates: z.array(z.unknown()).optional(),
+  hasMore: z.boolean().optional(),
 });
 
 const AttentionListSchema = z.object({
@@ -195,14 +196,27 @@ export async function loadRelationshipGraph(
 /** One page of the duplicate inbox. The next page uses the same size as an offset. */
 export const IDENTITY_CANDIDATE_PAGE = 50;
 
-/** A full page may have another duplicate behind it. A short page is the end. */
-export function identityCandidateHasMore(
-  pageLength: number,
-  earlierLength: number,
-  exhausted: boolean,
+/** One duplicate-inbox page. hasMore is the server's look past this page. */
+export type IdentityCandidatePage = {
+  candidates: RelationshipIdentityCandidate[];
+  hasMore: boolean;
+};
+
+/** Rows from an inbox page. A bare array is a test fixture that has no flag. */
+export function identityCandidateRows(
+  page: IdentityCandidatePage | readonly RelationshipIdentityCandidate[] | null | undefined,
+): RelationshipIdentityCandidate[] {
+  if (!page) return [];
+  if (Array.isArray(page)) return [...page];
+  return page.candidates ?? [];
+}
+
+/** True only when the server says another duplicate exists past this page. */
+export function identityCandidatePageHasMore(
+  page: IdentityCandidatePage | readonly RelationshipIdentityCandidate[] | null | undefined,
 ): boolean {
-  const loaded = pageLength + earlierLength;
-  return !exhausted && pageLength > 0 && loaded > 0 && loaded % IDENTITY_CANDIDATE_PAGE === 0;
+  if (!page || Array.isArray(page)) return false;
+  return Boolean(page.hasMore);
 }
 
 export async function loadIdentityCandidates(
@@ -211,7 +225,7 @@ export async function loadIdentityCandidates(
   relationshipId?: string,
   signal?: AbortSignal,
   offset = 0,
-): Promise<RelationshipIdentityCandidate[]> {
+): Promise<IdentityCandidatePage> {
   const params = new URLSearchParams({
     status,
     limit: String(IDENTITY_CANDIDATE_PAGE),
@@ -223,7 +237,10 @@ export async function loadIdentityCandidates(
     schema: IdentityListSchema,
     signal,
   });
-  return (body.candidates ?? []) as RelationshipIdentityCandidate[];
+  return {
+    candidates: (body.candidates ?? []) as RelationshipIdentityCandidate[],
+    hasMore: Boolean(body.hasMore),
+  };
 }
 
 /** The attention API caps a page at 100 and defaults to 50. The queue asks for that default, then the next offset. */
@@ -280,7 +297,7 @@ export function fetchIdentityCandidates(
   relationshipId?: string,
   signal?: AbortSignal,
   offset = 0,
-): Promise<RelationshipIdentityCandidate[]> {
+): Promise<IdentityCandidatePage> {
   return loadIdentityCandidates(requestJson, status, relationshipId, signal, offset);
 }
 

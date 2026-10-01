@@ -1,15 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { RelationshipIdentityCandidate } from "@/lib/revenue/types";
+
 import {
   IDENTITY_CANDIDATE_PAGE,
-  identityCandidateHasMore,
+  type IdentityCandidatePage,
+  identityCandidatePageHasMore,
+  identityCandidateRows,
   loadIdentityCandidates,
 } from "./fetch-relationships";
 
 describe("loadIdentityCandidates", () => {
-  it("asks for the next page by offset", async () => {
-    const request = vi.fn().mockResolvedValue({ candidates: [] });
-    await loadIdentityCandidates(request, "pending", undefined, undefined, IDENTITY_CANDIDATE_PAGE);
+  it("asks for the next page by offset and keeps the server flag", async () => {
+    const request = vi.fn().mockResolvedValue({ candidates: [], hasMore: true });
+    await expect(
+      loadIdentityCandidates(request, "pending", undefined, undefined, IDENTITY_CANDIDATE_PAGE),
+    ).resolves.toEqual({ candidates: [], hasMore: true });
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
         path: "/relationship-identity-candidates?status=pending&limit=50&offset=50",
@@ -17,9 +23,12 @@ describe("loadIdentityCandidates", () => {
     );
   });
 
-  it("keeps the first page at the inbox size", async () => {
+  it("keeps the first page at the inbox size when the inbox ends", async () => {
     const request = vi.fn().mockResolvedValue({ candidates: [] });
-    await loadIdentityCandidates(request, "pending");
+    await expect(loadIdentityCandidates(request, "pending")).resolves.toEqual({
+      candidates: [],
+      hasMore: false,
+    });
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
         path: "/relationship-identity-candidates?status=pending&limit=50",
@@ -28,15 +37,21 @@ describe("loadIdentityCandidates", () => {
   });
 });
 
-describe("identityCandidateHasMore", () => {
-  it("treats a full page as unfinished", () => {
-    expect(identityCandidateHasMore(50, 0, false)).toBe(true);
-    expect(identityCandidateHasMore(50, 50, false)).toBe(true);
+describe("identityCandidatePageHasMore", () => {
+  it("trusts the server flag on a full page", () => {
+    const candidates = Array.from({ length: 50 }, (_, index) => ({
+      id: `candidate-${index}`,
+    })) as RelationshipIdentityCandidate[];
+    const full = { candidates, hasMore: false } as IdentityCandidatePage;
+    expect(identityCandidatePageHasMore(full)).toBe(false);
+    expect(identityCandidatePageHasMore({ ...full, hasMore: true })).toBe(true);
+    expect(identityCandidateRows(full)).toHaveLength(50);
   });
 
-  it("stops when the last page is short or the list was exhausted", () => {
-    expect(identityCandidateHasMore(7, 0, false)).toBe(false);
-    expect(identityCandidateHasMore(50, 1, false)).toBe(false);
-    expect(identityCandidateHasMore(50, 0, true)).toBe(false);
+  it("treats a bare list as having no further page", () => {
+    const row = { id: "candidate-1" } as RelationshipIdentityCandidate;
+    expect(identityCandidatePageHasMore([])).toBe(false);
+    expect(identityCandidatePageHasMore(undefined)).toBe(false);
+    expect(identityCandidateRows([row])).toEqual([row]);
   });
 });
