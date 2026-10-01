@@ -422,6 +422,7 @@ export function CommitmentQueue({
   const [correctedDueAt, setCorrectedDueAt] = React.useState("");
   const [blocking, setBlocking] = React.useState(false);
   const [blockerText, setBlockerText] = React.useState("");
+  const [fulfilling, setFulfilling] = React.useState(false);
   // Home's count is past due only. "Due soon or overdue" would add rows the
   // number did not include.
   React.useEffect(() => {
@@ -430,6 +431,7 @@ export function CommitmentQueue({
   React.useEffect(() => {
     setBlocking(false);
     setBlockerText("");
+    setFulfilling(false);
   }, [selected?.id]);
   const items = React.useMemo(() => toQueueItems(entries), [entries]);
   // An empty select cannot be "chosen". That case is a missing company, not a
@@ -1227,7 +1229,10 @@ export function CommitmentQueue({
                           size="sm"
                           variant="outline"
                           disabled={busy !== null}
-                          onClick={() => setBlocking(true)}
+                          onClick={() => {
+                            setFulfilling(false);
+                            setBlocking(true);
+                          }}
                         >
                           Mark blocked
                         </Button>
@@ -1244,20 +1249,66 @@ export function CommitmentQueue({
                         Unblock
                       </Button>
                     ) : null}
-                    {["internally_confirmed", "accepted"].includes(selected.acceptance) ||
-                    selected.blocker ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={busy !== null}
-                        onClick={() => {
-                          if (window.confirm("Mark this commitment fulfilled?"))
-                            void transition(selected, "fulfilled");
-                        }}
-                      >
-                        Mark fulfilled
-                      </Button>
+                    {selected.state !== "met" &&
+                    (["internally_confirmed", "accepted"].includes(selected.acceptance) ||
+                      selected.blocker) ? (
+                      fulfilling ? (
+                        <>
+                          <p className="w-full text-[13px] text-primary/70">
+                            Mark this commitment fulfilled?
+                          </p>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={busy !== null}
+                            onClick={() => {
+                              void transition(selected, "fulfilled").then((saved) => {
+                                if (!saved) return;
+                                setSelected((current) =>
+                                  current && current.id === selected.id
+                                    ? {
+                                        ...current,
+                                        state: "met",
+                                        urgency: "closed",
+                                        blocker: undefined,
+                                        currentEventVersion: current.currentEventVersion + 1,
+                                        nextAction:
+                                          "Closed from observed or confirmed evidence.",
+                                      }
+                                    : current,
+                                );
+                                setFulfilling(false);
+                              });
+                            }}
+                          >
+                            Confirm fulfilled
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            disabled={busy !== null}
+                            onClick={() => setFulfilling(false)}
+                          >
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={busy !== null}
+                          onClick={() => {
+                            setBlocking(false);
+                            setBlockerText("");
+                            setFulfilling(true);
+                          }}
+                        >
+                          Mark fulfilled
+                        </Button>
+                      )
                     ) : null}
                   </div>
                 </Card>

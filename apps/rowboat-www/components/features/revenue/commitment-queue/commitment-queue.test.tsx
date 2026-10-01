@@ -322,6 +322,35 @@ describe("CommitmentQueue", () => {
     prompt.mockRestore();
   });
 
+  it("asks to mark a promise fulfilled on the page instead of a browser confirm", async () => {
+    const user = userEvent.setup();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    const onTransition = vi.fn(async () => true);
+    const source = fs.readFileSync(path.join(import.meta.dirname, "commitment-queue.tsx"), "utf8");
+    render(<CommitmentQueue {...props({ entries: entries("accepted"), onTransition })} />);
+
+    await user.click(screen.getByText("Acme"));
+    expect(screen.queryByText("Mark this commitment fulfilled?")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Mark fulfilled" }));
+    expect(screen.getByText("Mark this commitment fulfilled?")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Confirm fulfilled" }));
+
+    await waitFor(() =>
+      expect(onTransition).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "commitment-1" }),
+        expect.objectContaining({
+          kind: "fulfilled",
+          idempotencyKey: "commitment-queue:fulfilled:commitment-1:v3",
+        }),
+      ),
+    );
+    expect(confirm).not.toHaveBeenCalled();
+    expect(source).not.toContain("window.confirm");
+    expect(await screen.findByText("Closed from observed or confirmed evidence.")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Mark fulfilled" })).not.toBeInTheDocument();
+    confirm.mockRestore();
+  });
+
   it("records confirmation and correction through transition callbacks", async () => {
     const user = userEvent.setup();
     const onTransition = vi.fn(async () => true);
