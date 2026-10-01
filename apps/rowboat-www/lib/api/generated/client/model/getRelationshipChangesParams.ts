@@ -5,14 +5,17 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { RelationshipStateSnapshot } from "./relationshipStateSnapshot";
 
-/**
- * Snapshot list.
- */
-export type GetRelationshipChanges200 = {
-  /** An older snapshot exists beyond this page. */
-  hasMore: boolean;
-  /** Snapshots. */
-  snapshots: RelationshipStateSnapshot[];
+export type GetRelationshipChangesParams = {
+  /**
+   * Maximum snapshots (default 2, max 50).
+   * @minimum 1
+   * @maximum 50
+   */
+  limit?: number;
+  /**
+   * Page offset.
+   * @minimum 0
+   */
+  offset?: number;
 };

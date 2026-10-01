@@ -8,6 +8,7 @@ import {
   companyLinkedInURL,
   explainedRevenueError,
   friendlyRevenueError,
+  getRelationshipChanges,
   getRelationshipCommunicationTimeline,
   getRelationshipGraph,
   getRelationshipTimelinePage,
@@ -264,6 +265,38 @@ describe("getRelationshipTimelinePage", () => {
       hasMore: true,
       nextBefore: "2026-08-01T00:00:00Z",
     });
+  });
+});
+
+describe("getRelationshipChanges", () => {
+  it("loads the two newest snapshots first", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ snapshots: [{ id: "snap-3" }], hasMore: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await expect(getRelationshipChanges("rel-1")).resolves.toEqual({
+      snapshots: [{ id: "snap-3" }],
+      hasMore: true,
+    });
+    expect(mockFetch.mock.calls[0]?.[0]).toBe("/relationships/rel-1/changes?limit=2");
+  });
+
+  it("asks for the snapshots hidden behind the newest two", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ snapshots: [{ id: "snap-1" }], hasMore: false }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await expect(getRelationshipChanges("rel-1", 2)).resolves.toEqual({
+      snapshots: [{ id: "snap-1" }],
+      hasMore: false,
+    });
+    expect(mockFetch.mock.calls[0]?.[0]).toBe("/relationships/rel-1/changes?limit=2&offset=2");
   });
 });
 

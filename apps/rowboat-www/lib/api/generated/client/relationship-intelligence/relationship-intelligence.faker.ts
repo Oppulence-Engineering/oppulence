@@ -3699,8 +3699,9 @@ export const getRetractRelationshipAssertionResponseMock = (
 export const getGetRelationshipChangesResponseMock = (
   overrideResponse: Partial<Extract<GetRelationshipChanges200, object>> = {},
 ): GetRelationshipChanges200 => ({
-  snapshots: faker.helpers.arrayElement([
-    Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+  hasMore: faker.datatype.boolean(),
+  snapshots: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => ({
       assertionIds: Array.from(
         { length: faker.number.int({ min: 1, max: 10 }) },
         (_, i) => i + 1,
@@ -3716,9 +3717,8 @@ export const getGetRelationshipChangesResponseMock = (
       state: {},
       stateHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
       version: faker.number.int(),
-    })),
-    undefined,
-  ]),
+    }),
+  ),
   ...overrideResponse,
 });
 

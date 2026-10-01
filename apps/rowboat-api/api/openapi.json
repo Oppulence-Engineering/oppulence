@@ -23947,7 +23947,7 @@
     },
     "/v1/relationships/{relationshipId}/changes": {
       "get": {
-        "description": "Returns immutable projection snapshots so operators can see what changed and why.",
+        "description": "Returns immutable projection snapshots so operators can see what changed and why. The first page is the two newest snapshots.",
         "operationId": "getRelationshipChanges",
         "parameters": [
           {
@@ -23959,6 +23959,27 @@
               "format": "uuid",
               "type": "string"
             }
+          },
+          {
+            "description": "Maximum snapshots (default 2, max 50).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page offset.",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "minimum": 0,
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -23968,6 +23989,11 @@
                 "schema": {
                   "description": "Snapshot list.",
                   "properties": {
+                    "hasMore": {
+                      "description": "An older snapshot exists beyond this page.",
+                      "example": true,
+                      "type": "boolean"
+                    },
                     "snapshots": {
                       "description": "Snapshots.",
                       "items": {
@@ -23976,11 +24002,15 @@
                       "type": "array"
                     }
                   },
+                  "required": ["snapshots", "hasMore"],
                   "type": "object"
                 }
               }
             },
             "description": "State changes."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
           },
           "401": {
             "$ref": "#/components/responses/401"

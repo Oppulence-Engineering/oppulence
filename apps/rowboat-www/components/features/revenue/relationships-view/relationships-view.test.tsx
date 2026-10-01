@@ -39,6 +39,8 @@ import {
   earlierMailLabel,
   activityHistoryTitle,
   earlierActivityLabel,
+  relationshipChangeTitle,
+  earlierChangesLabel,
   mailReplyLabel,
   reviewEvidenceKindLabel,
   mutualPlanStatusLabel,
@@ -549,6 +551,9 @@ describe("RelationshipsView", () => {
     expect(activityHistoryTitle(50, true)).toBe("Activity history (50+)");
     expect(activityHistoryTitle(51, false)).toBe("Activity history (51)");
     expect(earlierActivityLabel()).toBe("Show earlier activity");
+    expect(relationshipChangeTitle(2, true)).toBe("What changed (2+)");
+    expect(relationshipChangeTitle(3, false)).toBe("What changed (3)");
+    expect(earlierChangesLabel()).toBe("Show earlier changes");
     expect(governanceReceiptRemainder(1)).toBe("Show the other 1 receipt");
     expect(governanceReceiptRemainder(4)).toBe("Show the other 4 receipts");
     expect(source).toContain(
@@ -558,6 +563,9 @@ describe("RelationshipsView", () => {
     expect(source).toContain("governanceReceiptRemainder(hiddenReceipts)");
     expect(source).toContain("earlierMailLabel()");
     expect(source).toContain("earlierActivityLabel()");
+    expect(source).toContain("relationshipChangeTitle(changes.length, changesHasMore)");
+    expect(source).toContain("earlierChangesLabel()");
+    expect(source).toContain("Could not load earlier changes.");
     expect(source).not.toContain("governanceReceipts.slice(0, 5)");
     expect(source).toContain("Activity history");
     expect(source).toContain("activityEvidenceLines(");

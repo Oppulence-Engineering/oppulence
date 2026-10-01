@@ -710,10 +710,22 @@ export const getCommunicationInteractionBody = (interactionId: string) =>
     `/revenue-workspaces/current/communications/${encodeURIComponent(interactionId)}/body`,
   );
 
-export const getRelationshipChanges = (id: string) =>
-  call<{ snapshots: RelationshipStateSnapshot[] }>(`/relationships/${id}/changes`).then(
-    (body) => body.snapshots ?? [],
-  );
+export const RELATIONSHIP_CHANGE_PAGE = 2;
+
+export type RelationshipChangePage = {
+  snapshots: RelationshipStateSnapshot[];
+  hasMore: boolean;
+};
+
+export const getRelationshipChanges = (id: string, offset = 0) =>
+  call<{ snapshots?: RelationshipStateSnapshot[]; hasMore?: boolean }>(
+    `/relationships/${id}/changes?limit=${RELATIONSHIP_CHANGE_PAGE}${
+      offset > 0 ? `&offset=${offset}` : ""
+    }`,
+  ).then((body) => ({
+    snapshots: body.snapshots ?? [],
+    hasMore: Boolean(body.hasMore),
+  }));
 
 export const getRelationshipEvidence = (relationshipId: string, evidenceId: string) =>
   call<{ observation: RelationshipObservation; payload: unknown }>(

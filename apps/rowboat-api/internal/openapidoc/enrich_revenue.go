@@ -829,8 +829,12 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/relationships/{relationshipId}/changes"] = obj{"get": operation("Relationship Intelligence", "Get relationship changes", "Returns immutable projection snapshots so operators can see what changed and why.", "getRelationshipChanges", bearer(), relationshipParam, nil, obj{
-		"200": jsonResponse("State changes.", objectSchema("Snapshot list.", obj{"snapshots": arraySchema("Snapshots.", ref("RelationshipStateSnapshot"))}), nil),
+	paths["/v1/relationships/{relationshipId}/changes"] = obj{"get": operation("Relationship Intelligence", "Get relationship changes", "Returns immutable projection snapshots so operators can see what changed and why. The first page is the two newest snapshots.", "getRelationshipChanges", bearer(), append(append(append([]any{}, relationshipParam...), obj{"name": "limit", "in": "query", "required": false, "description": "Maximum snapshots (default 2, max 50).", "schema": obj{"type": "integer", "minimum": 1, "maximum": 50}}), obj{"name": "offset", "in": "query", "required": false, "description": "Page offset.", "schema": obj{"type": "integer", "minimum": 0}}), nil, obj{
+		"200": jsonResponse("State changes.", objectSchema("Snapshot list.", obj{
+			"snapshots": arraySchema("Snapshots.", ref("RelationshipStateSnapshot")),
+			"hasMore":   boolSchema("An older snapshot exists beyond this page.", true),
+		}, "snapshots", "hasMore"), nil),
+		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}

@@ -36,6 +36,7 @@ import type {
   GetPublicMutualActionPlan200,
   GetRelationship200,
   GetRelationshipChanges200,
+  GetRelationshipChangesParams,
   GetRelationshipCommunicationTimelineParams,
   GetRelationshipEvidence200,
   GetRelationshipGraphParams,
@@ -1526,6 +1527,11 @@ export type getRelationshipChangesResponse200 = {
   status: 200;
 };
 
+export type getRelationshipChangesResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
 export type getRelationshipChangesResponse401 = {
   data: N401Response;
   status: 401;
@@ -1540,7 +1546,9 @@ export type getRelationshipChangesResponseSuccess = getRelationshipChangesRespon
   headers: Headers;
 };
 export type getRelationshipChangesResponseError = (
-  getRelationshipChangesResponse401 | getRelationshipChangesResponse404
+  | getRelationshipChangesResponse400
+  | getRelationshipChangesResponse401
+  | getRelationshipChangesResponse404
 ) & {
   headers: Headers;
 };
@@ -1548,19 +1556,35 @@ export type getRelationshipChangesResponseError = (
 export type getRelationshipChangesResponse =
   getRelationshipChangesResponseSuccess | getRelationshipChangesResponseError;
 
-export const getGetRelationshipChangesUrl = (relationshipId: string) => {
-  return `/v1/relationships/${relationshipId}/changes`;
+export const getGetRelationshipChangesUrl = (
+  relationshipId: string,
+  params?: GetRelationshipChangesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/relationships/${relationshipId}/changes?${stringifiedParams}`
+    : `/v1/relationships/${relationshipId}/changes`;
 };
 
 /**
- * Returns immutable projection snapshots so operators can see what changed and why.
+ * Returns immutable projection snapshots so operators can see what changed and why. The first page is the two newest snapshots.
  * @summary Get relationship changes
  */
 export const getRelationshipChanges = async (
   relationshipId: string,
+  params?: GetRelationshipChangesParams,
   options?: RequestInit,
 ): Promise<getRelationshipChangesResponse> => {
-  const res = await fetch(getGetRelationshipChangesUrl(relationshipId), {
+  const res = await fetch(getGetRelationshipChangesUrl(relationshipId, params), {
     ...options,
     method: "GET",
   });

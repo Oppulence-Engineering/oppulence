@@ -4596,15 +4596,36 @@ export const RetractRelationshipAssertion409Response = zod
   );
 
 /**
- * Returns immutable projection snapshots so operators can see what changed and why.
+ * Returns immutable projection snapshots so operators can see what changed and why. The first page is the two newest snapshots.
  * @summary Get relationship changes
  */
 export const GetRelationshipChangesParams = zod.object({
   relationshipId: zod.uuid().describe("Relationship id."),
 });
 
+export const getRelationshipChangesQueryLimitMax = 50;
+
+export const getRelationshipChangesQueryOffsetMin = 0;
+
+export const GetRelationshipChangesQueryParams = zod.object({
+  limit: zod.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(getRelationshipChangesQueryLimitMax)
+    .optional()
+    .describe("Maximum snapshots (default 2, max 50)."),
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(getRelationshipChangesQueryOffsetMin)
+    .optional()
+    .describe("Page offset."),
+});
+
 export const GetRelationshipChanges200Response = zod
   .strictObject({
+    hasMore: zod.boolean().describe("An older snapshot exists beyond this page."),
     snapshots: zod
       .array(
         zod
@@ -4633,10 +4654,24 @@ export const GetRelationshipChanges200Response = zod
             "Immutable projection snapshot created only when material relationship state changes.",
           ),
       )
-      .optional()
       .describe("Snapshots."),
   })
   .describe("Snapshot list.");
+
+export const GetRelationshipChanges400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
 
 export const GetRelationshipChanges401Response = zod
   .strictObject({

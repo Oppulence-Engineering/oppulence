@@ -2385,22 +2385,55 @@ func (s *Service) RelationshipObservationPayload(
 	return observation, payload, nil
 }
 
+// RelationshipChangePage is one page of immutable state snapshots, newest first.
+// HasMore is true when an older snapshot exists beyond this page.
+type RelationshipChangePage struct {
+	Snapshots []*ent.RelationshipStateSnapshot
+	HasMore   bool
+}
+
 // RelationshipChanges returns projected state snapshots for a relationship.
+// The first page stays the two newest snapshots. Older versions stay one
+// request away through offset. Version is unique per relationship; the id
+// keeps a tied page from skipping or repeating a row.
 func (s *Service) RelationshipChanges(
 	ctx context.Context,
 	relationshipID uuid.UUID,
-) ([]*ent.RelationshipStateSnapshot, error) {
+	limit int,
+	offset int,
+) (*RelationshipChangePage, error) {
+	if limit <= 0 {
+		limit = 2
+	}
+	if limit > 50 {
+		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	if _, err := s.client.Relationship.Get(ctx, relationshipID); err != nil {
 		if ent.IsNotFound(err) {
 			return nil, ErrNotFound
 		}
 		return nil, err
 	}
-	return s.client.RelationshipStateSnapshot.Query().
+	rows, err := s.client.RelationshipStateSnapshot.Query().
 		Where(relationshipstatesnapshot.HasRelationshipWith(relationship.IDEQ(relationshipID))).
-		Order(ent.Desc(relationshipstatesnapshot.FieldVersion)).
-		Limit(2).
+		Order(
+			ent.Desc(relationshipstatesnapshot.FieldVersion),
+			ent.Desc(relationshipstatesnapshot.FieldID),
+		).
+		Limit(limit + 1).
+		Offset(offset).
 		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	hasMore := len(rows) > limit
+	if hasMore {
+		rows = rows[:limit]
+	}
+	return &RelationshipChangePage{Snapshots: rows, HasMore: hasMore}, nil
 }
 
 // RelationshipSourceStatuses returns the current ingestion state of relationship sources.

@@ -2547,16 +2547,36 @@ func (h *Handler) RelationshipChanges(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	snapshots, err := h.svc.RelationshipChanges(r.Context(), id)
+	limit := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil || value < 1 {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid limit", ErrInvalidInput))
+			return
+		}
+		limit = value
+	}
+	offset := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		if value > 0 {
+			offset = value
+		}
+	}
+	page, err := h.svc.RelationshipChanges(r.Context(), id, limit, offset)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	out := make([]snapshotDTO, 0, len(snapshots))
-	for _, snapshot := range snapshots {
+	out := make([]snapshotDTO, 0, len(page.Snapshots))
+	for _, snapshot := range page.Snapshots {
 		out = append(out, snapshotToDTO(snapshot))
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"snapshots": out})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"snapshots": out, "hasMore": page.HasMore})
 }
 
 // RelationshipEvidence returns a single evidence record and its source references.

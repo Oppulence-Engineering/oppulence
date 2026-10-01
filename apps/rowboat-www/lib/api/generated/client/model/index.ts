@@ -277,6 +277,7 @@ export * from "./getOppulenceVoiceSession200";
 export * from "./getPublicMutualActionPlan200";
 export * from "./getRelationship200";
 export * from "./getRelationshipChanges200";
+export * from "./getRelationshipChangesParams";
 export * from "./getRelationshipCommunicationTimelineParams";
 export * from "./getRelationshipEvidence200";
 export * from "./getRelationshipEvidence200Payload";

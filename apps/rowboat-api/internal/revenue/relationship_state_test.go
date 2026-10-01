@@ -134,19 +134,33 @@ func TestRelationshipObservationProjectionAndCorrection(t *testing.T) {
 		t.Fatalf("user correction did not become canonical: %#v", corrected)
 	}
 
-	changes, err := f.svc.RelationshipChanges(f.ctx, relID)
+	page, err := f.svc.RelationshipChanges(f.ctx, relID, 2, 0)
 	if err != nil {
 		t.Fatalf("changes: %v", err)
 	}
-	if len(changes) != 2 || changes[0].Version != 3 || changes[1].Version != 2 {
-		t.Fatalf("want latest two snapshots, got %#v", changes)
+	if !page.HasMore || len(page.Snapshots) != 2 || page.Snapshots[0].Version != 3 || page.Snapshots[1].Version != 2 {
+		t.Fatalf("want latest two snapshots and an older one, got %#v hasMore=%v", page.Snapshots, page.HasMore)
 	}
 	var state RelationshipState
-	if err := json.Unmarshal([]byte(changes[0].StateJSON), &state); err != nil {
+	if err := json.Unmarshal([]byte(page.Snapshots[0].StateJSON), &state); err != nil {
 		t.Fatalf("snapshot json: %v", err)
 	}
 	if state.Health != "healthy" || state.StateReason != "Customer confirmed the plan in a call." {
 		t.Fatalf("snapshot explanation mismatch: %#v", state)
+	}
+	earlier, err := f.svc.RelationshipChanges(f.ctx, relID, 2, 2)
+	if err != nil {
+		t.Fatalf("earlier changes: %v", err)
+	}
+	if earlier.HasMore || len(earlier.Snapshots) != 1 || earlier.Snapshots[0].Version != 1 {
+		t.Fatalf("want the first snapshot, got %#v hasMore=%v", earlier.Snapshots, earlier.HasMore)
+	}
+	clamped, err := f.svc.RelationshipChanges(f.ctx, relID, 0, -2)
+	if err != nil {
+		t.Fatalf("clamped offset: %v", err)
+	}
+	if !clamped.HasMore || len(clamped.Snapshots) != 2 || clamped.Snapshots[0].Version != 3 {
+		t.Fatalf("negative offset should match the first page, got %#v", clamped.Snapshots)
 	}
 }
 

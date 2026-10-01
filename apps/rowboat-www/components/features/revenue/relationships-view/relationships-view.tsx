@@ -2313,6 +2313,15 @@ export function earlierActivityLabel(): string {
   return "Show earlier activity";
 }
 
+/** The change list says when the two newest snapshots are not the whole history. */
+export function relationshipChangeTitle(shown: number, hasMore: boolean): string {
+  return hasMore ? `What changed (${shown}+)` : `What changed (${shown})`;
+}
+
+export function earlierChangesLabel(): string {
+  return "Show earlier changes";
+}
+
 function appendById<T extends { id: string }>(current: T[], next: T[]): T[] {
   const seen = new Set(current.map((item) => item.id));
   const added = next.filter((item) => !seen.has(item.id));
@@ -2771,6 +2780,8 @@ export function RelationshipSheet({
   const [loadingEarlier, setLoadingEarlier] = React.useState<"mail" | "activity" | null>(null);
   const [governanceExpanded, setGovernanceExpanded] = React.useState(false);
   const [changes, setChanges] = React.useState<RelationshipStateSnapshot[]>([]);
+  const [changesHasMore, setChangesHasMore] = React.useState(false);
+  const [loadingEarlierChanges, setLoadingEarlierChanges] = React.useState(false);
   const [identityCandidates, setIdentityCandidates] = React.useState<
     RelationshipIdentityCandidate[]
   >([]);
@@ -2811,7 +2822,10 @@ export function RelationshipSheet({
             hasMore: false as boolean,
             nextBefore: undefined as string | undefined,
           })),
-          getRelationshipChanges(id).catch(() => [] as RelationshipStateSnapshot[]),
+          getRelationshipChanges(id).catch(() => ({
+            snapshots: [] as RelationshipStateSnapshot[],
+            hasMore: false,
+          })),
           listIdentityCandidates("pending", id).catch(() => [] as RelationshipIdentityCandidate[]),
           listIdentityCandidates("deferred", id).catch(() => [] as RelationshipIdentityCandidate[]),
           listIdentityCandidates("resolved", id).catch(() => [] as RelationshipIdentityCandidate[]),
@@ -2822,7 +2836,8 @@ export function RelationshipSheet({
       setCommunicationTimeline(nextCommunicationTimeline.items);
       setCommunicationHasMore(nextCommunicationTimeline.hasMore);
       setCommunicationBefore(nextCommunicationTimeline.nextBefore);
-      setChanges(nextChanges);
+      setChanges(nextChanges.snapshots);
+      setChangesHasMore(nextChanges.hasMore);
       setIdentityCandidates([...pending, ...deferred, ...resolved]);
       const people = nextData.participants
         .map((participant) => participant.person?.id)
@@ -2868,6 +2883,20 @@ export function RelationshipSheet({
       return false;
     } finally {
       setBusy(null);
+    }
+  };
+
+  const loadEarlierChanges = async () => {
+    if (!changesHasMore || loadingEarlierChanges) return;
+    setLoadingEarlierChanges(true);
+    try {
+      const page = await getRelationshipChanges(id, changes.length);
+      setChanges((current) => appendById(current, page.snapshots));
+      setChangesHasMore(page.hasMore);
+    } catch (error) {
+      onError(errMessage(error, "Could not load earlier changes."));
+    } finally {
+      setLoadingEarlierChanges(false);
     }
   };
 
@@ -3913,7 +3942,7 @@ export function RelationshipSheet({
                 </section>
 
                 <section data-capability="contradiction-resolution">
-                  <SectionTitle title={`What changed (${changes.length})`} />
+                  <SectionTitle title={relationshipChangeTitle(changes.length, changesHasMore)} />
                   {data.intelligence?.delta.changes.length ? (
                     <ul className="mb-3 flex flex-col gap-2">
                       {data.intelligence.delta.changes.map((change) => (
@@ -4010,6 +4039,18 @@ export function RelationshipSheet({
                       ))}
                     </ul>
                   )}
+                  {changesHasMore ? (
+                    <Button
+                      className="mt-2"
+                      disabled={loadingEarlierChanges}
+                      onClick={() => void loadEarlierChanges()}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      {loadingEarlierChanges ? "Loading…" : earlierChangesLabel()}
+                    </Button>
+                  ) : null}
                 </section>
 
                 {data.intelligence?.governanceReceipts.length ? (
