@@ -31,6 +31,7 @@ import {
 } from "@/components/features/connectors/google-oauth-return-handler/google-oauth-return-handler";
 import {
   auditFailureCopy,
+  auditHistoryLabel,
   friendlyRevenueError,
   getOpenPromisesReportMarkdown,
   latestCompletedScan,
@@ -226,7 +227,7 @@ function ReportBody() {
           >
             {scansQuery.data?.map((scan) => (
               <option key={scan.id} value={scan.id}>
-                {scan.status === "completed" ? "Completed" : scan.status} ·{" "}
+                {auditHistoryLabel(scan.status)} ·{" "}
                 {scan.completedAt || scan.startedAt
                   ? new Date(scan.completedAt ?? scan.startedAt ?? "").toLocaleDateString()
                   : scan.id}

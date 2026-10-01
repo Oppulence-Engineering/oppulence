@@ -34,6 +34,11 @@ describe("OpenPromisesReportClient", () => {
     expect(source).not.toContain("fulfilment");
   });
 
+  it("names a past audit in the picker", () => {
+    expect(source).toContain("auditHistoryLabel(scan.status)");
+    expect(source).not.toContain('scan.status === "completed" ? "Completed" : scan.status');
+  });
+
   it("names a mutual promise as shared", () => {
     expect(source).toContain("{promiseDirectionLabel(item.direction)}");
     expect(source).toContain('Stat label="We both promised"');

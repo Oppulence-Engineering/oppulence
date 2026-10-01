@@ -374,6 +374,27 @@ export function googleAuditLaunch(sources: RelationshipSourceStatus[]): GoogleAu
   return "run";
 }
 
+/**
+ * The report lists more than one audit in a picker. The stored status is a
+ * slug. The audits page already names the same states in sentences.
+ */
+export function auditHistoryLabel(status: string): string {
+  switch (status) {
+    case "completed":
+      return "Completed";
+    case "running":
+    case "pending":
+      return "In progress";
+    case "failed":
+      return "Failed";
+    default: {
+      const words = status.replaceAll("_", " ").trim();
+      if (!words) return "Unknown";
+      return words.replace(/\b\w/g, (letter) => letter.toUpperCase());
+    }
+  }
+}
+
 /** The audit button says what the click will do. A missing mailbox is not a scan. */
 export function auditLaunchLabel(input: {
   needsReconnect: boolean;

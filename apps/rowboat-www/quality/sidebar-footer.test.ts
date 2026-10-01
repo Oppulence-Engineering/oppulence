@@ -10,7 +10,7 @@ import {
   trialDaysRemaining,
   workspaceLabel,
 } from "@/components/features/dashboard/app-shell/app-shell";
-import { auditLaunchLabel, googleAuditLaunch } from "@/lib/revenue/revenue";
+import { auditHistoryLabel, auditLaunchLabel, googleAuditLaunch } from "@/lib/revenue/revenue";
 import type { RelationshipSourceStatus } from "@/lib/revenue/types";
 
 const inDays = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString();
@@ -157,6 +157,11 @@ describe("audit reconnect guard", () => {
         runLabel: "Run Promise Leak Audit",
       }),
     ).toBe("Connect Gmail & Calendar");
+    expect(auditHistoryLabel("completed")).toBe("Completed");
+    expect(auditHistoryLabel("failed")).toBe("Failed");
+    expect(auditHistoryLabel("running")).toBe("In progress");
+    expect(auditHistoryLabel("pending")).toBe("In progress");
+    expect(auditHistoryLabel("failed")).not.toBe("failed");
   });
 });
 
