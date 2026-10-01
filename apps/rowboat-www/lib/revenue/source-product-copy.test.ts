@@ -125,5 +125,11 @@ describe("source product copy", () => {
     expect(
       sourceConnectionLabel({ source: "google", status: "live", completeness: "complete" }),
     ).toBe("Active");
+    expect(sourceConnectionLabel({ source: "google", status: "not_connected" })).toBe(
+      "Not connected",
+    );
+    expect(sourceConnectionLabel({ source: "slack", status: "not_connected" })).not.toBe(
+      "Sync incomplete",
+    );
   });
 });

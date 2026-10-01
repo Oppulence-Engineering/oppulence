@@ -116,6 +116,7 @@ export function sourceConnectionLabel(source: {
   backfillPhase?: string;
   completeness?: string;
 }): string {
+  if (source.status === "not_connected") return "Not connected";
   const stopped = source.status === "reconnect_required" || source.status === "disconnected";
   const syncing =
     source.status === "backfilling" ||
