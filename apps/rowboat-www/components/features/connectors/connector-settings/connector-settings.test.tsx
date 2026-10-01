@@ -12,7 +12,7 @@ import type { Connector } from "@/lib/api/generated/client/model";
 import { fetchRelationshipSourceStatuses } from "@/hooks/queries/utils/fetch-relationship-sources";
 import type { RelationshipSourceStatus } from "@/lib/revenue/types";
 
-import { ConnectorSettings } from "./connector-settings";
+import { ConnectorSettings, googleAccessConfirmCopy } from "./connector-settings";
 
 const { fetchRelationshipSourceStatusesMock } = vi.hoisted(() => ({
   fetchRelationshipSourceStatusesMock: vi.fn(async () => [] as RelationshipSourceStatus[]),
@@ -153,8 +153,11 @@ describe("hosted connector settings", () => {
     expect(screen.queryByRole("button", { name: "Reconnect Google" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Reauthorize Google" })).not.toBeInTheDocument();
     await userEvent.click(changeAccess);
-    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("does not catch mail up"));
+    expect(screen.getByText(googleAccessConfirmCopy("warn"))).toBeVisible();
+    expect(confirm).not.toHaveBeenCalled();
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByRole("button", { name: "Change Google access" })).toBeVisible();
   });
 
   it("starts from the actual Connect control with explicit required scopes", async () => {
@@ -411,6 +414,7 @@ describe("Google grant claimed in the web app", () => {
     renderWithQuery(<ConnectorSettings />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Change Google access" }));
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
 
     await vi.waitFor(() => {
       expect(calls.some((call) => call.includes("/google-oauth/start"))).toBe(true);

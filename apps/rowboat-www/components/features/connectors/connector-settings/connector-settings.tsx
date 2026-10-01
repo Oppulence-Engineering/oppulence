@@ -90,6 +90,13 @@ function googleHealth(connected: boolean, sourceStatus?: string) {
   return connected ? GOOGLE_HEALTH.connected : GOOGLE_HEALTH.not_connected;
 }
 
+/** A connected mailbox already has a grant. Opening Google again needs a yes on this page. */
+export function googleAccessConfirmCopy(tone: string): string {
+  return tone === "bad"
+    ? "This starts Google authorization to restore access."
+    : "This opens Google only to switch accounts or update permissions. It does not catch mail up.";
+}
+
 function healthLabel(connector: Connector): string | null {
   // A connector that was never linked already says "Not connected". Repeating
   // the catalog health "disconnected" makes it look like a link that broke.
@@ -184,6 +191,7 @@ function GoogleConnectionSettings() {
   const status = statusQuery.data ?? null;
   const sourceStatus = sourcesQuery.data?.find((entry) => entry.source === "google")?.status;
   const [busy, setBusy] = React.useState(false);
+  const [confirming, setConfirming] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   const loadStatus = React.useCallback(async () => {
@@ -217,14 +225,8 @@ function GoogleConnectionSettings() {
   const health = googleHealth(Boolean(status?.connected), sourceStatus);
 
   const startConnection = () => {
-    if (
-      status?.connected &&
-      !window.confirm(
-        health.tone === "bad"
-          ? "This starts Google authorization to restore access. Continue?"
-          : "This opens Google only to switch accounts or update permissions. It does not catch mail up. Continue?",
-      )
-    ) {
+    if (status?.connected) {
+      setConfirming(true);
       return;
     }
     void connect();
@@ -268,15 +270,35 @@ function GoogleConnectionSettings() {
         ))}
         {error ? <p className="mt-1 font-mono text-xs text-destructive">{error}</p> : null}
       </div>
-      <Button disabled={busy} onClick={startConnection} size="sm" variant="outline">
-        {busy
-          ? "Connecting…"
-          : !status?.connected
-            ? "Connect Google"
-            : health.tone === "bad"
-              ? "Reconnect Google"
-              : "Change Google access"}
-      </Button>
+      {confirming ? (
+        <div className="flex max-w-xs flex-col items-end gap-2">
+          <p className="text-right text-xs text-primary/70">{googleAccessConfirmCopy(health.tone)}</p>
+          <div className="flex gap-2">
+            <Button disabled={busy} onClick={() => void connect()} size="sm" type="button">
+              {busy ? "Connecting…" : "Continue"}
+            </Button>
+            <Button
+              disabled={busy}
+              onClick={() => setConfirming(false)}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button disabled={busy} onClick={startConnection} size="sm" type="button" variant="outline">
+          {busy
+            ? "Connecting…"
+            : !status?.connected
+              ? "Connect Google"
+              : health.tone === "bad"
+                ? "Reconnect Google"
+                : "Change Google access"}
+        </Button>
+      )}
     </div>
   );
 }

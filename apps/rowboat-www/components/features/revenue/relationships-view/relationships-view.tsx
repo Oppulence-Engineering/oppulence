@@ -269,6 +269,17 @@ export function companyDomainHref(domain: string | null | undefined): string | n
 const formatResearchCost = (usd: number) =>
   usd < 0.01 ? "less than a cent" : `$${usd.toFixed(2)}`;
 
+/**
+ * Filling in profiles sends names and domains out of the workspace. The
+ * browser confirm used to be the only place that said so, and Cancel lived
+ * in a dialog the rest of this panel does not use.
+ */
+export function enrichConfirmCopy(companies: number, people: number, usd: number): string {
+  const companyWord = companies === 1 ? "company" : "companies";
+  const personWord = people === 1 ? "person" : "people";
+  return `Fill in ${companies} ${companyWord} and ${people} ${personWord} for about ${formatResearchCost(usd)}? Only names, company domains, and known employers are sent.`;
+}
+
 function RelationshipEnrichment({
   onError,
   onNotice,
@@ -282,6 +293,7 @@ function RelationshipEnrichment({
   const [personEstimate, setPersonEstimate] = React.useState<ResearchEstimate | null>(null);
   const [companyEstimate, setCompanyEstimate] = React.useState<ResearchEstimate | null>(null);
   const [busy, setBusy] = React.useState(false);
+  const [confirming, setConfirming] = React.useState(false);
   const [result, setResult] = React.useState<string | null>(null);
 
   const load = React.useCallback(async () => {
@@ -330,12 +342,7 @@ function RelationshipEnrichment({
     const people = personEstimate.people ?? 0;
     const companies = companyEstimate.companies ?? 0;
     if (people + companies === 0) return;
-    if (
-      !window.confirm(
-        `Enrich ${companies} ${companies === 1 ? "company" : "companies"} and ${people} ${people === 1 ? "person" : "people"} for about ${formatResearchCost(companyEstimate.usd + personEstimate.usd)}? Only names, company domains, and known employers are sent.`,
-      )
-    )
-      return;
+    setConfirming(false);
     setBusy(true);
     setResult(null);
     try {
@@ -417,10 +424,41 @@ function RelationshipEnrichment({
           {personEstimate &&
           companyEstimate &&
           (personEstimate.people ?? 0) + (companyEstimate.companies ?? 0) > 0 ? (
-            <Button type="button" size="sm" disabled={busy} onClick={() => void run()}>
-              {busy ? <Spinner className="size-4" /> : <Sparkle />}
-              Fill in companies and people
-            </Button>
+            confirming ? (
+              <div className="flex max-w-sm flex-col items-end gap-2">
+                <p className="text-right text-xs text-primary/70">
+                  {enrichConfirmCopy(
+                    companyEstimate.companies ?? 0,
+                    personEstimate.people ?? 0,
+                    companyEstimate.usd + personEstimate.usd,
+                  )}
+                </p>
+                <div className="flex gap-2">
+                  <Button disabled={busy} onClick={() => void run()} size="sm" type="button">
+                    {busy ? <Spinner className="size-4" /> : null} Continue
+                  </Button>
+                  <Button
+                    disabled={busy}
+                    onClick={() => setConfirming(false)}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                disabled={busy}
+                onClick={() => setConfirming(true)}
+                size="sm"
+                type="button"
+              >
+                {busy ? <Spinner className="size-4" /> : <Sparkle />}
+                Fill in companies and people
+              </Button>
+            )
           ) : null}
         </div>
       ) : (

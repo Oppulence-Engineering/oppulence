@@ -34,6 +34,7 @@ import {
   detailEvidenceCopy,
   detailSourceLabel,
   enrichmentAvailabilityCopy,
+  enrichConfirmCopy,
   identityMatchDetail,
   sourceListedOnConnectionsPage,
   identityMatchLabel,
@@ -429,6 +430,12 @@ describe("RelationshipsView", () => {
     expect(source).toContain("sourceConnectionLabel(source)");
     expect(source).toContain("sourceConnectionLabel({\n                    source: item.source,");
     expect(source).toContain("completenessProductLabel(account.completeness)");
+    expect(source).toContain("enrichConfirmCopy(");
+    expect(enrichConfirmCopy(2, 1, 1.5)).toBe(
+      "Fill in 2 companies and 1 person for about $1.50? Only names, company domains, and known employers are sent.",
+    );
+    expect(enrichConfirmCopy(1, 2, 0.004)).toContain("1 company and 2 people for about less than a cent");
+    expect(source).not.toContain("window.confirm");
     expect(source).not.toContain('humanize(account?.status || "not_connected")');
     expect(source).not.toContain("humanize(account.completeness)");
     expect(source).not.toContain("{source.source} · {source.status}");
