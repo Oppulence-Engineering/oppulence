@@ -7,6 +7,7 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "relationships-vie
 
 import {
   companyDomainHref,
+  companyName,
   companyDirectoryTitle,
   companyHealthFilterName,
   companyListEmptyCopy,
@@ -102,6 +103,18 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("Could not load relationship intelligence.");
     expect(source).not.toContain("Could not update this relationship.");
     expect(source).not.toContain("Could not enrich relationship profiles.");
+    expect(companyName({ displayName: "northwind.example", accountDomain: "northwind.example" })).toBe(
+      "Northwind",
+    );
+    expect(
+      companyName({ displayName: "hello@northwind.example", accountDomain: "northwind.example" }),
+    ).toBe("Northwind");
+    expect(
+      companyName({ displayName: "Billing @ Northwind", accountDomain: "northwind.example" }),
+    ).toBe("Billing @ Northwind");
+    expect(companyName({ displayName: "Northwind", accountDomain: "northwind.example" })).toBe(
+      "Northwind",
+    );
     expect(source).toContain('aria-label="Show company graph"');
     expect(source).toContain('aria-label="Show company list"');
     expect(source).toContain("clearCompanyGraphURL()");
