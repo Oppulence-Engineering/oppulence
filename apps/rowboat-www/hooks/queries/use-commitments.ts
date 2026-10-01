@@ -4,7 +4,11 @@ import "client-only";
 
 import { useQuery } from "@tanstack/react-query";
 
-import { fetchCommitments } from "@/hooks/queries/utils/fetch-commitments";
+import {
+  commitmentPageHasMore,
+  commitmentRows,
+  fetchCommitments,
+} from "@/hooks/queries/utils/fetch-commitments";
 import {
   COMMITMENT_REGISTER_STALE_TIME,
   commitmentKeys,
@@ -84,12 +88,14 @@ export function useCommitmentRegister(
         loadedRelationships,
         graph.status === "fulfilled" ? graph.value.nodes : [],
       );
-      const rawEntries = entries.status === "fulfilled" ? entries.value : [];
+      const loadedEntries = entries.status === "fulfilled" ? entries.value : [];
+      const rawEntries = commitmentRows(loadedEntries);
       return {
         entries: rawEntries.map((entry) => {
           const title = entry.relationshipId ? titles.get(entry.relationshipId) : undefined;
           return title ? { ...entry, relationshipName: title } : entry;
         }),
+        hasMore: commitmentPageHasMore(loadedEntries),
         registerError:
           entries.status === "rejected" ? registerErrorMessage(entries.reason) : undefined,
         sources: sources.status === "fulfilled" ? sources.value : [],

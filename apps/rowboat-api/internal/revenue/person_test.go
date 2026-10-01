@@ -436,11 +436,11 @@ func TestPersonSearchFindsTheCompanyTitle(t *testing.T) {
 	}
 
 	found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "Dogfood Label"})
-	if err != nil || len(found) != 1 || found[0].DisplayName != "Ada" {
+	if err != nil || found == nil || len(found.Persons) != 1 || found.Persons[0].DisplayName != "Ada" {
 		t.Fatalf("title search = %+v err=%v", found, err)
 	}
 	miss, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "zzzz-not-a-person"})
-	if err != nil || len(miss) != 0 {
+	if err != nil || miss == nil || len(miss.Persons) != 0 {
 		t.Fatalf("unrelated search = %+v err=%v", miss, err)
 	}
 }
@@ -461,15 +461,19 @@ func TestListPersonsOffsetSkipsEarlierNames(t *testing.T) {
 		}
 	}
 	page, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Limit: 1, Offset: 1})
-	if err != nil || len(page) != 1 || page[0].DisplayName != "Bea Offset" {
+	if err != nil || page == nil || len(page.Persons) != 1 || !page.HasMore || page.Persons[0].DisplayName != "Bea Offset" {
 		t.Fatalf("offset page = %+v err=%v", page, err)
 	}
 	none, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Limit: 1, Offset: 3})
-	if err != nil || len(none) != 0 {
-		t.Fatalf("past the end = %d err=%v", len(none), err)
+	if err != nil || none == nil || len(none.Persons) != 0 || none.HasMore {
+		count := -1
+		if none != nil {
+			count = len(none.Persons)
+		}
+		t.Fatalf("past the end = %d err=%v", count, err)
 	}
 	all, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Limit: 10, Offset: -2})
-	if err != nil || len(all) != 3 || all[0].DisplayName != "Ada Offset" {
+	if err != nil || all == nil || len(all.Persons) != 3 || all.HasMore || all.Persons[0].DisplayName != "Ada Offset" {
 		t.Fatalf("negative offset = %+v err=%v", all, err)
 	}
 }
@@ -497,23 +501,65 @@ func TestListPersonsTiedNameUsesID(t *testing.T) {
 		}
 	}
 	first, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Limit: 2})
-	if err != nil {
+	if err != nil || first == nil {
 		t.Fatal(err)
 	}
-	if len(first) != 2 {
-		t.Fatalf("first page = %d", len(first))
+	if len(first.Persons) != 2 || !first.HasMore {
+		t.Fatalf("first page = %d hasMore=%v", len(first.Persons), first.HasMore)
 	}
-	for _, row := range first {
+	for _, row := range first.Persons {
 		if row.PrimaryEmail == "last@tied.example" {
 			t.Fatal("the highest id was included beside lower ids with the same name")
 		}
 	}
 	second, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Limit: 2, Offset: 2})
+	if err != nil || second == nil {
+		t.Fatal(err)
+	}
+	if len(second.Persons) != 1 || second.HasMore || second.Persons[0].PrimaryEmail != "last@tied.example" {
+		t.Fatalf("later id page = %+v", second)
+	}
+}
+
+func TestListPersonsExactPageIsNotAnotherPage(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(second) != 1 || second[0].PrimaryEmail != "last@tied.example" {
-		t.Fatalf("later id page = %+v", second)
+	for _, name := range []string{"Ada Exact", "Bea Exact"} {
+		if _, err := f.client.Person.Create().
+			SetDisplayName(name).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	exact, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Limit: 2})
+	if err != nil || exact == nil || len(exact.Persons) != 2 || exact.HasMore {
+		count := 0
+		hasMore := false
+		if exact != nil {
+			count = len(exact.Persons)
+			hasMore = exact.HasMore
+		}
+		t.Fatalf("exact page = %d hasMore=%v err=%v", count, hasMore, err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Cara Exact").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	first, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Limit: 2})
+	if err != nil || first == nil || len(first.Persons) != 2 || !first.HasMore {
+		t.Fatalf("first page = %+v err=%v", first, err)
+	}
+	next, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Limit: 2, Offset: 2})
+	if err != nil || next == nil || len(next.Persons) != 1 || next.HasMore || next.Persons[0].DisplayName != "Cara Exact" {
+		t.Fatalf("next page = %+v err=%v", next, err)
 	}
 }
 

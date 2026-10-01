@@ -421,24 +421,53 @@ func TestRegisterTiedDueTimeUsesID(t *testing.T) {
 		States:    []string{RegisterOpen},
 		Limit:     200,
 	}
-	first, err := f.svc.ListCommitments(f.ctx, f.user, filter)
-	if err != nil {
+	first, err := f.svc.ListCommitmentPage(f.ctx, f.user, filter)
+	if err != nil || first == nil {
 		t.Fatal(err)
 	}
-	if len(first) != 200 {
-		t.Fatalf("newest page = %d", len(first))
+	if len(first.Commitments) != 200 || !first.HasMore {
+		t.Fatalf("newest page = %d hasMore=%v", len(first.Commitments), first.HasMore)
 	}
-	for _, row := range first {
+	for _, row := range first.Commitments {
 		if row.Text == "Tied Promise Last" {
 			t.Fatal("the lowest id was included beside higher ids with the same due time")
 		}
 	}
 	filter.Offset = 200
-	second, err := f.svc.ListCommitments(f.ctx, f.user, filter)
-	if err != nil {
+	second, err := f.svc.ListCommitmentPage(f.ctx, f.user, filter)
+	if err != nil || second == nil {
 		t.Fatal(err)
 	}
-	if len(second) != 1 || second[0].Text != "Tied Promise Last" {
-		t.Fatalf("older id page = %d", len(second))
+	if len(second.Commitments) != 1 || second.HasMore || second.Commitments[0].Text != "Tied Promise Last" {
+		t.Fatalf("older id page = %+v", second)
+	}
+}
+
+func TestListCommitmentsExactPageIsNotAnotherPage(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	due := time.Date(2099, 6, 1, 0, 0, 0, 0, time.UTC)
+	seedCommitment(t, f, rel, "promised_by_me", "Exact Promise One", "", &due)
+	seedCommitment(t, f, rel, "promised_by_me", "Exact Promise Two", "", &due)
+	filter := CommitmentFilter{Direction: "promised_by_me", Limit: 2}
+	exact, err := f.svc.ListCommitmentPage(f.ctx, f.user, filter)
+	if err != nil || exact == nil || len(exact.Commitments) != 2 || exact.HasMore {
+		count := 0
+		hasMore := false
+		if exact != nil {
+			count = len(exact.Commitments)
+			hasMore = exact.HasMore
+		}
+		t.Fatalf("exact page = %d hasMore=%v err=%v", count, hasMore, err)
+	}
+	seedCommitment(t, f, rel, "promised_by_me", "Exact Promise Extra", "", &due)
+	first, err := f.svc.ListCommitmentPage(f.ctx, f.user, filter)
+	if err != nil || first == nil || len(first.Commitments) != 2 || !first.HasMore {
+		t.Fatalf("first page = %+v err=%v", first, err)
+	}
+	filter.Offset = 2
+	next, err := f.svc.ListCommitmentPage(f.ctx, f.user, filter)
+	if err != nil || next == nil || len(next.Commitments) != 1 || next.HasMore {
+		t.Fatalf("next page = %+v err=%v", next, err)
 	}
 }

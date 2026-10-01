@@ -44,7 +44,8 @@ import { usePersons, useRelationships } from "@/hooks/queries/use-relationships"
 import { relationshipRows } from "@/hooks/queries/utils/fetch-relationships";
 import {
   fetchPersons,
-  PERSON_PAGE_SIZE,
+  personPageHasMore,
+  personRows,
 } from "@/hooks/queries/utils/fetch-relationships";
 import { useWorkspaceNotes } from "@/hooks/queries/use-workspace";
 import {
@@ -474,11 +475,9 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
   const [removing, setRemoving] = React.useState(false);
   const peopleQuery = usePersons(debouncedQuery);
   const [extraPeople, setExtraPeople] = React.useState<RelationshipPerson[]>([]);
-  const [morePeople, setMorePeople] = React.useState(false);
+  const [laterPeopleHasMore, setLaterPeopleHasMore] = React.useState<boolean | null>(null);
   const [loadingMorePeople, setLoadingMorePeople] = React.useState(false);
-  const loadedPeopleCount = React.useRef(0);
-  const primedPeople = React.useRef<string | null>(null);
-  const peoplePage = peopleQuery.data ?? [];
+  const peoplePage = personRows(peopleQuery.data);
   const people = React.useMemo(() => {
     if (extraPeople.length === 0) return peoplePage;
     const seen = new Set(peoplePage.map((person) => person.id));
@@ -492,23 +491,12 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
     ];
   }, [extraPeople, peoplePage]);
   const hasMorePeople =
-    primedPeople.current === null
-      ? peoplePage.length === PERSON_PAGE_SIZE && extraPeople.length === 0
-      : morePeople;
+    laterPeopleHasMore ?? (peoplePage.length > 0 && personPageHasMore(peopleQuery.data));
   const loading = peopleQuery.isPending;
   React.useEffect(() => {
     setExtraPeople([]);
-    setMorePeople(false);
-    primedPeople.current = null;
-    loadedPeopleCount.current = 0;
+    setLaterPeopleHasMore(null);
   }, [debouncedQuery]);
-  React.useEffect(() => {
-    if (!peopleQuery.isSuccess) return;
-    if (primedPeople.current === debouncedQuery) return;
-    primedPeople.current = debouncedQuery;
-    loadedPeopleCount.current = peopleQuery.data?.length ?? 0;
-    setMorePeople(loadedPeopleCount.current === PERSON_PAGE_SIZE);
-  }, [debouncedQuery, peopleQuery.data, peopleQuery.isSuccess]);
 
   React.useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 180);
@@ -522,26 +510,27 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
   }, [onError, peopleQuery.error]);
 
   const load = React.useCallback(async () => {
-    primedPeople.current = null;
     setExtraPeople([]);
-    setMorePeople(false);
-    loadedPeopleCount.current = 0;
+    setLaterPeopleHasMore(null);
     await queryClient.invalidateQueries({ queryKey: relationshipKeys.all });
   }, [queryClient]);
   const loadMorePeople = React.useCallback(async () => {
     if (loadingMorePeople || !hasMorePeople) return;
     setLoadingMorePeople(true);
     try {
-      const next = await fetchPersons(debouncedQuery, undefined, loadedPeopleCount.current);
-      loadedPeopleCount.current += next.length;
-      if (next.length < PERSON_PAGE_SIZE) setMorePeople(false);
-      setExtraPeople((current) => [...current, ...next]);
+      const next = await fetchPersons(
+        debouncedQuery,
+        undefined,
+        peoplePage.length + extraPeople.length,
+      );
+      setLaterPeopleHasMore(personPageHasMore(next));
+      setExtraPeople((current) => [...current, ...personRows(next)]);
     } catch (reason) {
       onError(explainedRevenueError(reason, "Could not load the next people."));
     } finally {
       setLoadingMorePeople(false);
     }
-  }, [debouncedQuery, hasMorePeople, loadingMorePeople, onError]);
+  }, [debouncedQuery, extraPeople.length, hasMorePeople, loadingMorePeople, onError, peoplePage.length]);
 
   const openPerson = async (person: RelationshipPerson) => {
     setSelected(person);

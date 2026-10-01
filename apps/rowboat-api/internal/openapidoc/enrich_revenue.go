@@ -707,7 +707,7 @@ func addRevenuePaths(paths obj) {
 	// The commitment register: obligations across every account. Every other
 	// commitment path is nested under a relationship id and cannot answer
 	// "what do we owe anyone", which is the product.
-	paths["/v1/commitments"] = obj{"get": operation("Relationship Intelligence", "List the commitment register", "Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register.", "listCommitments", bearer(), []any{
+	paths["/v1/commitments"] = obj{"get": operation("Relationship Intelligence", "List the commitment register", "Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register. A full page is the end of the register when hasMore is false.", "listCommitments", bearer(), []any{
 		obj{"name": "direction", "in": "query", "required": false, "description": "promised_by_me, promised_by_them, or mutual.", "schema": obj{"type": "string"}},
 		obj{"name": "state", "in": "query", "required": false, "description": "Comma-separated register states: open, at_risk, met, missed, waived, disputed. at_risk is derived from the due date.", "schema": obj{"type": "string"}},
 		obj{"name": "owner", "in": "query", "required": false, "description": "Owner participant reference.", "schema": obj{"type": "string"}},
@@ -718,7 +718,10 @@ func addRevenuePaths(paths obj) {
 		obj{"name": "offset", "in": "query", "required": false, "description": "Page offset.", "schema": obj{"type": "integer"}},
 		obj{"name": "includeCandidates", "in": "query", "required": false, "description": "Include unconfirmed extractions for a review surface.", "schema": obj{"type": "boolean"}},
 	}, nil, obj{
-		"200": jsonResponse("The register page.", objectSchema("Commitment register.", obj{"commitments": arraySchema("Register rows, each with its derived state and account.", ref("CommitmentRegisterEntry"))}, "commitments"), nil),
+		"200": jsonResponse("The register page.", objectSchema("Commitment register. A full page is the end of the register when hasMore is false.", obj{
+			"commitments": arraySchema("Register rows, each with its derived state and account.", ref("CommitmentRegisterEntry")),
+			"hasMore":     boolSchema("Another promise exists beyond this page.", false),
+		}, "commitments"), nil),
 		"400": responseRef("400"), "401": responseRef("401"),
 	})}
 	paths["/v1/commitments/{commitmentId}/export"] = obj{"get": operation("Relationship Intelligence", "Export a commitment record", "Returns one commitment as a standalone record: the obligation, its full state history, and the verbatim cited evidence with timestamps. Pass format=md for the Markdown document a user forwards. A record that cannot leave the tool cannot settle an argument.", "exportCommitment", bearer(), []any{

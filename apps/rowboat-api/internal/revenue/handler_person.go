@@ -36,16 +36,16 @@ func (h *Handler) ListPersons(w http.ResponseWriter, r *http.Request) {
 		}
 		filter.Offset = n
 	}
-	people, err := h.svc.ListPersons(r.Context(), u, filter)
+	page, err := h.svc.ListPersons(r.Context(), u, filter)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	out := make([]*personDTO, 0, len(people))
-	for _, p := range people {
+	out := make([]*personDTO, 0, len(page.Persons))
+	for _, p := range page.Persons {
 		out = append(out, personToDTO(p))
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"persons": out})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"persons": out, "hasMore": page.HasMore})
 }
 
 // GetPerson returns one canonical person.

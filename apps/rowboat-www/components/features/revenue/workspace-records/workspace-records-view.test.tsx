@@ -740,7 +740,9 @@ describe("task due order", () => {
     expect(noteCountLabel(2, false)).toBe("2");
     expect(earlierNotesLabel()).toBe("Show earlier notes");
     expect(source).toContain("fetchMoreWorkspaceNotes");
-    expect(source).toContain("fetchPersons(debouncedQuery, undefined, loadedPeopleCount.current)");
+    expect(source).toContain("personPageHasMore");
+    expect(source).toContain("peoplePage.length + extraPeople.length");
+    expect(source).not.toContain("peoplePage.length === PERSON_PAGE_SIZE");
     expect(source).toContain('useRevenueActions("open", ACTION_QUEUE_PAGE, "task")');
     expect(source).toContain("loadedTaskCount.current");
     expect(source).toContain("No tasks yet! Create your first");

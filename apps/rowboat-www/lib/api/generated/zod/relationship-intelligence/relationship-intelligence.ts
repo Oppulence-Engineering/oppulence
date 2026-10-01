@@ -8,7 +8,7 @@
 import * as zod from "zod";
 
 /**
- * Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register.
+ * Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register. A full page is the end of the register when hasMore is false.
  * @summary List the commitment register
  */
 export const ListCommitmentsQueryParams = zod.object({
@@ -87,8 +87,9 @@ export const ListCommitments200Response = zod
           .describe("One cross-account register row with its reader-facing state and account."),
       )
       .describe("Register rows, each with its derived state and account."),
+    hasMore: zod.boolean().optional().describe("Another promise exists beyond this page."),
   })
-  .describe("Commitment register.");
+  .describe("Commitment register. A full page is the end of the register when hasMore is false.");
 
 export const ListCommitments400Response = zod
   .strictObject({

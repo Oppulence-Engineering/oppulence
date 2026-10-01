@@ -10,7 +10,11 @@ import { useReportScan, useReportScanList } from "@/hooks/queries/use-report";
 import { useRelationshipSourceStatuses } from "@/hooks/queries/use-relationship-sources";
 import { useWorkspace } from "@/hooks/queries/use-workspace";
 import { commitmentKeys } from "@/hooks/queries/utils/commitment-keys";
-import { fetchCommitments } from "@/hooks/queries/utils/fetch-commitments";
+import {
+  commitmentPageHasMore,
+  commitmentRows,
+  fetchCommitments,
+} from "@/hooks/queries/utils/fetch-commitments";
 import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-source-keys";
 import { revenueActionKeys } from "@/hooks/queries/utils/revenue-action-keys";
 import { downloadMarkdown } from "@/lib/content/download-markdown";
@@ -136,7 +140,7 @@ export function RevenuePanel({
   // on every render. Go's dueBefore parser rejects fractional seconds.
   const [overdueBefore, setOverdueBefore] = React.useState<string | null>(null);
   const [extraEntries, setExtraEntries] = React.useState<RegisterEntry[]>([]);
-  const [registerExhausted, setRegisterExhausted] = React.useState(false);
+  const [laterRegisterHasMore, setLaterRegisterHasMore] = React.useState<boolean | null>(null);
   const [loadingMorePromises, setLoadingMorePromises] = React.useState(false);
   React.useEffect(
     () =>
@@ -158,7 +162,7 @@ export function RevenuePanel({
   const registerScope = `${registerView}|${registerAccountId}|${registerOwner}|${includeCandidates}|${overdueBefore ?? ""}`;
   React.useEffect(() => {
     setExtraEntries([]);
-    setRegisterExhausted(false);
+    setLaterRegisterHasMore(null);
   }, [registerScope]);
   const registerPage = commitmentQuery.data?.entries ?? [];
   const registerEntries = React.useMemo(() => {
@@ -174,9 +178,8 @@ export function RevenuePanel({
     ];
   }, [extraEntries, registerPage]);
   const hasMorePromises =
-    !registerExhausted &&
-    registerPage.length > 0 &&
-    (registerPage.length + extraEntries.length) % REGISTER_PAGE_SIZE === 0;
+    laterRegisterHasMore ??
+    (registerPage.length > 0 && Boolean(commitmentQuery.data?.hasMore));
   const loadMorePromises = React.useCallback(async () => {
     const filter = overdueBefore
       ? overdueRegisterFilter(overdueBefore)
@@ -196,11 +199,11 @@ export function RevenuePanel({
       const titles = new Map(
         (commitmentQuery.data?.accounts ?? []).map((account) => [account.id, account.label]),
       );
-      const named = next.map((entry) => {
+      const named = commitmentRows(next).map((entry) => {
         const title = entry.relationshipId ? titles.get(entry.relationshipId) : undefined;
         return title ? { ...entry, relationshipName: title } : entry;
       });
-      if (named.length < REGISTER_PAGE_SIZE) setRegisterExhausted(true);
+      setLaterRegisterHasMore(commitmentPageHasMore(next));
       setExtraEntries((current) => [...current, ...named]);
     } catch (reason) {
       setError(explainedRevenueError(reason, "Could not load the next promises."));

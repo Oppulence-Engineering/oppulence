@@ -29,12 +29,20 @@ type PersonFilter struct {
 
 const defaultPersonLimit = 100
 
+// PersonListPage is one people-directory page. HasMore is true only when
+// another person exists past this page, so an exact page of 500 is not offered
+// as if a 501st person were waiting.
+type PersonListPage struct {
+	Persons []*ent.Person
+	HasMore bool
+}
+
 // ListPersons returns the workspace's canonical people, most recently active
 // first. People who share that moment and the same name stay in id order, so
 // the next page does not repeat one and skip another.
 func (s *Service) ListPersons(
 	ctx context.Context, u *ent.User, filter PersonFilter,
-) ([]*ent.Person, error) {
+) (*PersonListPage, error) {
 	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceView)
 	if err != nil {
 		return nil, err
@@ -67,15 +75,23 @@ func (s *Service) ListPersons(
 			personNormalizedContains(term),
 		))
 	}
-	return q.
+	rows, err := q.
 		Order(
 			person.ByLastInteractionAt(sql.OrderDesc(), sql.OrderNullsLast()),
 			person.ByDisplayName(),
 			person.ByID(),
 		).
-		Limit(limit).
+		Limit(limit + 1).
 		Offset(filter.Offset).
 		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	hasMore := len(rows) > limit
+	if hasMore {
+		rows = rows[:limit]
+	}
+	return &PersonListPage{Persons: rows, HasMore: hasMore}, nil
 }
 
 // personNormalizedContains matches the company title a teammate sees. A domain

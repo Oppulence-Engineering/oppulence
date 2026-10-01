@@ -53,6 +53,10 @@ vi.mock("@/hooks/queries/utils/fetch-workspace", () => ({
 vi.mock("@/hooks/queries/utils/fetch-commitments", () => ({
   fetchCommitments: mocks.listCommitments,
   loadCommitments: mocks.listCommitments,
+  commitmentRows: (page: { commitments?: unknown[] } | unknown[] | null | undefined) =>
+    Array.isArray(page) ? page : (page?.commitments ?? []),
+  commitmentPageHasMore: (page: { hasMore?: boolean } | unknown[] | null | undefined) =>
+    Boolean(page && !Array.isArray(page) && page.hasMore),
 }));
 vi.mock("@/lib/analytics/analytics", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/analytics/analytics")>()),

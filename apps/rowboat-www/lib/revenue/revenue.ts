@@ -1,7 +1,7 @@
 // Revenue BFF client (RFC 030). Fetchers stay server-importable so RSC
 // prefetch can share the same keys and Zod contracts as the browser hooks.
 
-import { fetchCommitments } from "@/hooks/queries/utils/fetch-commitments";
+import { commitmentRows, fetchCommitments } from "@/hooks/queries/utils/fetch-commitments";
 import { fetchDigest, fetchImpact } from "@/hooks/queries/utils/fetch-impact";
 import {
   auditRows,
@@ -17,6 +17,7 @@ import {
 import {
   fetchIdentityCandidates,
   fetchPersons,
+  personRows,
   fetchRelationshipAttention,
   fetchRelationshipGraph,
   fetchRelationships,
@@ -548,7 +549,7 @@ export async function getRelationshipGraph(
 export const getRelationship = (id: string) => call<RelationshipDetail>(`/relationships/${id}`);
 
 export async function listPersons(q = "", signal?: AbortSignal): Promise<RelationshipPerson[]> {
-  return viaRequest(() => fetchPersons(q, signal));
+  return personRows(await viaRequest(() => fetchPersons(q, signal)));
 }
 
 export const getPersonAttributes = (personId: string) =>
@@ -1116,7 +1117,7 @@ export async function listCommitments(
   filter: CommitmentRegisterFilter = {},
   signal?: AbortSignal,
 ): Promise<RegisterEntry[]> {
-  return viaRequest(() => fetchCommitments(filter, signal));
+  return commitmentRows(await viaRequest(() => fetchCommitments(filter, signal)));
 }
 
 export async function getCommitmentRecord(

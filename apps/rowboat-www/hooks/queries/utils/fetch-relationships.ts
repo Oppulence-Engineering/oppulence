@@ -28,6 +28,7 @@ const AttentionListSchema = z.object({
 
 const PersonListSchema = z.object({
   persons: z.array(z.unknown()).optional(),
+  hasMore: z.boolean().optional(),
 });
 
 const SemanticSearchSchema = z.object({
@@ -345,12 +346,34 @@ export function fetchSemanticSearch(
 /** The people API refuses a larger page. The next rows use this same size as an offset. */
 export const PERSON_PAGE_SIZE = 500;
 
+export type PersonPage = {
+  persons: RelationshipPerson[];
+  hasMore: boolean;
+};
+
+/** Rows from a people page. A bare array is a test fixture that has no flag. */
+export function personRows(
+  page: PersonPage | readonly RelationshipPerson[] | null | undefined,
+): RelationshipPerson[] {
+  if (!page) return [];
+  if (Array.isArray(page)) return [...page];
+  return page.persons ?? [];
+}
+
+/** True only when the server says another person exists past this page. */
+export function personPageHasMore(
+  page: PersonPage | readonly RelationshipPerson[] | null | undefined,
+): boolean {
+  if (!page || Array.isArray(page)) return false;
+  return Boolean(page.hasMore);
+}
+
 export async function loadPersons(
   request: RequestJsonFn,
   query = "",
   signal?: AbortSignal,
   offset = 0,
-): Promise<RelationshipPerson[]> {
+): Promise<PersonPage> {
   const params = new URLSearchParams({ limit: String(PERSON_PAGE_SIZE) });
   if (query.trim()) params.set("q", query.trim());
   if (offset > 0) params.set("offset", String(offset));
@@ -359,13 +382,16 @@ export async function loadPersons(
     schema: PersonListSchema,
     signal,
   });
-  return (body.persons ?? []) as RelationshipPerson[];
+  return {
+    persons: (body.persons ?? []) as RelationshipPerson[],
+    hasMore: Boolean(body.hasMore),
+  };
 }
 
 export function fetchPersons(
   query = "",
   signal?: AbortSignal,
   offset = 0,
-): Promise<RelationshipPerson[]> {
+): Promise<PersonPage> {
   return loadPersons(requestJson, query, signal, offset);
 }

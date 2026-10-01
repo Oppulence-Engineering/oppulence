@@ -108,17 +108,17 @@ func (h *Handler) ListCommitments(w http.ResponseWriter, r *http.Request) {
 		}
 		filter.IncludeCandidates = include
 	}
-	rows, err := h.svc.ListCommitments(r.Context(), u, filter)
+	page, err := h.svc.ListCommitmentPage(r.Context(), u, filter)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
 	now := h.svc.now().UTC()
-	out := make([]registerEntryDTO, 0, len(rows))
-	for _, row := range rows {
+	out := make([]registerEntryDTO, 0, len(page.Commitments))
+	for _, row := range page.Commitments {
 		out = append(out, registerEntryToDTO(row, now))
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"commitments": out})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"commitments": out, "hasMore": page.HasMore})
 }
 
 // ExportCommitment returns one commitment as a standalone record: the
