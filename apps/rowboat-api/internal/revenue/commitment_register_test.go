@@ -124,6 +124,21 @@ func TestRegisterServesTheFiveViews(t *testing.T) {
 		if len(rows) != 1 || rows[0].Text != "Ship the migration" {
 			t.Fatalf("by-owner view wrong: %#v", rows)
 		}
+		// The field asks for a name or an email. The stored owner is the address.
+		named, err := f.svc.ListCommitments(f.ctx, f.user, CommitmentFilter{Owner: "Alex"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(named) != 1 || named[0].Text != "Ship the migration" {
+			t.Fatalf("owner name should find the address, got %#v", named)
+		}
+		other, err := f.svc.ListCommitments(f.ctx, f.user, CommitmentFilter{Owner: "sam"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(other) != 1 || other[0].Text != "Send the SOC 2 report" {
+			t.Fatalf("owner name matched the wrong promise: %#v", other)
+		}
 	})
 }
 

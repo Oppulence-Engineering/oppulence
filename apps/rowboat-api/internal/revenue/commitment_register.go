@@ -166,7 +166,10 @@ func (s *Service) ListCommitments(
 		q = q.Where(commitment.HasRelationshipWith(relationship.IDEQ(f.RelationshipID)))
 	}
 	if owner := strings.TrimSpace(f.Owner); owner != "" {
-		q = q.Where(commitment.OwnerParticipantRefEQ(owner))
+		// The box says "Owner name or email". The stored ref is often the full
+		// address, and an exact match hid the row when someone typed the name
+		// or a different case.
+		q = q.Where(commitment.OwnerParticipantRefContainsFold(owner))
 	}
 	if !f.DueBefore.IsZero() {
 		q = q.Where(commitment.DueAtNotNil(), commitment.DueAtLT(f.DueBefore.UTC()))
