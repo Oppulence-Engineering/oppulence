@@ -627,8 +627,8 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 	if in.PrimaryEmail != "" {
 		create.SetPrimaryEmail(strings.ToLower(strings.TrimSpace(in.PrimaryEmail)))
 	}
-	if in.AccountDomain != "" {
-		create.SetAccountDomain(strings.ToLower(strings.TrimSpace(in.AccountDomain)))
+	if domain := companyAccountDomain(in.AccountDomain); domain != "" {
+		create.SetAccountDomain(domain)
 	}
 	if in.Summary != "" {
 		create.SetSummary(in.Summary)
