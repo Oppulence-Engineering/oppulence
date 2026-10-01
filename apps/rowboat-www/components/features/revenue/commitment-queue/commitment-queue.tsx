@@ -1189,10 +1189,20 @@ export function CommitmentQueue({
                               const blocker = blockerText.trim();
                               if (!blocker) return;
                               void transition(selected, "blocked", { blocker }).then((saved) => {
-                                if (saved) {
-                                  setBlocking(false);
-                                  setBlockerText("");
-                                }
+                                if (!saved) return;
+                                setSelected((current) =>
+                                  current && current.id === selected.id
+                                    ? {
+                                        ...current,
+                                        blocker,
+                                        currentEventVersion: current.currentEventVersion + 1,
+                                        nextAction:
+                                          "Resolve the blocker or renegotiate the promise.",
+                                      }
+                                    : current,
+                                );
+                                setBlocking(false);
+                                setBlockerText("");
                               });
                             }}
                           >

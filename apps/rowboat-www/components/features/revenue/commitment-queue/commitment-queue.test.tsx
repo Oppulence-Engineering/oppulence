@@ -317,6 +317,8 @@ describe("CommitmentQueue", () => {
     );
     expect(prompt).not.toHaveBeenCalled();
     expect(source).not.toContain("window.prompt");
+    expect(await screen.findByRole("button", { name: "Unblock" })).toBeVisible();
+    expect(screen.getByText("Resolve the blocker or renegotiate the promise.")).toBeVisible();
     prompt.mockRestore();
   });
 
