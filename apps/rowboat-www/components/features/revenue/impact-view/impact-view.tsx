@@ -31,7 +31,14 @@ import {
 } from "@oppulence/ui/components/table";
 
 import { auditLaunchLabel, DETECTOR_LABELS } from "@/lib/revenue/revenue";
-import { atRiskPulseCount, exposureReasons, exposureRiskScore } from "@/lib/revenue/revenue-records";
+import {
+  atRiskPulseCount,
+  detectorsWithoutTasks,
+  digestWithoutTasks,
+  exposureReasons,
+  exposureRiskScore,
+  recoveryPulseCount,
+} from "@/lib/revenue/revenue-records";
 import type { RevenueImpact } from "@/lib/revenue/types";
 import { EmptyBlock, errMessage, ListSkeleton } from "@/components/features/revenue/shared/shared";
 import { cn } from "@/lib/utils";
@@ -130,8 +137,21 @@ export function ImpactView({
     attentionQuery.isSuccess ? attentionQuery.data : undefined,
     openActionsQuery.isSuccess ? openActionsQuery.data : undefined,
   );
+  const recoveryOpen = recoveryPulseCount(
+    data.open,
+    openActionsQuery.isSuccess ? openActionsQuery.data : undefined,
+    openActionsQuery.isError,
+  );
+  const taskCount = recoveryOpen == null ? 0 : Math.max(0, data.open - recoveryOpen);
+  const surfacedShown = Math.max(0, data.surfaced - taskCount);
+  const openShown = recoveryOpen ?? data.open;
+  const digestTop = digestWithoutTasks(
+    digest?.top,
+    openActionsQuery.isSuccess ? openActionsQuery.data : undefined,
+  );
+  const digestOpen = Math.max(0, (digest?.openCount ?? 0) - taskCount);
 
-  if (data.surfaced === 0 && data.atRiskRelationships === 0 && data.overdueCommitments === 0) {
+  if (surfacedShown === 0 && atRiskShown === 0 && data.overdueCommitments === 0 && openShown === 0) {
     const auditLabel = auditLaunchLabel({
       needsReconnect,
       needsConnect,
@@ -175,7 +195,7 @@ export function ImpactView({
 
   const pct = (v: number | null) => (v === null ? "—" : `${Math.round(v * 100)}%`);
   const funnel = [
-    { label: "Surfaced", value: data.surfaced },
+    { label: "Surfaced", value: surfacedShown },
     { label: "Approved", value: data.approved },
     { label: "Drafted / sent", value: data.executed },
     { label: "Replied", value: data.replied },
@@ -266,7 +286,7 @@ export function ImpactView({
       </Card>
 
       {/* weekly digest preview — the same summary the email is built from */}
-      {digest?.top?.length ? (
+      {digestTop.length ? (
         <Card className="gap-3 py-4">
           <CardHeader className="px-4 pb-0">
             <div className="flex items-center gap-2">
@@ -279,7 +299,7 @@ export function ImpactView({
           </CardHeader>
           <CardContent className="px-4">
             <ul className="flex flex-col gap-1.5">
-              {digest.top!.slice(0, 3).map((a, i) => (
+              {digestTop.slice(0, 3).map((a, i) => (
                 <li key={i} className="flex items-center justify-between gap-3 text-sm">
                   <Label className="truncate font-normal text-primary/75">
                     <Badge className="mr-1 font-normal text-primary/45" variant="outline">
@@ -296,9 +316,9 @@ export function ImpactView({
                 </li>
               ))}
             </ul>
-            {digest.openCount > 3 ? (
+            {digestOpen > digestTop.length ? (
               <CardDescription className="mt-2 text-xs text-primary/45">
-                +{digest.openCount - 3} more in your queue
+                +{digestOpen - digestTop.length} more in your queue
               </CardDescription>
             ) : null}
           </CardContent>
@@ -307,7 +327,7 @@ export function ImpactView({
 
       {/* headline stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="Open loops surfaced" value={data.surfaced} />
+        <Stat label="Open loops surfaced" value={surfacedShown} />
         <Stat label="Drafted / sent" value={data.executed} />
         <Stat label="Reply rate" value={pct(data.replyRate)} tone="good" />
         <Stat label="Meetings booked" value={data.meetingsBooked} tone="good" />
@@ -349,7 +369,7 @@ export function ImpactView({
           </CardHeader>
           <CardContent className="px-4">
             <dl className="flex flex-col gap-1.5 text-sm">
-              <Line label="Open" value={data.open} />
+              <Line label="Open" value={openShown} />
               <Line label="Handled" value={data.handled} />
               <Line label="Snoozed" value={data.snoozed} />
               <Line label="Dismissed" value={data.dismissed} />
@@ -372,7 +392,7 @@ export function ImpactView({
       </div>
 
       {/* per-detector */}
-      {data.byDetector?.length ? (
+      {detectorsWithoutTasks(data.byDetector, taskCount).length ? (
         <Card className="gap-3 py-4">
           <CardHeader className="px-4 pb-0">
             <CardTitle className="text-sm text-primary">Which signals pay off</CardTitle>
@@ -388,7 +408,7 @@ export function ImpactView({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {[...data.byDetector]
+                {[...detectorsWithoutTasks(data.byDetector, taskCount)]
                   .sort((a, b) => b.surfaced - a.surfaced)
                   .map((d) => (
                     <TableRow key={d.detector}>

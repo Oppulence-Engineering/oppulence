@@ -186,6 +186,41 @@ export function exposureRiskScore(apiScore: number, atRisk: number | null): numb
   return apiScore;
 }
 
+/**
+ * The weekly digest is the inbox summary. A task the person saved is not an
+ * open loop slipping in mail, even though it is stored as a manual action.
+ */
+export function digestWithoutTasks<T extends { detector?: string; reason?: string }>(
+  top: readonly T[] | undefined,
+  actions: readonly { actionType?: string; channel?: string; reason?: string }[] | undefined,
+): T[] {
+  const items = [...(top ?? [])];
+  if (!actions) return items;
+  const taskReasons = new Set(
+    actions
+      .filter(isWorkspaceTask)
+      .map((action) => (action.reason ?? "").trim())
+      .filter(Boolean),
+  );
+  return items.filter((item) => {
+    const manual = (item.detector ?? "").trim().toLowerCase() === "manual";
+    return !(manual && taskReasons.has((item.reason ?? "").trim()));
+  });
+}
+
+export function detectorsWithoutTasks<
+  T extends { detector: string; surfaced: number; handled: number },
+>(rows: readonly T[] | undefined, taskCount: number): T[] {
+  const list = [...(rows ?? [])];
+  if (taskCount <= 0) return list;
+  return list.flatMap((row) => {
+    if (row.detector !== "manual") return [row];
+    const surfaced = Math.max(0, row.surfaced - taskCount);
+    if (surfaced === 0 && row.handled === 0) return [];
+    return [{ ...row, surfaced }];
+  });
+}
+
 export function exposureReasons<T extends { reason: string; relationships: number }>(
   reasons: readonly T[] | undefined,
   attention: readonly { relationshipId: string; reasonCode?: string; recommendationId?: string }[] | undefined,

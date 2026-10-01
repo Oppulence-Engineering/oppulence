@@ -9,6 +9,8 @@ import {
   promiseDueLabel,
   atRiskPulseCount,
   attentionWithoutTasks,
+  detectorsWithoutTasks,
+  digestWithoutTasks,
   exposureReasons,
   exposureRiskScore,
   recoveryPulseCount,
@@ -96,6 +98,18 @@ describe("local due dates", () => {
       ]),
     ).toBe(1);
     expect(atRiskPulseCount(1, undefined, [])).toBeNull();
+    expect(
+      digestWithoutTasks(
+        [{ detector: "Manual", reason: "Call the harbor" }, { detector: "Waiting on you", reason: "Send the note" }],
+        [{ actionType: "follow_up_task", channel: "task", reason: "Call the harbor" }],
+      ),
+    ).toEqual([{ detector: "Waiting on you", reason: "Send the note" }]);
+    expect(
+      detectorsWithoutTasks(
+        [{ detector: "manual", surfaced: 1, handled: 0 }],
+        1,
+      ),
+    ).toEqual([]);
     expect(exposureRiskScore(30, 0)).toBe(0);
     expect(exposureRiskScore(30, 2)).toBe(30);
     expect(
