@@ -631,9 +631,17 @@ func (s *Service) persistAttentionCandidates(ctx context.Context, ws *ent.Revenu
 	return nil
 }
 
+// AttentionListPage is one portfolio-queue page. HasMore is true only when
+// another item exists past this page, so an exact page of 50 is not offered
+// as if a 51st company were waiting.
+type AttentionListPage struct {
+	Items   []*ent.RelationshipAttentionItem
+	HasMore bool
+}
+
 // ListRelationshipAttention returns the current tenant-scoped portfolio queue
 // in deterministic priority order.
-func (s *Service) ListRelationshipAttention(ctx context.Context, u *ent.User, status string, limit int, offset int) ([]*ent.RelationshipAttentionItem, error) {
+func (s *Service) ListRelationshipAttention(ctx context.Context, u *ent.User, status string, limit int, offset int) (*AttentionListPage, error) {
 	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceView)
 	if err != nil {
 		return nil, err
@@ -660,11 +668,19 @@ func (s *Service) ListRelationshipAttention(ctx context.Context, u *ent.User, st
 		q.Where(relationshipattentionitem.StatusEQ(status))
 	}
 	// Rank and time can tie. The id keeps an offset from skipping or repeating a row.
-	return q.Order(
+	rows, err := q.Order(
 		ent.Desc(relationshipattentionitem.FieldRankScore),
 		ent.Asc(relationshipattentionitem.FieldCreatedAt),
 		ent.Asc(relationshipattentionitem.FieldID),
-	).Limit(limit).Offset(offset).All(ctx)
+	).Limit(limit + 1).Offset(offset).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	hasMore := len(rows) > limit
+	if hasMore {
+		rows = rows[:limit]
+	}
+	return &AttentionListPage{Items: rows, HasMore: hasMore}, nil
 }
 
 // DecideRelationshipAttention applies an optimistic, actor-attributed queue

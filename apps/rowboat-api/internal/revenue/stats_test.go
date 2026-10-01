@@ -131,11 +131,11 @@ func TestSavedTasksStayOutOfAtRisk(t *testing.T) {
 	if err := f.svc.RefreshRelationshipAttention(f.ctx, f.user); err != nil {
 		t.Fatal(err)
 	}
-	items, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 50, 0)
-	if err != nil {
+	page, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 50, 0)
+	if err != nil || page == nil {
 		t.Fatal(err)
 	}
-	for _, item := range items {
+	for _, item := range page.Items {
 		if item.Edges.Relationship != nil && item.Edges.Relationship.ID == taskRel.ID {
 			t.Fatalf("saved task opened attention: %+v", item)
 		}

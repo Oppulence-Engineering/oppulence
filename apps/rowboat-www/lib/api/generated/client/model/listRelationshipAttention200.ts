@@ -8,13 +8,15 @@
 import type { RelationshipAttentionItem } from "./relationshipAttentionItem";
 
 /**
- * Attention list.
+ * Attention list. A full page is the end of the queue when hasMore is false.
  */
 export type ListRelationshipAttention200 = {
   /** Read boundary. */
   asOf: string;
   /** Contract version. */
   contractVersion: string;
+  /** Another company exists beyond this page of the queue. */
+  hasMore?: boolean;
   /** Attention items. */
   items: RelationshipAttentionItem[];
 };

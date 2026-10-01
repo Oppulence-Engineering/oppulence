@@ -2357,13 +2357,13 @@ func (h *Handler) ListRelationshipAttention(w http.ResponseWriter, r *http.Reque
 		}
 		offset = value
 	}
-	items, err := h.svc.ListRelationshipAttention(r.Context(), u, r.URL.Query().Get("status"), limit, offset)
+	page, err := h.svc.ListRelationshipAttention(r.Context(), u, r.URL.Query().Get("status"), limit, offset)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	out := make([]relationshipAttentionDTO, 0, len(items))
-	for _, item := range items {
+	out := make([]relationshipAttentionDTO, 0, len(page.Items))
+	for _, item := range page.Items {
 		dto, err := relationshipAttentionToDTO(item)
 		if err != nil {
 			h.writeServiceError(w, err)
@@ -2372,7 +2372,7 @@ func (h *Handler) ListRelationshipAttention(w http.ResponseWriter, r *http.Reque
 		out = append(out, dto)
 	}
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{
-		"contractVersion": "relationship-attention.v1", "asOf": h.svc.now().UTC(), "items": out,
+		"contractVersion": "relationship-attention.v1", "asOf": h.svc.now().UTC(), "items": out, "hasMore": page.HasMore,
 	})
 }
 

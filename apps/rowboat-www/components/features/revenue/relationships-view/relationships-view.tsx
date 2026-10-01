@@ -170,7 +170,8 @@ import {
   useRelationshipSourceStatuses,
 } from "@/hooks/queries/use-relationship-sources";
 import {
-  ATTENTION_PAGE_SIZE,
+  attentionPageHasMore,
+  attentionRows,
   fetchIdentityCandidates,
   fetchRelationshipAttention,
   fetchRelationships,
@@ -656,7 +657,7 @@ export function RelationshipsView({
   const [loadingMoreDuplicates, setLoadingMoreDuplicates] = React.useState(false);
   const attentionQuery = useRelationshipAttention("open");
   const [extraAttention, setExtraAttention] = React.useState<RelationshipAttentionItem[]>([]);
-  const [attentionExhausted, setAttentionExhausted] = React.useState(false);
+  const [laterAttentionHasMore, setLaterAttentionHasMore] = React.useState<boolean | null>(null);
   const [loadingMoreAttention, setLoadingMoreAttention] = React.useState(false);
   const openActionsQuery = useRevenueActions("open", 100, "task");
   const directoryPage = relationshipRows(relationshipsQuery.data);
@@ -713,7 +714,7 @@ export function RelationshipsView({
     (deferredPage.length > 0 && identityCandidatePageHasMore(deferredQuery.data));
   const hasMoreDuplicates = hasMorePending || hasMoreDeferred;
   const identityCandidates = [...pendingCandidates, ...deferredCandidates];
-  const attentionPage = attentionQuery.data ?? [];
+  const attentionPage = attentionRows(attentionQuery.data);
   const attention = React.useMemo(() => {
     if (extraAttention.length === 0) return attentionPage;
     const seen = new Set(attentionPage.map((item) => item.id));
@@ -727,9 +728,8 @@ export function RelationshipsView({
     ];
   }, [attentionPage, extraAttention]);
   const hasMoreAttention =
-    !attentionExhausted &&
-    attentionPage.length > 0 &&
-    (attentionPage.length + extraAttention.length) % ATTENTION_PAGE_SIZE === 0;
+    laterAttentionHasMore ??
+    (attentionPage.length > 0 && attentionPageHasMore(attentionQuery.data));
   const loading =
     relationshipsQuery.isPending ||
     sourcesQuery.isPending ||
@@ -803,7 +803,7 @@ export function RelationshipsView({
 
   const load = React.useCallback(async () => {
     setExtraAttention([]);
-    setAttentionExhausted(false);
+    setLaterAttentionHasMore(null);
     setExtraPending([]);
     setExtraDeferred([]);
     setLaterPendingHasMore(null);
@@ -822,8 +822,8 @@ export function RelationshipsView({
         undefined,
         attentionPage.length + extraAttention.length,
       );
-      if (next.length < ATTENTION_PAGE_SIZE) setAttentionExhausted(true);
-      setExtraAttention((current) => [...current, ...next]);
+      setLaterAttentionHasMore(attentionPageHasMore(next));
+      setExtraAttention((current) => [...current, ...attentionRows(next)]);
     } catch (reason) {
       onError(explainedRevenueError(reason, "Could not load the next companies in the queue."));
     } finally {

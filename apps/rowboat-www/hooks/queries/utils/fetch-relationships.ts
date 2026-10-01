@@ -23,6 +23,7 @@ const IdentityListSchema = z.object({
 
 const AttentionListSchema = z.object({
   items: z.array(z.unknown()).optional(),
+  hasMore: z.boolean().optional(),
 });
 
 const PersonListSchema = z.object({
@@ -246,12 +247,34 @@ export async function loadIdentityCandidates(
 /** The attention API caps a page at 100 and defaults to 50. The queue asks for that default, then the next offset. */
 export const ATTENTION_PAGE_SIZE = 50;
 
+export type AttentionPage = {
+  items: RelationshipAttentionItem[];
+  hasMore: boolean;
+};
+
+/** Rows from a queue page. A bare array is a test fixture that has no flag. */
+export function attentionRows(
+  page: AttentionPage | readonly RelationshipAttentionItem[] | null | undefined,
+): RelationshipAttentionItem[] {
+  if (!page) return [];
+  if (Array.isArray(page)) return [...page];
+  return page.items ?? [];
+}
+
+/** True only when the server says another company exists past this page. */
+export function attentionPageHasMore(
+  page: AttentionPage | readonly RelationshipAttentionItem[] | null | undefined,
+): boolean {
+  if (!page || Array.isArray(page)) return false;
+  return Boolean(page.hasMore);
+}
+
 export async function loadRelationshipAttention(
   request: RequestJsonFn,
   status = "open",
   signal?: AbortSignal,
   offset = 0,
-): Promise<RelationshipAttentionItem[]> {
+): Promise<AttentionPage> {
   const params = new URLSearchParams({
     status,
     limit: String(ATTENTION_PAGE_SIZE),
@@ -262,7 +285,10 @@ export async function loadRelationshipAttention(
     schema: AttentionListSchema,
     signal,
   });
-  return (body.items ?? []) as RelationshipAttentionItem[];
+  return {
+    items: (body.items ?? []) as RelationshipAttentionItem[],
+    hasMore: Boolean(body.hasMore),
+  };
 }
 
 export async function loadSemanticSearch(
@@ -305,7 +331,7 @@ export function fetchRelationshipAttention(
   status = "open",
   signal?: AbortSignal,
   offset = 0,
-): Promise<RelationshipAttentionItem[]> {
+): Promise<AttentionPage> {
   return loadRelationshipAttention(requestJson, status, signal, offset);
 }
 

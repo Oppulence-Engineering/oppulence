@@ -290,7 +290,7 @@ export const RespondPublicMutualActionPlan404Response = zod
   );
 
 /**
- * Returns deterministic relationship-native attention ordered by explicit factor contributions.
+ * Returns deterministic relationship-native attention ordered by explicit factor contributions. A full page is the end of the queue when hasMore is false.
  * @summary List portfolio attention
  */
 export const listRelationshipAttentionQueryOffsetMin = 0;
@@ -312,6 +312,10 @@ export const ListRelationshipAttention200Response = zod
   .strictObject({
     asOf: zod.iso.datetime({ offset: true }).describe("Read boundary."),
     contractVersion: zod.string().describe("Contract version."),
+    hasMore: zod
+      .boolean()
+      .optional()
+      .describe("Another company exists beyond this page of the queue."),
     items: zod
       .array(
         zod
@@ -362,7 +366,7 @@ export const ListRelationshipAttention200Response = zod
       )
       .describe("Attention items."),
   })
-  .describe("Attention list.");
+  .describe("Attention list. A full page is the end of the queue when hasMore is false.");
 
 export const ListRelationshipAttention401Response = zod
   .strictObject({

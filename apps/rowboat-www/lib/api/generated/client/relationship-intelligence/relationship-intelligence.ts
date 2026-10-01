@@ -357,7 +357,7 @@ export const getListRelationshipAttentionUrl = (params?: ListRelationshipAttenti
 };
 
 /**
- * Returns deterministic relationship-native attention ordered by explicit factor contributions.
+ * Returns deterministic relationship-native attention ordered by explicit factor contributions. A full page is the end of the queue when hasMore is false.
  * @summary List portfolio attention
  */
 export const listRelationshipAttention = async (

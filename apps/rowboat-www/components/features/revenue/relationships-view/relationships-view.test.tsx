@@ -127,7 +127,9 @@ describe("RelationshipsView", () => {
     expect(source).toContain(
       'fetchRelationshipAttention(\n        "open",\n        undefined,\n        attentionPage.length + extraAttention.length,',
     );
-    expect(source).toContain("ATTENTION_PAGE_SIZE");
+    expect(source).toContain("attentionPageHasMore");
+    expect(source).not.toContain("% ATTENTION_PAGE_SIZE");
+    expect(source).not.toContain("attentionExhausted");
     expect(source).toContain("COMPANY_DIRECTORY_PAGE");
     expect(source).not.toContain("in All companies`");
   });

@@ -22288,7 +22288,7 @@
     },
     "/v1/relationship-attention": {
       "get": {
-        "description": "Returns deterministic relationship-native attention ordered by explicit factor contributions.",
+        "description": "Returns deterministic relationship-native attention ordered by explicit factor contributions. A full page is the end of the queue when hasMore is false.",
         "operationId": "listRelationshipAttention",
         "parameters": [
           {
@@ -22332,7 +22332,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "Attention list.",
+                  "description": "Attention list. A full page is the end of the queue when hasMore is false.",
                   "properties": {
                     "asOf": {
                       "description": "Read boundary.",
@@ -22344,6 +22344,11 @@
                       "description": "Contract version.",
                       "example": "relationship-attention.v1",
                       "type": "string"
+                    },
+                    "hasMore": {
+                      "description": "Another company exists beyond this page of the queue.",
+                      "example": false,
+                      "type": "boolean"
                     },
                     "items": {
                       "description": "Attention items.",
