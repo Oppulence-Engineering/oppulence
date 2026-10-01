@@ -419,6 +419,20 @@ export function webAddressHref(value: string | null | undefined): string | null 
   return `https://${trimmed}`;
 }
 
+/** The list and the sheet share one LinkedIn action. A saved page or a company reference is "View profile". Anything else searches. */
+export function companyLinkedInAction(
+  displayName: string,
+  resourceRefs: readonly string[] | null | undefined,
+  linkedinURL?: string | null,
+): { href: string; label: "View profile" | "Find profile" } {
+  const refs = resourceRefs ?? [];
+  const href = companyLinkedInURL(displayName, [...refs], linkedinURL ?? undefined);
+  const saved =
+    Boolean(webAddressHref(linkedinURL)) ||
+    refs.some((ref) => ref.startsWith("linkedin:company:"));
+  return { href, label: saved ? "View profile" : "Find profile" };
+}
+
 export const companyLinkedInURL = (
   displayName: string,
   resourceRefs: string[],

@@ -131,7 +131,7 @@ import {
   requestConversationDeletion,
   retractRelationshipAssertion,
   setResearchConsent,
-  companyLinkedInURL,
+  companyLinkedInAction,
   webAddressHref,
   interactionCountLabel,
   RevenueAPIError,
@@ -1061,20 +1061,23 @@ export function RelationshipsView({
                       <TableCell className="border-r px-3 text-[13px]">
                         <a
                           className="text-primary/55 underline-offset-2 hover:text-primary hover:underline"
-                          href={companyLinkedInURL(
-                            companyName(relationship),
-                            relationship.resourceRefs,
-                            relationship.linkedinUrl,
-                          )}
+                          href={
+                            companyLinkedInAction(
+                              companyName(relationship),
+                              relationship.resourceRefs,
+                              relationship.linkedinUrl,
+                            ).href
+                          }
                           rel="noreferrer"
                           target="_blank"
                         >
-                          {webAddressHref(relationship.linkedinUrl) ||
-                          relationship.resourceRefs.some((ref) =>
-                            ref.startsWith("linkedin:company:"),
-                          )
-                            ? "View profile"
-                            : "Find profile"}
+                          {
+                            companyLinkedInAction(
+                              companyName(relationship),
+                              relationship.resourceRefs,
+                              relationship.linkedinUrl,
+                            ).label
+                          }
                         </a>
                       </TableCell>
                       {optionalColumns.includes("people") ? (
@@ -2211,6 +2214,13 @@ export function RelationshipSheet({
     ? companyEmailHref(primaryContact?.email || data.relationship.primaryEmail)
     : null;
   const companyEmail = data ? companyEmailDetail(data.relationship.primaryEmail) : null;
+  const companyLinkedIn = data
+    ? companyLinkedInAction(
+        companyName(data.relationship),
+        data.relationship.resourceRefs,
+        data.relationship.linkedinUrl,
+      )
+    : null;
   const companySource = data
     ? Object.values(data.relationship.companyEnrichmentRefs ?? {})
         .flat()
@@ -2372,18 +2382,14 @@ export function RelationshipSheet({
                   </dd>
                   <dt className="text-primary/40">LinkedIn</dt>
                   <dd className="text-primary/75">
-                    {webAddressHref(data.relationship.linkedinUrl) ? (
-                      <a
-                        className="underline-offset-2 hover:underline"
-                        href={webAddressHref(data.relationship.linkedinUrl) ?? undefined}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        View company
-                      </a>
-                    ) : (
-                      "Not filled in"
-                    )}
+                    <a
+                      className="underline-offset-2 hover:underline"
+                      href={companyLinkedIn?.href}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {companyLinkedIn?.label}
+                    </a>
                   </dd>
                   {companySource ? (
                     <>

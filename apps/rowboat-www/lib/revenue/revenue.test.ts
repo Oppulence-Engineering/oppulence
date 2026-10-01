@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { dashboardRequest } from "@/lib/auth/dashboard-fetch";
 import {
+  companyLinkedInAction,
   companyLinkedInURL,
   friendlyRevenueError,
   getRelationshipCommunicationTimeline,
@@ -236,6 +237,16 @@ describe("companyLinkedInURL", () => {
       "https://www.linkedin.com/company/acme",
     );
     expect(companyLinkedInURL("Acme", [], "javascript:alert(1)")).toContain("keywords=Acme");
+    expect(companyLinkedInAction("Acme", [], null)).toEqual({
+      href: companyLinkedInURL("Acme", []),
+      label: "Find profile",
+    });
+    expect(companyLinkedInAction("Acme", ["linkedin:company:acme"], null).label).toBe(
+      "View profile",
+    );
+    expect(
+      companyLinkedInAction("Acme", [], "https://www.linkedin.com/company/acme").label,
+    ).toBe("View profile");
   });
 });
 

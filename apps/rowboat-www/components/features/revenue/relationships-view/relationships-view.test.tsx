@@ -115,6 +115,9 @@ describe("RelationshipsView", () => {
     expect(companyName({ displayName: "Northwind", accountDomain: "northwind.example" })).toBe(
       "Northwind",
     );
+    expect(source).toContain("companyLinkedInAction(");
+    expect(source).toContain("{companyLinkedIn?.label}");
+    expect(source).not.toContain("View company");
     expect(source).toContain('aria-label="Show company graph"');
     expect(source).toContain('aria-label="Show company list"');
     expect(source).toContain("clearCompanyGraphURL()");
