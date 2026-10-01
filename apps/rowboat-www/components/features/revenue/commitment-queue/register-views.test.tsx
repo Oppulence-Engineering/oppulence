@@ -89,6 +89,38 @@ describe("the five register views", () => {
     expect(
       registerAccountChoices([], [{ kind: "relationship", relationshipId: "graph-1", label: "Acme" }]),
     ).toEqual([{ id: "graph-1", label: "Acme" }]);
+    expect(
+      registerAccountChoices(
+        [],
+        [
+          {
+            kind: "relationship",
+            relationshipId: "person-1",
+            label: "Ada",
+            metadata: { kind: "person" },
+          },
+          {
+            kind: "relationship",
+            relationshipId: "graph-1",
+            label: "Acme",
+            metadata: { kind: "company" },
+          },
+        ],
+      ),
+    ).toEqual([{ id: "graph-1", label: "Acme" }]);
+    expect(
+      registerAccountChoices(
+        [{ id: "person-1", kind: "person", displayName: "Ada" }],
+        [
+          {
+            kind: "relationship",
+            relationshipId: "person-1",
+            label: "Ada",
+            metadata: { kind: "person" },
+          },
+        ],
+      ),
+    ).toEqual([]);
     const hook = fs.readFileSync(
       path.join(import.meta.dirname, "../../../../hooks/queries/use-commitments.ts"),
       "utf8",

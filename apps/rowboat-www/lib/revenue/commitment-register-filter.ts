@@ -57,6 +57,7 @@ type RegisterGraphAccountSource = {
   kind?: string;
   relationshipId?: string;
   label?: string;
+  metadata?: Record<string, unknown>;
 };
 
 /**
@@ -64,7 +65,8 @@ type RegisterGraphAccountSource = {
  * the Companies page is not a graph node until it has been projected, so the
  * register said "No companies yet" beside a company the teammate had just added.
  * The company list is the list. The graph is only a fallback when that list
- * cannot be loaded.
+ * cannot be loaded. A person saved from People is a relationship on that
+ * graph, so the fallback skips metadata.kind "person" the same way the list does.
  */
 export function registerAccountChoices(
   relationships: readonly RegisterAccountSource[],
@@ -80,7 +82,9 @@ export function registerAccountChoices(
   return graphNodes.flatMap((node) => {
     const id = node.relationshipId?.trim() ?? "";
     const label = node.label?.trim() ?? "";
-    if (node.kind !== "relationship" || !id || !label) return [];
+    if (node.kind !== "relationship" || node.metadata?.kind === "person" || !id || !label) {
+      return [];
+    }
     return [{ id, label }];
   });
 }
