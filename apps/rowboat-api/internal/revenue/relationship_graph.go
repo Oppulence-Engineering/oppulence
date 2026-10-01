@@ -564,7 +564,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 				}
 			}
 			nodes[actionNodeID] = relationshipGraphNodeDTO{
-				ID: actionNodeID, Kind: "action", Label: strings.ReplaceAll(actionType, "_", " "),
+				ID: actionNodeID, Kind: "action", Label: graphActionLabel(actionType),
 				RelationshipID: relationshipID, RelationshipIDs: []string{relationshipID},
 				Summary: actionReason, Status: actionStatus, ApprovalStatus: approvalStatus,
 				PolicyStatus: policyStatus, ExecutionStatus: executionStatus,
@@ -655,6 +655,35 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 		dto.RelationshipID = aggregate.Relationships[0].ID.String()
 	}
 	return dto
+}
+
+// graphActionLabel matches the titles Recovery and the company sheet use.
+// A stored follow_up_task is "Follow-up task", not "follow up task".
+func graphActionLabel(actionType string) string {
+	switch actionType {
+	case "warm_follow_up":
+		return "Warm follow-up"
+	case "proposal_nudge":
+		return "Proposal nudge"
+	case "referral_reconnect":
+		return "Referral reconnect"
+	case "customer_risk":
+		return "Customer risk"
+	case "meeting_follow_up":
+		return "Meeting follow-up"
+	case "meeting_recap":
+		return "Meeting recap"
+	case "crm_update":
+		return "CRM update"
+	case "follow_up_task":
+		return "Follow-up task"
+	case "calendar_hold":
+		return "Calendar hold"
+	case "commitment_rescue":
+		return "Commitment rescue"
+	default:
+		return strings.ReplaceAll(actionType, "_", " ")
+	}
 }
 
 func ensureGraphSourceNode(

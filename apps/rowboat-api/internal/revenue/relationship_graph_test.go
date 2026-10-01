@@ -53,6 +53,9 @@ func TestRelationshipGraphReturnsVersionedGovernedProjection(t *testing.T) {
 	if graphAction.ApprovalStatus != ApprovalPending || graphAction.ResourceRef != action.ID.String() {
 		t.Fatalf("action governance was not projected: %#v", graphAction)
 	}
+	if graphAction.Label != "Warm follow-up" {
+		t.Fatalf("action label = %q, want Warm follow-up", graphAction.Label)
+	}
 	if len(dto.Edges) == 0 || dto.Edges[0].Label == "" || !dto.Edges[0].Directed {
 		t.Fatalf("typed directional edge missing: %#v", dto.Edges)
 	}
@@ -149,10 +152,19 @@ func TestRelationshipGraphHistoricalBoundaryUsesEligibleActionRevision(t *testin
 	if graphAction.ID == "" {
 		t.Fatal("historical action node missing")
 	}
-	if graphAction.Label != "warm follow up" || graphAction.Summary != "Original evidence-backed reason" {
+	if graphAction.Label != "Warm follow-up" || graphAction.Summary != "Original evidence-backed reason" {
 		t.Fatalf("later action revision leaked across asOf: %#v", graphAction)
 	}
 	if graphAction.Metadata["revision"] != 1 {
 		t.Fatalf("historical action revision = %#v, want 1", graphAction.Metadata["revision"])
+	}
+}
+
+func TestGraphActionLabelUsesTheProductTitle(t *testing.T) {
+	if got := graphActionLabel("follow_up_task"); got != "Follow-up task" {
+		t.Fatalf("follow_up_task label = %q", got)
+	}
+	if got := graphActionLabel("custom_signal"); got != "custom signal" {
+		t.Fatalf("unknown action label = %q", got)
 	}
 }
