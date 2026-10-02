@@ -86,6 +86,7 @@ export type DashboardChatController = {
   hasMoreSessions?: boolean;
   loadingMoreSessions?: boolean;
   onLoadMoreSessions?: () => void;
+  onRetrySessions?: () => void;
   sessionsLoadError?: string | null;
   selectedResource: SelectedResource | null;
   clearSelectedResource: () => void;
@@ -318,12 +319,13 @@ export function ChatRouteProvider({ children, className, ...props }: ChatRoutePr
     [setSelectedAgent, startNewChat],
   );
   const {
-    earlierSessionsError,
     hasMoreSessions,
     loadEarlierSessions,
     loadingEarlierSessions,
     openSession: loadSession,
+    reloadSessions,
     sessions,
+    sessionsLoadError,
   } = useChatSessions({
     activeRunId: run.runId,
     conversation: run.conversation,
@@ -405,7 +407,8 @@ export function ChatRouteProvider({ children, className, ...props }: ChatRoutePr
       hasMoreSessions,
       loadingMoreSessions: loadingEarlierSessions,
       onLoadMoreSessions: () => void loadEarlierSessions(),
-      sessionsLoadError: earlierSessionsError,
+      onRetrySessions: () => void reloadSessions(),
+      sessionsLoadError,
       selectedResource,
       clearSelectedResource,
       onAgentsChanged: refreshAgents,

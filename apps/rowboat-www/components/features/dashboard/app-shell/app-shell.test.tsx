@@ -58,6 +58,8 @@ describe("AppShellSidebar", () => {
     expect(source).toContain("Show earlier conversations");
     expect(source).toContain("onLoadMoreSessions");
     expect(source).toContain("sessionsLoadError");
+    expect(source).toContain("sessions.length === 0 && !sessionsLoadError");
+    expect(source).toContain("onRetrySessions");
   });
 
   it("explains a failed sidebar load with the same sentences as the rest of the app", () => {

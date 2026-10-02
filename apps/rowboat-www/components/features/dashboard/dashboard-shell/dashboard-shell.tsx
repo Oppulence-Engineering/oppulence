@@ -199,6 +199,7 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
                 }
                 onNewChat={chat.onNewChat}
                 onLoadMoreSessions={chat.onLoadMoreSessions}
+                onRetrySessions={chat.onRetrySessions}
                 onOpenSession={chat.onOpenSession}
                 onOpenSettings={openSettings}
                 hasMoreSessions={chat.hasMoreSessions}

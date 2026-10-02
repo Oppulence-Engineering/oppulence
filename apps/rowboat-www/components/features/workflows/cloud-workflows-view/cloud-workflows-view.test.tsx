@@ -565,6 +565,8 @@ describe("CloudWorkflowsView", () => {
     );
     expect(source).toContain("useWorkflowRuns({ slug: task.slug })");
     expect(source).toContain('taskRunsSettled ? "No runs yet." : "Loading runs…"');
+    expect(source).toContain("taskRuns.length === 0 && !scopedRunsQuery.isError");
+    expect(source).toContain("scopedRunsQuery.refetch()");
     const runsAt = source.indexOf('value="runs"');
     const runsPane = source.slice(runsAt - 80, runsAt + 500);
     expect(runsPane).toContain("EDITOR_PANE_CLASS");

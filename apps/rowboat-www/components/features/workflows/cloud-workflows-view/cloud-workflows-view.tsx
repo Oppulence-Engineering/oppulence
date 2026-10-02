@@ -1442,10 +1442,23 @@ function WorkflowEditor({
                   <CaretRight className="size-4 text-muted-foreground" />
                 </Button>
               ))}
-              {taskRuns.length === 0 ? (
+              {taskRuns.length === 0 && !scopedRunsQuery.isError ? (
                 <p className="p-8 text-center text-xs text-muted-foreground">
                   {taskRunsSettled ? "No runs yet." : "Loading runs…"}
                 </p>
+              ) : null}
+              {scopedRunsQuery.isError ? (
+                <div className="flex flex-col items-center gap-3 p-8 text-center">
+                  <p className="text-xs text-muted-foreground">{workflowRunsFailureCopy()}</p>
+                  <Button
+                    onClick={() => void scopedRunsQuery.refetch()}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Try again
+                  </Button>
+                </div>
               ) : null}
               {taskRunsHasMore ? (
                 <Button

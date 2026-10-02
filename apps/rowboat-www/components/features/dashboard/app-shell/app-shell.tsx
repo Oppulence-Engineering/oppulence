@@ -767,6 +767,7 @@ export function AppShellSidebar({
   hasMoreSessions = false,
   loadingMoreSessions = false,
   onLoadMoreSessions,
+  onRetrySessions,
   sessionsLoadError = null,
   overlayContainer = null,
 }: {
@@ -795,6 +796,7 @@ export function AppShellSidebar({
   hasMoreSessions?: boolean;
   loadingMoreSessions?: boolean;
   onLoadMoreSessions?: () => void;
+  onRetrySessions?: () => void;
   sessionsLoadError?: string | null;
   overlayContainer?: HTMLElement | null;
 }) {
@@ -1044,7 +1046,7 @@ export function AppShellSidebar({
                 <Plus className="size-3.5" />
               </Button>
             </div>
-            {sessions.length === 0 ? (
+            {sessions.length === 0 && !sessionsLoadError ? (
               <SidebarEmptyHint>No conversations yet</SidebarEmptyHint>
             ) : (
               sessions.map((session) => (
@@ -1067,7 +1069,24 @@ export function AppShellSidebar({
                 {loadingMoreSessions ? "Loading…" : "Show earlier conversations"}
               </Button>
             ) : null}
-            {sessionsLoadError ? <SidebarEmptyHint>{sessionsLoadError}</SidebarEmptyHint> : null}
+            {sessionsLoadError ? (
+              <>
+                <SidebarEmptyHint>{sessionsLoadError}</SidebarEmptyHint>
+                {onRetrySessions ? (
+                  <Button
+                    className={
+                      "h-auto w-full justify-start rounded-lg px-4 py-1.5 text-left " +
+                      "text-[13px] font-normal text-[var(--text-secondary)]"
+                    }
+                    onClick={onRetrySessions}
+                    type="button"
+                    variant="ghost"
+                  >
+                    Try again
+                  </Button>
+                ) : null}
+              </>
+            ) : null}
           </nav>
         )}
 

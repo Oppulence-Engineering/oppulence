@@ -30,6 +30,19 @@ import type { AgentRunSnapshot } from "@/hooks/dashboard/use-agent-run";
 
 type ChatMessage = Extract<AgentHistoryItem, { type: "message" }>;
 
+/** A failed first page is not an empty history. */
+export const CHAT_SESSIONS_LOAD_ERROR = "Could not load conversations.";
+
+/** The load-more sentence stays when that request failed. Otherwise a failed
+ * first page is named on its own. */
+export function chatSessionsLoadError(
+  earlierError: string | null,
+  remoteFailed: boolean,
+): string | null {
+  if (earlierError) return earlierError;
+  return remoteFailed ? CHAT_SESSIONS_LOAD_ERROR : null;
+}
+
 type UseChatSessionsOptions = {
   activeRunId: string | null;
   conversation: ConversationItem[];
@@ -165,6 +178,11 @@ export function useChatSessions({
     loadEarlierSessions,
     loadingEarlierSessions,
     openSession,
+    reloadSessions: () => remoteSessionsQuery.refetch(),
     sessions,
+    sessionsLoadError: chatSessionsLoadError(
+      earlierSessionsError,
+      remoteSessionsQuery.isError,
+    ),
   };
 }
