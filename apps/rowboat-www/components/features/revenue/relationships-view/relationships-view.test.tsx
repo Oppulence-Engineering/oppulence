@@ -468,6 +468,15 @@ describe("RelationshipsView", () => {
         "Evidence is incomplete; stale sources: gmail.",
       ),
     ).toBe("A connected source is out of date, so this promise cannot be checked yet.");
+    expect(
+      recoveryExplanationCopy("blocked", "This promise is blocked. Review it before acting."),
+    ).toBe("This promise is blocked. Review it before acting.");
+    expect(
+      recoveryExplanationCopy(
+        "renegotiated",
+        "This promise was renegotiated. Review the new terms.",
+      ),
+    ).toBe("This promise was renegotiated. Review the new terms.");
     expect(source).toContain("mailReplyLabel(thread.replyState)");
     expect(source).toContain("recoveryClassificationLabel(evaluation.classification)");
     expect(source).not.toContain("humanize(thread.replyState)");

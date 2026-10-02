@@ -2232,8 +2232,20 @@ export function recoveryClassificationLabel(classification: string): string {
   }
 }
 
+const CURRENT_RECOVERY_EXPLANATIONS = new Set([
+  "A connected source is out of date, so this promise cannot be checked yet.",
+  "A newer source shows this promise was met.",
+  "A newer source suggests this promise was met. Review it before closing it.",
+  "This promise is past due and nothing newer has closed it.",
+  "A later promise replaced this one.",
+  "This promise was renegotiated. Review the new terms.",
+  "This promise is blocked. Review it before acting.",
+  "Review this promise before acting on it.",
+]);
+
 export function recoveryExplanationCopy(classification: string, explanation: string): string {
   const raw = explanation.trim();
+  if (CURRENT_RECOVERY_EXPLANATIONS.has(raw)) return raw;
   if (/unknown_stale_sources|stale sources:/i.test(raw)) {
     return "A connected source is out of date, so this promise cannot be checked yet.";
   }

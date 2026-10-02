@@ -1,6 +1,9 @@
 package revenue
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -1847,6 +1850,83 @@ func TestRelationshipSearchFindsTheDirectoryColumns(t *testing.T) {
 	if got := namesOf(prospects.Relationships); !hasName(got, "Lumen Packet") || hasName(got, "Quill Atelier") {
 		t.Fatalf("prospect = %v", got)
 	}
+}
+
+func TestRelationshipSearchFindsThePromiseFollowUp(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveRecovery := func(rel *ent.Relationship, classification, explanation, stableID string, version int) {
+		t.Helper()
+		payload, err := json.Marshal(CommitmentRecoveryEvaluation{
+			EvaluationID:   stableID,
+			CommitmentID:   uuid.NewString(),
+			Classification: classification,
+			Explanation:    explanation,
+			EvaluatedAt:    time.Now().UTC().Format(time.RFC3339),
+			EvidenceRefs:   []string{},
+			StaleSources:   []string{},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(payload)
+		create := f.client.ConversationIntelligenceArtifact.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetKind("recovery_evaluation").SetStableID(stableID).SetVersion(version).
+			SetStatus(classification).SetSubjectRef(rel.ID.String()).
+			SetEffectiveAt(time.Now().UTC()).SetEvidenceRefs([]string{}).
+			SetPayloadJSON(string(payload)).SetPayloadHash(hex.EncodeToString(sum[:]))
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	quill := makeCompany("Quill Atelier")
+	lumen := makeCompany("Lumen Packet")
+	makeCompany("Harbor Ledger")
+	cedar := makeCompany("Cedar Mill")
+	saveRecovery(quill, "forgotten", recoveryExplanation("forgotten", nil), "recovery:quill", 1)
+	saveRecovery(quill, "blocked", recoveryExplanation("blocked", nil), "recovery:quill", 2)
+	saveRecovery(
+		lumen, "blocked",
+		"Fresh evidence suggests blocked; human review is required.",
+		"recovery:lumen-blocked", 1,
+	)
+	saveRecovery(cedar, "renegotiated", recoveryExplanation("renegotiated", nil), "recovery:cedar", 1)
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("The promise is blocked", "Quill Atelier", "Lumen Packet")
+	assertCompanyQuery("This promise is blocked. Review it before acting.", "Quill Atelier")
+	assertCompanyQuery("The promise is blocked. Review it before acting.", "Lumen Packet")
+	assertCompanyQuery("This promise looks forgotten")
+	assertCompanyQuery("The promise was renegotiated", "Cedar Mill")
+	assertCompanyQuery("This promise was renegotiated. Review the new terms.", "Cedar Mill")
 }
 
 func hasName(names []string, want string) bool {

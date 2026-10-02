@@ -140,6 +140,29 @@ func recoverySourceFreshness(
 	return float64(fresh) / float64(len(statuses)), stale, nil
 }
 
+// recoveryClassificationLabel is the heading on the company sheet. The stored
+// token stays in the artifact.
+func recoveryClassificationLabel(classification string) string {
+	switch classification {
+	case "forgotten":
+		return "This promise looks forgotten"
+	case "unknown_stale_sources":
+		return "A source is out of date"
+	case "fulfilled":
+		return "The promise looks met"
+	case "likely_fulfilled":
+		return "The promise may already be met"
+	case "superseded":
+		return "Replaced by a later promise"
+	case "renegotiated":
+		return "The promise was renegotiated"
+	case "blocked":
+		return "The promise is blocked"
+	default:
+		return classification
+	}
+}
+
 // recoveryExplanation is what a person reads. The stored classification stays
 // a token; the sentence must not repeat it.
 func recoveryExplanation(classification string, stale []string) string {

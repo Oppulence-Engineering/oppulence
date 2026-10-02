@@ -17,6 +17,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
@@ -864,6 +865,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if overdue := relationshipSheetOverdueMatch(needle, searchedAt); overdue != nil {
 			parts = append(parts, overdue)
 		}
+		if recovery := relationshipSheetRecoveryMatch(needle); recovery != nil {
+			parts = append(parts, recovery)
+		}
 		if sheetPhraseMatches("no action is currently recommended", needle) {
 			parts = append(parts, relationship.Not(
 				relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen)),
@@ -1581,6 +1585,163 @@ func relationshipSheetOverdueMatch(needle string, now time.Time) predicate.Relat
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// recoverySearchPhrase is one sentence the promise follow-up list prints, and
+// the stored artifact that prints it. A heading matches every latest evaluation
+// of that kind. A body matches the explanation that is still stored.
+type recoverySearchPhrase struct {
+	phrase          string
+	classification  string
+	explanation     string
+	explanationLike string
+}
+
+func recoverySearchPhrases() []recoverySearchPhrase {
+	classes := []string{
+		"forgotten", "unknown_stale_sources", "fulfilled", "likely_fulfilled",
+		"superseded", "renegotiated", "blocked",
+	}
+	phrases := make([]recoverySearchPhrase, 0, len(classes)*3+3)
+	for _, class := range classes {
+		phrases = append(phrases, recoverySearchPhrase{
+			phrase:         normalizePersonSearch(recoveryClassificationLabel(class)),
+			classification: class,
+		})
+		explanation := recoveryExplanation(class, nil)
+		if class == "unknown_stale_sources" {
+			explanation = recoveryExplanation(class, []string{"source"})
+		}
+		phrases = append(phrases, recoverySearchPhrase{
+			phrase:         normalizePersonSearch(explanation),
+			classification: class,
+			explanation:    explanation,
+		})
+		review := recoveryClassificationLabel(class) + ". Review it before acting."
+		phrases = append(phrases, recoverySearchPhrase{
+			phrase:         normalizePersonSearch(review),
+			classification: class,
+			explanation: fmt.Sprintf(
+				"Fresh evidence suggests %s; human review is required.", class,
+			),
+		})
+	}
+	dueSoon := recoveryExplanation("unknown_stale_sources", nil)
+	phrases = append(phrases, recoverySearchPhrase{
+		phrase:         normalizePersonSearch(dueSoon),
+		classification: "unknown_stale_sources",
+		explanation:    dueSoon,
+	})
+	stale := normalizePersonSearch(recoveryExplanation("unknown_stale_sources", []string{"source"}))
+	phrases = append(phrases,
+		recoverySearchPhrase{
+			phrase: stale, classification: "unknown_stale_sources", explanationLike: "%stale sources:%",
+		},
+		recoverySearchPhrase{
+			phrase: stale, classification: "unknown_stale_sources", explanationLike: "%unknown_stale_sources%",
+		},
+		recoverySearchPhrase{
+			phrase:         normalizePersonSearch(recoveryExplanation("fulfilled", nil)),
+			classification: "fulfilled",
+			explanation:    "Fresh explicit source evidence proves fulfillment.",
+		},
+	)
+	return phrases
+}
+
+// relationshipSheetRecoveryMatch matches the promise follow-up heading and the
+// sentence under it. "The promise is blocked" stays off a company whose body
+// says the promise was renegotiated.
+func relationshipSheetRecoveryMatch(needle string) predicate.Relationship {
+	phrases := recoverySearchPhrases()
+	chosen := make([]recoverySearchPhrase, 0)
+	for _, item := range phrases {
+		if needle == item.phrase {
+			chosen = append(chosen, item)
+		}
+	}
+	if len(chosen) == 0 {
+		for _, item := range phrases {
+			if sheetPhraseMatches(item.phrase, needle) {
+				chosen = append(chosen, item)
+			}
+		}
+	}
+	if len(chosen) == 0 {
+		return nil
+	}
+	preds := make([]predicate.Relationship, 0, len(chosen))
+	for _, item := range chosen {
+		preds = append(preds, relationshipHasLatestRecovery(item))
+	}
+	if len(preds) == 1 {
+		return preds[0]
+	}
+	return relationship.Or(preds...)
+}
+
+func relationshipHasLatestRecovery(item recoverySearchPhrase) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			art := conversationintelligenceartifact.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(art)
+			b.WriteString(" AS eval WHERE eval.")
+			b.WriteString(conversationintelligenceartifact.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND eval.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" = 'recovery_evaluation' AND eval.")
+			b.WriteString(conversationintelligenceartifact.FieldStatus)
+			b.WriteString(" = ")
+			b.Arg(item.classification)
+			b.WriteString(" AND eval.")
+			b.WriteString(conversationintelligenceartifact.FieldVersion)
+			b.WriteString(" = (SELECT MAX(newer.")
+			b.WriteString(conversationintelligenceartifact.FieldVersion)
+			b.WriteString(") FROM ")
+			b.WriteString(art)
+			b.WriteString(" AS newer WHERE newer.")
+			b.WriteString(conversationintelligenceartifact.FieldStableID)
+			b.WriteString(" = eval.")
+			b.WriteString(conversationintelligenceartifact.FieldStableID)
+			b.WriteString(" AND newer.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" = eval.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" AND newer.")
+			b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+			b.WriteString(" = eval.")
+			b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+			b.WriteString(")")
+			switch {
+			case item.explanation != "":
+				b.WriteString(" AND ")
+				writeRecoveryExplanation(b, s)
+				b.WriteString(" = ")
+				b.Arg(item.explanation)
+			case item.explanationLike != "":
+				b.WriteString(" AND ")
+				writeRecoveryExplanation(b, s)
+				b.WriteString(" LIKE ")
+				b.Arg(item.explanationLike)
+			}
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeRecoveryExplanation(b *sql.Builder, s *sql.Selector) {
+	column := "eval." + conversationintelligenceartifact.FieldPayloadJSON
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(column)
+		b.WriteString("::jsonb->>'explanation'")
+		return
+	}
+	b.WriteString("json_extract(")
+	b.WriteString(column)
+	b.WriteString(", '$.explanation')")
 }
 
 func overdueCommitmentAny(now time.Time) predicate.Commitment {
