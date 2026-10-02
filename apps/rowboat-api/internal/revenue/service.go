@@ -19,6 +19,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipreviewacknowledgement"
@@ -811,6 +812,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if review := relationshipSheetReviewMatch(u.ID, needle); review != nil {
 			parts = append(parts, review)
 		}
+		if sheetPhraseMatches("no supported answer yet", needle) {
+			parts = append(parts, relationship.Not(relationshipHasSupportedStateAnswer(time.Now())))
+		}
 		if sheetPhraseMatches("no action is currently recommended", needle) {
 			parts = append(parts, relationship.Not(
 				relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen)),
@@ -1293,6 +1297,45 @@ func relationshipAcknowledgementExists(s *sql.Selector, userID uuid.UUID, covers
 			))
 		}
 		b.WriteByte(')')
+	})
+}
+
+// relationshipHasSupportedStateAnswer is the lifecycle or health evidence the
+// sheet can show. Without either, the question reads "No supported answer yet."
+// A user correction stands on its own. Any other claim needs an observation.
+func relationshipHasSupportedStateAnswer(now time.Time) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			col := relationshipassertion.FieldSupportingObservationIds
+			evidence := ""
+			if s.Dialect() == dialect.Postgres {
+				evidence = fmt.Sprintf("jsonb_array_length(coalesce(%s, '[]'::jsonb)) > 0", col)
+			} else {
+				evidence = fmt.Sprintf("json_array_length(coalesce(%s, '[]')) > 0", col)
+			}
+			b.WriteString(fmt.Sprintf(
+				"EXISTS (SELECT 1 FROM %s WHERE %s = %s AND %s IN ('lifecycle', 'health') AND %s IN ('accepted', 'active') AND %s <= ",
+				relationshipassertion.Table,
+				relationshipassertion.RelationshipColumn,
+				s.C(relationship.FieldID),
+				relationshipassertion.FieldDimension,
+				relationshipassertion.FieldStatus,
+				relationshipassertion.FieldValidFrom,
+			))
+			b.Arg(now)
+			b.WriteString(fmt.Sprintf(
+				" AND (%s IS NULL OR %s > ",
+				relationshipassertion.FieldValidTo,
+				relationshipassertion.FieldValidTo,
+			))
+			b.Arg(now)
+			b.WriteString(fmt.Sprintf(
+				") AND (%s = 'user_correction' OR %s IS NOT NULL OR %s))",
+				relationshipassertion.FieldSourceType,
+				relationshipassertion.ObservationColumn,
+				evidence,
+			))
+		}))
 	})
 }
 
