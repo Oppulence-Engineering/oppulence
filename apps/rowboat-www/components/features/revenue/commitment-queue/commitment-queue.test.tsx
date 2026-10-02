@@ -5,7 +5,7 @@ import "@testing-library/jest-dom/vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ComponentProps } from "react";
@@ -492,6 +492,24 @@ describe("CommitmentQueue", () => {
           idempotencyKey: "commitment-queue:corrected:commitment-1:v3",
         }),
       ),
+    );
+  });
+
+  it("shows a failed correction inside the dialog", async () => {
+    const user = userEvent.setup();
+    const onTransition = vi.fn(async () => "Could not update the commitment.");
+    render(<CommitmentQueue {...props({ entries: entries("candidate"), onTransition })} />);
+
+    await user.click(screen.getByText("Acme"));
+    await user.click(screen.getByRole("button", { name: "Correct" }));
+    await user.click(screen.getByRole("button", { name: "Save correction" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+      "Could not update the commitment.",
+    );
+    expect(within(dialog).getByRole("textbox", { name: "Corrected promise" })).toHaveValue(
+      "Send the signed security packet",
     );
   });
 });

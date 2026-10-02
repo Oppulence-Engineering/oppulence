@@ -358,8 +358,9 @@ export function RevenuePanel({
         setNoticeMsg("Commitment review recorded.");
         return true;
       } catch (error) {
-        setBanner(shownRequestError(error, "Could not update the commitment."));
-        return false;
+        const message = shownRequestError(error, "Could not update the commitment.");
+        setBanner(message);
+        return message;
       }
     },
     [commitmentQuery, setBanner, setNoticeMsg],
@@ -375,7 +376,9 @@ export function RevenuePanel({
         capture(RevenueEvents.CommitmentExported, { commitmentId: item.id, state: item.state });
         setNoticeMsg("Commitment record exported.");
       } catch (error) {
-        setBanner(shownRequestError(error, "Could not export the record."));
+        const message = shownRequestError(error, "Could not export the record.");
+        setBanner(message);
+        return message;
       }
     },
     [setBanner, setNoticeMsg],
@@ -396,8 +399,9 @@ export function RevenuePanel({
         );
         return true;
       } catch (error) {
-        setBanner(shownRequestError(error, "Could not draft commitment recovery."));
-        return false;
+        const message = shownRequestError(error, "Could not draft commitment recovery.");
+        setBanner(message);
+        return message;
       }
     },
     [commitmentQuery, setBanner, setNoticeMsg],

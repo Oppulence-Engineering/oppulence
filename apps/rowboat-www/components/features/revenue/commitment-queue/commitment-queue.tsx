@@ -146,8 +146,8 @@ export interface CommitmentQueueProps extends Omit<
    */
   overdueOnly?: boolean;
   onLeaveOverdue?: () => void;
-  /** Fetches the Markdown record a user forwards. */
-  onExport?: (item: CommitmentQueueItem) => Promise<void>;
+  /** Fetches the Markdown record a user forwards. A string result is the failure sentence. */
+  onExport?: (item: CommitmentQueueItem) => Promise<void | string>;
   /** Accounts in the workspace, for the "no accounts yet" empty state. */
   relationshipCount?: number;
   accounts?: { id: string; label: string }[];
@@ -176,8 +176,8 @@ export interface CommitmentQueueProps extends Omit<
   onTransition: (
     item: CommitmentQueueItem,
     transition: CommitmentQueueTransition,
-  ) => Promise<boolean>;
-  onDraftRecovery: (relationshipId: string) => Promise<boolean>;
+  ) => Promise<boolean | string>;
+  onDraftRecovery: (relationshipId: string) => Promise<boolean | string>;
   /** The loaded page filled the register limit and a later page may exist. */
   hasMorePromises?: boolean;
   loadingMorePromises?: boolean;
@@ -556,6 +556,7 @@ export function CommitmentQueue({
   const [blocking, setBlocking] = React.useState(false);
   const [blockerText, setBlockerText] = React.useState("");
   const [fulfilling, setFulfilling] = React.useState(false);
+  const [recordError, setRecordError] = React.useState<string | null>(null);
   // Home's count is past due only. "Due soon or overdue" would add rows the
   // number did not include.
   React.useEffect(() => {
@@ -565,6 +566,7 @@ export function CommitmentQueue({
     setBlocking(false);
     setBlockerText("");
     setFulfilling(false);
+    setRecordError(null);
   }, [selected?.id]);
   const items = React.useMemo(() => toQueueItems(entries), [entries]);
   // An empty select cannot be "chosen". That case is a missing company, not a
@@ -604,13 +606,19 @@ export function CommitmentQueue({
     extra: Partial<CommitmentQueueTransition> = {},
   ) => {
     setBusy(`${item.id}:${kind}`);
+    setRecordError(null);
     try {
-      return await onTransition(item, {
+      const saved = await onTransition(item, {
         kind,
         idempotencyKey: `commitment-queue:${kind}:${item.id}:v${item.currentEventVersion}`,
         reason: `Reviewed from the Commitment Queue (${statusLabel(kind)}).`,
         ...extra,
       });
+      if (saved === true) return true;
+      setRecordError(
+        typeof saved === "string" && saved.trim() ? saved : "Could not update the commitment.",
+      );
+      return false;
     } finally {
       setBusy(null);
     }
@@ -1215,7 +1223,12 @@ export function CommitmentQueue({
                   disabled={exporting}
                   onClick={() => {
                     setExporting(true);
-                    void onExport(selected).finally(() => setExporting(false));
+                    setRecordError(null);
+                    void onExport(selected)
+                      .then((result) => {
+                        if (typeof result === "string" && result.trim()) setRecordError(result);
+                      })
+                      .finally(() => setExporting(false));
                   }}
                 >
                   {exporting ? <Spinner className="size-4" /> : <Export />}
@@ -1223,6 +1236,14 @@ export function CommitmentQueue({
                 </Button>
               ) : null}
             </div>
+            {recordError ? (
+              <p
+                className="border-b border-destructive/30 px-4 py-2 text-sm text-destructive"
+                role="alert"
+              >
+                {recordError}
+              </p>
+            ) : null}
             <div className="border-b border-border p-4">
               <div className="flex items-start gap-3">
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-none bg-[#3478f6] text-white">
@@ -1245,8 +1266,15 @@ export function CommitmentQueue({
                     disabled={busy !== null}
                     onClick={async () => {
                       setBusy(`${selected.id}:recovery`);
+                      setRecordError(null);
                       try {
-                        await onDraftRecovery(selected.relationshipId);
+                        const drafted = await onDraftRecovery(selected.relationshipId);
+                        if (drafted === true) return;
+                        setRecordError(
+                          typeof drafted === "string" && drafted.trim()
+                            ? drafted
+                            : "Could not draft commitment recovery.",
+                        );
                       } finally {
                         setBusy(null);
                       }
@@ -1265,6 +1293,7 @@ export function CommitmentQueue({
                   size="sm"
                   variant="outline"
                   onClick={() => {
+                    setRecordError(null);
                     setEditing(selected);
                     setCorrectedText(selected.text);
                     setCorrectedDueAt(localDateTime(selected.dueAt));
@@ -1577,6 +1606,11 @@ export function CommitmentQueue({
               onChange={(event) => setCorrectedDueAt(event.target.value)}
             />
           </div>
+          {recordError ? (
+            <p className="text-sm text-destructive" role="alert">
+              {recordError}
+            </p>
+          ) : null}
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setEditing(null)}>
               Cancel
