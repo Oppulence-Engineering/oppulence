@@ -125,6 +125,8 @@ import {
   personSheetSubtitle,
   sortTasksByDue,
   linkedCompanyName,
+  nextNoteCompaniesLabel,
+  noteCompanyMenuLabel,
   noteCompanyLabel,
   noteNeedsCompanyCopy,
   noteCountLabel,
@@ -293,6 +295,72 @@ describe("durable note templates and favorites", () => {
     expect(noteNeedsCompanyCopy("notice", true)).toBe(
       "Link a company before this note can be saved.",
     );
+  });
+
+  it("loads a later company into a new note without selecting it", async () => {
+    mocks.fetchWorkspaceNotes.mockResolvedValue({
+      notes: [],
+      relationships: [{ id: "relationship-1", kind: "organization", displayName: "Acme" }],
+      failedTimelineCount: 0,
+      hasMoreNotes: true,
+      nextRelationshipOffset: 200,
+      timelineCursors: [],
+    });
+    mocks.fetchMoreWorkspaceNotes.mockResolvedValue({
+      notes: [],
+      relationships: [
+        { id: "relationship-hidden", kind: "organization", displayName: "Hidden Account Co" },
+      ],
+      failedTimelineCount: 0,
+      hasMoreNotes: false,
+      timelineCursors: [],
+    });
+    const user = userEvent.setup();
+    Element.prototype.hasPointerCapture ??= () => false;
+    Element.prototype.setPointerCapture ??= () => undefined;
+    Element.prototype.releasePointerCapture ??= () => undefined;
+    Element.prototype.scrollIntoView ??= () => undefined;
+    renderNotes();
+
+    await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
+    await user.click(screen.getByRole("combobox", { name: "Linked company, Link a company" }));
+    expect(screen.getByRole("option", { name: "Acme" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Hidden Account Co" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: nextNoteCompaniesLabel() }));
+
+    expect(mocks.fetchMoreWorkspaceNotes).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole("option", { name: "Hidden Account Co" })).toHaveAttribute(
+      "aria-selected",
+      "false",
+    );
+    expect(screen.getByRole("option", { name: "Acme" })).toHaveAttribute("aria-selected", "false");
+    expect(mocks.ingestRelationshipObservations).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: nextNoteCompaniesLabel() })).toBeNull();
+  });
+
+  it("does not say the workspace has no companies while a later page still has them", async () => {
+    mocks.fetchWorkspaceNotes.mockResolvedValue({
+      notes: [],
+      relationships: [],
+      failedTimelineCount: 0,
+      hasMoreNotes: true,
+      nextRelationshipOffset: 200,
+      timelineCursors: [],
+    });
+    const user = userEvent.setup();
+    renderNotes();
+
+    await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
+
+    expect(noteCompanyMenuLabel(0, true)).toBe("More companies are still in this list.");
+    expect(
+      screen.getByRole("combobox", {
+        name: "Linked company, More companies are still in this list.",
+      }),
+    ).toBeEnabled();
+    expect(screen.queryByText("No companies yet")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add a company" })).toBeNull();
   });
 
   it("opens the company named on a meeting note", async () => {
@@ -916,6 +984,9 @@ describe("task due order", () => {
     expect(taskFilterName("all")).toBe("Tasks, All tasks");
     expect(taskFilterName("overdue")).toBe("Tasks, Overdue");
     expect(linkedCompanyName("No companies yet")).toBe("Linked company, No companies yet");
+    expect(noteCompanyMenuLabel(1, true)).toBe("Link a company");
+    expect(noteCompanyMenuLabel(0, false)).toBe("No companies yet");
+    expect(nextNoteCompaniesLabel()).toBe("Show the next companies");
     expect(source).toContain("aria-label={taskFilterName(filter)}");
     expect(source).toContain("taskListEmptyCopy(filter, hasMoreTasks)");
     expect(source).toContain("taskIsDueToday(task.dueAt, today)");

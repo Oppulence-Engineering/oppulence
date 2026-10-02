@@ -1094,6 +1094,10 @@ export function NotesView({
     ];
   }, [extraRelationships, notesPage?.relationships]);
   const hasMoreNotes = primedNotes.current === null ? Boolean(notesPage?.hasMoreNotes) : moreNotes;
+  const hasMoreCompanies =
+    primedNotes.current === null
+      ? notesPage?.nextRelationshipOffset !== undefined
+      : nextRelationshipOffset !== undefined;
   const loading = notesQuery.isPending;
   const [editing, setEditing] = React.useState<
     WorkspaceNote | { template?: NoteTemplateResource } | null
@@ -1734,6 +1738,9 @@ export function NotesView({
           }
           onViewTemplates={() => setTab("templates")}
           author={author}
+          hasMoreCompanies={hasMoreCompanies}
+          loadingMoreCompanies={loadingMoreNotes}
+          onLoadMoreCompanies={() => void loadEarlierNotes()}
           relationships={relationships}
           template={"template" in editing ? editing.template : undefined}
         />
@@ -1858,6 +1865,9 @@ function NoteDialog({
   onNotice,
   onViewTemplates,
   onAddCompany,
+  hasMoreCompanies = false,
+  loadingMoreCompanies = false,
+  onLoadMoreCompanies,
 }: {
   note?: WorkspaceNote;
   template?: NoteTemplateResource;
@@ -1871,6 +1881,10 @@ function NoteDialog({
   onViewTemplates: () => void;
   /** Closes this note and opens New company. Absent in tests that only check the empty copy. */
   onAddCompany?: () => void;
+  /** The company menu only lists companies whose notes are already loaded. */
+  hasMoreCompanies?: boolean;
+  loadingMoreCompanies?: boolean;
+  onLoadMoreCompanies?: () => void;
 }) {
   const noteId = React.useRef(note?.externalId || crypto.randomUUID()).current;
   const [title, setTitle] = React.useState(
@@ -1951,6 +1965,7 @@ function NoteDialog({
   }, [publish, relationshipId, snapshot]);
 
   const noteHasDraftContent = Boolean(title.trim() || plateText(content).trim());
+  const canLinkCompany = relationships.length > 0 || hasMoreCompanies;
 
   const closeEditor = async () => {
     const dirty = snapshot !== lastSaved.current;
@@ -1961,7 +1976,7 @@ function NoteDialog({
     // draft, but the status line and this notice are the only signal that the
     // text was not written.
     if (dirty && noteHasDraftContent && !relationshipId) {
-      onNotice(noteNeedsCompanyCopy("notice", relationships.length > 0));
+      onNotice(noteNeedsCompanyCopy("notice", canLinkCompany));
     }
     onClose();
     return true;
@@ -1970,6 +1985,9 @@ function NoteDialog({
     if (await closeEditor()) next();
   };
   const selectedRelationship = relationships.find((item) => item.id === relationshipId);
+  const companyMenuLabel = selectedRelationship
+    ? companyName(selectedRelationship)
+    : noteCompanyMenuLabel(relationships.length, hasMoreCompanies);
   const bodyEmpty = !plateText(content).trim();
   return (
     <Dialog open onOpenChange={(open) => !open && void closeEditor()}>
@@ -1982,24 +2000,16 @@ function NoteDialog({
           <div className="flex min-w-0 items-center gap-2 text-[12px] text-primary/80">
             <Note className="size-3.5 text-primary/45" />
             <Select
-              disabled={relationships.length === 0}
+              disabled={!canLinkCompany}
               value={relationshipId || undefined}
               onValueChange={setRelationshipId}
             >
               <SelectTrigger
                 id="note-relationship"
-                aria-label={linkedCompanyName(
-                  selectedRelationship
-                    ? companyName(selectedRelationship)
-                    : relationships.length === 0
-                      ? "No companies yet"
-                      : "Link a company",
-                )}
+                aria-label={linkedCompanyName(companyMenuLabel)}
                 className="h-auto max-w-56 border-0 bg-transparent p-0 text-[12px] text-primary underline shadow-none focus:ring-0"
               >
-                <SelectValue
-                  placeholder={relationships.length === 0 ? "No companies yet" : "Link a company"}
-                />
+                <SelectValue placeholder={companyMenuLabel} />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-none">
                 {relationships.map((relationship) => (
@@ -2007,6 +2017,21 @@ function NoteDialog({
                     {companyName(relationship)}
                   </SelectItem>
                 ))}
+                {hasMoreCompanies ? (
+                  <Button
+                    className={cn(
+                      "sticky bottom-0 z-10 h-8 w-full justify-start rounded-none",
+                      "border-t border-border bg-background px-2 text-[12px]",
+                    )}
+                    disabled={loadingMoreCompanies}
+                    onClick={() => onLoadMoreCompanies?.()}
+                    onPointerDown={(event) => event.preventDefault()}
+                    type="button"
+                    variant="ghost"
+                  >
+                    {loadingMoreCompanies ? "Loading…" : nextNoteCompaniesLabel()}
+                  </Button>
+                ) : null}
               </SelectContent>
             </Select>
           </div>
@@ -2118,7 +2143,7 @@ function NoteDialog({
             onChange={(event) => setTitle(event.target.value)}
           />
           <div className="mt-3 flex items-center gap-4 text-[13px] text-primary/55">
-            {relationships.length === 0 && onAddCompany ? (
+            {relationships.length === 0 && !hasMoreCompanies && onAddCompany ? (
               <Button
                 className="h-auto rounded-none px-0 py-0 text-[13px] font-normal text-primary/55 hover:bg-transparent hover:text-primary"
                 type="button"
@@ -2135,11 +2160,7 @@ function NoteDialog({
                 )}
               >
                 <Note className="size-3.5" />
-                {(selectedRelationship
-                  ? companyName(selectedRelationship)
-                  : relationships.length === 0
-                    ? "No companies yet"
-                    : "Link a company")}
+                {companyMenuLabel}
               </Label>
             )}
             <Button
@@ -2218,7 +2239,7 @@ function NoteDialog({
               className="absolute right-5 bottom-3 text-[11px] font-normal text-destructive"
               role="status"
             >
-              {noteNeedsCompanyCopy("status", relationships.length > 0)}
+              {noteNeedsCompanyCopy("status", canLinkCompany)}
             </p>
           ) : saveState !== "saved" ? (
             <Label
@@ -2323,6 +2344,17 @@ export function taskRemainderLabel(): string {
 /** The note's company menu shows the choice inside the control. The name has to repeat it. */
 export function linkedCompanyName(label: string): string {
   return comboboxFilterName("Linked company", label);
+}
+
+/** Companies past the loaded notes page are still in the workspace. */
+export function noteCompanyMenuLabel(loadedCount: number, hasMoreCompanies: boolean): string {
+  if (loadedCount > 0) return "Link a company";
+  if (hasMoreCompanies) return "More companies are still in this list.";
+  return "No companies yet";
+}
+
+export function nextNoteCompaniesLabel(): string {
+  return "Show the next companies";
 }
 
 /**
