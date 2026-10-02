@@ -819,6 +819,8 @@ describe("RelationshipsView", () => {
     expect(identityDecisionLabel("defer")).toBe("Decide later");
     expect(source).toContain("identityImpactLabel(kind, Number(count))");
     expect(source).toContain("identityDecisionLabel(decision)");
+    expect(source).toContain("setReviewError(message)");
+    expect(source).toContain("Could not save this review. Refresh and try again.");
     expect(source).not.toContain("{count} {humanize(kind)}");
     expect(source).not.toContain("relationshipLabel(decision)");
   });

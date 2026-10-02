@@ -1843,6 +1843,7 @@ function IdentityReviewInbox({
 }) {
   const [reasons, setReasons] = React.useState<Record<string, string>>({});
   const [busy, setBusy] = React.useState<string | null>(null);
+  const [reviewError, setReviewError] = React.useState<string | null>(null);
   if (candidates.length === 0) return null;
 
   const decide = async (
@@ -1850,6 +1851,7 @@ function IdentityReviewInbox({
     decision: DecideRelationshipIdentityCandidateInput["decision"],
   ) => {
     setBusy(`${candidate.id}:${decision}`);
+    setReviewError(null);
     try {
       await decideIdentityCandidate(candidate.id, {
         decision,
@@ -1859,7 +1861,9 @@ function IdentityReviewInbox({
       });
       onChanged();
     } catch (error) {
-      onError(errMessage(error, "Could not save this review. Refresh and try again."));
+      const message = errMessage(error, "Could not save this review. Refresh and try again.");
+      setReviewError(message);
+      onError(message);
     } finally {
       setBusy(null);
     }
@@ -1884,6 +1888,11 @@ function IdentityReviewInbox({
           Needs your review
         </Badge>
       </div>
+      {reviewError ? (
+        <p className="text-sm text-destructive" role="alert">
+          {reviewError}
+        </p>
+      ) : null}
       {candidates.map((candidate) => (
         <article key={candidate.id} className="space-y-3 border-t border-amber-500/20 pt-3">
           <div className="flex flex-wrap items-start justify-between gap-2">
