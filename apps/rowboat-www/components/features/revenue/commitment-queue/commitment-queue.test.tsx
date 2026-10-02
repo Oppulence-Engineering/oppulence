@@ -799,7 +799,51 @@ it("finds a promise by the status and score printed on the row", async () => {
       confidence: 65,
       currentEventVersion: 3,
     }),
-  ).toBe("Acme Taylor Morgan Send the signed security packet 65 At risk");
+  ).toBe(
+    [
+      "Acme Taylor Morgan Send the signed security packet 65 At risk",
+      "Due within 72h At risk Accepted Missing Not confirmed None Complete Watch",
+    ].join(" "),
+  );
+  const undated = commitmentSearchText({
+    id: "commitment-3",
+    relationshipId: "rel-3",
+    relationshipName: "Quill",
+    text: "Send the quill excerpt",
+    direction: "promised_by_me",
+    owner: "Ada",
+    counterparty: "Morgan",
+    state: "open",
+    acceptance: "internally_confirmed",
+    missingEvidence: [],
+    nextAction: "Watch connected sources for fulfillment or a reply.",
+    urgency: "open",
+    confidence: 80,
+    currentEventVersion: 1,
+  });
+  expect(undated).toContain("Missing");
+  expect(undated).toContain("Not confirmed");
+  expect(undated).not.toContain("Overdue");
+  const overdue = commitmentSearchText({
+    id: "commitment-4",
+    relationshipId: "rel-4",
+    relationshipName: "Lumen",
+    text: "Send the lumen excerpt",
+    direction: "promised_by_me",
+    owner: "Ada",
+    counterparty: "Riley",
+    dueAt: "2026-09-01T12:00:00.000Z",
+    state: "at_risk",
+    acceptance: "internally_confirmed",
+    missingEvidence: [],
+    nextAction: "Draft a recovery message or task now.",
+    urgency: "overdue",
+    confidence: 70,
+    currentEventVersion: 1,
+  });
+  expect(overdue).toContain("Overdue");
+  expect(overdue).not.toContain("Not confirmed");
+  expect(overdue).not.toContain("Missing");
 });
 
 it("says nothing matches once every loaded promise was searched", async () => {

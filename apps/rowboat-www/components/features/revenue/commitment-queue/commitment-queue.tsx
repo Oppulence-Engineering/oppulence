@@ -480,8 +480,13 @@ function registerPreviewStatus(item: CommitmentQueueItem) {
   return { label: "Confirmed", variant: "green" as const };
 }
 
-/** Search matches the words already printed on the row, including score and status. */
+/** Search matches the words on the row and the words on the open promise. */
 export function commitmentSearchText(item: CommitmentQueueItem): string {
+  const missing = formatMissingEvidence(item.missingEvidence);
+  const evidence =
+    item.missingEvidence.length > 0
+      ? [missing, `${item.missingEvidence.length} items missing`, `Missing ${missing}`].join(" ")
+      : "None Complete";
   return [
     item.relationshipName,
     item.owner,
@@ -489,6 +494,13 @@ export function commitmentSearchText(item: CommitmentQueueItem): string {
     item.text,
     String(item.confidence),
     registerPreviewStatus(item).label,
+    urgencyLabel(item.urgency),
+    statusLabel(item.state),
+    acceptanceLabel(item.acceptance),
+    item.dueAt ? new Date(item.dueAt).toLocaleString() : "Missing",
+    item.dueAt ? new Date(item.dueAt).toLocaleDateString() : "Not confirmed",
+    evidence,
+    item.nextAction,
   ].join(" ");
 }
 
