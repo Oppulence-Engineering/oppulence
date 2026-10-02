@@ -561,6 +561,18 @@ export function companyDirectoryRemainderLabel(): string {
 }
 
 /**
+ * The categories cell used to print only the first tag. A company filed under
+ * two categories looked like it had one.
+ */
+export function companyCategoriesLabel(
+  categories: readonly string[] | null | undefined,
+): string {
+  const names = (categories ?? []).map((item) => item.trim()).filter(Boolean);
+  if (names.length === 0) return "—";
+  return names.join(", ");
+}
+
+/**
  * A filtered directory can be empty because nothing matched. That is not the
  * same as a workspace that has never had a company.
  */
@@ -1294,7 +1306,7 @@ export function RelationshipsView({
                           className="bg-background-100 text-[11px] capitalize text-primary/60"
                           variant="outline"
                         >
-                          {relationship.categories?.[0] ?? "—"}
+                          {companyCategoriesLabel(relationship.categories)}
                         </Badge>
                       </TableCell>
                       <TableCell className="truncate border-r px-3 text-[13px]">

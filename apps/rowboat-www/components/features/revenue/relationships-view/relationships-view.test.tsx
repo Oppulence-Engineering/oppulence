@@ -9,6 +9,7 @@ import {
   companyDomainHref,
   companyName,
   companyDirectoryCount,
+  companyCategoriesLabel,
   companyDirectoryRemainderLabel,
   companyDirectoryTitle,
   companyHealthFilterName,
@@ -92,6 +93,15 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("JSON.stringify(change.before");
     expect(source).toContain("aria-label={`Connect ${item.displayName}`}");
     expect(source).toContain("aria-label={`Permissions for ${item.displayName}`}");
+  });
+
+  it("prints every category on the company row", () => {
+    expect(companyCategoriesLabel(["ledger", "atelier"])).toBe("ledger, atelier");
+    expect(companyCategoriesLabel(["  packet  "])).toBe("packet");
+    expect(companyCategoriesLabel([])).toBe("—");
+    expect(companyCategoriesLabel(undefined)).toBe("—");
+    expect(source).toContain("companyCategoriesLabel(relationship.categories)");
+    expect(source).not.toContain("relationship.categories?.[0]");
   });
 
   it("names a filtered company list and offers to clear it", () => {
