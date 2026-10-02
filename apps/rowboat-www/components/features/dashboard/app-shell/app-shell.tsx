@@ -556,14 +556,12 @@ function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen
   const trialDaysLeft = trialDaysRemaining(billing);
   if (sources.isPending && !sources.data) return null;
   const loadedSources = sources.data ?? [];
-  const sourcesMissing = loadedSources.length === 0;
-  const health: SourceHealth =
-    sources.isError && sourcesMissing
-      ? { tone: "idle", label: sidebarQueryError(sources.error, "Source status unavailable") }
-      : sourceHealth(loadedSources);
-  const connected =
-    sources.isError && sourcesMissing ? undefined : connectedSourceCount(loadedSources);
-  const total = sources.isError && sourcesMissing ? undefined : loadedSources.length;
+  const sourcesNeverLoaded = sources.isError && sources.data == null;
+  const health: SourceHealth = sourcesNeverLoaded
+    ? { tone: "idle", label: sidebarQueryError(sources.error, "Source status unavailable") }
+    : sourceHealth(loadedSources);
+  const connected = sourcesNeverLoaded ? undefined : connectedSourceCount(loadedSources);
+  const total = sourcesNeverLoaded ? undefined : loadedSources.length;
   return (
     <Button
       className={cn(
@@ -577,7 +575,7 @@ function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen
       <Label className="block whitespace-normal text-left text-[15px] font-normal leading-5">
         {health.label}
       </Label>
-      {sources.isError && !sourcesMissing ? (
+      {sources.isError && !sourcesNeverLoaded ? (
         <span className="text-[12px] font-normal leading-4 text-primary/70">
           {sidebarQueryError(sources.error, "Source status unavailable")}
         </span>
