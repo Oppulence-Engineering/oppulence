@@ -164,6 +164,8 @@ export interface CommitmentQueueProps extends Omit<
   failedScan?: RevenueLeakScan | null;
   loading?: boolean;
   error?: string;
+  /** The register page already arrived, so an error is a refresh of that page. */
+  registerKnown?: boolean;
   /** Asks the register for the same page again after a failed load. */
   onRetry?: () => void;
   scanning?: boolean;
@@ -526,6 +528,7 @@ export function CommitmentQueue({
   failedScan,
   loading = false,
   error,
+  registerKnown = false,
   onRetry,
   scanning = false,
   onScan,
@@ -876,7 +879,7 @@ export function CommitmentQueue({
           </Alert>
         ) : null}
 
-        {error && items.length > 0 ? (
+        {error && (items.length > 0 || registerKnown) ? (
           <div
             role="alert"
             className={
@@ -893,7 +896,7 @@ export function CommitmentQueue({
           </div>
         ) : null}
 
-        {error && items.length === 0 ? (
+        {error && items.length === 0 && !registerKnown ? (
           <div
             role="alert"
             className={

@@ -586,6 +586,28 @@ it("shows a register failure instead of the onboarding prompt", () => {
   expect(screen.queryByText(/Connect Gmail and Calendar to find/)).not.toBeInTheDocument();
 });
 
+it("keeps the empty register when its refresh fails", () => {
+  render(
+    <CommitmentQueue
+      {...props({
+        entries: [],
+        sources: [],
+        registerKnown: true,
+        error: "Could not refresh the commitment register. Try again.",
+      })}
+    />,
+  );
+
+  expect(screen.getByText("No commitments yet")).toBeInTheDocument();
+  expect(screen.getByText(/Connect Gmail and Calendar to find/)).toBeInTheDocument();
+  expect(
+    screen.getByText("Could not refresh the commitment register. Try again."),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByText("The commitment register could not be loaded."),
+  ).not.toBeInTheDocument();
+});
+
 it("keeps loaded promises when the register refresh fails", async () => {
   const onRetry = vi.fn();
   render(

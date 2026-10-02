@@ -34,17 +34,22 @@ import type { RegisterEntry } from "@/lib/revenue/types";
 
 /**
  * A failed refresh used to resolve as a successful empty page, which replaced
- * promises already on screen. Keep that page when it has rows.
+ * promises already on screen. Keep a page that already arrived, including one
+ * that was honestly empty. A failed first load has no known page to keep.
  */
 export function keptRegisterPage<T>(
-  previous: { entries: readonly T[]; hasMore: boolean } | undefined,
+  previous:
+    | { entries: readonly T[]; hasMore: boolean; entriesKnown?: boolean }
+    | undefined,
   entriesFailed: boolean,
 ): { entries: readonly T[]; hasMore: boolean } | null {
-  if (!entriesFailed || !previous || previous.entries.length === 0) return null;
+  if (!entriesFailed || !previous) return null;
+  if (previous.entries.length === 0 && previous.entriesKnown !== true) return null;
   return { entries: previous.entries, hasMore: previous.hasMore };
 }
 
-function registerErrorMessage(reason: unknown): string {
+/** A known register keeps its rows or its empty state. The sentence says which request missed. */
+export function registerLoadNotice(reason: unknown, hadPage: boolean): string {
   const status =
     reason instanceof RevenueAPIError || reason instanceof DashboardRequestError
       ? reason.status
@@ -66,9 +71,12 @@ function registerErrorMessage(reason: unknown): string {
     return friendlyRevenueError("Request failed (503)");
   }
   if (reason instanceof Error && reason.message.trim()) {
-    return friendlyRevenueError(reason.message);
+    const friendly = friendlyRevenueError(reason.message);
+    if (friendly !== reason.message) return friendly;
   }
-  return "The commitment register could not be loaded.";
+  return hadPage
+    ? "Could not refresh the commitment register. Try again."
+    : "The commitment register could not be loaded.";
 }
 
 export function useCommitmentRegister(
@@ -108,8 +116,11 @@ export function useCommitmentRegister(
       const previous = client.getQueryData<{
         entries: RegisterEntry[];
         hasMore: boolean;
+        entriesKnown?: boolean;
       }>(queryKey);
       const kept = keptRegisterPage(previous, entries.status === "rejected");
+      const hadPage =
+        previous != null && (previous.entries.length > 0 || previous.entriesKnown === true);
       const freshEntries = rawEntries.map((entry) => {
         const title = entry.relationshipId ? titles.get(entry.relationshipId) : undefined;
         return title ? { ...entry, relationshipName: title } : entry;
@@ -117,8 +128,9 @@ export function useCommitmentRegister(
       return {
         entries: kept ? [...kept.entries] : freshEntries,
         hasMore: kept ? kept.hasMore : commitmentPageHasMore(loadedEntries),
+        entriesKnown: entries.status === "fulfilled" || kept != null,
         registerError:
-          entries.status === "rejected" ? registerErrorMessage(entries.reason) : undefined,
+          entries.status === "rejected" ? registerLoadNotice(entries.reason, hadPage) : undefined,
         sources: sources.status === "fulfilled" ? sources.value : [],
         accounts,
         relationshipCount: accounts.length,
