@@ -100,7 +100,7 @@ func TestListWorkspaceNotesCollapsesEditsAndSkipsOtherCompanies(t *testing.T) {
 		t.Fatalf("ingest other: %v", err)
 	}
 
-	page, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 50, 0)
+	page, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 50, 0, "")
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
@@ -119,21 +119,21 @@ func TestListWorkspaceNotesCollapsesEditsAndSkipsOtherCompanies(t *testing.T) {
 		t.Fatalf("older note = %+v", page.Notes[1])
 	}
 
-	first, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 1, 0)
+	first, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 1, 0, "")
 	if err != nil {
 		t.Fatalf("first page: %v", err)
 	}
 	if !first.HasMore || len(first.Notes) != 1 || first.Notes[0].ExternalID != "cedar-edit" {
 		t.Fatalf("first page = %+v", first)
 	}
-	second, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 1, 1)
+	second, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 1, 1, "")
 	if err != nil {
 		t.Fatalf("second page: %v", err)
 	}
 	if second.HasMore || len(second.Notes) != 1 || second.Notes[0].ExternalID != "pine-note" {
 		t.Fatalf("second page = %+v", second)
 	}
-	if _, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, -1, 0); err == nil {
+	if _, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, -1, 0, ""); err == nil {
 		t.Fatal("negative limit was accepted")
 	}
 }
@@ -177,7 +177,7 @@ func TestListWorkspaceNotesReadsPastARevisionBatch(t *testing.T) {
 		t.Fatalf("ingest: %v", err)
 	}
 
-	page, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 50, 0)
+	page, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 50, 0, "")
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
@@ -189,6 +189,51 @@ func TestListWorkspaceNotesReadsPastARevisionBatch(t *testing.T) {
 	}
 	if page.Notes[1].Title != "Pine kept" || page.Notes[1].RelationshipName != "Pine Kept" {
 		t.Fatalf("older = %+v", page.Notes[1])
+	}
+}
+
+func TestListWorkspaceNotesOldestStartsAtTheFirstNote(t *testing.T) {
+	f := newFixture(t)
+	company, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Order", AccountDomain: "cedar-order.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	at := func(day int) time.Time {
+		return time.Date(2026, 8, day, 12, 0, 0, 0, time.UTC)
+	}
+	notes := []RelationshipObservationInput{
+		{
+			RelationshipID: company.ID, Source: "desktop_note", ExternalID: "oldest-note",
+			EventType: "note", OccurredAt: at(1), Summary: "Pine oldest",
+			Facts: map[string]any{"noteId": "oldest-note", "title": "Pine oldest", "body": "First"},
+		},
+		{
+			RelationshipID: company.ID, Source: "desktop_note", ExternalID: "middle-note",
+			EventType: "note", OccurredAt: at(2), Summary: "Cedar middle",
+			Facts: map[string]any{"noteId": "middle-note", "title": "Cedar middle", "body": "Second"},
+		},
+		{
+			RelationshipID: company.ID, Source: "desktop_note", ExternalID: "newest-note",
+			EventType: "note", OccurredAt: at(3), Summary: "Cedar newest",
+			Facts: map[string]any{"noteId": "newest-note", "title": "Cedar newest", "body": "Third"},
+		},
+	}
+	if _, err := f.svc.IngestRelationshipObservationCandidates(f.ctx, f.user, notes); err != nil {
+		t.Fatal(err)
+	}
+	oldest, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 1, 0, "oldest")
+	if err != nil || !oldest.HasMore || len(oldest.Notes) != 1 || oldest.Notes[0].Title != "Pine oldest" {
+		t.Fatalf("oldest page = %+v err=%v", oldest, err)
+	}
+	next, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 1, 1, "oldest")
+	if err != nil || !next.HasMore || len(next.Notes) != 1 || next.Notes[0].Title != "Cedar middle" {
+		t.Fatalf("next oldest = %+v err=%v", next, err)
+	}
+	newest, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 1, 0, "newest")
+	if err != nil || len(newest.Notes) != 1 || newest.Notes[0].Title != "Cedar newest" {
+		t.Fatalf("newest page = %+v err=%v", newest, err)
 	}
 }
 

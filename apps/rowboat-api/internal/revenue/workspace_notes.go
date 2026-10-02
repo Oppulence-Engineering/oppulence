@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -38,7 +39,9 @@ type WorkspaceNote struct {
 	EventType        string
 }
 
-// WorkspaceNotePage is one page of collapsed notes, newest first.
+// WorkspaceNotePage is one page of collapsed notes. Newest is the default.
+// Oldest starts at the earliest note, so a later page is not the only place
+// that note can appear.
 type WorkspaceNotePage struct {
 	Notes   []WorkspaceNote
 	HasMore bool
@@ -46,7 +49,8 @@ type WorkspaceNotePage struct {
 
 // ListWorkspaceNotes returns the latest copy of each company note. A newer
 // edit replaces the previous copy, and a later deletion removes the note.
-func (s *Service) ListWorkspaceNotes(ctx context.Context, u *ent.User, limit, offset int) (*WorkspaceNotePage, error) {
+// Order "oldest" pages from the earliest note. Any other order is newest first.
+func (s *Service) ListWorkspaceNotes(ctx context.Context, u *ent.User, limit, offset int, order string) (*WorkspaceNotePage, error) {
 	limit, offset, err := normalizeWorkspaceNotePage(limit, offset)
 	if err != nil {
 		return nil, err
@@ -55,11 +59,15 @@ func (s *Service) ListWorkspaceNotes(ctx context.Context, u *ent.User, limit, of
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.collectWorkspaceNoteRows(ctx, ws.ID, offset+limit+1)
+	oldest := order == "oldest"
+	rows, err := s.collectWorkspaceNoteRows(ctx, ws.ID, offset+limit+1, oldest)
 	if err != nil {
 		return nil, err
 	}
 	live := collapseWorkspaceNotes(rows)
+	if oldest {
+		slices.Reverse(live)
+	}
 	if offset > len(live) {
 		offset = len(live)
 	}
@@ -90,7 +98,7 @@ func normalizeWorkspaceNotePage(limit, offset int) (int, int, error) {
 // collectWorkspaceNoteRows reads revisions newest first until enough distinct
 // notes are collapsed, or the history ends. Stopping after a fixed number of
 // raw rows hid every older note once one note had been edited that many times.
-func (s *Service) collectWorkspaceNoteRows(ctx context.Context, workspaceID uuid.UUID, liveNeed int) ([]*ent.RelationshipObservation, error) {
+func (s *Service) collectWorkspaceNoteRows(ctx context.Context, workspaceID uuid.UUID, liveNeed int, untilEnd bool) ([]*ent.RelationshipObservation, error) {
 	if liveNeed < 1 {
 		liveNeed = 1
 	}
@@ -131,7 +139,12 @@ func (s *Service) collectWorkspaceNoteRows(ctx context.Context, workspaceID uuid
 			break
 		}
 		rows = append(rows, batch...)
-		if len(collapseWorkspaceNotes(rows)) >= liveNeed || len(batch) < batchSize {
+		if len(batch) < batchSize {
+			break
+		}
+		// Oldest-first has to see the whole history. Stopping at the newest
+		// page would hide the earliest note behind that page.
+		if !untilEnd && len(collapseWorkspaceNotes(rows)) >= liveNeed {
 			break
 		}
 		after = batch[len(batch)-1]

@@ -159,4 +159,39 @@ describe("loadWorkspaceNotes", () => {
     expect(more.relationships.map((company) => company.displayName)).toEqual(["Cedar Hidden"]);
     expect(more.nextRelationshipOffset).toBeUndefined();
   });
+
+  it("asks for the earliest notes when the list is oldest first", async () => {
+    const paths: string[] = [];
+    const request: RequestJsonFn = async (input) => {
+      paths.push(input.path);
+      if (input.path.startsWith("/workspace-notes")) {
+        return {
+          notes: [
+            {
+              externalId: "note-old",
+              title: "Pine oldest",
+              body: "",
+              relationshipId: "company-0",
+              relationshipName: "Cedar 0",
+              occurredAt: "2026-08-01T12:00:00Z",
+              eventType: "note",
+            },
+          ],
+          hasMore: true,
+        };
+      }
+      return { relationships: companies(1), hasMore: false };
+    };
+
+    const first = await loadWorkspaceNotes(request, undefined, "oldest");
+    await loadMoreWorkspaceNotes(request, {
+      relationships: first.relationships,
+      timelineCursors: first.timelineCursors,
+      order: "oldest",
+    });
+    expect(paths.filter((path) => path.startsWith("/workspace-notes"))).toEqual([
+      `/workspace-notes?limit=${String(WORKSPACE_NOTE_PAGE)}&order=oldest`,
+      `/workspace-notes?limit=${String(WORKSPACE_NOTE_PAGE)}&offset=1&order=oldest`,
+    ]);
+  });
 });

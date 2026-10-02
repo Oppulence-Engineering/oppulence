@@ -8,6 +8,9 @@ import type { RevenueRelationship } from "@/lib/revenue/types";
 /** One page of collapsed notes. The API refuses a larger page. */
 export const WORKSPACE_NOTE_PAGE = 50;
 
+/** Oldest pages from the earliest note. Newest is the default. */
+export type WorkspaceNoteOrder = "newest" | "oldest";
+
 /**
  * Marks the next page of workspace notes. Company timeline cursors used to
  * live in this list; those requests are what tripped the revenue rate limit.
@@ -51,11 +54,13 @@ export type MoreWorkspaceNotesInput = {
   relationships: RevenueRelationship[];
   timelineCursors: NoteTimelineCursor[];
   nextRelationshipOffset?: number;
+  order?: WorkspaceNoteOrder;
 };
 
-function workspaceNotesPath(offset: number): string {
+function workspaceNotesPath(offset: number, order: WorkspaceNoteOrder = "newest"): string {
   const params = new URLSearchParams({ limit: String(WORKSPACE_NOTE_PAGE) });
   if (offset > 0) params.set("offset", String(offset));
+  if (order === "oldest") params.set("order", "oldest");
   return `/workspace-notes?${params.toString()}`;
 }
 
@@ -73,9 +78,14 @@ function nextNoteOffset(
   return offset + notes.length;
 }
 
-async function loadNotePage(request: RequestJsonFn, offset: number, signal?: AbortSignal) {
+async function loadNotePage(
+  request: RequestJsonFn,
+  offset: number,
+  signal: AbortSignal | undefined,
+  order: WorkspaceNoteOrder,
+) {
   const page = await request({
-    path: workspaceNotesPath(offset),
+    path: workspaceNotesPath(offset, order),
     schema: WorkspaceNotesPageSchema,
     signal,
   });
@@ -94,10 +104,11 @@ function companyRows(
 export async function loadWorkspaceNotes(
   request: RequestJsonFn,
   signal?: AbortSignal,
+  order: WorkspaceNoteOrder = "newest",
 ): Promise<WorkspaceNotesBundle> {
   const [directory, page] = await Promise.all([
     loadRelationships(request, {}, signal),
-    loadNotePage(request, 0, signal),
+    loadNotePage(request, 0, signal, order),
   ]);
   const rows = relationshipRows(directory);
   const notesOffset = nextNoteOffset(0, page.notes, page.hasMore);
@@ -134,7 +145,7 @@ export async function loadMoreWorkspaceNotes(
   );
   const notesPage =
     Number.isInteger(noteOffset) && noteOffset >= 0
-      ? await loadNotePage(request, noteOffset, signal)
+      ? await loadNotePage(request, noteOffset, signal, input.order ?? "newest")
       : { notes: [], hasMore: false };
   const notesOffset = Number.isInteger(noteOffset)
     ? nextNoteOffset(noteOffset, notesPage.notes, notesPage.hasMore)
@@ -152,8 +163,11 @@ export async function loadMoreWorkspaceNotes(
   };
 }
 
-export function fetchWorkspaceNotes(signal?: AbortSignal): Promise<WorkspaceNotesBundle> {
-  return loadWorkspaceNotes(requestJson, signal);
+export function fetchWorkspaceNotes(
+  signal?: AbortSignal,
+  order: WorkspaceNoteOrder = "newest",
+): Promise<WorkspaceNotesBundle> {
+  return loadWorkspaceNotes(requestJson, signal, order);
 }
 
 export function fetchMoreWorkspaceNotes(

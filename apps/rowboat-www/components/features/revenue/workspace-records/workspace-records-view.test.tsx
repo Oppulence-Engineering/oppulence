@@ -1295,6 +1295,8 @@ describe("task due order", () => {
     expect(source).toContain("templatePage.length + extraTemplates.length");
     expect(source).toContain("favoritePage.length + extraFavorites.length");
     expect(source).toContain("fetchMoreWorkspaceNotes");
+    expect(source).toContain("useWorkspaceNotes(noteOrder)");
+    expect(source).toContain("order: noteOrder");
     expect(source).toContain("personPageHasMore");
     expect(source).toContain("peoplePage.length + extraPeople.length");
     expect(source).not.toContain("peoplePage.length === PERSON_PAGE_SIZE");

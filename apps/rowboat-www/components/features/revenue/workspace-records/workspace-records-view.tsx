@@ -1257,7 +1257,9 @@ export function NotesView({
 }: ViewProps & { onOpenCompanies?: () => void; onOpenCompany?: (relationshipId: string) => void }) {
   const queryClient = useQueryClient();
   const author = useNoteAuthor();
-  const notesQuery = useWorkspaceNotes();
+  const [newestFirst, setNewestFirst] = React.useState(true);
+  const noteOrder = newestFirst ? "newest" : "oldest";
+  const notesQuery = useWorkspaceNotes(noteOrder);
   const notesPage = notesQuery.data;
   const [extraNotes, setExtraNotes] = React.useState<WorkspaceNote[]>([]);
   const [extraRelationships, setExtraRelationships] = React.useState<RevenueRelationship[]>([]);
@@ -1306,7 +1308,6 @@ export function NotesView({
   );
   const [tab, setTab] = React.useState<"notes" | "templates">("notes");
   const [layout, setLayout] = React.useState<"grid" | "list">("grid");
-  const [newestFirst, setNewestFirst] = React.useState(true);
   const [showFavorites, setShowFavorites] = React.useState(true);
   const templatesQuery = useConsoleResources("note_template", noteTemplates);
   const favoritesQuery = useConsoleResources("note_favorite", noteFavorites);
@@ -1384,6 +1385,13 @@ export function NotesView({
     primedNotes.current = null;
     await queryClient.invalidateQueries({ queryKey: workspaceKeys.notes() });
   }, [queryClient]);
+  const chooseNoteOrder = (nextNewest: boolean) => {
+    primedNotes.current = null;
+    setExtraNotes([]);
+    setTimelineCursors([]);
+    setMoreNotes(false);
+    setNewestFirst(nextNewest);
+  };
   const loadEarlierNotes = React.useCallback(async () => {
     // The note picker still walks company pages after every note is loaded.
     if (loadingMoreNotes || (!hasMoreNotes && !hasMoreCompanies)) return;
@@ -1393,6 +1401,7 @@ export function NotesView({
         relationships,
         timelineCursors,
         nextRelationshipOffset,
+        order: noteOrder,
       });
       setExtraNotes((current) => mergeWorkspaceNotes(current, next.notes));
       setExtraRelationships((current) => [...current, ...next.relationships]);
@@ -1414,6 +1423,7 @@ export function NotesView({
     hasMoreNotes,
     loadingMoreNotes,
     nextRelationshipOffset,
+    noteOrder,
     onError,
     onNotice,
     relationships,
@@ -1540,7 +1550,7 @@ export function NotesView({
           type="button"
           className="h-8 rounded-none border border-border bg-background px-3 text-[13px] text-primary/60 hover:bg-background-100"
           variant="ghost"
-          onClick={() => setNewestFirst((value) => !value)}
+          onClick={() => chooseNoteOrder(!newestFirst)}
         >
           <List className="size-4" /> Sorted by{" "}
           <Label className="font-normal text-primary">

@@ -47,7 +47,11 @@ func (h *Handler) ListWorkspaceNotes(w http.ResponseWriter, r *http.Request) {
 		}
 		offset = parsed
 	}
-	page, err := h.svc.ListWorkspaceNotes(r.Context(), u, limit, offset)
+	order := ""
+	if r.URL.Query().Get("order") == "oldest" {
+		order = "oldest"
+	}
+	page, err := h.svc.ListWorkspaceNotes(r.Context(), u, limit, offset, order)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
