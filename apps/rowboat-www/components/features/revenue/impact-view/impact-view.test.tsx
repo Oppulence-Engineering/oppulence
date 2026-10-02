@@ -3,7 +3,13 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { digestSignalLabel, impactAccountTotal, overdueDirectionLines } from "./impact-view";
+import {
+  digestFailureCopy,
+  digestRefreshCopy,
+  digestSignalLabel,
+  impactAccountTotal,
+  overdueDirectionLines,
+} from "./impact-view";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "impact-view.tsx"), "utf8");
 
@@ -25,6 +31,9 @@ describe("ImpactView", () => {
     expect(source).not.toContain("atRiskPulseCount(");
     expect(source).not.toContain("recoveryPulseCount(");
     expect(source).toContain("digest?.top ?? []");
+    expect(source).toContain("digestFailed && digestTop.length === 0");
+    expect(digestFailureCopy()).toBe("The weekly digest could not load. Try again.");
+    expect(digestRefreshCopy()).toBe("Could not refresh the weekly digest. Try again.");
     expect(source).toContain("digest?.openCount");
     expect(source).not.toContain("digestWithoutTasks(");
     expect(source).toContain("digestTop.map(");

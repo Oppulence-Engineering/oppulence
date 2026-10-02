@@ -85,11 +85,30 @@ export function impactAccountTotal(
  * The digest email already names a signal. A stored token, or a name the
  * API left blank, is not what the preview badge should print.
  */
+export function digestFailureCopy(): string {
+  return "The weekly digest could not load. Try again.";
+}
+
+export function digestRefreshCopy(): string {
+  return "Could not refresh the weekly digest. Try again.";
+}
+
 export function digestSignalLabel(detector: string): string {
   const value = detector.trim();
   if (!value) return "";
   if (/^[a-z0-9_]+$/.test(value)) return attentionReasonLabel(value);
   return value;
+}
+
+function DigestLoadNotice({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+      <p className="text-[13px] text-primary/70">{digestFailureCopy()}</p>
+      <Button onClick={onRetry} size="sm" type="button" variant="outline">
+        Try again
+      </Button>
+    </div>
+  );
 }
 
 export function ImpactView({
@@ -136,7 +155,8 @@ export function ImpactView({
       </EmptyBlock>
     );
   }
-  const { data, digest } = impactQuery.data;
+  const { data, digest, digestFailed } = impactQuery.data;
+  const reload = () => void refetchClearingBanner(() => impactQuery.refetch(), onError);
   const accountTotal = impactAccountTotal(
     relationshipsQuery.isSuccess ? relationshipRows(relationshipsQuery.data) : undefined,
     data.relationships,
@@ -166,7 +186,9 @@ export function ImpactView({
       runLabel: "Run Promise Leak Audit",
     });
     return (
-      <EmptyBlock
+      <div className="flex min-h-full flex-col" data-slot="impact-view">
+        {digestFailed && digestTop.length === 0 ? <DigestLoadNotice onRetry={reload} /> : null}
+        <EmptyBlock
         body={
           needsConnect
             ? "Connect Gmail and Calendar. Replies, meetings, and wins show up here after an audit."
@@ -196,6 +218,7 @@ export function ImpactView({
           </Button>
         ) : null}
       </EmptyBlock>
+      </div>
     );
   }
 
@@ -290,6 +313,7 @@ export function ImpactView({
         </div>
       </Card>
 
+      {digestFailed && digestTop.length === 0 ? <DigestLoadNotice onRetry={reload} /> : null}
       {/* weekly digest preview — the same summary the email is built from */}
       {digestTop.length ? (
         <Card className="gap-3 py-4">
@@ -303,6 +327,14 @@ export function ImpactView({
             </div>
           </CardHeader>
           <CardContent className="px-4">
+            {digestFailed ? (
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="text-[13px] text-primary/70">{digestRefreshCopy()}</p>
+                <Button onClick={reload} size="sm" type="button" variant="outline">
+                  Try again
+                </Button>
+              </div>
+            ) : null}
             <ul className="flex flex-col gap-1.5">
               {digestTop.map((a, i) => {
                 const signal = digestSignalLabel(a.detector);
