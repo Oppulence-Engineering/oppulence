@@ -12,6 +12,7 @@ import type { ComponentProps } from "react";
 
 import {
   CommitmentQueue,
+  commitmentSearchText,
   formatMissingEvidence,
   missingEvidenceLabel,
   REGISTER_VIEWS,
@@ -753,6 +754,52 @@ it("keeps looking when a search misses only the loaded page", async () => {
   expect(screen.queryByText("No commitments match this view")).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Show the next promises" }));
   expect(onLoadMorePromises).toHaveBeenCalledTimes(1);
+});
+
+it("finds a promise by the status and score printed on the row", async () => {
+  const user = userEvent.setup();
+  const quiet = {
+    ...entries()[0],
+    id: "commitment-2",
+    text: "Ship the quiet packet",
+    state: "open" as const,
+    confidence: 0.4,
+    relationshipName: "Lumen",
+  };
+  render(<CommitmentQueue {...props({ entries: [...entries(), quiet] })} />);
+
+  const box = screen.getByRole("textbox", { name: "Search commitments" });
+  await user.type(box, "At risk");
+  expect(screen.getByText("Acme")).toBeInTheDocument();
+  expect(screen.queryByText("Lumen")).not.toBeInTheDocument();
+
+  await user.clear(box);
+  await user.type(box, "65");
+  expect(screen.getByText("Acme")).toBeInTheDocument();
+  expect(screen.queryByText("Lumen")).not.toBeInTheDocument();
+
+  await user.clear(box);
+  await user.type(box, "Confirmed");
+  expect(screen.getByText("Lumen")).toBeInTheDocument();
+  expect(screen.queryByText("Acme")).not.toBeInTheDocument();
+  expect(
+    commitmentSearchText({
+      id: "commitment-1",
+      relationshipId: "rel-1",
+      relationshipName: "Acme",
+      text: "Send the signed security packet",
+      direction: "promised_by_me",
+      owner: "Taylor",
+      counterparty: "Morgan",
+      state: "at_risk",
+      acceptance: "accepted",
+      missingEvidence: [],
+      nextAction: "Watch",
+      urgency: "due_soon",
+      confidence: 65,
+      currentEventVersion: 3,
+    }),
+  ).toBe("Acme Taylor Morgan Send the signed security packet 65 At risk");
 });
 
 it("says nothing matches once every loaded promise was searched", async () => {

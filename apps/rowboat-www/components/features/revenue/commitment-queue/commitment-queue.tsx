@@ -480,6 +480,18 @@ function registerPreviewStatus(item: CommitmentQueueItem) {
   return { label: "Confirmed", variant: "green" as const };
 }
 
+/** Search matches the words already printed on the row, including score and status. */
+export function commitmentSearchText(item: CommitmentQueueItem): string {
+  return [
+    item.relationshipName,
+    item.owner,
+    item.counterparty,
+    item.text,
+    String(item.confidence),
+    registerPreviewStatus(item).label,
+  ].join(" ");
+}
+
 export function CommitmentQueue({
   className,
   entries,
@@ -550,12 +562,7 @@ export function CommitmentQueue({
     if (filter === "closed" && item.urgency !== "closed") return false;
     if (filter === "active" && item.urgency === "closed") return false;
     const needle = query.trim().toLowerCase();
-    return (
-      !needle ||
-      `${item.relationshipName} ${item.owner} ${item.counterparty} ${item.text}`
-        .toLowerCase()
-        .includes(needle)
-    );
+    return !needle || commitmentSearchText(item).toLowerCase().includes(needle);
   });
   const google = sources.find((source) => source.source === "google");
   const googleNeedsReconnect = sourceNeedsReconnect(google);
