@@ -1155,6 +1155,10 @@ describe("people directory copy", () => {
     expect(source).toContain(">Companies</TableHead>");
     expect(source).toContain("personSeniorityLabel(person.seniority)");
     expect(source).toContain("personFactValue(attribute.dimension, attribute.value)");
+    expect(source).toContain(
+      'personFactValue("employment_status", person.employmentStatus)',
+    );
+    expect(source).toContain('person.employmentStatus === "departed"');
     expect(source).not.toContain("{person.seniority}");
     expect(source).not.toContain("{attribute.value}");
     expect(source).toContain("{personCompanyTitle(person) || \"—\"}");

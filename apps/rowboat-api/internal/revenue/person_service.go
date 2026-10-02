@@ -160,6 +160,10 @@ func personVisibleLabelMatch(term string) predicate.Person {
 	if strings.Contains("also known as", needle) {
 		preds = append(preds, personHasAlias())
 	}
+	// A departed person is badged "Left the company". The stored token is departed.
+	if strings.Contains("left the company", needle) {
+		preds = append(preds, person.EmploymentStatusEQ("departed"))
+	}
 	if n, ok := exactPersonDetailCount(needle); ok {
 		preds = append(preds, personDetailCount(n))
 	}

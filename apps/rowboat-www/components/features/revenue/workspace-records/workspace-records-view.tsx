@@ -701,9 +701,19 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
-                        <Label className="block truncate text-[13px] font-medium text-primary">
-                          {person.displayName}
-                        </Label>
+                        <div className="flex min-w-0 items-center gap-2">
+                          <Label className="truncate text-[13px] font-medium text-primary">
+                            {person.displayName}
+                          </Label>
+                          {person.employmentStatus === "departed" ? (
+                            <Badge
+                              className="shrink-0 rounded-none px-1.5 py-0 text-[10px] font-normal"
+                              variant="secondary"
+                            >
+                              {personFactValue("employment_status", person.employmentStatus)}
+                            </Badge>
+                          ) : null}
+                        </div>
                         <CardDescription className="block truncate text-[11px]">
                           {personDirectorySubtitle(person)}
                         </CardDescription>
@@ -920,6 +930,12 @@ function PersonSheet({
     ],
   ];
   if (aliasNames) sheetFacts.push(["Also known as", aliasNames]);
+  if (person.employmentStatus && person.employmentStatus !== "unknown") {
+    sheetFacts.push([
+      "Employment",
+      personFactValue("employment_status", person.employmentStatus),
+    ]);
+  }
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-lg">

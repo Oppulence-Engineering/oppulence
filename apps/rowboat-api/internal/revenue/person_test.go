@@ -750,6 +750,34 @@ func TestPersonSearchFindsTheAlias(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsWhoLeft(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Casey Quinn").
+		SetEmploymentStatus("departed").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Indira Cole").
+		SetEmploymentStatus("active").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "Left the company"})
+	if err != nil || found == nil || len(found.Persons) != 1 || found.Persons[0].DisplayName != "Casey Quinn" {
+		t.Fatalf("left = %+v err=%v", found, err)
+	}
+}
+
 func TestPersonSearchFindsTheCompanyCount(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
