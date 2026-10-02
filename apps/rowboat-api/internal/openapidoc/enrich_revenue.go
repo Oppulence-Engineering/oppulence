@@ -1286,4 +1286,26 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
+	paths["/v1/workspace-notes"] = obj{"get": operation("Relationship Intelligence", "List workspace notes", "Returns the latest copy of each company note in this workspace. One request reads every company, so the notes page does not ask for each company timeline. A newer edit replaces the previous copy, and a later deletion removes the note.", "listWorkspaceNotes", bearer(), []any{
+		obj{"name": "limit", "in": "query", "required": false, "description": "Maximum notes to return (default 50, max 100).", "schema": obj{"type": "integer", "minimum": 1, "maximum": 100}},
+		obj{"name": "offset", "in": "query", "required": false, "description": "Number of collapsed notes to skip.", "schema": obj{"type": "integer", "minimum": 0}},
+	}, nil, obj{
+		"200": jsonResponse("Collapsed workspace notes, newest first.", objectSchema("Workspace notes page.", obj{
+			"notes": arraySchema("Latest note for each note id.", objectSchema("Workspace note.", obj{
+				"externalId":       stringSchema("Stable note id.", "note-1"),
+				"title":            stringSchema("Note title.", "Renewal context"),
+				"body":             stringSchema("Plain note body.", "Use the updated terms."),
+				"content":          freeFormSchema("Editor document, when one was saved."),
+				"meetingLinked":    boolSchema("Whether the note is linked to a meeting.", false),
+				"liveLinked":       boolSchema("Whether the note is linked to a live note.", false),
+				"relationshipId":   uuidSchema("Company id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+				"relationshipName": stringSchema("Company name.", "Cedar Notes"),
+				"occurredAt":       stringSchema("When this copy was written.", "2026-09-01T12:00:00Z", obj{"format": "date-time"}),
+				"eventType":        stringSchema("Stored event. Live notes are note.", "note"),
+			}, "externalId", "title", "body", "meetingLinked", "liveLinked", "relationshipId", "relationshipName", "occurredAt", "eventType")),
+			"hasMore": boolSchema("Whether another page of notes exists.", false),
+		}, "notes", "hasMore"), nil),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+	})}
 }

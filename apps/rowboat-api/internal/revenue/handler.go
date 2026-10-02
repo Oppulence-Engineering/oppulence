@@ -117,6 +117,7 @@ func (h *Handler) Mount(r chi.Router) {
 	})
 	h.MountResearch(r)
 	r.Post("/v1/relationship-observations/batch", h.IngestRelationshipObservations)
+	r.Get("/v1/workspace-notes", h.ListWorkspaceNotes)
 	r.Route("/v1/relationship-identity-candidates", func(r chi.Router) {
 		r.Get("/", h.ListIdentityCandidates)
 		r.Get("/{candidateId}", h.GetIdentityCandidate)

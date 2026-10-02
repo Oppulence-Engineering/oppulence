@@ -1,15 +1,36 @@
+import { z } from "zod";
+
 import { loadRelationships, relationshipRows } from "@/hooks/queries/utils/fetch-relationships";
 import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
-import { getRelationshipTimelinePage, type TimelinePageCursor } from "@/lib/revenue/revenue";
-import {
-  collapseWorkspaceNotes,
-  mapSettledWithConcurrency,
-  type WorkspaceNote,
-} from "@/lib/revenue/revenue-records";
+import type { WorkspaceNote } from "@/lib/revenue/revenue-records";
 import type { RevenueRelationship } from "@/lib/revenue/types";
 
-/** One timeline page and one company page. The API refuses a larger request. */
-export const NOTE_SOURCE_PAGE = 200;
+/** One page of collapsed notes. The API refuses a larger page. */
+export const WORKSPACE_NOTE_PAGE = 50;
+
+/**
+ * Marks the next page of workspace notes. Company timeline cursors used to
+ * live in this list; those requests are what tripped the revenue rate limit.
+ */
+const WORKSPACE_NOTES_CURSOR = "__workspace_notes__";
+
+const WorkspaceNoteSchema = z.object({
+  externalId: z.string(),
+  title: z.string(),
+  body: z.string(),
+  content: z.unknown().optional(),
+  meetingLinked: z.boolean().optional(),
+  liveLinked: z.boolean().optional(),
+  relationshipId: z.string(),
+  relationshipName: z.string(),
+  occurredAt: z.string(),
+  eventType: z.string(),
+});
+
+const WorkspaceNotesPageSchema = z.object({
+  notes: z.array(WorkspaceNoteSchema).default([]),
+  hasMore: z.boolean().optional(),
+});
 
 export type NoteTimelineCursor = {
   relationshipId: string;
@@ -32,68 +53,61 @@ export type MoreWorkspaceNotesInput = {
   nextRelationshipOffset?: number;
 };
 
-async function notesFromCompanies(
-  request: RequestJsonFn,
-  companies: RevenueRelationship[],
-  beforeById: ReadonlyMap<string, TimelinePageCursor>,
-  signal?: AbortSignal,
-): Promise<{
-  notes: WorkspaceNote[];
-  failedTimelineCount: number;
-  timelineCursors: NoteTimelineCursor[];
-}> {
-  const results = await mapSettledWithConcurrency(companies, 6, (company) =>
-    getRelationshipTimelinePage(company.id, NOTE_SOURCE_PAGE, beforeById.get(company.id), signal),
-  );
-  const successfulCompanies: RevenueRelationship[] = [];
-  const timelines = [];
-  const timelineCursors: NoteTimelineCursor[] = [];
-  let failedTimelineCount = 0;
-  results.forEach((result, index) => {
-    const company = companies[index];
-    if (!company) return;
-    if (result.status !== "fulfilled") {
-      failedTimelineCount += 1;
-      const before = beforeById.get(company.id);
-      if (before?.before) {
-        timelineCursors.push({
-          relationshipId: company.id,
-          before: before.before,
-          beforeId: before.beforeId,
-        });
-      }
-      return;
-    }
-    successfulCompanies.push(company);
-    timelines.push(result.value.observations);
-    if (result.value.hasMore && result.value.nextBefore) {
-      timelineCursors.push({
-        relationshipId: company.id,
-        before: result.value.nextBefore,
-        beforeId: result.value.nextBeforeId,
-      });
-    }
+function workspaceNotesPath(offset: number): string {
+  const params = new URLSearchParams({ limit: String(WORKSPACE_NOTE_PAGE) });
+  if (offset > 0) params.set("offset", String(offset));
+  return `/workspace-notes?${params.toString()}`;
+}
+
+function notePageCursor(offset: number | undefined): NoteTimelineCursor[] {
+  if (offset === undefined) return [];
+  return [{ relationshipId: WORKSPACE_NOTES_CURSOR, before: String(offset) }];
+}
+
+function nextNoteOffset(
+  offset: number,
+  notes: readonly WorkspaceNote[],
+  hasMore: boolean,
+): number | undefined {
+  if (!hasMore || notes.length === 0) return undefined;
+  return offset + notes.length;
+}
+
+async function loadNotePage(request: RequestJsonFn, offset: number, signal?: AbortSignal) {
+  const page = await request({
+    path: workspaceNotesPath(offset),
+    schema: WorkspaceNotesPageSchema,
+    signal,
   });
   return {
-    notes: collapseWorkspaceNotes(successfulCompanies, timelines),
-    failedTimelineCount,
-    timelineCursors,
+    notes: page.notes,
+    hasMore: Boolean(page.hasMore),
   };
+}
+
+function companyRows(
+  page: Awaited<ReturnType<typeof loadRelationships>> | undefined,
+): RevenueRelationship[] {
+  return relationshipRows(page).filter((relationship) => relationship.kind !== "person");
 }
 
 export async function loadWorkspaceNotes(
   request: RequestJsonFn,
   signal?: AbortSignal,
 ): Promise<WorkspaceNotesBundle> {
-  const directory = await loadRelationships(request, {}, signal);
+  const [directory, page] = await Promise.all([
+    loadRelationships(request, {}, signal),
+    loadNotePage(request, 0, signal),
+  ]);
   const rows = relationshipRows(directory);
-  const relationships = rows.filter((relationship) => relationship.kind !== "person");
-  const page = await notesFromCompanies(request, relationships, new Map(), signal);
+  const notesOffset = nextNoteOffset(0, page.notes, page.hasMore);
   const nextRelationshipOffset = directory.hasMore ? rows.length : undefined;
   return {
-    ...page,
-    relationships,
-    hasMoreNotes: nextRelationshipOffset !== undefined || page.timelineCursors.length > 0,
+    notes: page.notes,
+    relationships: rows.filter((relationship) => relationship.kind !== "person"),
+    failedTimelineCount: 0,
+    hasMoreNotes: nextRelationshipOffset !== undefined || notesOffset !== undefined,
+    timelineCursors: notePageCursor(notesOffset),
     nextRelationshipOffset,
   };
 }
@@ -103,36 +117,35 @@ export async function loadMoreWorkspaceNotes(
   input: MoreWorkspaceNotesInput,
   signal?: AbortSignal,
 ): Promise<WorkspaceNotesBundle> {
-  const continuedIds = new Set(input.timelineCursors.map((cursor) => cursor.relationshipId));
-  const known = input.relationships.filter((relationship) => continuedIds.has(relationship.id));
-  const beforeById = new Map(
-    input.timelineCursors.map((cursor) => [
-      cursor.relationshipId,
-      { before: cursor.before, beforeId: cursor.beforeId },
-    ]),
+  const workspaceCursor = input.timelineCursors.find(
+    (cursor) => cursor.relationshipId === WORKSPACE_NOTES_CURSOR,
   );
+  const noteOffset = workspaceCursor ? Number(workspaceCursor.before) : Number.NaN;
   const moreDirectory =
     input.nextRelationshipOffset === undefined
       ? undefined
       : await loadRelationships(request, { offset: input.nextRelationshipOffset }, signal);
   const moreRows = relationshipRows(moreDirectory);
-  const moreCompanies = moreRows.filter(
-    (relationship) => relationship.kind !== "person" && !continuedIds.has(relationship.id),
+  const knownIds = new Set(input.relationships.map((relationship) => relationship.id));
+  const moreCompanies = companyRows(moreDirectory).filter(
+    (relationship) => !knownIds.has(relationship.id),
   );
-  const [continued, added] = await Promise.all([
-    notesFromCompanies(request, known, beforeById, signal),
-    notesFromCompanies(request, moreCompanies, new Map(), signal),
-  ]);
+  const notesPage =
+    Number.isInteger(noteOffset) && noteOffset >= 0
+      ? await loadNotePage(request, noteOffset, signal)
+      : { notes: [], hasMore: false };
+  const notesOffset = Number.isInteger(noteOffset)
+    ? nextNoteOffset(noteOffset, notesPage.notes, notesPage.hasMore)
+    : undefined;
   const nextRelationshipOffset = moreDirectory?.hasMore
     ? (input.nextRelationshipOffset ?? 0) + moreRows.length
     : undefined;
-  const timelineCursors = [...continued.timelineCursors, ...added.timelineCursors];
   return {
-    notes: [...continued.notes, ...added.notes],
+    notes: notesPage.notes,
     relationships: moreCompanies,
-    failedTimelineCount: continued.failedTimelineCount + added.failedTimelineCount,
-    hasMoreNotes: nextRelationshipOffset !== undefined || timelineCursors.length > 0,
-    timelineCursors,
+    failedTimelineCount: 0,
+    hasMoreNotes: nextRelationshipOffset !== undefined || notesOffset !== undefined,
+    timelineCursors: notePageCursor(notesOffset),
     nextRelationshipOffset,
   };
 }

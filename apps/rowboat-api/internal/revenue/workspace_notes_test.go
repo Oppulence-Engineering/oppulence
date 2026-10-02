@@ -1,0 +1,156 @@
+package revenue
+
+import (
+	"context"
+	"net/http"
+	"testing"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
+
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+)
+
+func TestListWorkspaceNotesCollapsesEditsAndSkipsOtherCompanies(t *testing.T) {
+	f := newFixture(t)
+	cedar, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Notes", AccountDomain: "cedar-notes.example",
+	})
+	if err != nil {
+		t.Fatalf("cedar: %v", err)
+	}
+	pine, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Pine Notes", AccountDomain: "pine-notes.example",
+	})
+	if err != nil {
+		t.Fatalf("pine: %v", err)
+	}
+	person, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "person", DisplayName: "Ada Notes", PrimaryEmail: "ada-notes@example.com",
+		AccountDomain: "ada-notes.example",
+	})
+	if err != nil {
+		t.Fatalf("person: %v", err)
+	}
+	other := newUser(t, f.client, "other-notes@x.co", "user_other_notes")
+	otherCtx := auth.WithUser(context.Background(), other)
+	otherCompany, err := f.svc.CreateRelationship(otherCtx, other, RelationshipInput{
+		Kind: "company", DisplayName: "Other Notes", AccountDomain: "other-notes.example",
+	})
+	if err != nil {
+		t.Fatalf("other company: %v", err)
+	}
+
+	sept := func(day, hour int) time.Time {
+		return time.Date(2026, 9, day, hour, 0, 0, 0, time.UTC)
+	}
+	observations := []RelationshipObservationInput{
+		{
+			RelationshipID: pine.ID, Source: "desktop_note", ExternalID: "pine-note",
+			EventType: "note", OccurredAt: sept(1, 12), Summary: "Pine title",
+			Facts: map[string]any{"noteId": "pine-note", "title": "Pine title", "body": "Pine body"},
+		},
+		{
+			RelationshipID: cedar.ID, Source: "desktop_note", ExternalID: "cedar-original",
+			EventType: "note", OccurredAt: sept(2, 12), Summary: "Original title",
+			Facts: map[string]any{
+				"noteId": "cedar-edit", "title": "Original title", "body": "Original body",
+				"meetingLinked": true,
+			},
+		},
+		{
+			RelationshipID: cedar.ID, Source: "desktop_note", ExternalID: "cedar-edited",
+			EventType: "note", OccurredAt: sept(3, 12), Summary: "Edited title",
+			Facts: map[string]any{
+				"noteId": "cedar-edit", "title": "Edited title", "body": "Edited body",
+				"meetingLinked": true, "liveLinked": true,
+				"content": []any{map[string]any{"type": "p"}},
+			},
+		},
+		{
+			RelationshipID: cedar.ID, Source: "desktop_note", ExternalID: "cedar-dropped",
+			EventType: "note", OccurredAt: sept(1, 15), Summary: "Dropped title",
+			Facts: map[string]any{"noteId": "cedar-dropped", "title": "Dropped title", "body": "Gone"},
+		},
+		{
+			RelationshipID: cedar.ID, Source: "desktop_note", ExternalID: "cedar-deleted",
+			EventType: "note_deleted", OccurredAt: sept(4, 12), Summary: "Dropped title",
+			Facts: map[string]any{"noteId": "cedar-dropped"},
+		},
+		{
+			RelationshipID: cedar.ID, Source: "gmail", ExternalID: "cedar-mail",
+			EventType: "message", OccurredAt: sept(5, 12), Summary: "A mail thread",
+			Facts: map[string]any{"noteId": "not-a-note", "title": "Mail"},
+		},
+		{
+			RelationshipID: person.ID, Source: "desktop_note", ExternalID: "person-note",
+			EventType: "note", OccurredAt: sept(6, 12), Summary: "Person note",
+			Facts: map[string]any{"noteId": "person-note", "title": "Person note", "body": "Hidden"},
+		},
+	}
+	if _, err := f.svc.IngestRelationshipObservationCandidates(f.ctx, f.user, observations); err != nil {
+		t.Fatalf("ingest: %v", err)
+	}
+	if _, err := f.svc.IngestRelationshipObservationCandidates(otherCtx, other, []RelationshipObservationInput{{
+		RelationshipID: otherCompany.ID, Source: "desktop_note", ExternalID: "other-note",
+		EventType: "note", OccurredAt: sept(7, 12), Summary: "Other title",
+		Facts: map[string]any{"noteId": "other-note", "title": "Other title", "body": "Elsewhere"},
+	}}); err != nil {
+		t.Fatalf("ingest other: %v", err)
+	}
+
+	page, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 50, 0)
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if page.HasMore {
+		t.Fatal("two notes should fit on one page")
+	}
+	if len(page.Notes) != 2 {
+		t.Fatalf("notes = %+v, want the edited cedar note and the pine note", page.Notes)
+	}
+	if page.Notes[0].Title != "Edited title" || page.Notes[0].Body != "Edited body" ||
+		page.Notes[0].RelationshipName != "Cedar Notes" || !page.Notes[0].MeetingLinked ||
+		!page.Notes[0].LiveLinked || page.Notes[0].ExternalID != "cedar-edit" || page.Notes[0].Content == nil {
+		t.Fatalf("newest note = %+v", page.Notes[0])
+	}
+	if page.Notes[1].Title != "Pine title" || page.Notes[1].RelationshipName != "Pine Notes" {
+		t.Fatalf("older note = %+v", page.Notes[1])
+	}
+
+	first, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 1, 0)
+	if err != nil {
+		t.Fatalf("first page: %v", err)
+	}
+	if !first.HasMore || len(first.Notes) != 1 || first.Notes[0].ExternalID != "cedar-edit" {
+		t.Fatalf("first page = %+v", first)
+	}
+	second, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 1, 1)
+	if err != nil {
+		t.Fatalf("second page: %v", err)
+	}
+	if second.HasMore || len(second.Notes) != 1 || second.Notes[0].ExternalID != "pine-note" {
+		t.Fatalf("second page = %+v", second)
+	}
+	if _, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, -1, 0); err == nil {
+		t.Fatal("negative limit was accepted")
+	}
+}
+
+func TestWorkspaceNotesRouteIsMounted(t *testing.T) {
+	router := chi.NewRouter()
+	NewHandler(nil, zap.NewNop()).Mount(router)
+	mounted := false
+	if err := chi.Walk(router, func(method, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
+		if method == http.MethodGet && route == "/v1/workspace-notes" {
+			mounted = true
+		}
+		return nil
+	}); err != nil {
+		t.Fatalf("walk: %v", err)
+	}
+	if !mounted {
+		t.Fatal("GET /v1/workspace-notes is not mounted")
+	}
+}
