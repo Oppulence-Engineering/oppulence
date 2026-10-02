@@ -1269,6 +1269,8 @@ function WorkflowEditor({
     scopedRuns,
     scopedRunsQuery.isSuccess && scopedRunsQuery.hasNextPage,
   );
+  const settingsPageRun = runs.find((run) => run.slug === task.slug);
+  const settingsLastRunReason = workflowLastRunReason(task, settingsPageRun);
 
   const save = async () => {
     const compiled = compileVisualWorkflow(workflow);
@@ -1479,11 +1481,11 @@ function WorkflowEditor({
                     Last run
                   </p>
                   <p className="mt-2 text-[13px]">
-                    {workflowSettingsLastRun(
-                      task,
-                      runs.find((run) => run.slug === task.slug),
-                    )}
+                    {workflowSettingsLastRun(task, settingsPageRun)}
                   </p>
+                  {settingsLastRunReason ? (
+                    <p className="mt-1 text-[12px] text-destructive">{settingsLastRunReason}</p>
+                  ) : null}
                 </div>
               </div>
               <div className="flex items-center justify-between border-y border-border py-4">

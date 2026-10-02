@@ -531,6 +531,7 @@ describe("CloudWorkflowsView", () => {
       ),
     ).not.toContain("Failed");
     expect(source).toContain("workflowSettingsLastRun(");
+    expect(source).toContain("{settingsLastRunReason}");
   });
 
   it("loads a workflow's own runs when they are off the account page", () => {
