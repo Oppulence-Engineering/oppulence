@@ -415,8 +415,17 @@ export function runWhereFilterName(value: string): string {
   return comboboxFilterName("Where it runs", current);
 }
 
-/** A failed run should say why in the list. Opening it is not required to learn that. */
-export function runFailureLine(run: Pick<CloudRun, "error" | "errorCode">): string | null {
+/**
+ * A failed run should say why in the list. Opening it is not required to learn
+ * that. A run that is still going, or one that succeeded, does not keep an
+ * earlier failure sentence beside its status.
+ */
+export function runFailureLine(
+  run: Pick<CloudRun, "error" | "errorCode"> & { status?: string },
+): string | null {
+  if (run.status === "running" || run.status === "queued" || run.status === "succeeded") {
+    return null;
+  }
   if (!run.error) return null;
   return runFailureCopy(run as CloudRun);
 }
@@ -1163,9 +1172,9 @@ function RunInspector({
         {run.summary ? (
           <p className="border border-border p-2.5 text-xs leading-5">{run.summary}</p>
         ) : null}
-        {run.error ? (
+        {runFailureLine(run) ? (
           <p className="border border-destructive/30 bg-destructive/5 p-2.5 text-xs leading-5 text-destructive">
-            {runFailureCopy(run)}
+            {runFailureLine(run)}
           </p>
         ) : null}
       </div>

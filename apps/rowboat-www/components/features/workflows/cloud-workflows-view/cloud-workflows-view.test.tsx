@@ -267,14 +267,22 @@ describe("CloudWorkflowsView", () => {
     expect(runRowDetail("failed", "cron")).toBe("Failed · Scheduled");
     expect(runRowDetail("failed", "window")).toBe("Failed · Time window");
     expect(source).toContain("runRowDetail(run.status, run.trigger)");
-    expect(runFailureLine({ error: "", errorCode: "" })).toBeNull();
+    expect(runFailureLine({ error: "", errorCode: "", status: "failed" })).toBeNull();
     expect(
       runFailureLine({
         error:
           'llm upstream returned status 401: {"error":{"message":"Missing Authentication header"}}',
         errorCode: "llm_call_failed",
+        status: "failed",
       }),
     ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
+    expect(
+      runFailureLine({
+        error: "llm upstream returned status 401: missing authentication header",
+        errorCode: "llm_call_failed",
+        status: "running",
+      }),
+    ).toBeNull();
     expect(source.match(/<RunRowFailure run=\{run\} \/>/g)).toHaveLength(2);
     expect(source).toContain("line-clamp-3 text-[11px] leading-4 text-destructive");
     expect(source).not.toContain("truncate text-[11px] text-destructive");
