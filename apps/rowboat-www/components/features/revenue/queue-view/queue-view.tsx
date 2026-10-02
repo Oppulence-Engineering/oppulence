@@ -126,6 +126,28 @@ export function recoveryFollowUpName(actionType: string): string {
   return comboboxFilterName("Follow-up", label ?? actionType.replaceAll("_", " "));
 }
 
+/**
+ * A follow-up with no address still belongs to a company. The card names that
+ * company instead of calling the recipient unknown.
+ */
+export function recoveryRecipientLabel(action: {
+  recipientEmail?: string | null;
+  relationshipName?: string | null;
+}): string {
+  return action.recipientEmail?.trim() || action.relationshipName?.trim() || "Unknown recipient";
+}
+
+/** The address is the heading. The company stays visible beside it. */
+export function recoveryCompanyCaption(action: {
+  recipientEmail?: string | null;
+  relationshipName?: string | null;
+}): string {
+  const email = action.recipientEmail?.trim() || "";
+  const company = action.relationshipName?.trim() || "";
+  if (!email || !company) return "";
+  return company;
+}
+
 /** Open recovery is "Held". The other stored statuses already have filter names. */
 export function recoveryStatusLabel(status: string): string {
   switch (status) {
@@ -485,7 +507,8 @@ function ActionCard({
 }) {
   const [busy, setBusy] = React.useState<string | null>(null);
   const tone = priorityTone(action.priorityScore);
-  const recipient = action.recipientEmail || "Unknown recipient";
+  const recipient = recoveryRecipientLabel(action);
+  const company = recoveryCompanyCaption(action);
   const open = action.queueStatus === "open";
   const sendFailure =
     action.executionStatus === "pending" || action.executionStatus === "failed"
@@ -526,6 +549,11 @@ function ActionCard({
             <Label className="truncate text-sm font-medium text-[var(--text-primary)]">
               {recipient}
             </Label>
+            {company ? (
+              <Label className="truncate text-[12px] font-normal text-[var(--text-muted)]">
+                {company}
+              </Label>
+            ) : null}
             <Chip className="ml-auto">{recoveryStatusLabel(action.queueStatus)}</Chip>
           </div>
           <p className="mt-1.5 line-clamp-2 text-sm text-[var(--text-secondary)]">

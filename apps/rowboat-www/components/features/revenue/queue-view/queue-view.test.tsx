@@ -8,7 +8,9 @@ import {
   recoveryEmptyDescription,
   recoveryFilterName,
   recoveryFollowUpName,
+  recoveryCompanyCaption,
   recoveryCompanyName,
+  recoveryRecipientLabel,
   recoveryRemainderLabel,
   recoveryShownLabel,
   recoveryStatusLabel,
@@ -37,6 +39,27 @@ describe("QueueView", () => {
     expect(recoveryCompanyName("Dogfood Harbor")).toBe("Company, Dogfood Harbor");
     expect(recoveryCompanyName("Choose a company")).toBe("Company, Choose a company");
     expect(recoveryFollowUpName("warm_follow_up")).toBe("Follow-up, Warm follow-up");
+    expect(recoveryRecipientLabel({})).toBe("Unknown recipient");
+    expect(recoveryRecipientLabel({ recipientEmail: "  ", relationshipName: "  " })).toBe(
+      "Unknown recipient",
+    );
+    expect(recoveryRecipientLabel({ relationshipName: "Quill Atelier" })).toBe("Quill Atelier");
+    expect(
+      recoveryRecipientLabel({
+        recipientEmail: "ada@quill.example",
+        relationshipName: "Quill Atelier",
+      }),
+    ).toBe("ada@quill.example");
+    expect(recoveryCompanyCaption({ relationshipName: "Quill Atelier" })).toBe("");
+    expect(
+      recoveryCompanyCaption({
+        recipientEmail: "ada@lumen.example",
+        relationshipName: "Lumen Packet",
+      }),
+    ).toBe("Lumen Packet");
+    expect(source).toContain("recoveryRecipientLabel(action)");
+    expect(source).toContain("recoveryCompanyCaption(action)");
+    expect(source).not.toContain('action.recipientEmail || "Unknown recipient"');
     expect(source).not.toContain('aria-label="Filter recovery actions"');
   });
 
