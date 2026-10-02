@@ -805,7 +805,10 @@ describe("people directory labels", () => {
       "No email · Also known as Dee Cole",
     );
     expect(personAliasNames(["Dee Cole", "Indy"])).toBe("Dee Cole, Indy");
-    expect(personDirectoryRole({})).toBe("—");
+    expect(personDirectoryRole({})).toBe("Not known");
+    expect(personDirectoryRole({ title: "  ", seniority: "  ", participantRoles: [" "] })).toBe(
+      "Not known",
+    );
     expect(personDirectoryRole({ participantRoles: ["decision_maker"] })).toBe("Decision maker");
     expect(
       personDirectoryRole({

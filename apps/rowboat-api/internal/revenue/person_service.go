@@ -169,6 +169,10 @@ func personVisibleLabelMatch(term string) predicate.Person {
 	if strings.Contains("left the company", needle) {
 		preds = append(preds, person.EmploymentStatusEQ("departed"))
 	}
+	// The Role column says "Not known" when no title, seniority, or company role is saved.
+	if strings.Contains("not known", needle) {
+		preds = append(preds, person.Not(personRoleKnown()))
+	}
 	if n, ok := exactPersonDetailCount(needle); ok {
 		preds = append(preds, personDetailCount(n))
 	}
@@ -375,6 +379,33 @@ func personMatchAll() predicate.Person {
 
 // personParticipantRoleMatch matches the role printed on the person, such as
 // "Decision maker". The stored token uses underscores. The row uses spaces.
+func personRoleKnown() predicate.Person {
+	return person.Or(
+		personTextPresent(person.FieldTitle),
+		personTextPresent(person.FieldSeniority),
+		person.HasParticipantsWith(participantRolePresent()),
+	)
+}
+
+func personTextPresent(field string) predicate.Person {
+	return predicate.Person(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(fmt.Sprintf("trim(coalesce(%s, '')) <> ''", s.C(field)))
+		}))
+	})
+}
+
+func participantRolePresent() predicate.RelationshipParticipant {
+	return predicate.RelationshipParticipant(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(fmt.Sprintf(
+				"trim(coalesce(%s, '')) <> ''",
+				s.C(relationshipparticipant.FieldRole),
+			))
+		}))
+	})
+}
+
 func personParticipantRoleMatch(term string) predicate.Person {
 	needle := "%" + escapePersonSearchLike(normalizePersonSearch(term)) + "%"
 	if needle == "%%" {

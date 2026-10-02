@@ -346,12 +346,14 @@ export function personDirectoryRole(person: {
   const roles = [
     ...new Set(
       (person.participantRoles ?? [])
-        .map((role) => participantRoleLabel(role.trim()))
-        .filter((role) => role && role !== title),
+        .map((role) => role.trim())
+        .filter(Boolean)
+        .map((role) => participantRoleLabel(role))
+        .filter((role) => role !== title),
     ),
   ];
   if (title && roles.length > 0) return `${title} · ${roles.join(", ")}`;
-  return title || roles.join(", ") || "—";
+  return title || roles.join(", ") || "Not known";
 }
 
 /** Other names stored on the person. The display name is not repeated here. */
