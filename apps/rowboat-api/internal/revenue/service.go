@@ -868,6 +868,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if recovery := relationshipSheetRecoveryMatch(needle); recovery != nil {
 			parts = append(parts, recovery)
 		}
+		if contradiction := relationshipSheetContradictionMatch(needle); contradiction != nil {
+			parts = append(parts, contradiction)
+		}
 		if sheetPhraseMatches("no action is currently recommended", needle) {
 			parts = append(parts, relationship.Not(
 				relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen)),
@@ -1742,6 +1745,207 @@ func writeRecoveryExplanation(b *sql.Builder, s *sql.Selector) {
 	b.WriteString("json_extract(")
 	b.WriteString(column)
 	b.WriteString(", '$.explanation')")
+}
+
+// contradictionDimensionLabel matches the sheet. The stored dimension stays a token.
+func contradictionDimensionLabel(dimension string) string {
+	switch dimension {
+	case "lifecycle":
+		return "Lifecycle"
+	case "engagement":
+		return "Engagement"
+	case "sentiment":
+		return "Sentiment"
+	case "health":
+		return "Health"
+	case "summary":
+		return "Summary"
+	case "next_action":
+		return "Next action"
+	case "risk":
+		return "Risk"
+	case "milestone":
+		return "Milestone"
+	default:
+		return dimension
+	}
+}
+
+type contradictionSearchPhrase struct {
+	phrase     string
+	status     string
+	statusNot  string
+	dimension  string
+	minSides   int
+	exactSides int
+	reason     string
+}
+
+func contradictionSearchPhrases() []contradictionSearchPhrase {
+	phrases := []contradictionSearchPhrase{{
+		phrase: "two details disagree", status: "open", minSides: 2,
+	}}
+	for _, dimension := range relationshipProjectionDimensions {
+		phrases = append(phrases, contradictionSearchPhrase{
+			phrase: normalizePersonSearch(fmt.Sprintf(
+				"Which %s should be the current one?",
+				contradictionDimensionLabel(dimension),
+			)),
+			status: "open", dimension: dimension, minSides: 2,
+		})
+	}
+	for n := 1; n <= 6; n++ {
+		phrases = append(phrases, contradictionSearchPhrase{
+			phrase: normalizePersonSearch(fmt.Sprintf(
+				"Choose the current value from %d sources.", n,
+			)),
+			status: "open", exactSides: n,
+		})
+	}
+	stronger := "A stronger source already chose the current value."
+	phrases = append(phrases,
+		contradictionSearchPhrase{
+			phrase: normalizePersonSearch(stronger), statusNot: "open", reason: stronger,
+		},
+		contradictionSearchPhrase{
+			phrase:    normalizePersonSearch(stronger),
+			statusNot: "open",
+			reason:    "deterministic assertion authority selected the current value",
+		},
+	)
+	return phrases
+}
+
+// relationshipSheetContradictionMatch matches the suggestion "Two details disagree"
+// and the sentence under it. A resolved disagreement prints a different sentence,
+// so the open suggestion stays off that company.
+func relationshipSheetContradictionMatch(needle string) predicate.Relationship {
+	phrases := contradictionSearchPhrases()
+	chosen := make([]contradictionSearchPhrase, 0)
+	for _, item := range phrases {
+		if needle == item.phrase {
+			chosen = append(chosen, item)
+		}
+	}
+	if len(chosen) == 0 {
+		for _, item := range phrases {
+			if sheetPhraseMatches(item.phrase, needle) {
+				chosen = append(chosen, item)
+			}
+		}
+	}
+	if len(chosen) == 0 {
+		return nil
+	}
+	preds := make([]predicate.Relationship, 0, len(chosen))
+	for _, item := range chosen {
+		preds = append(preds, relationshipHasLatestContradiction(item))
+	}
+	if len(preds) == 1 {
+		return preds[0]
+	}
+	return relationship.Or(preds...)
+}
+
+func relationshipHasLatestContradiction(item contradictionSearchPhrase) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			art := conversationintelligenceartifact.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(art)
+			b.WriteString(" AS eval WHERE eval.")
+			b.WriteString(conversationintelligenceartifact.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND eval.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" = 'contradiction_case' AND eval.")
+			b.WriteString(conversationintelligenceartifact.FieldVersion)
+			b.WriteString(" = (SELECT MAX(newer.")
+			b.WriteString(conversationintelligenceartifact.FieldVersion)
+			b.WriteString(") FROM ")
+			b.WriteString(art)
+			b.WriteString(" AS newer WHERE newer.")
+			b.WriteString(conversationintelligenceartifact.FieldStableID)
+			b.WriteString(" = eval.")
+			b.WriteString(conversationintelligenceartifact.FieldStableID)
+			b.WriteString(" AND newer.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" = eval.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" AND newer.")
+			b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+			b.WriteString(" = eval.")
+			b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+			b.WriteString(")")
+			if item.status != "" {
+				b.WriteString(" AND eval.")
+				b.WriteString(conversationintelligenceartifact.FieldStatus)
+				b.WriteString(" = ")
+				b.Arg(item.status)
+			}
+			if item.statusNot != "" {
+				b.WriteString(" AND eval.")
+				b.WriteString(conversationintelligenceartifact.FieldStatus)
+				b.WriteString(" <> ")
+				b.Arg(item.statusNot)
+			}
+			if item.dimension != "" {
+				b.WriteString(" AND ")
+				writeContradictionText(b, s, "dimension")
+				b.WriteString(" = ")
+				b.Arg(item.dimension)
+			}
+			if item.reason != "" {
+				b.WriteString(" AND ")
+				writeContradictionText(b, s, "reason")
+				b.WriteString(" = ")
+				b.Arg(item.reason)
+			}
+			if item.minSides > 0 {
+				b.WriteString(" AND ")
+				writeContradictionSideCount(b, s)
+				b.WriteString(" >= ")
+				b.Arg(item.minSides)
+			}
+			if item.exactSides > 0 {
+				b.WriteString(" AND ")
+				writeContradictionSideCount(b, s)
+				b.WriteString(" = ")
+				b.Arg(item.exactSides)
+			}
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeContradictionText(b *sql.Builder, s *sql.Selector, field string) {
+	column := "eval." + conversationintelligenceartifact.FieldPayloadJSON
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(column)
+		b.WriteString("::jsonb->>'")
+		b.WriteString(field)
+		b.WriteString("'")
+		return
+	}
+	b.WriteString("json_extract(")
+	b.WriteString(column)
+	b.WriteString(", '$.")
+	b.WriteString(field)
+	b.WriteString("')")
+}
+
+func writeContradictionSideCount(b *sql.Builder, s *sql.Selector) {
+	column := "eval." + conversationintelligenceartifact.FieldPayloadJSON
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_array_length(COALESCE(")
+		b.WriteString(column)
+		b.WriteString("::jsonb->'sides', '[]'::jsonb))")
+		return
+	}
+	b.WriteString("COALESCE(json_array_length(json_extract(")
+	b.WriteString(column)
+	b.WriteString(", '$.sides')), 0)")
 }
 
 func overdueCommitmentAny(now time.Time) predicate.Commitment {

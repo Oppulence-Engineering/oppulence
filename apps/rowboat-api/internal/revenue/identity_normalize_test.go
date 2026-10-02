@@ -1929,6 +1929,88 @@ func TestRelationshipSearchFindsThePromiseFollowUp(t *testing.T) {
 	assertCompanyQuery("This promise was renegotiated. Review the new terms.", "Cedar Mill")
 }
 
+func TestRelationshipSearchFindsTheDisagreement(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveCase := func(rel *ent.Relationship, status, dimension, reason, stableID string, version int) {
+		t.Helper()
+		payload, err := json.Marshal(ConversationContradictionCase{
+			CaseID: stableID, RelationshipID: rel.ID.String(), SubjectRef: rel.ID.String(),
+			Dimension: dimension, Status: status, Reason: reason,
+			Sides: []ConversationContradictionEvidenceSide{
+				{AssertionID: "left", Source: "user"},
+				{AssertionID: "right", Source: "hubspot"},
+			},
+			OpenedAt: time.Now().UTC().Format(time.RFC3339),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(payload)
+		if _, err := f.client.ConversationIntelligenceArtifact.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetKind("contradiction_case").SetStableID(stableID).SetVersion(version).
+			SetStatus(status).SetSubjectRef(rel.ID.String()).
+			SetEffectiveAt(time.Now().UTC()).SetEvidenceRefs([]string{}).
+			SetPayloadJSON(string(payload)).SetPayloadHash(hex.EncodeToString(sum[:])).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	quill := makeCompany("Quill Atelier")
+	cedar := makeCompany("Cedar Mill")
+	makeCompany("Harbor Ledger")
+	saveCase(
+		quill, "auto_resolved_by_authority", "health",
+		"A stronger source already chose the current value.",
+		"contradiction:quill", 1,
+	)
+	saveCase(
+		quill, "open", "lifecycle",
+		"Two sources disagree. Choose which value is current.",
+		"contradiction:quill", 2,
+	)
+	saveCase(
+		cedar, "auto_resolved_by_authority", "health",
+		"A stronger source already chose the current value.",
+		"contradiction:cedar", 1,
+	)
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Two details disagree", "Quill Atelier")
+	assertCompanyQuery("Which Lifecycle should be the current one?", "Quill Atelier")
+	assertCompanyQuery("Choose the current value from 2 sources.", "Quill Atelier")
+	assertCompanyQuery("Which Health should be the current one?")
+	assertCompanyQuery("A stronger source already chose the current value.", "Cedar Mill")
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {

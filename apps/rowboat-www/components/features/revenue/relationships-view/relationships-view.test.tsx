@@ -542,9 +542,35 @@ describe("RelationshipsView", () => {
     ).toBe("Confirmed in the last meeting.");
     expect(source).toContain("detailEvidenceCopy(item)");
     expect(source).not.toContain("{item.reason || item.missingReason}");
-    expect(liveCueCopy({ kind: "missing_next_step", title: "No next step", detail: "Agree on an owner and a dated next step before the meeting ends." })).toEqual({
+    expect(
+      liveCueCopy({
+        kind: "missing_next_step",
+        title: "No next step",
+        detail: "Agree on an owner and a dated next step before the meeting ends.",
+      }),
+    ).toEqual({
       title: "No next step",
       detail: "Add an owner and a date for what happens next.",
+    });
+    expect(
+      liveCueCopy({
+        kind: "contradiction",
+        title: "Relationship evidence conflicts",
+        detail: "Which lifecycle value should be current?",
+      }),
+    ).toEqual({
+      title: "Two details disagree",
+      detail: "Which Lifecycle should be the current one?",
+    });
+    expect(
+      liveCueCopy({
+        kind: "contradiction",
+        title: "Relationship evidence conflicts",
+        detail: "Which next_action value should be current?",
+      }),
+    ).toEqual({
+      title: "Two details disagree",
+      detail: "Which Next action should be the current one?",
     });
     expect(liveCueVisible({ kind: "missing_next_step" }, "prospect")).toBe(false);
     expect(liveCueVisible({ kind: "missing_next_step" }, "evaluation")).toBe(true);

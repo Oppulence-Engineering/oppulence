@@ -2538,10 +2538,11 @@ export function liveCueCopy(cue: { kind: string; title: string; detail: string }
     };
   }
   if (cue.kind === "contradiction") {
-    return {
-      title: "Two details disagree",
-      detail: cue.detail.replace(/value should be current\?$/, "should be the current one?"),
-    };
+    const named = /^Which (.+) value should be current\?$/.exec(cue.detail.trim());
+    const detail = named?.[1]
+      ? `Which ${relationshipChangeLabel(named[1])} should be the current one?`
+      : cue.detail.replace(/value should be current\?$/, "should be the current one?");
+    return { title: "Two details disagree", detail };
   }
   return { title: cue.title, detail: cue.detail };
 }
