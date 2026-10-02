@@ -97,6 +97,31 @@ describe("Composio connections", () => {
     expect(screen.queryByText(/Composio request failed/)).toBeNull();
   });
 
+  it("names a connect failure that has no explanation", async () => {
+    mocks.startComposioConnection.mockRejectedValue(new Error("Composio request failed (500)"));
+    renderWithQuery(<ComposioConnections />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Connect Jira" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not start the connection.");
+    expect(screen.queryByText(/Composio request failed/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Connect Jira" })).toBeEnabled();
+  });
+
+  it("names a disconnect failure that has no explanation", async () => {
+    mocks.listComposioConnections.mockResolvedValue([
+      { id: "ca_1", toolkit: "jira", status: "ACTIVE", createdAt: "" },
+    ]);
+    mocks.disconnectComposio.mockRejectedValue(new Error("Composio request failed (500)"));
+    renderWithQuery(<ComposioConnections />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Disconnect Jira" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not disconnect.");
+    expect(screen.queryByText(/Composio request failed/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Disconnect Jira" })).toBeEnabled();
+  });
+
   it("offers disconnect for a linked product and reloads after it", async () => {
     mocks.listComposioConnections.mockResolvedValue([
       { id: "ca_1", toolkit: "jira", status: "ACTIVE", createdAt: "" },

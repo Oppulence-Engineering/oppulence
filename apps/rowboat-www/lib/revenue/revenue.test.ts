@@ -379,6 +379,12 @@ describe("shownRequestError", () => {
     expect(
       shownRequestError(new Error("Workflow request failed (409)"), "Could not create workflow"),
     ).toBe("Could not create workflow");
+    expect(
+      shownRequestError(
+        new Error("Composio request failed (500)"),
+        "Could not start the connection.",
+      ),
+    ).toBe("Could not start the connection.");
     expect(shownRequestError(new Error("revision conflict"), company)).toBe("revision conflict");
     expect(shownRequestError(new Error("Request failed (429)"), company)).toBe(
       "Too many requests were sent from this workspace. Wait a moment, then try again.",

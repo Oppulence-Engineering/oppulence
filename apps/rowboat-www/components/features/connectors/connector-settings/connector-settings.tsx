@@ -45,7 +45,7 @@ import {
   scopeProductDetail,
   scopeProductLabel,
 } from "@/lib/connectors/connector-product-copy";
-import { explainedRevenueError, friendlyRevenueError } from "@/lib/revenue/revenue";
+import { explainedRevenueError, shownRequestError } from "@/lib/revenue/revenue";
 
 const OUTCOME_MESSAGES: Record<HostedOAuthOutcome, string> = {
   active: "Connected.",
@@ -260,11 +260,7 @@ function GoogleConnectionSettings() {
     try {
       window.location.assign((await createGoogleCommitmentsAuthorizationURL()).toString());
     } catch (error) {
-      setError(
-        friendlyRevenueError(
-          error instanceof Error ? error.message : "Google authorization could not be started.",
-        ),
-      );
+      setError(shownRequestError(error, "Google authorization could not be started."));
       setBusy(false);
     }
   };
@@ -402,11 +398,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
       await fn();
       onChanged();
     } catch (caught) {
-      setError(
-        friendlyRevenueError(
-          caught instanceof Error ? caught.message : "That connection change did not go through.",
-        ),
-      );
+      setError(shownRequestError(caught, "That connection change did not go through."));
     } finally {
       setBusy(false);
     }

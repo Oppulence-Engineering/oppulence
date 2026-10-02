@@ -188,8 +188,9 @@ export function explainedRevenueError(error: unknown, fallback: string): string 
   return friendly === message ? fallback : friendly;
 }
 
-const BARE_REQUEST_STATUS =
-  /^(?:Request failed|Console request failed|Workflow request failed) \(\d+\)\.?$/;
+const BARE_STATUS_PREFIX =
+  "Request failed|Console request failed|Workflow request failed|Composio request failed";
+const BARE_REQUEST_STATUS = new RegExp(`^(?:${BARE_STATUS_PREFIX}) \\(\\d+\\)\\.?$`);
 
 /**
  * A save should keep a specific API sentence. A status code with no sentence
