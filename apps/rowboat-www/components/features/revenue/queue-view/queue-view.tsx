@@ -6,7 +6,11 @@ import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { openCompanyCreate } from "@/lib/dashboard/company-create-request";
 import { useRelationships } from "@/hooks/queries/use-relationships";
-import { relationshipRows } from "@/hooks/queries/utils/fetch-relationships";
+import {
+  fetchRelationships,
+  relationshipPageHasMore,
+  relationshipRows,
+} from "@/hooks/queries/utils/fetch-relationships";
 import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
 import {
   ACTION_QUEUE_PAGE,
@@ -159,6 +163,16 @@ export function newActionIntro(hasCompany: boolean): string {
   return hasCompany
     ? "Add a follow-up for a company already in this workspace."
     : "Add a company before a follow-up can be created.";
+}
+
+export function recoveryNextCompaniesLabel(): string {
+  return "Show the next companies";
+}
+
+export function recoveryNoCompaniesCopy(hasMoreCompanies: boolean): string {
+  return hasMoreCompanies
+    ? "More companies are still in this list."
+    : "No companies yet. Add one in Companies, or run an audit to find them.";
 }
 
 export function QueueView({
@@ -593,9 +607,45 @@ function CreateActionDialog({
   onOpenCompanies?: () => void;
 }) {
   const relationshipsQuery = useRelationships();
-  const relationships = relationshipRows(relationshipsQuery.data).filter(
-    (record) => record.kind !== "person",
+  const directoryRows = React.useMemo(
+    () => relationshipRows(relationshipsQuery.data),
+    [relationshipsQuery.data],
   );
+  const [extraCompanies, setExtraCompanies] = React.useState<RevenueRelationship[]>([]);
+  const [companyOffset, setCompanyOffset] = React.useState<number | undefined>();
+  const [laterCompaniesHasMore, setLaterCompaniesHasMore] = React.useState<boolean | null>(null);
+  const [loadingMoreCompanies, setLoadingMoreCompanies] = React.useState(false);
+  React.useEffect(() => {
+    setExtraCompanies([]);
+    setCompanyOffset(undefined);
+    setLaterCompaniesHasMore(null);
+  }, [relationshipsQuery.dataUpdatedAt]);
+  const relationships = React.useMemo(() => {
+    const seen = new Set<string>();
+    return [...directoryRows, ...extraCompanies].filter((record) => {
+      if (record.kind === "person" || seen.has(record.id)) return false;
+      seen.add(record.id);
+      return true;
+    });
+  }, [directoryRows, extraCompanies]);
+  const hasMoreCompanies =
+    laterCompaniesHasMore ?? relationshipPageHasMore(relationshipsQuery.data);
+  const loadMoreCompanies = async () => {
+    if (loadingMoreCompanies || !hasMoreCompanies) return;
+    setLoadingMoreCompanies(true);
+    try {
+      const offset = companyOffset ?? directoryRows.length;
+      const next = await fetchRelationships({ offset });
+      const rows = relationshipRows(next);
+      setCompanyOffset(offset + rows.length);
+      setLaterCompaniesHasMore(next.hasMore);
+      setExtraCompanies((current) => [...current, ...rows]);
+    } catch (reason) {
+      onError(explainedRevenueError(reason, "Could not load the next companies."));
+    } finally {
+      setLoadingMoreCompanies(false);
+    }
+  };
   const [relationshipId, setRelationshipId] = React.useState("");
   const createActionTypes = [
     "warm_follow_up",
@@ -646,13 +696,15 @@ function CreateActionDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>New action</DialogTitle>
-          <DialogDescription>{newActionIntro(relationships.length > 0)}</DialogDescription>
+          <DialogDescription>
+            {newActionIntro(relationships.length > 0 || hasMoreCompanies)}
+          </DialogDescription>
         </DialogHeader>
-        {relationships.length === 0 ? (
+        {relationships.length === 0 && !hasMoreCompanies ? (
           <Empty className="gap-3 py-4">
             <EmptyHeader>
               <EmptyDescription className="text-sm text-primary/55">
-                No companies yet. Add one in Companies, or run an audit to find them.
+                {recoveryNoCompaniesCopy(false)}
               </EmptyDescription>
             </EmptyHeader>
             {onOpenCompanies ? (
@@ -675,7 +727,11 @@ function CreateActionDialog({
                 aria-label={recoveryCompanyName(
                   (() => {
                     const selected = relationships.find((item) => item.id === relationshipId);
-                    return selected ? companyName(selected) : "Choose a company";
+                    if (selected) return companyName(selected);
+                    if (relationships.length === 0 && hasMoreCompanies) {
+                      return "More companies are still in this list.";
+                    }
+                    return "Choose a company";
                   })(),
                 )}
                 size="sm"
@@ -689,6 +745,23 @@ function CreateActionDialog({
                     {r.primaryEmail ? ` · ${r.primaryEmail}` : ""}
                   </SelectItem>
                 ))}
+                {hasMoreCompanies ? (
+                  <Button
+                    className={cn(
+                      "sticky bottom-0 z-10 h-8 w-full justify-start rounded-none",
+                      "border-t border-border bg-background px-2 text-[12px]",
+                    )}
+                    disabled={loadingMoreCompanies}
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      void loadMoreCompanies();
+                    }}
+                    type="button"
+                    variant="ghost"
+                  >
+                    {loadingMoreCompanies ? "Loading…" : recoveryNextCompaniesLabel()}
+                  </Button>
+                ) : null}
               </SelectContent>
             </Select>
             <Select

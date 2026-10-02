@@ -30,11 +30,27 @@ export type TaskCreateDialogProps = {
   onError: (message: string) => void;
   /** Present when the workspace can switch to Companies and open New company. */
   onAddCompany?: () => void;
+  /** The company chip only lists the directory page already loaded. */
+  hasMoreCompanies?: boolean;
+  loadingMoreCompanies?: boolean;
+  onLoadMoreCompanies?: () => void;
 };
 
 /** Save needs a company. Adding one is the next step only when the workspace has none. */
-export function taskCompanyRequiredCopy(noCompanies: boolean): string {
-  return noCompanies ? "Add a company before saving." : "Link a company before saving.";
+export function taskCompanyRequiredCopy(noCompanies: boolean, hasMoreCompanies = false): string {
+  if (!noCompanies) return "Link a company before saving.";
+  if (hasMoreCompanies) return "Show the next companies before saving.";
+  return "Add a company before saving.";
+}
+
+export function taskNextCompaniesLabel(): string {
+  return "Show the next companies";
+}
+
+export function taskCompanyMenuLabel(loadedCount: number, hasMoreCompanies: boolean): string {
+  if (loadedCount > 0) return "Link a company";
+  if (hasMoreCompanies) return "More companies are still in this list.";
+  return "No companies yet";
 }
 
 const todayValue = () => {
@@ -61,6 +77,9 @@ export function TaskCreateDialog({
   onSaved,
   onError,
   onAddCompany,
+  hasMoreCompanies = false,
+  loadingMoreCompanies = false,
+  onLoadMoreCompanies,
 }: TaskCreateDialogProps) {
   const todayDefault = React.useMemo(() => todayValue(), []);
   const [title, setTitle] = React.useState("");
@@ -78,12 +97,14 @@ export function TaskCreateDialog({
       })),
     [relationships],
   );
-  const noCompanies = relationships.length === 0;
+  const noCompanies = relationships.length === 0 && !hasMoreCompanies;
   const dueLabel = dueDate === todayDefault ? "Today" : formatShortDate(dueDate);
   const selectedCompany = relationshipOptions.find((option) => option.value === relationshipId);
-  const companyChoice = noCompanies
-    ? "No companies yet"
-    : selectedCompany?.label || (recordError ? "Link a company to save" : "Link a company");
+  const companyChoice =
+    selectedCompany?.label ||
+    (recordError && relationships.length > 0
+      ? "Link a company to save"
+      : taskCompanyMenuLabel(relationships.length, hasMoreCompanies));
 
   const close = React.useCallback(() => onOpenChange(false), [onOpenChange]);
 
@@ -149,7 +170,22 @@ export function TaskCreateDialog({
           }}
         />
         {recordError ? (
-          <ChipModalError>{taskCompanyRequiredCopy(noCompanies)}</ChipModalError>
+          <ChipModalError>
+            {taskCompanyRequiredCopy(relationships.length === 0, hasMoreCompanies)}
+          </ChipModalError>
+        ) : null}
+        {hasMoreCompanies ? (
+          <button
+            className={
+              "mt-2 self-start px-1 text-caption underline " +
+              "disabled:opacity-50 text-[var(--text-secondary)]"
+            }
+            disabled={loadingMoreCompanies}
+            type="button"
+            onClick={() => onLoadMoreCompanies?.()}
+          >
+            {loadingMoreCompanies ? "Loading…" : taskNextCompaniesLabel()}
+          </button>
         ) : null}
         {noCompanies && onAddCompany ? (
           <button
@@ -166,12 +202,15 @@ export function TaskCreateDialog({
         cancelDisabled={busy}
         onCancel={close}
         primaryAction={{
-          disabled: busy || !title.trim() || !dueDate || noCompanies,
-          disabledTooltip: noCompanies
-            ? "Add a company before this task can be saved"
-            : !relationshipId
-              ? "Link a company to save"
-              : undefined,
+          disabled: busy || !title.trim() || !dueDate || relationships.length === 0,
+          disabledTooltip:
+            relationships.length === 0
+              ? hasMoreCompanies
+                ? "Show the next companies before this task can be saved"
+                : "Add a company before this task can be saved"
+              : !relationshipId
+                ? "Link a company to save"
+                : undefined,
           label: "Save",
           leftAdornment: busy ? (
             <Loader animate className="size-[14px] text-[var(--text-tertiary)]" />
@@ -182,12 +221,14 @@ export function TaskCreateDialog({
           // Create more only applies after a save, and a save needs a company.
           custom: (
             <label
-              className={`inline-flex items-center gap-2 px-1 text-[var(--text-secondary)] text-caption ${noCompanies ? "cursor-not-allowed" : "cursor-pointer"}`}
+              className={`inline-flex items-center gap-2 px-1 text-caption ${
+                relationships.length === 0 ? "cursor-not-allowed" : "cursor-pointer"
+              } text-[var(--text-secondary)]`}
             >
               <Switch
                 aria-label="Create more tasks after saving"
                 checked={createMore}
-                disabled={noCompanies}
+                disabled={relationships.length === 0}
                 onCheckedChange={setCreateMore}
               />
               Create more
@@ -220,7 +261,7 @@ export function TaskCreateDialog({
               <ChipDropdown
                 aria-label={comboboxFilterName("Company", companyChoice)}
                 className={recordError ? "text-[var(--text-error)]" : undefined}
-                disabled={noCompanies}
+                disabled={relationships.length === 0}
                 leftIcon={Link}
                 options={relationshipOptions}
                 placeholder={companyChoice}

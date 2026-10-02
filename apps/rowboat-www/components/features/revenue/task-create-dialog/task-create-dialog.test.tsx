@@ -16,7 +16,9 @@ vi.mock("@/lib/revenue/revenue", () => ({
 
 import {
   TaskCreateDialog,
+  taskCompanyMenuLabel,
   taskCompanyRequiredCopy,
+  taskNextCompaniesLabel,
 } from "@/components/features/revenue/task-create-dialog/task-create-dialog";
 
 describe("TaskCreateDialog", () => {
@@ -94,5 +96,56 @@ describe("TaskCreateDialog", () => {
     await user.click(screen.getByRole("button", { name: "Add a company" }));
     expect(onAddCompany).toHaveBeenCalledOnce();
     expect(mocks.createAction).not.toHaveBeenCalled();
+  });
+
+  it("loads a later company into a new task without saving", async () => {
+    Element.prototype.hasPointerCapture ??= () => false;
+    Element.prototype.setPointerCapture ??= () => undefined;
+    Element.prototype.releasePointerCapture ??= () => undefined;
+    Element.prototype.scrollIntoView ??= () => undefined;
+    const user = userEvent.setup();
+    const onLoadMoreCompanies = vi.fn();
+    const acme = { id: "relationship-1", kind: "company" as const, displayName: "Acme" };
+    const hidden = {
+      id: "relationship-hidden",
+      kind: "company" as const,
+      displayName: "Hidden Account Co",
+    };
+    const { rerender } = render(
+      <TaskCreateDialog
+        hasMoreCompanies
+        open
+        relationships={[acme]}
+        onError={vi.fn()}
+        onLoadMoreCompanies={onLoadMoreCompanies}
+        onOpenChange={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: taskNextCompaniesLabel() })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Company, Link a company" }));
+    expect(screen.getByRole("menuitem", { name: "Acme" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Hidden Account Co" })).toBeNull();
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: taskNextCompaniesLabel() }));
+    expect(onLoadMoreCompanies).toHaveBeenCalledOnce();
+
+    rerender(
+      <TaskCreateDialog
+        open
+        relationships={[acme, hidden]}
+        onError={vi.fn()}
+        onLoadMoreCompanies={onLoadMoreCompanies}
+        onOpenChange={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Company, Link a company" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Company, Link a company" }));
+    expect(screen.getByRole("menuitem", { name: "Hidden Account Co" })).toBeInTheDocument();
+    expect(mocks.createAction).not.toHaveBeenCalled();
+    expect(taskCompanyMenuLabel(0, true)).toBe("More companies are still in this list.");
+    expect(taskCompanyRequiredCopy(true, true)).toBe("Show the next companies before saving.");
   });
 });

@@ -48,7 +48,11 @@ import {
   fetchRevenueActions,
 } from "@/hooks/queries/utils/fetch-revenue-actions";
 import { usePersons, useRelationships } from "@/hooks/queries/use-relationships";
-import { relationshipRows } from "@/hooks/queries/utils/fetch-relationships";
+import {
+  fetchRelationships,
+  relationshipPageHasMore,
+  relationshipRows,
+} from "@/hooks/queries/utils/fetch-relationships";
 import {
   fetchPersons,
   personPageHasMore,
@@ -2443,6 +2447,10 @@ export function TasksView({
   const [extraTasks, setExtraTasks] = React.useState<RevenueAction[]>([]);
   const [laterTasksHasMore, setLaterTasksHasMore] = React.useState<boolean | null>(null);
   const [loadingMoreTasks, setLoadingMoreTasks] = React.useState(false);
+  const [extraCompanies, setExtraCompanies] = React.useState<RevenueRelationship[]>([]);
+  const [companyOffset, setCompanyOffset] = React.useState<number | undefined>();
+  const [laterCompaniesHasMore, setLaterCompaniesHasMore] = React.useState<boolean | null>(null);
+  const [loadingMoreCompanies, setLoadingMoreCompanies] = React.useState(false);
   const taskPage = actionRows(actionsQuery.data);
   const taskRows = React.useMemo(() => {
     if (extraTasks.length === 0) return taskPage;
@@ -2459,9 +2467,25 @@ export function TasksView({
   const hasMoreTasks =
     laterTasksHasMore ?? (taskPage.length > 0 && actionPageHasMore(actionsQuery.data));
   const tasks = sortTasksByDue(taskRows.filter(isWorkspaceTask), soonestFirst);
-  const relationships = relationshipRows(relationshipsQuery.data).filter(
-    (record) => record.kind !== "person",
+  const directoryRows = React.useMemo(
+    () => relationshipRows(relationshipsQuery.data),
+    [relationshipsQuery.data],
   );
+  React.useEffect(() => {
+    setExtraCompanies([]);
+    setCompanyOffset(undefined);
+    setLaterCompaniesHasMore(null);
+  }, [relationshipsQuery.dataUpdatedAt]);
+  const relationships = React.useMemo(() => {
+    const seen = new Set<string>();
+    return [...directoryRows, ...extraCompanies].filter((record) => {
+      if (record.kind === "person" || seen.has(record.id)) return false;
+      seen.add(record.id);
+      return true;
+    });
+  }, [directoryRows, extraCompanies]);
+  const hasMoreCompanies =
+    laterCompaniesHasMore ?? relationshipPageHasMore(relationshipsQuery.data);
   const loading = actionsQuery.isPending || relationshipsQuery.isPending;
   const load = React.useCallback(async () => {
     setExtraTasks([]);
@@ -2490,6 +2514,22 @@ export function TasksView({
       setLoadingMoreTasks(false);
     }
   }, [extraTasks.length, hasMoreTasks, loadingMoreTasks, onError, taskPage.length]);
+  const loadMoreCompanies = React.useCallback(async () => {
+    if (loadingMoreCompanies || !hasMoreCompanies) return;
+    setLoadingMoreCompanies(true);
+    try {
+      const offset = companyOffset ?? directoryRows.length;
+      const next = await fetchRelationships({ offset });
+      const rows = relationshipRows(next);
+      setCompanyOffset(offset + rows.length);
+      setLaterCompaniesHasMore(next.hasMore);
+      setExtraCompanies((current) => [...current, ...rows]);
+    } catch (reason) {
+      onError(explainedRevenueError(reason, "Could not load the next companies."));
+    } finally {
+      setLoadingMoreCompanies(false);
+    }
+  }, [companyOffset, directoryRows.length, hasMoreCompanies, loadingMoreCompanies, onError]);
 
   React.useEffect(() => {
     const error = actionsQuery.error ?? relationshipsQuery.error;
@@ -2711,6 +2751,9 @@ export function TasksView({
       {creating ? (
         <TaskCreateDialog
           open
+          hasMoreCompanies={hasMoreCompanies}
+          loadingMoreCompanies={loadingMoreCompanies}
+          onLoadMoreCompanies={() => void loadMoreCompanies()}
           relationships={relationships}
           onAddCompany={
             onOpenCompanies

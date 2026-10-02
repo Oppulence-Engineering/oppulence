@@ -41,7 +41,7 @@ describe("QueueView", () => {
   });
 
   it("points an empty workspace at Companies and names the action", () => {
-    expect(source).toContain("{newActionIntro(relationships.length > 0)}");
+    expect(source).toContain("{newActionIntro(relationships.length > 0 || hasMoreCompanies)}");
     expect(newActionIntro(true)).toBe(
       "Add a follow-up for a company already in this workspace.",
     );
@@ -53,7 +53,7 @@ describe("QueueView", () => {
     expect(source).toContain("openCompanyCreate(onOpenCompanies)");
     expect(source).not.toContain("Relationships tab");
     expect(source).toContain("ACTION_TYPE_LABELS[t]");
-    expect(source).toContain('record.kind !== "person"');
+    expect(source).toContain('record.kind === "person"');
     expect(source).toContain('errMessage(relationshipsQuery.error, "Could not load companies.")');
     expect(source).not.toContain("Could not load relationships.");
     expect(source).toContain('errMessage(actionsQuery.error, "Could not load recovery.")');
