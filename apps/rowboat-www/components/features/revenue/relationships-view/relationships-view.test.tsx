@@ -15,6 +15,7 @@ import {
   companyDirectoryTitle,
   companyHealthFilterName,
   companyListEmptyCopy,
+  companyListFailureCopy,
   companyStageFilterName,
   companySheetPositionLabel,
   companyReviewCopy,
@@ -131,6 +132,11 @@ describe("RelationshipsView", () => {
       }),
     ).toBe("Connect Gmail to discover companies from real conversations, or add one by hand.");
     expect(source).toContain("companyListEmptyCopy({");
+    expect(companyListFailureCopy()).toBe("Companies could not load. Try again.");
+    expect(source).toContain("relationshipsQuery.isError");
+    expect(source).toContain("companyListFailureCopy()");
+    expect(source).toContain("relationshipsQuery.refetch()");
+    expect(source).toContain('"Couldn\'t load"');
     expect(companySheetPositionLabel(1, 4, false)).toBe("1 of 4 in All companies");
     expect(companySheetPositionLabel(1, 1, true)).toBe("1 of 1 in this filter");
     expect(companySheetPositionLabel(1, 200, false, true)).toBe("1 of 200+ in All companies");

@@ -618,6 +618,11 @@ export function companyListEmptyCopy(input: {
   return "Connect Gmail to discover companies from real conversations, or add one by hand.";
 }
 
+/** A failed directory request is not an empty workspace. */
+export function companyListFailureCopy(): string {
+  return "Companies could not load. Try again.";
+}
+
 /** Health and stage are comboboxes. The visible word is the choice, not the name. */
 export function companyHealthFilterName(value: string): string {
   return comboboxFilterName("Health", value === "all" ? "Any health" : humanize(value));
@@ -950,6 +955,10 @@ export function RelationshipsView({
     }
   }, [onError, onNotice]);
 
+  const companyCountLabel = relationshipsQuery.isError
+    ? "Couldn't load"
+    : companyDirectoryCount(companies.length, hasMoreCompanies);
+
   return (
     <div className="flex min-h-full flex-col" data-slot="relationships-view">
       <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-3">
@@ -963,7 +972,7 @@ export function RelationshipsView({
           >
             <Buildings /> {directoryTitle.label}{" "}
             <Badge className="font-normal text-primary/40" variant="secondary">
-              {companyDirectoryCount(companies.length, hasMoreCompanies)}
+              {companyCountLabel}
             </Badge>
           </Button>
         ) : (
@@ -973,7 +982,7 @@ export function RelationshipsView({
           >
             <Buildings /> {directoryTitle.label}{" "}
             <Badge className="font-normal text-primary/40" variant="secondary">
-              {companyDirectoryCount(companies.length, hasMoreCompanies)}
+              {companyCountLabel}
             </Badge>
           </Badge>
         )}
@@ -1013,7 +1022,23 @@ export function RelationshipsView({
         </div>
       </div>
 
-      {surface === "graph" ? (
+      {relationshipsQuery.isError ? (
+        <EmptyBlock
+          body={companyListFailureCopy()}
+          image="companies"
+          learnMore={[]}
+          title="Companies"
+        >
+          <Button
+            onClick={() => void relationshipsQuery.refetch()}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            Try again
+          </Button>
+        </EmptyBlock>
+      ) : surface === "graph" ? (
         <RelationshipGraphWorkspace
           relationships={companies}
           hasMoreCompanies={hasMoreCompanies}

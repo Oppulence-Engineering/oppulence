@@ -297,6 +297,11 @@ export function peopleListEmptyCopy(filtered: boolean): string {
   return "Connect Gmail or add a person to keep a contact for each company.";
 }
 
+/** A failed people request is not an empty directory. */
+export function peopleListFailureCopy(): string {
+  return "People could not load. Try again.";
+}
+
 /**
  * Enrichment is the count of verified profile fields. Location already has
  * its own column; using it as a fallback made a known city look enriched.
@@ -630,7 +635,9 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
       <RecordHeader
         icon={<User />}
         label={directoryTitle.label}
-        count={personDirectoryCount(people.length, hasMorePeople)}
+        count={
+          peopleQuery.isError ? "Couldn't load" : personDirectoryCount(people.length, hasMorePeople)
+        }
         filtered={directoryTitle.filtered}
         onClear={() => {
           setQuery("");
@@ -665,6 +672,17 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
         <div className="p-4">
           <ListSkeleton />
         </div>
+      ) : peopleQuery.isError ? (
+        <EmptyBlock body={peopleListFailureCopy()} image="people" learnMore={[]} title="People">
+          <Button
+            onClick={() => void peopleQuery.refetch()}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            Try again
+          </Button>
+        </EmptyBlock>
       ) : people.length === 0 ? (
         <EmptyBlock
           body={peopleListEmptyCopy(directoryTitle.filtered)}
@@ -1099,6 +1117,11 @@ export function noteCountLabel(shown: number, hasMore: boolean): string {
   return hasMore ? `${shown}+` : String(shown);
 }
 
+/** A failed notes request is not an empty notebook. */
+export function noteListFailureCopy(): string {
+  return "Notes could not load. Try again.";
+}
+
 export function earlierNotesLabel(): string {
   return "Show earlier notes";
 }
@@ -1410,10 +1433,12 @@ export function NotesView({
           >
             <Note className="size-4" /> Notes{" "}
             <Badge className="font-normal text-primary/40" variant="secondary">
-              {noteCountLabel(
-                notes.length,
-                notesTabContinues(notes.length, hasEarlierNotes, hasMoreCompanies),
-              )}
+              {notesQuery.isError
+                ? "Couldn't load"
+                : noteCountLabel(
+                    notes.length,
+                    notesTabContinues(notes.length, hasEarlierNotes, hasMoreCompanies),
+                  )}
             </Badge>
           </TabsTrigger>
           <TabsTrigger
@@ -1580,6 +1605,23 @@ export function NotesView({
         <div className="p-4">
           <ListSkeleton />
         </div>
+      ) : notesQuery.isError ? (
+        <WorkspaceEmptyState
+          action={
+            <Button
+              onClick={() => void notesQuery.refetch()}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              Try again
+            </Button>
+          }
+          description={noteListFailureCopy()}
+          image="notes"
+          learnMore={[]}
+          title="Notes"
+        />
       ) : visible.length === 0 ? (
         <WorkspaceEmptyState
           action={
@@ -2432,6 +2474,11 @@ export function taskListEmptyCopy(
   return null;
 }
 
+/** A failed task request is not an empty task list. */
+export function taskListFailureCopy(): string {
+  return "Tasks could not load. Try again.";
+}
+
 const TASK_FILTER_LABEL = {
   all: "All tasks",
   today: "Due today",
@@ -2696,6 +2743,23 @@ export function TasksView({
         <div className="p-4">
           <ListSkeleton />
         </div>
+      ) : actionsQuery.isError ? (
+        <WorkspaceEmptyState
+          action={
+            <Button
+              onClick={() => void actionsQuery.refetch()}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              Try again
+            </Button>
+          }
+          description={taskListFailureCopy()}
+          image="tasks"
+          learnMore={[]}
+          title="Tasks"
+        />
       ) : visible.length === 0 ? (
         <WorkspaceEmptyState
           action={

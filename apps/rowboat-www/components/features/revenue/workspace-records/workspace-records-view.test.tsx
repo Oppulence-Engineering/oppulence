@@ -29,6 +29,10 @@ const records = vi.hoisted(() => ({
     attributesVersion: number;
     primaryEmail?: string;
   }>,
+  peopleError: null as Error | null,
+  actionsError: null as Error | null,
+  peopleRefetch: vi.fn(async () => undefined),
+  actionsRefetch: vi.fn(async () => undefined),
 }));
 
 vi.mock("@/lib/console/console", () => ({
@@ -60,27 +64,31 @@ vi.mock("@/lib/revenue/revenue", async (importOriginal) => {
 });
 vi.mock("@/hooks/queries/use-revenue-actions", () => ({
   useRevenueActions: () => ({
-    data: [
-      {
-        id: "task-1",
-        reason: "Call the harbor",
-        relationshipId: "relationship-1",
-        dueAt: "2026-10-11T21:00:00.000Z",
-        actionType: "follow_up_task",
-        channel: "task",
-      },
-      {
-        id: "task-hidden",
-        reason: "Call the hidden account",
-        relationshipId: "relationship-hidden",
-        relationshipName: "Hidden Account Co",
-        dueAt: "2026-10-12T21:00:00.000Z",
-        actionType: "follow_up_task",
-        channel: "task",
-      },
-    ],
+    data: records.actionsError
+      ? undefined
+      : [
+          {
+            id: "task-1",
+            reason: "Call the harbor",
+            relationshipId: "relationship-1",
+            dueAt: "2026-10-11T21:00:00.000Z",
+            actionType: "follow_up_task",
+            channel: "task",
+          },
+          {
+            id: "task-hidden",
+            reason: "Call the hidden account",
+            relationshipId: "relationship-hidden",
+            relationshipName: "Hidden Account Co",
+            dueAt: "2026-10-12T21:00:00.000Z",
+            actionType: "follow_up_task",
+            channel: "task",
+          },
+        ],
     isPending: false,
-    error: null,
+    isError: records.actionsError != null,
+    error: records.actionsError,
+    refetch: records.actionsRefetch,
   }),
 }));
 vi.mock("@/hooks/queries/use-relationships", () => ({
@@ -89,7 +97,13 @@ vi.mock("@/hooks/queries/use-relationships", () => ({
     isPending: false,
     error: null,
   }),
-  usePersons: () => ({ data: records.people, isPending: false, error: null }),
+  usePersons: () => ({
+    data: records.peopleError ? undefined : records.people,
+    isPending: false,
+    isError: records.peopleError != null,
+    error: records.peopleError,
+    refetch: records.peopleRefetch,
+  }),
 }));
 vi.mock("@/components/auth/auth-gate", () => ({
   useAuthSession: () => ({
@@ -114,6 +128,9 @@ import {
   personDirectoryTitle,
   personRemainderLabel,
   peopleListEmptyCopy,
+  peopleListFailureCopy,
+  noteListFailureCopy,
+  taskListFailureCopy,
   enrichmentEvidence,
   personEnrichmentLabel,
   personEvidenceProvenance,
@@ -775,6 +792,30 @@ describe("durable note templates and favorites", () => {
     expect(screen.queryByText("Created today")).not.toBeInTheDocument();
     vi.useRealTimers();
   });
+
+  it("says notes failed to load instead of claiming there are no notes", async () => {
+    mocks.fetchWorkspaceNotes.mockRejectedValue(new Error("boom"));
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <NotesView onError={vi.fn()} onNotice={vi.fn()} />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText(noteListFailureCopy())).toBeVisible();
+    expect(screen.getByText("Couldn't load")).toBeVisible();
+    expect(screen.queryByText(/No notes yet/)).not.toBeInTheDocument();
+    mocks.fetchWorkspaceNotes.mockResolvedValue({
+      notes: [],
+      relationships: [],
+      failedTimelineCount: 0,
+      hasMoreNotes: false,
+      timelineCursors: [],
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByText(/No notes yet/)).toBeVisible();
+    expect(screen.queryByText("Couldn't load")).not.toBeInTheDocument();
+  });
 });
 import { describe, expect, it } from "vitest";
 
@@ -1097,6 +1138,9 @@ describe("task due order", () => {
     expect(source).not.toContain("loadedTaskCount.current");
     expect(source).not.toContain("=== ACTION_QUEUE_PAGE");
     expect(source).toContain("No tasks yet! Create your first");
+    expect(taskListFailureCopy()).toBe("Tasks could not load. Try again.");
+    expect(source).toContain("actionsQuery.isError");
+    expect(source).toContain("taskListFailureCopy()");
     expect(source).toContain("onOpenCompany(task.relationshipId)");
   });
 
@@ -1136,6 +1180,23 @@ describe("task due order", () => {
     expect(taskCompanyName("Acme", "Hidden Account Co")).toBe("Acme");
     expect(taskCompanyName(undefined, "  ")).toBe("");
   });
+
+  it("says tasks failed to load instead of claiming there are no tasks", async () => {
+    records.actionsError = new Error("boom");
+    records.actionsRefetch.mockClear();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <TasksView onError={vi.fn()} onNotice={vi.fn()} />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText(taskListFailureCopy())).toBeVisible();
+    expect(screen.queryByText(/No tasks yet/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(records.actionsRefetch).toHaveBeenCalled();
+    records.actionsError = null;
+  });
 });
 
 describe("empty note template heading", () => {
@@ -1171,7 +1232,13 @@ describe("people directory copy", () => {
     expect(source).toContain("keep a contact for each company.");
     expect(peopleListEmptyCopy(true)).toBe("No people match this search.");
     expect(peopleListEmptyCopy(false)).toContain("keep a contact for each company.");
+    expect(peopleListFailureCopy()).toBe("People could not load. Try again.");
+    expect(noteListFailureCopy()).toBe("Notes could not load. Try again.");
     expect(source).toContain("peopleListEmptyCopy(directoryTitle.filtered)");
+    expect(source).toContain("peopleQuery.isError");
+    expect(source).toContain("notesQuery.isError");
+    expect(source).toContain("peopleListFailureCopy()");
+    expect(source).toContain("noteListFailureCopy()");
     expect(source).toContain("<Plus /> New person");
     expect(source).not.toContain("Add person");
     expect(source).toContain("Mail and meetings can fill in the rest later.");
@@ -1253,5 +1320,25 @@ describe("people directory copy", () => {
     expect(confirm).not.toHaveBeenCalled();
     confirm.mockRestore();
     records.people = [];
+  });
+
+  it("says people failed to load instead of claiming the directory is empty", async () => {
+    cleanup();
+    records.peopleError = new Error("boom");
+    records.peopleRefetch.mockClear();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <PeopleView onError={vi.fn()} onNotice={vi.fn()} />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText(peopleListFailureCopy())).toBeVisible();
+    expect(screen.getByText("Couldn't load")).toBeVisible();
+    expect(screen.queryByText(/Connect Gmail or add a person/)).not.toBeInTheDocument();
+    expect(screen.queryByText("0", { exact: true })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(records.peopleRefetch).toHaveBeenCalled();
+    records.peopleError = null;
   });
 });
