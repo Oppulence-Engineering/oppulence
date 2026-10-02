@@ -815,6 +815,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if sheetPhraseMatches("no supported answer yet", needle) {
 			parts = append(parts, relationship.Not(relationshipHasSupportedStateAnswer(time.Now())))
 		}
+		if counts := relationshipSheetDetailCountMatch(needle); counts != nil {
+			parts = append(parts, counts)
+		}
 		if sheetPhraseMatches("no action is currently recommended", needle) {
 			parts = append(parts, relationship.Not(
 				relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen)),
@@ -1337,6 +1340,91 @@ func relationshipHasSupportedStateAnswer(now time.Time) predicate.Relationship {
 			))
 		}))
 	})
+}
+
+// relationshipSheetDetailCountMatch matches the source badge on the company
+// sheet. The badge says "0 of 8 details have a source," and the question under
+// it says how many come from a source you can open. The 8 is every projected
+// detail, so a company with one correction reads "1 of 8".
+func relationshipSheetDetailCountMatch(needle string) predicate.Relationship {
+	total := len(relationshipProjectionDimensions)
+	now := time.Now()
+	var preds []predicate.Relationship
+	seen := map[int]bool{}
+	for n := 0; n <= total; n++ {
+		have := fmt.Sprintf("%d of %d details have a source", n, total)
+		come := fmt.Sprintf("%d of %d details come from a source you can open.", n, total)
+		if !sheetPhraseMatches(have, needle) && !sheetPhraseMatches(come, needle) {
+			continue
+		}
+		if seen[n] {
+			continue
+		}
+		seen[n] = true
+		preds = append(preds, relationshipSupportedDetailCount(n, now))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func relationshipSupportedDetailCount(n int, now time.Time) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT count(DISTINCT ")
+			b.WriteString(relationshipassertion.FieldDimension)
+			b.WriteString(") FROM ")
+			b.WriteString(relationshipassertion.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(relationshipassertion.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			b.WriteString(relationshipassertion.FieldDimension)
+			b.WriteString(" IN (")
+			for i, dimension := range relationshipProjectionDimensions {
+				if i > 0 {
+					b.WriteString(", ")
+				}
+				b.Arg(dimension)
+			}
+			b.WriteString(") AND ")
+			writeSupportedAssertionTail(b, s, now)
+			b.WriteString(") = ")
+			b.Arg(n)
+		}))
+	})
+}
+
+func writeSupportedAssertionTail(b *sql.Builder, s *sql.Selector, now time.Time) {
+	col := relationshipassertion.FieldSupportingObservationIds
+	evidence := fmt.Sprintf("json_array_length(coalesce(%s, '[]')) > 0", col)
+	if s.Dialect() == dialect.Postgres {
+		evidence = fmt.Sprintf("jsonb_array_length(coalesce(%s, '[]'::jsonb)) > 0", col)
+	}
+	b.WriteString(relationshipassertion.FieldStatus)
+	b.WriteString(" IN ('accepted', 'active') AND ")
+	b.WriteString(relationshipassertion.FieldValidFrom)
+	b.WriteString(" <= ")
+	b.Arg(now)
+	b.WriteString(" AND (")
+	b.WriteString(relationshipassertion.FieldValidTo)
+	b.WriteString(" IS NULL OR ")
+	b.WriteString(relationshipassertion.FieldValidTo)
+	b.WriteString(" > ")
+	b.Arg(now)
+	b.WriteString(") AND (")
+	b.WriteString(relationshipassertion.FieldSourceType)
+	b.WriteString(" = 'user_correction' OR ")
+	b.WriteString(relationshipassertion.ObservationColumn)
+	b.WriteString(" IS NOT NULL OR ")
+	b.WriteString(evidence)
+	b.WriteByte(')')
 }
 
 func sheetPhraseMatches(phrase, needle string) bool {

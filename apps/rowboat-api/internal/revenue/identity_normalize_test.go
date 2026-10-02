@@ -473,6 +473,9 @@ func TestRelationshipSearchFindsTheUnsupportedStateAnswer(t *testing.T) {
 	assertCompanyQuery("No supported answer yet", "Quill Atelier")
 	assertCompanyQuery("supported", "Quill Atelier")
 	assertCompanyQuery("answer")
+	assertCompanyQuery("0 of 8 details have a source", "Quill Atelier")
+	assertCompanyQuery("1 of 8 details come from a source you can open", "Lumen Packet")
+	assertCompanyQuery("2 of 8 details have a source")
 }
 
 func TestRelationshipSearchFindsTheSheetReviewAndRecommendation(t *testing.T) {
