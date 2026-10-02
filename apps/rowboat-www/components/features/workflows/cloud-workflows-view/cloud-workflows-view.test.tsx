@@ -167,15 +167,38 @@ describe("CloudWorkflowsView", () => {
         runCount: 0,
       }),
     ).toBe(null);
+    expect(
+      workflowLibraryNotice({
+        tasksError: null,
+        taskCount: 0,
+        templatesError: null,
+        templateCount: 0,
+        runsError: new Error("refresh unavailable"),
+        runCount: 0,
+        runsLoaded: true,
+      }),
+    ).toBe("Could not refresh runs. Try again.");
+    expect(
+      workflowLibraryNotice({
+        tasksError: new Error("refresh unavailable"),
+        taskCount: 0,
+        tasksLoaded: true,
+        templatesError: null,
+        templateCount: 0,
+        runsError: null,
+        runCount: 0,
+      }),
+    ).toBe("Could not refresh workflows. Try again.");
     expect(source).toContain("workflowLibraryNotice(");
     expect(source).toContain("templatesFailed");
-    expect(source).toContain("templatesQuery.isError && templates.length === 0");
-    expect(source).toContain("templatesQuery.isError && templates.length > 0");
+    expect(source).toContain("templatesQuery.isError && templatesQuery.data == null");
+    expect(source).toContain("templatesQuery.isError && templatesQuery.data != null");
     expect(source).toContain("workflowTemplatesRefreshCopy()");
     expect(source).toContain("Loading templates…");
     expect(source).toContain("tasksQuery.isPending && !tasksQuery.isError");
-    expect(source).toContain("tasksQuery.isError && tasks.length === 0");
-    expect(source).toContain("runsQuery.isError && runs.length === 0");
+    expect(source).toContain("tasksQuery.isError && tasksQuery.data == null");
+    expect(source).toContain("runsQuery.isError && runsQuery.data == null");
+    expect(source).toContain("runsLoaded: runsQuery.data != null");
     expect(source).toContain("loadFailed || query.trim()");
     expect(source).toContain("Start from a trigger or schedule");
     expect(source).toContain("aria-label={`Use ${name}`}");

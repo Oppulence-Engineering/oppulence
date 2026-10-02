@@ -349,15 +349,18 @@ export function workflowRefreshCopy(): string {
 export function workflowLibraryNotice(input: {
   tasksError: unknown;
   taskCount: number;
+  tasksLoaded?: boolean;
   templatesError: unknown;
   templateCount: number;
+  templatesLoaded?: boolean;
   runsError: unknown;
   runCount: number;
+  runsLoaded?: boolean;
 }): string | null {
   if (input.tasksError) {
     return workflowQueryNotice(
       input.tasksError,
-      input.taskCount > 0,
+      input.tasksLoaded ?? input.taskCount > 0,
       workflowRefreshCopy(),
       input.taskCount === 0 ? null : "Could not load workflows",
     );
@@ -365,7 +368,7 @@ export function workflowLibraryNotice(input: {
   if (input.templatesError) {
     return workflowQueryNotice(
       input.templatesError,
-      input.templateCount > 0,
+      input.templatesLoaded ?? input.templateCount > 0,
       workflowTemplatesRefreshCopy(),
       workflowTemplatesFailureCopy(),
     );
@@ -373,7 +376,7 @@ export function workflowLibraryNotice(input: {
   if (input.runsError) {
     return workflowQueryNotice(
       input.runsError,
-      input.runCount > 0,
+      input.runsLoaded ?? input.runCount > 0,
       workflowRunsRefreshCopy(),
       workflowRunsFailureCopy(),
     );
@@ -749,8 +752,7 @@ function CreateWorkflowDialog({
                       </div>
                     );
                   })}
-                {templates.filter((template) => !template.firstParty).length === 0 &&
-                !templatesStale ? (
+                {templates.filter((template) => !template.firstParty).length === 0 ? (
                   templatesFailed ? (
                     <div className="flex flex-col items-center gap-3 p-6 text-center">
                       <p className="text-xs text-muted-foreground">
@@ -765,7 +767,7 @@ function CreateWorkflowDialog({
                         Try again
                       </Button>
                     </div>
-                  ) : templatesLoading ? (
+                  ) : templatesLoading && !templatesStale ? (
                     <p className="p-6 text-center text-xs text-muted-foreground">
                       Loading templates…
                     </p>
@@ -1837,10 +1839,13 @@ export function CloudWorkflowsView({
   const queryError = workflowLibraryNotice({
     tasksError: tasksQuery.error,
     taskCount: tasks.length,
+    tasksLoaded: tasksQuery.data != null,
     templatesError: templatesQuery.error,
     templateCount: templates.length,
+    templatesLoaded: templatesQuery.data != null,
     runsError: runsQuery.error,
     runCount: runs.length,
+    runsLoaded: runsQuery.data != null,
   });
 
   React.useEffect(() => subscribeWorkflowLibrary(() => setScreen("library")), []);
@@ -2070,15 +2075,15 @@ export function CloudWorkflowsView({
             selectRun(null);
             setScreen("editor");
           }}
-          loadFailed={tasksQuery.isError && tasks.length === 0}
+          loadFailed={tasksQuery.isError && tasksQuery.data == null}
           onRetryLoad={() => {
             void tasksQuery.refetch();
           }}
           onRetryTemplates={() => {
             void templatesQuery.refetch();
           }}
-          templatesFailed={templatesQuery.isError && templates.length === 0}
-          templatesStale={templatesQuery.isError && templates.length > 0}
+          templatesFailed={templatesQuery.isError && templatesQuery.data == null}
+          templatesStale={templatesQuery.isError && templatesQuery.data != null}
           templatesLoading={templatesQuery.isPending}
           runs={runs}
           tasks={tasks}
@@ -2110,7 +2115,7 @@ export function CloudWorkflowsView({
               await invalidateRuns();
             })
           }
-          loadFailed={runsQuery.isError && runs.length === 0}
+          loadFailed={runsQuery.isError && runsQuery.data == null}
           onReload={() => {
             void runsQuery.refetch();
           }}
