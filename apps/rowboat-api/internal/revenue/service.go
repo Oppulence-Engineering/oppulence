@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -759,7 +760,11 @@ func (s *Service) ListRelationshipsFiltered(
 			relationship.DisplayNameContainsFold(value),
 			relationship.AccountDomainContainsFold(value),
 			relationship.PrimaryEmailContainsFold(value),
+			relationship.NextActionContainsFold(value),
+			relationship.SummaryContainsFold(value),
+			relationship.CompanyDescriptionContainsFold(value),
 			relationshipNormalizedContains(value),
+			relationshipCategoryContains(value),
 		))
 	}
 	rows, err := q.
@@ -786,22 +791,47 @@ func (s *Service) ListRelationshipsFiltered(
 	return &RelationshipListPage{Relationships: rows, HasMore: hasMore}, nil
 }
 
-// relationshipNormalizedContains matches the company title on the directory.
-// A domain stored as dogfood-label.example is shown as "Dogfood Label", and
-// that phrase has to find the company even though the stored value uses a
-// hyphen and a dot.
+// relationshipNormalizedContains matches the words a teammate sees. A domain
+// stored as dogfood-label.example is shown as "Dogfood Label", and a next
+// action stored with a hyphen still has to match the phrase on the row.
 func relationshipNormalizedContains(term string) predicate.Relationship {
 	needle := "%" + escapePersonSearchLike(normalizePersonSearch(term)) + "%"
 	return predicate.Relationship(func(s *sql.Selector) {
-		parts := make([]*sql.Predicate, 0, 3)
-		for _, field := range []string{
-			relationship.FieldDisplayName,
-			relationship.FieldAccountDomain,
-			relationship.FieldPrimaryEmail,
-		} {
+		parts := make([]*sql.Predicate, 0, len(relationshipSearchColumns))
+		for _, field := range relationshipSearchColumns {
 			parts = append(parts, normalizedSearchLike(s, field, needle))
 		}
 		s.Where(sql.Or(parts...))
+	})
+}
+
+// relationshipSearchColumns are the text facts on a company row: the name,
+// the domain, the email, the next action, and the description.
+var relationshipSearchColumns = []string{
+	relationship.FieldDisplayName,
+	relationship.FieldAccountDomain,
+	relationship.FieldPrimaryEmail,
+	relationship.FieldNextAction,
+	relationship.FieldSummary,
+	relationship.FieldCompanyDescription,
+}
+
+// relationshipCategoryContains matches the category badge on the directory.
+// The value is a JSON list, so Postgres has to read it as text. SQLite already
+// stores that list as text.
+func relationshipCategoryContains(term string) predicate.Relationship {
+	needle := "%" + escapePersonSearchLike(strings.ToLower(strings.TrimSpace(term))) + "%"
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(relationship.FieldCompanyCategories)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(fmt.Sprintf("lower(%s::text) LIKE ", column))
+			} else {
+				b.WriteString(fmt.Sprintf("lower(coalesce(%s, '')) LIKE ", column))
+			}
+			b.Arg(needle)
+			b.WriteString(" ESCAPE '!'")
+		}))
 	})
 }
 

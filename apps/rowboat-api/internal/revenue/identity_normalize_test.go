@@ -233,7 +233,45 @@ func TestRelationshipSearchSQLUsesPostgresPlaceholders(t *testing.T) {
 	if !strings.Contains(query, "ESCAPE '!'") || !strings.Contains(query, "$1") {
 		t.Fatalf("postgres search = %s", query)
 	}
-	if len(args) != 3 || args[0] != "%dogfood label%" {
+	if len(args) != len(relationshipSearchColumns) || args[0] != "%dogfood label%" {
 		t.Fatalf("args = %#v", args)
+	}
+}
+
+func TestRelationshipSearchFindsTheRowFacts(t *testing.T) {
+	f := newFixture(t)
+	rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Northwind Quiet", AccountDomain: "northwind-quiet.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(rel.ID).
+		SetNextAction("Send the security packet").
+		SetSummary("Quiet renewal notes").
+		SetCompanyDescription("Builds precision actuators").
+		SetCompanyCategories([]string{"Industrial Robotics"}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Plain Supplies",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, query := range []string{
+		"security packet",
+		"Quiet renewal",
+		"precision actuators",
+		"Industrial Robotics",
+	} {
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		names := []string{}
+		if found != nil {
+			names = namesOf(found.Relationships)
+		}
+		if err != nil || len(names) != 1 || names[0] != "Northwind Quiet" {
+			t.Fatalf("query %q = %v err=%v", query, names, err)
+		}
 	}
 }
