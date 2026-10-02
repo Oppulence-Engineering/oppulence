@@ -917,8 +917,12 @@ export function RelationshipsView({
   ]);
 
   React.useEffect(() => {
+    const listed =
+      relationshipsQuery.error != null && relationshipsQuery.data != null
+        ? null
+        : relationshipsQuery.error;
     const error =
-      relationshipsQuery.error ??
+      listed ??
       sourcesQuery.error ??
       inventoryQuery.error ??
       pendingQuery.error ??
@@ -938,6 +942,7 @@ export function RelationshipsView({
     inventoryQuery.error,
     onError,
     pendingQuery.error,
+    relationshipsQuery.data,
     relationshipsQuery.error,
     sourcesQuery.error,
   ]);

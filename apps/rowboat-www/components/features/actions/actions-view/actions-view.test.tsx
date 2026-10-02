@@ -22,9 +22,9 @@ describe("ActionsView", () => {
     expect(source).toContain("Actions an agent wants to take");
     expect(approvalListFailureCopy()).toBe("Agent approvals could not load. Try again.");
     expect(approvalRefreshFailureCopy()).toBe("Could not refresh agent approvals. Try again.");
-    expect(source).toContain("proposalsQuery.isError && !unavailable && proposals.length === 0");
+    expect(source).toContain("proposalsQuery.isError && !unavailable && !approvalsLoaded");
     expect(source).toContain("setError(approvalRefreshFailureCopy())");
-    expect(source).toContain("unavailable || shown === 0");
+    expect(source).toContain("unavailable || !approvalsLoaded");
     expect(source).toContain("approvalListFailureCopy()");
     expect(source).toContain("Nothing happens until you approve");
     expect(source).toContain("Approve and run");

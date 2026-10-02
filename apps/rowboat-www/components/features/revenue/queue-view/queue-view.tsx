@@ -255,10 +255,9 @@ export function QueueView({
   }, [filter]);
 
   React.useEffect(() => {
-    if (actionsQuery.error) {
-      onError(errMessage(actionsQuery.error, "Could not load recovery."));
-    }
-  }, [actionsQuery.error, onError]);
+    if (!actionsQuery.error || actionsQuery.data != null) return;
+    onError(errMessage(actionsQuery.error, "Could not load recovery."));
+  }, [actionsQuery.data, actionsQuery.error, onError]);
 
   const loadMoreRecovery = React.useCallback(async () => {
     if (loadingMoreRecovery || !hasMoreRecovery) return;

@@ -109,19 +109,19 @@ export function ActionsView() {
   const proposals = unavailable
     ? []
     : (localProposals ?? proposalsQuery.data ?? (proposalsQuery.isPending ? null : []));
+  const approvalsLoaded = localProposals != null || proposalsQuery.data != null;
 
   React.useEffect(() => {
     if (proposalsQuery.data) setLocalProposals(proposalsQuery.data);
   }, [proposalsQuery.data]);
 
   React.useEffect(() => {
-    const shown = (localProposals ?? proposalsQuery.data ?? []).length;
-    if (!proposalsQuery.error || unavailable || shown === 0) {
+    if (!proposalsQuery.error || unavailable || !approvalsLoaded) {
       setError((current) => (current === approvalRefreshFailureCopy() ? null : current));
       return;
     }
     setError(approvalRefreshFailureCopy());
-  }, [localProposals, proposalsQuery.data, proposalsQuery.error, unavailable]);
+  }, [approvalsLoaded, proposalsQuery.error, unavailable]);
 
   const load = React.useCallback(async () => {
     setError(null);
@@ -250,7 +250,7 @@ export function ActionsView() {
           description="Agent approvals are not switched on for this workspace yet. When they are, every action an agent proposes will wait here before anything happens."
           title="Agent approvals"
         />
-      ) : proposalsQuery.isError && !unavailable && proposals.length === 0 ? (
+      ) : proposalsQuery.isError && !unavailable && !approvalsLoaded ? (
         <ActionsEmpty
           action={
             <Button

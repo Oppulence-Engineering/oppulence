@@ -588,10 +588,9 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
   }, [query]);
 
   React.useEffect(() => {
-    if (peopleQuery.error) {
-      onError(errMessage(peopleQuery.error, "Could not load people."));
-    }
-  }, [onError, peopleQuery.error]);
+    if (!peopleQuery.error || peopleQuery.data != null) return;
+    onError(errMessage(peopleQuery.error, "Could not load people."));
+  }, [onError, peopleQuery.data, peopleQuery.error]);
 
   const load = React.useCallback(async () => {
     setExtraPeople([]);
@@ -1391,10 +1390,9 @@ export function NotesView({
   ]);
 
   React.useEffect(() => {
-    if (notesQuery.error) {
-      onError(errMessage(notesQuery.error, "Could not load notes."));
-    }
-  }, [notesQuery.error, onError]);
+    if (!notesQuery.error || notesQuery.data != null) return;
+    onError(errMessage(notesQuery.error, "Could not load notes."));
+  }, [notesQuery.data, notesQuery.error, onError]);
 
   React.useEffect(() => {
     const failed = notesQuery.data?.failedTimelineCount ?? 0;
@@ -2726,14 +2724,14 @@ export function TasksView({
   }, [companyOffset, directoryRows.length, hasMoreCompanies, loadingMoreCompanies, onError]);
 
   React.useEffect(() => {
-    if (actionsQuery.error) {
+    if (actionsQuery.error && actionsQuery.data == null) {
       onError(errMessage(actionsQuery.error, "Could not load tasks."));
       return;
     }
     if (relationshipsQuery.error) {
       onError(errMessage(relationshipsQuery.error, "Could not load companies."));
     }
-  }, [actionsQuery.error, onError, relationshipsQuery.error]);
+  }, [actionsQuery.data, actionsQuery.error, onError, relationshipsQuery.error]);
   const names = new Map(
     relationships.map((relationship) => [relationship.id, companyName(relationship)]),
   );
