@@ -264,3 +264,62 @@ func TestListPagination(t *testing.T) {
 		t.Fatalf("paged through %d events, want 5", seen)
 	}
 }
+
+func TestListPaginationExactPageIsNotAnotherPage(t *testing.T) {
+	client, u := setup(t)
+	h := New(client, testSealer(t), &fakeRouteController{}, Config{MaxPayloadBytes: 1 << 20}, zap.NewNop())
+	srv := newTestServer(t, h, u)
+	base := time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)
+	for i := 0; i < 2; i++ {
+		client.CloudEvent.Create().
+			SetUser(u).
+			SetSource(SourceInternal).
+			SetDedupeKey(fmt.Sprintf("exact-%d", i)).
+			SetText("x").
+			SetReceivedAt(base.Add(time.Duration(i) * time.Second)).
+			SaveX(auth.WithInternal(context.Background()))
+	}
+
+	var page struct {
+		Events     []json.RawMessage `json:"events"`
+		NextCursor string            `json:"nextCursor"`
+	}
+	get := func(rawURL string) {
+		t.Helper()
+		resp, err := http.Get(rawURL)
+		if err != nil {
+			t.Fatalf("get: %v", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("status = %d, want 200", resp.StatusCode)
+		}
+		page = struct {
+			Events     []json.RawMessage `json:"events"`
+			NextCursor string            `json:"nextCursor"`
+		}{}
+		if err := json.NewDecoder(resp.Body).Decode(&page); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+	}
+
+	get(srv.URL + "/v1/events?limit=2")
+	if page.NextCursor != "" || len(page.Events) != 2 {
+		t.Fatalf("exact page cursor=%q len=%d", page.NextCursor, len(page.Events))
+	}
+	client.CloudEvent.Create().
+		SetUser(u).
+		SetSource(SourceInternal).
+		SetDedupeKey("exact-extra").
+		SetText("x").
+		SetReceivedAt(base.Add(3 * time.Second)).
+		SaveX(auth.WithInternal(context.Background()))
+	get(srv.URL + "/v1/events?limit=2")
+	if page.NextCursor == "" || len(page.Events) != 2 {
+		t.Fatalf("full page cursor=%q len=%d", page.NextCursor, len(page.Events))
+	}
+	get(srv.URL + "/v1/events?limit=2&cursor=" + url.QueryEscape(page.NextCursor))
+	if page.NextCursor != "" || len(page.Events) != 1 {
+		t.Fatalf("last page cursor=%q len=%d", page.NextCursor, len(page.Events))
+	}
+}
