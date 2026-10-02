@@ -855,17 +855,51 @@ func TestPersonSearchFindsTheUnknownRole(t *testing.T) {
 		Save(f.ctx); err != nil {
 		t.Fatal(err)
 	}
+	partial, err := f.client.Person.Create().
+		SetDisplayName("Mina Holt").
+		SetTitle("Finance lead").
+		SetOrgName("Quill Atelier").
+		SetOrgDomain("quill.example").
+		SetSeniority("director").
+		SetLocation("Austin").
+		SetLinkedinURL("https://www.linkedin.com/in/mina").
+		SetTimezone("America/Chicago").
+		SetLastInteractionAt(time.Now().Add(-3 * time.Hour)).
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if partial.Department != "" {
+		t.Fatalf("department = %q", partial.Department)
+	}
 	if _, err := f.client.Person.Create().
 		SetDisplayName("Indira Cole").
 		SetTitle("Finance lead").
+		SetOrgName("Lumen Packet").
+		SetOrgDomain("lumen.example").
+		SetSeniority("director").
+		SetDepartment("Finance").
+		SetLocation("Denver").
+		SetLinkedinURL("https://www.linkedin.com/in/indira").
+		SetTimezone("America/Denver").
+		SetLastInteractionAt(time.Now().Add(-3 * time.Hour)).
 		SetWorkspace(ws).
 		SetUser(f.user).
 		Save(f.ctx); err != nil {
 		t.Fatal(err)
 	}
 	found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "Not known"})
-	if err != nil || found == nil || len(found.Persons) != 1 || found.Persons[0].DisplayName != "Casey Quinn" {
-		t.Fatalf("not known = %+v err=%v", found, err)
+	if err != nil || found == nil {
+		t.Fatalf("not known err=%v", err)
+	}
+	got := map[string]bool{}
+	for _, row := range found.Persons {
+		got[row.DisplayName] = true
+	}
+	if len(got) != 2 || !got["Casey Quinn"] || !got["Mina Holt"] || got["Indira Cole"] {
+		t.Fatalf("not known = %v", got)
 	}
 }
 

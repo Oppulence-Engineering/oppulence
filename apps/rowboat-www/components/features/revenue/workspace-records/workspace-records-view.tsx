@@ -356,6 +356,16 @@ export function personDirectoryRole(person: {
   return title || roles.join(", ") || "Not known";
 }
 
+/** The directory and the sheet use the same words for a fact that was never saved. */
+export function personKnownFact(value?: string | null): string {
+  return value?.trim() || "Not known";
+}
+
+export function personLastInteractionLabel(iso?: string | null): string {
+  const label = iso ? relativeTime(iso) : "";
+  return label || "Not known";
+}
+
 /** Other names stored on the person. The display name is not repeated here. */
 export function personAliasNames(aliases: readonly string[] | null | undefined): string {
   return (aliases ?? [])
@@ -744,19 +754,19 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                     </Button>
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
-                    {personCompanyTitle(person) || "—"}
+                    {personKnownFact(personCompanyTitle(person))}
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
                     {personDirectoryRole(person)}
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
-                    {person.department || "—"}
+                    {personKnownFact(person.department)}
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
-                    {person.location || "—"}
+                    {personKnownFact(person.location)}
                   </TableCell>
                   <TableCell className="border-r px-3 text-[12px] text-primary/50">
-                    {person.lastInteractionAt ? relativeTime(person.lastInteractionAt) : "—"}
+                    {personLastInteractionLabel(person.lastInteractionAt)}
                   </TableCell>
                   <TableCell className="border-r px-3 text-center text-[12px] text-primary/60">
                     {person.relationshipCount}
@@ -773,7 +783,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                       </a>
                     ) : (
                       <Badge className="font-normal text-primary/35" variant="ghost">
-                        —
+                        Not known
                       </Badge>
                     )}
                   </TableCell>
@@ -947,10 +957,7 @@ function PersonSheet({
     ["Location", person.location],
     ["LinkedIn", person.linkedinUrl],
     ["Timezone", person.timezone],
-    [
-      "Last interaction",
-      person.lastInteractionAt ? relativeTime(person.lastInteractionAt) : undefined,
-    ],
+    ["Last interaction", personLastInteractionLabel(person.lastInteractionAt)],
   ];
   if (aliasNames) sheetFacts.push(["Also known as", aliasNames]);
   if (person.employmentStatus && person.employmentStatus !== "unknown") {

@@ -124,6 +124,8 @@ import {
   personSheetDetail,
   personAliasNames,
   personDirectoryRole,
+  personKnownFact,
+  personLastInteractionLabel,
   personDirectorySubtitle,
   personSheetSubtitle,
   sortTasksByDue,
@@ -805,6 +807,12 @@ describe("people directory labels", () => {
       "No email · Also known as Dee Cole",
     );
     expect(personAliasNames(["Dee Cole", "Indy"])).toBe("Dee Cole, Indy");
+    expect(personKnownFact("")).toBe("Not known");
+    expect(personKnownFact("  ")).toBe("Not known");
+    expect(personKnownFact("Finance")).toBe("Finance");
+    expect(personLastInteractionLabel(null)).toBe("Not known");
+    expect(personLastInteractionLabel("")).toBe("Not known");
+    expect(personLastInteractionLabel("2026-10-01T12:00:00.000Z")).toBe("now");
     expect(personDirectoryRole({})).toBe("Not known");
     expect(personDirectoryRole({ title: "  ", seniority: "  ", participantRoles: [" "] })).toBe(
       "Not known",
@@ -1179,7 +1187,10 @@ describe("people directory copy", () => {
     expect(source).toContain('person.employmentStatus === "departed"');
     expect(source).not.toContain("{person.seniority}");
     expect(source).not.toContain("{attribute.value}");
-    expect(source).toContain("{personCompanyTitle(person) || \"—\"}");
+    expect(source).toContain("personKnownFact(personCompanyTitle(person))");
+    expect(source).toContain("personKnownFact(person.department)");
+    expect(source).toContain("personKnownFact(person.location)");
+    expect(source).toContain("personLastInteractionLabel(person.lastInteractionAt)");
     expect(source).toContain('["Company", personCompanyTitle(person) || undefined]');
     expect(source).not.toContain("{person.orgName || \"—\"}");
     expect(source).toContain("personSheetDetail(label, value)");

@@ -169,9 +169,10 @@ func personVisibleLabelMatch(term string) predicate.Person {
 	if strings.Contains("left the company", needle) {
 		preds = append(preds, person.EmploymentStatusEQ("departed"))
 	}
-	// The Role column says "Not known" when no title, seniority, or company role is saved.
+	// "Not known" is the empty company, role, department, location, profile, and
+	// last interaction. One blank fact is enough for the row or the sheet to say it.
 	if strings.Contains("not known", needle) {
-		preds = append(preds, person.Not(personRoleKnown()))
+		preds = append(preds, personPrintsNotKnown())
 	}
 	if n, ok := exactPersonDetailCount(needle); ok {
 		preds = append(preds, personDetailCount(n))
@@ -379,6 +380,29 @@ func personMatchAll() predicate.Person {
 
 // personParticipantRoleMatch matches the role printed on the person, such as
 // "Decision maker". The stored token uses underscores. The row uses spaces.
+func personPrintsNotKnown() predicate.Person {
+	return person.Or(
+		person.Not(personRoleKnown()),
+		personTextMissing(person.FieldTitle),
+		personTextMissing(person.FieldSeniority),
+		personTextMissing(person.FieldOrgName),
+		personTextMissing(person.FieldOrgDomain),
+		personTextMissing(person.FieldDepartment),
+		personTextMissing(person.FieldLocation),
+		personTextMissing(person.FieldLinkedinURL),
+		personTextMissing(person.FieldTimezone),
+		person.LastInteractionAtIsNil(),
+	)
+}
+
+func personTextMissing(field string) predicate.Person {
+	return predicate.Person(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(fmt.Sprintf("trim(coalesce(%s, '')) = ''", s.C(field)))
+		}))
+	})
+}
+
 func personRoleKnown() predicate.Person {
 	return person.Or(
 		personTextPresent(person.FieldTitle),
