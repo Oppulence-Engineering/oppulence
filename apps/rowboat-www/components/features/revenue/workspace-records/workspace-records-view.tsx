@@ -2024,8 +2024,12 @@ function NoteDialog({
                       "border-t border-border bg-background px-2 text-[12px]",
                     )}
                     disabled={loadingMoreCompanies}
-                    onClick={() => onLoadMoreCompanies?.()}
-                    onPointerDown={(event) => event.preventDefault()}
+                    onPointerDown={(event) => {
+                      // Canceling this event keeps the menu open, and it also
+                      // suppresses the click. Load from the pointer itself.
+                      event.preventDefault();
+                      onLoadMoreCompanies?.();
+                    }}
                     type="button"
                     variant="ghost"
                   >
