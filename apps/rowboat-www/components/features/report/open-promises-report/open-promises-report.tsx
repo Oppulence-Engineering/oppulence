@@ -32,13 +32,13 @@ import {
 import {
   auditFailureCopy,
   auditHistoryLabel,
-  friendlyRevenueError,
   getOpenPromisesReportMarkdown,
   latestCompletedScan,
   relationshipSourceHealth,
   REVENUE_EVIDENCE_LOOKBACK_DAYS,
   REVENUE_EVIDENCE_LOOKBACK_LABEL,
   safeResearchCitationURL,
+  shownRequestError,
   startScan,
 } from "@/lib/revenue/revenue";
 import { promiseDirectionLabel, promiseDueLabel } from "@/lib/revenue/revenue-records";
@@ -157,7 +157,7 @@ function ReportBody() {
         surface: "report",
       });
     } catch (e) {
-      setError(friendlyRevenueError(e instanceof Error ? e.message : "Could not start the scan."));
+      setError(shownRequestError(e, "Could not start the scan."));
     } finally {
       setStarting(false);
     }
@@ -201,11 +201,7 @@ function ReportBody() {
         (await createGoogleCommitmentsAuthorizationURL("/app/report")).toString(),
       );
     } catch (error) {
-      setError(
-        friendlyRevenueError(
-          error instanceof Error ? error.message : "Google authorization could not be started.",
-        ),
-      );
+      setError(shownRequestError(error, "Google authorization could not be started."));
       setConnecting(false);
     }
   }, []);
@@ -318,9 +314,7 @@ function ReportBody() {
         <section className="border border-destructive/40 bg-destructive/5 p-5" role="alert">
           <h2 className="text-[15px] font-medium text-destructive">The report could not load</h2>
           <p className="mt-1.5 text-[13px] text-primary/70">
-            {friendlyRevenueError(
-              reportQuery.error instanceof Error ? reportQuery.error.message : "Please try again.",
-            )}
+            {shownRequestError(reportQuery.error, "The report could not load. Try again.")}
           </p>
           <Button
             className="mt-4"
@@ -538,11 +532,7 @@ function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string
     try {
       downloadMarkdown("open-promises.md", await getOpenPromisesReportMarkdown(scanId));
     } catch (error) {
-      setDownloadError(
-        friendlyRevenueError(
-          error instanceof Error ? error.message : "The report could not be downloaded.",
-        ),
-      );
+      setDownloadError(shownRequestError(error, "The report could not be downloaded."));
     } finally {
       setDownloading(false);
     }
