@@ -124,6 +124,8 @@ import {
   templateCountLabel,
   nextTemplatesLabel,
   nextFavoritesLabel,
+  favoriteNotesLabel,
+  favoriteNotesEmptyCopy,
   taskFilterName,
   taskListEmptyCopy,
 } from "@/components/features/revenue/workspace-records/workspace-records-view";
@@ -567,6 +569,67 @@ describe("durable note templates and favorites", () => {
     expect(screen.queryByLabelText("Note title")).not.toBeInTheDocument();
   });
 
+  it("keeps a favorited note that is still on a later page", async () => {
+    const user = userEvent.setup();
+    mocks.fetchWorkspaceNotes.mockResolvedValue({
+      notes: [
+        {
+          externalId: "note-1",
+          title: "Account review",
+          body: "Follow up",
+          relationshipId: "relationship-1",
+          relationshipName: "Acme",
+          occurredAt: "2026-09-17T12:00:00Z",
+          eventType: "note",
+        },
+      ],
+      relationships: [{ id: "relationship-1", kind: "organization", displayName: "Acme" }],
+      failedTimelineCount: 0,
+      hasMoreNotes: true,
+      timelineCursors: [{ relationshipId: "relationship-1", before: "2026-09-01T00:00:00Z" }],
+    });
+    mocks.fetchMoreWorkspaceNotes.mockResolvedValue({
+      notes: [
+        {
+          externalId: "note-hidden",
+          title: "Hidden desk note",
+          body: "Still here",
+          relationshipId: "relationship-1",
+          relationshipName: "Acme",
+          occurredAt: "2026-08-01T12:00:00Z",
+          eventType: "note",
+        },
+      ],
+      relationships: [],
+      failedTimelineCount: 0,
+      hasMoreNotes: false,
+      timelineCursors: [],
+    });
+    mocks.fetchConsoleResources.mockImplementation(async (kind: string) =>
+      kind === "note_template"
+        ? []
+        : [
+            {
+              ...timestamps,
+              id: "22222222-2222-4222-8222-222222222222",
+              kind,
+              payload: { noteId: "note-hidden" },
+            },
+          ],
+    );
+    renderNotes();
+
+    expect(await screen.findByText("Favorited notes are further back.")).toBeInTheDocument();
+    expect(screen.getByText("Favorites").parentElement).toHaveTextContent("0+");
+    expect(screen.queryByText("Favorite a note to keep it here.")).not.toBeInTheDocument();
+
+    await user.click(screen.getAllByRole("button", { name: "Show earlier notes" })[0]);
+
+    expect(await screen.findByRole("button", { name: "Hidden desk note" })).toBeInTheDocument();
+    expect(screen.getByText("Favorites").parentElement).toHaveTextContent("1");
+    expect(screen.queryByText("Favorited notes are further back.")).not.toBeInTheDocument();
+  });
+
   it("copies a link that stays on the notes tab", async () => {
     window.history.replaceState(null, "", "/app/revenue?tab=commitments#note=note-1");
     const user = userEvent.setup();
@@ -856,6 +919,13 @@ describe("task due order", () => {
     expect(templateCountLabel(100, true)).toBe("100+");
     expect(nextTemplatesLabel()).toBe("Show the next templates");
     expect(nextFavoritesLabel()).toBe("Show the next favorites");
+    expect(favoriteNotesLabel(0, 1)).toBe("0+");
+    expect(favoriteNotesLabel(1, 0)).toBe("1");
+    expect(favoriteNotesEmptyCopy(1, true)).toBe("Favorited notes are further back.");
+    expect(favoriteNotesEmptyCopy(1, false)).toBe(
+      "A favorite points at a note that is no longer here.",
+    );
+    expect(favoriteNotesEmptyCopy(0, false)).toBe("Favorite a note to keep it here.");
     expect(source).toContain("templatePage.length + extraTemplates.length");
     expect(source).toContain("favoritePage.length + extraFavorites.length");
     expect(source).toContain("fetchMoreWorkspaceNotes");

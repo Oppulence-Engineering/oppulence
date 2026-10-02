@@ -1043,6 +1043,17 @@ export function nextFavoritesLabel(): string {
   return "Show the next favorites";
 }
 
+/** A favorite whose note is not on screen yet is not zero. */
+export function favoriteNotesLabel(shown: number, hidden: number): string {
+  return hidden > 0 ? `${shown}+` : String(shown);
+}
+
+export function favoriteNotesEmptyCopy(hidden: number, hasMoreNotes: boolean): string {
+  if (hidden > 0 && hasMoreNotes) return "Favorited notes are further back.";
+  if (hidden > 0) return "A favorite points at a note that is no longer here.";
+  return "Favorite a note to keep it here.";
+}
+
 export function NotesView({
   onError,
   onNotice,
@@ -1274,6 +1285,10 @@ export function NotesView({
     return () => window.removeEventListener("hashchange", onHashChange);
   }, [hasMoreNotes, loadEarlierNotes, loading, loadingMoreNotes, notes, onNotice]);
   const favoriteIds = new Set(favoriteResources.map((item) => item.payload.noteId));
+  const loadedNoteIds = new Set(notes.map((note) => note.externalId));
+  const unresolvedFavorites = favoriteResources.filter(
+    (favorite) => !loadedNoteIds.has(favorite.payload.noteId),
+  ).length;
   const favoriteNotes = visible.filter((note) => favoriteIds.has(note.externalId));
   return (
     <div className="flex min-h-full flex-col bg-background" data-slot="notes-view">
@@ -1507,7 +1522,7 @@ export function NotesView({
               <Label className="mb-3 flex items-center gap-1 text-[12px] font-normal text-primary/45">
                 Favorites
                 <Badge className="text-[10px] font-normal" variant="outline">
-                  {favoriteNotes.length}
+                  {favoriteNotesLabel(favoriteNotes.length, unresolvedFavorites)}
                 </Badge>
               </Label>
               {favoritesQuery.isError ? (
@@ -1536,10 +1551,29 @@ export function NotesView({
               ) : (
                 <Card className="flex h-28 items-center justify-center border-dashed py-0 text-center">
                   <CardContent>
-                    <CardDescription>Favorite a note to keep it here.</CardDescription>
+                    <CardDescription>
+                      {favoriteNotesEmptyCopy(unresolvedFavorites, hasMoreNotes)}
+                    </CardDescription>
                   </CardContent>
                 </Card>
               )}
+              {favoriteNotes.length > 0 && unresolvedFavorites > 0 ? (
+                <p className="mt-2 text-xs text-primary/55">
+                  {favoriteNotesEmptyCopy(unresolvedFavorites, hasMoreNotes)}
+                </p>
+              ) : null}
+              {unresolvedFavorites > 0 && hasMoreNotes ? (
+                <Button
+                  className="mt-3"
+                  disabled={loadingMoreNotes}
+                  onClick={() => void loadEarlierNotes()}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  {loadingMoreNotes ? "Loading…" : earlierNotesLabel()}
+                </Button>
+              ) : null}
               {hasMoreFavorites ? (
                 <Button
                   className="mt-3 w-full rounded-none"
