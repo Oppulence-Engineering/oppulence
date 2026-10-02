@@ -194,6 +194,7 @@ describe("RelationshipsView", () => {
     expect(source).toContain('onNotice("Company added.")');
     expect(source).toContain('onNotice("Company updated.")');
     expect(source).toContain('errMessage(error, "Could not create the company.")');
+    expect(source).toContain("setFormError(message)");
     expect(source).toContain('errMessage(error, "Could not load this company.")');
     expect(source).toContain('errMessage(error, "Could not update this company.")');
     expect(source).toContain('errMessage(error, "Could not load companies.")');

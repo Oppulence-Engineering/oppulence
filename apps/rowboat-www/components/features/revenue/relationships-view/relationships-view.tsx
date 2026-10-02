@@ -4990,10 +4990,12 @@ function CreateRelationshipDialog({
   const [accountDomain, setAccountDomain] = React.useState("");
   const [summary, setSummary] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+  const [formError, setFormError] = React.useState<string | null>(null);
 
   const submit = async () => {
     if (!displayName.trim()) return;
     setBusy(true);
+    setFormError(null);
     onError("");
     try {
       await createRelationship({
@@ -5005,7 +5007,9 @@ function CreateRelationshipDialog({
       });
       onCreated();
     } catch (error) {
-      onError(errMessage(error, "Could not create the company."));
+      const message = errMessage(error, "Could not create the company.");
+      setFormError(message);
+      onError(message);
     } finally {
       setBusy(false);
     }
@@ -5046,6 +5050,7 @@ function CreateRelationshipDialog({
             placeholder="Notes about this company (optional)"
           />
         </div>
+        {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel
