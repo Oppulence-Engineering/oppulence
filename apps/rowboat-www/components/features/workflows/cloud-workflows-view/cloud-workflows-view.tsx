@@ -435,8 +435,9 @@ export function workflowStepLabel(task: CloudTask): string {
 
 /**
  * The library search used to read the name, schedule, and subtitle. The row
- * also prints Live or Draft, the step count, and Failed when the last run
- * failed. Those words have to find the workflow.
+ * also prints Live or Draft, the step count, the last-run clock (and Failed
+ * beside it), and Oppulence on a maintained workflow. Those words have to
+ * find the workflow.
  */
 export function workflowLibrarySearchText(
   task: CloudTask,
@@ -444,14 +445,18 @@ export function workflowLibrarySearchText(
   pageRun?: { createdAt?: string | null; status?: string | null } | null,
 ): string {
   const lastRunAt = workflowLastRunAt(task, pageRun?.createdAt);
+  const mark = workflowLastRunMark(task, pageRun);
+  const lastRun = lastRunAt
+    ? `${scheduleMomentLabel(lastRunAt)}${mark ? ` · ${mark}` : ""}`
+    : "Never";
   return [
     taskTitle(task),
     scheduleLabel(task),
     workflowListSummary(task, templates),
     workflowStepLabel(task),
     task.active ? "Live" : "Draft",
-    workflowLastRunMark(task, pageRun) ?? "",
-    lastRunAt ? "" : "Never",
+    task.systemManaged ? "Oppulence" : "",
+    lastRun,
   ].join(" ");
 }
 

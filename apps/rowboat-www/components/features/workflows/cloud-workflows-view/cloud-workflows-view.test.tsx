@@ -70,6 +70,33 @@ describe("CloudWorkflowsView", () => {
     expect(draftText).not.toContain("failed");
   });
 
+  it("searches the last-run clock and the Oppulence badge printed on the row", () => {
+    const maintained = {
+      slug: "oppulence-attention-monitor",
+      name: "Attention Monitor",
+      active: true,
+      systemManaged: true,
+      lastRunAt: "2026-10-01T08:00:00.153Z",
+      lastRunError: "activity error",
+    } as CloudTask;
+    const clock = scheduleMomentLabel(maintained.lastRunAt);
+    const maintainedText = workflowLibrarySearchText(maintained);
+    expect(maintainedText).toContain(`${clock} · Failed`);
+    expect(maintainedText).toContain("Oppulence");
+    const own = {
+      slug: "custom-follow-up",
+      name: "Custom follow-up",
+      active: true,
+      systemManaged: false,
+      lastRunAt: "2026-10-02T05:00:00Z",
+    } as CloudTask;
+    const ownClock = scheduleMomentLabel(own.lastRunAt);
+    const ownText = workflowLibrarySearchText(own);
+    expect(ownText).toContain(ownClock);
+    expect(ownText).not.toContain("Oppulence");
+    expect(ownText).not.toContain(clock);
+  });
+
   it("treats a workflow search miss as a filter, not an empty library", () => {
     expect(source).toContain("No workflows match this search. Try another phrase.");
     expect(source).toContain("Clear search");
