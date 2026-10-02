@@ -23,6 +23,7 @@ import {
   workflowSettingsIntro,
   createWorkflowIntro,
   deleteWorkflowConfirmCopy,
+  workflowLibrarySearchText,
   workflowStepLabel,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
@@ -45,6 +46,30 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "cloud-workflows-v
 const task = (name: string, updatedAt: string): CloudTask => ({ name, updatedAt }) as CloudTask;
 
 describe("CloudWorkflowsView", () => {
+  it("searches the Live status and the Failed mark printed on the row", () => {
+    const failed = {
+      slug: "oppulence-relationship-refresh",
+      name: "Relationship Refresh",
+      active: true,
+      lastRunAt: "2026-10-01T00:00:00Z",
+      lastRunError: "activity error",
+    } as CloudTask;
+    const failedText = workflowLibrarySearchText(failed).toLowerCase();
+    expect(failedText).toContain("failed");
+    expect(failedText).toContain("live");
+    expect(failedText).toContain("company refresh");
+    const draft = {
+      ...failed,
+      active: false,
+      lastRunAt: null,
+      lastRunError: "",
+    } as CloudTask;
+    const draftText = workflowLibrarySearchText(draft).toLowerCase();
+    expect(draftText).toContain("draft");
+    expect(draftText).toContain("never");
+    expect(draftText).not.toContain("failed");
+  });
+
   it("treats a workflow search miss as a filter, not an empty library", () => {
     expect(source).toContain("No workflows match this search. Try another phrase.");
     expect(source).toContain("Clear search");

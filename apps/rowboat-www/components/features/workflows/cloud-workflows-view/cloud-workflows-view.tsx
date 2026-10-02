@@ -433,6 +433,28 @@ export function workflowStepLabel(task: CloudTask): string {
   return steps === 1 ? "1 step" : `${steps} steps`;
 }
 
+/**
+ * The library search used to read the name, schedule, and subtitle. The row
+ * also prints Live or Draft, the step count, and Failed when the last run
+ * failed. Those words have to find the workflow.
+ */
+export function workflowLibrarySearchText(
+  task: CloudTask,
+  templates: readonly Pick<CloudTaskTemplate, "slug" | "taskSlug" | "description">[] = [],
+  pageRun?: { createdAt?: string | null; status?: string | null } | null,
+): string {
+  const lastRunAt = workflowLastRunAt(task, pageRun?.createdAt);
+  return [
+    taskTitle(task),
+    scheduleLabel(task),
+    workflowListSummary(task, templates),
+    workflowStepLabel(task),
+    task.active ? "Live" : "Draft",
+    workflowLastRunMark(task, pageRun) ?? "",
+    lastRunAt ? "" : "Never",
+  ].join(" ");
+}
+
 function CreateWorkflowDialog({
   templates,
   onCreated,
@@ -618,11 +640,12 @@ function WorkflowLibrary({
   const [query, setQuery] = React.useState("");
   const [sort, setSort] = React.useState<WorkflowLibrarySort>("published");
   const filtered = sortWorkflowTasks(
-    tasks.filter((task) =>
-      `${taskTitle(task)} ${scheduleLabel(task)} ${workflowListSummary(task, templates)}`
+    tasks.filter((task) => {
+      const pageRun = runs.find((run) => run.slug === task.slug);
+      return workflowLibrarySearchText(task, templates, pageRun)
         .toLowerCase()
-        .includes(query.trim().toLowerCase()),
-    ),
+        .includes(query.trim().toLowerCase());
+    }),
     sort,
   );
 
