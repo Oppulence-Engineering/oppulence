@@ -709,9 +709,10 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 // is the same filters with Offset set to how many rows are already on screen.
 const relationshipListLimit = 200
 
-// ListRelationships returns the workspace's relationships, newest touch first,
-// each with its open queue actions eager-loaded so the caller can report
-// open-loop counts.
+// ListRelationships returns the workspace's relationships, most recent
+// interaction first. A company with no interaction follows those, newest
+// edit first. Each row includes its open queue actions so the caller can
+// report open-loop counts.
 func (s *Service) ListRelationships(ctx context.Context, u *ent.User) ([]*ent.Relationship, error) {
 	page, err := s.ListRelationshipsFiltered(ctx, u, RelationshipListFilter{})
 	if err != nil {
@@ -738,8 +739,9 @@ type RelationshipListPage struct {
 }
 
 // ListRelationshipsFiltered returns account mission-control rows with
-// explainable-state filters shared by web and desktop. Companies that share a
-// touch time stay in id order, so the next page does not repeat or skip one.
+// explainable-state filters shared by web and desktop. The Last interaction
+// column is this order. Companies that share an interaction time stay in
+// edit time, then id, so the next page does not repeat or skip one.
 func (s *Service) ListRelationshipsFiltered(
 	ctx context.Context,
 	u *ent.User,
@@ -896,8 +898,9 @@ func (s *Service) ListRelationshipsFiltered(
 		WithMailThreads().
 		WithCommitments().
 		Order(
-			ent.Desc(relationship.FieldUpdatedAt),
-			ent.Desc(relationship.FieldID),
+			relationship.ByLastTouchAt(sql.OrderDesc(), sql.OrderNullsLast()),
+			relationship.ByUpdatedAt(sql.OrderDesc()),
+			relationship.ByID(sql.OrderDesc()),
 		).
 		Limit(relationshipListLimit + 1).
 		Offset(filter.Offset).

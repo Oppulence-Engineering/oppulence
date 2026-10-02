@@ -163,6 +163,38 @@ func TestListRelationshipsOffsetSkipsTheNewestRows(t *testing.T) {
 	}
 }
 
+func TestListRelationshipsRecentTouchPrecedesANewerEdit(t *testing.T) {
+	f := newFixture(t)
+	talked, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Talk",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	edited, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Edited",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	yesterday := time.Now().UTC().Add(-24 * time.Hour)
+	if _, err := f.client.Relationship.UpdateOneID(talked.ID).
+		SetLastTouchAt(yesterday).
+		SetUpdatedAt(yesterday.Add(-30 * 24 * time.Hour)).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(edited.ID).
+		SetUpdatedAt(time.Now().UTC()).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	page, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{})
+	if err != nil || len(page.Relationships) < 2 || page.Relationships[0].DisplayName != "Cedar Talk" {
+		t.Fatalf("directory = %v err=%v", namesOf(page.Relationships), err)
+	}
+}
+
 func TestListRelationshipsTiedUpdatedAtUsesID(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
