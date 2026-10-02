@@ -232,6 +232,19 @@ describe("WorkspaceView", () => {
     expect(screen.queryByText(/\bCRM\b/)).not.toBeInTheDocument();
   });
 
+  it("says the source list failed instead of claiming nothing is connected", async () => {
+    vi.mocked(fetchRelationshipSourceStatuses).mockRejectedValue(new Error("boom"));
+    renderWorkspace();
+    expect(await screen.findByText("Sources could not load. Try again.")).toBeVisible();
+    expect(screen.getByText("Couldn't load")).toBeVisible();
+    expect(screen.queryByText(/Nothing is connected yet/)).not.toBeInTheDocument();
+    expect(screen.queryByText("0 sources")).not.toBeInTheDocument();
+    vi.mocked(fetchRelationshipSourceStatuses).mockResolvedValue([]);
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByText(/Nothing is connected yet/)).toBeVisible();
+    expect(screen.getByText("0 sources")).toBeVisible();
+  });
+
   it("keeps the Gmail draft sentence once Google is connected", () => {
     expect(gmailDraftsAvailable([{ source: "google", status: "live" }])).toBe(true);
     expect(gmailDraftsAvailable([{ source: "google", status: "disconnected" }])).toBe(false);

@@ -164,7 +164,9 @@ export function WorkspaceView({
           actions={
             sourcesQuery.isLoading
               ? "Loading…"
-              : `${sources?.length ?? 0} source${sources?.length === 1 ? "" : "s"}`
+              : sourcesQuery.isError
+                ? "Couldn't load"
+                : `${sources?.length ?? 0} source${sources?.length === 1 ? "" : "s"}`
           }
           title="Connected sources"
         />
@@ -172,7 +174,14 @@ export function WorkspaceView({
           <div className="p-4">
             <Skeleton className="h-16 w-full rounded-[2px]" />
           </div>
-        ) : sourcesQuery.isError || !sources?.length ? (
+        ) : sourcesQuery.isError ? (
+          <div className="flex flex-col gap-3 px-4 py-6 text-sm text-[var(--text-secondary)]">
+            <p>Sources could not load. Try again.</p>
+            <Button onClick={() => void sourcesQuery.refetch()} size="sm" type="button">
+              Try again
+            </Button>
+          </div>
+        ) : !sources?.length ? (
           <div className="flex flex-col gap-3 px-4 py-6 text-sm text-[var(--text-secondary)]">
             <p>
               Nothing is connected yet. Connect Gmail and Calendar, or another tool below.
