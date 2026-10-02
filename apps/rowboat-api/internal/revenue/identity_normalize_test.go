@@ -1311,6 +1311,99 @@ func TestRelationshipSearchFindsTheOverduePromise(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsNeedsRefresh(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rank, ok := relationshipAssertionAuthorityRank("source_fact")
+	if !ok {
+		t.Fatal("source_fact rank")
+	}
+	seed := func(name, source, account string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		row, err = f.svc.GetRelationship(f.ctx, row.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		obs, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(row).
+			SetSource(source).SetSourceAccountID(account).
+			SetExternalID(name).SetEventType("note").
+			SetOccurredAt(row.CreatedAt).SetReceivedAt(row.CreatedAt).
+			SetContentHash(name).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.RelationshipAssertion.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(row).SetObservation(obs).
+			SetDimension("lifecycle").SetValue("prospect").
+			SetSourceType("source_fact").SetAuthorityRank(rank).
+			SetValidFrom(row.CreatedAt).
+			SetValueSchemaVersion(relationshipAssertionValueSchemaVersion).
+			SetProjectorCompatVersion(relationshipProjectorVersion).
+			SetSupportingObservationIds([]string{}).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	quill := seed("Quill Atelier", "hubspot", "quill-account")
+	lumen := seed("Lumen Packet", "hubspot", "lumen-account")
+	cedar := seed("Cedar Mill", "hubspot", "cedar-account")
+	harbor := seed("Harbor Ledger", "desktop_note", "default")
+	for _, status := range []struct{ account, completeness string }{
+		{"quill-account", "stale"},
+		{"lumen-account", "complete"},
+	} {
+		if _, err := f.client.RelationshipSourceStatus.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetSource("hubspot").SetSourceAccountID(status.account).
+			SetStatus("live").SetCompleteness(status.completeness).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	assertFresh := func(row *ent.Relationship, fresh bool) {
+		t.Helper()
+		model, err := f.svc.MissionControl(f.ctx, f.user, row.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		item := model.Evidence["lifecycle"]
+		if item.Fresh != fresh {
+			t.Fatalf("%s fresh = %v, supported = %v, reason = %q", row.DisplayName, item.Fresh, item.Supported, item.MissingReason)
+		}
+	}
+	assertFresh(quill, false)
+	assertFresh(lumen, true)
+	assertFresh(cedar, false)
+	assertFresh(harbor, true)
+	found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Needs refresh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := namesOf(found.Relationships)
+	if len(got) != 2 || !hasName(got, "Quill Atelier") || !hasName(got, "Cedar Mill") {
+		t.Fatalf("needs refresh = %v", got)
+	}
+	plain, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "refresh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if names := namesOf(plain.Relationships); len(names) != 0 {
+		t.Fatalf("refresh = %v", names)
+	}
+}
+
 func TestRelationshipSearchFindsTheDetailSource(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

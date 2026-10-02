@@ -2019,6 +2019,9 @@ func relationshipSheetDetailSourceMatch(needle string) predicate.Relationship {
 	if sheetPhraseMatches("this detail has no source you can open.", needle) {
 		preds = append(preds, relationshipHasDetailWithoutEvidence(now))
 	}
+	if sheetPhraseMatches("needs refresh", needle) {
+		preds = append(preds, relationshipShowsNeedsRefresh(now))
+	}
 	switch len(preds) {
 	case 0:
 		return nil
@@ -2049,6 +2052,148 @@ func relationshipHasDetailSource(sourceType string, now time.Time) predicate.Rel
 			b.WriteString(")")
 		}))
 	})
+}
+
+// relationshipShowsNeedsRefresh matches the "Needs refresh" badge. A detail
+// needs it when its evidence comes from a connector that is incomplete, or
+// from a connector account that has no status row.
+func relationshipShowsNeedsRefresh(now time.Time) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipassertion.Table)
+			b.WriteString(" AS fresh_assertion JOIN ")
+			b.WriteString(relationshipobservation.Table)
+			b.WriteString(" AS fresh_obs ON fresh_obs.")
+			b.WriteString(relationshipobservation.RelationshipColumn)
+			b.WriteString(" = fresh_assertion.")
+			b.WriteString(relationshipassertion.RelationshipColumn)
+			b.WriteString(" AND (fresh_assertion.")
+			b.WriteString(relationshipassertion.ObservationColumn)
+			b.WriteString(" = fresh_obs.")
+			b.WriteString(relationshipobservation.FieldID)
+			b.WriteString(" OR ")
+			writeAssertionListsObservation(b, s)
+			b.WriteString(") WHERE fresh_assertion.")
+			b.WriteString(relationshipassertion.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND fresh_assertion.")
+			b.WriteString(relationshipassertion.FieldDimension)
+			b.WriteString(" IN (")
+			for i, dimension := range relationshipProjectionDimensions {
+				if i > 0 {
+					b.WriteString(", ")
+				}
+				b.Arg(dimension)
+			}
+			b.WriteString(") AND fresh_assertion.")
+			b.WriteString(relationshipassertion.FieldStatus)
+			b.WriteString(" IN ('accepted', 'active') AND fresh_assertion.")
+			b.WriteString(relationshipassertion.FieldValidFrom)
+			b.WriteString(" <= ")
+			b.Arg(now)
+			b.WriteString(" AND (fresh_assertion.")
+			b.WriteString(relationshipassertion.FieldValidTo)
+			b.WriteString(" IS NULL OR fresh_assertion.")
+			b.WriteString(relationshipassertion.FieldValidTo)
+			b.WriteString(" > ")
+			b.Arg(now)
+			b.WriteString(") AND ")
+			writeCanonicalSourceSQL(b, "fresh_obs."+relationshipobservation.FieldSource)
+			b.WriteString(" IN ('google', 'slack', 'hubspot') AND ")
+			writeObservationNeedsRefresh(b, s)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeAssertionListsObservation(b *sql.Builder, s *sql.Selector) {
+	column := "fresh_assertion." + relationshipassertion.FieldSupportingObservationIds
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("EXISTS (SELECT 1 FROM jsonb_array_elements_text(coalesce(")
+		b.WriteString(column)
+		b.WriteString(", '[]'::jsonb)) AS ref(value) WHERE ref.value = fresh_obs.")
+		b.WriteString(relationshipobservation.FieldID)
+		b.WriteString("::text)")
+		return
+	}
+	b.WriteString("EXISTS (SELECT 1 FROM json_each(coalesce(")
+	b.WriteString(column)
+	b.WriteString(", '[]')) WHERE json_each.value = fresh_obs.")
+	b.WriteString(relationshipobservation.FieldID)
+	b.WriteString(")")
+}
+
+func writeCanonicalSourceSQL(b *sql.Builder, column string) {
+	b.WriteString("CASE lower(")
+	b.WriteString(column)
+	b.WriteString(") WHEN 'gmail' THEN 'google' WHEN 'calendar' THEN 'google' WHEN 'crm' THEN 'hubspot' ELSE lower(")
+	b.WriteString(column)
+	b.WriteString(") END")
+}
+
+func writeSourceAccountKey(b *sql.Builder, column string) {
+	b.WriteString("lower(coalesce(nullif(trim(")
+	b.WriteString(column)
+	b.WriteString("), ''), 'default'))")
+}
+
+func writeObservationNeedsRefresh(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("(")
+	b.WriteString("EXISTS (SELECT 1 FROM ")
+	b.WriteString(relationshipsourcestatus.Table)
+	b.WriteString(" AS fresh_stop WHERE fresh_stop.")
+	b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.WorkspaceColumn))
+	b.WriteString(" AND ")
+	writeCanonicalSourceSQL(b, "fresh_stop."+relationshipsourcestatus.FieldSource)
+	b.WriteString(" = ")
+	writeCanonicalSourceSQL(b, "fresh_obs."+relationshipobservation.FieldSource)
+	b.WriteString(" AND ")
+	writeSourceAccountKey(b, "fresh_stop."+relationshipsourcestatus.FieldSourceAccountID)
+	b.WriteString(" = ")
+	writeSourceAccountKey(b, "fresh_obs."+relationshipobservation.FieldSourceAccountID)
+	b.WriteString(" AND fresh_stop.")
+	b.WriteString(relationshipsourcestatus.FieldCompleteness)
+	b.WriteString(" <> 'complete') OR (NOT EXISTS (SELECT 1 FROM ")
+	b.WriteString(relationshipsourcestatus.Table)
+	b.WriteString(" AS fresh_stop WHERE fresh_stop.")
+	b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.WorkspaceColumn))
+	b.WriteString(" AND ")
+	writeCanonicalSourceSQL(b, "fresh_stop."+relationshipsourcestatus.FieldSource)
+	b.WriteString(" = ")
+	writeCanonicalSourceSQL(b, "fresh_obs."+relationshipobservation.FieldSource)
+	b.WriteString(" AND ")
+	writeSourceAccountKey(b, "fresh_stop."+relationshipsourcestatus.FieldSourceAccountID)
+	b.WriteString(" = ")
+	writeSourceAccountKey(b, "fresh_obs."+relationshipobservation.FieldSourceAccountID)
+	b.WriteString(") AND NOT ((SELECT count(*) FROM ")
+	b.WriteString(relationshipsourcestatus.Table)
+	b.WriteString(" AS fresh_stop WHERE fresh_stop.")
+	b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.WorkspaceColumn))
+	b.WriteString(" AND ")
+	writeCanonicalSourceSQL(b, "fresh_stop."+relationshipsourcestatus.FieldSource)
+	b.WriteString(" = ")
+	writeCanonicalSourceSQL(b, "fresh_obs."+relationshipobservation.FieldSource)
+	b.WriteString(") = 1 AND EXISTS (SELECT 1 FROM ")
+	b.WriteString(relationshipsourcestatus.Table)
+	b.WriteString(" AS fresh_stop WHERE fresh_stop.")
+	b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.WorkspaceColumn))
+	b.WriteString(" AND ")
+	writeCanonicalSourceSQL(b, "fresh_stop."+relationshipsourcestatus.FieldSource)
+	b.WriteString(" = ")
+	writeCanonicalSourceSQL(b, "fresh_obs."+relationshipobservation.FieldSource)
+	b.WriteString(" AND fresh_stop.")
+	b.WriteString(relationshipsourcestatus.FieldCompleteness)
+	b.WriteString(" = 'complete'))))")
 }
 
 func relationshipHasUnfilledDetail(now time.Time) predicate.Relationship {
