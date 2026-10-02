@@ -62,6 +62,7 @@ import {
   conversationNoteCount,
   deleteConversationConfirmCopy,
   completenessProductLabel,
+  identityReviewBlockCopy,
   detailEvidenceCopy,
   detailSourceLabel,
   enrichmentAvailabilityCopy,
@@ -504,6 +505,9 @@ describe("RelationshipsView", () => {
     expect(completenessProductLabel("partial")).toBe("Some details are still missing");
     expect(completenessProductLabel("complete")).toBe("Details are current");
     expect(completenessProductLabel("custom_status")).toBe("Custom Status");
+    expect(identityReviewBlockCopy(1)).toBe("1 identity review blocks acting.");
+    expect(identityReviewBlockCopy(2)).toBe("2 identity reviews block acting.");
+    expect(source).toContain("identityReviewBlockCopy(model.completeness.unresolvedIdentityCount)");
     expect(detailSourceLabel("ai_inference", true)).toBe("Suggested");
     expect(detailSourceLabel("external_research", true)).toBe("Public research");
     expect(detailSourceLabel("external_research", false)).toBe("Not filled in yet");

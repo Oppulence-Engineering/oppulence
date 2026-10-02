@@ -1298,8 +1298,9 @@ function MissionControlOverview({
         </div>
         {model.completeness.unresolvedIdentityCount > 0 ? (
           <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">
-            {model.completeness.unresolvedIdentityCount} identity review
-            {model.completeness.unresolvedIdentityCount === 1 ? "" : "s"} block acting.
+            {model.completeness.unresolvedIdentityCount === 1
+              ? "1 identity review blocks acting."
+              : `${model.completeness.unresolvedIdentityCount} identity reviews block acting.`}
           </p>
         ) : null}
       </div>

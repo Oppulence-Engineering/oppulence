@@ -1921,6 +1921,12 @@ export function completenessProductLabel(status: string): string {
   return labels[status] ?? relationshipLabel(status);
 }
 
+/** One pending identity review blocks acting. Several reviews block acting. */
+export function identityReviewBlockCopy(count: number): string {
+  if (count === 1) return "1 identity review blocks acting.";
+  return `${count} identity reviews block acting.`;
+}
+
 /**
  * Completeness text is stored with the company. The empty-workspace sentence
  * talks about a sync. The sheet says what the person can do.
@@ -2616,8 +2622,7 @@ function MissionControlOverview({
         </div>
         {model.completeness.unresolvedIdentityCount > 0 ? (
           <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">
-            {model.completeness.unresolvedIdentityCount} identity review
-            {model.completeness.unresolvedIdentityCount === 1 ? "" : "s"} block acting.
+            {identityReviewBlockCopy(model.completeness.unresolvedIdentityCount)}
           </p>
         ) : null}
       </div>
