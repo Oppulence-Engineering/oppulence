@@ -1191,6 +1191,18 @@ export function noteListFailureCopy(): string {
   return "Notes could not load. Try again.";
 }
 
+/**
+ * One timeline per company can fail while the notes request itself succeeds.
+ * Zero notes after that miss is not an empty notebook.
+ */
+export function notesTimelineUnread(noteCount: number, failedTimelines: number): boolean {
+  return noteCount === 0 && failedTimelines > 0;
+}
+
+export function notesTimelineFailureCopy(): string {
+  return "Notes could not be read from these companies. Try again.";
+}
+
 export function earlierNotesLabel(): string {
   return "Show earlier notes";
 }
@@ -1417,12 +1429,17 @@ export function NotesView({
 
   React.useEffect(() => {
     const failed = notesQuery.data?.failedTimelineCount ?? 0;
-    if (failed > 0) {
+    const loadedNotes = notesQuery.data?.notes.length ?? 0;
+    if (failed > 0 && loadedNotes > 0) {
       onNotice(
         `Loaded available notes, but ${String(failed)} company timeline${failed === 1 ? "" : "s"} could not be read.`,
       );
     }
-  }, [notesQuery.data?.failedTimelineCount, onNotice]);
+  }, [notesQuery.data?.failedTimelineCount, notesQuery.data?.notes.length, onNotice]);
+  const timelinesUnread = notesTimelineUnread(
+    notes.length,
+    notesQuery.data?.failedTimelineCount ?? 0,
+  );
   const visible = [...notes].sort((left, right) =>
     newestFirst
       ? right.occurredAt.localeCompare(left.occurredAt)
@@ -1501,7 +1518,7 @@ export function NotesView({
           >
             <Note className="size-4" /> Notes{" "}
             <Badge className="font-normal text-primary/40" variant="secondary">
-              {listNeverLoaded(notesQuery.isError, notesQuery.data)
+              {listNeverLoaded(notesQuery.isError, notesQuery.data) || timelinesUnread
                 ? "Couldn't load"
                 : noteCountLabel(
                     notes.length,
@@ -1698,6 +1715,23 @@ export function NotesView({
             </Button>
           }
           description={noteListFailureCopy()}
+          image="notes"
+          learnMore={[]}
+          title="Notes"
+        />
+      ) : timelinesUnread ? (
+        <WorkspaceEmptyState
+          action={
+            <Button
+              onClick={() => void refetchClearingBanner(() => notesQuery.refetch(), onError)}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              Try again
+            </Button>
+          }
+          description={notesTimelineFailureCopy()}
           image="notes"
           learnMore={[]}
           title="Notes"

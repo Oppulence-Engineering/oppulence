@@ -136,6 +136,8 @@ import {
   peopleListEmptyCopy,
   peopleListFailureCopy,
   noteListFailureCopy,
+  notesTimelineFailureCopy,
+  notesTimelineUnread,
   taskListFailureCopy,
   taskCompaniesFailureCopy,
   enrichmentEvidence,
@@ -945,6 +947,23 @@ describe("durable note templates and favorites", () => {
     expect(await screen.findByText(/No notes yet/)).toBeVisible();
     expect(screen.queryByText("Couldn't load")).not.toBeInTheDocument();
   });
+
+  it("does not call a failed company timeline an empty notebook", async () => {
+    mocks.fetchWorkspaceNotes.mockResolvedValue({
+      notes: [],
+      relationships: [{ id: "relationship-1", kind: "organization", displayName: "Acme" }],
+      failedTimelineCount: 1,
+      hasMoreNotes: false,
+      timelineCursors: [],
+    });
+    renderNotes();
+
+    expect(await screen.findByText(notesTimelineFailureCopy())).toBeVisible();
+    expect(screen.getByText("Couldn't load")).toBeVisible();
+    expect(screen.queryByText(/No notes yet/)).not.toBeInTheDocument();
+    expect(notesTimelineUnread(0, 1)).toBe(true);
+    expect(notesTimelineUnread(2, 1)).toBe(false);
+  });
 });
 import { describe, expect, it } from "vitest";
 
@@ -1395,6 +1414,11 @@ describe("people directory copy", () => {
     expect(peopleListEmptyCopy(false)).toContain("keep a contact for each company.");
     expect(peopleListFailureCopy()).toBe("People could not load. Try again.");
     expect(noteListFailureCopy()).toBe("Notes could not load. Try again.");
+    expect(notesTimelineFailureCopy()).toBe(
+      "Notes could not be read from these companies. Try again.",
+    );
+    expect(source).toContain("notesTimelineUnread(");
+    expect(source).toContain("notesTimelineFailureCopy()");
     expect(source).toContain("peopleListEmptyCopy(directoryTitle.filtered)");
     expect(source).toContain("listNeverLoaded(peopleQuery.isError, peopleQuery.data)");
     expect(source).toContain('listRefreshFailureCopy("people")');
