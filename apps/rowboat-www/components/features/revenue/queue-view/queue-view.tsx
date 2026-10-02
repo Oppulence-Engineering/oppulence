@@ -701,6 +701,7 @@ function CreateActionDialog({
   const [message, setMessage] = React.useState("");
   const [reason, setReason] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+  const [formError, setFormError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (relationshipsQuery.error) {
@@ -711,6 +712,7 @@ function CreateActionDialog({
   const submit = async () => {
     if (!relationshipId || !reason.trim()) return;
     setBusy(true);
+    setFormError(null);
     onError("");
     try {
       const rel = relationships.find((r) => r.id === relationshipId);
@@ -726,7 +728,9 @@ function CreateActionDialog({
       });
       onCreated(created);
     } catch (e) {
-      onError(errMessage(e, "Could not create the action."));
+      const message = errMessage(e, "Could not create the action.");
+      setFormError(message);
+      onError(message);
     } finally {
       setBusy(false);
     }
@@ -841,6 +845,7 @@ function CreateActionDialog({
             />
           </div>
         )}
+        {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel

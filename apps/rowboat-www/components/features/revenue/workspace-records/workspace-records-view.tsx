@@ -905,9 +905,12 @@ function CreatePersonDialog({
   const [name, setName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+  const [formError, setFormError] = React.useState<string | null>(null);
   const submit = async () => {
     if (!name.trim()) return;
     setBusy(true);
+    setFormError(null);
+    onError("");
     try {
       const relationship = await createRelationship({
         kind: "person",
@@ -932,7 +935,9 @@ function CreatePersonDialog({
       ]);
       onCreated();
     } catch (error) {
-      onError(errMessage(error, "Could not create the person."));
+      const message = errMessage(error, "Could not create the person.");
+      setFormError(message);
+      onError(message);
     } finally {
       setBusy(false);
     }
@@ -961,6 +966,7 @@ function CreatePersonDialog({
             onChange={(event) => setEmail(event.target.value)}
           />
         </div>
+        {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel

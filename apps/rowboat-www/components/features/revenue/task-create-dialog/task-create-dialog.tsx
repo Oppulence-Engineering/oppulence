@@ -88,6 +88,7 @@ export function TaskCreateDialog({
   const [createMore, setCreateMore] = React.useState(false);
   const [recordError, setRecordError] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
+  const [formError, setFormError] = React.useState<string | null>(null);
 
   const relationshipOptions = React.useMemo(
     () =>
@@ -116,6 +117,8 @@ export function TaskCreateDialog({
     }
 
     setBusy(true);
+    setFormError(null);
+    onError("");
     try {
       await createAction({
         relationshipId,
@@ -133,7 +136,9 @@ export function TaskCreateDialog({
         close();
       }
     } catch (error) {
-      onError(errMessage(error, "Could not create the task."));
+      const message = errMessage(error, "Could not create the task.");
+      setFormError(message);
+      onError(message);
     } finally {
       setBusy(false);
     }
@@ -169,7 +174,9 @@ export function TaskCreateDialog({
             }
           }}
         />
-        {recordError ? (
+        {formError ? (
+          <ChipModalError>{formError}</ChipModalError>
+        ) : recordError ? (
           <ChipModalError>
             {taskCompanyRequiredCopy(relationships.length === 0, hasMoreCompanies)}
           </ChipModalError>

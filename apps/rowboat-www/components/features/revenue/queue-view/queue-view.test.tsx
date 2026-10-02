@@ -37,6 +37,8 @@ describe("QueueView", () => {
     expect(source).toContain("aria-label={recoveryFilterName(filter)}");
     expect(source).toContain("aria-label={recoveryCompanyName(");
     expect(source).toContain("value={relationshipId || undefined}");
+    expect(source).toContain('errMessage(e, "Could not create the action.")');
+    expect(source).toContain("setFormError(message)");
     expect(source).not.toContain("relationships[0]");
     expect(source).toContain("aria-label={recoveryFollowUpName(actionType)}");
     expect(recoveryCompanyName("Dogfood Harbor")).toBe("Company, Dogfood Harbor");

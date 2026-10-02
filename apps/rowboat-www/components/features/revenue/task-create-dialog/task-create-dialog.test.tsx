@@ -10,9 +10,12 @@ const mocks = vi.hoisted(() => ({
   createAction: vi.fn(),
 }));
 
-vi.mock("@/lib/revenue/revenue", () => ({
-  createAction: mocks.createAction,
-}));
+vi.mock("@/lib/revenue/revenue", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/revenue/revenue")>(
+    "@/lib/revenue/revenue",
+  );
+  return { ...actual, createAction: mocks.createAction };
+});
 
 import {
   TaskCreateDialog,
@@ -147,5 +150,36 @@ describe("TaskCreateDialog", () => {
     expect(mocks.createAction).not.toHaveBeenCalled();
     expect(taskCompanyMenuLabel(0, true)).toBe("More companies are still in this list.");
     expect(taskCompanyRequiredCopy(true, true)).toBe("Show the next companies before saving.");
+  });
+
+  it("shows a failed save inside the dialog", async () => {
+    Element.prototype.hasPointerCapture ??= () => false;
+    Element.prototype.setPointerCapture ??= () => undefined;
+    Element.prototype.releasePointerCapture ??= () => undefined;
+    Element.prototype.scrollIntoView ??= () => undefined;
+    mocks.createAction.mockRejectedValue(new Error("Request failed (500)"));
+    const onError = vi.fn();
+    const onSaved = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <TaskCreateDialog
+        open
+        relationships={[{ id: "relationship-1", kind: "company", displayName: "Acme" }]}
+        onError={onError}
+        onOpenChange={vi.fn()}
+        onSaved={onSaved}
+      />,
+    );
+
+    await user.type(screen.getByLabelText("Task title"), "Follow up on renewal");
+    await user.click(screen.getByRole("button", { name: "Company, Link a company" }));
+    await user.click(screen.getByRole("menuitem", { name: "Acme" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not create the task.");
+    expect(screen.getByLabelText("Task title")).toHaveValue("Follow up on renewal");
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledWith("Could not create the task.");
   });
 });
