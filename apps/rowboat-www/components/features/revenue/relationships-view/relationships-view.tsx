@@ -556,6 +556,22 @@ export function companyDirectoryCount(shown: number, hasMore: boolean): string {
   return hasMore ? `${shown}+` : String(shown);
 }
 
+/**
+ * An unfiltered directory is only the first page, so a company further down
+ * still belongs in the queue. A finished filter is the whole match, so a
+ * company the directory hid does not stay in the queue above it. A filter
+ * that still has another page can match a company that is not loaded yet.
+ */
+export function attentionForCompanyDirectory<T extends { relationshipId: string }>(
+  items: readonly T[],
+  companies: readonly { id: string }[],
+  input: { filtered: boolean; hasMore: boolean },
+): T[] {
+  if (!input.filtered || input.hasMore) return [...items];
+  const ids = new Set(companies.map((company) => company.id));
+  return items.filter((item) => ids.has(item.relationshipId));
+}
+
 export function companyDirectoryRemainderLabel(): string {
   return "Show the next companies";
 }
@@ -755,6 +771,8 @@ export function RelationshipsView({
   );
   const companies = rows.filter((relationship) => relationship.kind !== "person");
   const directoryTitle = companyDirectoryTitle({ query, health, lifecycle });
+  const directoryFilterSettled =
+    debouncedQuery.trim().length > 0 || health !== "all" || lifecycle !== "all";
   const clearCompanyFilters = () => {
     setQuery("");
     setDebouncedQuery("");
@@ -764,11 +782,16 @@ export function RelationshipsView({
   const personIds = new Set(
     rows.filter((relationship) => relationship.kind === "person").map((relationship) => relationship.id),
   );
-  // The directory is paged. A company past this page still belongs in the queue.
   const companyAttention = attentionWithCompanyTitles(
-    attentionWithoutTasks(
-      attention.filter((item) => !personIds.has(item.relationshipId)),
-      openActionsQuery.isSuccess ? workspaceTaskIds(actionRows(openActionsQuery.data)) : new Set(),
+    attentionForCompanyDirectory(
+      attentionWithoutTasks(
+        attention.filter((item) => !personIds.has(item.relationshipId)),
+        openActionsQuery.isSuccess
+          ? workspaceTaskIds(actionRows(openActionsQuery.data))
+          : new Set(),
+      ),
+      companies,
+      { filtered: directoryFilterSettled, hasMore: hasMoreCompanies },
     ),
     companies,
   );

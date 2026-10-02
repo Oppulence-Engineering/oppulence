@@ -11,6 +11,7 @@ import {
   companyDirectoryCount,
   companyCategoriesLabel,
   companyDirectoryRemainderLabel,
+  attentionForCompanyDirectory,
   companyDirectoryTitle,
   companyHealthFilterName,
   companyListEmptyCopy,
@@ -87,6 +88,7 @@ describe("RelationshipsView", () => {
     expect(source).toContain("subscribeCompanyCreate(() => setCreating(true))");
     expect(source).toContain("relationshipDeltaValue(change.before)");
     expect(source).toContain("attentionWithoutTasks(");
+    expect(source).toContain("attentionForCompanyDirectory(");
     expect(source).toContain("!personIds.has(item.relationshipId)");
     expect(source).not.toContain(
       "companies.some((relationship) => relationship.id === item.relationshipId)",
@@ -144,6 +146,28 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("attentionExhausted");
     expect(source).toContain("COMPANY_DIRECTORY_PAGE");
     expect(source).not.toContain("in All companies`");
+  });
+
+  it("drops attention for a company a finished filter hid", () => {
+    const lumen = { relationshipId: "lumen" };
+    const quill = { relationshipId: "quill" };
+    const items = [lumen, quill];
+    const loaded = [{ id: "quill" }];
+    expect(
+      attentionForCompanyDirectory(items, loaded, { filtered: false, hasMore: false }).map(
+        (item) => item.relationshipId,
+      ),
+    ).toEqual(["lumen", "quill"]);
+    expect(
+      attentionForCompanyDirectory(items, loaded, { filtered: true, hasMore: true }).map(
+        (item) => item.relationshipId,
+      ),
+    ).toEqual(["lumen", "quill"]);
+    expect(
+      attentionForCompanyDirectory(items, loaded, { filtered: true, hasMore: false }).map(
+        (item) => item.relationshipId,
+      ),
+    ).toEqual(["quill"]);
   });
 
   it("does not offer company checkboxes that select nothing", () => {
