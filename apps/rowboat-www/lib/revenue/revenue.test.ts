@@ -385,6 +385,21 @@ describe("shownRequestError", () => {
         "Could not start the connection.",
       ),
     ).toBe("Could not start the connection.");
+    expect(
+      shownRequestError(new Error("Export failed (500)"), "Could not export the record."),
+    ).toBe("Could not export the record.");
+    expect(
+      shownRequestError(
+        new Error("Report export failed (500)"),
+        "The report could not be downloaded.",
+      ),
+    ).toBe("The report could not be downloaded.");
+    expect(
+      shownRequestError(
+        new Error("Report export failed (429)"),
+        "The report could not be downloaded.",
+      ),
+    ).toBe("Too many requests were sent from this workspace. Wait a moment, then try again.");
     expect(shownRequestError(new Error("revision conflict"), company)).toBe("revision conflict");
     expect(shownRequestError(new Error("Request failed (429)"), company)).toBe(
       "Too many requests were sent from this workspace. Wait a moment, then try again.",
