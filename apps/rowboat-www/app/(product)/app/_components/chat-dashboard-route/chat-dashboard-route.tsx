@@ -39,6 +39,7 @@ import type { AgentHistoryItem } from "@/lib/agents/agent-history";
 import { agentToolLabel, approvalTrustCopy } from "@/lib/agents/agent-tools";
 import { requestDueCommitments } from "@/lib/dashboard/commitment-due-request";
 import { recoveryOpenCount } from "@/lib/revenue/revenue-records";
+import { explainedRevenueError } from "@/lib/revenue/revenue";
 import type { RevenueTab } from "@/lib/dashboard/product-navigation";
 import type { RevenueImpact } from "@/lib/revenue/types";
 
@@ -115,56 +116,88 @@ function renderToolOutput(value: unknown): string {
   }
 }
 
-function PulseFigure({ failed, value }: { failed: boolean; value: number | null }) {
-  if (value == null) {
-    return failed ? "—" : <Skeleton className="inline-block h-3 w-4" />;
-  }
+/** A missed load is not an unknown count. The em dash used to read as "no number". */
+export function pulseFigureValue(
+  loaded: boolean,
+  failed: boolean,
+): "loading" | "failed" | "ready" {
+  if (!loaded) return failed ? "failed" : "loading";
+  return "ready";
+}
+
+export function pulseLoadFailureCopy(): string {
+  return "Workspace counts could not load. Try again.";
+}
+
+export function pulseRefreshFailureCopy(): string {
+  return "Could not refresh workspace counts. Try again.";
+}
+
+function PulseFigure({ state, value }: { state: "loading" | "failed" | "ready"; value: number }) {
+  if (state === "loading") return <Skeleton className="inline-block h-3 w-4" />;
+  if (state === "failed") return "Couldn't load";
   return value;
 }
 
 function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
   const impactQuery = useImpact();
   const impact = impactQuery.data ?? null;
+  const loaded = impact != null;
   const failed = impactQuery.isError;
-  const recovery = impact ? recoveryOpenCount(impact.open, impact.openTasks) : null;
+  const figure = pulseFigureValue(loaded, failed);
+  const recovery = impact ? recoveryOpenCount(impact.open, impact.openTasks) : 0;
+  const notice = failed
+    ? explainedRevenueError(
+        impactQuery.error,
+        loaded ? pulseRefreshFailureCopy() : pulseLoadFailureCopy(),
+      )
+    : null;
 
   return (
     <footer
       aria-label="Workspace pulse"
       className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-0 text-[12px] text-[var(--text-muted)]"
     >
-      {HOME_STATS.map((stat, index) => (
-        <span className="inline-flex items-center gap-3" key={stat.tab}>
-          {index > 0 ? (
-            <span aria-hidden className="text-[var(--border)]">
-              ·
-            </span>
-          ) : null}
-          <button
-            className="inline-flex items-baseline gap-1.5 font-normal transition-colors hover:text-[var(--text-secondary)]"
-            onClick={() => {
-              // The count is past-due promises in every direction, so the register opens on that slice.
-              if (stat.tab === "commitments") requestDueCommitments();
-              onOpenTab(stat.tab);
-            }}
-            type="button"
-          >
-            <span className="font-mono tabular-nums text-[var(--text-secondary)]">
-              <PulseFigure
-                failed={failed}
-                value={
-                  stat.label === "recovery"
-                    ? recovery
-                    : impact
-                      ? stat.read(impact)
-                      : null
-                }
-              />
-            </span>
-            <span>{stat.label}</span>
-          </button>
-        </span>
-      ))}
+      {notice ? (
+        <button
+          className="font-normal hover:text-[var(--text-secondary)]"
+          onClick={() => void impactQuery.refetch()}
+          type="button"
+        >
+          {notice}
+        </button>
+      ) : null}
+      {figure === "failed" ? null : (
+        HOME_STATS.map((stat, index) => (
+          <span className="inline-flex items-center gap-3" key={stat.tab}>
+            {index > 0 ? (
+              <span aria-hidden className="text-[var(--border)]">
+                ·
+              </span>
+            ) : null}
+            <button
+              className={[
+                "inline-flex items-baseline gap-1.5 font-normal transition-colors",
+                "hover:text-[var(--text-secondary)]",
+              ].join(" ")}
+              onClick={() => {
+                // Past-due promises, in every direction. The register opens on that slice.
+                if (stat.tab === "commitments") requestDueCommitments();
+                onOpenTab(stat.tab);
+              }}
+              type="button"
+            >
+              <span className="font-mono tabular-nums text-[var(--text-secondary)]">
+                <PulseFigure
+                  state={figure}
+                  value={stat.label === "recovery" ? recovery : impact ? stat.read(impact) : 0}
+                />
+              </span>
+              <span>{stat.label}</span>
+            </button>
+          </span>
+        ))
+      )}
     </footer>
   );
 }
