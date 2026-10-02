@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
@@ -16,10 +18,11 @@ import (
 const (
 	workspaceNotePageDefault = 50
 	workspaceNotePageMax     = 100
-	// One notes page used to read every company timeline. Note revisions are
-	// sparse next to mail, so one bounded scan replaces that fan-out.
-	workspaceNoteScanCap = 2000
 )
+
+// workspaceNoteReadBatch is how many raw revisions are read at once. A note
+// keeps every edit, so the scan continues until the collapsed page is full.
+var workspaceNoteReadBatch = 200
 
 // WorkspaceNote is the latest copy of one company note.
 type WorkspaceNote struct {
@@ -52,25 +55,9 @@ func (s *Service) ListWorkspaceNotes(ctx context.Context, u *ent.User, limit, of
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.client.RelationshipObservation.Query().
-		Where(
-			relationshipobservation.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
-			relationshipobservation.SourceEQ("desktop_note"),
-			relationshipobservation.EventTypeIn("note", "note_deleted"),
-			relationshipobservation.HasRelationshipWith(relationship.KindNEQ("person")),
-		).
-		WithRelationship().
-		Order(
-			ent.Desc(relationshipobservation.FieldOccurredAt),
-			ent.Desc(relationshipobservation.FieldID),
-		).
-		Limit(workspaceNoteScanCap + 1).
-		All(ctx)
+	rows, err := s.collectWorkspaceNoteRows(ctx, ws.ID, offset+limit+1)
 	if err != nil {
 		return nil, err
-	}
-	if len(rows) > workspaceNoteScanCap {
-		rows = rows[:workspaceNoteScanCap]
 	}
 	live := collapseWorkspaceNotes(rows)
 	if offset > len(live) {
@@ -98,6 +85,58 @@ func normalizeWorkspaceNotePage(limit, offset int) (int, int, error) {
 		limit = workspaceNotePageMax
 	}
 	return limit, offset, nil
+}
+
+// collectWorkspaceNoteRows reads revisions newest first until enough distinct
+// notes are collapsed, or the history ends. Stopping after a fixed number of
+// raw rows hid every older note once one note had been edited that many times.
+func (s *Service) collectWorkspaceNoteRows(ctx context.Context, workspaceID uuid.UUID, liveNeed int) ([]*ent.RelationshipObservation, error) {
+	if liveNeed < 1 {
+		liveNeed = 1
+	}
+	batchSize := workspaceNoteReadBatch
+	if batchSize < 1 {
+		batchSize = 200
+	}
+	var rows []*ent.RelationshipObservation
+	var after *ent.RelationshipObservation
+	for {
+		q := s.client.RelationshipObservation.Query().
+			Where(
+				relationshipobservation.HasWorkspaceWith(revenueworkspace.IDEQ(workspaceID)),
+				relationshipobservation.SourceEQ("desktop_note"),
+				relationshipobservation.EventTypeIn("note", "note_deleted"),
+				relationshipobservation.HasRelationshipWith(relationship.KindNEQ("person")),
+			).
+			WithRelationship().
+			Order(
+				ent.Desc(relationshipobservation.FieldOccurredAt),
+				ent.Desc(relationshipobservation.FieldID),
+			).
+			Limit(batchSize)
+		if after != nil {
+			q = q.Where(relationshipobservation.Or(
+				relationshipobservation.OccurredAtLT(after.OccurredAt),
+				relationshipobservation.And(
+					relationshipobservation.OccurredAtEQ(after.OccurredAt),
+					relationshipobservation.IDLT(after.ID),
+				),
+			))
+		}
+		batch, err := q.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if len(batch) == 0 {
+			break
+		}
+		rows = append(rows, batch...)
+		if len(collapseWorkspaceNotes(rows)) >= liveNeed || len(batch) < batchSize {
+			break
+		}
+		after = batch[len(batch)-1]
+	}
+	return rows, nil
 }
 
 // collapseWorkspaceNotes keeps the newest revision of each note and drops a

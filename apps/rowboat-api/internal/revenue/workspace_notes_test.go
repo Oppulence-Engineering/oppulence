@@ -138,6 +138,60 @@ func TestListWorkspaceNotesCollapsesEditsAndSkipsOtherCompanies(t *testing.T) {
 	}
 }
 
+func TestListWorkspaceNotesReadsPastARevisionBatch(t *testing.T) {
+	previous := workspaceNoteReadBatch
+	workspaceNoteReadBatch = 2
+	t.Cleanup(func() { workspaceNoteReadBatch = previous })
+
+	f := newFixture(t)
+	cedar, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Edits", AccountDomain: "cedar-edits.example",
+	})
+	if err != nil {
+		t.Fatalf("cedar: %v", err)
+	}
+	pine, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Pine Kept", AccountDomain: "pine-kept.example",
+	})
+	if err != nil {
+		t.Fatalf("pine: %v", err)
+	}
+	at := func(hour int) time.Time {
+		return time.Date(2026, 9, 2, hour, 0, 0, 0, time.UTC)
+	}
+	observations := []RelationshipObservationInput{
+		{
+			RelationshipID: pine.ID, Source: "desktop_note", ExternalID: "pine-kept",
+			EventType: "note", OccurredAt: at(1), Summary: "Pine kept",
+			Facts: map[string]any{"noteId": "pine-kept", "title": "Pine kept", "body": "Still here"},
+		},
+	}
+	for hour, title := range map[int]string{2: "Draft", 3: "Revised", 4: "Edited Cedar"} {
+		observations = append(observations, RelationshipObservationInput{
+			RelationshipID: cedar.ID, Source: "desktop_note", ExternalID: title,
+			EventType: "note", OccurredAt: at(hour), Summary: title,
+			Facts: map[string]any{"noteId": "cedar-edit", "title": title, "body": title},
+		})
+	}
+	if _, err := f.svc.IngestRelationshipObservationCandidates(f.ctx, f.user, observations); err != nil {
+		t.Fatalf("ingest: %v", err)
+	}
+
+	page, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 50, 0)
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if page.HasMore || len(page.Notes) != 2 {
+		t.Fatalf("notes = %+v, want both companies", page.Notes)
+	}
+	if page.Notes[0].Title != "Edited Cedar" || page.Notes[0].RelationshipName != "Cedar Edits" {
+		t.Fatalf("newest = %+v", page.Notes[0])
+	}
+	if page.Notes[1].Title != "Pine kept" || page.Notes[1].RelationshipName != "Pine Kept" {
+		t.Fatalf("older = %+v", page.Notes[1])
+	}
+}
+
 func TestWorkspaceNotesRouteIsMounted(t *testing.T) {
 	router := chi.NewRouter()
 	NewHandler(nil, zap.NewNop()).Mount(router)
