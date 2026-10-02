@@ -209,8 +209,9 @@ export function workflowLastRunAt(
  * and still leave that clock looking successful. The mark belongs to the
  * moment on the row: the newest page hit when it is at least as new as the
  * stored time, otherwise the error kept on the task. That error is empty
- * when the latest recorded run did not fail. The raw error stays off the
- * row, because it names the scheduler.
+ * when the latest recorded run did not fail. The row shows Failed beside
+ * the clock, and the friendly reason under it. The scheduler payload stays
+ * off the row.
  */
 export function workflowLastRunMark(
   task: { lastRunAt?: string | null; lastRunError?: string | null },
@@ -230,6 +231,39 @@ export function workflowLastRunMark(
     return null;
   }
   return task.lastRunError?.trim() ? "Failed" : null;
+}
+
+type WorkflowLastRunSource = {
+  createdAt?: string | null;
+  status?: string | null;
+  error?: string | null;
+  errorCode?: string | null;
+};
+
+/**
+ * Failed is the mark. The sentence under it is why, in the same words as the
+ * runs list. A later successful run clears a stale stored error. The raw
+ * scheduler text is rewritten before it is shown or searched.
+ */
+export function workflowLastRunReason(
+  task: { lastRunAt?: string | null; lastRunError?: string | null },
+  pageRun?: WorkflowLastRunSource | null,
+): string {
+  if (workflowLastRunMark(task, pageRun) !== "Failed") return "";
+  const pageTime = Date.parse(pageRun?.createdAt?.trim() ?? "");
+  const storedTime = Date.parse(task.lastRunAt?.trim() ?? "");
+  const pageIsShown =
+    Boolean(pageRun) &&
+    !Number.isNaN(pageTime) &&
+    (Number.isNaN(storedTime) || pageTime >= storedTime);
+  const pageError = pageRun?.error?.trim() ?? "";
+  const storedError = task.lastRunError?.trim() ?? "";
+  const raw = pageIsShown && pageError ? pageError : storedError;
+  if (!raw) return "";
+  const friendly = friendlyAgentError(raw, "run");
+  if (friendly !== raw) return friendly;
+  const code = pageIsShown && pageError ? pageRun?.errorCode?.trim() : "";
+  return code ? `${code}: ${raw}` : raw;
 }
 
 /** Settings already says the schedule is in sync. That is not the last run. */
@@ -436,16 +470,17 @@ export function workflowStepLabel(task: CloudTask): string {
 /**
  * The library search used to read the name, schedule, and subtitle. The row
  * also prints Live or Draft, the step count, the last-run clock (and Failed
- * beside it), and Oppulence on a maintained workflow. Those words have to
- * find the workflow.
+ * beside it), the friendly failure sentence, and Oppulence on a maintained
+ * workflow. Those words have to find the workflow.
  */
 export function workflowLibrarySearchText(
   task: CloudTask,
   templates: readonly Pick<CloudTaskTemplate, "slug" | "taskSlug" | "description">[] = [],
-  pageRun?: { createdAt?: string | null; status?: string | null } | null,
+  pageRun?: WorkflowLastRunSource | null,
 ): string {
   const lastRunAt = workflowLastRunAt(task, pageRun?.createdAt);
   const mark = workflowLastRunMark(task, pageRun);
+  const reason = workflowLastRunReason(task, pageRun);
   const lastRun = lastRunAt
     ? `${scheduleMomentLabel(lastRunAt)}${mark ? ` · ${mark}` : ""}`
     : "Never";
@@ -457,6 +492,7 @@ export function workflowLibrarySearchText(
     task.active ? "Live" : "Draft",
     task.systemManaged ? "Oppulence" : "",
     lastRun,
+    reason,
   ].join(" ");
 }
 
@@ -707,7 +743,12 @@ function WorkflowLibrary({
                 <TableHead className="h-9 w-[110px] px-4 text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
                   Status
                 </TableHead>
-                <TableHead className="h-9 w-[150px] px-4 text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                <TableHead
+                  className={
+                    "h-9 w-[280px] px-4 text-[10px] font-medium " +
+                    "uppercase tracking-[0.1em] text-muted-foreground"
+                  }
+                >
                   Last run
                 </TableHead>
                 <TableHead className="h-9 w-8 px-4" />
@@ -718,6 +759,12 @@ function WorkflowLibrary({
                 const pageRun = runs.find((run) => run.slug === task.slug);
                 const lastRunAt = workflowLastRunAt(task, pageRun?.createdAt);
                 const lastRunMark = workflowLastRunMark(task, pageRun);
+                const lastRunReason = workflowLastRunReason(task, pageRun);
+                const lastRunLabel = lastRunAt
+                  ? `${scheduleMomentLabel(lastRunAt)}${
+                      lastRunMark ? ` · ${lastRunMark}` : ""
+                    }`
+                  : "Never";
                 return (
                   <TableRow
                     className="cursor-pointer border-b hover:bg-muted/35"
@@ -770,10 +817,16 @@ function WorkflowLibrary({
                         {task.active ? "Live" : "Draft"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="px-4 text-[12px] text-muted-foreground">
-                      {lastRunAt
-                        ? `${scheduleMomentLabel(lastRunAt)}${lastRunMark ? ` · ${lastRunMark}` : ""}`
-                        : "Never"}
+                    <TableCell className="max-w-[280px] px-4 text-[12px] text-muted-foreground">
+                      <p>{lastRunLabel}</p>
+                      {lastRunReason ? (
+                        <p
+                          className="mt-0.5 line-clamp-3 text-[11px] leading-4 text-destructive"
+                          title={lastRunReason}
+                        >
+                          {lastRunReason}
+                        </p>
+                      ) : null}
                     </TableCell>
                     <TableCell className="px-4">
                       <CaretRight className="size-4 text-muted-foreground" />

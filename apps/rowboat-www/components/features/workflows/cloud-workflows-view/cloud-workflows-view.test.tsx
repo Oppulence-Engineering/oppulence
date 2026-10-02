@@ -17,6 +17,7 @@ import {
   workflowOpeningScreen,
   workflowLastRunAt,
   workflowLastRunMark,
+  workflowLastRunReason,
   workflowSettingsLastRun,
   workflowRunsForEditor,
   maintainedWorkflowNotice,
@@ -56,6 +57,7 @@ describe("CloudWorkflowsView", () => {
     } as CloudTask;
     const failedText = workflowLibrarySearchText(failed).toLowerCase();
     expect(failedText).toContain("failed");
+    expect(failedText).toContain("this run could not finish");
     expect(failedText).toContain("live");
     expect(failedText).toContain("company refresh");
     const draft = {
@@ -461,7 +463,60 @@ describe("CloudWorkflowsView", () => {
       ),
     ).toBe("Stopped");
     expect(source).toContain("workflowLastRunMark(");
+    expect(source).toContain("workflowLastRunReason(");
     expect(source).not.toContain("lastRunError}");
+    const apiKey =
+      "The AI provider rejected the API key for this workspace. Nothing was charged.";
+    const denied = {
+      lastRunAt: "2026-10-02T07:45:00.234Z",
+      lastRunError:
+        "activity error: llm upstream returned status 401: " +
+        '{"error":{"message":"Missing Authentication header"}}',
+    };
+    expect(workflowLastRunReason(denied, null)).toBe(apiKey);
+    expect(workflowLibrarySearchText(denied as CloudTask).toLowerCase()).toContain("api key");
+    expect(
+      workflowLastRunReason(denied, {
+        createdAt: "2026-10-02T08:00:00Z",
+        status: "succeeded",
+        error: "",
+      }),
+    ).toBe("");
+    expect(
+      workflowLibrarySearchText(denied as CloudTask, [], {
+        createdAt: "2026-10-02T08:00:00Z",
+        status: "succeeded",
+      })
+        .toLowerCase(),
+    ).not.toContain("api key");
+    expect(
+      workflowLastRunReason(
+        { lastRunAt: "2026-10-02T07:00:00Z", lastRunError: "" },
+        {
+          createdAt: "2026-10-02T07:45:00Z",
+          status: "failed",
+          error: "llm upstream returned status 401: Missing Authentication header",
+          errorCode: "llm_call_failed",
+        },
+      ),
+    ).toBe(apiKey);
+    expect(
+      workflowLastRunReason(
+        { lastRunAt: "2026-10-02T07:00:00Z", lastRunError: "older failure" },
+        {
+          createdAt: "2026-10-02T07:45:00Z",
+          status: "failed",
+          error: "disk full",
+          errorCode: "storage",
+        },
+      ),
+    ).toBe("storage: disk full");
+    expect(
+      workflowLastRunReason(
+        { lastRunAt: "2026-10-02T07:45:00Z", lastRunError: "activity error" },
+        { createdAt: "2026-10-02T07:45:00Z", status: "stopped" },
+      ),
+    ).toBe("");
     expect(
       workflowSettingsLastRun(
         { lastRunAt: "2026-09-30T09:00:00Z", lastRunError: "activity error" },
