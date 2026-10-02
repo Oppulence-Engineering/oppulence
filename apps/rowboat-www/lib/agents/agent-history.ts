@@ -43,7 +43,16 @@ export function friendlyAgentError(message: string, subject: "agent" | "run" = "
   return message;
 }
 
-const BARE_AGENT_STATUS = /^Request failed(?:: \d+\b.*| \(\d+\))$/;
+const BARE_AGENT_STATUS = new RegExp(
+  "^(?:" +
+    [
+      "Request failed(?:: \\d+\\b.*| \\(\\d+\\))",
+      "Failed to (?:load|save) file \\(\\d+\\)",
+      "Could not delete agent \\(\\d+\\)",
+      "Agent stream failed \\(\\d+\\)",
+    ].join("|") +
+    ")$",
+);
 
 /**
  * A chat action should keep a specific failure. A status code with no sentence

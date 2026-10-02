@@ -58,6 +58,15 @@ describe("shownAgentError", () => {
       send,
     );
     expect(shownAgentError(new Error("Request failed (500)"), send)).toBe(send);
+    expect(
+      shownAgentError(new Error("Failed to load file (500)"), "Could not load this file."),
+    ).toBe("Could not load this file.");
+    expect(
+      shownAgentError(new Error("Failed to save file (500)"), "Could not save this file."),
+    ).toBe("Could not save this file.");
+    expect(
+      shownAgentError(new Error("Could not delete agent (500)"), "Could not delete this agent."),
+    ).toBe("Could not delete this agent.");
     expect(shownAgentError(new Error("The agent was canceled."), send)).toBe(
       "The agent was canceled.",
     );

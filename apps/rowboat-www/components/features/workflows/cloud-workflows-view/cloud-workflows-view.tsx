@@ -478,7 +478,11 @@ export function shownWorkflowError(cause: unknown, fallback: string): string {
   if (!message) return fallback;
   const friendly = friendlyAgentError(message);
   if (friendly !== message) return friendly;
-  if (/^Workflow request failed \(\d+\)$/.test(message)) return fallback;
+  if (
+    /^(?:Workflow request failed \(\d+\)|Could not remove the workflow \(\d+\)\.)$/.test(message)
+  ) {
+    return fallback;
+  }
   return message;
 }
 

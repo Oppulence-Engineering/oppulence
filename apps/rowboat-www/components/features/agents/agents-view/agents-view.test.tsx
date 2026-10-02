@@ -21,9 +21,11 @@ describe("AgentsView", () => {
     expect(source).not.toMatch(/>\s*Instructions\s*</);
     expect(source).toMatch(/>\s*Purpose\s*</);
     expect(source).toContain("{agentToolLabel(tool)}");
-    expect(source).toContain(
-      'friendlyAgentError(\n          agentsQuery.error instanceof Error ? agentsQuery.error.message : "Could not load agents",\n        )',
-    );
+    expect(source).toContain('shownAgentError(\n          agentsQuery.error,');
+    expect(source).toContain('"Could not refresh agents. Try again."');
+    expect(source).toContain('"Could not load agents."');
+    expect(source).toContain('shownAgentError(cause, "Could not delete this agent.")');
+    expect(source).toContain('shownAgentError(cause, "Could not create agent")');
     expect(source).not.toContain("title={tool}");
     expect(source).toContain("setError(null)");
     expect(source).toContain("agents.length === 0 && !agentsQuery.isError && !error");

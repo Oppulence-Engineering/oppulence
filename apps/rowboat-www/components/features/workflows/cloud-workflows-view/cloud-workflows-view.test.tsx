@@ -304,6 +304,12 @@ describe("CloudWorkflowsView", () => {
     expect(shownWorkflowError(new Error("revision conflict"), "Could not create workflow")).toBe(
       "revision conflict",
     );
+    expect(
+      shownWorkflowError(
+        new Error("Could not remove the workflow (500)."),
+        "Workflow operation failed",
+      ),
+    ).toBe("Workflow operation failed");
     expect(source).toContain("transcriptLoadNotice(cause, hadTranscript)");
     expect(source).toContain("scheduleLoadNotice(cause, hadSchedule)");
     expect(source).toContain("friendlyAgentError(error.message)");

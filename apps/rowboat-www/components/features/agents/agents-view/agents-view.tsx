@@ -45,7 +45,7 @@ import {
   agentSourceLabel,
   duplicateAgentInstructions,
 } from "@/lib/agents/agent-schemas";
-import { friendlyAgentError } from "@/lib/agents/agent-history";
+import { shownAgentError } from "@/lib/agents/agent-history";
 import { agentToolLabel } from "@/lib/agents/agent-tools";
 import { cn } from "@/lib/utils";
 
@@ -130,9 +130,7 @@ function CreateAgentDialog({
       setOpen(false);
       onCreated(slug.trim());
     } catch (cause) {
-      setError(
-        friendlyAgentError(cause instanceof Error ? cause.message : "Could not create agent"),
-      );
+      setError(shownAgentError(cause, "Could not create agent"));
     } finally {
       setBusy(false);
     }
@@ -239,14 +237,15 @@ export function AgentsView({
   React.useEffect(() => {
     if (agentsQuery.error) {
       setError(
-        friendlyAgentError(
-          agentsQuery.error instanceof Error ? agentsQuery.error.message : "Could not load agents",
+        shownAgentError(
+          agentsQuery.error,
+          agents.length > 0 ? "Could not refresh agents. Try again." : "Could not load agents.",
         ),
       );
       return;
     }
     setError(null);
-  }, [agentsQuery.error]);
+  }, [agents.length, agentsQuery.error]);
 
   React.useEffect(() => {
     if (agents.length === 0) return;
@@ -278,9 +277,7 @@ export function AgentsView({
       setConfirmingDelete(false);
       await Promise.all([load(), onAgentsChanged()]);
     } catch (cause) {
-      setError(
-        friendlyAgentError(cause instanceof Error ? cause.message : "Could not delete agent"),
-      );
+      setError(shownAgentError(cause, "Could not delete this agent."));
     } finally {
       setMutating(false);
     }
