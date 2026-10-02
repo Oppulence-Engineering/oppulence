@@ -349,7 +349,10 @@ function RunRowFailure({ run }: { run: CloudRun }) {
   const failure = runFailureLine(run);
   if (!failure) return null;
   return (
-    <CardDescription className="mt-0.5 block truncate text-[11px] text-destructive">
+    <CardDescription
+      className="mt-0.5 line-clamp-3 text-[11px] leading-4 text-destructive"
+      title={failure}
+    >
       {failure}
     </CardDescription>
   );

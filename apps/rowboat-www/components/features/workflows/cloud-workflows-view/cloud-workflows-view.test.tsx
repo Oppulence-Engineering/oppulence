@@ -177,6 +177,8 @@ describe("CloudWorkflowsView", () => {
       }),
     ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
     expect(source.match(/<RunRowFailure run=\{run\} \/>/g)).toHaveLength(2);
+    expect(source).toContain("line-clamp-3 text-[11px] leading-4 text-destructive");
+    expect(source).not.toContain("truncate text-[11px] text-destructive");
     expect(source).toContain("triggerLabel(run.trigger)");
     expect(source).not.toContain("{readableEnum(run.trigger)}");
     expect(source).toContain("workflowName={taskTitle(task)}");
