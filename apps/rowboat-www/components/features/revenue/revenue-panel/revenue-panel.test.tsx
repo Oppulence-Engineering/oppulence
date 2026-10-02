@@ -25,6 +25,12 @@ describe("RevenuePanel", () => {
     expect(source).toContain("onOpenCompany={onOpenCompany}");
   });
 
+  it("loads another company page into the register account menu", () => {
+    expect(source).toContain("fetchRelationships({ offset })");
+    expect(source).toContain("onLoadMoreAccounts={() => void loadMoreAccounts()}");
+    expect(source).toContain("hasMoreAccounts={hasMoreAccounts}");
+  });
+
   it("opens the company named on a task", () => {
     expect(source).toContain(`<TasksView
             onError={setBanner}

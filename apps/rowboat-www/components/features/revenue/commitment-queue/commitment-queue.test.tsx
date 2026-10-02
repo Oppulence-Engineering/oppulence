@@ -17,8 +17,11 @@ import {
   REGISTER_VIEWS,
   registerPartyLabels,
   registerCountLabel,
+  registerEmptyAccountsDetail,
+  registerEmptyAccountsTitle,
   registerMissDetail,
   registerMissTitle,
+  registerNextCompaniesLabel,
   registerRemainderLabel,
   urgencyLabel,
 } from "./commitment-queue";
@@ -205,6 +208,62 @@ describe("CommitmentQueue", () => {
     ).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Review recovery drafts" }));
     expect(onOpenRecoveryQueue).toHaveBeenCalledOnce();
+  });
+
+  it("loads a company past the directory page into By account", async () => {
+    Element.prototype.hasPointerCapture ??= () => false;
+    Element.prototype.setPointerCapture ??= () => undefined;
+    Element.prototype.releasePointerCapture ??= () => undefined;
+    Element.prototype.scrollIntoView ??= () => undefined;
+    const onLoadMoreAccounts = vi.fn();
+    const { rerender } = render(
+      <CommitmentQueue
+        {...props({
+          view: "by_account",
+          accounts: [{ id: "acct-1", label: "Visible Account 1" }],
+          hasMoreAccounts: true,
+          onLoadMoreAccounts,
+        })}
+      />,
+    );
+    await userEvent.click(screen.getByRole("combobox", { name: "Account, Choose an account" }));
+    expect(screen.queryByRole("option", { name: "Hidden Account Co" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: registerNextCompaniesLabel() }));
+    expect(onLoadMoreAccounts).toHaveBeenCalledOnce();
+    rerender(
+      <CommitmentQueue
+        {...props({
+          view: "by_account",
+          accounts: [
+            { id: "acct-1", label: "Visible Account 1" },
+            { id: "acct-hidden", label: "Hidden Account Co" },
+          ],
+          hasMoreAccounts: false,
+          onLoadMoreAccounts,
+        })}
+      />,
+    );
+    expect(screen.getByRole("option", { name: "Hidden Account Co" })).toBeVisible();
+  });
+
+  it("asks for the next companies when the loaded page has none", () => {
+    expect(registerEmptyAccountsTitle(false)).toBe("No companies yet");
+    expect(registerEmptyAccountsDetail(true)).toBe(
+      "Show the next companies before choosing an account.",
+    );
+    render(
+      <CommitmentQueue
+        {...props({
+          view: "by_account",
+          accounts: [],
+          hasMoreAccounts: true,
+          onLoadMoreAccounts: vi.fn(),
+        })}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: registerEmptyAccountsTitle(true) })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "No companies yet" })).toBeNull();
+    expect(screen.getByRole("button", { name: registerNextCompaniesLabel() })).toBeVisible();
   });
 
   it("says there is nothing to choose when the workspace has no companies", async () => {

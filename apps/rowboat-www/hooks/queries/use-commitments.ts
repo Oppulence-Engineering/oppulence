@@ -24,6 +24,7 @@ import {
 import {
   fetchRelationshipGraph,
   fetchRelationships,
+  relationshipPageHasMore,
   relationshipRows,
 } from "@/hooks/queries/utils/fetch-relationships";
 import { DashboardRequestError } from "@/lib/api/request-json";
@@ -77,8 +78,9 @@ export function useCommitmentRegister(
         fetchRelationshipGraph({ scope: "portfolio", depth: 1 }, signal),
         fetchRelationships({}, signal),
       ]);
-      const loadedRelationships =
-        relationships.status === "fulfilled" ? relationshipRows(relationships.value) : [];
+      const relationshipPage =
+        relationships.status === "fulfilled" ? relationships.value : undefined;
+      const loadedRelationships = relationshipRows(relationshipPage);
       const titles = new Map(
         loadedRelationships
           .filter((row) => row.kind !== "person")
@@ -101,6 +103,8 @@ export function useCommitmentRegister(
         sources: sources.status === "fulfilled" ? sources.value : [],
         accounts,
         relationshipCount: accounts.length,
+        hasMoreAccounts: relationshipPageHasMore(relationshipPage),
+        relationshipPageCount: loadedRelationships.length,
       };
     },
     enabled: options?.enabled ?? true,

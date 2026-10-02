@@ -27,8 +27,14 @@ import { capture, RevenueEvents } from "@/lib/analytics/analytics";
 import {
   overdueRegisterFilter,
   REGISTER_PAGE_SIZE,
+  registerAccountChoices,
   registerFilterFor,
 } from "@/lib/revenue/commitment-register-filter";
+import {
+  fetchRelationships,
+  relationshipPageHasMore,
+  relationshipRows,
+} from "@/hooks/queries/utils/fetch-relationships";
 import {
   appendCommitmentTransition,
   explainedRevenueError,
@@ -142,6 +148,10 @@ export function RevenuePanel({
   const [extraEntries, setExtraEntries] = React.useState<RegisterEntry[]>([]);
   const [laterRegisterHasMore, setLaterRegisterHasMore] = React.useState<boolean | null>(null);
   const [loadingMorePromises, setLoadingMorePromises] = React.useState(false);
+  const [extraAccounts, setExtraAccounts] = React.useState<{ id: string; label: string }[]>([]);
+  const [accountOffset, setAccountOffset] = React.useState<number | null>(null);
+  const [laterAccountsHasMore, setLaterAccountsHasMore] = React.useState<boolean | null>(null);
+  const [loadingMoreAccounts, setLoadingMoreAccounts] = React.useState(false);
   React.useEffect(
     () =>
       subscribeDueCommitments(() => {
@@ -164,6 +174,51 @@ export function RevenuePanel({
     setExtraEntries([]);
     setLaterRegisterHasMore(null);
   }, [registerScope]);
+  const registerDataAt = commitmentQuery.dataUpdatedAt;
+  React.useEffect(() => {
+    setLaterAccountsHasMore(null);
+    setAccountOffset(null);
+  }, [registerDataAt]);
+  const registerAccounts = React.useMemo(() => {
+    const first = commitmentQuery.data?.accounts ?? [];
+    if (extraAccounts.length === 0) return first;
+    const seen = new Set(first.map((account) => account.id));
+    return [
+      ...first,
+      ...extraAccounts.filter((account) => {
+        if (seen.has(account.id)) return false;
+        seen.add(account.id);
+        return true;
+      }),
+    ];
+  }, [commitmentQuery.data?.accounts, extraAccounts]);
+  const hasMoreAccounts =
+    laterAccountsHasMore ?? Boolean(commitmentQuery.data?.hasMoreAccounts);
+  const loadMoreAccounts = React.useCallback(async () => {
+    if (loadingMoreAccounts || !hasMoreAccounts) return;
+    const base = commitmentQuery.data?.relationshipPageCount ?? 0;
+    const offset = accountOffset ?? base;
+    setLoadingMoreAccounts(true);
+    try {
+      const next = await fetchRelationships({ offset });
+      const choices = registerAccountChoices(relationshipRows(next));
+      setExtraAccounts((current) => {
+        const seen = new Set(current.map((account) => account.id));
+        return [...current, ...choices.filter((account) => !seen.has(account.id))];
+      });
+      setAccountOffset(offset + relationshipRows(next).length);
+      setLaterAccountsHasMore(relationshipPageHasMore(next));
+    } catch (reason) {
+      setError(explainedRevenueError(reason, "Could not load the next companies."));
+    } finally {
+      setLoadingMoreAccounts(false);
+    }
+  }, [
+    accountOffset,
+    commitmentQuery.data?.relationshipPageCount,
+    hasMoreAccounts,
+    loadingMoreAccounts,
+  ]);
   const registerPage = commitmentQuery.data?.entries ?? [];
   const registerEntries = React.useMemo(() => {
     if (extraEntries.length === 0) return registerPage;
@@ -393,8 +448,11 @@ export function RevenuePanel({
               setRegisterView(next);
             }}
             onExport={exportRecord}
-            relationshipCount={commitmentQuery.data?.relationshipCount ?? 0}
-            accounts={commitmentQuery.data?.accounts ?? []}
+            relationshipCount={registerAccounts.length}
+            accounts={registerAccounts}
+            hasMoreAccounts={hasMoreAccounts}
+            loadingMoreAccounts={loadingMoreAccounts}
+            onLoadMoreAccounts={() => void loadMoreAccounts()}
             accountId={registerAccountId}
             onAccountChange={setRegisterAccountId}
             owner={registerOwner}

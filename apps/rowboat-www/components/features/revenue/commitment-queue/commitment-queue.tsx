@@ -178,6 +178,10 @@ export interface CommitmentQueueProps extends Omit<
   hasMorePromises?: boolean;
   loadingMorePromises?: boolean;
   onLoadMorePromises?: () => void;
+  /** The company directory page is full and a later page may hold more accounts. */
+  hasMoreAccounts?: boolean;
+  loadingMoreAccounts?: boolean;
+  onLoadMoreAccounts?: () => void;
 }
 
 /** The header count says when this page is not the whole register. */
@@ -197,6 +201,21 @@ export function registerMissDetail(hasMore: boolean): string {
 
 export function registerRemainderLabel(): string {
   return "Show the next promises";
+}
+
+/** The By account menu only holds the companies already loaded. */
+export function registerNextCompaniesLabel(): string {
+  return "Show the next companies";
+}
+
+export function registerEmptyAccountsTitle(hasMoreAccounts: boolean): string {
+  return hasMoreAccounts ? "More companies are still in this list." : "No companies yet";
+}
+
+export function registerEmptyAccountsDetail(hasMoreAccounts: boolean): string {
+  return hasMoreAccounts
+    ? "Show the next companies before choosing an account."
+    : "Add a company before this view can show its promise history.";
 }
 
 // The register already carries direction, owner, counterparty, the derived
@@ -491,6 +510,9 @@ export function CommitmentQueue({
   hasMorePromises = false,
   loadingMorePromises = false,
   onLoadMorePromises,
+  hasMoreAccounts = false,
+  loadingMoreAccounts = false,
+  onLoadMoreAccounts,
   ...props
 }: CommitmentQueueProps) {
   const [query, setQuery] = React.useState("");
@@ -517,7 +539,8 @@ export function CommitmentQueue({
   const items = React.useMemo(() => toQueueItems(entries), [entries]);
   // An empty select cannot be "chosen". That case is a missing company, not a
   // prompt to pick one.
-  const noAccounts = view === "by_account" && accounts.length === 0;
+  const noAccounts = view === "by_account" && accounts.length === 0 && !hasMoreAccounts;
+  const waitingForAccounts = view === "by_account" && accounts.length === 0 && hasMoreAccounts;
   const scopeMissing =
     (view === "by_account" && !noAccounts && !accountId) || (view === "by_owner" && !owner.trim());
   const filtered = items.filter((item) => {
@@ -621,11 +644,12 @@ export function CommitmentQueue({
               value={query}
             />
           </div>
-          {view === "by_account" && accounts.length > 0 ? (
+          {view === "by_account" && (accounts.length > 0 || hasMoreAccounts) ? (
             <Select onValueChange={onAccountChange} value={accountId}>
               <SelectTrigger
                 aria-label={registerAccountName(
-                  accounts.find((account) => account.id === accountId)?.label,
+                  accounts.find((account) => account.id === accountId)?.label ??
+                    (waitingForAccounts ? "More companies are still in this list." : undefined),
                 )}
                 className="h-8 w-44"
               >
@@ -637,6 +661,23 @@ export function CommitmentQueue({
                     {account.label}
                   </SelectItem>
                 ))}
+                {hasMoreAccounts ? (
+                  <Button
+                    className={cn(
+                      "sticky bottom-0 z-10 h-8 w-full justify-start rounded-none",
+                      "border-t border-border bg-background px-2 text-[12px]",
+                    )}
+                    disabled={loadingMoreAccounts}
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      onLoadMoreAccounts?.();
+                    }}
+                    type="button"
+                    variant="ghost"
+                  >
+                    {loadingMoreAccounts ? "Loading…" : registerNextCompaniesLabel()}
+                  </Button>
+                ) : null}
               </SelectContent>
             </Select>
           ) : null}
@@ -826,9 +867,11 @@ export function CommitmentQueue({
           </div>
         ) : noAccounts ? (
           <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
-            <h2 className="text-[20px] font-semibold leading-6 text-primary">No companies yet</h2>
+            <h2 className="text-[20px] font-semibold leading-6 text-primary">
+              {registerEmptyAccountsTitle(false)}
+            </h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
-              Add a company before this view can show its promise history.
+              {registerEmptyAccountsDetail(false)}
             </p>
             <Button
               className="mt-5 bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
@@ -837,6 +880,28 @@ export function CommitmentQueue({
               type="button"
             >
               <Plus /> Add a company
+            </Button>
+          </div>
+        ) : waitingForAccounts ? (
+          <div
+            className={
+              "flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center"
+            }
+          >
+            <h2 className="text-[20px] font-semibold leading-6 text-primary">
+              {registerEmptyAccountsTitle(true)}
+            </h2>
+            <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
+              {registerEmptyAccountsDetail(true)}
+            </p>
+            <Button
+              className="mt-5"
+              disabled={loadingMoreAccounts}
+              onClick={() => onLoadMoreAccounts?.()}
+              size="sm"
+              type="button"
+            >
+              {loadingMoreAccounts ? "Loading…" : registerNextCompaniesLabel()}
             </Button>
           </div>
         ) : scopeMissing ? (
