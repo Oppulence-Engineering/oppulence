@@ -154,10 +154,68 @@ func personVisibleLabelMatch(term string) predicate.Person {
 	if strings.Contains("no email", needle) {
 		preds = append(preds, personTextBlank(person.PrimaryEmailIsNil, person.PrimaryEmailEQ))
 	}
+	if n, ok := exactPersonDetailCount(needle); ok {
+		preds = append(preds, personDetailCount(n))
+	}
 	if len(preds) == 0 {
 		return nil
 	}
 	return person.Or(preds...)
+}
+
+// exactPersonDetailCount reads the Details cell. One fact is "1 detail filled
+// in". Two or more are "2 details filled in".
+func exactPersonDetailCount(needle string) (int, bool) {
+	var n int
+	if _, err := fmt.Sscanf(needle, "%d detail", &n); err != nil || n < 1 || n > 10 {
+		return 0, false
+	}
+	noun := "details"
+	if n == 1 {
+		noun = "detail"
+	}
+	if needle != fmt.Sprintf("%d %s filled in", n, noun) {
+		return 0, false
+	}
+	return n, true
+}
+
+func personDetailCount(n int) predicate.Person {
+	return predicate.Person(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			fields := []string{
+				person.FieldTitle,
+				person.FieldSeniority,
+				person.FieldOrgName,
+				person.FieldOrgDomain,
+				person.FieldLocation,
+				person.FieldLinkedinURL,
+				person.FieldDepartment,
+				person.FieldTimezone,
+				person.FieldLocale,
+			}
+			b.WriteString("(")
+			for i, field := range fields {
+				if i > 0 {
+					b.WriteString(" + ")
+				}
+				column := s.C(field)
+				b.WriteString(fmt.Sprintf(
+					"(CASE WHEN %s IS NOT NULL AND %s <> '' THEN 1 ELSE 0 END)",
+					column,
+					column,
+				))
+			}
+			employment := s.C(person.FieldEmploymentStatus)
+			b.WriteString(fmt.Sprintf(
+				" + (CASE WHEN %s IS NOT NULL AND %s <> '' AND %s <> 'unknown' THEN 1 ELSE 0 END)) = ",
+				employment,
+				employment,
+				employment,
+			))
+			b.Arg(n)
+		}))
+	})
 }
 
 func personTextBlank(isNil func() predicate.Person, eq func(string) predicate.Person) predicate.Person {

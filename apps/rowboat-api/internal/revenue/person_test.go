@@ -686,6 +686,39 @@ func TestPersonSearchFindsNoEmail(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsTheDetailCount(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Casey Quinn").
+		SetTitle("Account Executive").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Morgan Lee").
+		SetTitle("Account Executive").
+		SetDepartment("Finance").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	one, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "1 detail filled in"})
+	if err != nil || one == nil || len(one.Persons) != 1 || one.Persons[0].DisplayName != "Casey Quinn" {
+		t.Fatalf("one detail = %+v err=%v", one, err)
+	}
+	two, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "2 details filled in"})
+	if err != nil || two == nil || len(two.Persons) != 1 || two.Persons[0].DisplayName != "Morgan Lee" {
+		t.Fatalf("two details = %+v err=%v", two, err)
+	}
+}
+
 func withRole(in RelationshipParticipantInput, role string) RelationshipParticipantInput {
 	in.Role = role
 	return in
