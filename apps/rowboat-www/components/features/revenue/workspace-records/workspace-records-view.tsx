@@ -557,6 +557,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
     "ready",
   );
   const [removing, setRemoving] = React.useState(false);
+  const [removeError, setRemoveError] = React.useState<string | null>(null);
   const peopleQuery = usePersons(debouncedQuery);
   const [extraPeople, setExtraPeople] = React.useState<RelationshipPerson[]>([]);
   const [laterPeopleHasMore, setLaterPeopleHasMore] = React.useState<boolean | null>(null);
@@ -618,7 +619,10 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
   const loadPersonAttributes = async (person: RelationshipPerson, recover = false) => {
     const samePerson = selected?.id === person.id;
     setSelected(person);
-    if (!samePerson) setAttributes([]);
+    if (!samePerson) {
+      setAttributes([]);
+      setRemoveError(null);
+    }
     setAttributesStatus("loading");
     try {
       setAttributes(await getPersonAttributes(person.id));
@@ -634,13 +638,16 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
   const removeSelectedPerson = async () => {
     if (!selected) return;
     setRemoving(true);
+    setRemoveError(null);
     try {
       await deletePerson(selected.id);
       setSelected(null);
       onNotice("Person removed.");
       await load();
     } catch (error) {
-      onError(errMessage(error, "Could not remove this person."));
+      const message = errMessage(error, "Could not remove this person.");
+      setRemoveError(message);
+      onError(message);
     } finally {
       setRemoving(false);
     }
@@ -870,6 +877,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
           onReload={() => void loadPersonAttributes(selected, true)}
           onRemove={() => void removeSelectedPerson()}
           person={selected}
+          removeError={removeError}
           removing={removing}
         />
       ) : null}
@@ -987,6 +995,7 @@ function PersonSheet({
   onClose,
   onReload,
   onRemove,
+  removeError,
   removing,
 }: {
   person: RelationshipPerson;
@@ -995,6 +1004,7 @@ function PersonSheet({
   onClose: () => void;
   onReload: () => void;
   onRemove: () => void;
+  removeError: string | null;
   removing: boolean;
 }) {
   const [confirmingRemove, setConfirmingRemove] = React.useState(false);
@@ -1059,6 +1069,11 @@ function PersonSheet({
                 <p className="text-sm text-primary/70">
                   {removePersonConfirmCopy(person.displayName)}
                 </p>
+                {removeError ? (
+                  <p className="text-sm text-destructive" role="alert">
+                    {removeError}
+                  </p>
+                ) : null}
                 <div className="flex flex-wrap gap-2">
                   <Button
                     disabled={removing}

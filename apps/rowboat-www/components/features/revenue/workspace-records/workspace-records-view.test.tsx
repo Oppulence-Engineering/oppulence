@@ -6,7 +6,7 @@ import path from "node:path";
 import "@testing-library/jest-dom/vitest";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -1454,6 +1454,7 @@ describe("people directory copy", () => {
     expect(source).toContain('attributesStatus === "error" && evidence.length === 0');
     expect(personEvidenceFailureCopy()).toBe("Profile details could not load. Try again.");
     expect(source).toContain("deletePerson(selected.id)");
+    expect(source).toContain("setRemoveError(message)");
     expect(source).toContain('errMessage(error, "Could not remove this person.")');
     expect(source).toContain("removePersonConfirmCopy(person.displayName)");
     expect(source).not.toContain("window.confirm");
@@ -1493,6 +1494,40 @@ describe("people directory copy", () => {
     await waitFor(() => expect(mocks.deletePerson).toHaveBeenCalledWith("person-1"));
     expect(confirm).not.toHaveBeenCalled();
     confirm.mockRestore();
+    records.people = [];
+  });
+
+  it("shows a failed remove inside the person sheet", async () => {
+    cleanup();
+    records.people = [
+      {
+        id: "person-1",
+        displayName: "Morgan Hale",
+        aliases: [],
+        status: "active",
+        relationshipCount: 0,
+        attributesVersion: 0,
+        primaryEmail: "morgan@harbor.example",
+      },
+    ];
+    mocks.deletePerson.mockRejectedValueOnce(new Error("Request failed (500)"));
+    const user = userEvent.setup();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <PeopleView onError={vi.fn()} onNotice={vi.fn()} />
+      </QueryClientProvider>,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Open Morgan Hale" }));
+    await user.click(screen.getByRole("button", { name: "Remove" }));
+    await user.click(screen.getByRole("button", { name: "Confirm remove" }));
+
+    const sheet = screen.getByRole("dialog");
+    expect(await within(sheet).findByRole("alert")).toHaveTextContent(
+      "Could not remove this person.",
+    );
+    expect(within(sheet).getByRole("button", { name: "Confirm remove" })).toBeVisible();
     records.people = [];
   });
 
