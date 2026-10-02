@@ -9,6 +9,7 @@ import {
   fetchCommunicationPolicy,
   fetchCommunicationPrivacyRules,
 } from "@/hooks/queries/utils/fetch-communication";
+import { communicationKeys } from "@/hooks/queries/utils/communication-keys";
 import { renderWithQuery } from "@/quality/test-support/render-query";
 
 import {
@@ -111,6 +112,65 @@ describe("CommunicationPrivacySettings", () => {
     expect(
       privacyLoadNotice({ accountEntered: false, policyFailed: true, rulesFailed: true }),
     ).toBe(null);
+    expect(
+      privacyLoadNotice({
+        accountEntered: true,
+        policyFailed: true,
+        rulesFailed: true,
+        policyLoaded: true,
+        rulesLoaded: true,
+      }),
+    ).toBe("Could not refresh mailbox policy and privacy rules. Try again.");
+    expect(
+      privacyLoadNotice({
+        accountEntered: true,
+        policyFailed: false,
+        rulesFailed: true,
+        rulesLoaded: true,
+      }),
+    ).toBe("Could not refresh privacy rules. Try again.");
+  });
+
+  it("keeps saved privacy rules when a refresh fails", async () => {
+    const rule = {
+      id: "rule-1",
+      kind: "protected_address" as const,
+      value: "buyer@example.com",
+      valueHash: "hash",
+      active: true,
+    };
+    vi.mocked(fetchCommunicationPolicy).mockResolvedValue({
+      id: "policy-1",
+      sourceAccountId: "you@company.com",
+      metadataVisibility: "private",
+      shareSubject: false,
+      shareBody: false,
+      shareAttachments: false,
+      signatureEnrichment: false,
+      modelContactExtraction: false,
+      retentionDays: 30,
+      version: 1,
+    });
+    vi.mocked(fetchCommunicationPrivacyRules).mockResolvedValue([rule]);
+
+    const { client } = renderWithQuery(<CommunicationPrivacySettings />);
+    fireEvent.change(screen.getByLabelText("Mailbox account email"), {
+      target: { value: "you@company.com" },
+    });
+
+    expect(await screen.findByText("Protected address: buyer@example.com")).toBeVisible();
+    expect(screen.getByLabelText("Share subject lines by default")).toBeInTheDocument();
+    vi.mocked(fetchCommunicationPrivacyRules).mockRejectedValue(new Error("rules down"));
+    vi.mocked(fetchCommunicationPolicy).mockRejectedValue(new Error("policy down"));
+    await client.invalidateQueries({ queryKey: communicationKeys.all });
+
+    expect(
+      await screen.findByText("Could not refresh mailbox policy and privacy rules. Try again."),
+    ).toBeVisible();
+    expect(screen.getByText("Protected address: buyer@example.com")).toBeVisible();
+    expect(screen.getByLabelText("Share subject lines by default")).toBeInTheDocument();
+    expect(screen.queryByText("Privacy rules could not load. Try again.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Mailbox policy could not load. Try again.")).not.toBeInTheDocument();
   });
 
   it("says there are no privacy rules only after they load", async () => {

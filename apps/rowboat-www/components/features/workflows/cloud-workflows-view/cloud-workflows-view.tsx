@@ -340,6 +340,61 @@ export function workflowTemplatesRefreshCopy(): string {
   return "Could not refresh templates. Try again.";
 }
 
+export function workflowRefreshCopy(): string {
+  return "Could not refresh workflows. Try again.";
+}
+
+/** The library banner names the request that failed. A generic body is not a
+ * reason to say the workflow list never arrived. */
+export function workflowLibraryNotice(input: {
+  tasksError: unknown;
+  taskCount: number;
+  templatesError: unknown;
+  templateCount: number;
+  runsError: unknown;
+  runCount: number;
+}): string | null {
+  if (input.tasksError) {
+    return workflowQueryNotice(
+      input.tasksError,
+      input.taskCount > 0,
+      workflowRefreshCopy(),
+      input.taskCount === 0 ? null : "Could not load workflows",
+    );
+  }
+  if (input.templatesError) {
+    return workflowQueryNotice(
+      input.templatesError,
+      input.templateCount > 0,
+      workflowTemplatesRefreshCopy(),
+      workflowTemplatesFailureCopy(),
+    );
+  }
+  if (input.runsError) {
+    return workflowQueryNotice(
+      input.runsError,
+      input.runCount > 0,
+      workflowRunsRefreshCopy(),
+      workflowRunsFailureCopy(),
+    );
+  }
+  return null;
+}
+
+function workflowQueryNotice(
+  error: unknown,
+  loaded: boolean,
+  refreshCopy: string,
+  failureCopy: string | null,
+): string | null {
+  if (error instanceof Error) {
+    const friendly = friendlyAgentError(error.message);
+    if (friendly !== error.message) return friendly;
+  }
+  if (loaded) return refreshCopy;
+  return failureCopy;
+}
+
 export function runWhereFilterName(value: string): string {
   const current = value === "api" ? "Cloud" : value === "desktop" ? "Desktop" : "Cloud or desktop";
   return comboboxFilterName("Where it runs", current);
@@ -1752,13 +1807,14 @@ export function CloudWorkflowsView({
   // A template or run refetch with no cached page sets status back to pending.
   // Treating that as the first load replaced the library and closed this dialog.
   const loading = tasksQuery.isPending && !tasksQuery.isError;
-  const queryCause = tasksQuery.error ?? templatesQuery.error ?? runsQuery.error;
-  const queryError =
-    queryCause instanceof Error
-      ? friendlyAgentError(queryCause.message)
-      : queryCause
-        ? "Could not load workflows"
-        : null;
+  const queryError = workflowLibraryNotice({
+    tasksError: tasksQuery.error,
+    taskCount: tasks.length,
+    templatesError: templatesQuery.error,
+    templateCount: templates.length,
+    runsError: runsQuery.error,
+    runCount: runs.length,
+  });
 
   React.useEffect(() => subscribeWorkflowLibrary(() => setScreen("library")), []);
 

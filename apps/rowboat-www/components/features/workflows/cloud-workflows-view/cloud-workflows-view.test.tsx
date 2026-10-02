@@ -31,6 +31,8 @@ import {
   workflowRunsRefreshCopy,
   workflowTemplatesFailureCopy,
   workflowTemplatesRefreshCopy,
+  workflowLibraryNotice,
+  workflowRefreshCopy,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
   calledModelLabel,
@@ -112,6 +114,58 @@ describe("CloudWorkflowsView", () => {
     expect(workflowRunsRefreshCopy()).toBe("Could not refresh runs. Try again.");
     expect(workflowTemplatesFailureCopy()).toBe("Templates could not load. Try again.");
     expect(workflowTemplatesRefreshCopy()).toBe("Could not refresh templates. Try again.");
+    expect(workflowRefreshCopy()).toBe("Could not refresh workflows. Try again.");
+    expect(
+      workflowLibraryNotice({
+        tasksError: new Error("refresh unavailable"),
+        taskCount: 3,
+        templatesError: null,
+        templateCount: 4,
+        runsError: null,
+        runCount: 2,
+      }),
+    ).toBe("Could not refresh workflows. Try again.");
+    expect(
+      workflowLibraryNotice({
+        tasksError: null,
+        taskCount: 3,
+        templatesError: new Error("refresh unavailable"),
+        templateCount: 4,
+        runsError: null,
+        runCount: 2,
+      }),
+    ).toBe("Could not refresh templates. Try again.");
+    expect(
+      workflowLibraryNotice({
+        tasksError: null,
+        taskCount: 3,
+        templatesError: null,
+        templateCount: 4,
+        runsError: new Error("refresh unavailable"),
+        runCount: 2,
+      }),
+    ).toBe("Could not refresh runs. Try again.");
+    expect(
+      workflowLibraryNotice({
+        tasksError: new Error("status 401"),
+        taskCount: 3,
+        templatesError: null,
+        templateCount: 0,
+        runsError: null,
+        runCount: 0,
+      }),
+    ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
+    expect(
+      workflowLibraryNotice({
+        tasksError: new Error("list unavailable"),
+        taskCount: 0,
+        templatesError: null,
+        templateCount: 0,
+        runsError: null,
+        runCount: 0,
+      }),
+    ).toBe(null);
+    expect(source).toContain("workflowLibraryNotice(");
     expect(source).toContain("templatesFailed");
     expect(source).toContain("templatesQuery.isError && templates.length === 0");
     expect(source).toContain("templatesQuery.isError && templates.length > 0");
@@ -202,7 +256,8 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain("workflowName={taskTitle(task)}");
     expect(source).toContain('friendlyAgentError(message, "run")');
     expect(source.match(/setError\(shownWorkflowError\(cause,/g)).toHaveLength(9);
-    expect(source).toContain("friendlyAgentError(queryCause.message)");
+    expect(source).toContain("friendlyAgentError(error.message)");
+    expect(source).toContain("workflowLibraryNotice(");
     expect(source).toContain("cause instanceof Error ? cause.message : fallback");
   });
 

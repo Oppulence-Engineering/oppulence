@@ -51,13 +51,28 @@ export function privacyLoadNotice(input: {
   accountEntered: boolean;
   policyFailed: boolean;
   rulesFailed: boolean;
+  policyLoaded?: boolean;
+  rulesLoaded?: boolean;
 }): string | null {
   if (!input.accountEntered) return null;
+  const policyLoaded = input.policyLoaded === true;
+  const rulesLoaded = input.rulesLoaded === true;
   if (input.policyFailed && input.rulesFailed) {
+    if (policyLoaded || rulesLoaded) {
+      return "Could not refresh mailbox policy and privacy rules. Try again.";
+    }
     return "Mailbox policy and privacy rules could not load. Try again.";
   }
-  if (input.policyFailed) return "Mailbox policy could not load. Try again.";
-  if (input.rulesFailed) return "Privacy rules could not load. Try again.";
+  if (input.policyFailed) {
+    return policyLoaded
+      ? "Could not refresh mailbox policy. Try again."
+      : "Mailbox policy could not load. Try again.";
+  }
+  if (input.rulesFailed) {
+    return rulesLoaded
+      ? "Could not refresh privacy rules. Try again."
+      : "Privacy rules could not load. Try again.";
+  }
   return null;
 }
 
@@ -97,6 +112,8 @@ export function CommunicationPrivacySettings() {
     accountEntered,
     policyFailed: policyQuery.isError,
     rulesFailed: rulesQuery.isError,
+    policyLoaded: policyQuery.data != null,
+    rulesLoaded: rulesQuery.data != null,
   });
 
   const refresh = React.useCallback(async () => {
@@ -281,9 +298,9 @@ export function CommunicationPrivacySettings() {
             </li>
           ))}
         </ul>
-      ) : accountEntered && rulesQuery.isPending ? (
+      ) : accountEntered && rulesQuery.isPending && rulesQuery.data == null ? (
         <p className="settings-inline-notice">Loading privacy rules…</p>
-      ) : accountEntered && rulesQuery.isSuccess ? (
+      ) : accountEntered && rulesQuery.data != null ? (
         <p className="settings-inline-notice">{privacyRulesEmptyCopy()}</p>
       ) : null}
 
