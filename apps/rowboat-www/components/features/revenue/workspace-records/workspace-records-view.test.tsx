@@ -330,6 +330,42 @@ describe("durable note templates and favorites", () => {
     );
   });
 
+  it("names a failed note save and lets the note close", async () => {
+    mocks.fetchWorkspaceNotes.mockResolvedValue({
+      notes: [],
+      relationships: [{ id: "relationship-1", kind: "company", displayName: "Acme" }],
+      failedTimelineCount: 0,
+    });
+    mocks.ingestRelationshipObservations.mockRejectedValue(new Error("Request failed (500)"));
+    const onError = vi.fn();
+    const onNotice = vi.fn();
+    const user = userEvent.setup();
+    Element.prototype.hasPointerCapture ??= () => false;
+    Element.prototype.setPointerCapture ??= () => undefined;
+    Element.prototype.releasePointerCapture ??= () => undefined;
+    Element.prototype.scrollIntoView ??= () => undefined;
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <NotesView onError={onError} onNotice={onNotice} />
+      </QueryClientProvider>,
+    );
+
+    await user.click((await screen.findAllByRole("button", { name: "New note" }))[0]);
+    await user.type(screen.getByLabelText("Note title"), "Call notes");
+    await user.click(screen.getByRole("combobox", { name: "Linked company, Link a company" }));
+    await user.click(screen.getByRole("option", { name: "Acme" }));
+
+    expect(await screen.findByText("Could not save the note.")).toBeInTheDocument();
+    expect(screen.queryByText("Save failed")).toBeNull();
+    expect(screen.queryByText("Request failed (500)")).toBeNull();
+    expect(onError).toHaveBeenCalledWith("Could not save the note.");
+
+    await user.click(screen.getByRole("button", { name: "Close note" }));
+    expect(onNotice).toHaveBeenCalledWith("Could not save the note.");
+    expect(screen.queryByLabelText("Note title")).toBeNull();
+  });
+
   it("loads a later company into a new note without selecting it", async () => {
     mocks.fetchWorkspaceNotes.mockResolvedValue({
       notes: [],

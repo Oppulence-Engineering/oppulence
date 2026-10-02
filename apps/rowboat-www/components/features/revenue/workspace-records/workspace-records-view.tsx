@@ -2124,6 +2124,7 @@ function NoteDialog({
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [insertOpen, setInsertOpen] = React.useState(false);
   const [saveState, setSaveState] = React.useState<"saved" | "saving" | "error">("saved");
+  const [saveError, setSaveError] = React.useState<string | null>(null);
   const lastSaved = React.useRef(
     note ? JSON.stringify([title, relationshipId, content, meetingLinked]) : "",
   );
@@ -2141,6 +2142,7 @@ function NoteDialog({
     async (eventType: "note" | "note_deleted") => {
       if (!relationshipId) return false;
       setSaveState("saving");
+      setSaveError(null);
       try {
         const body = plateText(content);
         await ingestRelationshipObservations([
@@ -2169,8 +2171,10 @@ function NoteDialog({
         onSaved();
         return true;
       } catch (error) {
+        const message = errMessage(error, "Could not save the note.");
         setSaveState("error");
-        onError(errMessage(error, "Could not save the note."));
+        setSaveError(message);
+        onError(message);
         return false;
       }
     },
@@ -2189,7 +2193,11 @@ function NoteDialog({
   const closeEditor = async () => {
     const dirty = snapshot !== lastSaved.current;
     if (dirty && noteHasDraftContent && relationshipId) {
-      if (!(await publish("note"))) return false;
+      if (saveState !== "error") {
+        if (!(await publish("note"))) return false;
+      } else {
+        onNotice(saveError || "Could not save the note.");
+      }
     }
     // A note can only be stored against a company. Closing still dismisses the
     // draft, but the status line and this notice are the only signal that the
@@ -2468,7 +2476,7 @@ function NoteDialog({
             <Label
               className={`absolute right-5 bottom-3 text-[11px] font-normal ${saveState === "error" ? "text-destructive" : "text-primary/55"}`}
             >
-              {saveState === "saving" ? "Saving…" : "Save failed"}
+              {saveState === "saving" ? "Saving…" : saveError || "Could not save the note."}
             </Label>
           ) : null}
         </div>
