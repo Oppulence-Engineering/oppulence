@@ -35,6 +35,7 @@ import {
   workflowRefreshCopy,
   scheduleNextRunLabel,
   scheduleLoadNotice,
+  transcriptLoadNotice,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
   calledModelLabel,
@@ -280,7 +281,8 @@ describe("CloudWorkflowsView", () => {
     expect(source).not.toContain("{readableEnum(run.trigger)}");
     expect(source).toContain("workflowName={taskTitle(task)}");
     expect(source).toContain('friendlyAgentError(message, "run")');
-    expect(source.match(/setError\(shownWorkflowError\(cause,/g)).toHaveLength(8);
+    expect(source.match(/setError\(shownWorkflowError\(cause,/g)).toHaveLength(7);
+    expect(source).toContain("transcriptLoadNotice(cause, hadTranscript)");
     expect(source).toContain("scheduleLoadNotice(cause, hadSchedule)");
     expect(source).toContain("friendlyAgentError(error.message)");
     expect(source).toContain("workflowLibraryNotice(");
@@ -343,6 +345,13 @@ describe("CloudWorkflowsView", () => {
     expect(runEventBody({ event: "Agent step 1." })).toBe("Step 1.");
     expect(source).toContain("runEventBody(event)");
     expect(source).toContain("The transcript could not be loaded.");
+    expect(transcriptLoadNotice(new Error("Workflow request failed (500)"), false)).toBe(
+      "The transcript could not be loaded.",
+    );
+    expect(transcriptLoadNotice(new Error("Workflow request failed (500)"), true)).toBe(
+      "Could not refresh the transcript. Try again.",
+    );
+    expect(source).toContain("transcriptCache.current.get(run.runId)");
     expect(source).toContain("Loading the transcript…");
     expect(source).toContain('transcriptStatus === "ready"');
     expect(source).toContain("No transcript events yet.");

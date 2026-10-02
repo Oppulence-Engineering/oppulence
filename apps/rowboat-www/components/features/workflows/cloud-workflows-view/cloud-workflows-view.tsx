@@ -471,6 +471,18 @@ export function scheduleLoadNotice(cause: unknown, hadSchedule: boolean): string
   return hadSchedule ? "Could not refresh the schedule. Try again." : "Could not load schedule";
 }
 
+/** A transcript that already arrived stays on screen. The sentence says which request missed. */
+export function transcriptLoadNotice(cause: unknown, hadTranscript: boolean): string {
+  const raw = cause instanceof Error ? cause.message : "";
+  if (raw) {
+    const friendly = friendlyAgentError(raw);
+    if (friendly !== raw) return friendly;
+  }
+  return hadTranscript
+    ? "Could not refresh the transcript. Try again."
+    : "The transcript could not be loaded.";
+}
+
 function runFailureCopy(run: CloudRun): string {
   const message = run.error ?? "";
   const friendly = friendlyAgentError(message, "run");
@@ -1862,13 +1874,38 @@ export function CloudWorkflowsView({
       ? transcriptPhase
       : "loading";
 
+  const transcriptCache = React.useRef(
+    new Map<string, { events: CloudRunEvent[]; nextSeq: number | null }>(),
+  );
+  const transcriptNoticeRef = React.useRef<string | null>(null);
+
+  const clearTranscriptNotice = React.useCallback(() => {
+    const notice = transcriptNoticeRef.current;
+    transcriptNoticeRef.current = null;
+    if (notice) setError((current) => (current === notice ? null : current));
+  }, []);
+
   const selectRun = React.useCallback((run: CloudRun | null) => {
     setSelectedRun(run);
-    setEvents([]);
-    setTranscriptNextSeq(null);
-    setTranscriptRunId(run?.runId ?? null);
-    setTranscriptPhase(run ? "loading" : "ready");
-    if (run) setSelectedSlug(run.slug);
+    if (!run) {
+      setEvents([]);
+      setTranscriptNextSeq(null);
+      setTranscriptRunId(null);
+      setTranscriptPhase("ready");
+      return;
+    }
+    setSelectedSlug(run.slug);
+    const cached = transcriptCache.current.get(run.runId);
+    setTranscriptRunId(run.runId);
+    if (!cached) {
+      setEvents([]);
+      setTranscriptNextSeq(null);
+      setTranscriptPhase("loading");
+      return;
+    }
+    setEvents(cached.events);
+    setTranscriptNextSeq(cached.nextSeq);
+    setTranscriptPhase("ready");
   }, []);
 
   const refresh = React.useCallback(async () => {
@@ -1958,18 +1995,28 @@ export function CloudWorkflowsView({
           setEvents((current) => {
             const pageIds = new Set(nextEvents.events.map((event) => event.id));
             const later = current.filter((event) => !pageIds.has(event.id));
-            return later.length > 0 ? [...nextEvents.events, ...later] : nextEvents.events;
+            const merged =
+              later.length > 0 ? [...nextEvents.events, ...later] : nextEvents.events;
+            transcriptCache.current.set(selectedRunID, {
+              events: merged,
+              nextSeq: nextEvents.nextSeq,
+            });
+            return merged;
           });
           if (!transcriptExtended.current) setTranscriptNextSeq(nextEvents.nextSeq);
           setSelectedRun(nextRun);
           setTranscriptRunId(selectedRunID);
           setTranscriptPhase("ready");
+          clearTranscriptNotice();
         }
       } catch (cause) {
         if (!cancelled) {
-          setError(shownWorkflowError(cause, "Could not refresh workflow run"));
+          const hadTranscript = transcriptCache.current.has(selectedRunID);
+          const notice = transcriptLoadNotice(cause, hadTranscript);
+          transcriptNoticeRef.current = notice;
           setTranscriptRunId(selectedRunID);
-          setTranscriptPhase("error");
+          setTranscriptPhase(hadTranscript ? "ready" : "error");
+          setError(notice);
         }
       }
     };
@@ -1986,7 +2033,7 @@ export function CloudWorkflowsView({
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [queryClient, selectedRunID, selectedRunSlug, selectedRunStatus]);
+  }, [clearTranscriptNotice, queryClient, selectedRunID, selectedRunSlug, selectedRunStatus]);
 
   const loadMoreEvents = async () => {
     if (
@@ -2003,7 +2050,9 @@ export function CloudWorkflowsView({
       transcriptExtended.current = true;
       setEvents((current) => {
         const seen = new Set(current.map((event) => event.id));
-        return [...current, ...page.events.filter((event) => !seen.has(event.id))];
+        const merged = [...current, ...page.events.filter((event) => !seen.has(event.id))];
+        transcriptCache.current.set(selectedRunID, { events: merged, nextSeq: page.nextSeq });
+        return merged;
       });
       setTranscriptNextSeq(page.nextSeq);
     } catch (cause) {
