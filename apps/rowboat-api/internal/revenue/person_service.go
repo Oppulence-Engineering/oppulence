@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 
@@ -78,6 +79,7 @@ func (s *Service) ListPersons(
 			person.LocationContainsFold(term),
 			person.LinkedinURLContainsFold(term),
 			personNormalizedContains(term),
+			personAliasContains(term),
 		}
 		if labels := personVisibleLabelMatch(term); labels != nil {
 			parts = append(parts, labels)
@@ -153,6 +155,10 @@ func personVisibleLabelMatch(term string) predicate.Person {
 	// The address sits under the name. A missing one is the words "No email".
 	if strings.Contains("no email", needle) {
 		preds = append(preds, personTextBlank(person.PrimaryEmailIsNil, person.PrimaryEmailEQ))
+	}
+	// Another name is printed as "Also known as". The stored list is JSON.
+	if strings.Contains("also known as", needle) {
+		preds = append(preds, personHasAlias())
 	}
 	if n, ok := exactPersonDetailCount(needle); ok {
 		preds = append(preds, personDetailCount(n))
@@ -355,6 +361,39 @@ func personUnfilled() predicate.Person {
 func personMatchAll() predicate.Person {
 	return predicate.Person(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) { b.WriteString("1 = 1") }))
+	})
+}
+
+// personAliasContains matches another name printed under the person. The
+// names live in one JSON list, so the search reads that list as text.
+func personAliasContains(term string) predicate.Person {
+	needle := "%" + escapePersonSearchLike(strings.ToLower(strings.TrimSpace(term))) + "%"
+	return predicate.Person(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(person.FieldAliases)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(fmt.Sprintf("lower(%s::text) LIKE ", column))
+			} else {
+				b.WriteString(fmt.Sprintf("lower(coalesce(%s, '')) LIKE ", column))
+			}
+			b.Arg(needle)
+			b.WriteString(" ESCAPE '!'")
+		}))
+	})
+}
+
+// personHasAlias is a person whose row says "Also known as". An empty list is
+// "[]", two characters, so anything longer is another name.
+func personHasAlias() predicate.Person {
+	return predicate.Person(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(person.FieldAliases)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(fmt.Sprintf("length(coalesce(%s::text, '')) > 2", column))
+			} else {
+				b.WriteString(fmt.Sprintf("length(coalesce(%s, '')) > 2", column))
+			}
+		}))
 	})
 }
 

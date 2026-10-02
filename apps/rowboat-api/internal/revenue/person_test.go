@@ -719,6 +719,37 @@ func TestPersonSearchFindsTheDetailCount(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsTheAlias(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Indira Cole").
+		SetAliases([]string{"Dee Cole"}).
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Casey Quinn").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "Dee"})
+	if err != nil || found == nil || len(found.Persons) != 1 || found.Persons[0].DisplayName != "Indira Cole" {
+		t.Fatalf("alias = %+v err=%v", found, err)
+	}
+	label, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "Also known as"})
+	if err != nil || label == nil || len(label.Persons) != 1 || label.Persons[0].DisplayName != "Indira Cole" {
+		t.Fatalf("also known as = %+v err=%v", label, err)
+	}
+}
+
 func TestPersonSearchFindsTheCompanyCount(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

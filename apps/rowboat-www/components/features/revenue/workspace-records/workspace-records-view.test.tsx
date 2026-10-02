@@ -122,6 +122,8 @@ import {
   personSeniorityLabel,
   personAccountDomain,
   personSheetDetail,
+  personAliasNames,
+  personDirectorySubtitle,
   personSheetSubtitle,
   sortTasksByDue,
   linkedCompanyName,
@@ -796,6 +798,12 @@ describe("people directory labels", () => {
   it("does not present a typed name as enrichment", () => {
     expect(personSheetSubtitle({})).toBe("No email");
     expect(personSheetSubtitle({ primaryEmail: "ada@acme.com" })).toBe("ada@acme.com");
+    expect(personDirectorySubtitle({})).toBe("No email");
+    expect(personDirectorySubtitle({ primaryEmail: "ada@acme.com" })).toBe("ada@acme.com");
+    expect(personDirectorySubtitle({ aliases: [" Dee Cole ", ""] })).toBe(
+      "No email · Also known as Dee Cole",
+    );
+    expect(personAliasNames(["Dee Cole", "Indy"])).toBe("Dee Cole, Indy");
     expect(personAccountDomain("Ada <ada@northwind.example>")).toBe("northwind.example");
     expect(personAccountDomain("mailto:ada@northwind.example")).toBe("northwind.example");
     expect(personAccountDomain("ada@northwind.example")).toBe("northwind.example");

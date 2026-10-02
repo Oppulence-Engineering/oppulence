@@ -333,6 +333,28 @@ export function personSheetSubtitle(person: Pick<RelationshipPerson, "primaryEma
   return person.primaryEmail?.trim() || "No email";
 }
 
+/** Other names stored on the person. The display name is not repeated here. */
+export function personAliasNames(aliases: readonly string[] | null | undefined): string {
+  return (aliases ?? [])
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .join(", ");
+}
+
+/**
+ * The address sits under the name. Another stored name is printed on that
+ * same line, because the row is only tall enough for two lines.
+ */
+export function personDirectorySubtitle(person: {
+  primaryEmail?: string | null;
+  aliases?: readonly string[] | null;
+}): string {
+  const email = person.primaryEmail?.trim() || "No email";
+  const names = personAliasNames(person.aliases);
+  if (!names) return email;
+  return `${email} · Also known as ${names}`;
+}
+
 /**
  * The people list opens a saved LinkedIn page. The sheet has to do the same,
  * and it must not print an address that is not a web link.
@@ -683,7 +705,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                           {person.displayName}
                         </Label>
                         <CardDescription className="block truncate text-[11px]">
-                          {person.primaryEmail || "No email"}
+                          {personDirectorySubtitle(person)}
                         </CardDescription>
                       </div>
                     </Button>
@@ -882,6 +904,22 @@ function PersonSheet({
     setConfirmingRemove(false);
   }, [person.id]);
   const evidence = enrichmentEvidence(attributes);
+  const aliasNames = personAliasNames(person.aliases);
+  const sheetFacts: Array<[string, string | undefined]> = [
+    ["Company", personCompanyTitle(person) || undefined],
+    ["Domain", person.orgDomain],
+    ["Role", person.title],
+    ["Seniority", personSeniorityLabel(person.seniority)],
+    ["Department", person.department],
+    ["Location", person.location],
+    ["LinkedIn", person.linkedinUrl],
+    ["Timezone", person.timezone],
+    [
+      "Last interaction",
+      person.lastInteractionAt ? relativeTime(person.lastInteractionAt) : undefined,
+    ],
+  ];
+  if (aliasNames) sheetFacts.push(["Also known as", aliasNames]);
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-lg">
@@ -891,20 +929,7 @@ function PersonSheet({
         </SheetHeader>
         <div className="overflow-y-auto p-4">
           <dl className="grid grid-cols-[120px_minmax(0,1fr)] gap-x-3 gap-y-3 text-sm">
-            {[
-              ["Company", personCompanyTitle(person) || undefined],
-              ["Domain", person.orgDomain],
-              ["Role", person.title],
-              ["Seniority", personSeniorityLabel(person.seniority)],
-              ["Department", person.department],
-              ["Location", person.location],
-              ["LinkedIn", person.linkedinUrl],
-              ["Timezone", person.timezone],
-              [
-                "Last interaction",
-                person.lastInteractionAt ? relativeTime(person.lastInteractionAt) : undefined,
-              ],
-            ].map(([label, value]) => {
+            {sheetFacts.map(([label, value]) => {
               const detail = personSheetDetail(label, value);
               return (
                 <React.Fragment key={label}>
