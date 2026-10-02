@@ -85,6 +85,7 @@ export type DashboardChatController = {
   sessions: SessionMeta[];
   hasMoreSessions?: boolean;
   loadingMoreSessions?: boolean;
+  loadingSessions?: boolean;
   onLoadMoreSessions?: () => void;
   onRetrySessions?: () => void;
   sessionsLoadError?: string | null;
@@ -322,6 +323,7 @@ export function ChatRouteProvider({ children, className, ...props }: ChatRoutePr
     hasMoreSessions,
     loadEarlierSessions,
     loadingEarlierSessions,
+    loadingSessions,
     openSession: loadSession,
     reloadSessions,
     sessions,
@@ -406,6 +408,7 @@ export function ChatRouteProvider({ children, className, ...props }: ChatRoutePr
       sessions,
       hasMoreSessions,
       loadingMoreSessions: loadingEarlierSessions,
+      loadingSessions,
       onLoadMoreSessions: () => void loadEarlierSessions(),
       onRetrySessions: () => void reloadSessions(),
       sessionsLoadError,

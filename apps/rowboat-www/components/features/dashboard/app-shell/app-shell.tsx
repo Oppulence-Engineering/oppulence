@@ -766,6 +766,7 @@ export function AppShellSidebar({
   onNewChat,
   hasMoreSessions = false,
   loadingMoreSessions = false,
+  loadingSessions = false,
   onLoadMoreSessions,
   onRetrySessions,
   sessionsLoadError = null,
@@ -795,6 +796,7 @@ export function AppShellSidebar({
   onNewChat?: () => void;
   hasMoreSessions?: boolean;
   loadingMoreSessions?: boolean;
+  loadingSessions?: boolean;
   onLoadMoreSessions?: () => void;
   onRetrySessions?: () => void;
   sessionsLoadError?: string | null;
@@ -1046,7 +1048,9 @@ export function AppShellSidebar({
                 <Plus className="size-3.5" />
               </Button>
             </div>
-            {sessions.length === 0 && !sessionsLoadError ? (
+            {sessions.length === 0 && loadingSessions ? (
+              <SidebarEmptyHint>Loading…</SidebarEmptyHint>
+            ) : sessions.length === 0 && !sessionsLoadError ? (
               <SidebarEmptyHint>No conversations yet</SidebarEmptyHint>
             ) : (
               sessions.map((session) => (
@@ -1069,7 +1073,7 @@ export function AppShellSidebar({
                 {loadingMoreSessions ? "Loading…" : "Show earlier conversations"}
               </Button>
             ) : null}
-            {sessionsLoadError ? (
+            {sessionsLoadError && !loadingSessions ? (
               <>
                 <SidebarEmptyHint>{sessionsLoadError}</SidebarEmptyHint>
                 {onRetrySessions ? (

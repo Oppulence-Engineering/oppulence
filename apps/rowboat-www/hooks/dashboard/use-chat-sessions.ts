@@ -178,6 +178,7 @@ export function useChatSessions({
     loadEarlierSessions,
     loadingEarlierSessions,
     openSession,
+    loadingSessions: remoteSessionsQuery.isPending || remoteSessionsQuery.isFetching,
     reloadSessions: () => remoteSessionsQuery.refetch(),
     sessions,
     sessionsLoadError: chatSessionsLoadError(

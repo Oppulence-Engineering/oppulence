@@ -204,6 +204,7 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
                 onOpenSettings={openSettings}
                 hasMoreSessions={chat.hasMoreSessions}
                 loadingMoreSessions={chat.loadingMoreSessions}
+                loadingSessions={chat.loadingSessions}
                 sessionsLoadError={chat.sessionsLoadError}
                 onSelectResource={chat.onOpenResource}
                 onToggle={toggleSidebar}
