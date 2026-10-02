@@ -521,6 +521,19 @@ export function sidebarQueryError(error: unknown, fallback: string): string {
   return fallback;
 }
 
+/** A cached sidebar list, even an empty one, is a refresh. */
+export function sidebarGroupFallback(loaded: boolean, noun: string): string {
+  return loaded ? `Could not refresh ${noun}` : `Could not load ${noun}`;
+}
+
+function sidebarListError(
+  query: { isError: boolean; error: unknown; data?: unknown },
+  noun: string,
+): string | undefined {
+  if (!query.isError) return undefined;
+  return sidebarQueryError(query.error, sidebarGroupFallback(query.data != null, noun));
+}
+
 /**
  * The meter is a ratio of sources that are still delivering. An empty workspace
  * is not a ratio: "0 / 0" under "No sources connected" reads as a broken meter.
@@ -845,16 +858,10 @@ export function AppShellSidebar({
     scheduled: tasksQuery.isPending,
     runs: runsQuery.isPending,
   };
-  const groupErrors: Partial<Record<string, string>> = {
-    ...(agentsQuery.isError
-      ? { agents: sidebarQueryError(agentsQuery.error, "Could not load agents") }
-      : {}),
-    ...(tasksQuery.isError
-      ? { scheduled: sidebarQueryError(tasksQuery.error, "Could not load schedules") }
-      : {}),
-    ...(runsQuery.isError
-      ? { runs: sidebarQueryError(runsQuery.error, "Could not load runs") }
-      : {}),
+  const groupErrors = {
+    agents: sidebarListError(agentsQuery, "agents"),
+    scheduled: sidebarListError(tasksQuery, "schedules"),
+    runs: sidebarListError(runsQuery, "runs"),
   };
   const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>({});
   const { theme, setTheme: handleTheme } = useThemePreference();
@@ -871,6 +878,7 @@ export function AppShellSidebar({
     empty: string;
     loading?: boolean;
     error?: string;
+    loaded?: boolean;
     onNavigate?: () => void;
     onRetry?: () => void;
   }[] = [
@@ -881,6 +889,7 @@ export function AppShellSidebar({
       items: agents,
       empty: "No agents found",
       loading: loadingGroups.agents,
+      loaded: agentsQuery.data != null,
       error: groupErrors.agents,
       onNavigate: onNavigateAgents,
       onRetry: () => void agentsQuery.refetch(),
@@ -892,6 +901,7 @@ export function AppShellSidebar({
       items: tasks,
       empty: "Nothing scheduled",
       loading: loadingGroups.scheduled,
+      loaded: tasksQuery.data != null,
       error: groupErrors.scheduled,
       onNavigate: onNavigateScheduled,
       onRetry: () => void tasksQuery.refetch(),
@@ -904,6 +914,7 @@ export function AppShellSidebar({
       countLabel: sidebarRunCountLabel(runPreview),
       empty: "No runs yet",
       loading: loadingGroups.runs,
+      loaded: runsQuery.data != null,
       error: groupErrors.runs,
       onNavigate: onNavigateRuns,
       onRetry: () => void runsQuery.refetch(),
@@ -1046,27 +1057,35 @@ export function AppShellSidebar({
                   <div className="flex flex-col gap-0.5 pb-1">
                     {group.loading && group.items.length === 0 ? (
                       <SidebarEmptyHint>Loading…</SidebarEmptyHint>
-                    ) : group.error && group.items.length === 0 ? (
+                    ) : group.error && !group.loaded ? (
                       <SidebarGroupError message={group.error} onRetry={group.onRetry} />
-                    ) : group.items.length === 0 ? (
-                      <SidebarEmptyHint>{group.empty}</SidebarEmptyHint>
                     ) : (
                       <>
                         {group.error ? (
                           <SidebarGroupError message={group.error} onRetry={group.onRetry} />
                         ) : null}
-                        {group.items.map((item) => (
-                        <SidebarSubItem
-                          active={selected?.kind === group.kind && selected?.name === item.value}
-                          key={item.value}
-                          label={item.label}
-                          onClick={
-                            group.kind
-                              ? () => onSelectResource?.({ kind: group.kind!, name: item.value })
-                              : undefined
-                          }
-                        />
-                      ))}
+                        {group.items.length === 0 ? (
+                          <SidebarEmptyHint>{group.empty}</SidebarEmptyHint>
+                        ) : (
+                          group.items.map((item) => (
+                            <SidebarSubItem
+                              active={
+                                selected?.kind === group.kind && selected?.name === item.value
+                              }
+                              key={item.value}
+                              label={item.label}
+                              onClick={
+                                group.kind
+                                  ? () =>
+                                      onSelectResource?.({
+                                        kind: group.kind!,
+                                        name: item.value,
+                                      })
+                                  : undefined
+                              }
+                            />
+                          ))
+                        )}
                       </>
                     )}
                   </div>

@@ -69,10 +69,10 @@ describe("AppShellSidebar", () => {
     expect(source).toContain(
       'className="block whitespace-normal text-left text-[15px] font-normal leading-5"',
     );
-    expect(source).toContain('sidebarQueryError(agentsQuery.error, "Could not load agents")');
-    expect(source).toContain('sidebarQueryError(tasksQuery.error, "Could not load schedules")');
-    expect(source).toContain('sidebarQueryError(runsQuery.error, "Could not load runs")');
-    expect(source).toContain("group.error && group.items.length === 0");
+    expect(source).toContain('sidebarListError(agentsQuery, "agents")');
+    expect(source).toContain('sidebarListError(tasksQuery, "schedules")');
+    expect(source).toContain('sidebarListError(runsQuery, "runs")');
+    expect(source).toContain("group.error && !group.loaded");
     expect(source).toContain("const sourcesNeverLoaded = sources.isError && sources.data == null");
     expect(source).toContain("sources.isError && !sourcesNeverLoaded");
     expect(source).not.toContain('label: "Source status unavailable"');

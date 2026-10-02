@@ -5,6 +5,7 @@ import {
   googleNeedsReconnect,
   revenueTabFromParam,
   revenueTabSearch,
+  sidebarGroupFallback,
   sidebarQueryError,
   sourceHealth,
   sourceMeterVisible,
@@ -106,6 +107,9 @@ describe("sidebar source status", () => {
     expect(sidebarQueryError(new Error("Request failed (500)"), "Could not load agents")).toBe(
       "Could not load agents",
     );
+    expect(sidebarGroupFallback(false, "agents")).toBe("Could not load agents");
+    expect(sidebarGroupFallback(true, "schedules")).toBe("Could not refresh schedules");
+    expect(sidebarGroupFallback(true, "runs")).toBe("Could not refresh runs");
     expect(sidebarQueryError(new Error("  "), "Source status unavailable")).toBe(
       "Source status unavailable",
     );
