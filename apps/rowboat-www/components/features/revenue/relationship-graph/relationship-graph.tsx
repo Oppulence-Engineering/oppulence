@@ -1388,6 +1388,7 @@ export function RelationshipGraphWorkspace({
   const [activeSavedViewId, setActiveSavedViewId] = React.useState<string>();
   const [namingView, setNamingView] = React.useState(false);
   const [viewName, setViewName] = React.useState("");
+  const [viewError, setViewError] = React.useState<string | null>(null);
   const [resetSignal, setResetSignal] = React.useState(0);
   const migrationStartedRef = React.useRef(false);
   const graphEnabled = !(viewState.scope === "relationship" && !viewState.relationshipId);
@@ -1568,7 +1569,11 @@ export function RelationshipGraphWorkspace({
       });
       onNotice(`Saved “${resource.name}”.`);
     },
-    onError: (error) => onError(errMessage(error, "Could not save this graph view.")),
+    onError: (error) => {
+      const message = errMessage(error, "Could not save this graph view.");
+      setViewError(message);
+      onError(message);
+    },
   });
   const deleteViewMutation = useMutation({
     mutationFn: (resourceId: string) => deleteConsoleResource(resourceId),
@@ -1750,6 +1755,7 @@ export function RelationshipGraphWorkspace({
 
   const openSaveDialog = () => {
     if (!graph?.permissions.canSaveViews) return;
+    setViewError(null);
     setViewName(`Graph view ${savedViews.length + 1}`);
     setNamingView(true);
   };
@@ -1757,6 +1763,7 @@ export function RelationshipGraphWorkspace({
   const confirmSaveView = () => {
     const label = viewName.trim();
     if (!label || !graph?.permissions.canSaveViews) return;
+    setViewError(null);
     saveViewMutation.mutate({ label, state: viewState });
   };
 
@@ -2330,6 +2337,7 @@ export function RelationshipGraphWorkspace({
                 }
               }}
             />
+            {viewError ? <p className="text-sm text-destructive">{viewError}</p> : null}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setNamingView(false)}>

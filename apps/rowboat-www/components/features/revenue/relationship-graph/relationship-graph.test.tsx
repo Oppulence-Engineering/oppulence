@@ -298,6 +298,8 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).not.toContain("Views offline");
     expect(source).not.toContain("window.prompt");
     expect(source).toContain("Name this graph view");
+    expect(source).toContain('errMessage(error, "Could not save this graph view.")');
+    expect(source).toContain("setViewError(message)");
     expect(source).toContain('htmlFor="graph-view-name"');
     expect(source).toContain("Save view");
   });

@@ -1408,6 +1408,8 @@ describe("people directory copy", () => {
     expect(source).toContain("noteListFailureCopy()");
     expect(source).toContain("<Plus /> New person");
     expect(source).toContain('errMessage(error, "Could not create the person.")');
+    expect(source).toContain("Could not save the note template.");
+    expect(source).not.toContain("The template change failed.");
     expect(source).toContain("setFormError(message)");
     expect(source).not.toContain("Add person");
     expect(source).toContain("Mail and meetings can fill in the rest later.");

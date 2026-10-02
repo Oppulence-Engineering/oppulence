@@ -2040,7 +2040,12 @@ function TemplateDialog({
           />
           {mutation.isError ? (
             <p className="text-xs text-destructive" role="alert">
-              The template change failed. You can retry without losing this draft.
+              {errMessage(
+                mutation.error,
+                mutation.variables === "delete"
+                  ? "Could not delete the note template."
+                  : "Could not save the note template.",
+              )}
             </p>
           ) : null}
         </div>
