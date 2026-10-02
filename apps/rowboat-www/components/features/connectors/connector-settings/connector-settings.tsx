@@ -237,14 +237,16 @@ function GoogleConnectionSettings() {
   }, [queryClient]);
 
   React.useEffect(() => {
-    if (statusQuery.error) {
-      setError(
-        explainedRevenueError(statusQuery.error, "Could not load Google connection status."),
-      );
+    if (!statusQuery.error) {
+      setError(null);
       return;
     }
-    setError(null);
-  }, [statusQuery.error]);
+    setError(
+      statusQuery.data
+        ? "Could not refresh the Google connection. Try again."
+        : explainedRevenueError(statusQuery.error, "Could not load Google connection status."),
+    );
+  }, [statusQuery.data, statusQuery.error]);
 
   React.useEffect(() => {
     const refresh = () => void loadStatus();

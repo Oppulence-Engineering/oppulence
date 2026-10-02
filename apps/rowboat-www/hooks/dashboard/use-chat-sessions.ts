@@ -33,14 +33,19 @@ type ChatMessage = Extract<AgentHistoryItem, { type: "message" }>;
 /** A failed first page is not an empty history. */
 export const CHAT_SESSIONS_LOAD_ERROR = "Could not load conversations.";
 
+/** A failed refresh is not a missing history. */
+export const CHAT_SESSIONS_REFRESH_ERROR = "Could not refresh conversations. Try again.";
+
 /** The load-more sentence stays when that request failed. Otherwise a failed
- * first page is named on its own. */
+ * first page is named on its own, and a failed refresh keeps the list. */
 export function chatSessionsLoadError(
   earlierError: string | null,
   remoteFailed: boolean,
+  hasSessions = false,
 ): string | null {
   if (earlierError) return earlierError;
-  return remoteFailed ? CHAT_SESSIONS_LOAD_ERROR : null;
+  if (!remoteFailed) return null;
+  return hasSessions ? CHAT_SESSIONS_REFRESH_ERROR : CHAT_SESSIONS_LOAD_ERROR;
 }
 
 type UseChatSessionsOptions = {
@@ -184,6 +189,7 @@ export function useChatSessions({
     sessionsLoadError: chatSessionsLoadError(
       earlierSessionsError,
       remoteSessionsQuery.isError,
+      sessions.length > 0,
     ),
   };
 }

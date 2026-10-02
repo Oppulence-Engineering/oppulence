@@ -13,4 +13,11 @@ describe("chatSessionsLoadError", () => {
       "Could not load earlier conversations.",
     );
   });
+
+  it("names a failed refresh when conversations are already listed", () => {
+    expect(chatSessionsLoadError(null, true, true)).toBe(
+      "Could not refresh conversations. Try again.",
+    );
+    expect(chatSessionsLoadError(null, false, true)).toBeNull();
+  });
 });
