@@ -478,6 +478,58 @@ func TestRelationshipSearchFindsTheUnsupportedStateAnswer(t *testing.T) {
 	assertCompanyQuery("2 of 8 details have a source")
 }
 
+func TestRelationshipSearchFindsTheCompletenessCopy(t *testing.T) {
+	f := newFixture(t)
+	quill, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	lumen, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet", ResourceRefs: []string{"hubspot:company:lumen-1"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	quillModel, err := f.svc.MissionControl(f.ctx, f.user, quill.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if quillModel.Completeness.Status != "partial" ||
+		quillModel.Completeness.Explanation != "No source connection has completed its first useful sync." {
+		t.Fatalf("quill completeness = %+v", quillModel.Completeness)
+	}
+	lumenModel, err := f.svc.MissionControl(f.ctx, f.user, lumen.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if lumenModel.Completeness.Explanation != "One or more material values have no accessible supporting evidence." {
+		t.Fatalf("lumen completeness = %+v", lumenModel.Completeness)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Connect a source before these details can fill in", "Quill Atelier")
+	assertCompanyQuery("One or more material values have no accessible supporting evidence", "Lumen Packet")
+	assertCompanyQuery("source")
+	assertCompanyQuery("missing")
+}
+
 func TestRelationshipSearchFindsTheSheetReviewAndRecommendation(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

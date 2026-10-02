@@ -21,8 +21,12 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipprojectionjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipreviewacknowledgement"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -818,6 +822,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if counts := relationshipSheetDetailCountMatch(needle); counts != nil {
 			parts = append(parts, counts)
 		}
+		if completeness := relationshipSheetCompletenessMatch(needle); completeness != nil {
+			parts = append(parts, completeness)
+		}
 		if sheetPhraseMatches("no action is currently recommended", needle) {
 			parts = append(parts, relationship.Not(
 				relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen)),
@@ -1425,6 +1432,236 @@ func writeSupportedAssertionTail(b *sql.Builder, s *sql.Selector, now time.Time)
 	b.WriteString(" IS NOT NULL OR ")
 	b.WriteString(evidence)
 	b.WriteByte(')')
+}
+
+// relationshipSheetCompletenessMatch matches the sentences under the company
+// sheet heading. A company with no connector says to connect a source. A
+// company that already names one says the remaining details have no evidence.
+// A short fragment such as "source" is not that sentence.
+func relationshipSheetCompletenessMatch(needle string) predicate.Relationship {
+	now := time.Now()
+	var preds []predicate.Relationship
+	if sheetPhraseMatches("connect a source before these details can fill in.", needle) {
+		preds = append(preds, relationshipConnectSourceCopy(now))
+	}
+	if sheetPhraseMatches("one or more material values have no accessible supporting evidence.", needle) {
+		preds = append(preds, relationshipMaterialGapCopy(now))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func relationshipConnectSourceCopy(now time.Time) predicate.Relationship {
+	return relationship.And(
+		relationship.Not(relationshipHasSourceDependency()),
+		relationship.Not(relationshipHasUnresolvedIdentity()),
+		relationship.Not(relationshipHasBlockingProjection(now)),
+		relationship.Not(relationshipGmailExplanation(now)),
+	)
+}
+
+func relationshipMaterialGapCopy(now time.Time) predicate.Relationship {
+	return relationship.And(
+		relationshipHasSourceDependency(),
+		relationship.Not(relationshipHasUnresolvedIdentity()),
+		relationship.Not(relationshipHasBlockingProjection(now)),
+		relationship.Not(relationshipHasEarlySourceStop()),
+		relationship.Not(relationshipSupportedDetailCount(len(relationshipProjectionDimensions), now)),
+		relationship.Not(relationshipGmailExplanation(now)),
+	)
+}
+
+// relationshipGmailExplanation is the paragraph that replaces completeness
+// copy when Gmail threads are linked and no detail has a source yet.
+func relationshipGmailExplanation(now time.Time) predicate.Relationship {
+	return relationship.And(
+		relationshipHasMailThreads(),
+		relationshipSupportedDetailCount(0, now),
+	)
+}
+
+func relationshipHasMailThreads() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(fmt.Sprintf(
+				"EXISTS (SELECT 1 FROM %s WHERE %s = %s)",
+				mailthread.Table,
+				mailthread.RelationshipColumn,
+				s.C(relationship.FieldID),
+			))
+		}))
+	})
+}
+
+func relationshipHasUnresolvedIdentity() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(fmt.Sprintf(
+				"EXISTS (SELECT 1 FROM %s WHERE %s IN ('%s', '%s', '%s') AND (%s = %s OR %s = %s))",
+				relationshipidentitycandidate.Table,
+				relationshipidentitycandidate.FieldStatus,
+				identityPending,
+				identityDeferred,
+				identityResolving,
+				relationshipidentitycandidate.ProposedRelationshipColumn,
+				s.C(relationship.FieldID),
+				relationshipidentitycandidate.ExistingRelationshipColumn,
+				s.C(relationship.FieldID),
+			))
+		}))
+	})
+}
+
+func relationshipHasBlockingProjection(now time.Time) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(fmt.Sprintf(
+				"EXISTS (SELECT 1 FROM %s WHERE %s = %s AND %s <= ",
+				relationshipprojectionjob.Table,
+				relationshipprojectionjob.RelationshipColumn,
+				s.C(relationship.FieldID),
+				relationshipprojectionjob.FieldEvaluatedAt,
+			))
+			b.Arg(now)
+			b.WriteString(fmt.Sprintf(
+				" AND %s IN ('dead', 'pending', 'running', 'failed'))",
+				relationshipprojectionjob.FieldStatus,
+			))
+		}))
+	})
+}
+
+func relationshipHasSourceDependency() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.Or(
+			relationshipDependsOnGoogle(s),
+			relationshipDependsOnSlack(s),
+			relationshipDependsOnHubSpot(s),
+		))
+	})
+}
+
+func relationshipDependsOnGoogle(s *sql.Selector) *sql.Predicate {
+	return sql.P(func(b *sql.Builder) {
+		writeRelationshipDependsOn(b, s, []string{"gmail", "calendar", "google"}, []string{"email", "gmail", "calendar"})
+	})
+}
+
+func relationshipDependsOnSlack(s *sql.Selector) *sql.Predicate {
+	return sql.P(func(b *sql.Builder) {
+		writeRelationshipDependsOn(b, s, []string{"slack"}, []string{"slack"})
+	})
+}
+
+func relationshipDependsOnHubSpot(s *sql.Selector) *sql.Predicate {
+	return sql.P(func(b *sql.Builder) {
+		writeRelationshipDependsOn(b, s, []string{"hubspot", "crm"}, []string{"hubspot", "crm", "crm_task", "task"})
+	})
+}
+
+func writeRelationshipDependsOn(b *sql.Builder, s *sql.Selector, sources, channels []string) {
+	b.WriteByte('(')
+	writeObservationSourceIn(b, s, sources)
+	b.WriteString(" OR ")
+	writeResourceRefSource(b, s, sources)
+	b.WriteString(" OR ")
+	writeOpenActionChannelIn(b, s, channels)
+	b.WriteByte(')')
+}
+
+func writeObservationSourceIn(b *sql.Builder, s *sql.Selector, sources []string) {
+	b.WriteString(fmt.Sprintf(
+		"EXISTS (SELECT 1 FROM %s WHERE %s = %s AND lower(%s) IN (",
+		relationshipobservation.Table,
+		relationshipobservation.RelationshipColumn,
+		s.C(relationship.FieldID),
+		relationshipobservation.FieldSource,
+	))
+	for i, source := range sources {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.Arg(source)
+	}
+	b.WriteString("))")
+}
+
+func writeOpenActionChannelIn(b *sql.Builder, s *sql.Selector, channels []string) {
+	b.WriteString(fmt.Sprintf(
+		"EXISTS (SELECT 1 FROM %s WHERE %s = %s AND %s = ",
+		revenueaction.Table,
+		revenueaction.RelationshipColumn,
+		s.C(relationship.FieldID),
+		revenueaction.FieldQueueStatus,
+	))
+	b.Arg(QueueOpen)
+	b.WriteString(fmt.Sprintf(" AND lower(%s) IN (", revenueaction.FieldChannel))
+	for i, channel := range channels {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.Arg(channel)
+	}
+	b.WriteString("))")
+}
+
+func writeResourceRefSource(b *sql.Builder, s *sql.Selector, sources []string) {
+	column := s.C(relationship.FieldResourceRefs)
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(fmt.Sprintf(
+			"EXISTS (SELECT 1 FROM jsonb_array_elements_text(coalesce(%s, '[]'::jsonb)) AS ref(value) WHERE ",
+			column,
+		))
+	} else {
+		b.WriteString(fmt.Sprintf(
+			"EXISTS (SELECT 1 FROM json_each(coalesce(%s, '[]')) AS ref WHERE ",
+			column,
+		))
+	}
+	for i, source := range sources {
+		if i > 0 {
+			b.WriteString(" OR ")
+		}
+		b.WriteString("lower(ref.value) LIKE ")
+		b.Arg(source + ":%")
+		b.WriteString(" OR lower(ref.value) LIKE ")
+		b.Arg("%/" + source + "/%")
+	}
+	b.WriteByte(')')
+}
+
+func relationshipHasEarlySourceStop() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(fmt.Sprintf(
+				"EXISTS (SELECT 1 FROM %s WHERE %s = %s AND %s IN ('stale', 'disconnected', 'rebuilding') AND (",
+				relationshipsourcestatus.Table,
+				relationshipsourcestatus.WorkspaceColumn,
+				s.C(relationship.WorkspaceColumn),
+				relationshipsourcestatus.FieldCompleteness,
+			))
+			statusSource := relationshipsourcestatus.Table + "." + relationshipsourcestatus.FieldSource
+			b.WriteString("(lower(")
+			b.WriteString(statusSource)
+			b.WriteString(") IN ('gmail', 'calendar', 'google') AND ")
+			writeRelationshipDependsOn(b, s, []string{"gmail", "calendar", "google"}, []string{"email", "gmail", "calendar"})
+			b.WriteString(") OR (lower(")
+			b.WriteString(statusSource)
+			b.WriteString(") = 'slack' AND ")
+			writeRelationshipDependsOn(b, s, []string{"slack"}, []string{"slack"})
+			b.WriteString(") OR (lower(")
+			b.WriteString(statusSource)
+			b.WriteString(") IN ('hubspot', 'crm') AND ")
+			writeRelationshipDependsOn(b, s, []string{"hubspot", "crm"}, []string{"hubspot", "crm", "crm_task", "task"})
+			b.WriteString(")))")
+		}))
+	})
 }
 
 func sheetPhraseMatches(phrase, needle string) bool {
