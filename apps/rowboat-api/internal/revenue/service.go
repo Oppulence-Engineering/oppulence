@@ -877,6 +877,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if privacy := relationshipSheetPrivacyMatch(needle); privacy != nil {
 			parts = append(parts, privacy)
 		}
+		if governance := relationshipSheetGovernanceMatch(needle); governance != nil {
+			parts = append(parts, governance)
+		}
 		if sheetPhraseMatches("no action is currently recommended", needle) {
 			parts = append(parts, relationship.Not(
 				relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen)),
@@ -2379,6 +2382,317 @@ func writePolicyBoolIsFalse(b *sql.Builder, s *sql.Selector, field string) {
 	b.WriteString(", '$.")
 	b.WriteString(field)
 	b.WriteString("'), 0) = 0")
+}
+
+// relationshipSheetGovernanceMatch matches the consent receipt and the last
+// deletion line. The receipt is stored on the conversation observation.
+func relationshipSheetGovernanceMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	for _, item := range governanceReceiptPhrases() {
+		if !sheetPhraseMatches(item.phrase, needle) {
+			continue
+		}
+		if item.prefix {
+			preds = append(preds, relationshipHasGovernanceReceiptPrefix(item.field, item.value))
+			continue
+		}
+		preds = append(preds, relationshipHasGovernanceReceiptValue(item.field, item.value))
+	}
+	if sheetPhraseMatches("legal hold on", needle) {
+		preds = append(preds, relationshipHasGovernanceLegalHold(true))
+	}
+	if sheetPhraseMatches("legal hold off", needle) {
+		preds = append(preds, relationshipHasGovernanceLegalHold(false))
+	}
+	if route, ok := importedGovernanceRoute(needle); ok {
+		preds = append(preds, relationshipHasGovernanceReceiptValue("routing", route))
+	}
+	if n, ok := governanceReceiptCount(needle); ok {
+		preds = append(preds, relationshipGovernanceReceiptCount("=", n))
+	} else if sheetPhraseMatches("consent and governance", needle) {
+		preds = append(preds, relationshipGovernanceReceiptCount(">=", 1))
+	}
+	for _, item := range governanceDeletionPhrases() {
+		if sheetPhraseMatches(item.phrase, needle) {
+			preds = append(preds, relationshipHasLatestDeletionStatus(item.status))
+		}
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+type governanceReceiptPhrase struct {
+	phrase string
+	field  string
+	value  string
+	prefix bool
+}
+
+func governanceReceiptPhrases() []governanceReceiptPhrase {
+	return []governanceReceiptPhrase{
+		{phrase: "captured by hand", field: "capturePolicy", value: "manual_capture"},
+		{phrase: "uploaded on purpose", field: "capturePolicy", value: "explicit_upload"},
+		{phrase: "imported from the provider", field: "capturePolicy", value: "provider_import"},
+		{phrase: "started from the calendar or by hand", field: "capturePolicy", value: "calendar_prompt_or_manual"},
+		{phrase: "do not capture", field: "capturePolicy", value: "deny"},
+		{phrase: "ask before capturing", field: "capturePolicy", value: "require_consent"},
+		{phrase: "capture is allowed", field: "capturePolicy", value: "allow"},
+		{phrase: "transcribed on this device, then saved here", field: "routing", value: "local_transcription_to_oppulence"},
+		{phrase: "stays on this device", field: "routing", value: "local_only"},
+		{phrase: "on this device", field: "region", value: "local_device"},
+		{phrase: "at the provider", field: "region", value: "provider_managed"},
+		{phrase: "kept until it is transcribed", field: "retention", value: "until_transcribed"},
+		{phrase: "kept until it is transcribed", field: "retention", value: "untilTranscribed"},
+		{phrase: "the provider's policy, plus the evidence saved here", field: "retention", value: "provider_policy_plus_oppulence_evidence"},
+		{phrase: "kept", field: "retention", value: "always"},
+		{phrase: "kept", field: "deletionOutcome", value: "retained"},
+		{phrase: "people were not told", field: "participantDisclosure", value: "not_recorded"},
+		{phrase: "the provider says people were told", field: "participantDisclosure", value: "provider_reported"},
+		{phrase: "scheduled to be deleted after transcription", field: "deletionOutcome", value: "scheduled_after_transcription"},
+		{phrase: "kept because of your settings", field: "deletionOutcome", value: "retained_by_user_policy"},
+		{phrase: "nothing to delete", field: "deletionOutcome", value: "not_applicable"},
+		{phrase: "deleted", field: "deletionOutcome", value: "deleted:", prefix: true},
+		{phrase: "no audio was kept", field: "evidenceClip", value: "not_retained"},
+		{phrase: "the audio that was kept is encrypted", field: "evidenceClip", value: "encrypted"},
+	}
+}
+
+func governanceDeletionPhrases() []struct {
+	phrase string
+	status string
+} {
+	return []struct {
+		phrase string
+		status string
+	}{
+		{phrase: "deletion is still running", status: "pending"},
+		{phrase: "last deletion: deletion is still running", status: "pending"},
+		{phrase: "deletion is blocked", status: "blocked"},
+		{phrase: "last deletion: deletion is blocked", status: "blocked"},
+		{phrase: "some copies are still there", status: "partial"},
+		{phrase: "last deletion: some copies are still there", status: "partial"},
+		{phrase: "deletion is finished", status: "verified"},
+		{phrase: "last deletion: deletion is finished", status: "verified"},
+	}
+}
+
+func importedGovernanceRoute(needle string) (string, bool) {
+	const prefix = "imported from "
+	const suffix = ", then saved here"
+	if !strings.HasPrefix(needle, prefix) || !strings.HasSuffix(needle, suffix) {
+		return "", false
+	}
+	name := strings.TrimSuffix(strings.TrimPrefix(needle, prefix), suffix)
+	if name == "" || strings.Contains(name, "provider") {
+		return "", false
+	}
+	return strings.ReplaceAll(name, " ", "_") + "_to_oppulence", true
+}
+
+func governanceReceiptCount(needle string) (int, bool) {
+	const prefix = "consent and governance ("
+	if !strings.HasPrefix(needle, prefix) || !strings.HasSuffix(needle, ")") {
+		return 0, false
+	}
+	body := strings.TrimSuffix(strings.TrimPrefix(needle, prefix), ")")
+	parsed, err := strconv.Atoi(body)
+	if err != nil || parsed < 0 || strconv.Itoa(parsed) != body {
+		return 0, false
+	}
+	return parsed, true
+}
+
+func relationshipHasGovernanceReceiptValue(field, value string) predicate.Relationship {
+	return relationshipHasGovernanceReceipt(func(b *sql.Builder, s *sql.Selector) {
+		writeGovernanceText(b, s, field)
+		b.WriteString(" = ")
+		b.Arg(value)
+	})
+}
+
+func relationshipHasGovernanceReceiptPrefix(field, prefix string) predicate.Relationship {
+	return relationshipHasGovernanceReceipt(func(b *sql.Builder, s *sql.Selector) {
+		writeGovernanceText(b, s, field)
+		b.WriteString(" LIKE ")
+		b.Arg(prefix + "%")
+	})
+}
+
+func relationshipHasGovernanceLegalHold(on bool) predicate.Relationship {
+	return relationshipHasGovernanceReceipt(func(b *sql.Builder, s *sql.Selector) {
+		writeGovernanceBool(b, s, "legalHold", on)
+	})
+}
+
+func relationshipHasGovernanceReceipt(match func(*sql.Builder, *sql.Selector)) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			obs := relationshipobservation.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(obs)
+			b.WriteString(" AS obs WHERE obs.")
+			b.WriteString(relationshipobservation.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			writeGovernanceText(b, s, "receiptId")
+			b.WriteString(" <> '' AND ")
+			match(b, s)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func relationshipGovernanceReceiptCount(compare string, n int) predicate.Relationship {
+	if compare != "=" && compare != ">=" {
+		compare = "="
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			obs := relationshipobservation.Table
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(obs)
+			b.WriteString(" AS obs WHERE obs.")
+			b.WriteString(relationshipobservation.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			writeGovernanceText(b, s, "receiptId")
+			b.WriteString(" <> '') ")
+			b.WriteString(compare)
+			b.WriteString(" ")
+			b.Arg(n)
+		}))
+	})
+}
+
+func relationshipHasLatestDeletionStatus(status string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			writeLatestDeletionReceipt(b, s, "eval")
+			b.WriteString(" AND ")
+			writeDeletionText(b, s, "eval", "status")
+			b.WriteString(" = ")
+			b.Arg(status)
+			b.WriteString(" AND ")
+			writeDeletionText(b, s, "eval", "requestedAt")
+			b.WriteString(" = (SELECT MAX(")
+			writeDeletionText(b, s, "newest", "requestedAt")
+			b.WriteString(") FROM ")
+			writeLatestDeletionReceipt(b, s, "newest")
+			b.WriteString("))")
+		}))
+	})
+}
+
+func writeLatestDeletionReceipt(b *sql.Builder, s *sql.Selector, alias string) {
+	art := conversationintelligenceartifact.Table
+	b.WriteString(art)
+	b.WriteString(" AS ")
+	b.WriteString(alias)
+	b.WriteString(" WHERE ")
+	b.WriteString(alias)
+	b.WriteString(".")
+	b.WriteString(conversationintelligenceartifact.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.FieldID))
+	b.WriteString(" AND ")
+	b.WriteString(alias)
+	b.WriteString(".")
+	b.WriteString(conversationintelligenceartifact.FieldKind)
+	b.WriteString(" = 'deletion_receipt' AND ")
+	b.WriteString(alias)
+	b.WriteString(".")
+	b.WriteString(conversationintelligenceartifact.FieldVersion)
+	b.WriteString(" = (SELECT MAX(prior.")
+	b.WriteString(conversationintelligenceartifact.FieldVersion)
+	b.WriteString(") FROM ")
+	b.WriteString(art)
+	b.WriteString(" AS prior WHERE prior.")
+	b.WriteString(conversationintelligenceartifact.FieldStableID)
+	b.WriteString(" = ")
+	b.WriteString(alias)
+	b.WriteString(".")
+	b.WriteString(conversationintelligenceartifact.FieldStableID)
+	b.WriteString(" AND prior.")
+	b.WriteString(conversationintelligenceartifact.FieldKind)
+	b.WriteString(" = ")
+	b.WriteString(alias)
+	b.WriteString(".")
+	b.WriteString(conversationintelligenceartifact.FieldKind)
+	b.WriteString(" AND prior.")
+	b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+	b.WriteString(" = ")
+	b.WriteString(alias)
+	b.WriteString(".")
+	b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+	b.WriteString(")")
+}
+
+func writeGovernanceText(b *sql.Builder, s *sql.Selector, field string) {
+	column := "obs." + relationshipobservation.FieldNormalizedFactsJSON
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(column)
+		b.WriteString("::jsonb->'governance_receipt'->>'")
+		b.WriteString(field)
+		b.WriteString("'")
+		return
+	}
+	b.WriteString("json_extract(")
+	b.WriteString(column)
+	b.WriteString(", '$.governance_receipt.")
+	b.WriteString(field)
+	b.WriteString("')")
+}
+
+func writeGovernanceBool(b *sql.Builder, s *sql.Selector, field string, on bool) {
+	column := "obs." + relationshipobservation.FieldNormalizedFactsJSON
+	want := "0"
+	if on {
+		want = "1"
+	}
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("COALESCE(")
+		b.WriteString(column)
+		b.WriteString("::jsonb->'governance_receipt'->>'")
+		b.WriteString(field)
+		b.WriteString("', 'false') = ")
+		if on {
+			b.WriteString("'true'")
+			return
+		}
+		b.WriteString("'false'")
+		return
+	}
+	b.WriteString("COALESCE(json_extract(")
+	b.WriteString(column)
+	b.WriteString(", '$.governance_receipt.")
+	b.WriteString(field)
+	b.WriteString("'), 0) = ")
+	b.WriteString(want)
+}
+
+func writeDeletionText(b *sql.Builder, s *sql.Selector, alias, field string) {
+	column := alias + "." + conversationintelligenceartifact.FieldPayloadJSON
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(column)
+		b.WriteString("::jsonb->>'")
+		b.WriteString(field)
+		b.WriteString("'")
+		return
+	}
+	b.WriteString("json_extract(")
+	b.WriteString(column)
+	b.WriteString(", '$.")
+	b.WriteString(field)
+	b.WriteString("')")
 }
 
 func writePolicyRetentionDays(b *sql.Builder, s *sql.Selector) {

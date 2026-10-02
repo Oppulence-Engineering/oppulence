@@ -2314,6 +2314,136 @@ func TestRelationshipSearchFindsPrivacySentences(t *testing.T) {
 	assertCompanyQuery("Capture is allowed")
 }
 
+func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveReceipt := func(rel *ent.Relationship, externalID string, receipt ConversationGovernanceReceipt) {
+		t.Helper()
+		facts, err := json.Marshal(map[string]any{"governance_receipt": receipt})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(externalID).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(externalID).
+			SetNormalizedFactsJSON(string(facts)).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveDeletion := func(rel *ent.Relationship, stableID, status, requestedAt string, version int) {
+		t.Helper()
+		payload, err := json.Marshal(ConversationDeletionReceipt{
+			ReceiptID: stableID, RequestedAt: requestedAt, Status: status,
+			Targets: []ConversationDeletionTargetOutcome{},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(payload)
+		if _, err := f.client.ConversationIntelligenceArtifact.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetKind("deletion_receipt").SetStableID(stableID).SetVersion(version).
+			SetStatus(status).SetSubjectRef(rel.ID.String()).
+			SetEffectiveAt(time.Now().UTC()).SetEvidenceRefs([]string{}).
+			SetPayloadJSON(string(payload)).SetPayloadHash(hex.EncodeToString(sum[:])).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	quill := makeCompany("Quill Atelier")
+	cedar := makeCompany("Cedar Mill")
+	harbor := makeCompany("Harbor Ledger")
+	lumen := makeCompany("Lumen Packet")
+	saveReceipt(quill, "consent-quill", ConversationGovernanceReceipt{
+		ReceiptID: "quill", CapturePolicy: "manual_capture",
+		Routing: "local_transcription_to_oppulence", Region: "local_device",
+		Retention: "until_transcribed", ParticipantDisclosure: "not_recorded",
+		DeletionOutcome: "not_applicable", EvidenceClip: "not_retained",
+	})
+	saveReceipt(cedar, "consent-cedar", ConversationGovernanceReceipt{
+		ReceiptID: "cedar", CapturePolicy: "explicit_upload", Routing: "local_only",
+		Region: "provider_managed", Retention: "always", ParticipantDisclosure: "provider_reported",
+		LegalHold: true, DeletionOutcome: "retained_by_user_policy", EvidenceClip: "encrypted",
+	})
+	saveReceipt(harbor, "consent-harbor-1", ConversationGovernanceReceipt{
+		ReceiptID: "harbor-1", CapturePolicy: "provider_import", Routing: "gmail_to_oppulence",
+		Region: "provider_managed", Retention: "provider_policy_plus_oppulence_evidence",
+		ParticipantDisclosure: "provider_reported", DeletionOutcome: "deleted:audio",
+		EvidenceClip: "not_retained",
+	})
+	saveReceipt(harbor, "consent-harbor-2", ConversationGovernanceReceipt{
+		ReceiptID: "harbor-2", CapturePolicy: "calendar_prompt_or_manual",
+		Routing: "local_only", Region: "local_device", Retention: "untilTranscribed",
+		ParticipantDisclosure: "not_recorded", DeletionOutcome: "scheduled_after_transcription",
+		EvidenceClip: "encrypted",
+	})
+	saveDeletion(harbor, "deletion:harbor", "pending", "2026-09-01T00:00:00Z", 1)
+	saveDeletion(harbor, "deletion:harbor", "verified", "2026-10-01T00:00:00Z", 2)
+	saveDeletion(lumen, "deletion:lumen", "pending", "2026-10-01T00:00:00Z", 1)
+	quillIntel, err := f.svc.RelationshipIntelligenceFor(f.ctx, quill)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(quillIntel.GovernanceReceipts) != 1 || quillIntel.GovernanceReceipts[0].CapturePolicy != "manual_capture" {
+		t.Fatalf("quill receipts = %+v", quillIntel.GovernanceReceipts)
+	}
+	harborIntel, err := f.svc.RelationshipIntelligenceFor(f.ctx, harbor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(harborIntel.GovernanceReceipts) != 2 || len(harborIntel.DeletionReceipts) != 1 || harborIntel.DeletionReceipts[0].Status != "verified" {
+		t.Fatalf("harbor receipts=%d deletion=%+v", len(harborIntel.GovernanceReceipts), harborIntel.DeletionReceipts)
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Captured by hand", "Quill Atelier")
+	assertCompanyQuery("No audio was kept", "Quill Atelier", "Harbor Ledger")
+	assertCompanyQuery("People were not told", "Quill Atelier", "Harbor Ledger")
+	assertCompanyQuery("Uploaded on purpose", "Cedar Mill")
+	assertCompanyQuery("The audio that was kept is encrypted", "Cedar Mill", "Harbor Ledger")
+	assertCompanyQuery("Legal hold on", "Cedar Mill")
+	assertCompanyQuery("Legal hold off", "Quill Atelier", "Harbor Ledger")
+	assertCompanyQuery("Kept", "Cedar Mill")
+	assertCompanyQuery("Imported from Gmail, then saved here", "Harbor Ledger")
+	assertCompanyQuery("Deleted", "Harbor Ledger")
+	assertCompanyQuery("Consent and governance (1)", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("Consent and governance (2)", "Harbor Ledger")
+	assertCompanyQuery("Consent and governance", "Quill Atelier", "Cedar Mill", "Harbor Ledger")
+	assertCompanyQuery("Deletion is finished", "Harbor Ledger")
+	assertCompanyQuery("Last deletion: Deletion is finished", "Harbor Ledger")
+	assertCompanyQuery("Deletion is still running", "Lumen Packet")
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {
