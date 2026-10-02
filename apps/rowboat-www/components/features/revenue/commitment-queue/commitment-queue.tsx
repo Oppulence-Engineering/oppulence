@@ -164,6 +164,8 @@ export interface CommitmentQueueProps extends Omit<
   failedScan?: RevenueLeakScan | null;
   loading?: boolean;
   error?: string;
+  /** Asks the register for the same page again after a failed load. */
+  onRetry?: () => void;
   scanning?: boolean;
   onScan: () => void;
   onOpenConnectors?: () => void;
@@ -524,6 +526,7 @@ export function CommitmentQueue({
   failedScan,
   loading = false,
   error,
+  onRetry,
   scanning = false,
   onScan,
   onOpenConnectors,
@@ -873,12 +876,37 @@ export function CommitmentQueue({
           </Alert>
         ) : null}
 
-        {error ? (
+        {error && items.length > 0 ? (
           <div
             role="alert"
-            className="m-3 rounded-none border border-destructive/40 p-3 text-sm text-destructive"
+            className={
+              "mx-3 mt-3 flex items-center justify-between gap-3 rounded-none border " +
+              "border-destructive/40 p-3 text-sm text-destructive"
+            }
           >
-            {error}
+            <p>{error}</p>
+            {onRetry ? (
+              <Button onClick={onRetry} size="sm" type="button" variant="outline">
+                Try again
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {error && items.length === 0 ? (
+          <div
+            role="alert"
+            className={
+              "m-3 flex items-center justify-between gap-3 rounded-none border " +
+              "border-destructive/40 p-3 text-sm text-destructive"
+            }
+          >
+            <p>{error}</p>
+            {onRetry ? (
+              <Button onClick={onRetry} size="sm" type="button" variant="outline">
+                Try again
+              </Button>
+            ) : null}
           </div>
         ) : loading ? (
           <div className="flex flex-1 items-center justify-center gap-2 p-6 text-sm text-primary/55">

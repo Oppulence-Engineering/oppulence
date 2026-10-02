@@ -586,6 +586,25 @@ it("shows a register failure instead of the onboarding prompt", () => {
   expect(screen.queryByText(/Connect Gmail and Calendar to find/)).not.toBeInTheDocument();
 });
 
+it("keeps loaded promises when the register refresh fails", async () => {
+  const onRetry = vi.fn();
+  render(
+    <CommitmentQueue
+      {...props({
+        entries: entries(),
+        error: "The commitment register could not be loaded.",
+        onRetry,
+      })}
+    />,
+  );
+
+  expect(screen.getByText("The commitment register could not be loaded.")).toBeInTheDocument();
+  expect(screen.getByText("Send the signed security packet")).toBeInTheDocument();
+  expect(screen.queryByText("No commitments yet")).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+  expect(onRetry).toHaveBeenCalledOnce();
+});
+
 // Dogfooding found this: the reconnect warning only rendered on an empty
 // register. With rows on screen the list still looked authoritative while it
 // was quietly going out of date, and nothing said the audits had stopped.

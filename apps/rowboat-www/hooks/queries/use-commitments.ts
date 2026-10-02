@@ -30,6 +30,19 @@ import {
 import { DashboardRequestError } from "@/lib/api/request-json";
 import { friendlyRevenueError, RevenueAPIError } from "@/lib/revenue/revenue";
 import { companyName } from "@/lib/revenue/revenue-records";
+import type { RegisterEntry } from "@/lib/revenue/types";
+
+/**
+ * A failed refresh used to resolve as a successful empty page, which replaced
+ * promises already on screen. Keep that page when it has rows.
+ */
+export function keptRegisterPage<T>(
+  previous: { entries: readonly T[]; hasMore: boolean } | undefined,
+  entriesFailed: boolean,
+): { entries: readonly T[]; hasMore: boolean } | null {
+  if (!entriesFailed || !previous || previous.entries.length === 0) return null;
+  return { entries: previous.entries, hasMore: previous.hasMore };
+}
 
 function registerErrorMessage(reason: unknown): string {
   const status =
@@ -64,7 +77,7 @@ export function useCommitmentRegister(
 ) {
   return useQuery({
     queryKey: commitmentKeys.register(scope),
-    queryFn: async ({ signal }) => {
+    queryFn: async ({ signal, client, queryKey }) => {
       const filter = scope.dueBefore
         ? overdueRegisterFilter(scope.dueBefore)
         : registerFilterFor(scope.view as RegisterView, {
@@ -92,12 +105,18 @@ export function useCommitmentRegister(
       );
       const loadedEntries = entries.status === "fulfilled" ? entries.value : [];
       const rawEntries = commitmentRows(loadedEntries);
+      const previous = client.getQueryData<{
+        entries: RegisterEntry[];
+        hasMore: boolean;
+      }>(queryKey);
+      const kept = keptRegisterPage(previous, entries.status === "rejected");
+      const freshEntries = rawEntries.map((entry) => {
+        const title = entry.relationshipId ? titles.get(entry.relationshipId) : undefined;
+        return title ? { ...entry, relationshipName: title } : entry;
+      });
       return {
-        entries: rawEntries.map((entry) => {
-          const title = entry.relationshipId ? titles.get(entry.relationshipId) : undefined;
-          return title ? { ...entry, relationshipName: title } : entry;
-        }),
-        hasMore: commitmentPageHasMore(loadedEntries),
+        entries: kept ? [...kept.entries] : freshEntries,
+        hasMore: kept ? kept.hasMore : commitmentPageHasMore(loadedEntries),
         registerError:
           entries.status === "rejected" ? registerErrorMessage(entries.reason) : undefined,
         sources: sources.status === "fulfilled" ? sources.value : [],

@@ -469,6 +469,7 @@ export function RevenuePanel({
                   ? "Could not load commitments."
                   : commitmentQuery.data?.registerError
             }
+            onRetry={() => void commitmentQuery.refetch()}
             scanning={scanning}
             onScan={runScan}
             onOpenConnectors={onOpenConnectors}
