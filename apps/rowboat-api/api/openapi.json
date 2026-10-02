@@ -12441,6 +12441,11 @@
             "format": "uuid",
             "type": "string"
           },
+          "relationshipName": {
+            "description": "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+            "example": "Acme",
+            "type": "string"
+          },
           "revision": {
             "description": "Current revision number.",
             "example": 1,

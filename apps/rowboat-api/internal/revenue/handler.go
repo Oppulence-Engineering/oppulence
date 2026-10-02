@@ -853,6 +853,7 @@ func relationshipToDTOWithOpen(rel *ent.Relationship) relationshipDTO {
 type actionDTO struct {
 	ID                      string              `json:"id"`
 	RelationshipID          string              `json:"relationshipId,omitempty"`
+	RelationshipName        string              `json:"relationshipName,omitempty"`
 	ActionType              string              `json:"actionType"`
 	Channel                 string              `json:"channel"`
 	Detector                string              `json:"detector"`
@@ -952,6 +953,7 @@ func actionToDTO(a *ent.RevenueAction) actionDTO {
 	}
 	if rel, err := a.Edges.RelationshipOrErr(); err == nil {
 		dto.RelationshipID = rel.ID.String()
+		dto.RelationshipName = rel.DisplayName
 	}
 	return dto
 }

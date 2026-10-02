@@ -69,6 +69,15 @@ vi.mock("@/hooks/queries/use-revenue-actions", () => ({
         actionType: "follow_up_task",
         channel: "task",
       },
+      {
+        id: "task-hidden",
+        reason: "Call the hidden account",
+        relationshipId: "relationship-hidden",
+        relationshipName: "Hidden Account Co",
+        dueAt: "2026-10-12T21:00:00.000Z",
+        actionType: "follow_up_task",
+        channel: "task",
+      },
     ],
     isPending: false,
     error: null,
@@ -126,6 +135,7 @@ import {
   nextFavoritesLabel,
   favoriteNotesLabel,
   favoriteNotesEmptyCopy,
+  taskCompanyName,
   taskFilterName,
   taskListEmptyCopy,
 } from "@/components/features/revenue/workspace-records/workspace-records-view";
@@ -957,6 +967,28 @@ describe("task due order", () => {
     expect(await screen.findByText("Call the harbor")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Open company Acme" }));
     expect(onOpenCompany).toHaveBeenCalledWith("relationship-1");
+  });
+
+  it("names a task whose company is past the loaded directory page", async () => {
+    cleanup();
+    const onOpenCompany = vi.fn();
+    const user = userEvent.setup();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <TasksView onError={vi.fn()} onNotice={vi.fn()} onOpenCompany={onOpenCompany} />
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Open company Hidden Account Co" }),
+    ).toBeVisible();
+    expect(screen.queryByText("Unlinked")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Open company Hidden Account Co" }));
+    expect(onOpenCompany).toHaveBeenCalledWith("relationship-hidden");
+    expect(taskCompanyName(undefined, "Hidden Account Co")).toBe("Hidden Account Co");
+    expect(taskCompanyName("Acme", "Hidden Account Co")).toBe("Acme");
+    expect(taskCompanyName(undefined, "  ")).toBe("");
   });
 });
 

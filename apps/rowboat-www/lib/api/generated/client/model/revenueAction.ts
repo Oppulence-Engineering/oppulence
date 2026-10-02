@@ -101,6 +101,8 @@ export interface RevenueAction {
   reconciliationStatus?: RevenueActionReconciliationStatus;
   /** Owning relationship id. */
   relationshipId?: string;
+  /** Owning company name. The directory is paged, so a task still names a company that is not on the first page. */
+  relationshipName?: string;
   /** Current revision number. */
   revision: number;
   /** Canonical hash of the revision content. */

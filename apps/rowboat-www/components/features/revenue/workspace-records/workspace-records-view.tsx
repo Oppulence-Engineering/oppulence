@@ -2325,6 +2325,17 @@ export function linkedCompanyName(label: string): string {
   return comboboxFilterName("Linked company", label);
 }
 
+/**
+ * The directory page is not every company. A task still carries the company
+ * name, and that name is what the row shows when the page has moved on.
+ */
+export function taskCompanyName(
+  directoryName: string | undefined,
+  actionName: string | undefined,
+): string {
+  return directoryName?.trim() || actionName?.trim() || "";
+}
+
 /** The company named on a note or a task opens that company. */
 export function noteCompanyLabel(name: string): string {
   const company = name.trim() || "company";
@@ -2563,7 +2574,10 @@ export function TasksView({
         <ul className="divide-y divide-border">
           {visible.map((task) => {
             const overdue = taskIsOverdue(task.dueAt, now);
-            const companyName = names.get(task.relationshipId || "");
+            const companyName = taskCompanyName(
+              names.get(task.relationshipId || ""),
+              task.relationshipName,
+            );
             return (
               <li
                 key={task.id}
