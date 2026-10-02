@@ -77,8 +77,8 @@ export function ComposioConnections({
   const awaitingConnection = React.useRef(false);
 
   React.useEffect(() => {
-    if (state === "ready") onToolkits?.(toolkits.map((kit) => kit.slug));
-  }, [onToolkits, state, toolkits]);
+    if (toolkitsQuery.data) onToolkits?.(toolkits.map((kit) => kit.slug));
+  }, [onToolkits, toolkits, toolkitsQuery.data]);
 
   const refreshLists = React.useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: composioKeys.all });
@@ -163,19 +163,34 @@ export function ComposioConnections({
           as promises. Promises come from Gmail, Google Calendar, and HubSpot.
         </p>
       </div>
-      {state === "loading" ? (
+      {state === "loading" && toolkits.length === 0 && connections.length === 0 ? (
         <p className="p-4 text-sm text-muted-foreground">Loading products…</p>
-      ) : state === "error" ? (
-        <p className="p-4 text-sm text-muted-foreground">
-          {explainedRevenueError(
-            toolkitsQuery.error ?? connectionsQuery.error,
-            "Additional products are temporarily unavailable.",
-          )}
-        </p>
+      ) : state === "error" && toolkits.length === 0 && connections.length === 0 ? (
+        <div className="flex flex-col items-start gap-3 p-4">
+          <p className="text-sm text-muted-foreground">
+            {explainedRevenueError(
+              toolkitsQuery.error ?? connectionsQuery.error,
+              "Additional products are temporarily unavailable.",
+            )}
+          </p>
+          <Button onClick={() => void refreshLists()} size="sm" type="button" variant="outline">
+            Try again
+          </Button>
+        </div>
       ) : toolkits.length === 0 && orphans.length === 0 ? (
         <p className="p-4 text-sm text-muted-foreground">No products are available to connect.</p>
       ) : (
         <div className="flex flex-col divide-y divide-primary/10">
+          {state === "error" ? (
+            <div className="flex items-center justify-between gap-3 px-4 py-3">
+              <p className="text-sm text-muted-foreground">
+                Could not refresh products. Try again.
+              </p>
+              <Button onClick={() => void refreshLists()} size="sm" type="button" variant="outline">
+                Try again
+              </Button>
+            </div>
+          ) : null}
           {toolkits.map((toolkit) => {
             const connection = connectedBySlug.get(toolkit.slug);
             return (

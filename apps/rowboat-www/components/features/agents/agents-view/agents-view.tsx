@@ -50,6 +50,11 @@ import { agentToolLabel } from "@/lib/agents/agent-tools";
 import { cn } from "@/lib/utils";
 
 /** A failed load is not an empty workspace. */
+export function agentLoadTitle(loadFailed: boolean, count: number): string {
+  if (!loadFailed) return "Could not delete this agent";
+  return count === 0 ? "Could not load agents" : "Could not refresh agents";
+}
+
 export function agentWorkspaceCount(count: number, loadFailed: boolean): string {
   if (loadFailed && count === 0) return "Couldn't load";
   const noun = count === 1 ? "agent" : "agents";
@@ -314,7 +319,7 @@ export function AgentsView({
         <Alert className="shrink-0 rounded-none border-x-0 border-t-0" variant="destructive">
           <Warning className="size-4" />
           <AlertTitle className="text-xs">
-            {agentsQuery.isError ? "Could not load agents" : "Could not delete this agent"}
+            {agentLoadTitle(agentsQuery.isError, agents.length)}
           </AlertTitle>
           <AlertDescription className="flex items-center justify-between gap-3 text-xs">
             {error}

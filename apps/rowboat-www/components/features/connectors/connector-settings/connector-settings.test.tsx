@@ -500,4 +500,41 @@ describe("Google grant claimed in the web app", () => {
     );
     expect(stripe.compareDocumentPosition(extra) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
+
+  it("keeps loaded connections when the refresh fails", async () => {
+    const fetchMock = mockConnectors(connector());
+    const { client } = renderWithQuery(<ConnectorSettings />);
+    expect(await screen.findByText("Google")).toBeVisible();
+
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/api/rowboat/v1/connectors")) {
+        return new Response(JSON.stringify({ message: "connectors unavailable" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (url.includes("/composio/")) {
+        return new Response(JSON.stringify({ toolkits: [], connections: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (url.includes("/google-oauth")) {
+        return new Response(JSON.stringify({ connected: false, accounts: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ sources: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    await client.invalidateQueries({ queryKey: ["connector", "list"] });
+
+    expect(await screen.findByText("Could not refresh connections. Try again.")).toBeVisible();
+    expect(screen.getAllByText("Google").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Could not load connections.")).not.toBeInTheDocument();
+  });
 });

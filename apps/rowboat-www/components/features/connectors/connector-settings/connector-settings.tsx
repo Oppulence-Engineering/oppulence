@@ -702,24 +702,55 @@ export function ConnectorSettings({ showHeading = true }: { showHeading?: boolea
           used to sit on top of this list and read as if these products had
           failed to load. */}
       <div className="settings-panel flex flex-col">
-        {state === "loading" ? (
+        {state === "loading" && connectors.length === 0 ? (
           <p className="p-4 text-sm text-muted-foreground">Loading connections…</p>
-        ) : state === "error" ? (
-          <p className="p-4 text-sm text-muted-foreground">
-            {explainedRevenueError(connectorsQuery.error, "Could not load connections.")}
-          </p>
+        ) : connectorsQuery.isError && connectors.length === 0 ? (
+          <div className="flex flex-col items-start gap-3 p-4">
+            <p className="text-sm text-muted-foreground">
+              {explainedRevenueError(connectorsQuery.error, "Could not load connections.")}
+            </p>
+            <Button
+              onClick={() => void connectorsQuery.refetch()}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              Try again
+            </Button>
+          </div>
         ) : visibleConnectors.length === 0 ? (
           <p className="p-4 text-sm text-muted-foreground">No connections are available yet.</p>
         ) : (
-          <div className="flex flex-col divide-y divide-primary/10">
-            {visibleConnectors.map((connector) => (
-              <ConnectorRow
-                connector={connector}
-                key={connector.name}
-                onChanged={refreshConnectors}
-              />
-            ))}
-          </div>
+          <>
+            {connectorsQuery.isError ? (
+              <div
+                className={
+                  "flex items-center justify-between gap-3 border-b border-primary/10 px-4 py-3"
+                }
+              >
+                <p className="text-sm text-muted-foreground">
+                  Could not refresh connections. Try again.
+                </p>
+                <Button
+                  onClick={() => void connectorsQuery.refetch()}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  Try again
+                </Button>
+              </div>
+            ) : null}
+            <div className="flex flex-col divide-y divide-primary/10">
+              {visibleConnectors.map((connector) => (
+                <ConnectorRow
+                  connector={connector}
+                  key={connector.name}
+                  onChanged={refreshConnectors}
+                />
+              ))}
+            </div>
+          </>
         )}
       </div>
       <ComposioConnections onToolkits={setComposioSlugs} />

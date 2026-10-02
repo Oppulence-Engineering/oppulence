@@ -195,6 +195,21 @@ describe("Composio connections", () => {
       await screen.findByText("Additional products are temporarily unavailable."),
     ).toBeInTheDocument();
   });
+
+  it("keeps offered products when the refresh fails", async () => {
+    const { client } = renderWithQuery(<ComposioConnections />);
+    expect(await screen.findByText("Jira")).toBeVisible();
+
+    mocks.listComposioToolkits.mockRejectedValue(new Error("upstream"));
+    await client.invalidateQueries({ queryKey: ["composio", "toolkits"] });
+
+    expect(await screen.findByText("Could not refresh products. Try again.")).toBeVisible();
+    expect(screen.getByText("Jira")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Connect Asana" })).toBeVisible();
+    expect(
+      screen.queryByText("Additional products are temporarily unavailable."),
+    ).not.toBeInTheDocument();
+  });
 });
 
 describe("Composio connections for products no longer offered", () => {

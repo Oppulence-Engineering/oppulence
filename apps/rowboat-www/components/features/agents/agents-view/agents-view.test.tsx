@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { agentWorkspaceCount } from "./agents-view";
+import { agentLoadTitle, agentWorkspaceCount } from "./agents-view";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "agents-view.tsx"), "utf8");
 
@@ -34,5 +34,9 @@ describe("AgentsView", () => {
     expect(agentWorkspaceCount(0, false)).toBe("0 agents in this workspace");
     expect(agentWorkspaceCount(1, false)).toBe("1 agent in this workspace");
     expect(agentWorkspaceCount(3, true)).toBe("3 agents in this workspace");
+    expect(agentLoadTitle(true, 0)).toBe("Could not load agents");
+    expect(agentLoadTitle(true, 3)).toBe("Could not refresh agents");
+    expect(agentLoadTitle(false, 3)).toBe("Could not delete this agent");
+    expect(source).toContain("agentLoadTitle(agentsQuery.isError, agents.length)");
   });
 });
