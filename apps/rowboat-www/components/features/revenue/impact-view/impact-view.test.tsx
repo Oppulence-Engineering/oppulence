@@ -66,7 +66,11 @@ describe("ImpactView", () => {
   });
 
   it("counts companies in the account total and leaves a person out", () => {
-    expect(impactAccountTotal([{ kind: "company" }, { kind: "person" }], 2)).toBe(1);
-    expect(impactAccountTotal(undefined, 2)).toBe(2);
+    expect(impactAccountTotal([{ kind: "company" }, { kind: "person" }], 2)).toBe("1");
+    expect(impactAccountTotal(undefined, 2)).toBe("2");
+    const page = Array.from({ length: 200 }, () => ({ kind: "company" }));
+    expect(impactAccountTotal(page, 201, true)).toBe("200+");
+    expect(impactAccountTotal(page, 201, false)).toBe("200");
+    expect(source).toContain("relationshipPageHasMore(relationshipsQuery.data)");
   });
 });

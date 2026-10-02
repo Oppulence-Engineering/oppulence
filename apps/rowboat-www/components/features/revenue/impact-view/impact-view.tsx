@@ -6,7 +6,10 @@ import * as React from "react";
 import { EnvelopeSimple, MagnifyingGlass, Plugs, WarningDiamond } from "@/lib/icons";
 import { useImpactBundle } from "@/hooks/queries/use-impact";
 import { useRelationships } from "@/hooks/queries/use-relationships";
-import { relationshipRows } from "@/hooks/queries/utils/fetch-relationships";
+import {
+  relationshipPageHasMore,
+  relationshipRows,
+} from "@/hooks/queries/utils/fetch-relationships";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
 import { Badge } from "@oppulence/ui/components/badge";
@@ -59,14 +62,18 @@ export function overdueDirectionLines(
 /**
  * Impact's relationship total counts People records too. The "of N accounts"
  * line is about companies, so a person saved from People is not an account.
- * Until that list has loaded, the impact total is the only number available.
+ * The directory is paged. A full first page is not the portfolio, and the
+ * count says another company may still be past it. Until that list has
+ * loaded, the impact total is the only number available.
  */
 export function impactAccountTotal(
   relationships: readonly { kind?: string }[] | undefined,
   fallback: number,
-): number {
-  if (!relationships) return fallback;
-  return relationships.filter((record) => record.kind !== "person").length;
+  hasMore = false,
+): string {
+  if (!relationships) return String(fallback);
+  const accounts = relationships.filter((record) => record.kind !== "person").length;
+  return hasMore ? `${accounts}+` : String(accounts);
 }
 
 /**
@@ -124,6 +131,7 @@ export function ImpactView({
   const accountTotal = impactAccountTotal(
     relationshipsQuery.isSuccess ? relationshipRows(relationshipsQuery.data) : undefined,
     data.relationships,
+    relationshipsQuery.isSuccess && relationshipPageHasMore(relationshipsQuery.data),
   );
   const atRiskShown = data.atRiskRelationships;
   const riskScore = data.portfolioRiskScore;
