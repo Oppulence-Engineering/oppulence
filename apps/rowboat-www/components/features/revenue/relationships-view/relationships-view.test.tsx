@@ -198,6 +198,7 @@ describe("RelationshipsView", () => {
     expect(source).toContain('errMessage(error, "Could not load this company.")');
     expect(source).toContain('errMessage(error, "Could not update this company.")');
     expect(source).toContain("setActionError(message)");
+    expect(source).toContain("reportSheetFailure(error, \"Could not open the original detail.\")");
     expect(source).toContain('errMessage(error, "Could not load companies.")');
     expect(source).toContain('errMessage(error, "Could not fill in companies and people.")');
     expect(source).not.toContain("Relationship added.");

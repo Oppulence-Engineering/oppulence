@@ -3208,6 +3208,12 @@ export function RelationshipSheet({
     setGovernanceExpanded(false);
   }, [id]);
 
+  const reportSheetFailure = (error: unknown, fallback: string) => {
+    const message = errMessage(error, fallback);
+    setActionError(message);
+    onError(message);
+  };
+
   const act = async (key: string, operation: () => Promise<unknown>): Promise<boolean> => {
     setBusy(key);
     setActionError(null);
@@ -3280,7 +3286,7 @@ export function RelationshipSheet({
           : current.resolvedHasMore,
       }));
     } catch (error) {
-      onError(errMessage(error, "Could not load the next duplicates."));
+      reportSheetFailure(error, "Could not load the next duplicates.");
     } finally {
       if (sheetIdRef.current === requestedId) setLoadingSheetDuplicates(false);
     }
@@ -3294,7 +3300,7 @@ export function RelationshipSheet({
       setChanges((current) => appendById(current, page.snapshots));
       setChangesHasMore(page.hasMore);
     } catch (error) {
-      onError(errMessage(error, "Could not load earlier changes."));
+      reportSheetFailure(error, "Could not load earlier changes.");
     } finally {
       setLoadingEarlierChanges(false);
     }
@@ -3315,7 +3321,7 @@ export function RelationshipSheet({
       setEvidenceReviewHasMore(page.hasMore);
       setEvidenceReviewOffset(offset + INTELLIGENCE_OBSERVATION_PAGE);
     } catch (error) {
-      onError(errMessage(error, "Could not load earlier evidence."));
+      reportSheetFailure(error, "Could not load earlier evidence.");
     } finally {
       if (sheetIdRef.current === requestedId) setLoadingEarlierEvidence(false);
     }
@@ -3338,13 +3344,11 @@ export function RelationshipSheet({
         setTimelineCursor(pageCursor(page));
       }
     } catch (error) {
-      onError(
-        errMessage(
-          error,
-          kind === "mail"
-            ? "Could not load earlier mail and meetings."
-            : "Could not load earlier activity.",
-        ),
+      reportSheetFailure(
+        error,
+        kind === "mail"
+          ? "Could not load earlier mail and meetings."
+          : "Could not load earlier activity.",
       );
     } finally {
       setLoadingEarlier(null);
@@ -3364,7 +3368,7 @@ export function RelationshipSheet({
       const result = await getRelationshipEvidence(id, observation.id);
       setEvidence((current) => ({ ...current, [observation.id]: result.payload }));
     } catch (error) {
-      onError(errMessage(error, "Could not open the original detail."));
+      reportSheetFailure(error, "Could not open the original detail.");
     }
   };
 
