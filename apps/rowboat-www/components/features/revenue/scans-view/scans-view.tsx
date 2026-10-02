@@ -10,7 +10,11 @@ import { Badge } from "@oppulence/ui/components/badge";
 import { Label } from "@oppulence/ui/components/label";
 import { Button } from "@oppulence/ui/components/button";
 import { Spinner } from "@oppulence/ui/components/spinner";
-import { WorkspaceEmptyState } from "@/components/features/revenue/shared/shared";
+import {
+  ListRefreshFailure,
+  listRefreshFailureCopy,
+  WorkspaceEmptyState,
+} from "@/components/features/revenue/shared/shared";
 import {
   Table,
   TableBody,
@@ -32,6 +36,10 @@ export function auditListFailureCopy(): string {
   return "Audits could not load. Try again.";
 }
 
+export function auditRefreshCopy(): string {
+  return listRefreshFailureCopy("audits");
+}
+
 export function ScansView({
   scans,
   activeScan,
@@ -42,6 +50,7 @@ export function ScansView({
   loadingEarlierAudits = false,
   earlierAuditsError = null,
   loadFailed = false,
+  refreshFailed = false,
   onLoadEarlierAudits,
   onRetry,
   onScan,
@@ -59,6 +68,8 @@ export function ScansView({
   earlierAuditsError?: string | null;
   /** The audit list request failed and no audits are on screen. */
   loadFailed?: boolean;
+  /** A later refresh failed. Audits already loaded stay on screen. */
+  refreshFailed?: boolean;
   onLoadEarlierAudits?: () => void;
   onRetry?: () => void;
   onScan: () => void;
@@ -90,6 +101,10 @@ export function ScansView({
           {launchLabel}
         </Button>
       </div>
+
+      {refreshFailed ? (
+        <ListRefreshFailure message={auditRefreshCopy()} onRetry={() => onRetry?.()} />
+      ) : null}
 
       {loadFailed && rows.length === 0 ? (
         <WorkspaceEmptyState

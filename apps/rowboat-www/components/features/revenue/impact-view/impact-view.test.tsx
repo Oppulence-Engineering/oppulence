@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   digestFailureCopy,
   digestRefreshCopy,
+  impactRefreshCopy,
   digestSignalLabel,
   impactAccountTotal,
   overdueDirectionLines,
@@ -34,6 +35,9 @@ describe("ImpactView", () => {
     expect(source).toContain("digestFailed && digestTop.length === 0");
     expect(digestFailureCopy()).toBe("The weekly digest could not load. Try again.");
     expect(digestRefreshCopy()).toBe("Could not refresh the weekly digest. Try again.");
+    expect(impactRefreshCopy()).toBe("Could not refresh impact. Try again.");
+    expect(source).toContain("if (!impactQuery.error || impactQuery.data) return;");
+    expect(source).toContain("message={impactRefreshCopy()}");
     expect(source).toContain("digest?.openCount");
     expect(source).not.toContain("digestWithoutTasks(");
     expect(source).toContain("digestTop.map(");

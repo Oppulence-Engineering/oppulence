@@ -39,6 +39,8 @@ import type { RevenueImpact } from "@/lib/revenue/types";
 import {
   EmptyBlock,
   errMessage,
+  ListRefreshFailure,
+  listRefreshFailureCopy,
   ListSkeleton,
   refetchClearingBanner,
 } from "@/components/features/revenue/shared/shared";
@@ -93,6 +95,10 @@ export function digestRefreshCopy(): string {
   return "Could not refresh the weekly digest. Try again.";
 }
 
+export function impactRefreshCopy(): string {
+  return listRefreshFailureCopy("impact");
+}
+
 export function digestSignalLabel(detector: string): string {
   const value = detector.trim();
   if (!value) return "";
@@ -131,10 +137,9 @@ export function ImpactView({
   const relationshipsQuery = useRelationships();
 
   React.useEffect(() => {
-    if (impactQuery.error) {
-      onError(errMessage(impactQuery.error, "Could not load impact."));
-    }
-  }, [impactQuery.error, onError]);
+    if (!impactQuery.error || impactQuery.data) return;
+    onError(errMessage(impactQuery.error, "Could not load impact."));
+  }, [impactQuery.data, impactQuery.error, onError]);
 
   if (impactQuery.isPending) return <ListSkeleton rows={2} />;
   if (!impactQuery.data) {
@@ -187,6 +192,9 @@ export function ImpactView({
     });
     return (
       <div className="flex min-h-full flex-col" data-slot="impact-view">
+        {impactQuery.isError ? (
+          <ListRefreshFailure message={impactRefreshCopy()} onRetry={reload} />
+        ) : null}
         {digestFailed && digestTop.length === 0 ? <DigestLoadNotice onRetry={reload} /> : null}
         <EmptyBlock
         body={
@@ -240,6 +248,9 @@ export function ImpactView({
 
   return (
     <div className="flex min-h-full w-full min-w-0 flex-col gap-6" data-slot="impact-view">
+      {impactQuery.isError ? (
+        <ListRefreshFailure message={impactRefreshCopy()} onRetry={reload} />
+      ) : null}
       <Card className="gap-0 py-0" data-capability="relationship-impact">
         <CardHeader className="flex flex-wrap items-start justify-between gap-3 border-b p-4">
           <div>
