@@ -1028,6 +1028,9 @@ export function earlierNotesLabel(): string {
   return "Show earlier notes";
 }
 
+/** A copied link walks this many earlier pages before asking the reader to continue. */
+export const NOTE_LINK_SEEK_PAGES = 8;
+
 export function templateCountLabel(shown: number, hasMore: boolean): string {
   return hasMore ? `${shown}+` : String(shown);
 }
@@ -1222,30 +1225,54 @@ export function NotesView({
   );
   const noteGroups = groupWorkspaceNotes(visible, new Date(), newestFirst);
   const openedNoteHash = React.useRef<string | null>(null);
+  const noteSeekPages = React.useRef(0);
+  const noteSeekPaused = React.useRef<string | null>(null);
+  const noteSeeking = React.useRef(false);
   // The hash is read after paint so SSR and the first client render agree.
-  // Remembering the id we already handled keeps a refetch from reopening a
-  // note the reader just closed. A new hash clears that memory.
+  // Remembering the id we already opened keeps a refetch from reopening a
+  // note the reader just closed. A note that is only on a later page is not
+  // gone: walk those pages, and say it is gone only when they run out.
   React.useEffect(() => {
     if (loading) return;
     const openLinkedNote = () => {
       const noteId = noteIdFromHash(window.location.hash);
       if (!noteId || openedNoteHash.current === noteId) return;
-      openedNoteHash.current = noteId;
       const note = notes.find((item) => item.externalId === noteId);
-      if (!note) {
-        onNotice("That note is no longer in this workspace.");
+      if (note) {
+        openedNoteHash.current = noteId;
+        noteSeekPaused.current = null;
+        noteSeekPages.current = 0;
+        setEditing(note);
         return;
       }
-      setEditing(note);
+      if (noteSeeking.current || loadingMoreNotes) return;
+      if (hasMoreNotes && noteSeekPaused.current !== noteId) {
+        if (noteSeekPages.current >= NOTE_LINK_SEEK_PAGES) {
+          noteSeekPaused.current = noteId;
+          onNotice("That note is further back than the notes already open.");
+          return;
+        }
+        noteSeeking.current = true;
+        noteSeekPages.current += 1;
+        void loadEarlierNotes().finally(() => {
+          noteSeeking.current = false;
+        });
+        return;
+      }
+      if (hasMoreNotes) return;
+      openedNoteHash.current = noteId;
+      onNotice("That note is no longer in this workspace.");
     };
     openLinkedNote();
     const onHashChange = () => {
       openedNoteHash.current = null;
+      noteSeekPaused.current = null;
+      noteSeekPages.current = 0;
       openLinkedNote();
     };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
-  }, [loading, notes, onNotice]);
+  }, [hasMoreNotes, loadEarlierNotes, loading, loadingMoreNotes, notes, onNotice]);
   const favoriteIds = new Set(favoriteResources.map((item) => item.payload.noteId));
   const favoriteNotes = visible.filter((note) => favoriteIds.has(note.externalId));
   return (

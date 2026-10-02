@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   fetchConsoleResources: vi.fn(),
   fetchWorkspaceNotes: vi.fn(),
+  fetchMoreWorkspaceNotes: vi.fn(),
   ingestRelationshipObservations: vi.fn(),
   deletePerson: vi.fn(async () => undefined),
   getPersonAttributes: vi.fn(async () => []),
@@ -45,6 +46,7 @@ vi.mock("@/hooks/queries/utils/fetch-console", async (importOriginal) => {
 });
 vi.mock("@/hooks/queries/utils/fetch-workspace-notes", () => ({
   fetchWorkspaceNotes: mocks.fetchWorkspaceNotes,
+  fetchMoreWorkspaceNotes: mocks.fetchMoreWorkspaceNotes,
 }));
 vi.mock("@/lib/revenue/revenue", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/revenue/revenue")>();
@@ -118,6 +120,7 @@ import {
   noteNeedsCompanyCopy,
   noteCountLabel,
   earlierNotesLabel,
+  NOTE_LINK_SEEK_PAGES,
   templateCountLabel,
   nextTemplatesLabel,
   nextFavoritesLabel,
@@ -156,6 +159,15 @@ describe("durable note templates and favorites", () => {
       ],
       relationships: [{ id: "relationship-1", kind: "organization", displayName: "Acme" }],
       failedTimelineCount: 0,
+      hasMoreNotes: false,
+      timelineCursors: [],
+    });
+    mocks.fetchMoreWorkspaceNotes.mockResolvedValue({
+      notes: [],
+      relationships: [],
+      failedTimelineCount: 0,
+      hasMoreNotes: false,
+      timelineCursors: [],
     });
     mocks.fetchConsoleResources.mockImplementation(async (kind: string) =>
       kind === "note_template"
@@ -458,6 +470,100 @@ describe("durable note templates and favorites", () => {
     await waitFor(() =>
       expect(onNotice).toHaveBeenCalledWith("That note is no longer in this workspace."),
     );
+    expect(mocks.fetchMoreWorkspaceNotes).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText("Note title")).not.toBeInTheDocument();
+  });
+
+  it("opens a linked note that is still on a later page", async () => {
+    mocks.fetchWorkspaceNotes.mockResolvedValue({
+      notes: [
+        {
+          externalId: "note-1",
+          title: "Account review",
+          body: "Follow up",
+          relationshipId: "relationship-1",
+          relationshipName: "Acme",
+          occurredAt: "2026-09-17T12:00:00Z",
+          eventType: "note",
+        },
+      ],
+      relationships: [{ id: "relationship-1", kind: "organization", displayName: "Acme" }],
+      failedTimelineCount: 0,
+      hasMoreNotes: true,
+      timelineCursors: [{ relationshipId: "relationship-1", before: "2026-09-01T00:00:00Z" }],
+    });
+    mocks.fetchMoreWorkspaceNotes.mockResolvedValue({
+      notes: [
+        {
+          externalId: "note-hidden",
+          title: "Hidden desk note",
+          body: "Still here",
+          relationshipId: "relationship-1",
+          relationshipName: "Acme",
+          occurredAt: "2026-08-01T12:00:00Z",
+          eventType: "note",
+        },
+      ],
+      relationships: [],
+      failedTimelineCount: 0,
+      hasMoreNotes: false,
+      timelineCursors: [],
+    });
+    window.history.replaceState(null, "", "/app/revenue?tab=notes#note=note-hidden");
+    const onNotice = vi.fn();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <NotesView onError={vi.fn()} onNotice={onNotice} />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByDisplayValue("Hidden desk note")).toBeInTheDocument();
+    expect(onNotice).not.toHaveBeenCalledWith("That note is no longer in this workspace.");
+    expect(mocks.fetchMoreWorkspaceNotes).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops walking earlier pages and does not call a buried note gone", async () => {
+    mocks.fetchWorkspaceNotes.mockResolvedValue({
+      notes: [
+        {
+          externalId: "note-1",
+          title: "Account review",
+          body: "Follow up",
+          relationshipId: "relationship-1",
+          relationshipName: "Acme",
+          occurredAt: "2026-09-17T12:00:00Z",
+          eventType: "note",
+        },
+      ],
+      relationships: [{ id: "relationship-1", kind: "organization", displayName: "Acme" }],
+      failedTimelineCount: 0,
+      hasMoreNotes: true,
+      timelineCursors: [{ relationshipId: "relationship-1", before: "2026-09-01T00:00:00Z" }],
+    });
+    mocks.fetchMoreWorkspaceNotes.mockResolvedValue({
+      notes: [],
+      relationships: [],
+      failedTimelineCount: 0,
+      hasMoreNotes: true,
+      timelineCursors: [{ relationshipId: "relationship-1", before: "2026-08-01T00:00:00Z" }],
+    });
+    window.history.replaceState(null, "", "/app/revenue?tab=notes#note=note-buried");
+    const onNotice = vi.fn();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <NotesView onError={vi.fn()} onNotice={onNotice} />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() =>
+      expect(onNotice).toHaveBeenCalledWith(
+        "That note is further back than the notes already open.",
+      ),
+    );
+    expect(mocks.fetchMoreWorkspaceNotes).toHaveBeenCalledTimes(NOTE_LINK_SEEK_PAGES);
+    expect(onNotice).not.toHaveBeenCalledWith("That note is no longer in this workspace.");
     expect(screen.queryByLabelText("Note title")).not.toBeInTheDocument();
   });
 
