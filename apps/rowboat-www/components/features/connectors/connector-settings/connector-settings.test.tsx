@@ -12,7 +12,11 @@ import type { Connector } from "@/lib/api/generated/client/model";
 import { fetchRelationshipSourceStatuses } from "@/hooks/queries/utils/fetch-relationship-sources";
 import type { RelationshipSourceStatus } from "@/lib/revenue/types";
 
-import { ConnectorSettings, googleAccessConfirmCopy } from "./connector-settings";
+import {
+  ConnectorSettings,
+  googleAccessConfirmCopy,
+  googleConnectionPresentation,
+} from "./connector-settings";
 
 const { fetchRelationshipSourceStatusesMock } = vi.hoisted(() => ({
   fetchRelationshipSourceStatusesMock: vi.fn(async () => [] as RelationshipSourceStatus[]),
@@ -113,6 +117,25 @@ afterEach(() => {
   window.history.replaceState(null, "", "/app/settings?settings=connections");
 });
 
+describe("googleConnectionPresentation", () => {
+  it("keeps a failed status check from reading as not connected", () => {
+    expect(googleConnectionPresentation(null, undefined, "error")).toEqual({
+      label: "Couldn't load",
+      tone: "warn",
+      action: "retry",
+    });
+    expect(googleConnectionPresentation(null, undefined, "loading").action).toBe("wait");
+    expect(googleConnectionPresentation(false, undefined, "ready")).toMatchObject({
+      label: "Not connected",
+      action: "connect",
+    });
+    expect(googleConnectionPresentation(true, "stale", "error")).toMatchObject({
+      label: "Out of date",
+      action: "change",
+    });
+  });
+});
+
 describe("hosted connector settings", () => {
   it("explains stale sync without presenting reauthorization as the normal action", async () => {
     vi.mocked(fetchRelationshipSourceStatuses).mockResolvedValue([
@@ -171,7 +194,7 @@ describe("hosted connector settings", () => {
 
     const gmail = (await screen.findByText("Gmail & Google Calendar")).closest(".settings-panel");
     expect(gmail).not.toBeNull();
-    expect(within(gmail as HTMLElement).getByText("Not connected")).toBeVisible();
+    expect(await within(gmail as HTMLElement).findByText("Not connected")).toBeVisible();
     expect(within(gmail as HTMLElement).queryByText("Required")).not.toBeInTheDocument();
 
     const row = await screen.findByTestId("connector-google");

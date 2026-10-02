@@ -91,6 +91,42 @@ function googleHealth(connected: boolean, sourceStatus?: string) {
   return connected ? GOOGLE_HEALTH.connected : GOOGLE_HEALTH.not_connected;
 }
 
+export type GoogleConnectionAction = "connect" | "reconnect" | "change" | "retry" | "wait";
+
+/** Unknown status is not "Not connected". Connect stays hidden until the check finishes. */
+export function googleConnectionPresentation(
+  connected: boolean | null,
+  sourceStatus: string | undefined,
+  phase: "loading" | "error" | "ready",
+): {
+  label: string;
+  tone: "ok" | "warn" | "bad" | "neutral";
+  action: GoogleConnectionAction;
+} {
+  if (connected == null && phase === "error") {
+    return { label: "Couldn't load", tone: "warn", action: "retry" };
+  }
+  if (connected == null && phase === "loading") {
+    return { label: "Loading…", tone: "neutral", action: "wait" };
+  }
+  const health = googleHealth(Boolean(connected), sourceStatus);
+  const action: GoogleConnectionAction = !connected
+    ? "connect"
+    : health.tone === "bad"
+      ? "reconnect"
+      : "change";
+  return { label: health.label, tone: health.tone, action };
+}
+
+function googleConnectionButtonLabel(action: GoogleConnectionAction, busy: boolean): string {
+  if (busy && action !== "retry" && action !== "wait") return "Connecting…";
+  if (action === "retry") return "Try again";
+  if (action === "wait") return "Loading…";
+  if (action === "reconnect") return "Reconnect Google";
+  if (action === "change") return "Change Google access";
+  return "Connect Google";
+}
+
 /** A connected mailbox already has a grant. Opening Google again needs a yes on this page. */
 export function googleAccessConfirmCopy(tone: string): string {
   return tone === "bad"
@@ -205,7 +241,9 @@ function GoogleConnectionSettings() {
       setError(
         explainedRevenueError(statusQuery.error, "Could not load Google connection status."),
       );
+      return;
     }
+    setError(null);
   }, [statusQuery.error]);
 
   React.useEffect(() => {
@@ -229,7 +267,13 @@ function GoogleConnectionSettings() {
     }
   };
 
-  const health = googleHealth(Boolean(status?.connected), sourceStatus);
+  const knownConnected = status ? status.connected : statusQuery.isSuccess ? false : null;
+  const connectionPhase = statusQuery.isPending
+    ? "loading"
+    : statusQuery.isError
+      ? "error"
+      : "ready";
+  const health = googleConnectionPresentation(knownConnected, sourceStatus, connectionPhase);
 
   const startConnection = () => {
     if (status?.connected) {
@@ -275,7 +319,16 @@ function GoogleConnectionSettings() {
             {account.accountId}
           </p>
         ))}
-        {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}
+        {error ? (
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-destructive">
+            <span>{error}</span>
+            {health.action === "retry" ? null : (
+              <Button onClick={() => void loadStatus()} size="sm" type="button" variant="outline">
+                Try again
+              </Button>
+            )}
+          </p>
+        ) : null}
       </div>
       {confirming ? (
         <div className="flex max-w-xs flex-col items-end gap-2">
@@ -296,14 +349,20 @@ function GoogleConnectionSettings() {
           </div>
         </div>
       ) : (
-        <Button disabled={busy} onClick={startConnection} size="sm" type="button" variant="outline">
-          {busy
-            ? "Connecting…"
-            : !status?.connected
-              ? "Connect Google"
-              : health.tone === "bad"
-                ? "Reconnect Google"
-                : "Change Google access"}
+        <Button
+          disabled={busy || health.action === "wait"}
+          onClick={() => {
+            if (health.action === "retry") {
+              void loadStatus();
+              return;
+            }
+            startConnection();
+          }}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          {googleConnectionButtonLabel(health.action, busy)}
         </Button>
       )}
     </div>

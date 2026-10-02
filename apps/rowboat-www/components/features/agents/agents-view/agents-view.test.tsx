@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { agentWorkspaceCount } from "./agents-view";
+
 const source = fs.readFileSync(path.join(import.meta.dirname, "agents-view.tsx"), "utf8");
 
 describe("AgentsView", () => {
@@ -23,5 +25,14 @@ describe("AgentsView", () => {
       'friendlyAgentError(\n          agentsQuery.error instanceof Error ? agentsQuery.error.message : "Could not load agents",\n        )',
     );
     expect(source).not.toContain("title={tool}");
+    expect(source).toContain("setError(null)");
+    expect(source).toContain("agents.length === 0 && !agentsQuery.isError && !error");
+  });
+
+  it("counts a failed empty load separately from an empty workspace", () => {
+    expect(agentWorkspaceCount(0, true)).toBe("Couldn't load");
+    expect(agentWorkspaceCount(0, false)).toBe("0 agents in this workspace");
+    expect(agentWorkspaceCount(1, false)).toBe("1 agent in this workspace");
+    expect(agentWorkspaceCount(3, true)).toBe("3 agents in this workspace");
   });
 });

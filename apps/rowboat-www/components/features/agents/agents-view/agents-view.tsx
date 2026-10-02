@@ -49,6 +49,13 @@ import { friendlyAgentError } from "@/lib/agents/agent-history";
 import { agentToolLabel } from "@/lib/agents/agent-tools";
 import { cn } from "@/lib/utils";
 
+/** A failed load is not an empty workspace. */
+export function agentWorkspaceCount(count: number, loadFailed: boolean): string {
+  if (loadFailed && count === 0) return "Couldn't load";
+  const noun = count === 1 ? "agent" : "agents";
+  return `${count} ${noun} in this workspace`;
+}
+
 function slugify(value: string): string {
   return value
     .toLowerCase()
@@ -231,7 +238,9 @@ export function AgentsView({
           agentsQuery.error instanceof Error ? agentsQuery.error.message : "Could not load agents",
         ),
       );
+      return;
     }
+    setError(null);
   }, [agentsQuery.error]);
 
   React.useEffect(() => {
@@ -284,7 +293,7 @@ export function AgentsView({
     <div className="flex h-full min-h-0 flex-col bg-background" data-slot="agents-view">
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b px-5 py-3">
         <p className="text-sm text-muted-foreground">
-          {agents.length} {agents.length === 1 ? "agent" : "agents"} in this workspace
+          {agentWorkspaceCount(agents.length, agentsQuery.isError)}
         </p>
         <div className="flex gap-2">
           <Button
@@ -304,7 +313,9 @@ export function AgentsView({
       {error ? (
         <Alert className="shrink-0 rounded-none border-x-0 border-t-0" variant="destructive">
           <Warning className="size-4" />
-          <AlertTitle className="text-xs">Could not load agents</AlertTitle>
+          <AlertTitle className="text-xs">
+            {agentsQuery.isError ? "Could not load agents" : "Could not delete this agent"}
+          </AlertTitle>
           <AlertDescription className="flex items-center justify-between gap-3 text-xs">
             {error}
             <Button onClick={() => void load()} size="sm" variant="outline">
@@ -314,7 +325,7 @@ export function AgentsView({
         </Alert>
       ) : null}
 
-      {agents.length === 0 && !error ? (
+      {agents.length === 0 && !agentsQuery.isError && !error ? (
         <WorkspaceEmptyState
           description="Create an agent to give recurring work a clear role, instructions, and tools."
           image="agents"
@@ -324,7 +335,7 @@ export function AgentsView({
           ]}
           title="Agents"
         />
-      ) : (
+      ) : agents.length > 0 ? (
         <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] md:grid-cols-[220px_minmax(0,1fr)] md:grid-rows-1">
           <aside className="max-h-52 min-h-0 border-b bg-muted/5 md:max-h-none md:border-r md:border-b-0">
             <ScrollArea className="h-full p-2">
@@ -479,7 +490,7 @@ export function AgentsView({
             ) : null}
           </ScrollArea>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
