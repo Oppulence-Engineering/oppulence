@@ -30,7 +30,10 @@ import {
 import {
   EmptyBlock,
   errMessage,
+  failedListIsEmpty,
+  ListRefreshFailure,
   ListSkeleton,
+  listRefreshFailureCopy,
   ModeChip,
   refetchClearingBanner,
 } from "@/components/features/revenue/shared/shared";
@@ -956,7 +959,7 @@ export function RelationshipsView({
     }
   }, [onError, onNotice]);
 
-  const companyCountLabel = relationshipsQuery.isError
+  const companyCountLabel = failedListIsEmpty(relationshipsQuery.isError, companies.length)
     ? "Couldn't load"
     : companyDirectoryCount(companies.length, hasMoreCompanies);
 
@@ -1023,7 +1026,15 @@ export function RelationshipsView({
         </div>
       </div>
 
-      {relationshipsQuery.isError ? (
+      {relationshipsQuery.isError && companies.length > 0 ? (
+        <ListRefreshFailure
+          message={listRefreshFailureCopy("companies")}
+          onRetry={() =>
+            void refetchClearingBanner(() => relationshipsQuery.refetch(), onError)
+          }
+        />
+      ) : null}
+      {failedListIsEmpty(relationshipsQuery.isError, companies.length) ? (
         <EmptyBlock
           body={companyListFailureCopy()}
           image="companies"

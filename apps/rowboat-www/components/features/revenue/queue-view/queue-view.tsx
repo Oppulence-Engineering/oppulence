@@ -77,7 +77,10 @@ import {
 import {
   errMessage,
   ExecutionBadge,
+  failedListIsEmpty,
+  ListRefreshFailure,
   ListSkeleton,
+  listRefreshFailureCopy,
   PolicyBadge,
   priorityTone,
   refetchClearingBanner,
@@ -352,11 +355,17 @@ export function QueueView({
           </Button>
         </SimProductToolbar>
 
+        {actionsQuery.isError && actions.length > 0 ? (
+          <ListRefreshFailure
+            message={listRefreshFailureCopy("recovery")}
+            onRetry={() => void refetchClearingBanner(() => actionsQuery.refetch(), onError)}
+          />
+        ) : null}
         {actionsQuery.isPending ? (
           <div className="p-3">
             <ListSkeleton />
           </div>
-        ) : actionsQuery.isError ? (
+        ) : failedListIsEmpty(actionsQuery.isError, actions.length) ? (
           <EmptyBlock
             body="The recovery queue is temporarily unavailable. Existing drafts and approvals were not changed."
             image="recovery"

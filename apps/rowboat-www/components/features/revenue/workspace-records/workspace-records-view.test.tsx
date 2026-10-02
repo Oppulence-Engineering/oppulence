@@ -103,7 +103,7 @@ vi.mock("@/hooks/queries/use-relationships", () => ({
     dataUpdatedAt: 1,
   }),
   usePersons: () => ({
-    data: records.peopleError ? undefined : records.people,
+    data: records.peopleError && records.people.length === 0 ? undefined : records.people,
     isPending: false,
     isError: records.peopleError != null,
     error: records.peopleError,
@@ -124,6 +124,7 @@ vi.mock("@oppulence/ui/components/dialog", () => ({
   DialogTitle: ({ children }: React.PropsWithChildren) => <h2>{children}</h2>,
 }));
 
+import { listRefreshFailureCopy } from "@/components/features/revenue/shared/shared";
 import { removePersonConfirmCopy } from "@/lib/revenue/source-product-copy";
 import {
   NotesView,
@@ -1147,7 +1148,10 @@ describe("task due order", () => {
     expect(taskListFailureCopy()).toBe("Tasks could not load. Try again.");
     expect(taskCompaniesFailureCopy()).toBe("Companies could not load. Try again.");
     expect(source).toContain("actionsQuery.isError");
-    expect(source).toContain("relationshipsQuery.isError && !actionsQuery.isError");
+    expect(source).toContain(
+      "relationshipsQuery.isError && !failedListIsEmpty(actionsQuery.isError, tasks.length)",
+    );
+    expect(source).toContain('listRefreshFailureCopy("tasks")');
     expect(source).toContain("taskListFailureCopy()");
     expect(source).toContain("taskCompaniesFailureCopy()");
     expect(source).toContain(
@@ -1270,7 +1274,10 @@ describe("people directory copy", () => {
     expect(peopleListFailureCopy()).toBe("People could not load. Try again.");
     expect(noteListFailureCopy()).toBe("Notes could not load. Try again.");
     expect(source).toContain("peopleListEmptyCopy(directoryTitle.filtered)");
-    expect(source).toContain("peopleQuery.isError");
+    expect(source).toContain("failedListIsEmpty(peopleQuery.isError, people.length)");
+    expect(source).toContain('listRefreshFailureCopy("people")');
+    expect(source).toContain("failedListIsEmpty(notesQuery.isError, notes.length)");
+    expect(source).toContain('listRefreshFailureCopy("notes")');
     expect(source).toContain("refetchClearingBanner(() => peopleQuery.refetch(), onError)");
     expect(source).toContain("refetchClearingBanner(() => notesQuery.refetch(), onError)");
     expect(source).toContain("refetchClearingBanner(() => actionsQuery.refetch(), onError)");
@@ -1378,5 +1385,40 @@ describe("people directory copy", () => {
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(records.peopleRefetch).toHaveBeenCalled();
     records.peopleError = null;
+  });
+
+  it("keeps people on screen when a refresh fails", async () => {
+    cleanup();
+    records.people = [
+      {
+        id: "person-1",
+        displayName: "Morgan Hale",
+        aliases: [],
+        status: "active",
+        relationshipCount: 0,
+        attributesVersion: 0,
+        primaryEmail: "morgan@harbor.example",
+      },
+    ];
+    records.peopleError = new Error("people down");
+    records.peopleRefetch.mockClear();
+    const onError = vi.fn();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <PeopleView onError={onError} onNotice={vi.fn()} />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("Morgan Hale")).toBeVisible();
+    expect(screen.getByText(listRefreshFailureCopy("people"))).toBeVisible();
+    expect(screen.queryByText(peopleListFailureCopy())).not.toBeInTheDocument();
+    expect(screen.queryByText("Couldn't load")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(records.peopleRefetch).toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledWith("");
+    records.people = [];
+    records.peopleError = null;
+    cleanup();
   });
 });

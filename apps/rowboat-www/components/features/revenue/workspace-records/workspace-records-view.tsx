@@ -71,7 +71,10 @@ import { workspaceKeys } from "@/hooks/queries/utils/workspace-keys";
 import {
   EmptyBlock,
   errMessage,
+  failedListIsEmpty,
+  ListRefreshFailure,
   ListSkeleton,
+  listRefreshFailureCopy,
   refetchClearingBanner,
   WorkspaceEmptyState,
 } from "@/components/features/revenue/shared/shared";
@@ -637,7 +640,9 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
         icon={<User />}
         label={directoryTitle.label}
         count={
-          peopleQuery.isError ? "Couldn't load" : personDirectoryCount(people.length, hasMorePeople)
+          failedListIsEmpty(peopleQuery.isError, people.length)
+            ? "Couldn't load"
+            : personDirectoryCount(people.length, hasMorePeople)
         }
         filtered={directoryTitle.filtered}
         onClear={() => {
@@ -673,7 +678,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
         <div className="p-4">
           <ListSkeleton />
         </div>
-      ) : peopleQuery.isError ? (
+      ) : failedListIsEmpty(peopleQuery.isError, people.length) ? (
         <EmptyBlock body={peopleListFailureCopy()} image="people" learnMore={[]} title="People">
           <Button
             onClick={() => void refetchClearingBanner(() => peopleQuery.refetch(), onError)}
@@ -719,6 +724,12 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
         </EmptyBlock>
       ) : (
         <div className="min-w-0 flex-1 overflow-auto">
+          {peopleQuery.isError ? (
+            <ListRefreshFailure
+              message={listRefreshFailureCopy("people")}
+              onRetry={() => void refetchClearingBanner(() => peopleQuery.refetch(), onError)}
+            />
+          ) : null}
           <table
             className="w-full min-w-[1180px] table-fixed border-collapse text-left"
             aria-label="People"
@@ -1434,7 +1445,7 @@ export function NotesView({
           >
             <Note className="size-4" /> Notes{" "}
             <Badge className="font-normal text-primary/40" variant="secondary">
-              {notesQuery.isError
+              {failedListIsEmpty(notesQuery.isError, notes.length)
                 ? "Couldn't load"
                 : noteCountLabel(
                     notes.length,
@@ -1606,7 +1617,7 @@ export function NotesView({
         <div className="p-4">
           <ListSkeleton />
         </div>
-      ) : notesQuery.isError ? (
+      ) : failedListIsEmpty(notesQuery.isError, notes.length) ? (
         <WorkspaceEmptyState
           action={
             <Button
@@ -1666,6 +1677,12 @@ export function NotesView({
         />
       ) : (
         <div className="min-h-0 flex-1 overflow-auto">
+          {notesQuery.isError ? (
+            <ListRefreshFailure
+              message={listRefreshFailureCopy("notes")}
+              onRetry={() => void refetchClearingBanner(() => notesQuery.refetch(), onError)}
+            />
+          ) : null}
           {showFavorites ? (
             <section className="px-4 pt-3">
               <Label className="mb-3 flex items-center gap-1 text-[12px] font-normal text-primary/45">
@@ -2750,7 +2767,7 @@ export function TasksView({
           </Button>
         </div>
       </div>
-      {relationshipsQuery.isError && !actionsQuery.isError ? (
+      {relationshipsQuery.isError && !failedListIsEmpty(actionsQuery.isError, tasks.length) ? (
         <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
           <p className="text-[13px] text-primary/70">{taskCompaniesFailureCopy()}</p>
           <Button
@@ -2765,11 +2782,17 @@ export function TasksView({
           </Button>
         </div>
       ) : null}
+      {actionsQuery.isError && tasks.length > 0 ? (
+        <ListRefreshFailure
+          message={listRefreshFailureCopy("tasks")}
+          onRetry={() => void refetchClearingBanner(() => actionsQuery.refetch(), onError)}
+        />
+      ) : null}
       {loading ? (
         <div className="p-4">
           <ListSkeleton />
         </div>
-      ) : actionsQuery.isError ? (
+      ) : failedListIsEmpty(actionsQuery.isError, tasks.length) ? (
         <WorkspaceEmptyState
           action={
             <Button

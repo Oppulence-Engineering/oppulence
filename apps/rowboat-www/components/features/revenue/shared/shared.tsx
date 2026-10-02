@@ -15,6 +15,7 @@ import {
 
 import { Avatar, AvatarFallback } from "@oppulence/ui/components/avatar";
 import { Badge } from "@oppulence/ui/components/badge";
+import { Button } from "@oppulence/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@oppulence/ui/components/card";
 import {
   Empty,
@@ -357,4 +358,33 @@ export async function refetchClearingBanner(
   const result = await refetch();
   if (result?.isError) return;
   onError("");
+}
+
+/**
+ * A failed refresh keeps rows already on screen.
+ * The empty failure is for a list with nothing to show.
+ */
+export function failedListIsEmpty(isError: boolean, count: number): boolean {
+  return isError && count === 0;
+}
+
+export function listRefreshFailureCopy(noun: string): string {
+  return `Could not refresh ${noun}. Try again.`;
+}
+
+export function ListRefreshFailure({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+      <p className="text-[13px] text-primary/70">{message}</p>
+      <Button onClick={onRetry} size="sm" type="button" variant="outline">
+        Try again
+      </Button>
+    </div>
+  );
 }
