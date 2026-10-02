@@ -787,6 +787,16 @@ func (s *Service) ListRelationshipsFiltered(
 				relationship.LastTouchAtLTE(window.until),
 			))
 		}
+		needle := normalizePersonSearch(value)
+		if strings.Contains("no activity", needle) {
+			parts = append(parts, relationship.LastTouchAtIsNil())
+		}
+		if strings.Contains("no description yet", needle) {
+			parts = append(parts, relationship.And(
+				relationshipTextBlank(relationship.FieldCompanyDescription),
+				relationshipTextBlank(relationship.FieldSummary),
+			))
+		}
 		q.Where(relationship.Or(parts...))
 	}
 	rows, err := q.
@@ -1099,6 +1109,16 @@ func exactOpenActionCount(needle string) (int, bool) {
 
 func relationshipNextActionBlank() predicate.Relationship {
 	return relationship.Or(relationship.NextActionIsNil(), relationship.NextActionEQ(""))
+}
+
+// relationshipTextBlank matches a description the sheet prints as empty.
+// A whitespace-only summary still reads "No description yet".
+func relationshipTextBlank(field string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(fmt.Sprintf("trim(coalesce(%s, '')) = ''", s.C(field)))
+		}))
+	})
 }
 
 func relationshipParticipantCount(compare string, n int) predicate.Relationship {

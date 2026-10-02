@@ -384,6 +384,47 @@ func TestRelationshipSearchFindsTheLastInteraction(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsTheQuietCompany(t *testing.T) {
+	f := newFixture(t)
+	quiet, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(quiet.ID).
+		SetSummary("   ").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	active, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(active.ID).
+		SetSummary("Ledger notes").
+		SetLastTouchAt(time.Now().Add(-3*24*time.Hour - time.Hour)).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	noActivity, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "No activity"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(noActivity.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
+		t.Fatalf("no activity = %v", got)
+	}
+	noDescription, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "No description yet"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(noDescription.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
+		t.Fatalf("no description yet = %v", got)
+	}
+}
+
 func TestRelationshipSearchFindsEngagementAndSentiment(t *testing.T) {
 	f := newFixture(t)
 	declining, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

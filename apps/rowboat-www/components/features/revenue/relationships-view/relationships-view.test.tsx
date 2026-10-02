@@ -18,6 +18,7 @@ import {
   companySheetPositionLabel,
   companyReviewCopy,
   companyDescriptionCopy,
+  companyLastActivityLabel,
   companyEmailDetail,
   companyEmailHref,
   companyNextActionCopy,
@@ -536,6 +537,15 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("mailto:${primaryContact.email}");
     expect(source).not.toContain("Not detected");
     expect(source).toContain("Not filled in");
+    expect(companyLastActivityLabel(undefined)).toBe("No activity");
+    expect(companyLastActivityLabel(null)).toBe("No activity");
+    expect(companyLastActivityLabel("")).toBe("No activity");
+    expect(companyLastActivityLabel("not-a-date")).toBe("No activity");
+    expect(
+      companyLastActivityLabel(new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()),
+    ).toMatch(/ago$/);
+    expect(source).toContain("companyLastActivityLabel(relationship.lastTouchAt)");
+    expect(source).toContain("companyLastActivityLabel(data.relationship.lastTouchAt)");
     expect(companyDescriptionCopy({})).toBe("No description yet");
     expect(companyDescriptionCopy({ summary: "  " })).toBe("No description yet");
     expect(companyDescriptionCopy({ summary: "Builds boats" })).toBe("Builds boats");

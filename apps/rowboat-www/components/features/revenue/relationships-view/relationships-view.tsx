@@ -1291,7 +1291,7 @@ export function RelationshipsView({
                         </Button>
                       </TableCell>
                       <TableCell className="border-r px-3 text-[13px] text-primary/50">
-                        {relationship.lastTouchAt ? relativeTime(relationship.lastTouchAt) : "—"}
+                        {companyLastActivityLabel(relationship.lastTouchAt)}
                       </TableCell>
                       <TableCell className="border-r px-3">
                         <Badge
@@ -1929,6 +1929,12 @@ export function companyDescriptionCopy(record: {
 }): string {
   const description = record.companyDescription?.trim() || record.summary?.trim();
   return description || "No description yet";
+}
+
+/** The directory and the sheet use the same words when nothing has happened yet. */
+export function companyLastActivityLabel(lastTouchAt?: string | null): string {
+  const label = lastTouchAt ? relativeTime(lastTouchAt) : "";
+  return label || "No activity";
 }
 
 export function companyNextActionCopy(record: {
@@ -3405,9 +3411,7 @@ export function RelationshipSheet({
                   </dd>
                   <dt className="text-primary/40">Last activity</dt>
                   <dd className="text-primary/75">
-                    {data.relationship.lastTouchAt
-                      ? relativeTime(data.relationship.lastTouchAt)
-                      : "No activity"}
+                    {companyLastActivityLabel(data.relationship.lastTouchAt)}
                   </dd>
                 </dl>
               </section>
@@ -3479,9 +3483,7 @@ export function RelationshipSheet({
                     ["Engagement", humanize(data.relationship.engagement)],
                     [
                       "Last interaction",
-                      data.relationship.lastTouchAt
-                        ? relativeTime(data.relationship.lastTouchAt)
-                        : "No activity",
+                      companyLastActivityLabel(data.relationship.lastTouchAt),
                     ],
                     ["People", String(data.participants.length)],
                     ["Email threads", String(data.emailThreads.length)],
