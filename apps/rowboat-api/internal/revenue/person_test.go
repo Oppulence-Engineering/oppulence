@@ -750,6 +750,40 @@ func TestPersonSearchFindsTheAlias(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsTheTimezone(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Casey Quinn").
+		SetTimezone("America/Chicago").
+		SetLocale("en-US").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Indira Cole").
+		SetTimezone("America/Denver").
+		SetLocale("fr-FR").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	chicago, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "Chicago"})
+	if err != nil || chicago == nil || len(chicago.Persons) != 1 || chicago.Persons[0].DisplayName != "Casey Quinn" {
+		t.Fatalf("chicago = %+v err=%v", chicago, err)
+	}
+	french, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "fr-FR"})
+	if err != nil || french == nil || len(french.Persons) != 1 || french.Persons[0].DisplayName != "Indira Cole" {
+		t.Fatalf("locale = %+v err=%v", french, err)
+	}
+}
+
 func TestPersonSearchFindsTheCompanyRole(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

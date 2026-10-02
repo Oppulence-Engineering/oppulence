@@ -79,6 +79,8 @@ func (s *Service) ListPersons(
 			person.DepartmentContainsFold(term),
 			person.LocationContainsFold(term),
 			person.LinkedinURLContainsFold(term),
+			person.TimezoneContainsFold(term),
+			person.LocaleContainsFold(term),
 			personNormalizedContains(term),
 			personAliasContains(term),
 			personParticipantRoleMatch(term),
@@ -427,6 +429,8 @@ var personSearchColumns = []string{
 	person.FieldSeniority,
 	person.FieldDepartment,
 	person.FieldLocation,
+	person.FieldTimezone,
+	person.FieldLocale,
 }
 
 // normalizedSearchLike compares a stored name after hyphens, underscores, and

@@ -765,6 +765,8 @@ func (s *Service) ListRelationshipsFiltered(
 			relationship.SummaryContainsFold(value),
 			relationship.CompanyDescriptionContainsFold(value),
 			relationship.LinkedinURLContainsFold(value),
+			relationship.EngagementContainsFold(value),
+			relationship.SentimentContainsFold(value),
 			relationshipNormalizedContains(value),
 			relationshipCategoryContains(value),
 			relationshipEnrichmentContains(value),

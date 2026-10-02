@@ -384,6 +384,47 @@ func TestRelationshipSearchFindsTheLastInteraction(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsEngagementAndSentiment(t *testing.T) {
+	f := newFixture(t)
+	declining, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(declining.ID).
+		SetEngagement("declining").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	negative, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(negative.ID).
+		SetEngagement("steady").
+		SetSentiment("negative").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	byEngagement, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Declining"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(byEngagement.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
+		t.Fatalf("declining = %v", got)
+	}
+	bySentiment, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Negative"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(bySentiment.Relationships); len(got) != 1 || got[0] != "Lumen Packet" {
+		t.Fatalf("negative = %v", got)
+	}
+}
+
 func TestRelationshipSearchFindsTheEnrichment(t *testing.T) {
 	f := newFixture(t)
 	austin, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
