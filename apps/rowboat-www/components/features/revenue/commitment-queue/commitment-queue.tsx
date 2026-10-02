@@ -186,6 +186,15 @@ export function registerCountLabel(shown: number, hasMore: boolean): string {
   return hasMore ? `${shown}+ ${noun}` : `${shown} ${noun}`;
 }
 
+/** A search of the loaded page is not a search of promises still past it. */
+export function registerMissTitle(hasMore: boolean): string {
+  return hasMore ? "No loaded promises match this view" : "No commitments match this view";
+}
+
+export function registerMissDetail(hasMore: boolean): string {
+  return hasMore ? "Show the next promises to keep looking." : "Change the filter or search query.";
+}
+
 export function registerRemainderLabel(): string {
   return "Show the next promises";
 }
@@ -567,10 +576,7 @@ export function CommitmentQueue({
     >
       <SimProductPanel className="mx-3 mt-3 flex min-h-0 flex-1 flex-col">
         <SimProductHeader
-          actions={registerCountLabel(
-            filtered.length,
-            hasMorePromises && filtered.length === items.length,
-          )}
+          actions={registerCountLabel(filtered.length, hasMorePromises)}
           icon={TableIcon}
           title="Commitment register"
         />
@@ -891,7 +897,7 @@ export function CommitmentQueue({
           <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[84px] text-center">
             <WorkspaceEmptyIllustration image="commitments" />
             <h2 className="text-[20px] font-semibold leading-6 text-primary">
-              {items.length === 0 ? "No commitments yet" : "No commitments match this view"}
+              {items.length === 0 ? "No commitments yet" : registerMissTitle(hasMorePromises)}
             </h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
               {items.length === 0
@@ -900,8 +906,20 @@ export function CommitmentQueue({
                   : googleNeedsReconnect
                     ? "Reconnect Google to resume finding who promised what, when it is due, and the message it came from."
                     : "Connect Gmail and Calendar to find who promised what, when it is due, and the message it came from."
-                : "Change the filter or search query."}
+                : registerMissDetail(hasMorePromises)}
             </p>
+            {items.length > 0 && hasMorePromises && onLoadMorePromises ? (
+              <Button
+                className="mt-5"
+                disabled={loadingMorePromises}
+                onClick={onLoadMorePromises}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {registerRemainderLabel()}
+              </Button>
+            ) : null}
             {items.length === 0 ? (
               <div className="mt-5 flex flex-wrap justify-center gap-2">
                 {!googleConnected ? (

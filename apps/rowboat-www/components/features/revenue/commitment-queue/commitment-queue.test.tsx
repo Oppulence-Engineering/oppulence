@@ -17,6 +17,8 @@ import {
   REGISTER_VIEWS,
   registerPartyLabels,
   registerCountLabel,
+  registerMissDetail,
+  registerMissTitle,
   registerRemainderLabel,
   urgencyLabel,
 } from "./commitment-queue";
@@ -661,10 +663,48 @@ it("keeps promises past the first register page one click away", () => {
   expect(registerCountLabel(1, true)).toBe("1+ commitment");
   expect(registerCountLabel(201, false)).toBe("201 commitments");
   expect(registerRemainderLabel()).toBe("Show the next promises");
+  expect(registerMissTitle(true)).toBe("No loaded promises match this view");
+  expect(registerMissTitle(false)).toBe("No commitments match this view");
+  expect(registerMissDetail(true)).toBe("Show the next promises to keep looking.");
+  expect(registerMissDetail(false)).toBe("Change the filter or search query.");
   const source = fs.readFileSync(path.join(import.meta.dirname, "commitment-queue.tsx"), "utf8");
-  expect(source).toContain("registerCountLabel(");
+  expect(source).toContain("registerCountLabel(filtered.length, hasMorePromises)");
+  expect(source).not.toContain("filtered.length === items.length");
   expect(source).toContain("registerRemainderLabel()");
   expect(source).toContain("onLoadMorePromises");
+});
+
+it("keeps looking when a search misses only the loaded page", async () => {
+  const user = userEvent.setup();
+  const onLoadMorePromises = vi.fn();
+  render(
+    <CommitmentQueue
+      {...props({
+        hasMorePromises: true,
+        onLoadMorePromises,
+      })}
+    />,
+  );
+
+  await user.type(screen.getByRole("textbox", { name: "Search commitments" }), "hidden packet");
+
+  expect(screen.getByText("0+ commitments")).toBeInTheDocument();
+  expect(screen.getByText("No loaded promises match this view")).toBeInTheDocument();
+  expect(screen.getByText("Show the next promises to keep looking.")).toBeInTheDocument();
+  expect(screen.queryByText("No commitments match this view")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Show the next promises" }));
+  expect(onLoadMorePromises).toHaveBeenCalledTimes(1);
+});
+
+it("says nothing matches once every loaded promise was searched", async () => {
+  const user = userEvent.setup();
+  render(<CommitmentQueue {...props()} />);
+
+  await user.type(screen.getByRole("textbox", { name: "Search commitments" }), "hidden packet");
+
+  expect(screen.getByText("No commitments match this view")).toBeInTheDocument();
+  expect(screen.getByText("Change the filter or search query.")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Show the next promises" })).not.toBeInTheDocument();
 });
 
 it("does not offer a meeting import that opens the company directory", () => {
