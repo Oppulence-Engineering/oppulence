@@ -959,6 +959,9 @@ func relationshipDirectoryColumnMatch(term string) predicate.Relationship {
 	if health := relationshipHealthLabelMatch(needle); health != nil {
 		preds = append(preds, health)
 	}
+	if lifecycle := relationshipLifecycleLabelMatch(needle); lifecycle != nil {
+		preds = append(preds, lifecycle)
+	}
 	if n, ok := exactPersonCompanyCount(needle); ok {
 		preds = append(preds, relationshipParticipantCount("=", n))
 		// "2 open actions" also prints that number. A bare "2" has to find it,
@@ -1002,6 +1005,35 @@ func relationshipHealthLabelMatch(needle string) predicate.Relationship {
 		return relationshipMatchAll()
 	}
 	return relationship.HealthIn(values...)
+}
+
+func relationshipLifecycleLabelMatch(needle string) predicate.Relationship {
+	labels := []struct {
+		label string
+		value string
+	}{
+		{"prospect", "prospect"},
+		{"evaluation", "evaluation"},
+		{"contracting", "contracting"},
+		{"onboarding", "onboarding"},
+		{"active customer", "active_customer"},
+		{"renewal", "renewal"},
+		{"churned", "churned"},
+		{"former customer", "former_customer"},
+	}
+	values := make([]string, 0, len(labels))
+	for _, item := range labels {
+		if strings.Contains(item.label, needle) {
+			values = append(values, item.value)
+		}
+	}
+	if len(values) == 0 {
+		return nil
+	}
+	if len(values) == len(labels) {
+		return relationshipMatchAll()
+	}
+	return relationship.LifecycleIn(values...)
 }
 
 func relationshipOpenActionLabelMatch(needle string) predicate.Relationship {

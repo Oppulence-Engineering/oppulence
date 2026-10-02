@@ -469,6 +469,23 @@ func TestRelationshipSearchFindsTheDirectoryColumns(t *testing.T) {
 	if got := namesOf(two.Relationships); len(got) != 1 || got[0] != "Northwind Quiet" {
 		t.Fatalf("2 open actions = %v", got)
 	}
+	if _, err := f.client.Relationship.UpdateOneID(healthy.ID).SetLifecycle("active_customer").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	active, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Active Customer"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(active.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
+		t.Fatalf("active customer = %v", got)
+	}
+	prospects, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Prospect"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(prospects.Relationships); !hasName(got, "Lumen Packet") || hasName(got, "Quill Atelier") {
+		t.Fatalf("prospect = %v", got)
+	}
 }
 
 func hasName(names []string, want string) bool {
