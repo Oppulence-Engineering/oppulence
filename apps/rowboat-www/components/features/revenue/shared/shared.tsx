@@ -28,7 +28,7 @@ import {
 import { Label } from "@oppulence/ui/components/label";
 import { Skeleton } from "@oppulence/ui/components/skeleton";
 import { cn } from "@/lib/utils";
-import { priorityComponentLabel } from "@/lib/revenue/revenue";
+import { priorityComponentLabel, shownRequestError } from "@/lib/revenue/revenue";
 import type { RevenueAction } from "@/lib/revenue/types";
 
 export function priorityTone(score: number): { label: string; className: string } {
@@ -347,7 +347,7 @@ export function EmptyBlock({
 }
 
 export function errMessage(e: unknown, fallback: string): string {
-  return e instanceof Error ? e.message : fallback;
+  return shownRequestError(e, fallback);
 }
 
 /** A successful retry should take down the banner that the failed load raised. */

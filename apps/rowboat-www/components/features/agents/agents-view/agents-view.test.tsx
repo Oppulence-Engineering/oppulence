@@ -27,6 +27,8 @@ describe("AgentsView", () => {
     expect(source).not.toContain("title={tool}");
     expect(source).toContain("setError(null)");
     expect(source).toContain("agents.length === 0 && !agentsQuery.isError && !error");
+    expect(source).toContain(': "Could not create agent"');
+    expect(source).not.toContain("Could not create agent (${response.status})");
   });
 
   it("counts a failed empty load separately from an empty workspace", () => {

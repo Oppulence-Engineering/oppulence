@@ -17,7 +17,7 @@ import {
   SimProductPanel,
   SimProductToolbar,
 } from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
-import { decideRelationshipAttention } from "@/lib/revenue/revenue";
+import { decideRelationshipAttention, shownRequestError } from "@/lib/revenue/revenue";
 import type { RelationshipAttentionItem } from "@/lib/revenue/types";
 
 const COLUMNS = [
@@ -166,7 +166,7 @@ export function AttentionQueueSurface({
       setDismissing(false);
     } catch (error) {
       onActionError(
-        error instanceof Error ? error.message : "Could not update the attention item.",
+        shownRequestError(error, "Could not update the attention item."),
       );
     } finally {
       setBusy(null);

@@ -18,8 +18,8 @@ import { communicationKeys } from "@/hooks/queries/utils/communication-keys";
 import {
   createCommunicationPrivacyRule,
   deleteCommunicationPrivacyRule,
-  friendlyRevenueError,
   putCommunicationPolicy,
+  shownRequestError,
 } from "@/lib/revenue/revenue";
 import type { CommunicationPolicy, CommunicationPrivacyRule } from "@/lib/revenue/types";
 
@@ -139,11 +139,7 @@ export function CommunicationPrivacySettings() {
       setPolicy(saved);
       setStatus("Mailbox policy saved.");
     } catch (error: unknown) {
-      setStatus(
-        friendlyRevenueError(
-          error instanceof Error ? error.message : "Could not save mailbox policy.",
-        ),
-      );
+      setStatus(shownRequestError(error, "Could not save mailbox policy."));
     } finally {
       setBusy(false);
     }
@@ -159,11 +155,7 @@ export function CommunicationPrivacySettings() {
       await refresh();
       setStatus("Privacy rule added.");
     } catch (error: unknown) {
-      setStatus(
-        friendlyRevenueError(
-          error instanceof Error ? error.message : "Could not add privacy rule.",
-        ),
-      );
+      setStatus(shownRequestError(error, "Could not add privacy rule."));
     } finally {
       setBusy(false);
     }

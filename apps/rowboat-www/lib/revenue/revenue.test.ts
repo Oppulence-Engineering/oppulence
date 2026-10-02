@@ -8,6 +8,7 @@ import {
   companyLinkedInURL,
   explainedRevenueError,
   friendlyRevenueError,
+  shownRequestError,
   getRelationshipChanges,
   getRelationshipConversationReview,
   getRelationshipCommunicationTimeline,
@@ -364,6 +365,32 @@ describe("explainedRevenueError", () => {
       ),
     ).toBe(
       "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.",
+    );
+  });
+});
+
+describe("shownRequestError", () => {
+  it("replaces a bare status code and keeps a specific sentence", () => {
+    const company = "Could not create the company.";
+    expect(shownRequestError(new Error("Request failed (500)"), company)).toBe(company);
+    expect(shownRequestError(new Error("Console request failed (500)."), "Could not save.")).toBe(
+      "Could not save.",
+    );
+    expect(
+      shownRequestError(new Error("Workflow request failed (409)"), "Could not create workflow"),
+    ).toBe("Could not create workflow");
+    expect(shownRequestError(new Error("revision conflict"), company)).toBe("revision conflict");
+    expect(shownRequestError(new Error("Request failed (429)"), company)).toBe(
+      "Too many requests were sent from this workspace. Wait a moment, then try again.",
+    );
+    expect(shownRequestError(new Error("Request failed (503)"), company)).toBe(
+      [
+        "The Oppulence API returned an error (503).",
+        "Confirm rowboat-api is running on port 18080, then reload.",
+      ].join(" "),
+    );
+    expect(shownRequestError("nope", "Could not save mailbox policy.")).toBe(
+      "Could not save mailbox policy.",
     );
   });
 });

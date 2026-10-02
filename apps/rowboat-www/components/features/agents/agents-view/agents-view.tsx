@@ -124,7 +124,7 @@ function CreateAgentDialog({
         const message =
           body && typeof body === "object" && "message" in body && typeof body.message === "string"
             ? body.message
-            : `Could not create agent (${response.status})`;
+            : "Could not create agent";
         throw new Error(message);
       }
       setOpen(false);

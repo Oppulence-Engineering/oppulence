@@ -188,6 +188,23 @@ export function explainedRevenueError(error: unknown, fallback: string): string 
   return friendly === message ? fallback : friendly;
 }
 
+const BARE_REQUEST_STATUS =
+  /^(?:Request failed|Console request failed|Workflow request failed) \(\d+\)\.?$/;
+
+/**
+ * A save should keep a specific API sentence. A status code with no sentence
+ * is replaced by the action's own fallback. Rate limits and a down API still
+ * use the sentences we already explain.
+ */
+export function shownRequestError(error: unknown, fallback: string): string {
+  const message = error instanceof Error ? error.message.trim() : "";
+  if (!message) return fallback;
+  const friendly = friendlyRevenueError(message);
+  if (friendly !== message) return friendly;
+  if (BARE_REQUEST_STATUS.test(message)) return fallback;
+  return message;
+}
+
 export function friendlyRevenueError(message: string) {
   if (/gmail.*(?:returned 429|user-rate limit exceeded)/i.test(message)) {
     return "Google is temporarily limiting Gmail reads for this account. Please try the audit again in about 15 minutes.";

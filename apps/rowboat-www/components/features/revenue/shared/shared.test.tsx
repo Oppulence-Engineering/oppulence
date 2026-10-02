@@ -26,6 +26,8 @@ describe("WorkspaceEmptyState", () => {
     expect(priorityComponentLabel("contact_risk_penalty")).toBe("Contact risk");
     expect(priorityComponentLabel("urgency")).toBe("Urgency");
     expect(source).toContain("priorityComponentLabel(key)");
+    expect(source).toContain("return shownRequestError(e, fallback);");
+    expect(source).not.toContain("return e instanceof Error ? e.message : fallback;");
     expect(source).not.toContain("PRIORITY_COMPONENT_LABELS[key] ?? key");
   });
 });

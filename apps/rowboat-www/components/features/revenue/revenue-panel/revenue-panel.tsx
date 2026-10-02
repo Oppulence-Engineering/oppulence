@@ -39,6 +39,7 @@ import {
   appendCommitmentTransition,
   explainedRevenueError,
   friendlyRevenueError,
+  shownRequestError,
   googleAuditLaunch,
   getCommitmentRecordMarkdown,
   REVENUE_EVIDENCE_LOOKBACK_DAYS,
@@ -344,7 +345,7 @@ export function RevenuePanel({
       if (e instanceof RevenueAPIError && e.code === "scan_unavailable") {
         setError("Connect Gmail and Calendar before running a Promise Leak Audit.");
       } else {
-        setError(e instanceof Error ? e.message : "Could not start the scan.");
+        setError(shownRequestError(e, "Could not start the scan."));
       }
     }
   }, [connectBeforeAudit, reconnectBeforeAudit, onOpenConnectors]);
@@ -357,7 +358,7 @@ export function RevenuePanel({
         setNoticeMsg("Commitment review recorded.");
         return true;
       } catch (error) {
-        setBanner(error instanceof Error ? error.message : "Could not update the commitment.");
+        setBanner(shownRequestError(error, "Could not update the commitment."));
         return false;
       }
     },
@@ -374,7 +375,7 @@ export function RevenuePanel({
         capture(RevenueEvents.CommitmentExported, { commitmentId: item.id, state: item.state });
         setNoticeMsg("Commitment record exported.");
       } catch (error) {
-        setBanner(error instanceof Error ? error.message : "Could not export the record.");
+        setBanner(shownRequestError(error, "Could not export the record."));
       }
     },
     [setBanner, setNoticeMsg],
@@ -395,7 +396,7 @@ export function RevenuePanel({
         );
         return true;
       } catch (error) {
-        setBanner(error instanceof Error ? error.message : "Could not draft commitment recovery.");
+        setBanner(shownRequestError(error, "Could not draft commitment recovery."));
         return false;
       }
     },
