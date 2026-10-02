@@ -802,8 +802,32 @@ func TestRelationshipSearchFindsTheMissingNextStep(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("No next step", "Quill Atelier", "Cedar Mill")
-	assertCompanyQuery("Add an owner and a date for what happens next", "Quill Atelier", "Cedar Mill")
+	mesa, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Clay", ResourceRefs: []string{"hubspot:company:mesa"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(mesa.ID).SetLifecycle("contracting").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("hubspot").SetSourceAccountID("default").
+		SetStatus("stale").SetCompleteness("stale").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery("No next step", "Quill Atelier", "Cedar Mill", "Mesa Clay")
+	assertCompanyQuery("Add an owner and a date for what happens next", "Quill Atelier", "Cedar Mill", "Mesa Clay")
+	assertCompanyQuery("This company is in Contracting and has no next step", "Quill Atelier")
+	assertCompanyQuery("This company is in Evaluation and has no next step", "Cedar Mill")
+	assertCompanyQuery("has no next step", "Quill Atelier", "Cedar Mill")
 	assertCompanyQuery("owner")
 	assertCompanyQuery("step")
 }

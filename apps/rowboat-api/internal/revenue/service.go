@@ -829,6 +829,19 @@ func (s *Service) ListRelationshipsFiltered(
 			sheetPhraseMatches("add an owner and a date for what happens next.", needle) {
 			parts = append(parts, relationshipShowsMissingNextStep())
 		}
+		for _, lifecycle := range []string{"evaluation", "contracting", "onboarding", "renewal"} {
+			phrase := strings.ToLower(fmt.Sprintf(
+				"This company is in %s and has no next step.",
+				attentionTokenLabel(lifecycle),
+			))
+			if sheetPhraseMatches(phrase, needle) {
+				parts = append(parts, relationship.And(
+					relationshipShowsMissingNextStep(),
+					relationship.LifecycleEQ(lifecycle),
+					relationship.Not(relationshipHasDegradedDependency()),
+				))
+			}
+		}
 		if sheetPhraseMatches("no action is currently recommended", needle) {
 			parts = append(parts, relationship.Not(
 				relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen)),
@@ -1158,6 +1171,40 @@ func relationshipShowsMissingNextStep() predicate.Relationship {
 		relationshipTextBlank(relationship.FieldNextAction),
 		relationship.LifecycleIn("evaluation", "contracting", "onboarding", "renewal"),
 	)
+}
+
+// relationshipHasDegradedDependency is a connector the company uses that is not
+// live and complete. That company gets a source warning instead of the
+// "no next step" attention sentence.
+func relationshipHasDegradedDependency() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipsourcestatus.Table)
+			b.WriteString(" AS stop WHERE stop.")
+			b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND (stop.")
+			b.WriteString(relationshipsourcestatus.FieldStatus)
+			b.WriteString(" <> 'live' OR stop.")
+			b.WriteString(relationshipsourcestatus.FieldCompleteness)
+			b.WriteString(" <> 'complete' OR NOT ")
+			writeAliasMissingScopesEmpty(b, s, "stop")
+			b.WriteString(") AND ")
+			writeDependentSource(b, s, "stop")
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeAliasMissingScopesEmpty(b *sql.Builder, s *sql.Selector, alias string) {
+	column := alias + "." + relationshipsourcestatus.FieldMissingScopes
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(fmt.Sprintf("jsonb_array_length(coalesce(%s, '[]'::jsonb)) = 0", column))
+		return
+	}
+	b.WriteString(fmt.Sprintf("json_array_length(coalesce(%s, '[]')) = 0", column))
 }
 
 func relationshipTextBlank(field string) predicate.Relationship {
