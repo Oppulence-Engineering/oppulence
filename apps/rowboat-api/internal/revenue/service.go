@@ -874,6 +874,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if suggestion := relationshipSheetSuggestionMatch(needle); suggestion != nil {
 			parts = append(parts, suggestion)
 		}
+		if privacy := relationshipSheetPrivacyMatch(needle); privacy != nil {
+			parts = append(parts, privacy)
+		}
 		if sheetPhraseMatches("no action is currently recommended", needle) {
 			parts = append(parts, relationship.Not(
 				relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen)),
@@ -2151,6 +2154,244 @@ func relationshipReviewCount(n int, atLeast bool) predicate.Relationship {
 			b.Arg(n)
 		}))
 	})
+}
+
+// relationshipSheetPrivacyMatch matches the sentences inside the company
+// sheet's Privacy disclosure. The builtin rule is ask-before-capture, shared
+// excerpts on, plan sharing allowed, and 30 days, unless a saved layer is stricter.
+func relationshipSheetPrivacyMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	if sheetPhraseMatches("do not capture", needle) || sheetPhraseMatches("capture: do not capture", needle) {
+		preds = append(preds, relationshipHasPolicyCapture("deny"))
+	}
+	if sheetPhraseMatches("ask before capturing", needle) || sheetPhraseMatches("capture: ask before capturing", needle) {
+		preds = append(preds, relationship.Not(relationshipHasPolicyCapture("deny")))
+	}
+	if sheetPhraseMatches("shared excerpts: off", needle) {
+		preds = append(preds, relationshipHasPolicyBoolFalse("publishEvidence"))
+	}
+	if sheetPhraseMatches("shared excerpts: on", needle) {
+		preds = append(preds, relationship.Not(relationshipHasPolicyBoolFalse("publishEvidence")))
+	}
+	if sheetPhraseMatches("plan sharing outside this workspace: blocked", needle) {
+		preds = append(preds, relationshipHasPolicyBoolFalse("externalShare"))
+	}
+	if sheetPhraseMatches("plan sharing outside this workspace: allowed", needle) {
+		preds = append(preds, relationship.Not(relationshipHasPolicyBoolFalse("externalShare")))
+	}
+	if days, ok := privacyRetentionDays(needle); ok {
+		preds = append(preds, relationshipPrivacyRetention(days))
+	}
+	if n, ok := privacyDecisionCount(needle); ok {
+		preds = append(preds, relationshipGovernanceDecisionCount("=", n))
+	} else {
+		var counts []predicate.Relationship
+		if sheetPhraseMatches("no privacy decisions recorded", needle) {
+			counts = append(counts, relationship.Or(
+				relationshipGovernanceDecisionCount("=", 0),
+				relationshipGovernanceDecisionCount(">=", 2),
+			))
+		}
+		if sheetPhraseMatches("1 privacy decision recorded", needle) {
+			counts = append(counts, relationshipGovernanceDecisionCount("=", 1))
+		}
+		switch len(counts) {
+		case 1:
+			preds = append(preds, counts[0])
+		case 2:
+			preds = append(preds, relationship.Or(counts...))
+		}
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func privacyDecisionCount(needle string) (int, bool) {
+	switch needle {
+	case "no privacy decisions recorded":
+		return 0, true
+	case "1 privacy decision recorded":
+		return 1, true
+	}
+	const suffix = " privacy decisions recorded"
+	if !strings.HasSuffix(needle, suffix) {
+		return 0, false
+	}
+	body := strings.TrimSuffix(needle, suffix)
+	parsed, err := strconv.Atoi(body)
+	if err != nil || parsed < 2 || strconv.Itoa(parsed) != body {
+		return 0, false
+	}
+	return parsed, true
+}
+
+func privacyRetentionDays(needle string) (int, bool) {
+	const prefix = "retention: "
+	const suffix = " days"
+	if !strings.HasPrefix(needle, prefix) || !strings.HasSuffix(needle, suffix) {
+		return 0, false
+	}
+	body := strings.TrimSuffix(strings.TrimPrefix(needle, prefix), suffix)
+	parsed, err := strconv.Atoi(body)
+	if err != nil || parsed < 0 || strconv.Itoa(parsed) != body {
+		return 0, false
+	}
+	return parsed, true
+}
+
+func relationshipHasPolicyCapture(capture string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			writeLatestApplicablePolicy(b, s)
+			b.WriteString(" AND ")
+			writePolicyText(b, s, "capture")
+			b.WriteString(" = ")
+			b.Arg(capture)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func relationshipHasPolicyBoolFalse(field string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			writeLatestApplicablePolicy(b, s)
+			b.WriteString(" AND ")
+			writePolicyBoolIsFalse(b, s, field)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func relationshipPrivacyRetention(days int) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT MIN(policy_days.days) FROM (SELECT 30 AS days UNION ALL SELECT ")
+			writePolicyRetentionDays(b, s)
+			b.WriteString(" AS days FROM ")
+			writeLatestApplicablePolicy(b, s)
+			b.WriteString(") AS policy_days) = ")
+			b.Arg(days)
+		}))
+	})
+}
+
+func relationshipGovernanceDecisionCount(compare string, n int) predicate.Relationship {
+	if compare != "=" && compare != ">=" {
+		compare = "="
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			art := conversationintelligenceartifact.Table
+			b.WriteString("(SELECT COUNT(DISTINCT decision.")
+			b.WriteString(conversationintelligenceartifact.FieldStableID)
+			b.WriteString(") FROM ")
+			b.WriteString(art)
+			b.WriteString(" AS decision WHERE decision.")
+			b.WriteString(conversationintelligenceartifact.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND decision.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" = 'governance_decision') ")
+			b.WriteString(compare)
+			b.WriteString(" ")
+			b.Arg(n)
+		}))
+	})
+}
+
+// writeLatestApplicablePolicy is the saved conversation policy that actually
+// applies to this company: the newest version of a layer, either on this
+// company or shared by the workspace. The builtin default is not a row.
+func writeLatestApplicablePolicy(b *sql.Builder, s *sql.Selector) {
+	art := conversationintelligenceartifact.Table
+	b.WriteString(art)
+	b.WriteString(" AS layer WHERE layer.")
+	b.WriteString(conversationintelligenceartifact.FieldKind)
+	b.WriteString(" = 'conversation_policy' AND layer.")
+	b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.WorkspaceColumn))
+	b.WriteString(" AND (layer.")
+	b.WriteString(conversationintelligenceartifact.RelationshipColumn)
+	b.WriteString(" IS NULL OR layer.")
+	b.WriteString(conversationintelligenceartifact.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.FieldID))
+	b.WriteString(") AND layer.")
+	b.WriteString(conversationintelligenceartifact.FieldVersion)
+	b.WriteString(" = (SELECT MAX(newer.")
+	b.WriteString(conversationintelligenceartifact.FieldVersion)
+	b.WriteString(") FROM ")
+	b.WriteString(art)
+	b.WriteString(" AS newer WHERE newer.")
+	b.WriteString(conversationintelligenceartifact.FieldStableID)
+	b.WriteString(" = layer.")
+	b.WriteString(conversationintelligenceartifact.FieldStableID)
+	b.WriteString(" AND newer.")
+	b.WriteString(conversationintelligenceartifact.FieldKind)
+	b.WriteString(" = layer.")
+	b.WriteString(conversationintelligenceartifact.FieldKind)
+	b.WriteString(" AND newer.")
+	b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+	b.WriteString(" = layer.")
+	b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+	b.WriteString(")")
+}
+
+func writePolicyText(b *sql.Builder, s *sql.Selector, field string) {
+	column := "layer." + conversationintelligenceartifact.FieldPayloadJSON
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(column)
+		b.WriteString("::jsonb->>'")
+		b.WriteString(field)
+		b.WriteString("'")
+		return
+	}
+	b.WriteString("json_extract(")
+	b.WriteString(column)
+	b.WriteString(", '$.")
+	b.WriteString(field)
+	b.WriteString("')")
+}
+
+func writePolicyBoolIsFalse(b *sql.Builder, s *sql.Selector, field string) {
+	column := "layer." + conversationintelligenceartifact.FieldPayloadJSON
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("COALESCE(")
+		b.WriteString(column)
+		b.WriteString("::jsonb->>'")
+		b.WriteString(field)
+		b.WriteString("', 'false') = 'false'")
+		return
+	}
+	b.WriteString("COALESCE(json_extract(")
+	b.WriteString(column)
+	b.WriteString(", '$.")
+	b.WriteString(field)
+	b.WriteString("'), 0) = 0")
+}
+
+func writePolicyRetentionDays(b *sql.Builder, s *sql.Selector) {
+	column := "layer." + conversationintelligenceartifact.FieldPayloadJSON
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("COALESCE((")
+		b.WriteString(column)
+		b.WriteString("::jsonb->>'retentionDays')::int, 0)")
+		return
+	}
+	b.WriteString("COALESCE(json_extract(")
+	b.WriteString(column)
+	b.WriteString(", '$.retentionDays'), 0)")
 }
 
 func overdueCommitmentAny(now time.Time) predicate.Commitment {

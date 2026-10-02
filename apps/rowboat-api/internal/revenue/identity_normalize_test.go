@@ -2203,6 +2203,117 @@ func TestRelationshipSearchFindsFocusedReview(t *testing.T) {
 	assertCompanyQuery("Focused evidence review (1)", "Lumen Packet")
 }
 
+func TestRelationshipSearchFindsPrivacySentences(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveArtifact := func(rel *ent.Relationship, kind, stableID string, version int, payload any) {
+		t.Helper()
+		body, err := json.Marshal(payload)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(body)
+		if _, err := f.client.ConversationIntelligenceArtifact.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetKind(kind).SetStableID(stableID).SetVersion(version).
+			SetStatus("active").SetSubjectRef(rel.ID.String()).
+			SetEffectiveAt(time.Now().UTC()).SetEvidenceRefs([]string{}).
+			SetPayloadJSON(string(body)).SetPayloadHash(hex.EncodeToString(sum[:])).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	policy := func(capture string, publish, share bool, days int) ConversationPolicyLayer {
+		return ConversationPolicyLayer{
+			LayerID: "layer", Scope: "meeting", Enforced: true,
+			Capture: capture, ModelRoute: "hosted_allowed",
+			PublishEvidence: publish, ExternalShare: share, RetentionDays: days,
+			RedactionClasses: []string{},
+		}
+	}
+	decision := func(id string) ConversationGovernanceDecision {
+		return ConversationGovernanceDecision{
+			DecisionID: id, Checkpoint: "transcription", PolicyVersion: "policy:test",
+			Allowed: true, Route: "hosted_allowed",
+			Reason:           "effective policy permits this operation",
+			RedactionClasses: []string{}, DecidedAt: time.Now().UTC().Format(time.RFC3339),
+		}
+	}
+	quill := makeCompany("Quill Atelier")
+	cedar := makeCompany("Cedar Mill")
+	harbor := makeCompany("Harbor Ledger")
+	lumen := makeCompany("Lumen Packet")
+	saveArtifact(quill, "conversation_policy", "privacy:quill", 1, policy("deny", false, false, 7))
+	saveArtifact(quill, "governance_decision", "privacy:quill:decision", 1, decision("privacy:quill:decision"))
+	saveArtifact(harbor, "governance_decision", "privacy:harbor:one", 1, decision("privacy:harbor:one"))
+	saveArtifact(harbor, "governance_decision", "privacy:harbor:two", 1, decision("privacy:harbor:two"))
+	saveArtifact(lumen, "conversation_policy", "privacy:lumen", 1, policy("deny", false, false, 7))
+	saveArtifact(lumen, "conversation_policy", "privacy:lumen", 2, policy("require_consent", true, true, 30))
+	quillIntel, err := f.svc.RelationshipIntelligenceFor(f.ctx, quill)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if quillIntel.EffectivePolicy.Capture != "deny" || quillIntel.EffectivePolicy.PublishEvidence || quillIntel.EffectivePolicy.ExternalShare || quillIntel.EffectivePolicy.RetentionDays != 7 || len(quillIntel.GovernanceDecisions) != 1 {
+		t.Fatalf("quill privacy = %+v decisions=%d", quillIntel.EffectivePolicy, len(quillIntel.GovernanceDecisions))
+	}
+	cedarIntel, err := f.svc.RelationshipIntelligenceFor(f.ctx, cedar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cedarIntel.EffectivePolicy.Capture != "require_consent" || !cedarIntel.EffectivePolicy.PublishEvidence || !cedarIntel.EffectivePolicy.ExternalShare || cedarIntel.EffectivePolicy.RetentionDays != 30 || len(cedarIntel.GovernanceDecisions) != 0 {
+		t.Fatalf("cedar privacy = %+v decisions=%d", cedarIntel.EffectivePolicy, len(cedarIntel.GovernanceDecisions))
+	}
+	lumenIntel, err := f.svc.RelationshipIntelligenceFor(f.ctx, lumen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if lumenIntel.EffectivePolicy.Capture != "require_consent" || lumenIntel.EffectivePolicy.RetentionDays != 30 {
+		t.Fatalf("lumen privacy = %+v", lumenIntel.EffectivePolicy)
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Do not capture", "Quill Atelier")
+	assertCompanyQuery("Capture: Do not capture", "Quill Atelier")
+	assertCompanyQuery("Shared excerpts: off", "Quill Atelier")
+	assertCompanyQuery("Plan sharing outside this workspace: blocked", "Quill Atelier")
+	assertCompanyQuery("Retention: 7 days", "Quill Atelier")
+	assertCompanyQuery("1 privacy decision recorded.", "Quill Atelier")
+	assertCompanyQuery("Ask before capturing", "Cedar Mill", "Harbor Ledger", "Lumen Packet")
+	assertCompanyQuery("Shared excerpts: on", "Cedar Mill", "Harbor Ledger", "Lumen Packet")
+	assertCompanyQuery("Plan sharing outside this workspace: allowed", "Cedar Mill", "Harbor Ledger", "Lumen Packet")
+	assertCompanyQuery("Retention: 30 days", "Cedar Mill", "Harbor Ledger", "Lumen Packet")
+	assertCompanyQuery("No privacy decisions recorded.", "Cedar Mill", "Lumen Packet")
+	assertCompanyQuery("2 privacy decisions recorded.", "Harbor Ledger")
+	assertCompanyQuery("Capture is allowed")
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {
