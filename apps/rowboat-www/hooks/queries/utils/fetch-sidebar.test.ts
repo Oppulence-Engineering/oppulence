@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 
+import { DashboardRequestError, type RequestJsonFn } from "@/lib/api/request-json";
 import {
+  loadSidebarTasks,
   previewSidebarRuns,
   sidebarAgentItem,
   sidebarRunCountLabel,
   sidebarRunLabel,
   SIDEBAR_RUN_PREVIEW,
 } from "@/hooks/queries/utils/fetch-sidebar";
+import { loadWorkflowTasks } from "@/hooks/queries/utils/fetch-workflows";
 
 describe("sidebar labels", () => {
   it("names an agent and keeps the slug as the navigation value", () => {
@@ -68,5 +71,25 @@ describe("sidebar run preview", () => {
   it("omits the badge when there are no runs", () => {
     expect(sidebarRunCountLabel(previewSidebarRuns([]))).toBe("");
     expect(sidebarRunCountLabel(previewSidebarRuns([{ slug: "missing-id" }]))).toBe("");
+  });
+});
+
+describe("workflow list failures", () => {
+  it("does not turn a down API into an empty workflow list", async () => {
+    const down = new DashboardRequestError("Request failed (503)", 503);
+    const request = (async () => {
+      throw down;
+    }) as RequestJsonFn;
+    await expect(loadSidebarTasks(request)).rejects.toBe(down);
+    await expect(loadWorkflowTasks(request)).rejects.toBe(down);
+  });
+
+  it("still treats a missing workflow route as an empty list", async () => {
+    const missing = new DashboardRequestError("gone", 404);
+    const request = (async () => {
+      throw missing;
+    }) as RequestJsonFn;
+    await expect(loadSidebarTasks(request)).resolves.toEqual([]);
+    await expect(loadWorkflowTasks(request)).resolves.toEqual([]);
   });
 });

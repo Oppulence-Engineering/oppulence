@@ -30,12 +30,9 @@ export type RequestJsonInput<T> = {
 
 export type RequestJsonFn = <T>(input: RequestJsonInput<T>) => Promise<T>;
 
-/** 404/502/503 mean the route is missing or the local API is down. */
+/** A missing route is optional. A gateway timeout or an unavailable API is a failed load. */
 export function isOptionalRequestFailure(error: unknown): boolean {
-  return (
-    error instanceof DashboardRequestError &&
-    (error.status === 404 || error.status === 502 || error.status === 503)
-  );
+  return error instanceof DashboardRequestError && error.status === 404;
 }
 
 function errorMessage(body: unknown, status: number): { message: string; code?: string } {
