@@ -1222,12 +1222,19 @@ export function graphAskChanges(
   return draft.trim() !== state.query || Boolean(state.selectedNodeId) || state.focusDepth !== 0;
 }
 
-export function graphQueryAnswer(answer: string, companyCount: number): string {
+/** A question only sees companies already drawn. A later page can still hold the match. */
+export function graphQueryMissLabel(): string {
+  return "No loaded companies match this question. Show the next companies to keep looking.";
+}
+
+export function graphQueryAnswer(answer: string, companyCount: number, hasMore = false): string {
   if (companyCount === 0) return "No companies are in this graph yet.";
-  return answer
+  const rewritten = answer
     .replace(/\b1 relationship matches\b/g, "1 company matches")
     .replace(/\b(\d+) relationships match\b/g, (_, count: string) => `${count} companies match`)
     .replace(/\btext: /g, "");
+  if (hasMore && /^0 companies match\b/.test(rewritten)) return graphQueryMissLabel();
+  return rewritten;
 }
 
 /** Parsed filters are query tokens such as "lifecycle: renewal". Show the value. */
@@ -1988,7 +1995,11 @@ export function RelationshipGraphWorkspace({
           >
             <Sparkle className="size-4 shrink-0 text-oppulence-orange" />
             <Label className="mr-auto font-normal">
-              {graphQueryAnswer(queryResult.answer, relationships.length)}
+              {graphQueryAnswer(
+                queryResult.answer,
+                relationships.length,
+                Boolean(graph?.hasMore),
+              )}
             </Label>
             {relationships.length === 0
               ? null

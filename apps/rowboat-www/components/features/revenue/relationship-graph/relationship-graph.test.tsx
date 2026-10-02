@@ -28,6 +28,7 @@ import {
   graphAskChanges,
   graphCanReset,
   graphQueryAnswer,
+  graphQueryMissLabel,
   graphQueryFilterLabel,
   searchWithoutCompanyGraph,
   withoutPersonDirectoryRecords,
@@ -228,6 +229,12 @@ describe("RelationshipGraphWorkspace", () => {
     );
     expect(graphQueryAnswer("2 relationships match overdue commitments.", 2)).toBe(
       "2 companies match overdue commitments.",
+    );
+    expect(graphQueryAnswer("0 relationships match text: quillhaven.", 200, true)).toBe(
+      graphQueryMissLabel(),
+    );
+    expect(graphQueryAnswer("0 relationships match text: quillhaven.", 200, false)).toBe(
+      "0 companies match quillhaven.",
     );
     expect(graphQueryFilterLabel("text: dogfood")).toBe("Dogfood");
     expect(graphQueryFilterLabel("lifecycle: renewal")).toBe("Renewal");
