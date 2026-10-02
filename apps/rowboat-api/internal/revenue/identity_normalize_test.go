@@ -832,6 +832,99 @@ func TestRelationshipSearchFindsTheMissingNextStep(t *testing.T) {
 	assertCompanyQuery("step")
 }
 
+func TestRelationshipSearchFindsTheSourceWarning(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier", ResourceRefs: []string{"hubspot:company:quill"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Mill", ResourceRefs: []string{"slack:channel:cedar"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+		ResourceRefs: []string{"google:company:lumen", "slack:channel:lumen"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Ledger",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, status := range []struct{ source, state, completeness string }{
+		{"hubspot", "stale", "stale"},
+		{"slack", "rebuilding", "rebuilding"},
+		{"google", "degraded", "disconnected"},
+	} {
+		if _, err := f.client.RelationshipSourceStatus.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetSource(status.source).SetSourceAccountID("default").
+			SetStatus(status.state).SetCompleteness(status.completeness).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	page, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 100, 0)
+	if err != nil || page == nil {
+		t.Fatal(err)
+	}
+	gotExplanation := map[string]string{}
+	for _, item := range page.Items {
+		if item.ReasonCode != "source_degradation" || item.Edges.Relationship == nil {
+			continue
+		}
+		gotExplanation[item.Edges.Relationship.DisplayName] = item.Explanation
+	}
+	wantExplanation := map[string]string{
+		"Quill Atelier": "HubSpot evidence is incomplete, stale, rebuilding, or missing a required permission.",
+		"Cedar Mill":    "Slack evidence is incomplete, stale, rebuilding, or missing a required permission.",
+		"Lumen Packet":  "Google and Slack evidence is incomplete, stale, rebuilding, or missing a required permission.",
+	}
+	for name, explanation := range wantExplanation {
+		if gotExplanation[name] != explanation {
+			t.Fatalf("%s explanation = %q, want %q", name, gotExplanation[name], explanation)
+		}
+	}
+	if _, ok := gotExplanation["Harbor Ledger"]; ok {
+		t.Fatalf("harbor explanation = %q", gotExplanation["Harbor Ledger"])
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	hubspot := "HubSpot evidence is incomplete, stale, rebuilding, or missing a required permission."
+	slack := "Slack evidence is incomplete, stale, rebuilding, or missing a required permission."
+	combined := "Google and Slack evidence is incomplete, stale, rebuilding, or missing a required permission."
+	assertCompanyQuery("Source needs reconnecting", "Quill Atelier", "Cedar Mill", "Lumen Packet")
+	assertCompanyQuery(hubspot, "Quill Atelier")
+	assertCompanyQuery(slack, "Cedar Mill")
+	assertCompanyQuery(combined, "Lumen Packet")
+	assertCompanyQuery("Google evidence is incomplete, stale, rebuilding, or missing a required permission.")
+	assertCompanyQuery("HubSpot and Slack evidence is incomplete, stale, rebuilding, or missing a required permission.")
+	assertCompanyQuery("reconnecting", "Quill Atelier", "Cedar Mill", "Lumen Packet")
+}
+
 func TestRelationshipSearchFindsTheDetailSource(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

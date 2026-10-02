@@ -845,6 +845,9 @@ func (s *Service) ListRelationshipsFiltered(
 				))
 			}
 		}
+		if degraded := relationshipSheetSourceDegradationMatch(needle); degraded != nil {
+			parts = append(parts, degraded)
+		}
 		if sheetPhraseMatches("no action is currently recommended", needle) {
 			parts = append(parts, relationship.Not(
 				relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen)),
@@ -1174,6 +1177,111 @@ func relationshipShowsMissingNextStep() predicate.Relationship {
 		relationshipTextBlank(relationship.FieldNextAction),
 		relationship.LifecycleIn("evaluation", "contracting", "onboarding", "renewal"),
 	)
+}
+
+// relationshipSheetSourceDegradationMatch matches the attention sentence for a
+// connector that is incomplete, stale, rebuilding, or missing a permission.
+// The joined sentence is exact: "Slack evidence…" stays off a company whose
+// warning actually says "Google and Slack evidence…".
+func relationshipSheetSourceDegradationMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	if sheetPhraseMatches("source needs reconnecting", needle) {
+		preds = append(preds, relationshipHasDegradedDependency())
+	}
+	type sourceWarning struct {
+		phrase string
+		pred   predicate.Relationship
+	}
+	families := []string{"google", "hubspot", "slack"}
+	warnings := make([]sourceWarning, 0, (1<<len(families))-1)
+	for mask := 1; mask < 1<<len(families); mask++ {
+		sources := make([]string, 0, len(families))
+		for i, family := range families {
+			if mask&(1<<i) != 0 {
+				sources = append(sources, family)
+			}
+		}
+		warnings = append(warnings, sourceWarning{
+			phrase: normalizePersonSearch(sourceDegradationExplanation(sources)),
+			pred:   relationshipDegradedCanonicalSet(sources),
+		})
+	}
+	exact := false
+	for _, warning := range warnings {
+		if needle == warning.phrase {
+			preds = append(preds, warning.pred)
+			exact = true
+			break
+		}
+	}
+	if !exact {
+		for _, warning := range warnings {
+			if sheetPhraseMatches(warning.phrase, needle) {
+				preds = append(preds, warning.pred)
+			}
+		}
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+// relationshipDegradedCanonicalSet is the company whose degraded connectors
+// are exactly these canonical sources, in the same set the attention sentence
+// joins.
+func relationshipDegradedCanonicalSet(sources []string) predicate.Relationship {
+	wanted := make(map[string]bool, len(sources))
+	for _, source := range sources {
+		wanted[canonicalSource(source)] = true
+	}
+	preds := make([]predicate.Relationship, 0, 3)
+	for _, family := range []string{"google", "hubspot", "slack"} {
+		match := relationshipHasDegradedCanonical(family)
+		if wanted[family] {
+			preds = append(preds, match)
+			continue
+		}
+		preds = append(preds, relationship.Not(match))
+	}
+	return relationship.And(preds...)
+}
+
+func relationshipHasDegradedCanonical(canonical string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipsourcestatus.Table)
+			b.WriteString(" AS stop WHERE stop.")
+			b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND (stop.")
+			b.WriteString(relationshipsourcestatus.FieldStatus)
+			b.WriteString(" <> 'live' OR stop.")
+			b.WriteString(relationshipsourcestatus.FieldCompleteness)
+			b.WriteString(" <> 'complete' OR NOT ")
+			writeAliasMissingScopesEmpty(b, s, "stop")
+			b.WriteString(") AND lower(stop.")
+			b.WriteString(relationshipsourcestatus.FieldSource)
+			b.WriteString(") IN (")
+			switch canonical {
+			case "google":
+				b.WriteString("'gmail', 'calendar', 'google'")
+			case "slack":
+				b.WriteString("'slack'")
+			default:
+				b.WriteString("'hubspot', 'crm'")
+			}
+			b.WriteString(") AND ")
+			writeDependentSource(b, s, "stop")
+			b.WriteString(")")
+		}))
+	})
 }
 
 // relationshipHasDegradedDependency is a connector the company uses that is not
