@@ -109,6 +109,8 @@ describe("CloudWorkflowsView", () => {
     expect(workflowRunsFailureCopy()).toBe("Runs could not load. Try again.");
     expect(workflowTemplatesFailureCopy()).toBe("Templates could not load. Try again.");
     expect(source).toContain("templatesFailed");
+    expect(source).toContain("Loading templates…");
+    expect(source).toContain("tasksQuery.isPending && !tasksQuery.isError");
     expect(source).toContain("tasksQuery.isError && tasks.length === 0");
     expect(source).toContain("runsQuery.isError && runs.length === 0");
     expect(source).toContain("loadFailed || query.trim()");

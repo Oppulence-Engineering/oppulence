@@ -517,11 +517,13 @@ export function workflowLibrarySearchText(
 function CreateWorkflowDialog({
   templates,
   templatesFailed = false,
+  templatesLoading = false,
   onRetryTemplates,
   onCreated,
 }: {
   templates: CloudTaskTemplate[];
   templatesFailed?: boolean;
+  templatesLoading?: boolean;
   onRetryTemplates?: () => void;
   onCreated: (task: CloudTask) => void;
 }) {
@@ -663,6 +665,10 @@ function CreateWorkflowDialog({
                         Try again
                       </Button>
                     </div>
+                  ) : templatesLoading ? (
+                    <p className="p-6 text-center text-xs text-muted-foreground">
+                      Loading templates…
+                    </p>
                   ) : (
                     <p className="p-6 text-center text-xs text-muted-foreground">
                       No custom templates are available yet.
@@ -704,6 +710,7 @@ function WorkflowLibrary({
   runs,
   templates,
   templatesFailed = false,
+  templatesLoading = false,
   busy,
   loadFailed = false,
   onCreated,
@@ -716,6 +723,7 @@ function WorkflowLibrary({
   runs: CloudRun[];
   templates: CloudTaskTemplate[];
   templatesFailed?: boolean;
+  templatesLoading?: boolean;
   busy: boolean;
   loadFailed?: boolean;
   onCreated: (task: CloudTask) => void;
@@ -764,6 +772,7 @@ function WorkflowLibrary({
             onRetryTemplates={onRetryTemplates}
             templates={templates}
             templatesFailed={templatesFailed}
+            templatesLoading={templatesLoading}
           />
         </div>
       </div>
@@ -1694,7 +1703,9 @@ export function CloudWorkflowsView({
   const templates = (templatesQuery.data ?? []) as CloudTaskTemplate[];
   const runs = (runsQuery.data?.pages.flatMap((page) => page.runs) ?? []) as CloudRun[];
   const nextCursor = runsQuery.hasNextPage ? runsQuery.data?.pages.at(-1)?.nextCursor : undefined;
-  const loading = tasksQuery.isPending || templatesQuery.isPending || runsQuery.isPending;
+  // A template or run refetch with no cached page sets status back to pending.
+  // Treating that as the first load replaced the library and closed this dialog.
+  const loading = tasksQuery.isPending && !tasksQuery.isError;
   const queryCause = tasksQuery.error ?? templatesQuery.error ?? runsQuery.error;
   const queryError =
     queryCause instanceof Error
@@ -1917,10 +1928,8 @@ export function CloudWorkflowsView({
           onRetryTemplates={() => {
             void templatesQuery.refetch();
           }}
-          templatesFailed={
-            templatesQuery.isError &&
-            templates.filter((template) => !template.firstParty).length === 0
-          }
+          templatesFailed={templatesQuery.isError}
+          templatesLoading={templatesQuery.isPending}
           runs={runs}
           tasks={tasks}
           templates={templates}
