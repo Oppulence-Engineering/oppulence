@@ -626,6 +626,7 @@ function Inspector({
   onPropose,
   focusDepth,
   onFocusDepth,
+  actionError,
 }: {
   node?: RelationshipGraphNode;
   graph: RelationshipGraph;
@@ -636,6 +637,7 @@ function Inspector({
   onPropose: (node: RelationshipGraphNode) => void;
   focusDepth: RelationshipGraphSavedViewState["focusDepth"];
   onFocusDepth: (depth: RelationshipGraphSavedViewState["focusDepth"]) => void;
+  actionError?: string | null;
 }) {
   const [expandedConnections, setExpandedConnections] = React.useState(false);
   const [expandedDetails, setExpandedDetails] = React.useState(false);
@@ -857,6 +859,11 @@ function Inspector({
         </div>
       ) : null}
 
+      {actionError ? (
+        <p className="mt-4 text-sm text-destructive" role="alert">
+          {actionError}
+        </p>
+      ) : null}
       <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-4">
         {relationshipRecords.map((relationship) => (
           <Button key={relationship.id} size="sm" onClick={() => onOpen(relationship.id)}>
@@ -1389,6 +1396,7 @@ export function RelationshipGraphWorkspace({
   const [namingView, setNamingView] = React.useState(false);
   const [viewName, setViewName] = React.useState("");
   const [viewError, setViewError] = React.useState<string | null>(null);
+  const [actionError, setActionError] = React.useState<string | null>(null);
   const [resetSignal, setResetSignal] = React.useState(0);
   const migrationStartedRef = React.useRef(false);
   const graphEnabled = !(viewState.scope === "relationship" && !viewState.relationshipId);
@@ -1745,11 +1753,13 @@ export function RelationshipGraphWorkspace({
     setViewState((current) => ({ ...current, ...patch }));
   }, []);
   const selectNode = React.useCallback(
-    (selectedNodeId?: string) =>
+    (selectedNodeId?: string) => {
+      setActionError(null);
       updateState({
         selectedNodeId,
         focusDepth: selectedNodeId ? viewState.focusDepth : 0,
-      }),
+      });
+    },
     [updateState, viewState.focusDepth],
   );
 
@@ -1791,6 +1801,7 @@ export function RelationshipGraphWorkspace({
   };
 
   const governAction = async (kind: "evaluate" | "approve" | "reject", actionId: string) => {
+    setActionError(null);
     setBusy(true);
     try {
       if (kind === "evaluate") await evaluateAction(actionId);
@@ -1801,7 +1812,9 @@ export function RelationshipGraphWorkspace({
       await load();
     } catch (error) {
       const verb = kind === "evaluate" ? "check" : kind;
-      onError(errMessage(error, `Could not ${verb} this action.`));
+      const message = errMessage(error, `Could not ${verb} this action.`);
+      setActionError(message);
+      onError(message);
     } finally {
       setBusy(false);
     }
@@ -1810,6 +1823,7 @@ export function RelationshipGraphWorkspace({
   const proposeAction = async (node: RelationshipGraphNode) => {
     const relationshipId = node.relationshipId || node.relationshipIds[0];
     if (!relationshipId) return;
+    setActionError(null);
     setBusy(true);
     try {
       await createAction({
@@ -1823,7 +1837,9 @@ export function RelationshipGraphWorkspace({
       onNotice("Follow-up proposed. It still needs your approval.");
       await load();
     } catch (error) {
-      onError(errMessage(error, "Could not propose a follow-up."));
+      const message = errMessage(error, "Could not propose a follow-up.");
+      setActionError(message);
+      onError(message);
     } finally {
       setBusy(false);
     }
@@ -2313,6 +2329,7 @@ export function RelationshipGraphWorkspace({
             onPropose={(node) => void proposeAction(node)}
             focusDepth={viewState.focusDepth}
             onFocusDepth={(focusDepth) => updateState({ focusDepth })}
+            actionError={actionError}
           />
         ) : null}
       </div>
