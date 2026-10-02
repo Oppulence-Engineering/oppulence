@@ -157,10 +157,104 @@ func personVisibleLabelMatch(term string) predicate.Person {
 	if n, ok := exactPersonDetailCount(needle); ok {
 		preds = append(preds, personDetailCount(n))
 	}
+	if window, ok := relativeLabelWindow(needle, time.Now()); ok {
+		preds = append(preds, person.And(
+			person.LastInteractionAtNotNil(),
+			person.LastInteractionAtGT(window.after),
+			person.LastInteractionAtLTE(window.until),
+		))
+	}
 	if len(preds) == 0 {
 		return nil
 	}
 	return person.Or(preds...)
+}
+
+// relativeLabelWindow is the timestamp range that relativeTime prints as this
+// phrase. "3 days ago" is the Last interaction cell, not a stored string.
+func relativeLabelWindow(needle string, now time.Time) (relativeWindow, bool) {
+	past := strings.HasSuffix(needle, " ago")
+	future := strings.HasSuffix(needle, " from now")
+	rest := ""
+	switch {
+	case past:
+		rest = strings.TrimSuffix(needle, " ago")
+	case future:
+		rest = strings.TrimSuffix(needle, " from now")
+	default:
+		return relativeWindow{}, false
+	}
+	var n int
+	var unit string
+	if _, err := fmt.Sscanf(rest, "%d %s", &n, &unit); err != nil || fmt.Sprintf("%d %s", n, unit) != rest {
+		return relativeWindow{}, false
+	}
+	base := strings.TrimSuffix(unit, "s")
+	if base == "min" && unit != "min" && unit != "mins" {
+		return relativeWindow{}, false
+	}
+	step, cap, ok := relativeStep(base)
+	if !ok || n < 1 {
+		return relativeWindow{}, false
+	}
+	want := base
+	if n != 1 {
+		want = base + "s"
+	}
+	if unit != want || n > relativeMax(base) {
+		return relativeWindow{}, false
+	}
+	minAbs := time.Duration(n)*step - step/2
+	maxAbs := time.Duration(n)*step + step/2
+	if n == 1 {
+		minAbs = step
+		if base == "min" {
+			minAbs = 0
+		}
+	}
+	if maxAbs > cap {
+		maxAbs = cap
+	}
+	if minAbs >= cap {
+		return relativeWindow{}, false
+	}
+	if future {
+		return relativeWindow{after: now.Add(minAbs).Add(-time.Nanosecond), until: now.Add(maxAbs)}, false
+	}
+	return relativeWindow{after: now.Add(-maxAbs), until: now.Add(-minAbs)}, true
+}
+
+func relativeStep(base string) (step, cap time.Duration, ok bool) {
+	switch base {
+	case "min":
+		return time.Minute, time.Hour, true
+	case "hour":
+		return time.Hour, 24 * time.Hour, true
+	case "day":
+		return 24 * time.Hour, 30 * 24 * time.Hour, true
+	default:
+		return 0, 0, false
+	}
+}
+
+func relativeMax(base string) int {
+	switch base {
+	case "min":
+		return 60
+	case "hour":
+		return 24
+	case "day":
+		return 30
+	default:
+		return 0
+	}
+}
+
+// relativeWindow is exclusive on the older side and inclusive on the newer
+// side for a past label. Callers use GT(after) and LTE(until).
+type relativeWindow struct {
+	after time.Time
+	until time.Time
 }
 
 // exactPersonDetailCount reads the Details cell. One fact is "1 detail filled

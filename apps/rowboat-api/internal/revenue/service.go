@@ -773,6 +773,13 @@ func (s *Service) ListRelationshipsFiltered(
 		if threads := relationshipEmailThreadLabelMatch(value); threads != nil {
 			parts = append(parts, threads)
 		}
+		if window, ok := relativeLabelWindow(value, time.Now()); ok {
+			parts = append(parts, relationship.And(
+				relationship.LastTouchAtNotNil(),
+				relationship.LastTouchAtGT(window.after),
+				relationship.LastTouchAtLTE(window.until),
+			))
+		}
 		q.Where(relationship.Or(parts...))
 	}
 	rows, err := q.

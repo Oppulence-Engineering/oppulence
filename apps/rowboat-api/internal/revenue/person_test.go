@@ -719,6 +719,36 @@ func TestPersonSearchFindsTheDetailCount(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsTheLastInteraction(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	recent := time.Now().Add(-3*24*time.Hour - time.Hour)
+	older := time.Now().Add(-10 * 24 * time.Hour)
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Casey Quinn").
+		SetLastInteractionAt(recent).
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Morgan Lee").
+		SetLastInteractionAt(older).
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "3 days ago"})
+	if err != nil || found == nil || len(found.Persons) != 1 || found.Persons[0].DisplayName != "Casey Quinn" {
+		t.Fatalf("3 days ago = %+v err=%v", found, err)
+	}
+}
+
 func withRole(in RelationshipParticipantInput, role string) RelationshipParticipantInput {
 	in.Role = role
 	return in

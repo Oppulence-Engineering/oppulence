@@ -351,6 +351,39 @@ func TestRelationshipSearchFindsTheEmailThreadLabel(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsTheLastInteraction(t *testing.T) {
+	f := newFixture(t)
+	recent, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(recent.ID).
+		SetLastTouchAt(time.Now().Add(-3*24*time.Hour - time.Hour)).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	older, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(older.ID).
+		SetLastTouchAt(time.Now().Add(-10 * 24 * time.Hour)).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "3 days ago"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(found.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
+		t.Fatalf("3 days ago = %v", got)
+	}
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {
