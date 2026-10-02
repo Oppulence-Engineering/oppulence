@@ -288,6 +288,8 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain("Sending check finished.");
     expect(source).toContain("Saved views unavailable · Retry");
     expect(source).toContain("savedViewsQuery.isError && savedViewResources.length === 0");
+    expect(source).toContain("legacy: readLegacyGraphViews(window.localStorage)");
+    expect(source).toContain("!migrationSettled || migrationPending");
     expect(source).not.toContain("policy evaluation");
     expect(source).not.toContain("Graph deep link");
     expect(source).not.toContain("Views offline");

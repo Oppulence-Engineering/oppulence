@@ -106,6 +106,7 @@ import {
 } from "@/lib/revenue/revenue";
 import { createConsoleResource, deleteConsoleResource } from "@/lib/console/console";
 import {
+  GRAPH_VIEWS_MIGRATED_KEY,
   LEGACY_GRAPH_VIEWS_KEY,
   graphSavedViews,
   migrateLegacyGraphViews,
@@ -1573,11 +1574,19 @@ export function RelationshipGraphWorkspace({
     },
     onError: (error) => onError(errMessage(error, "Could not delete this graph view.")),
   });
+  const [migrationSettled, setMigrationSettled] = React.useState(false);
   const { mutate: migrateLegacyViews, isPending: migrationPending } = useMutation({
-    mutationFn: (remote: ReturnType<typeof graphSavedViews>) =>
+    mutationFn: ({
+      remote,
+      legacy,
+    }: {
+      remote: ReturnType<typeof graphSavedViews>;
+      legacy: RelationshipGraphSavedView[];
+    }) =>
       migrateLegacyGraphViews({
         storage: window.localStorage,
         remote,
+        legacy,
         create: (view) =>
           createConsoleResource({
             kind: "graph_saved_view",
@@ -1593,16 +1602,26 @@ export function RelationshipGraphWorkspace({
       }
     },
     onError: (error) => onError(errMessage(error, "Could not import local saved graph views.")),
+    onSettled: () => setMigrationSettled(true),
   });
 
   React.useEffect(() => {
     if (!savedViewsQuery.data || migrationStartedRef.current) return;
     migrationStartedRef.current = true;
-    migrateLegacyViews(savedViewsQuery.data.items);
+    // Read before the snapshot effect replaces this key with the server list.
+    // Otherwise the import treats views that already exist as new local views.
+    if (window.localStorage.getItem(GRAPH_VIEWS_MIGRATED_KEY) === "true") {
+      setMigrationSettled(true);
+      return;
+    }
+    migrateLegacyViews({
+      remote: savedViewsQuery.data.items,
+      legacy: readLegacyGraphViews(window.localStorage),
+    });
   }, [migrateLegacyViews, savedViewsQuery.data]);
 
   React.useEffect(() => {
-    if (!savedViewsQuery.data || migrationPending) return;
+    if (!savedViewsQuery.data || !migrationSettled || migrationPending) return;
     const snapshot = savedViewResources.map((resource) => ({
       id: resource.id,
       label: resource.name,
@@ -1615,7 +1634,7 @@ export function RelationshipGraphWorkspace({
     } catch {
       // The durable API remains authoritative when browser storage is unavailable.
     }
-  }, [migrationPending, savedViewResources, savedViewsQuery.data]);
+  }, [migrationPending, migrationSettled, savedViewResources, savedViewsQuery.data]);
 
   const load = React.useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: relationshipKeys.graphs() });
