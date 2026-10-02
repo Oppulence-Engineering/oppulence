@@ -157,6 +157,10 @@ func personVisibleLabelMatch(term string) predicate.Person {
 	if n, ok := exactPersonDetailCount(needle); ok {
 		preds = append(preds, personDetailCount(n))
 	}
+	// The Companies column is only the number. "1" has to find that count.
+	if n, ok := exactPersonCompanyCount(needle); ok {
+		preds = append(preds, person.RelationshipCountEQ(n))
+	}
 	if window, ok := relativeLabelWindow(needle, time.Now()); ok {
 		preds = append(preds, person.And(
 			person.LastInteractionAtNotNil(),
@@ -255,6 +259,20 @@ func relativeMax(base string) int {
 type relativeWindow struct {
 	after time.Time
 	until time.Time
+}
+
+// exactPersonCompanyCount reads the Companies column. The cell is the number
+// itself, so the whole query has to be that number. "1 detail filled in" is
+// the Details cell, not a company count of 1.
+func exactPersonCompanyCount(needle string) (int, bool) {
+	if needle == "" || needle[0] < '0' || needle[0] > '9' {
+		return 0, false
+	}
+	n, err := strconv.Atoi(needle)
+	if err != nil || strconv.Itoa(n) != needle {
+		return 0, false
+	}
+	return n, true
 }
 
 // exactPersonDetailCount reads the Details cell. One fact is "1 detail filled

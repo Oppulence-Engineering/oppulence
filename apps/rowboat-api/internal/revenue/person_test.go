@@ -719,6 +719,38 @@ func TestPersonSearchFindsTheDetailCount(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsTheCompanyCount(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Indira Cole").
+		SetRelationshipCount(1).
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Casey Quinn").
+		SetRelationshipCount(0).
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	one, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "1"})
+	if err != nil || one == nil || len(one.Persons) != 1 || one.Persons[0].DisplayName != "Indira Cole" {
+		t.Fatalf("one company = %+v err=%v", one, err)
+	}
+	none, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "0"})
+	if err != nil || none == nil || len(none.Persons) != 1 || none.Persons[0].DisplayName != "Casey Quinn" {
+		t.Fatalf("zero companies = %+v err=%v", none, err)
+	}
+}
+
 func TestPersonSearchFindsTheLastInteraction(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
