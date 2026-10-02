@@ -13,6 +13,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 )
 
 func TestNormalizeEmailKeepsTheAddress(t *testing.T) {
@@ -528,6 +529,80 @@ func TestRelationshipSearchFindsTheCompletenessCopy(t *testing.T) {
 	assertCompanyQuery("One or more material values have no accessible supporting evidence", "Lumen Packet")
 	assertCompanyQuery("source")
 	assertCompanyQuery("missing")
+}
+
+func TestRelationshipSearchFindsTheCompletenessHeading(t *testing.T) {
+	f := newFixture(t)
+	quill, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	lumen, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	harbor, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Ledger",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipIdentityCandidate.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetProposedRelationship(lumen).
+		SetExistingRelationship(harbor).
+		SetDedupeKey("lumen-harbor").
+		SetAnchorKind("domain").
+		SetAnchorKeyHash("lumen-harbor-hash").
+		SetStatus("pending").
+		Save(auth.WithInternal(f.ctx)); err != nil {
+		t.Fatal(err)
+	}
+	lumenModel, err := f.svc.MissionControl(f.ctx, f.user, lumen.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if lumenModel.Completeness.Status != "ambiguous" || lumenModel.Completeness.UnresolvedIdentityCount != 1 {
+		t.Fatalf("lumen completeness = %+v", lumenModel.Completeness)
+	}
+	quillModel, err := f.svc.MissionControl(f.ctx, f.user, quill.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if quillModel.Completeness.Status != "partial" {
+		t.Fatalf("quill completeness = %+v", quillModel.Completeness)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Some details are still missing", "Quill Atelier")
+	assertCompanyQuery("Needs a review before you act", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("Identity review is required before acting on this relationship", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("1 identity review blocks acting", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("Details are current")
 }
 
 func TestRelationshipSearchFindsTheSheetReviewAndRecommendation(t *testing.T) {

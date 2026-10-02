@@ -1447,6 +1447,25 @@ func relationshipSheetCompletenessMatch(needle string) predicate.Relationship {
 	if sheetPhraseMatches("one or more material values have no accessible supporting evidence.", needle) {
 		preds = append(preds, relationshipMaterialGapCopy(now))
 	}
+	if sheetPhraseMatches("some details are still missing", needle) {
+		preds = append(preds, relationshipShowsPartialHeading(now))
+	}
+	if sheetPhraseMatches("details are current", needle) {
+		preds = append(preds, relationshipShowsCurrentHeading(now))
+	}
+	if sheetPhraseMatches("needs a review before you act", needle) ||
+		sheetPhraseMatches("identity review is required before acting on this relationship.", needle) {
+		preds = append(preds, relationshipShowsAmbiguousHeading(now))
+	}
+	for n := 1; n <= 20; n++ {
+		phrase := fmt.Sprintf("%d identity reviews block acting.", n)
+		if n == 1 {
+			phrase = "1 identity review blocks acting."
+		}
+		if sheetPhraseMatches(phrase, needle) {
+			preds = append(preds, relationshipIdentityReviewCount(n))
+		}
+	}
 	switch len(preds) {
 	case 0:
 		return nil
@@ -1475,6 +1494,132 @@ func relationshipMaterialGapCopy(now time.Time) predicate.Relationship {
 		relationship.Not(relationshipSupportedDetailCount(len(relationshipProjectionDimensions), now)),
 		relationship.Not(relationshipGmailExplanation(now)),
 	)
+}
+
+// relationshipShowsPartialHeading is the heading "Some details are still missing".
+// A review block, a stale connector, a projector wait, and a fully current
+// company each use a different heading.
+func relationshipShowsPartialHeading(now time.Time) predicate.Relationship {
+	return relationship.And(
+		relationship.Not(relationshipHasUnresolvedIdentity()),
+		relationship.Not(relationshipHasBlockingProjection(now)),
+		relationship.Not(relationshipHasEarlySourceStop()),
+		relationship.Not(relationship.And(
+			relationshipSupportedDetailCount(len(relationshipProjectionDimensions), now),
+			relationshipDependenciesAreCurrent(),
+		)),
+	)
+}
+
+// relationshipShowsCurrentHeading is the heading "Details are current".
+func relationshipShowsCurrentHeading(now time.Time) predicate.Relationship {
+	return relationship.And(
+		relationship.Not(relationshipHasUnresolvedIdentity()),
+		relationship.Not(relationshipHasBlockingProjection(now)),
+		relationship.Not(relationshipHasEarlySourceStop()),
+		relationshipSupportedDetailCount(len(relationshipProjectionDimensions), now),
+		relationshipDependenciesAreCurrent(),
+	)
+}
+
+// relationshipShowsAmbiguousHeading is "Needs a review before you act" and the
+// sentence under it. A projector wait replaces both.
+func relationshipShowsAmbiguousHeading(now time.Time) predicate.Relationship {
+	return relationship.And(
+		relationshipHasUnresolvedIdentity(),
+		relationship.Not(relationshipHasBlockingProjection(now)),
+	)
+}
+
+func relationshipIdentityReviewCount(n int) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT count(*) FROM ")
+			b.WriteString(relationshipidentitycandidate.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(relationshipidentitycandidate.FieldStatus)
+			b.WriteString(fmt.Sprintf(
+				" IN ('%s', '%s', '%s') AND (%s = %s OR %s = %s)) = ",
+				identityPending,
+				identityDeferred,
+				identityResolving,
+				relationshipidentitycandidate.ProposedRelationshipColumn,
+				s.C(relationship.FieldID),
+				relationshipidentitycandidate.ExistingRelationshipColumn,
+				s.C(relationship.FieldID),
+			))
+			b.Arg(n)
+		}))
+	})
+}
+
+// relationshipDependenciesAreCurrent is true when every connector the company
+// names has a complete status row and no stored missing scope. A company with
+// no connector is not current.
+func relationshipDependenciesAreCurrent() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.And(
+			sql.Or(
+				relationshipDependsOnGoogle(s),
+				relationshipDependsOnSlack(s),
+				relationshipDependsOnHubSpot(s),
+			),
+			sql.Or(sql.Not(relationshipDependsOnGoogle(s)), relationshipSourceGroupCurrent(s, "gmail", "calendar", "google")),
+			sql.Or(sql.Not(relationshipDependsOnSlack(s)), relationshipSourceGroupCurrent(s, "slack")),
+			sql.Or(sql.Not(relationshipDependsOnHubSpot(s)), relationshipSourceGroupCurrent(s, "hubspot", "crm")),
+		))
+	})
+}
+
+func relationshipSourceGroupCurrent(s *sql.Selector, sources ...string) *sql.Predicate {
+	return sql.And(
+		relationshipSourceGroupState(s, true, sources...),
+		sql.Not(relationshipSourceGroupState(s, false, sources...)),
+	)
+}
+
+func relationshipSourceGroupState(s *sql.Selector, current bool, sources ...string) *sql.Predicate {
+	return sql.P(func(b *sql.Builder) {
+		b.WriteString("EXISTS (SELECT 1 FROM ")
+		b.WriteString(relationshipsourcestatus.Table)
+		b.WriteString(" WHERE ")
+		b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+		b.WriteString(" = ")
+		b.WriteString(s.C(relationship.WorkspaceColumn))
+		b.WriteString(" AND lower(")
+		b.WriteString(relationshipsourcestatus.Table)
+		b.WriteByte('.')
+		b.WriteString(relationshipsourcestatus.FieldSource)
+		b.WriteString(") IN (")
+		for i, source := range sources {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			b.Arg(source)
+		}
+		b.WriteString(") AND ")
+		if current {
+			b.WriteString(relationshipsourcestatus.FieldCompleteness)
+			b.WriteString(" = 'complete' AND ")
+			writeMissingScopesEmpty(b, s)
+		} else {
+			b.WriteByte('(')
+			b.WriteString(relationshipsourcestatus.FieldCompleteness)
+			b.WriteString(" <> 'complete' OR NOT ")
+			writeMissingScopesEmpty(b, s)
+			b.WriteByte(')')
+		}
+		b.WriteByte(')')
+	})
+}
+
+func writeMissingScopesEmpty(b *sql.Builder, s *sql.Selector) {
+	column := relationshipsourcestatus.Table + "." + relationshipsourcestatus.FieldMissingScopes
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(fmt.Sprintf("jsonb_array_length(coalesce(%s, '[]'::jsonb)) = 0", column))
+		return
+	}
+	b.WriteString(fmt.Sprintf("json_array_length(coalesce(%s, '[]')) = 0", column))
 }
 
 // relationshipGmailExplanation is the paragraph that replaces completeness
