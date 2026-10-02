@@ -434,12 +434,22 @@ describe("durable note templates and favorites", () => {
     expect(screen.queryByRole("button", { name: "Add a company" })).toBeNull();
   });
 
-  it("does not claim earlier notes when only more companies remain", async () => {
+  it("does not treat a later company page as missing notes", async () => {
     mocks.fetchWorkspaceNotes.mockResolvedValue({
-      notes: [],
+      notes: [
+        {
+          externalId: "note-1",
+          title: "Account review",
+          body: "Follow up",
+          relationshipId: "relationship-1",
+          relationshipName: "Acme",
+          occurredAt: "2026-09-17T12:00:00Z",
+          eventType: "note",
+        },
+      ],
       relationships: [{ id: "relationship-1", kind: "organization", displayName: "Acme" }],
       failedTimelineCount: 0,
-      hasMoreNotes: true,
+      hasMoreNotes: false,
       nextRelationshipOffset: 200,
       timelineCursors: [],
     });
@@ -451,18 +461,27 @@ describe("durable note templates and favorites", () => {
       failedTimelineCount: 0,
       hasMoreNotes: false,
       timelineCursors: [],
+      nextRelationshipOffset: undefined,
     });
     const user = userEvent.setup();
+    Element.prototype.hasPointerCapture ??= () => false;
+    Element.prototype.setPointerCapture ??= () => undefined;
+    Element.prototype.releasePointerCapture ??= () => undefined;
+    Element.prototype.scrollIntoView ??= () => undefined;
     renderNotes();
 
-    expect(await screen.findByText(notesEmptyDescription(false))).toBeInTheDocument();
-    expect(screen.queryByText(notesEmptyDescription(true))).toBeNull();
-    expect(screen.getByRole("tab", { name: /^Notes/ })).not.toHaveTextContent("0+");
-    await user.click(screen.getByRole("button", { name: notesRemainderLabel(false) }));
+    expect(await screen.findByRole("tab", { name: "Notes 1" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: nextNoteCompaniesLabel() })).toBeNull();
+    expect(screen.queryByRole("button", { name: earlierNotesLabel() })).toBeNull();
+    expect(screen.queryByText(notesEmptyDescription(false))).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "New note" }));
+    await user.click(screen.getByRole("combobox", { name: "Linked company, Link a company" }));
+    await user.click(screen.getByRole("button", { name: nextNoteCompaniesLabel() }));
 
     expect(mocks.fetchMoreWorkspaceNotes).toHaveBeenCalledTimes(1);
-    expect(await screen.findByText(/No notes yet/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: notesRemainderLabel(false) })).toBeNull();
+    expect(await screen.findByRole("option", { name: "Hidden Account Co" })).toBeInTheDocument();
+    expect(mocks.ingestRelationshipObservations).not.toHaveBeenCalled();
   });
 
   it("opens the company named on a meeting note", async () => {
@@ -1260,9 +1279,8 @@ describe("task due order", () => {
     expect(notesRemainderLabel(false)).toBe("Show the next companies");
     expect(notesEmptyDescription(true)).toBe("Earlier notes are still on these companies.");
     expect(notesEmptyDescription(false)).toBe("More companies are still in this list.");
-    expect(notesTabContinues(0, false, true)).toBe(false);
-    expect(notesTabContinues(0, true, false)).toBe(true);
-    expect(notesTabContinues(2, false, true)).toBe(true);
+    expect(notesTabContinues(false)).toBe(false);
+    expect(notesTabContinues(true)).toBe(true);
     expect(templateCountLabel(100, false)).toBe("100");
     expect(templateCountLabel(100, true)).toBe("100+");
     expect(nextTemplatesLabel()).toBe("Show the next templates");

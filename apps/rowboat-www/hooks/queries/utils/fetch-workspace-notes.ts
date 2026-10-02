@@ -106,7 +106,9 @@ export async function loadWorkspaceNotes(
     notes: page.notes,
     relationships: rows.filter((relationship) => relationship.kind !== "person"),
     failedTimelineCount: 0,
-    hasMoreNotes: nextRelationshipOffset !== undefined || notesOffset !== undefined,
+    // The company directory is only the note picker. Notes already cover the
+    // whole workspace, so another company page is not another note page.
+    hasMoreNotes: notesOffset !== undefined,
     timelineCursors: notePageCursor(notesOffset),
     nextRelationshipOffset,
   };
@@ -144,7 +146,7 @@ export async function loadMoreWorkspaceNotes(
     notes: notesPage.notes,
     relationships: moreCompanies,
     failedTimelineCount: 0,
-    hasMoreNotes: nextRelationshipOffset !== undefined || notesOffset !== undefined,
+    hasMoreNotes: notesOffset !== undefined,
     timelineCursors: notePageCursor(notesOffset),
     nextRelationshipOffset,
   };

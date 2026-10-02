@@ -1218,13 +1218,9 @@ export function notesEmptyDescription(hasEarlierNotes: boolean): string {
     : "More companies are still in this list.";
 }
 
-export function notesTabContinues(
-  noteCount: number,
-  hasEarlierNotes: boolean,
-  hasMoreCompanies: boolean,
-): boolean {
-  if (hasEarlierNotes) return true;
-  return noteCount > 0 && hasMoreCompanies;
+/** Another company page is the note picker, not an unread note. */
+export function notesTabContinues(hasEarlierNotes: boolean): boolean {
+  return hasEarlierNotes;
 }
 
 /** A copied link walks this many earlier pages before asking the reader to continue. */
@@ -1389,7 +1385,8 @@ export function NotesView({
     await queryClient.invalidateQueries({ queryKey: workspaceKeys.notes() });
   }, [queryClient]);
   const loadEarlierNotes = React.useCallback(async () => {
-    if (loadingMoreNotes || !hasMoreNotes) return;
+    // The note picker still walks company pages after every note is loaded.
+    if (loadingMoreNotes || (!hasMoreNotes && !hasMoreCompanies)) return;
     setLoadingMoreNotes(true);
     try {
       const next = await fetchMoreWorkspaceNotes({
@@ -1413,6 +1410,7 @@ export function NotesView({
       setLoadingMoreNotes(false);
     }
   }, [
+    hasMoreCompanies,
     hasMoreNotes,
     loadingMoreNotes,
     nextRelationshipOffset,
@@ -1520,10 +1518,7 @@ export function NotesView({
             <Badge className="font-normal text-primary/40" variant="secondary">
               {listNeverLoaded(notesQuery.isError, notesQuery.data) || timelinesUnread
                 ? "Couldn't load"
-                : noteCountLabel(
-                    notes.length,
-                    notesTabContinues(notes.length, hasEarlierNotes, hasMoreCompanies),
-                  )}
+                : noteCountLabel(notes.length, notesTabContinues(hasEarlierNotes))}
             </Badge>
           </TabsTrigger>
           <TabsTrigger
@@ -1739,7 +1734,7 @@ export function NotesView({
       ) : visible.length === 0 ? (
         <WorkspaceEmptyState
           action={
-            hasMoreNotes ? (
+            hasEarlierNotes ? (
               <Button
                 disabled={loadingMoreNotes}
                 onClick={() => void loadEarlierNotes()}
@@ -1760,7 +1755,7 @@ export function NotesView({
             )
           }
           description={
-            hasMoreNotes ? (
+            hasEarlierNotes ? (
               notesEmptyDescription(hasEarlierNotes)
             ) : (
               <>
@@ -1822,7 +1817,7 @@ export function NotesView({
                 <Card className="flex h-28 items-center justify-center border-dashed py-0 text-center">
                   <CardContent>
                     <CardDescription>
-                      {favoriteNotesEmptyCopy(unresolvedFavorites, hasMoreNotes)}
+                      {favoriteNotesEmptyCopy(unresolvedFavorites, hasEarlierNotes)}
                     </CardDescription>
                   </CardContent>
                 </Card>
@@ -1831,10 +1826,10 @@ export function NotesView({
               )}
               {favoriteNotes.length > 0 && unresolvedFavorites > 0 ? (
                 <p className="mt-2 text-xs text-primary/55">
-                  {favoriteNotesEmptyCopy(unresolvedFavorites, hasMoreNotes)}
+                  {favoriteNotesEmptyCopy(unresolvedFavorites, hasEarlierNotes)}
                 </p>
               ) : null}
-              {unresolvedFavorites > 0 && hasMoreNotes ? (
+              {unresolvedFavorites > 0 && hasEarlierNotes ? (
                 <Button
                   className="mt-3"
                   disabled={loadingMoreNotes}
@@ -1964,7 +1959,7 @@ export function NotesView({
               </div>
             </div>
           ))}
-          {hasMoreNotes ? (
+          {hasEarlierNotes ? (
             <Button
               className="m-3"
               disabled={loadingMoreNotes}

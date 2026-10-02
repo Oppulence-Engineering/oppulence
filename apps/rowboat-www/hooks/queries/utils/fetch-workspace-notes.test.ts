@@ -112,4 +112,51 @@ describe("loadWorkspaceNotes", () => {
     expect(more.notes.map((note) => note.title)).toEqual(["Older note"]);
     expect(more.hasMoreNotes).toBe(false);
   });
+
+  it("does not treat another company page as another note page", async () => {
+    const request: RequestJsonFn = async (input) => {
+      if (input.path.startsWith("/workspace-notes")) {
+        return {
+          notes: [
+            {
+              externalId: "note-1",
+              title: "Only note",
+              body: "",
+              relationshipId: "company-0",
+              relationshipName: "Cedar 0",
+              occurredAt: "2026-09-03T12:00:00Z",
+              eventType: "note",
+            },
+          ],
+          hasMore: false,
+        };
+      }
+      const offset = new URLSearchParams(input.path.split("?")[1] ?? "").get("offset");
+      if (offset === "200") {
+        return {
+          relationships: [
+            { id: "company-hidden", kind: "company", displayName: "Cedar Hidden" },
+          ],
+          hasMore: false,
+        };
+      }
+      return { relationships: companies(200), hasMore: true };
+    };
+
+    const first = await loadWorkspaceNotes(request);
+    expect(first.hasMoreNotes).toBe(false);
+    expect(first.timelineCursors).toEqual([]);
+    expect(first.nextRelationshipOffset).toBe(200);
+    expect(first.notes).toHaveLength(1);
+
+    const more = await loadMoreWorkspaceNotes(request, {
+      relationships: first.relationships,
+      timelineCursors: first.timelineCursors,
+      nextRelationshipOffset: first.nextRelationshipOffset,
+    });
+    expect(more.hasMoreNotes).toBe(false);
+    expect(more.notes).toEqual([]);
+    expect(more.relationships.map((company) => company.displayName)).toEqual(["Cedar Hidden"]);
+    expect(more.nextRelationshipOffset).toBeUndefined();
+  });
 });
