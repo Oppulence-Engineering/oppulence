@@ -898,13 +898,16 @@ describe("task due order", () => {
 
   it("names an empty due filter instead of saying the workspace has no tasks", () => {
     expect(taskListEmptyCopy("today")).toBe("Nothing is due today.");
+    expect(taskListEmptyCopy("today", true)).toBe("Nothing loaded is due today.");
     expect(taskListEmptyCopy("overdue")).toBe("Nothing is overdue.");
+    expect(taskListEmptyCopy("overdue", true)).toBe("Nothing loaded is overdue.");
     expect(taskListEmptyCopy("all")).toBeNull();
+    expect(taskListEmptyCopy("all", true)).toBe("More tasks are still in this list.");
     expect(taskFilterName("all")).toBe("Tasks, All tasks");
     expect(taskFilterName("overdue")).toBe("Tasks, Overdue");
     expect(linkedCompanyName("No companies yet")).toBe("Linked company, No companies yet");
     expect(source).toContain("aria-label={taskFilterName(filter)}");
-    expect(source).toContain("taskListEmptyCopy(filter)");
+    expect(source).toContain("taskListEmptyCopy(filter, hasMoreTasks)");
     expect(source).toContain("taskIsDueToday(task.dueAt, today)");
     expect(source).toContain("companyName(relationship)");
     expect(source).toContain("taskIsOverdue(task.dueAt, now)");

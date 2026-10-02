@@ -2288,12 +2288,20 @@ export function sortTasksByDue<T extends { dueAt?: string | null }>(
 }
 
 /**
- * Due today and Overdue are filters. An empty result means nothing falls in
- * that window, which is not the same as a workspace with no tasks.
+ * Due today and Overdue are filters. An empty result means nothing loaded
+ * falls in that window. Later tasks can still be due today or overdue.
  */
-export function taskListEmptyCopy(filter: "all" | "today" | "overdue"): string | null {
-  if (filter === "today") return "Nothing is due today.";
-  if (filter === "overdue") return "Nothing is overdue.";
+export function taskListEmptyCopy(
+  filter: "all" | "today" | "overdue",
+  hasMore = false,
+): string | null {
+  if (filter === "today") {
+    return hasMore ? "Nothing loaded is due today." : "Nothing is due today.";
+  }
+  if (filter === "overdue") {
+    return hasMore ? "Nothing loaded is overdue." : "Nothing is overdue.";
+  }
+  if (hasMore) return "More tasks are still in this list.";
   return null;
 }
 
@@ -2531,7 +2539,7 @@ export function TasksView({
             )
           }
           description={
-            taskListEmptyCopy(filter) ?? (
+            taskListEmptyCopy(filter, hasMoreTasks) ?? (
               <>
                 No tasks yet! Create your first
                 <br />
