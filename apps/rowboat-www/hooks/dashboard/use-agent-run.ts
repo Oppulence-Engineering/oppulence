@@ -8,6 +8,7 @@ import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import {
   applyAgentEvent,
   friendlyAgentError,
+  shownAgentError,
   type ApprovalRequest,
   type ConversationItem,
 } from "@/lib/agents/agent-history";
@@ -94,7 +95,7 @@ export function useAgentRun(selectedAgent: string) {
   const failOpenRun = useCallback((message: string) => {
     setConversation([]);
     setStatus("error");
-    setChatError(friendlyAgentError(message));
+    setChatError(shownAgentError(new Error(message), "Could not load conversation"));
   }, []);
 
   const handleEvent = useCallback((rawEvent: AgentStreamEvent) => {
@@ -203,9 +204,7 @@ export function useAgentRun(selectedAgent: string) {
       setProcessing(false);
       setStatus("ready");
     } catch (error) {
-      setChatError(
-        friendlyAgentError(error instanceof Error ? error.message : "Could not stop the run"),
-      );
+      setChatError(shownAgentError(error, "Could not stop the run"));
       setStatus("streaming");
     }
   }, [runId]);
@@ -254,11 +253,7 @@ export function useAgentRun(selectedAgent: string) {
               : item,
           ),
         );
-        setChatError(
-          friendlyAgentError(
-            error instanceof Error ? error.message : "Could not resolve the approval",
-          ),
-        );
+        setChatError(shownAgentError(error, "Could not resolve the approval"));
       }
     },
     [runId],
@@ -325,9 +320,7 @@ export function useAgentRun(selectedAgent: string) {
       } catch (error) {
         setConversation((items) => items.filter((item) => item.id !== userMessageId));
         setText(originalText);
-        setChatError(
-          friendlyAgentError(error instanceof Error ? error.message : "Failed to send message"),
-        );
+        setChatError(shownAgentError(error, "Failed to send message"));
         setStatus("error");
         window.setTimeout(() => setStatus("ready"), 2_000);
         throw error;

@@ -12,6 +12,7 @@ import {
 
 import {
   conversationFromAgentEvents,
+  shownAgentError,
   type AgentHistoryItem,
   type ConversationItem,
 } from "@/lib/agents/agent-history";
@@ -147,7 +148,7 @@ export function useChatSessions({
         const agent = stored?.agent || meta?.agent;
         if (agent) onSelectAgent(agent);
       } catch (error) {
-        onFailedOpen(error instanceof Error ? error.message : "Could not load conversation");
+        onFailedOpen(shownAgentError(error, "Could not load conversation"));
       }
     },
     [activeRunId, onBeginOpen, onFailedOpen, onOpen, onSelectAgent, scope, sessions],

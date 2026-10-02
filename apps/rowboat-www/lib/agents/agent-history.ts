@@ -43,6 +43,22 @@ export function friendlyAgentError(message: string, subject: "agent" | "run" = "
   return message;
 }
 
+const BARE_AGENT_STATUS = /^Request failed(?:: \d+\b.*| \(\d+\))$/;
+
+/**
+ * A chat action should keep a specific failure. A status code with no sentence
+ * is replaced by the action's own fallback. A rejected key, a rate limit, and
+ * an out-of-credits provider still use the sentences we already explain.
+ */
+export function shownAgentError(error: unknown, fallback: string): string {
+  const message = error instanceof Error ? error.message.trim() : "";
+  if (!message) return fallback;
+  const friendly = friendlyAgentError(message);
+  if (friendly !== message) return friendly;
+  if (BARE_AGENT_STATUS.test(message)) return fallback;
+  return message;
+}
+
 export function parseAgentSessionsResponse(value: unknown): AgentSessionSummary[] {
   return ListAgentSessions200Response.parse(value).sessions.map(
     ({ sessionId, agent, title, createdAt, lastActivityAt }) => ({

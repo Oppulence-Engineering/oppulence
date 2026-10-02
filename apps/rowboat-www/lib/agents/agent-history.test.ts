@@ -5,6 +5,7 @@ import {
   friendlyAgentError,
   parseAgentSessionEventsResponse,
   parseAgentSessionsResponse,
+  shownAgentError,
 } from "@/lib/agents/agent-history";
 
 it("hides provider and workflow details from agent failures", () => {
@@ -48,6 +49,25 @@ it("hides provider and workflow details from agent failures", () => {
   expect(friendlyAgentError("Agent stream failed (429)")).toBe(
     "Too many requests were sent from this workspace. Wait a moment, then try again.",
   );
+});
+
+describe("shownAgentError", () => {
+  it("replaces a bare status and keeps a specific sentence", () => {
+    const send = "Failed to send message";
+    expect(shownAgentError(new Error("Request failed: 500 Internal Server Error"), send)).toBe(
+      send,
+    );
+    expect(shownAgentError(new Error("Request failed (500)"), send)).toBe(send);
+    expect(shownAgentError(new Error("The agent was canceled."), send)).toBe(
+      "The agent was canceled.",
+    );
+    expect(shownAgentError(new Error("Request failed: 429 Too Many Requests"), send)).toBe(
+      "Too many requests were sent from this workspace. Wait a moment, then try again.",
+    );
+    expect(shownAgentError("nope", "Could not load conversation")).toBe(
+      "Could not load conversation",
+    );
+  });
 });
 
 describe("conversationFromAgentEvents", () => {
