@@ -30,9 +30,9 @@ import {
 import {
   EmptyBlock,
   errMessage,
-  failedListIsEmpty,
   ListRefreshFailure,
   ListSkeleton,
+  listNeverLoaded,
   listRefreshFailureCopy,
   ModeChip,
   refetchClearingBanner,
@@ -959,7 +959,8 @@ export function RelationshipsView({
     }
   }, [onError, onNotice]);
 
-  const companyCountLabel = failedListIsEmpty(relationshipsQuery.isError, companies.length)
+  const companiesMissing = listNeverLoaded(relationshipsQuery.isError, relationshipsQuery.data);
+  const companyCountLabel = companiesMissing
     ? "Couldn't load"
     : companyDirectoryCount(companies.length, hasMoreCompanies);
 
@@ -1026,7 +1027,7 @@ export function RelationshipsView({
         </div>
       </div>
 
-      {relationshipsQuery.isError && companies.length > 0 ? (
+      {relationshipsQuery.isError && relationshipsQuery.data != null ? (
         <ListRefreshFailure
           message={listRefreshFailureCopy("companies")}
           onRetry={() =>
@@ -1034,7 +1035,7 @@ export function RelationshipsView({
           }
         />
       ) : null}
-      {failedListIsEmpty(relationshipsQuery.isError, companies.length) ? (
+      {companiesMissing ? (
         <EmptyBlock
           body={companyListFailureCopy()}
           image="companies"

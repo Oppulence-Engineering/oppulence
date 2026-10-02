@@ -71,9 +71,9 @@ import { workspaceKeys } from "@/hooks/queries/utils/workspace-keys";
 import {
   EmptyBlock,
   errMessage,
-  failedListIsEmpty,
   ListRefreshFailure,
   ListSkeleton,
+  listNeverLoaded,
   listRefreshFailureCopy,
   refetchClearingBanner,
   WorkspaceEmptyState,
@@ -654,7 +654,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
         icon={<User />}
         label={directoryTitle.label}
         count={
-          failedListIsEmpty(peopleQuery.isError, people.length)
+          listNeverLoaded(peopleQuery.isError, peopleQuery.data)
             ? "Couldn't load"
             : personDirectoryCount(people.length, hasMorePeople)
         }
@@ -688,11 +688,17 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
           <ArrowClockwise className={loading ? "animate-spin" : ""} /> Refresh
         </Button>
       </div>
+      {peopleQuery.isError && peopleQuery.data != null ? (
+        <ListRefreshFailure
+          message={listRefreshFailureCopy("people")}
+          onRetry={() => void refetchClearingBanner(() => peopleQuery.refetch(), onError)}
+        />
+      ) : null}
       {loading ? (
         <div className="p-4">
           <ListSkeleton />
         </div>
-      ) : failedListIsEmpty(peopleQuery.isError, people.length) ? (
+      ) : listNeverLoaded(peopleQuery.isError, peopleQuery.data) ? (
         <EmptyBlock body={peopleListFailureCopy()} image="people" learnMore={[]} title="People">
           <Button
             onClick={() => void refetchClearingBanner(() => peopleQuery.refetch(), onError)}
@@ -738,12 +744,6 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
         </EmptyBlock>
       ) : (
         <div className="min-w-0 flex-1 overflow-auto">
-          {peopleQuery.isError ? (
-            <ListRefreshFailure
-              message={listRefreshFailureCopy("people")}
-              onRetry={() => void refetchClearingBanner(() => peopleQuery.refetch(), onError)}
-            />
-          ) : null}
           <table
             className="w-full min-w-[1180px] table-fixed border-collapse text-left"
             aria-label="People"
@@ -1482,7 +1482,7 @@ export function NotesView({
           >
             <Note className="size-4" /> Notes{" "}
             <Badge className="font-normal text-primary/40" variant="secondary">
-              {failedListIsEmpty(notesQuery.isError, notes.length)
+              {listNeverLoaded(notesQuery.isError, notesQuery.data)
                 ? "Couldn't load"
                 : noteCountLabel(
                     notes.length,
@@ -1575,7 +1575,13 @@ export function NotesView({
         </div>
       </div>
       ) : null}
-      {tab === "templates" && failedListIsEmpty(templatesQuery.isError, templates.length) ? (
+      {tab === "notes" && notesQuery.isError && notesQuery.data != null ? (
+        <ListRefreshFailure
+          message={listRefreshFailureCopy("notes")}
+          onRetry={() => void refetchClearingBanner(() => notesQuery.refetch(), onError)}
+        />
+      ) : null}
+      {tab === "templates" && listNeverLoaded(templatesQuery.isError, templatesQuery.data) ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
           <p className="text-sm text-destructive">
             {explainedRevenueError(templatesQuery.error, "Could not load note templates.")}
@@ -1660,7 +1666,7 @@ export function NotesView({
         <div className="p-4">
           <ListSkeleton />
         </div>
-      ) : failedListIsEmpty(notesQuery.isError, notes.length) ? (
+      ) : listNeverLoaded(notesQuery.isError, notesQuery.data) ? (
         <WorkspaceEmptyState
           action={
             <Button
@@ -1720,12 +1726,6 @@ export function NotesView({
         />
       ) : (
         <div className="min-h-0 flex-1 overflow-auto">
-          {notesQuery.isError ? (
-            <ListRefreshFailure
-              message={listRefreshFailureCopy("notes")}
-              onRetry={() => void refetchClearingBanner(() => notesQuery.refetch(), onError)}
-            />
-          ) : null}
           {showFavorites ? (
             <section className="px-4 pt-3">
               <Label className="mb-3 flex items-center gap-1 text-[12px] font-normal text-primary/45">
@@ -1734,7 +1734,7 @@ export function NotesView({
                   {favoriteNotesLabel(favoriteNotes.length, unresolvedFavorites)}
                 </Badge>
               </Label>
-              {favoritesQuery.isError && favoriteNotes.length === 0 ? (
+              {listNeverLoaded(favoritesQuery.isError, favoritesQuery.data) ? (
                 <div className="flex items-center gap-3 border border-destructive/30 p-3">
                   <p className="text-xs text-destructive">
                     {explainedRevenueError(favoritesQuery.error, "Could not load favorites.")}
@@ -2820,7 +2820,7 @@ export function TasksView({
           </Button>
         </div>
       </div>
-      {relationshipsQuery.isError && !failedListIsEmpty(actionsQuery.isError, tasks.length) ? (
+      {relationshipsQuery.isError && !listNeverLoaded(actionsQuery.isError, actionsQuery.data) ? (
         <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
           <p className="text-[13px] text-primary/70">{taskCompaniesFailureCopy()}</p>
           <Button
@@ -2835,7 +2835,7 @@ export function TasksView({
           </Button>
         </div>
       ) : null}
-      {actionsQuery.isError && tasks.length > 0 ? (
+      {actionsQuery.isError && actionsQuery.data != null ? (
         <ListRefreshFailure
           message={listRefreshFailureCopy("tasks")}
           onRetry={() => void refetchClearingBanner(() => actionsQuery.refetch(), onError)}
@@ -2845,7 +2845,7 @@ export function TasksView({
         <div className="p-4">
           <ListSkeleton />
         </div>
-      ) : failedListIsEmpty(actionsQuery.isError, tasks.length) ? (
+      ) : listNeverLoaded(actionsQuery.isError, actionsQuery.data) ? (
         <WorkspaceEmptyState
           action={
             <Button

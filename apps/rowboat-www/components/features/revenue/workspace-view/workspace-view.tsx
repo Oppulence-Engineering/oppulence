@@ -29,10 +29,10 @@ import {
   SimProductPanel,
 } from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
 import {
-  failedListIsEmpty,
   Field,
   errMessage,
   ListRefreshFailure,
+  listNeverLoaded,
   listRefreshFailureCopy,
 } from "@/components/features/revenue/shared/shared";
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
@@ -133,9 +133,9 @@ export function WorkspaceView({
   const linked = workspace.mode === "linked" && workspace.status === "active";
   const sources = sourcesQuery.data;
   const sourceCount = sources?.length ?? 0;
-  const sourcesFailedEmpty = failedListIsEmpty(sourcesQuery.isError, sourceCount);
+  const sourcesNeverLoaded = listNeverLoaded(sourcesQuery.isError, sources);
   const gmail =
-    sourcesQuery.isLoading || sourcesFailedEmpty
+    sourcesQuery.isLoading || sourcesNeverLoaded
       ? "unknown"
       : gmailDraftsAvailable(sources ?? [])
         ? "connected"
@@ -172,17 +172,23 @@ export function WorkspaceView({
           actions={
             sourcesQuery.isLoading
               ? "Loading…"
-              : sourcesFailedEmpty
+              : sourcesNeverLoaded
                 ? "Couldn't load"
                 : `${sourceCount} source${sourceCount === 1 ? "" : "s"}`
           }
           title="Connected sources"
         />
+        {sourcesQuery.isError && sources != null ? (
+          <ListRefreshFailure
+            message={listRefreshFailureCopy("sources")}
+            onRetry={() => void sourcesQuery.refetch()}
+          />
+        ) : null}
         {sourcesQuery.isLoading && sourceCount === 0 ? (
           <div className="p-4">
             <Skeleton className="h-16 w-full rounded-[2px]" />
           </div>
-        ) : sourcesFailedEmpty ? (
+        ) : sourcesNeverLoaded ? (
           <div className="flex flex-col gap-3 px-4 py-6 text-sm text-[var(--text-secondary)]">
             <p>Sources could not load. Try again.</p>
             <Button onClick={() => void sourcesQuery.refetch()} size="sm" type="button">
@@ -199,14 +205,7 @@ export function WorkspaceView({
             </Button>
           </div>
         ) : (
-          <div>
-            {sourcesQuery.isError ? (
-              <ListRefreshFailure
-                message={listRefreshFailureCopy("sources")}
-                onRetry={() => void sourcesQuery.refetch()}
-              />
-            ) : null}
-            <div className="divide-y divide-[var(--border)]">
+          <div className="divide-y divide-[var(--border)]">
             {(sources ?? []).map((source) => (
               <SourceRow
                 autoRefreshBlocker={autoRefreshBlocker}
@@ -218,7 +217,6 @@ export function WorkspaceView({
                 source={source}
               />
             ))}
-            </div>
           </div>
         )}
       </SimProductPanel>

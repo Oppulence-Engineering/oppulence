@@ -547,6 +547,30 @@ describe("durable note templates and favorites", () => {
     expect(screen.getAllByRole("button", { name: "New template" })).toHaveLength(1);
   });
 
+  it("keeps the empty template list when a refresh fails", async () => {
+    mocks.fetchConsoleResources.mockImplementation(async () => []);
+    const user = userEvent.setup();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <NotesView onError={vi.fn()} onNotice={vi.fn()} />
+      </QueryClientProvider>,
+    );
+
+    await user.click(await screen.findByRole("tab", { name: /Templates/ }));
+    expect(await screen.findByText("No templates yet")).toBeVisible();
+
+    mocks.fetchConsoleResources.mockImplementation(async (kind: string) => {
+      if (kind === "note_template") throw new Error("templates unavailable");
+      return [];
+    });
+    await client.invalidateQueries({ queryKey: ["console", "resources", "note_template"] });
+
+    expect(await screen.findByText(listRefreshFailureCopy("note templates"))).toBeVisible();
+    expect(screen.getByText("No templates yet")).toBeVisible();
+    expect(screen.queryByText("Could not load note templates.")).not.toBeInTheDocument();
+  });
+
   it("keeps loaded note templates when the refresh fails", async () => {
     const user = userEvent.setup();
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -1211,7 +1235,7 @@ describe("task due order", () => {
     expect(taskCompaniesFailureCopy()).toBe("Companies could not load. Try again.");
     expect(source).toContain("actionsQuery.isError");
     expect(source).toContain(
-      "relationshipsQuery.isError && !failedListIsEmpty(actionsQuery.isError, tasks.length)",
+      "relationshipsQuery.isError && !listNeverLoaded(actionsQuery.isError, actionsQuery.data)",
     );
     expect(source).toContain('listRefreshFailureCopy("tasks")');
     expect(source).toContain("taskListFailureCopy()");
@@ -1336,9 +1360,9 @@ describe("people directory copy", () => {
     expect(peopleListFailureCopy()).toBe("People could not load. Try again.");
     expect(noteListFailureCopy()).toBe("Notes could not load. Try again.");
     expect(source).toContain("peopleListEmptyCopy(directoryTitle.filtered)");
-    expect(source).toContain("failedListIsEmpty(peopleQuery.isError, people.length)");
+    expect(source).toContain("listNeverLoaded(peopleQuery.isError, peopleQuery.data)");
     expect(source).toContain('listRefreshFailureCopy("people")');
-    expect(source).toContain("failedListIsEmpty(notesQuery.isError, notes.length)");
+    expect(source).toContain("listNeverLoaded(notesQuery.isError, notesQuery.data)");
     expect(source).toContain('listRefreshFailureCopy("notes")');
     expect(source).toContain("refetchClearingBanner(() => peopleQuery.refetch(), onError)");
     expect(source).toContain("refetchClearingBanner(() => notesQuery.refetch(), onError)");

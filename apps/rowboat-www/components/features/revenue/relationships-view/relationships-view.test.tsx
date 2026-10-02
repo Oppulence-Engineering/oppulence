@@ -137,7 +137,10 @@ describe("RelationshipsView", () => {
     ).toBe("Connect Gmail to discover companies from real conversations, or add one by hand.");
     expect(source).toContain("companyListEmptyCopy({");
     expect(companyListFailureCopy()).toBe("Companies could not load. Try again.");
-    expect(source).toContain("failedListIsEmpty(relationshipsQuery.isError, companies.length)");
+    expect(source).toContain(
+      "listNeverLoaded(relationshipsQuery.isError, relationshipsQuery.data)",
+    );
+    expect(source).toContain("relationshipsQuery.data != null");
     expect(source).toContain('listRefreshFailureCopy("companies")');
     expect(source).toContain("companyListFailureCopy()");
     expect(source).toContain("relationshipsQuery.refetch()");

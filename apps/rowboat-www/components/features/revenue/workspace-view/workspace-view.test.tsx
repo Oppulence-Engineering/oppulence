@@ -7,6 +7,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { listNeverLoaded } from "@/components/features/revenue/shared/shared";
 import {
   gmailDraftsAvailable,
   localModeNotice,
@@ -260,6 +261,22 @@ describe("WorkspaceView", () => {
     expect(screen.getByText("2 sources")).toBeVisible();
     expect(screen.queryByText("Sources could not load. Try again.")).not.toBeInTheDocument();
     expect(screen.queryByText("Couldn't load")).not.toBeInTheDocument();
+  });
+
+  it("keeps the empty source list when a refresh fails", async () => {
+    vi.mocked(fetchRelationshipSourceStatuses).mockResolvedValue([]);
+    const { client } = renderWorkspace();
+    expect(await screen.findByText(/Nothing is connected yet/)).toBeVisible();
+    expect(screen.getByText("0 sources")).toBeVisible();
+    vi.mocked(fetchRelationshipSourceStatuses).mockRejectedValue(new Error("boom"));
+    await client.invalidateQueries();
+    expect(await screen.findByText("Could not refresh sources. Try again.")).toBeVisible();
+    expect(screen.getByText(/Nothing is connected yet/)).toBeVisible();
+    expect(screen.getByText("0 sources")).toBeVisible();
+    expect(screen.queryByText("Sources could not load. Try again.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Couldn't load")).not.toBeInTheDocument();
+    expect(listNeverLoaded(true, undefined)).toBe(true);
+    expect(listNeverLoaded(true, [])).toBe(false);
   });
 
   it("keeps the Gmail draft sentence once Google is connected", () => {

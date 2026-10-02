@@ -77,9 +77,9 @@ import {
 import {
   errMessage,
   ExecutionBadge,
-  failedListIsEmpty,
   ListRefreshFailure,
   ListSkeleton,
+  listNeverLoaded,
   listRefreshFailureCopy,
   PolicyBadge,
   priorityTone,
@@ -317,7 +317,7 @@ export function QueueView({
     [actionsQueryKey, queryClient],
   );
 
-  const empty = actionsQuery.isSuccess && actions.length === 0;
+  const empty = actionsQuery.data != null && actions.length === 0;
   const auditLabel = auditLaunchLabel({
     needsReconnect,
     needsConnect,
@@ -355,7 +355,7 @@ export function QueueView({
           </Button>
         </SimProductToolbar>
 
-        {actionsQuery.isError && actions.length > 0 ? (
+        {actionsQuery.isError && actionsQuery.data != null ? (
           <ListRefreshFailure
             message={listRefreshFailureCopy("recovery")}
             onRetry={() => void refetchClearingBanner(() => actionsQuery.refetch(), onError)}
@@ -365,7 +365,7 @@ export function QueueView({
           <div className="p-3">
             <ListSkeleton />
           </div>
-        ) : failedListIsEmpty(actionsQuery.isError, actions.length) ? (
+        ) : listNeverLoaded(actionsQuery.isError, actionsQuery.data) ? (
           <EmptyBlock
             body="The recovery queue is temporarily unavailable. Existing drafts and approvals were not changed."
             image="recovery"

@@ -361,11 +361,11 @@ export async function refetchClearingBanner(
 }
 
 /**
- * A failed refresh keeps rows already on screen.
- * The empty failure is for a list with nothing to show.
+ * A failed refresh keeps a page already on screen, including an empty one.
+ * The load failure is only for a query that never returned a page.
  */
-export function failedListIsEmpty(isError: boolean, count: number): boolean {
-  return isError && count === 0;
+export function listNeverLoaded(isError: boolean, data: unknown): boolean {
+  return isError && data == null;
 }
 
 export function listRefreshFailureCopy(noun: string): string {
