@@ -825,6 +825,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if completeness := relationshipSheetCompletenessMatch(needle); completeness != nil {
 			parts = append(parts, completeness)
 		}
+		if sheetPhraseMatches("no next step", needle) ||
+			sheetPhraseMatches("add an owner and a date for what happens next.", needle) {
+			parts = append(parts, relationshipShowsMissingNextStep())
+		}
 		if sheetPhraseMatches("no action is currently recommended", needle) {
 			parts = append(parts, relationship.Not(
 				relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen)),
@@ -1147,6 +1151,15 @@ func relationshipNextActionBlank() predicate.Relationship {
 
 // relationshipTextBlank matches a description the sheet prints as empty.
 // A whitespace-only summary still reads "No description yet".
+// relationshipShowsMissingNextStep is the suggestion "No next step". A prospect
+// with a blank next step does not print that card.
+func relationshipShowsMissingNextStep() predicate.Relationship {
+	return relationship.And(
+		relationshipTextBlank(relationship.FieldNextAction),
+		relationship.LifecycleIn("evaluation", "contracting", "onboarding", "renewal"),
+	)
+}
+
 func relationshipTextBlank(field string) predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {

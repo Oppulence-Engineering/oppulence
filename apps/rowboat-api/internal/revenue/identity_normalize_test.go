@@ -724,6 +724,90 @@ func TestRelationshipSearchFindsTheRefreshHeading(t *testing.T) {
 	assertCompanyQuery("refresh")
 }
 
+func TestRelationshipSearchFindsTheMissingNextStep(t *testing.T) {
+	f := newFixture(t)
+	quill, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(quill.ID).SetLifecycle("contracting").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	lumen, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(lumen.ID).SetLifecycle("prospect").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	harbor, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Ledger",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(harbor.ID).
+		SetLifecycle("contracting").
+		SetNextAction("Send the packet").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	cedar, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Mill",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(cedar.ID).
+		SetLifecycle("evaluation").
+		SetNextAction("   ").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	quill, err = f.svc.GetRelationship(f.ctx, quill.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	intelligence, err := f.svc.RelationshipIntelligenceFor(f.ctx, quill)
+	if err != nil {
+		t.Fatal(err)
+	}
+	foundCue := false
+	for _, cue := range intelligence.LiveCues {
+		if cue.Kind == "missing_next_step" && cue.Title == "No next step" {
+			foundCue = true
+		}
+	}
+	if !foundCue {
+		t.Fatalf("quill cues = %+v", intelligence.LiveCues)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("No next step", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("Add an owner and a date for what happens next", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("owner")
+	assertCompanyQuery("step")
+}
+
 func TestRelationshipSearchFindsTheSheetReviewAndRecommendation(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
