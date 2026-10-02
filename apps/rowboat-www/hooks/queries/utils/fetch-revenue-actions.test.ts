@@ -8,6 +8,7 @@ import {
   actionPageHasMore,
   actionRows,
   loadRevenueActions,
+  prependCreatedAction,
   replaceActionPage,
 } from "./fetch-revenue-actions";
 
@@ -59,5 +60,20 @@ describe("actionPageHasMore", () => {
     expect(actionRows([row])).toEqual([row]);
     expect(replaceActionPage([row], []).hasMore).toBe(false);
     expect(replaceActionPage({ actions: [row], hasMore: true }, []).hasMore).toBe(true);
+  });
+});
+
+describe("prependCreatedAction", () => {
+  it("keeps a page object and shows the new action first", () => {
+    const existing = { id: "action-old", reason: "Older" } as RevenueAction;
+    const created = { id: "action-new", reason: "Cedar recovery draft" } as RevenueAction;
+    const page = prependCreatedAction({ actions: [existing], hasMore: true }, created);
+    expect(page.actions.map((action) => action.id)).toEqual(["action-new", "action-old"]);
+    expect(page.hasMore).toBe(true);
+    expect(prependCreatedAction(page, created).actions).toHaveLength(2);
+    expect(prependCreatedAction(undefined, created)).toEqual({
+      actions: [created],
+      hasMore: false,
+    });
   });
 });

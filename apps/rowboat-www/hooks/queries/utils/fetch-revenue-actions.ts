@@ -38,6 +38,19 @@ export function replaceActionPage(
   return { actions, hasMore: actionPageHasMore(page) };
 }
 
+/**
+ * Puts a just-created action on the loaded page. The cache is a page object,
+ * so spreading it as a list throws and the new row never appears.
+ */
+export function prependCreatedAction(
+  page: ActionPage | readonly RevenueAction[] | null | undefined,
+  action: RevenueAction,
+): ActionPage {
+  const rows = actionRows(page);
+  if (rows.some((row) => row.id === action.id)) return replaceActionPage(page, rows);
+  return replaceActionPage(page, [action, ...rows]);
+}
+
 function revenueActionsPath(
   queueStatus: string,
   limit: number,

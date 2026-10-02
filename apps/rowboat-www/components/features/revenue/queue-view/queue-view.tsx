@@ -17,6 +17,7 @@ import {
   actionPageHasMore,
   actionRows,
   fetchRevenueActions,
+  prependCreatedAction,
   replaceActionPage,
 } from "@/hooks/queries/utils/fetch-revenue-actions";
 import { revenueActionKeys } from "@/hooks/queries/utils/revenue-action-keys";
@@ -491,10 +492,9 @@ export function QueueView({
             setCreating(false);
             onNotice("Action created.");
             if (filter === "open") {
-              queryClient.setQueryData<RevenueAction[]>(actionsQueryKey, (current = []) => [
-                a,
-                ...current,
-              ]);
+              queryClient.setQueryData(actionsQueryKey, (current) =>
+                prependCreatedAction(current, a),
+              );
             }
           }}
           onError={onError}
