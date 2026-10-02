@@ -275,3 +275,51 @@ func TestRelationshipSearchFindsTheRowFacts(t *testing.T) {
 		}
 	}
 }
+
+func TestRelationshipSearchFindsTheLinkedInLabel(t *testing.T) {
+	f := newFixture(t)
+	saved, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(saved.ID).
+		SetLinkedinURL("https://www.linkedin.com/company/quill-atelier").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Ref Ledger", ResourceRefs: []string{"linkedin:company:ref-ledger"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	view, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "View profile"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(view.Relationships); len(got) != 2 || !hasName(got, "Quill Atelier") || !hasName(got, "Ref Ledger") || hasName(got, "Lumen Packet") {
+		t.Fatalf("view profile = %v", got)
+	}
+	find, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Find profile"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(find.Relationships); len(got) != 1 || got[0] != "Lumen Packet" {
+		t.Fatalf("find profile = %v", got)
+	}
+}
+
+func hasName(names []string, want string) bool {
+	for _, name := range names {
+		if name == want {
+			return true
+		}
+	}
+	return false
+}

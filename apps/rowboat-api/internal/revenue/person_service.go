@@ -67,7 +67,7 @@ func (s *Service) ListPersons(
 		q = q.Where(person.StatusEQ(status))
 	}
 	if term := strings.TrimSpace(strings.ToLower(filter.Query)); term != "" {
-		q = q.Where(person.Or(
+		parts := []predicate.Person{
 			person.DisplayNameContainsFold(term),
 			person.PrimaryEmailContainsFold(term),
 			person.OrgNameContainsFold(term),
@@ -76,8 +76,13 @@ func (s *Service) ListPersons(
 			person.SeniorityContainsFold(term),
 			person.DepartmentContainsFold(term),
 			person.LocationContainsFold(term),
+			person.LinkedinURLContainsFold(term),
 			personNormalizedContains(term),
-		))
+		}
+		if labels := personVisibleLabelMatch(term); labels != nil {
+			parts = append(parts, labels)
+		}
+		q = q.Where(person.Or(parts...))
 	}
 	rows, err := q.
 		Order(
@@ -110,6 +115,72 @@ func personNormalizedContains(term string) predicate.Person {
 			parts = append(parts, normalizedSearchLike(s, field, needle))
 		}
 		s.Where(sql.Or(parts...))
+	})
+}
+
+// personVisibleLabelMatch matches words the directory prints from a code, not
+// from the stored text. A blank title with seniority "ic" reads "Individual
+// contributor". An empty profile reads "Not filled in". A saved LinkedIn page
+// reads "View profile".
+func personVisibleLabelMatch(term string) predicate.Person {
+	needle := normalizePersonSearch(term)
+	if needle == "" {
+		return nil
+	}
+	var preds []predicate.Person
+	if strings.Contains("individual contributor", needle) {
+		preds = append(preds, person.And(
+			personTextBlank(person.TitleIsNil, person.TitleEQ),
+			person.SeniorityEQ("ic"),
+		))
+	}
+	unfilled := strings.Contains("not filled in", needle)
+	filled := strings.Contains("detail filled in", needle)
+	switch {
+	case unfilled && filled:
+		preds = append(preds, personMatchAll())
+	case unfilled:
+		preds = append(preds, personUnfilled())
+	case filled:
+		preds = append(preds, person.Not(personUnfilled()))
+	}
+	if strings.Contains("view profile", needle) {
+		preds = append(preds, person.And(
+			person.LinkedinURLNotNil(),
+			person.LinkedinURLNEQ(""),
+		))
+	}
+	if len(preds) == 0 {
+		return nil
+	}
+	return person.Or(preds...)
+}
+
+func personTextBlank(isNil func() predicate.Person, eq func(string) predicate.Person) predicate.Person {
+	return person.Or(isNil(), eq(""))
+}
+
+// personUnfilled is the Details cell "Not filled in": no profile fact, and
+// employment still unknown. A primary email is the address under the name,
+// not one of those details.
+func personUnfilled() predicate.Person {
+	return person.And(
+		personTextBlank(person.TitleIsNil, person.TitleEQ),
+		personTextBlank(person.SeniorityIsNil, person.SeniorityEQ),
+		personTextBlank(person.OrgNameIsNil, person.OrgNameEQ),
+		personTextBlank(person.OrgDomainIsNil, person.OrgDomainEQ),
+		personTextBlank(person.LocationIsNil, person.LocationEQ),
+		personTextBlank(person.LinkedinURLIsNil, person.LinkedinURLEQ),
+		personTextBlank(person.DepartmentIsNil, person.DepartmentEQ),
+		personTextBlank(person.TimezoneIsNil, person.TimezoneEQ),
+		personTextBlank(person.LocaleIsNil, person.LocaleEQ),
+		person.Or(person.EmploymentStatusEQ("unknown"), person.EmploymentStatusEQ("")),
+	)
+}
+
+func personMatchAll() predicate.Person {
+	return predicate.Person(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) { b.WriteString("1 = 1") }))
 	})
 }
 

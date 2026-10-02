@@ -756,16 +756,21 @@ func (s *Service) ListRelationshipsFiltered(
 		q.Where(relationship.EngagementEQ(value))
 	}
 	if value := strings.ToLower(strings.TrimSpace(filter.Query)); value != "" {
-		q.Where(relationship.Or(
+		parts := []predicate.Relationship{
 			relationship.DisplayNameContainsFold(value),
 			relationship.AccountDomainContainsFold(value),
 			relationship.PrimaryEmailContainsFold(value),
 			relationship.NextActionContainsFold(value),
 			relationship.SummaryContainsFold(value),
 			relationship.CompanyDescriptionContainsFold(value),
+			relationship.LinkedinURLContainsFold(value),
 			relationshipNormalizedContains(value),
 			relationshipCategoryContains(value),
-		))
+		}
+		if labels := relationshipLinkedInLabelMatch(value); labels != nil {
+			parts = append(parts, labels)
+		}
+		q.Where(relationship.Or(parts...))
 	}
 	rows, err := q.
 		WithActions(func(q *ent.RevenueActionQuery) {
@@ -832,6 +837,59 @@ func relationshipCategoryContains(term string) predicate.Relationship {
 			b.Arg(needle)
 			b.WriteString(" ESCAPE '!'")
 		}))
+	})
+}
+
+// relationshipLinkedInLabelMatch matches the LinkedIn column. A saved page or
+// company reference reads "View profile". Every other company reads "Find profile".
+func relationshipLinkedInLabelMatch(term string) predicate.Relationship {
+	needle := normalizePersonSearch(term)
+	if needle == "" {
+		return nil
+	}
+	view := strings.Contains("view profile", needle)
+	find := strings.Contains("find profile", needle)
+	switch {
+	case view && find:
+		return relationshipMatchAll()
+	case view:
+		return relationshipSavedLinkedIn()
+	case find:
+		return relationship.Not(relationshipSavedLinkedIn())
+	default:
+		return nil
+	}
+}
+
+func relationshipSavedLinkedIn() predicate.Relationship {
+	return relationship.Or(
+		relationship.And(
+			relationship.LinkedinURLNotNil(),
+			relationship.LinkedinURLNEQ(""),
+		),
+		relationshipResourceRefContains("linkedin:company:"),
+	)
+}
+
+func relationshipResourceRefContains(fragment string) predicate.Relationship {
+	needle := "%" + escapePersonSearchLike(strings.ToLower(fragment)) + "%"
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(relationship.FieldResourceRefs)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(fmt.Sprintf("lower(%s::text) LIKE ", column))
+			} else {
+				b.WriteString(fmt.Sprintf("lower(coalesce(%s, '')) LIKE ", column))
+			}
+			b.Arg(needle)
+			b.WriteString(" ESCAPE '!'")
+		}))
+	})
+}
+
+func relationshipMatchAll() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) { b.WriteString("1 = 1") }))
 	})
 }
 

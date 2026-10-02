@@ -611,6 +611,47 @@ func TestPersonSearchFindsVisibleRoleFacts(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsThePrintedLabels(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	create := func(name string, apply func(*ent.PersonCreate)) {
+		t.Helper()
+		row := f.client.Person.Create().SetDisplayName(name).SetWorkspace(ws).SetUser(f.user)
+		if apply != nil {
+			apply(row)
+		}
+		if _, err := row.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	create("Casey Quinn", nil)
+	create("Indira Cole", func(row *ent.PersonCreate) { row.SetSeniority("ic") })
+	create("Link Rivera", func(row *ent.PersonCreate) {
+		row.SetLinkedinURL("https://www.linkedin.com/in/link-rivera")
+	})
+	create("Morgan Lee", func(row *ent.PersonCreate) { row.SetTitle("Account Executive") })
+	expect := map[string]string{
+		"Not filled in":          "Casey Quinn",
+		"Individual contributor": "Indira Cole",
+		"View profile":           "Link Rivera",
+	}
+	for query, name := range expect {
+		found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query})
+		if err != nil || found == nil || len(found.Persons) != 1 || found.Persons[0].DisplayName != name {
+			got := []string{}
+			if found != nil {
+				for _, person := range found.Persons {
+					got = append(got, person.DisplayName)
+				}
+			}
+			t.Fatalf("query %q = %v err=%v", query, got, err)
+		}
+	}
+}
+
 func withRole(in RelationshipParticipantInput, role string) RelationshipParticipantInput {
 	in.Role = role
 	return in
