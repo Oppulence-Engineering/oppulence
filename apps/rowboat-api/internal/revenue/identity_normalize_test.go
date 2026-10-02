@@ -433,6 +433,70 @@ func TestRelationshipSearchFindsTheSheetMailWords(t *testing.T) {
 	assertCompanyQuery("date")
 }
 
+func TestRelationshipSearchFindsTheSheetReviewAndRecommendation(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	lumen, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: lumen.ID,
+		ActionType:     "warm_follow_up",
+		Channel:        "email",
+		Reason:         "Send the harbor packet",
+		PriorityScore:  80,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	harbor, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Ledger",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(harbor.ID).
+		SetStateVersion(1).
+		SetStateHash("harbor-reviewed").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.AcknowledgeMissionControl(f.ctx, f.user, harbor.ID, 1, "harbor-reviewed"); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("No action is currently recommended", "Quill Atelier", "Harbor Ledger")
+	assertCompanyQuery("Send the harbor packet", "Lumen Packet")
+	assertCompanyQuery("Not reviewed yet", "Quill Atelier", "Lumen Packet")
+	assertCompanyQuery("Nothing changed since your last review", "Harbor Ledger")
+	assertCompanyQuery("Nothing new since your last review", "Harbor Ledger")
+	assertCompanyQuery("recomm")
+	assertCompanyQuery("changed")
+	assertCompanyQuery("reviewed", "Quill Atelier", "Lumen Packet")
+}
+
 func TestRelationshipSearchFindsTheLastInteraction(t *testing.T) {
 	f := newFixture(t)
 	recent, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

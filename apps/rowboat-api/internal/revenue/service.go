@@ -21,6 +21,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipreviewacknowledgement"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -807,6 +808,15 @@ func (s *Service) ListRelationshipsFiltered(
 		if mail := relationshipSheetMailMatch(needle); mail != nil {
 			parts = append(parts, mail)
 		}
+		if review := relationshipSheetReviewMatch(u.ID, needle); review != nil {
+			parts = append(parts, review)
+		}
+		if sheetPhraseMatches("no action is currently recommended", needle) {
+			parts = append(parts, relationship.Not(
+				relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen)),
+			))
+		}
+		parts = append(parts, relationship.HasActionsWith(revenueaction.ReasonContainsFold(value)))
 		q.Where(relationship.Or(parts...))
 	}
 	rows, err := q.
@@ -1223,6 +1233,67 @@ func relationshipSheetMailMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// relationshipSheetReviewMatch matches the review line on the company sheet.
+// A company at version 0 with no later acknowledgement reads "Not reviewed yet."
+// Acknowledging the current version reads "Nothing changed since your last
+// review" and "Nothing new since your last review." The acknowledgement is
+// the signed-in person's, so another reviewer's row does not change this search.
+func relationshipSheetReviewMatch(userID uuid.UUID, needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	if sheetPhraseMatches("not reviewed yet", needle) {
+		preds = append(preds, relationshipNotReviewedYet(userID))
+	}
+	if sheetPhraseMatches("nothing changed since your last review", needle) ||
+		sheetPhraseMatches("nothing new since your last review", needle) {
+		preds = append(preds, relationshipReviewedUnchanged(userID))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func relationshipNotReviewedYet(userID uuid.UUID) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.And(
+			sql.EQ(s.C(relationship.FieldStateVersion), 0),
+			sql.Not(relationshipAcknowledgementExists(s, userID, false)),
+		))
+	})
+}
+
+func relationshipReviewedUnchanged(userID uuid.UUID) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(relationshipAcknowledgementExists(s, userID, true))
+	})
+}
+
+func relationshipAcknowledgementExists(s *sql.Selector, userID uuid.UUID, coversCurrent bool) *sql.Predicate {
+	return sql.P(func(b *sql.Builder) {
+		b.WriteString(fmt.Sprintf(
+			"EXISTS (SELECT 1 FROM %s WHERE %s = %s AND %s = ",
+			relationshipreviewacknowledgement.Table,
+			relationshipreviewacknowledgement.RelationshipColumn,
+			s.C(relationship.FieldID),
+			relationshipreviewacknowledgement.UserColumn,
+		))
+		b.Arg(userID.String())
+		b.WriteString(fmt.Sprintf(" AND %s > 0", relationshipreviewacknowledgement.FieldStateVersion))
+		if coversCurrent {
+			b.WriteString(fmt.Sprintf(
+				" AND %s >= %s",
+				relationshipreviewacknowledgement.FieldStateVersion,
+				s.C(relationship.FieldStateVersion),
+			))
+		}
+		b.WriteByte(')')
+	})
 }
 
 func sheetPhraseMatches(phrase, needle string) bool {
