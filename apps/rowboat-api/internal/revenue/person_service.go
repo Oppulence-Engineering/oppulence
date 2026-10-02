@@ -17,6 +17,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 )
 
@@ -80,6 +81,7 @@ func (s *Service) ListPersons(
 			person.LinkedinURLContainsFold(term),
 			personNormalizedContains(term),
 			personAliasContains(term),
+			personParticipantRoleMatch(term),
 		}
 		if labels := personVisibleLabelMatch(term); labels != nil {
 			parts = append(parts, labels)
@@ -87,6 +89,7 @@ func (s *Service) ListPersons(
 		q = q.Where(person.Or(parts...))
 	}
 	rows, err := q.
+		WithParticipants().
 		Order(
 			person.ByLastInteractionAt(sql.OrderDesc(), sql.OrderNullsLast()),
 			person.ByDisplayName(),
@@ -366,6 +369,18 @@ func personMatchAll() predicate.Person {
 	return predicate.Person(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) { b.WriteString("1 = 1") }))
 	})
+}
+
+// personParticipantRoleMatch matches the role printed on the person, such as
+// "Decision maker". The stored token uses underscores. The row uses spaces.
+func personParticipantRoleMatch(term string) predicate.Person {
+	needle := "%" + escapePersonSearchLike(normalizePersonSearch(term)) + "%"
+	if needle == "%%" {
+		return nil
+	}
+	return person.HasParticipantsWith(predicate.RelationshipParticipant(func(s *sql.Selector) {
+		s.Where(normalizedSearchLike(s, relationshipparticipant.FieldRole, needle))
+	}))
 }
 
 // personAliasContains matches another name printed under the person. The

@@ -123,7 +123,7 @@ import {
 } from "@oppulence/ui/components/sheet";
 import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { noteIdFromHash, workspaceNoteHref } from "@/lib/revenue/note-link";
-import { removePersonConfirmCopy } from "@/lib/revenue/source-product-copy";
+import { participantRoleLabel, removePersonConfirmCopy } from "@/lib/revenue/source-product-copy";
 import {
   companyName,
   personCompanyTitle,
@@ -331,6 +331,27 @@ export function personEnrichmentLabel(
 /** The directory already says "No email" when the address is missing. */
 export function personSheetSubtitle(person: Pick<RelationshipPerson, "primaryEmail">): string {
   return person.primaryEmail?.trim() || "No email";
+}
+
+/**
+ * The Role column is the title, or the seniority when no title is saved.
+ * A company role such as Decision maker is printed with it.
+ */
+export function personDirectoryRole(person: {
+  title?: string | null;
+  seniority?: string | null;
+  participantRoles?: readonly string[] | null;
+}): string {
+  const title = person.title?.trim() || personSeniorityLabel(person.seniority);
+  const roles = [
+    ...new Set(
+      (person.participantRoles ?? [])
+        .map((role) => participantRoleLabel(role.trim()))
+        .filter((role) => role && role !== title),
+    ),
+  ];
+  if (title && roles.length > 0) return `${title} · ${roles.join(", ")}`;
+  return title || roles.join(", ") || "—";
 }
 
 /** Other names stored on the person. The display name is not repeated here. */
@@ -724,7 +745,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                     {personCompanyTitle(person) || "—"}
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
-                    {person.title || personSeniorityLabel(person.seniority) || "—"}
+                    {personDirectoryRole(person)}
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
                     {person.department || "—"}

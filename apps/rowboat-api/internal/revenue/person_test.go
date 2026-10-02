@@ -750,6 +750,63 @@ func TestPersonSearchFindsTheAlias(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsTheCompanyRole(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	company, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	maker, err := f.client.Person.Create().
+		SetDisplayName("Casey Quinn").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := f.client.Person.Create().
+		SetDisplayName("Indira Cole").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetRelationshipID(company.ID).
+		SetPerson(maker).
+		SetDisplayName("Casey Quinn").
+		SetRole("decision_maker").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetRelationshipID(company.ID).
+		SetPerson(other).
+		SetDisplayName("Indira Cole").
+		SetRole("contact").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "Decision maker"})
+	if err != nil || found == nil || len(found.Persons) != 1 || found.Persons[0].DisplayName != "Casey Quinn" {
+		t.Fatalf("decision maker = %+v err=%v", found, err)
+	}
+	if len(found.Persons[0].Edges.Participants) != 1 || found.Persons[0].Edges.Participants[0].Role != "decision_maker" {
+		t.Fatalf("role edge = %+v", found.Persons[0].Edges.Participants)
+	}
+}
+
 func TestPersonSearchFindsWhoLeft(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

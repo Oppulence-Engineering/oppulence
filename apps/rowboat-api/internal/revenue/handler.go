@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -316,11 +317,14 @@ type personDTO struct {
 	Status      string `json:"status"`
 	// Whether their mail still reaches them. Surfaced so the UI can say a contact
 	// has left rather than silently ranking the account as merely quiet.
-	EmploymentStatus   string  `json:"employmentStatus,omitempty"`
-	RelationshipCount  int     `json:"relationshipCount"`
-	FirstInteractionAt *string `json:"firstInteractionAt,omitempty"`
-	LastInteractionAt  *string `json:"lastInteractionAt,omitempty"`
-	AttributesVersion  int     `json:"attributesVersion"`
+	EmploymentStatus  string `json:"employmentStatus,omitempty"`
+	RelationshipCount int    `json:"relationshipCount"`
+	// Roles this person holds on companies. The people directory prints them
+	// in the Role column. Empty when no company has named a role.
+	ParticipantRoles   []string `json:"participantRoles,omitempty"`
+	FirstInteractionAt *string  `json:"firstInteractionAt,omitempty"`
+	LastInteractionAt  *string  `json:"lastInteractionAt,omitempty"`
+	AttributesVersion  int      `json:"attributesVersion"`
 	// Phone is deliberately absent: it is derived PII with no relationship
 	// dimension to land in, and it stays on the device that parsed it.
 }
@@ -350,6 +354,21 @@ func personToDTO(p *ent.Person) *personDTO {
 	}
 	if dto.Aliases == nil {
 		dto.Aliases = []string{}
+	}
+	if participants, err := p.Edges.ParticipantsOrErr(); err == nil {
+		seen := map[string]struct{}{}
+		for _, participant := range participants {
+			role := strings.TrimSpace(participant.Role)
+			if role == "" {
+				continue
+			}
+			if _, ok := seen[role]; ok {
+				continue
+			}
+			seen[role] = struct{}{}
+			dto.ParticipantRoles = append(dto.ParticipantRoles, role)
+		}
+		sort.Strings(dto.ParticipantRoles)
 	}
 	if p.FirstInteractionAt != nil {
 		value := p.FirstInteractionAt.UTC().Format(time.RFC3339)

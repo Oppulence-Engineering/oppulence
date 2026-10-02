@@ -112,6 +112,8 @@ export interface RelationshipPerson {
   status: string;
   employmentStatus?: "unknown" | "active" | "departed";
   relationshipCount: number;
+  /** Company roles such as decision_maker. The directory prints the words. */
+  participantRoles?: string[];
   firstInteractionAt?: string;
   lastInteractionAt?: string;
   attributesVersion: number;

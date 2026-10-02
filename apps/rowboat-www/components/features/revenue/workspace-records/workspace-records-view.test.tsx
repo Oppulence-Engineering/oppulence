@@ -123,6 +123,7 @@ import {
   personAccountDomain,
   personSheetDetail,
   personAliasNames,
+  personDirectoryRole,
   personDirectorySubtitle,
   personSheetSubtitle,
   sortTasksByDue,
@@ -804,6 +805,20 @@ describe("people directory labels", () => {
       "No email · Also known as Dee Cole",
     );
     expect(personAliasNames(["Dee Cole", "Indy"])).toBe("Dee Cole, Indy");
+    expect(personDirectoryRole({})).toBe("—");
+    expect(personDirectoryRole({ participantRoles: ["decision_maker"] })).toBe("Decision maker");
+    expect(
+      personDirectoryRole({
+        title: "Finance lead",
+        participantRoles: ["decision_maker", "decision_maker"],
+      }),
+    ).toBe("Finance lead · Decision maker");
+    expect(
+      personDirectoryRole({
+        title: "Decision maker",
+        participantRoles: ["decision_maker"],
+      }),
+    ).toBe("Decision maker");
     expect(personAccountDomain("Ada <ada@northwind.example>")).toBe("northwind.example");
     expect(personAccountDomain("mailto:ada@northwind.example")).toBe("northwind.example");
     expect(personAccountDomain("ada@northwind.example")).toBe("northwind.example");
