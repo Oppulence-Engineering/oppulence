@@ -2692,11 +2692,12 @@ export function TasksView({
   onOpenCompany?: (relationshipId: string) => void;
 }) {
   const queryClient = useQueryClient();
-  const actionsQuery = useRevenueActions("open", ACTION_QUEUE_PAGE, "task");
   const relationshipsQuery = useRelationships();
   const [creating, setCreating] = React.useState(false);
   const [filter, setFilter] = React.useState<"all" | "today" | "overdue">("all");
   const [soonestFirst, setSoonestFirst] = React.useState(true);
+  const dueOrder = soonestFirst ? "asc" : "desc";
+  const actionsQuery = useRevenueActions("open", ACTION_QUEUE_PAGE, "task", dueOrder);
   const [busy, setBusy] = React.useState<string | null>(null);
   const [now] = React.useState(() => Date.now());
   const [extraTasks, setExtraTasks] = React.useState<RevenueAction[]>([]);
@@ -2750,6 +2751,11 @@ export function TasksView({
       queryClient.invalidateQueries({ queryKey: relationshipKeys.all }),
     ]);
   }, [queryClient]);
+  const chooseDueOrder = (nextSoonest: boolean) => {
+    setExtraTasks([]);
+    setLaterTasksHasMore(null);
+    setSoonestFirst(nextSoonest);
+  };
   const loadMoreTasks = React.useCallback(async () => {
     if (loadingMoreTasks || !hasMoreTasks) return;
     setLoadingMoreTasks(true);
@@ -2760,6 +2766,7 @@ export function TasksView({
         undefined,
         "task",
         taskPage.length + extraTasks.length,
+        dueOrder,
       );
       setLaterTasksHasMore(actionPageHasMore(next));
       setExtraTasks((current) => [...current, ...actionRows(next)]);
@@ -2768,7 +2775,7 @@ export function TasksView({
     } finally {
       setLoadingMoreTasks(false);
     }
-  }, [extraTasks.length, hasMoreTasks, loadingMoreTasks, onError, taskPage.length]);
+  }, [dueOrder, extraTasks.length, hasMoreTasks, loadingMoreTasks, onError, taskPage.length]);
   const loadMoreCompanies = React.useCallback(async () => {
     if (loadingMoreCompanies || !hasMoreCompanies) return;
     setLoadingMoreCompanies(true);
@@ -2823,7 +2830,7 @@ export function TasksView({
         <div className="flex items-center gap-2">
           <Button
             className="h-8 rounded-none border border-border bg-background px-3 text-[13px] text-primary/60 hover:bg-background-100"
-            onClick={() => setSoonestFirst((value) => !value)}
+            onClick={() => chooseDueOrder(!soonestFirst)}
             type="button"
             variant="ghost"
           >
@@ -2867,7 +2874,7 @@ export function TasksView({
                   aria-label="Soonest due first"
                   checked={soonestFirst}
                   id="tasks-soonest-due"
-                  onCheckedChange={(checked) => setSoonestFirst(checked === true)}
+                  onCheckedChange={(checked) => chooseDueOrder(checked === true)}
                 />
               </label>
             </div>

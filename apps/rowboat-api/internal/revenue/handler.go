@@ -2891,6 +2891,10 @@ func (h *Handler) ListActions(w http.ResponseWriter, r *http.Request) {
 	case "task", "recovery":
 		f.Surface = r.URL.Query().Get("surface")
 	}
+	switch r.URL.Query().Get("due") {
+	case "asc", "desc":
+		f.DueOrder = r.URL.Query().Get("due")
+	}
 	if v := r.URL.Query().Get("limit"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			f.Limit = n

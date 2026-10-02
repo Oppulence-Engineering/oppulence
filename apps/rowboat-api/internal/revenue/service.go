@@ -4197,6 +4197,9 @@ type ListFilter struct {
 	Limit       int
 	Offset      int
 	Surface     string
+	// DueOrder is "asc" or "desc" for the task list. Empty keeps priority order.
+	// Undated tasks stay last in either direction.
+	DueOrder string
 }
 
 // ActionListPage is one queue page. HasMore is true only when another action
@@ -4261,11 +4264,7 @@ func (s *Service) ListActionPage(ctx context.Context, u *ent.User, f ListFilter)
 		))
 	}
 	rows, err := q.WithRelationship().
-		Order(
-			ent.Desc(revenueaction.FieldPriorityScore),
-			ent.Asc(revenueaction.FieldCreatedAt),
-			ent.Asc(revenueaction.FieldID),
-		).
+		Order(actionPageOrder(f)...).
 		Limit(limit + 1).
 		Offset(f.Offset).
 		All(ctx)
@@ -4277,6 +4276,29 @@ func (s *Service) ListActionPage(ctx context.Context, u *ent.User, f ListFilter)
 		rows = rows[:limit]
 	}
 	return &ActionListPage{Actions: rows, HasMore: hasMore}, nil
+}
+
+// actionPageOrder keeps recovery on priority. The task list can follow due
+// date so a low-priority task that is due now is not stuck behind a full page
+// of later work.
+func actionPageOrder(f ListFilter) []revenueaction.OrderOption {
+	if f.Surface == "task" && f.DueOrder == "asc" {
+		return []revenueaction.OrderOption{
+			revenueaction.ByDueAt(sql.OrderAsc(), sql.OrderNullsLast()),
+			revenueaction.ByID(),
+		}
+	}
+	if f.Surface == "task" && f.DueOrder == "desc" {
+		return []revenueaction.OrderOption{
+			revenueaction.ByDueAt(sql.OrderDesc(), sql.OrderNullsLast()),
+			revenueaction.ByID(sql.OrderDesc()),
+		}
+	}
+	return []revenueaction.OrderOption{
+		revenueaction.ByPriorityScore(sql.OrderDesc()),
+		revenueaction.ByCreatedAt(),
+		revenueaction.ByID(),
+	}
 }
 
 // ReopenDueSnoozes returns elapsed snoozes to the caller's open queue.

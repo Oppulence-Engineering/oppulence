@@ -28,6 +28,16 @@ describe("loadRevenueActions", () => {
     );
   });
 
+  it("asks the task list to follow due date", async () => {
+    const request = vi.fn().mockResolvedValue({ actions: [], hasMore: false });
+    await loadRevenueActions(request, "open", ACTION_QUEUE_PAGE, undefined, "task", 0, "asc");
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: "/revenue-actions?queueStatus=open&limit=100&surface=task&due=asc",
+      }),
+    );
+  });
+
   it("treats a missing flag as the end of the queue", async () => {
     const request = vi.fn().mockResolvedValue({ actions: [] });
     await expect(loadRevenueActions(request, "open", 10, undefined, "recovery")).resolves.toEqual({

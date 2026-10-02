@@ -818,6 +818,54 @@ func TestListActionsOffsetSkipsHigherPriority(t *testing.T) {
 	}
 }
 
+func TestListActionsTaskDueOrderPutsTheSoonestFirst(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	yesterday := time.Now().Add(-24 * time.Hour).UTC()
+	nextYear := time.Now().Add(365 * 24 * time.Hour).UTC()
+	soon, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task",
+		Reason: "Yesterday", PriorityScore: 10, DedupeKey: "due-yesterday", DueAt: &yesterday,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	later, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task",
+		Reason: "Next year", PriorityScore: 90, DedupeKey: "due-next-year", DueAt: &nextYear,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	undated, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task",
+		Reason: "No date", PriorityScore: 100, DedupeKey: "due-none",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	asc, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{
+		QueueStatus: QueueOpen, Limit: 10, Surface: "task", DueOrder: "asc",
+	})
+	if err != nil || len(asc.Actions) != 3 || asc.Actions[0].ID != soon.ID || asc.Actions[1].ID != later.ID || asc.Actions[2].ID != undated.ID {
+		t.Fatalf("soonest page = %v err=%v", reasonsOf(asc.Actions), err)
+	}
+	desc, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{
+		QueueStatus: QueueOpen, Limit: 10, Surface: "task", DueOrder: "desc",
+	})
+	if err != nil || len(desc.Actions) != 3 || desc.Actions[0].ID != later.ID || desc.Actions[1].ID != soon.ID || desc.Actions[2].ID != undated.ID {
+		t.Fatalf("latest page = %v err=%v", reasonsOf(desc.Actions), err)
+	}
+}
+
+func reasonsOf(actions []*ent.RevenueAction) []string {
+	names := make([]string, 0, len(actions))
+	for _, action := range actions {
+		names = append(names, action.Reason)
+	}
+	return names
+}
+
 func TestListActionsTiedPriorityUsesID(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

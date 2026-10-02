@@ -1298,7 +1298,8 @@ describe("task due order", () => {
     expect(source).toContain("personPageHasMore");
     expect(source).toContain("peoplePage.length + extraPeople.length");
     expect(source).not.toContain("peoplePage.length === PERSON_PAGE_SIZE");
-    expect(source).toContain('useRevenueActions("open", ACTION_QUEUE_PAGE, "task")');
+    expect(source).toContain('useRevenueActions("open", ACTION_QUEUE_PAGE, "task", dueOrder)');
+    expect(source).toContain("taskPage.length + extraTasks.length,\n        dueOrder,");
     expect(source).toContain("actionPageHasMore");
     expect(source).toContain("taskPage.length + extraTasks.length");
     expect(source).not.toContain("loadedTaskCount.current");

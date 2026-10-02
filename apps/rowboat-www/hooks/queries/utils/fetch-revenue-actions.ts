@@ -5,6 +5,9 @@ import type { RevenueAction } from "@/lib/revenue/types";
 
 export type RevenueActionSurface = "task" | "recovery";
 
+/** Task pages follow due date. Empty keeps the priority order used by recovery. */
+export type TaskDueOrder = "asc" | "desc";
+
 /** The queue refuses a larger page. The next rows use this same size as an offset. */
 export const ACTION_QUEUE_PAGE = 100;
 
@@ -56,12 +59,14 @@ function revenueActionsPath(
   limit: number,
   surface?: RevenueActionSurface,
   offset = 0,
+  due?: TaskDueOrder,
 ): string {
   return withQueryString("/revenue-actions", {
     queueStatus,
     limit,
     surface,
     ...(offset > 0 ? { offset } : {}),
+    ...(due ? { due } : {}),
   });
 }
 
@@ -72,9 +77,10 @@ export async function loadRevenueActions(
   signal?: AbortSignal,
   surface?: RevenueActionSurface,
   offset = 0,
+  due?: TaskDueOrder,
 ): Promise<ActionPage> {
   const body = await request({
-    path: revenueActionsPath(queueStatus, limit, surface, offset),
+    path: revenueActionsPath(queueStatus, limit, surface, offset, due),
     schema: ListRevenueActions200Response,
     signal,
   });
@@ -90,6 +96,7 @@ export function fetchRevenueActions(
   signal?: AbortSignal,
   surface?: RevenueActionSurface,
   offset = 0,
+  due?: TaskDueOrder,
 ): Promise<ActionPage> {
-  return loadRevenueActions(requestJson, queueStatus, limit, signal, surface, offset);
+  return loadRevenueActions(requestJson, queueStatus, limit, signal, surface, offset, due);
 }
