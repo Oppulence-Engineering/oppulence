@@ -16,6 +16,7 @@ import {
   workflowForTask,
   workflowOpeningScreen,
   workflowLastRunAt,
+  runCompletedLabel,
   workflowLastRunMark,
   workflowLastRunReason,
   workflowSettingsLastRun,
@@ -587,6 +588,29 @@ describe("CloudWorkflowsView", () => {
         { createdAt: "2026-09-30T18:30:00Z", status: "stopped" },
       ),
     ).toBe("Stopped");
+    expect(
+      workflowLastRunMark(
+        { lastRunAt: "2026-09-30T18:30:00Z", lastRunError: "stale" },
+        { createdAt: "2026-09-30T18:30:00Z", status: "running" },
+      ),
+    ).toBe("Running");
+    expect(
+      workflowLastRunMark(
+        { lastRunAt: "2026-09-30T18:30:00Z" },
+        { createdAt: "2026-09-30T18:30:00Z", status: "queued" },
+      ),
+    ).toBe("Queued");
+    expect(
+      workflowLibrarySearchText(
+        { lastRunAt: "2026-09-30T18:30:00Z", lastRunError: "stale" } as CloudTask,
+        [],
+        { createdAt: "2026-09-30T18:30:00Z", status: "running" },
+      ).toLowerCase(),
+    ).toContain("running");
+    expect(runCompletedLabel("running", null)).toBe("Not finished");
+    expect(runCompletedLabel("queued", "")).toBe("Not finished");
+    expect(runCompletedLabel("succeeded", "2026-09-30T18:30:00Z")).toContain("Sep 30");
+    expect(runCompletedLabel("failed", null)).toBe("—");
     expect(source).toContain("workflowLastRunMark(");
     expect(source).toContain("workflowLastRunReason(");
     expect(source).not.toContain("lastRunError}");

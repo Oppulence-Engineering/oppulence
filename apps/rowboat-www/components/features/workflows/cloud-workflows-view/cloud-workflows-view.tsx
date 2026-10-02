@@ -205,13 +205,13 @@ export function workflowLastRunAt(
 }
 
 /**
- * The library row used to show only the clock next to Live. A run can fail
- * and still leave that clock looking successful. The mark belongs to the
- * moment on the row: the newest page hit when it is at least as new as the
- * stored time, otherwise the error kept on the task. That error is empty
- * when the latest recorded run did not fail. The row shows Failed beside
- * the clock, and the friendly reason under it. The scheduler payload stays
- * off the row.
+ * The library row used to show only the clock next to Live. A run can fail,
+ * or still be going, and leave that clock looking successful. The mark
+ * belongs to the moment on the row: the newest page hit when it is at least
+ * as new as the stored time, otherwise the error kept on the task. That
+ * error is empty when the latest recorded run did not fail. The row shows
+ * Failed, Stopped, Running, or Queued beside the clock. The friendly reason
+ * stays under a failure. The scheduler payload stays off the row.
  */
 export function workflowLastRunMark(
   task: { lastRunAt?: string | null; lastRunError?: string | null },
@@ -225,12 +225,24 @@ export function workflowLastRunMark(
     Boolean(pageRun) &&
     !Number.isNaN(pageTime) &&
     (Number.isNaN(storedTime) || pageTime >= storedTime);
-  if (pageIsShown) {
-    if (pageRun?.status === "failed") return "Failed";
-    if (pageRun?.status === "stopped") return "Stopped";
-    return null;
-  }
+  if (pageIsShown) return pageRunStatusMark(pageRun?.status);
   return task.lastRunError?.trim() ? "Failed" : null;
+}
+
+function pageRunStatusMark(status: string | null | undefined): string | null {
+  if (status === "failed") return "Failed";
+  if (status === "stopped") return "Stopped";
+  if (status === "running") return "Running";
+  if (status === "queued") return "Queued";
+  return null;
+}
+
+/** A run that has not finished has no completed time. That is not a blank clock. */
+export function runCompletedLabel(status: string, completedAt?: string | null): string {
+  const shown = scheduleMomentLabel(completedAt);
+  if (shown !== "—") return shown;
+  if (status === "queued" || status === "running") return "Not finished";
+  return "—";
 }
 
 type WorkflowLastRunSource = {
@@ -1145,7 +1157,7 @@ function RunInspector({
           </div>
           <div>
             <Label className="font-normal text-muted-foreground">Completed</Label>
-            <p className="mt-0.5">{formatDate(run.completedAt)}</p>
+            <p className="mt-0.5">{runCompletedLabel(run.status, run.completedAt)}</p>
           </div>
         </div>
         {run.summary ? (
