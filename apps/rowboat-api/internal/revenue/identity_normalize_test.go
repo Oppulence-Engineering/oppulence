@@ -384,6 +384,93 @@ func TestRelationshipSearchFindsTheLastInteraction(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsTheDirectoryColumns(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	healthy, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(healthy.ID).SetHealth("healthy").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetRelationship(healthy).
+		SetDisplayName("Ada Quill").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	busy, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Northwind Quiet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 1; i <= 2; i++ {
+		if _, err := f.client.RevenueAction.Create().
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetRelationship(busy).
+			SetActionType("follow_up_task").
+			SetChannel("task").
+			SetDetector("manual").
+			SetDedupeKey(fmt.Sprintf("directory-column-%d", i)).
+			SetRevisionHash(fmt.Sprintf("directory-column-hash-%d", i)).
+			SetReason("Send the excerpt").
+			SetPriorityScore(40).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	lumen, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(lumen.ID).
+		SetNextAction("Mail the ledger excerpt").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	healthyRows, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Healthy"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(healthyRows.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
+		t.Fatalf("healthy = %v", got)
+	}
+	onePerson, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(onePerson.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
+		t.Fatalf("1 person = %v", got)
+	}
+	none, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "No open action"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(none.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
+		t.Fatalf("no open action = %v", got)
+	}
+	two, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "2 open actions"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(two.Relationships); len(got) != 1 || got[0] != "Northwind Quiet" {
+		t.Fatalf("2 open actions = %v", got)
+	}
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {

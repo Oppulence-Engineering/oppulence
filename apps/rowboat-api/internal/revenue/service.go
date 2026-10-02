@@ -20,6 +20,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -773,6 +774,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if threads := relationshipEmailThreadLabelMatch(value); threads != nil {
 			parts = append(parts, threads)
 		}
+		if columns := relationshipDirectoryColumnMatch(value); columns != nil {
+			parts = append(parts, columns)
+		}
 		if window, ok := relativeLabelWindow(value, time.Now()); ok {
 			parts = append(parts, relationship.And(
 				relationship.LastTouchAtNotNil(),
@@ -940,6 +944,144 @@ func exactEmailThreadCount(needle string) (int, bool) {
 		return 0, false
 	}
 	return n, true
+}
+
+// relationshipDirectoryColumnMatch matches the columns that open with the
+// directory: Health, People, and the next-action sentence. Health is stored
+// as a token and printed as a title. People is the participant count. A blank
+// next action reads "No open action", or "2 open actions" when drafts exist.
+func relationshipDirectoryColumnMatch(term string) predicate.Relationship {
+	needle := normalizePersonSearch(term)
+	if needle == "" {
+		return nil
+	}
+	var preds []predicate.Relationship
+	if health := relationshipHealthLabelMatch(needle); health != nil {
+		preds = append(preds, health)
+	}
+	if n, ok := exactPersonCompanyCount(needle); ok {
+		preds = append(preds, relationshipParticipantCount("=", n))
+		// "2 open actions" also prints that number. A bare "2" has to find it,
+		// and it must not pull in every company that has some other count.
+		if n >= 1 {
+			preds = append(preds, relationship.And(
+				relationshipNextActionBlank(),
+				relationshipOpenActionCount("=", n),
+			))
+		}
+	}
+	if action := relationshipOpenActionLabelMatch(needle); action != nil {
+		preds = append(preds, action)
+	}
+	if len(preds) == 0 {
+		return nil
+	}
+	return relationship.Or(preds...)
+}
+
+func relationshipHealthLabelMatch(needle string) predicate.Relationship {
+	labels := []struct {
+		label string
+		value string
+	}{
+		{"unknown", "unknown"},
+		{"healthy", "healthy"},
+		{"needs attention", "needs_attention"},
+		{"critical", "critical"},
+	}
+	values := make([]string, 0, len(labels))
+	for _, item := range labels {
+		if strings.Contains(item.label, needle) {
+			values = append(values, item.value)
+		}
+	}
+	if len(values) == 0 {
+		return nil
+	}
+	if len(values) == len(labels) {
+		return relationshipMatchAll()
+	}
+	return relationship.HealthIn(values...)
+}
+
+func relationshipOpenActionLabelMatch(needle string) predicate.Relationship {
+	// A bare number is the People column, and the exact open-action count above.
+	// Treating it as a substring of "1 open action" would match every draft.
+	if _, ok := exactPersonCompanyCount(needle); ok {
+		return nil
+	}
+	if n, ok := exactOpenActionCount(needle); ok {
+		return relationship.And(relationshipNextActionBlank(), relationshipOpenActionCount("=", n))
+	}
+	none := strings.Contains("no open action", needle)
+	some := strings.Contains("open actions", needle) || strings.Contains("1 open action", needle)
+	switch {
+	case none && some:
+		return relationshipNextActionBlank()
+	case none:
+		return relationship.And(relationshipNextActionBlank(), relationshipOpenActionCount("=", 0))
+	case some:
+		return relationship.And(relationshipNextActionBlank(), relationshipOpenActionCount("<>", 0))
+	default:
+		return nil
+	}
+}
+
+func exactOpenActionCount(needle string) (int, bool) {
+	var n int
+	if _, err := fmt.Sscanf(needle, "%d open action", &n); err != nil || n < 1 {
+		return 0, false
+	}
+	label := fmt.Sprintf("%d open actions", n)
+	if n == 1 {
+		label = "1 open action"
+	}
+	if needle != label {
+		return 0, false
+	}
+	return n, true
+}
+
+func relationshipNextActionBlank() predicate.Relationship {
+	return relationship.Or(relationship.NextActionIsNil(), relationship.NextActionEQ(""))
+}
+
+func relationshipParticipantCount(compare string, n int) predicate.Relationship {
+	if compare != "=" && compare != "<>" {
+		compare = "="
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(fmt.Sprintf(
+				"(SELECT count(*) FROM %s WHERE %s = %s) %s ",
+				relationshipparticipant.Table,
+				relationshipparticipant.RelationshipColumn,
+				s.C(relationship.FieldID),
+				compare,
+			))
+			b.Arg(n)
+		}))
+	})
+}
+
+func relationshipOpenActionCount(compare string, n int) predicate.Relationship {
+	if compare != "=" && compare != "<>" {
+		compare = "="
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(fmt.Sprintf(
+				"(SELECT count(*) FROM %s WHERE %s = %s AND %s = '%s') %s ",
+				revenueaction.Table,
+				revenueaction.RelationshipColumn,
+				s.C(relationship.FieldID),
+				revenueaction.FieldQueueStatus,
+				QueueOpen,
+				compare,
+			))
+			b.Arg(n)
+		}))
+	})
 }
 
 func relationshipMailThreadCount(compare string, n int) predicate.Relationship {
