@@ -63,17 +63,20 @@ const incomplete: RelationshipSourceStatus = {
 
 function renderWorkspace(overrides?: Partial<React.ComponentProps<typeof WorkspaceView>>) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={client}>
-      <WorkspaceView
-        workspace={{ id: "ws-1", mode: "local", status: "active", preflightAvailable: false }}
-        onLinked={vi.fn()}
-        onError={vi.fn()}
-        onNotice={vi.fn()}
-        {...overrides}
-      />
-    </QueryClientProvider>,
-  );
+  return {
+    client,
+    ...render(
+      <QueryClientProvider client={client}>
+        <WorkspaceView
+          workspace={{ id: "ws-1", mode: "local", status: "active", preflightAvailable: false }}
+          onLinked={vi.fn()}
+          onError={vi.fn()}
+          onNotice={vi.fn()}
+          {...overrides}
+        />
+      </QueryClientProvider>,
+    ),
+  };
 }
 
 beforeEach(() => {
@@ -243,6 +246,20 @@ describe("WorkspaceView", () => {
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText(/Nothing is connected yet/)).toBeVisible();
     expect(screen.getByText("0 sources")).toBeVisible();
+  });
+
+  it("keeps loaded sources when a refresh fails", async () => {
+    const { client } = renderWorkspace();
+    expect(await screen.findByText("A note")).toBeVisible();
+    expect(screen.getByText("2 sources")).toBeVisible();
+    vi.mocked(fetchRelationshipSourceStatuses).mockRejectedValue(new Error("boom"));
+    await client.invalidateQueries();
+    expect(await screen.findByText("Could not refresh sources. Try again.")).toBeVisible();
+    expect(screen.getByText("A note")).toBeVisible();
+    expect(screen.getByText("Google")).toBeVisible();
+    expect(screen.getByText("2 sources")).toBeVisible();
+    expect(screen.queryByText("Sources could not load. Try again.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Couldn't load")).not.toBeInTheDocument();
   });
 
   it("keeps the Gmail draft sentence once Google is connected", () => {

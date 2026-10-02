@@ -72,6 +72,9 @@ describe("AppShellSidebar", () => {
     expect(source).toContain('sidebarQueryError(agentsQuery.error, "Could not load agents")');
     expect(source).toContain('sidebarQueryError(tasksQuery.error, "Could not load schedules")');
     expect(source).toContain('sidebarQueryError(runsQuery.error, "Could not load runs")');
+    expect(source).toContain("group.error && group.items.length === 0");
+    expect(source).toContain("sources.isError && sourcesMissing");
+    expect(source).toContain("sources.isError && !sourcesMissing");
     expect(source).not.toContain('label: "Source status unavailable"');
   });
 

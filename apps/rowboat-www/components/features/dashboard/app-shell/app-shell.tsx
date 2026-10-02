@@ -554,12 +554,16 @@ function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen
   const sources = useRelationshipSourceStatuses();
 
   const trialDaysLeft = trialDaysRemaining(billing);
-  if (sources.isPending) return null;
-  const health: SourceHealth = sources.isError
-    ? { tone: "idle", label: sidebarQueryError(sources.error, "Source status unavailable") }
-    : sourceHealth(sources.data);
-  const connected = sources.isError ? undefined : connectedSourceCount(sources.data);
-  const total = sources.isError ? undefined : sources.data.length;
+  if (sources.isPending && !sources.data) return null;
+  const loadedSources = sources.data ?? [];
+  const sourcesMissing = loadedSources.length === 0;
+  const health: SourceHealth =
+    sources.isError && sourcesMissing
+      ? { tone: "idle", label: sidebarQueryError(sources.error, "Source status unavailable") }
+      : sourceHealth(loadedSources);
+  const connected =
+    sources.isError && sourcesMissing ? undefined : connectedSourceCount(loadedSources);
+  const total = sources.isError && sourcesMissing ? undefined : loadedSources.length;
   return (
     <Button
       className={cn(
@@ -573,6 +577,11 @@ function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen
       <Label className="block whitespace-normal text-left text-[15px] font-normal leading-5">
         {health.label}
       </Label>
+      {sources.isError && !sourcesMissing ? (
+        <span className="text-[12px] font-normal leading-4 text-primary/70">
+          {sidebarQueryError(sources.error, "Source status unavailable")}
+        </span>
+      ) : null}
       {sourceMeterVisible(total, connected) &&
       typeof total === "number" &&
       typeof connected === "number" ? (
@@ -722,6 +731,30 @@ function SidebarEmptyHint({ children }: { children: React.ReactNode }) {
   return <div className="px-6 py-1.5 text-[13px] text-muted-foreground">{children}</div>;
 }
 
+function SidebarGroupError({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <>
+      <SidebarEmptyHint>{message}</SidebarEmptyHint>
+      {onRetry ? (
+        <Button
+          className={
+            "h-auto w-full justify-start rounded-lg px-4 py-1.5 text-left " +
+            "text-[13px] font-normal text-[var(--text-secondary)]"
+          }
+          onClick={(event) => {
+            event.stopPropagation();
+            onRetry();
+          }}
+          type="button"
+          variant="ghost"
+        >
+          Try again
+        </Button>
+      ) : null}
+    </>
+  );
+}
+
 const SIDEBAR_FOOTER_LINK =
   "flex h-[var(--shell-nav-row-height,30px)] w-full shrink-0 items-center justify-start rounded-lg px-2 text-[var(--text-small,13px)] text-[var(--text-body)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[var(--border)]";
 
@@ -841,6 +874,7 @@ export function AppShellSidebar({
     loading?: boolean;
     error?: string;
     onNavigate?: () => void;
+    onRetry?: () => void;
   }[] = [
     {
       key: "agents",
@@ -851,6 +885,7 @@ export function AppShellSidebar({
       loading: loadingGroups.agents,
       error: groupErrors.agents,
       onNavigate: onNavigateAgents,
+      onRetry: () => void agentsQuery.refetch(),
     },
     {
       key: "scheduled",
@@ -861,6 +896,7 @@ export function AppShellSidebar({
       loading: loadingGroups.scheduled,
       error: groupErrors.scheduled,
       onNavigate: onNavigateScheduled,
+      onRetry: () => void tasksQuery.refetch(),
     },
     {
       key: "runs",
@@ -872,6 +908,7 @@ export function AppShellSidebar({
       loading: loadingGroups.runs,
       error: groupErrors.runs,
       onNavigate: onNavigateRuns,
+      onRetry: () => void runsQuery.refetch(),
     },
   ];
 
@@ -1009,14 +1046,18 @@ export function AppShellSidebar({
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <div className="flex flex-col gap-0.5 pb-1">
-                    {group.loading ? (
+                    {group.loading && group.items.length === 0 ? (
                       <SidebarEmptyHint>Loading…</SidebarEmptyHint>
-                    ) : group.error ? (
-                      <SidebarEmptyHint>{group.error}</SidebarEmptyHint>
+                    ) : group.error && group.items.length === 0 ? (
+                      <SidebarGroupError message={group.error} onRetry={group.onRetry} />
                     ) : group.items.length === 0 ? (
                       <SidebarEmptyHint>{group.empty}</SidebarEmptyHint>
                     ) : (
-                      group.items.map((item) => (
+                      <>
+                        {group.error ? (
+                          <SidebarGroupError message={group.error} onRetry={group.onRetry} />
+                        ) : null}
+                        {group.items.map((item) => (
                         <SidebarSubItem
                           active={selected?.kind === group.kind && selected?.name === item.value}
                           key={item.value}
@@ -1027,7 +1068,8 @@ export function AppShellSidebar({
                               : undefined
                           }
                         />
-                      ))
+                      ))}
+                      </>
                     )}
                   </div>
                 </CollapsibleContent>
