@@ -80,6 +80,7 @@ import {
   ListSkeleton,
   PolicyBadge,
   priorityTone,
+  refetchClearingBanner,
 } from "@/components/features/revenue/shared/shared";
 import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
@@ -362,7 +363,11 @@ export function QueueView({
             learnMore={[]}
             title="Recovery could not load"
           >
-            <Button onClick={() => void actionsQuery.refetch()} type="button" variant="outline">
+            <Button
+              onClick={() => void refetchClearingBanner(() => actionsQuery.refetch(), onError)}
+              type="button"
+              variant="outline"
+            >
               Try again
             </Button>
           </EmptyBlock>

@@ -1236,6 +1236,9 @@ describe("people directory copy", () => {
     expect(noteListFailureCopy()).toBe("Notes could not load. Try again.");
     expect(source).toContain("peopleListEmptyCopy(directoryTitle.filtered)");
     expect(source).toContain("peopleQuery.isError");
+    expect(source).toContain("refetchClearingBanner(() => peopleQuery.refetch(), onError)");
+    expect(source).toContain("refetchClearingBanner(() => notesQuery.refetch(), onError)");
+    expect(source).toContain("refetchClearingBanner(() => actionsQuery.refetch(), onError)");
     expect(source).toContain("notesQuery.isError");
     expect(source).toContain("peopleListFailureCopy()");
     expect(source).toContain("noteListFailureCopy()");

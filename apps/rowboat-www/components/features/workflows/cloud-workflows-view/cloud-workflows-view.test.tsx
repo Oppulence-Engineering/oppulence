@@ -28,6 +28,7 @@ import {
   workflowStepLabel,
   workflowListFailureCopy,
   workflowRunsFailureCopy,
+  workflowTemplatesFailureCopy,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
   calledModelLabel,
@@ -106,6 +107,8 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain("Clear search");
     expect(workflowListFailureCopy()).toBe("Workflows could not load. Try again.");
     expect(workflowRunsFailureCopy()).toBe("Runs could not load. Try again.");
+    expect(workflowTemplatesFailureCopy()).toBe("Templates could not load. Try again.");
+    expect(source).toContain("templatesFailed");
     expect(source).toContain("tasksQuery.isError && tasks.length === 0");
     expect(source).toContain("runsQuery.isError && runs.length === 0");
     expect(source).toContain("loadFailed || query.trim()");

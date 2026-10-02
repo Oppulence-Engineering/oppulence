@@ -32,6 +32,7 @@ import {
   errMessage,
   ListSkeleton,
   ModeChip,
+  refetchClearingBanner,
 } from "@/components/features/revenue/shared/shared";
 import { AttentionQueueSurface } from "@/components/features/revenue/attention-queue-surface/attention-queue-surface";
 import { useAskOppulence } from "@/components/features/dashboard/dashboard-shell/dashboard-shell";
@@ -1030,7 +1031,7 @@ export function RelationshipsView({
           title="Companies"
         >
           <Button
-            onClick={() => void relationshipsQuery.refetch()}
+            onClick={() => void refetchClearingBanner(() => relationshipsQuery.refetch(), onError)}
             size="sm"
             type="button"
             variant="outline"

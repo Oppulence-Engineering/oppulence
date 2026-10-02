@@ -327,6 +327,11 @@ export function workflowRunsFailureCopy(): string {
   return "Runs could not load. Try again.";
 }
 
+/** A failed template list is not a catalog the workspace has not created yet. */
+export function workflowTemplatesFailureCopy(): string {
+  return "Templates could not load. Try again.";
+}
+
 export function runWhereFilterName(value: string): string {
   const current = value === "api" ? "Cloud" : value === "desktop" ? "Desktop" : "Cloud or desktop";
   return comboboxFilterName("Where it runs", current);
@@ -511,9 +516,13 @@ export function workflowLibrarySearchText(
 
 function CreateWorkflowDialog({
   templates,
+  templatesFailed = false,
+  onRetryTemplates,
   onCreated,
 }: {
   templates: CloudTaskTemplate[];
+  templatesFailed?: boolean;
+  onRetryTemplates?: () => void;
   onCreated: (task: CloudTask) => void;
 }) {
   const [open, setOpen] = React.useState(false);
@@ -640,9 +649,25 @@ function CreateWorkflowDialog({
                     );
                   })}
                 {templates.filter((template) => !template.firstParty).length === 0 ? (
-                  <p className="p-6 text-center text-xs text-muted-foreground">
-                    No custom templates are available yet.
-                  </p>
+                  templatesFailed ? (
+                    <div className="flex flex-col items-center gap-3 p-6 text-center">
+                      <p className="text-xs text-muted-foreground">
+                        {workflowTemplatesFailureCopy()}
+                      </p>
+                      <Button
+                        onClick={onRetryTemplates}
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                      >
+                        Try again
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="p-6 text-center text-xs text-muted-foreground">
+                      No custom templates are available yet.
+                    </p>
+                  )
                 ) : null}
               </div>
             </ScrollArea>
@@ -678,21 +703,25 @@ function WorkflowLibrary({
   tasks,
   runs,
   templates,
+  templatesFailed = false,
   busy,
   loadFailed = false,
   onCreated,
   onRefresh,
   onRetryLoad,
+  onRetryTemplates,
   onSelect,
 }: {
   tasks: CloudTask[];
   runs: CloudRun[];
   templates: CloudTaskTemplate[];
+  templatesFailed?: boolean;
   busy: boolean;
   loadFailed?: boolean;
   onCreated: (task: CloudTask) => void;
   onRefresh: () => void;
   onRetryLoad?: () => void;
+  onRetryTemplates?: () => void;
   onSelect: (task: CloudTask) => void;
 }) {
   const [query, setQuery] = React.useState("");
@@ -730,7 +759,12 @@ function WorkflowLibrary({
           >
             <ArrowClockwise className={cn(busy && "animate-spin")} />
           </Button>
-          <CreateWorkflowDialog onCreated={onCreated} templates={templates} />
+          <CreateWorkflowDialog
+            onCreated={onCreated}
+            onRetryTemplates={onRetryTemplates}
+            templates={templates}
+            templatesFailed={templatesFailed}
+          />
         </div>
       </div>
       <div className="flex h-11 shrink-0 items-center border-b border-border px-3">
@@ -1880,6 +1914,13 @@ export function CloudWorkflowsView({
           onRetryLoad={() => {
             void tasksQuery.refetch();
           }}
+          onRetryTemplates={() => {
+            void templatesQuery.refetch();
+          }}
+          templatesFailed={
+            templatesQuery.isError &&
+            templates.filter((template) => !template.firstParty).length === 0
+          }
           runs={runs}
           tasks={tasks}
           templates={templates}

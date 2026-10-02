@@ -36,7 +36,12 @@ import {
 import { attentionReasonLabel, auditLaunchLabel } from "@/lib/revenue/revenue";
 import { detectorsWithoutTasks, recoveryOpenCount } from "@/lib/revenue/revenue-records";
 import type { RevenueImpact } from "@/lib/revenue/types";
-import { EmptyBlock, errMessage, ListSkeleton } from "@/components/features/revenue/shared/shared";
+import {
+  EmptyBlock,
+  errMessage,
+  ListSkeleton,
+  refetchClearingBanner,
+} from "@/components/features/revenue/shared/shared";
 import { cn } from "@/lib/utils";
 
 /**
@@ -121,7 +126,11 @@ export function ImpactView({
         learnMore={[]}
         title="Impact could not load"
       >
-        <Button onClick={() => void impactQuery.refetch()} type="button" variant="outline">
+        <Button
+          onClick={() => void refetchClearingBanner(() => impactQuery.refetch(), onError)}
+          type="button"
+          variant="outline"
+        >
           Try again
         </Button>
       </EmptyBlock>

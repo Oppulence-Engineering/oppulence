@@ -72,6 +72,7 @@ import {
   EmptyBlock,
   errMessage,
   ListSkeleton,
+  refetchClearingBanner,
   WorkspaceEmptyState,
 } from "@/components/features/revenue/shared/shared";
 import { Avatar, AvatarFallback } from "@oppulence/ui/components/avatar";
@@ -675,7 +676,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
       ) : peopleQuery.isError ? (
         <EmptyBlock body={peopleListFailureCopy()} image="people" learnMore={[]} title="People">
           <Button
-            onClick={() => void peopleQuery.refetch()}
+            onClick={() => void refetchClearingBanner(() => peopleQuery.refetch(), onError)}
             size="sm"
             type="button"
             variant="outline"
@@ -1609,7 +1610,7 @@ export function NotesView({
         <WorkspaceEmptyState
           action={
             <Button
-              onClick={() => void notesQuery.refetch()}
+              onClick={() => void refetchClearingBanner(() => notesQuery.refetch(), onError)}
               size="sm"
               type="button"
               variant="outline"
@@ -2747,7 +2748,7 @@ export function TasksView({
         <WorkspaceEmptyState
           action={
             <Button
-              onClick={() => void actionsQuery.refetch()}
+              onClick={() => void refetchClearingBanner(() => actionsQuery.refetch(), onError)}
               size="sm"
               type="button"
               variant="outline"

@@ -348,3 +348,13 @@ export function EmptyBlock({
 export function errMessage(e: unknown, fallback: string): string {
   return e instanceof Error ? e.message : fallback;
 }
+
+/** A successful retry should take down the banner that the failed load raised. */
+export async function refetchClearingBanner(
+  refetch: () => Promise<{ isError: boolean }>,
+  onError: (message: string) => void,
+): Promise<void> {
+  const result = await refetch();
+  if (result?.isError) return;
+  onError("");
+}
