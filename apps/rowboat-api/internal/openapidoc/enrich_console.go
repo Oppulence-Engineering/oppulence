@@ -87,10 +87,11 @@ func addConsoleSchemas(schemas obj) {
 	})
 	patch["additionalProperties"] = false
 	schemas["ConsoleResourcePatch"] = patch
-	schemas["ConsoleResourcePage"] = objectSchema("Bounded deterministic resource page.", obj{
+	schemas["ConsoleResourcePage"] = objectSchema("Bounded deterministic resource page. A full page is the end of the list when hasMore is false.", obj{
 		"resources": arraySchema("Resources ordered by sortOrder, createdAt descending, then id.", ref("ConsoleResource")),
 		"limit":     intSchema("Applied page limit.", 50),
 		"offset":    intSchema("Applied page offset.", 0),
+		"hasMore":   boolSchema("Another resource exists beyond this page.", false),
 	}, "resources", "limit", "offset")
 }
 
@@ -120,7 +121,7 @@ func addConsolePaths(paths obj) {
 	createResponses["201"] = jsonResponse("Created resource.", ref("ConsoleResource"), nil)
 	createResponses["409"] = consoleConflictResponse()
 	paths["/v1/console/resources"] = obj{
-		"get": operation("Console", "List console resources", "Lists only the caller's resources in the exact organization workspace asserted by the token.", "listConsoleResources", bearer(), []any{
+		"get": operation("Console", "List console resources", "Lists only the caller's resources in the exact organization workspace asserted by the token. A full page is the end of the list when hasMore is false.", "listConsoleResources", bearer(), []any{
 			queryParam("kind", "Required resource kind.", true, ref("ConsoleResourceKind")),
 			queryParam("limit", "Page size (default 50, max 100).", false, obj{"type": "integer", "minimum": 1, "maximum": 100}),
 			queryParam("offset", "Page offset (max 10000).", false, obj{"type": "integer", "minimum": 0, "maximum": 10000}),

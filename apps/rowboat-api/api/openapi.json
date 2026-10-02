@@ -5524,8 +5524,13 @@
         "type": "string"
       },
       "ConsoleResourcePage": {
-        "description": "Bounded deterministic resource page.",
+        "description": "Bounded deterministic resource page. A full page is the end of the list when hasMore is false.",
         "properties": {
+          "hasMore": {
+            "description": "Another resource exists beyond this page.",
+            "example": false,
+            "type": "boolean"
+          },
           "limit": {
             "description": "Applied page limit.",
             "example": 50,
@@ -19782,7 +19787,7 @@
     },
     "/v1/console/resources": {
       "get": {
-        "description": "Lists only the caller's resources in the exact organization workspace asserted by the token.",
+        "description": "Lists only the caller's resources in the exact organization workspace asserted by the token. A full page is the end of the list when hasMore is false.",
         "operationId": "listConsoleResources",
         "parameters": [
           {

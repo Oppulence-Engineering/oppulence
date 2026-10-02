@@ -35,10 +35,14 @@ vi.mock("@/lib/console/console", () => ({
   deleteConsoleResource: vi.fn(),
   patchConsoleResource: vi.fn(),
 }));
-vi.mock("@/hooks/queries/utils/fetch-console", () => ({
-  fetchConsoleResources: mocks.fetchConsoleResources,
-  fetchConsolePreferences: vi.fn(),
-}));
+vi.mock("@/hooks/queries/utils/fetch-console", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/hooks/queries/utils/fetch-console")>();
+  return {
+    ...actual,
+    fetchConsoleResources: mocks.fetchConsoleResources,
+    fetchConsolePreferences: vi.fn(),
+  };
+});
 vi.mock("@/hooks/queries/utils/fetch-workspace-notes", () => ({
   fetchWorkspaceNotes: mocks.fetchWorkspaceNotes,
 }));
@@ -114,6 +118,9 @@ import {
   noteNeedsCompanyCopy,
   noteCountLabel,
   earlierNotesLabel,
+  templateCountLabel,
+  nextTemplatesLabel,
+  nextFavoritesLabel,
   taskFilterName,
   taskListEmptyCopy,
 } from "@/components/features/revenue/workspace-records/workspace-records-view";
@@ -739,6 +746,12 @@ describe("task due order", () => {
     expect(noteCountLabel(1, true)).toBe("1+");
     expect(noteCountLabel(2, false)).toBe("2");
     expect(earlierNotesLabel()).toBe("Show earlier notes");
+    expect(templateCountLabel(100, false)).toBe("100");
+    expect(templateCountLabel(100, true)).toBe("100+");
+    expect(nextTemplatesLabel()).toBe("Show the next templates");
+    expect(nextFavoritesLabel()).toBe("Show the next favorites");
+    expect(source).toContain("templatePage.length + extraTemplates.length");
+    expect(source).toContain("favoritePage.length + extraFavorites.length");
     expect(source).toContain("fetchMoreWorkspaceNotes");
     expect(source).toContain("personPageHasMore");
     expect(source).toContain("peoplePage.length + extraPeople.length");

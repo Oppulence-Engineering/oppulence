@@ -35,6 +35,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthSession } from "@/components/auth/auth-gate";
 import { useWorkspaceLabel } from "@/components/features/dashboard/app-shell/app-shell";
 import { useConsoleResources } from "@/hooks/queries/use-console";
+import {
+  consoleResourcePageHasMore,
+  consoleResourceRows,
+  fetchConsoleResources,
+} from "@/hooks/queries/utils/fetch-console";
 import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
 import {
   ACTION_QUEUE_PAGE,
@@ -134,6 +139,7 @@ import {
 import {
   noteFavorites,
   noteTemplates,
+  type NoteFavoriteResource,
   type NoteTemplateResource,
 } from "@/lib/console/console-resources";
 import {
@@ -1022,6 +1028,18 @@ export function earlierNotesLabel(): string {
   return "Show earlier notes";
 }
 
+export function templateCountLabel(shown: number, hasMore: boolean): string {
+  return hasMore ? `${shown}+` : String(shown);
+}
+
+export function nextTemplatesLabel(): string {
+  return "Show the next templates";
+}
+
+export function nextFavoritesLabel(): string {
+  return "Show the next favorites";
+}
+
 export function NotesView({
   onError,
   onNotice,
@@ -1075,9 +1093,35 @@ export function NotesView({
   const [showFavorites, setShowFavorites] = React.useState(true);
   const templatesQuery = useConsoleResources("note_template", noteTemplates);
   const favoritesQuery = useConsoleResources("note_favorite", noteFavorites);
+  const [extraTemplates, setExtraTemplates] = React.useState<NoteTemplateResource[]>([]);
+  const [laterTemplateHasMore, setLaterTemplateHasMore] = React.useState<boolean | null>(null);
+  const [loadingMoreTemplates, setLoadingMoreTemplates] = React.useState(false);
+  const [extraFavorites, setExtraFavorites] = React.useState<NoteFavoriteResource[]>([]);
+  const [laterFavoriteHasMore, setLaterFavoriteHasMore] = React.useState<boolean | null>(null);
+  const [loadingMoreFavorites, setLoadingMoreFavorites] = React.useState(false);
+  React.useEffect(() => {
+    setExtraTemplates([]);
+    setLaterTemplateHasMore(null);
+  }, [templatesQuery.dataUpdatedAt]);
+  React.useEffect(() => {
+    setExtraFavorites([]);
+    setLaterFavoriteHasMore(null);
+  }, [favoritesQuery.dataUpdatedAt]);
+  const templatePage = templatesQuery.data?.items ?? [];
+  const templates = React.useMemo(() => {
+    const seen = new Set(templatePage.map((template) => template.id));
+    return [...templatePage, ...extraTemplates.filter((template) => !seen.has(template.id))];
+  }, [extraTemplates, templatePage]);
+  const hasMoreTemplates = laterTemplateHasMore ?? Boolean(templatesQuery.data?.hasMore);
+  const favoritePage = favoritesQuery.data?.items ?? [];
+  const favoriteResources = React.useMemo(() => {
+    const seen = new Set(favoritePage.map((favorite) => favorite.id));
+    return [...favoritePage, ...extraFavorites.filter((favorite) => !seen.has(favorite.id))];
+  }, [extraFavorites, favoritePage]);
+  const hasMoreFavorites = laterFavoriteHasMore ?? Boolean(favoritesQuery.data?.hasMore);
   const favoriteMutation = useMutation({
     mutationFn: async (noteId: string) => {
-      const existing = favoritesQuery.data?.find((favorite) => favorite.payload.noteId === noteId);
+      const existing = favoriteResources.find((favorite) => favorite.payload.noteId === noteId);
       if (existing) return deleteConsoleResource(existing.id);
       return createConsoleResource({ kind: "note_favorite", payload: { noteId } });
     },
@@ -1085,6 +1129,40 @@ export function NotesView({
       queryClient.invalidateQueries({ queryKey: consoleKeys.resourceKind("note_favorite") }),
     onError: (error) => onError(errMessage(error, "Could not update the favorite.")),
   });
+  const loadMoreTemplates = async () => {
+    if (loadingMoreTemplates || !hasMoreTemplates) return;
+    setLoadingMoreTemplates(true);
+    try {
+      const page = await fetchConsoleResources(
+        "note_template",
+        undefined,
+        templatePage.length + extraTemplates.length,
+      );
+      setLaterTemplateHasMore(consoleResourcePageHasMore(page));
+      setExtraTemplates((current) => [...current, ...noteTemplates(consoleResourceRows(page))]);
+    } catch (error) {
+      onError(explainedRevenueError(error, "Could not load more templates."));
+    } finally {
+      setLoadingMoreTemplates(false);
+    }
+  };
+  const loadMoreFavorites = async () => {
+    if (loadingMoreFavorites || !hasMoreFavorites) return;
+    setLoadingMoreFavorites(true);
+    try {
+      const page = await fetchConsoleResources(
+        "note_favorite",
+        undefined,
+        favoritePage.length + extraFavorites.length,
+      );
+      setLaterFavoriteHasMore(consoleResourcePageHasMore(page));
+      setExtraFavorites((current) => [...current, ...noteFavorites(consoleResourceRows(page))]);
+    } catch (error) {
+      onError(explainedRevenueError(error, "Could not load more favorites."));
+    } finally {
+      setLoadingMoreFavorites(false);
+    }
+  };
   const load = React.useCallback(async () => {
     primedNotes.current = null;
     await queryClient.invalidateQueries({ queryKey: workspaceKeys.notes() });
@@ -1168,7 +1246,7 @@ export function NotesView({
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, [loading, notes, onNotice]);
-  const favoriteIds = new Set(favoritesQuery.data?.map((item) => item.payload.noteId) ?? []);
+  const favoriteIds = new Set(favoriteResources.map((item) => item.payload.noteId));
   const favoriteNotes = visible.filter((note) => favoriteIds.has(note.externalId));
   return (
     <div className="flex min-h-full flex-col bg-background" data-slot="notes-view">
@@ -1196,7 +1274,7 @@ export function NotesView({
           >
             <NotePencil className="size-4" /> Templates{" "}
             <Badge className="font-normal text-primary/40" variant="secondary">
-              {templatesQuery.data?.length ?? 0}
+              {templateCountLabel(templates.length, hasMoreTemplates)}
             </Badge>
           </TabsTrigger>
         </TabsList>
@@ -1296,9 +1374,9 @@ export function NotesView({
               <Plus /> New template
             </Button>
           </div>
-          {templatesQuery.data?.length ? (
+          {templates.length ? (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
-              {templatesQuery.data.map((template) => (
+              {templates.map((template) => (
                 <Card className="gap-3 p-4" key={template.id}>
                   <CardTitle>{template.payload.title}</CardTitle>
                   <CardDescription className="line-clamp-3">
@@ -1337,6 +1415,18 @@ export function NotesView({
               title="No templates yet"
             />
           )}
+          {hasMoreTemplates ? (
+            <Button
+              className="mt-3 w-full rounded-none"
+              disabled={loadingMoreTemplates}
+              onClick={() => void loadMoreTemplates()}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              {loadingMoreTemplates ? "Loading…" : nextTemplatesLabel()}
+            </Button>
+          ) : null}
         </div>
       ) : loading ? (
         <div className="p-4">
@@ -1423,6 +1513,18 @@ export function NotesView({
                   </CardContent>
                 </Card>
               )}
+              {hasMoreFavorites ? (
+                <Button
+                  className="mt-3 w-full rounded-none"
+                  disabled={loadingMoreFavorites}
+                  onClick={() => void loadMoreFavorites()}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  {loadingMoreFavorites ? "Loading…" : nextFavoritesLabel()}
+                </Button>
+              ) : null}
             </section>
           ) : null}
           {noteGroups.map((group) => (

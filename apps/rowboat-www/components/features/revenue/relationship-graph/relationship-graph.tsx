@@ -9,6 +9,11 @@ import {
 } from "@oppulence/relationship-contract";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useConsoleResources } from "@/hooks/queries/use-console";
+import {
+  consoleResourcePageHasMore,
+  consoleResourceRows,
+  fetchConsoleResources,
+} from "@/hooks/queries/utils/fetch-console";
 import { companyName } from "@/lib/revenue/revenue-records";
 import { getRelationshipGraph } from "@/lib/revenue/revenue";
 import { enumLabel, participantRoleLabel } from "@/lib/revenue/source-product-copy";
@@ -105,6 +110,7 @@ import {
   graphSavedViews,
   migrateLegacyGraphViews,
   readLegacyGraphViews,
+  type GraphSavedViewResource,
 } from "@/lib/console/console-resources";
 import {
   RelationshipGraphSavedViewSchema,
@@ -340,6 +346,10 @@ export function graphAccountChoice(name: string | null | undefined): string {
 export function graphSavedViewChoice(label: string | null | undefined): string {
   const trimmed = label?.trim() ?? "";
   return trimmed || "Saved views";
+}
+
+export function nextSavedViewsLabel(): string {
+  return "Show the next saved views";
 }
 
 function layoutNodes(
@@ -1474,13 +1484,46 @@ export function RelationshipGraphWorkspace({
     ? friendlyRevenueError(errMessage(graphQuery.error, "Could not load the company graph."))
     : null;
   const savedViewsQuery = useConsoleResources("graph_saved_view", graphSavedViews);
+  const remoteSavedViews = savedViewsQuery.data?.items ?? [];
+  const [extraSavedViews, setExtraSavedViews] = React.useState<GraphSavedViewResource[]>([]);
+  const [laterSavedViewsHasMore, setLaterSavedViewsHasMore] = React.useState<boolean | null>(null);
+  const [loadingMoreSavedViews, setLoadingMoreSavedViews] = React.useState(false);
+  React.useEffect(() => {
+    setExtraSavedViews([]);
+    setLaterSavedViewsHasMore(null);
+  }, [savedViewsQuery.dataUpdatedAt]);
+  const savedViewResources = React.useMemo(() => {
+    const seen = new Set(remoteSavedViews.map((view) => view.id));
+    return [...remoteSavedViews, ...extraSavedViews.filter((view) => !seen.has(view.id))];
+  }, [extraSavedViews, remoteSavedViews]);
+  const hasMoreSavedViews = laterSavedViewsHasMore ?? Boolean(savedViewsQuery.data?.hasMore);
+  const loadMoreSavedViews = async () => {
+    if (loadingMoreSavedViews || !hasMoreSavedViews) return;
+    setLoadingMoreSavedViews(true);
+    try {
+      const page = await fetchConsoleResources(
+        "graph_saved_view",
+        undefined,
+        remoteSavedViews.length + extraSavedViews.length,
+      );
+      setLaterSavedViewsHasMore(consoleResourcePageHasMore(page));
+      setExtraSavedViews((current) => [
+        ...current,
+        ...graphSavedViews(consoleResourceRows(page)),
+      ]);
+    } catch (error) {
+      onError(errMessage(error, "Could not load more saved views."));
+    } finally {
+      setLoadingMoreSavedViews(false);
+    }
+  };
   const legacyViews = React.useMemo(
     () => (typeof window === "undefined" ? [] : readLegacyGraphViews(window.localStorage)),
     [],
   );
   const savedViews: RelationshipGraphSavedView[] = savedViewsQuery.isError
     ? legacyViews
-    : (savedViewsQuery.data ?? []).map((resource) => ({
+    : savedViewResources.map((resource) => ({
         id: resource.id,
         label: resource.name,
         createdAt: resource.createdAt,
@@ -1540,12 +1583,12 @@ export function RelationshipGraphWorkspace({
   React.useEffect(() => {
     if (!savedViewsQuery.data || migrationStartedRef.current) return;
     migrationStartedRef.current = true;
-    migrateLegacyViews(savedViewsQuery.data);
+    migrateLegacyViews(savedViewsQuery.data.items);
   }, [migrateLegacyViews, savedViewsQuery.data]);
 
   React.useEffect(() => {
     if (!savedViewsQuery.data || migrationPending) return;
-    const snapshot = savedViewsQuery.data.map((resource) => ({
+    const snapshot = savedViewResources.map((resource) => ({
       id: resource.id,
       label: resource.name,
       createdAt: resource.createdAt,
@@ -1557,7 +1600,7 @@ export function RelationshipGraphWorkspace({
     } catch {
       // The durable API remains authoritative when browser storage is unavailable.
     }
-  }, [migrationPending, savedViewsQuery.data]);
+  }, [migrationPending, savedViewResources, savedViewsQuery.data]);
 
   const load = React.useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: relationshipKeys.graphs() });
@@ -2058,6 +2101,17 @@ export function RelationshipGraphWorkspace({
                 ))}
               </SelectContent>
             </Select>
+          ) : null}
+          {hasMoreSavedViews ? (
+            <Button
+              disabled={loadingMoreSavedViews}
+              onClick={() => void loadMoreSavedViews()}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {loadingMoreSavedViews ? "Loading…" : nextSavedViewsLabel()}
+            </Button>
           ) : null}
           <Button
             type="button"

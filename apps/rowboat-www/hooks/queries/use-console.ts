@@ -5,6 +5,8 @@ import "client-only";
 import { useQuery } from "@tanstack/react-query";
 
 import {
+  consoleResourcePageHasMore,
+  consoleResourceRows,
   fetchConsolePreferences,
   fetchConsoleResources,
 } from "@/hooks/queries/utils/fetch-console";
@@ -13,7 +15,7 @@ import {
   CONSOLE_RESOURCE_STALE_TIME,
   consoleKeys,
 } from "@/hooks/queries/utils/console-keys";
-import type { ConsoleResourceKind } from "@/lib/console/console-contract";
+import type { ConsoleResource, ConsoleResourceKind } from "@/lib/console/console-contract";
 
 export function useConsolePreferences() {
   return useQuery({
@@ -23,14 +25,17 @@ export function useConsolePreferences() {
   });
 }
 
-export function useConsoleResources<T>(
+export function useConsoleResources<T = ConsoleResource>(
   kind: ConsoleResourceKind,
-  select?: (resources: Awaited<ReturnType<typeof fetchConsoleResources>>) => T,
+  select?: (resources: ConsoleResource[]) => T,
 ) {
   return useQuery({
     queryKey: consoleKeys.resourceKind(kind),
     queryFn: ({ signal }) => fetchConsoleResources(kind, signal),
     staleTime: CONSOLE_RESOURCE_STALE_TIME,
-    select,
+    select: (page) => ({
+      items: select ? select(consoleResourceRows(page)) : consoleResourceRows(page),
+      hasMore: consoleResourcePageHasMore(page),
+    }),
   });
 }

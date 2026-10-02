@@ -24,6 +24,7 @@ import {
   graphLayoutLabel,
   graphAccountChoice,
   graphSavedViewChoice,
+  nextSavedViewsLabel,
   graphAskChanges,
   graphCanReset,
   graphQueryAnswer,
@@ -173,6 +174,8 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphAccountChoice("  Harbor  ")).toBe("Harbor");
     expect(graphAccountChoice("")).toBe("Choose an account");
     expect(graphSavedViewChoice(undefined)).toBe("Saved views");
+    expect(nextSavedViewsLabel()).toBe("Show the next saved views");
+    expect(source).toContain("remoteSavedViews.length + extraSavedViews.length");
     expect(source).toContain('comboboxFilterName(\n                  "Account",');
     expect(source).toContain('comboboxFilterName(\n                  "Saved view",');
     expect(source).toContain('placeholder="Choose an account"');
