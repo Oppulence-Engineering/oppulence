@@ -384,6 +384,39 @@ func TestRelationshipSearchFindsTheLastInteraction(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsTheEnrichment(t *testing.T) {
+	f := newFixture(t)
+	austin, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(austin.ID).
+		SetCompanyEnrichmentData(map[string]string{"headquarters": "Austin"}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	denver, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(denver.ID).
+		SetCompanyEnrichmentData(map[string]string{"headquarters": "Denver"}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Austin"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(found.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
+		t.Fatalf("Austin = %v", got)
+	}
+}
+
 func TestRelationshipSearchFindsTheDirectoryColumns(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

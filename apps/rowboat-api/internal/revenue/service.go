@@ -767,6 +767,7 @@ func (s *Service) ListRelationshipsFiltered(
 			relationship.LinkedinURLContainsFold(value),
 			relationshipNormalizedContains(value),
 			relationshipCategoryContains(value),
+			relationshipEnrichmentContains(value),
 		}
 		if labels := relationshipLinkedInLabelMatch(value); labels != nil {
 			parts = append(parts, labels)
@@ -843,6 +844,26 @@ func relationshipCategoryContains(term string) predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
 			column := s.C(relationship.FieldCompanyCategories)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(fmt.Sprintf("lower(%s::text) LIKE ", column))
+			} else {
+				b.WriteString(fmt.Sprintf("lower(coalesce(%s, '')) LIKE ", column))
+			}
+			b.Arg(needle)
+			b.WriteString(" ESCAPE '!'")
+		}))
+	})
+}
+
+// relationshipEnrichmentContains matches the research facts the directory
+// can show: headquarters, employee range, funding, revenue, and growth
+// signals. They live in one JSON object, so the search reads that object as
+// text. The keys are not words on the row; a city or a range still has to match.
+func relationshipEnrichmentContains(term string) predicate.Relationship {
+	needle := "%" + escapePersonSearchLike(strings.ToLower(strings.TrimSpace(term))) + "%"
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(relationship.FieldCompanyEnrichmentData)
 			if s.Dialect() == dialect.Postgres {
 				b.WriteString(fmt.Sprintf("lower(%s::text) LIKE ", column))
 			} else {
