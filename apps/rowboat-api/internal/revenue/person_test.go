@@ -652,6 +652,40 @@ func TestPersonSearchFindsThePrintedLabels(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsNoEmail(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Casey Quinn").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Morgan Lee").
+		SetPrimaryEmail("morgan@lumen.example").
+		SetTitle("Account Executive").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "No email"})
+	if err != nil || found == nil || len(found.Persons) != 1 || found.Persons[0].DisplayName != "Casey Quinn" {
+		got := []string{}
+		if found != nil {
+			for _, row := range found.Persons {
+				got = append(got, row.DisplayName)
+			}
+		}
+		t.Fatalf("no email = %v err=%v", got, err)
+	}
+}
+
 func withRole(in RelationshipParticipantInput, role string) RelationshipParticipantInput {
 	in.Role = role
 	return in

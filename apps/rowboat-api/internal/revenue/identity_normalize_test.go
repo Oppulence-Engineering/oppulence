@@ -315,6 +315,42 @@ func TestRelationshipSearchFindsTheLinkedInLabel(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsTheEmailThreadLabel(t *testing.T) {
+	f := newFixture(t)
+	one, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.MailThread.Create().
+		SetUser(f.user).
+		SetProviderThreadID("quill-thread").
+		SetRelationship(one).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	single, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "1 email thread"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(single.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
+		t.Fatalf("1 email thread = %v", got)
+	}
+	none, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "0 email threads"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(none.Relationships); len(got) != 1 || got[0] != "Lumen Packet" {
+		t.Fatalf("0 email threads = %v", got)
+	}
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {

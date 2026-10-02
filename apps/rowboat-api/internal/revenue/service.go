@@ -770,6 +770,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if labels := relationshipLinkedInLabelMatch(value); labels != nil {
 			parts = append(parts, labels)
 		}
+		if threads := relationshipEmailThreadLabelMatch(value); threads != nil {
+			parts = append(parts, threads)
+		}
 		q.Where(relationship.Or(parts...))
 	}
 	rows, err := q.
@@ -890,6 +893,63 @@ func relationshipResourceRefContains(fragment string) predicate.Relationship {
 func relationshipMatchAll() predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) { b.WriteString("1 = 1") }))
+	})
+}
+
+// relationshipEmailThreadLabelMatch matches the Email threads column.
+// Zero is "0 email threads" and one is "1 email thread".
+func relationshipEmailThreadLabelMatch(term string) predicate.Relationship {
+	needle := normalizePersonSearch(term)
+	if needle == "" {
+		return nil
+	}
+	if n, ok := exactEmailThreadCount(needle); ok {
+		return relationshipMailThreadCount("=", n)
+	}
+	singular := strings.Contains("1 email thread", needle)
+	plural := strings.Contains("email threads", needle)
+	switch {
+	case singular && plural:
+		return relationshipMatchAll()
+	case singular:
+		return relationshipMailThreadCount("=", 1)
+	case plural:
+		return relationshipMailThreadCount("<>", 1)
+	default:
+		return nil
+	}
+}
+
+func exactEmailThreadCount(needle string) (int, bool) {
+	var n int
+	if _, err := fmt.Sscanf(needle, "%d email thread", &n); err != nil || n < 0 {
+		return 0, false
+	}
+	label := fmt.Sprintf("%d email threads", n)
+	if n == 1 {
+		label = "1 email thread"
+	}
+	if needle != label {
+		return 0, false
+	}
+	return n, true
+}
+
+func relationshipMailThreadCount(compare string, n int) predicate.Relationship {
+	if compare != "=" && compare != "<>" {
+		compare = "="
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(fmt.Sprintf(
+				"(SELECT count(*) FROM %s WHERE %s = %s) %s ",
+				mailthread.Table,
+				mailthread.RelationshipColumn,
+				s.C(relationship.FieldID),
+				compare,
+			))
+			b.Arg(n)
+		}))
 	})
 }
 

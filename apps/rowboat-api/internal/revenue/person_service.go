@@ -150,6 +150,10 @@ func personVisibleLabelMatch(term string) predicate.Person {
 			person.LinkedinURLNEQ(""),
 		))
 	}
+	// The address sits under the name. A missing one is the words "No email".
+	if strings.Contains("no email", needle) {
+		preds = append(preds, personTextBlank(person.PrimaryEmailIsNil, person.PrimaryEmailEQ))
+	}
 	if len(preds) == 0 {
 		return nil
 	}
