@@ -469,8 +469,17 @@ function StatusIcon({ status }: { status: string }) {
   return <Pause className="size-4" />;
 }
 
-function shownWorkflowError(cause: unknown, fallback: string): string {
-  return friendlyAgentError(cause instanceof Error ? cause.message : fallback);
+/**
+ * A status code is not an explanation. The fallback names the action. A 401,
+ * a 429, or a credit failure still uses that sentence.
+ */
+export function shownWorkflowError(cause: unknown, fallback: string): string {
+  const message = cause instanceof Error ? cause.message.trim() : "";
+  if (!message) return fallback;
+  const friendly = friendlyAgentError(message);
+  if (friendly !== message) return friendly;
+  if (/^Workflow request failed \(\d+\)$/.test(message)) return fallback;
+  return message;
 }
 
 /** A missing schedule is not "no next run". The em dash stays for a real empty clock. */

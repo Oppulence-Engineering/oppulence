@@ -34,6 +34,7 @@ import {
   workflowTemplatesRefreshCopy,
   workflowLibraryNotice,
   workflowRefreshCopy,
+  shownWorkflowError,
   scheduleNextRunLabel,
   scheduleLoadNotice,
   transcriptLoadNotice,
@@ -291,11 +292,24 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain("workflowName={taskTitle(task)}");
     expect(source).toContain('friendlyAgentError(message, "run")');
     expect(source.match(/setError\(shownWorkflowError\(cause,/g)).toHaveLength(7);
+    expect(
+      shownWorkflowError(new Error("Workflow request failed (500)"), "Could not create workflow"),
+    ).toBe("Could not create workflow");
+    expect(
+      shownWorkflowError(
+        new Error("llm upstream returned status 401: missing authentication header"),
+        "Could not create workflow",
+      ),
+    ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
+    expect(shownWorkflowError(new Error("revision conflict"), "Could not create workflow")).toBe(
+      "revision conflict",
+    );
     expect(source).toContain("transcriptLoadNotice(cause, hadTranscript)");
     expect(source).toContain("scheduleLoadNotice(cause, hadSchedule)");
     expect(source).toContain("friendlyAgentError(error.message)");
     expect(source).toContain("workflowLibraryNotice(");
-    expect(source).toContain("cause instanceof Error ? cause.message : fallback");
+    expect(source).toContain("Workflow request failed");
+    expect(source).toContain("return fallback;");
   });
 
   it("names schedule health and transcript events", () => {
