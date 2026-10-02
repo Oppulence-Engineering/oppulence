@@ -351,6 +351,88 @@ func TestRelationshipSearchFindsTheEmailThreadLabel(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsTheSheetMailWords(t *testing.T) {
+	f := newFixture(t)
+	quiet, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	harbor, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Ledger",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	when := time.Now().Add(-2 * time.Hour)
+	if _, err := f.client.MailThread.Create().
+		SetUser(f.user).
+		SetProviderThreadID("quill-quiet").
+		SetSubject("The quill invoice").
+		SetLastActivityAt(when).
+		SetReplyState("quiet").
+		SetRelationship(quiet).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.MailThread.Create().
+		SetUser(f.user).
+		SetProviderThreadID("harbor-blank").
+		SetSubject("").
+		SetReplyState("needs_reply").
+		SetRelationship(harbor).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	waiting, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Northwind Ledger",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.MailThread.Create().
+		SetUser(f.user).
+		SetProviderThreadID("northwind-wait").
+		SetSubject("The northwind note").
+		SetLastActivityAt(when).
+		SetReplyState("awaiting_reply").
+		SetRelationship(waiting).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("No Gmail threads linked yet", "Lumen Packet")
+	assertCompanyQuery("Unknown date", "Harbor Ledger")
+	assertCompanyQuery("Email conversation", "Harbor Ledger")
+	assertCompanyQuery("Needs a reply", "Harbor Ledger")
+	assertCompanyQuery("Waiting on them", "Northwind Ledger")
+	assertCompanyQuery("Quiet", "Quill Atelier")
+	assertCompanyQuery("gmail")
+	assertCompanyQuery("date")
+}
+
 func TestRelationshipSearchFindsTheLastInteraction(t *testing.T) {
 	f := newFixture(t)
 	recent, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

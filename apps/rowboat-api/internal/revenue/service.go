@@ -804,6 +804,9 @@ func (s *Service) ListRelationshipsFiltered(
 				relationshipCategoriesBlank(),
 			))
 		}
+		if mail := relationshipSheetMailMatch(needle); mail != nil {
+			parts = append(parts, mail)
+		}
 		q.Where(relationship.Or(parts...))
 	}
 	rows, err := q.
@@ -1185,6 +1188,58 @@ func relationshipOpenActionCount(compare string, n int) predicate.Relationship {
 			b.Arg(n)
 		}))
 	})
+}
+
+// relationshipSheetMailMatch matches the mail section on the company sheet.
+// An empty mailbox says "No Gmail threads linked yet." A thread with no
+// subject says "Email conversation," a missing time says "Unknown date," and
+// the reply state says who speaks next. A one-word fragment of a longer
+// sentence stays out, so "gmail" does not mean a company with no mail.
+func relationshipSheetMailMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	if sheetPhraseMatches("no gmail threads linked yet", needle) {
+		preds = append(preds, relationshipMailThreadCount("=", 0))
+	}
+	if sheetPhraseMatches("email conversation", needle) {
+		preds = append(preds, relationship.HasMailThreadsWith(mailThreadSubjectBlank()))
+	}
+	if sheetPhraseMatches("unknown date", needle) {
+		preds = append(preds, relationship.HasMailThreadsWith(mailthread.LastActivityAtIsNil()))
+	}
+	if sheetPhraseMatches("needs a reply", needle) {
+		preds = append(preds, relationship.HasMailThreadsWith(mailthread.ReplyStateEQ("needs_reply")))
+	}
+	if sheetPhraseMatches("waiting on them", needle) {
+		preds = append(preds, relationship.HasMailThreadsWith(mailthread.ReplyStateEQ("awaiting_reply")))
+	}
+	if sheetPhraseMatches("quiet", needle) {
+		preds = append(preds, relationship.HasMailThreadsWith(mailthread.ReplyStateEQ("quiet")))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func sheetPhraseMatches(phrase, needle string) bool {
+	if needle == "" {
+		return false
+	}
+	if needle == phrase {
+		return true
+	}
+	if len(needle) < 8 {
+		return false
+	}
+	return strings.Contains(phrase, needle)
+}
+
+func mailThreadSubjectBlank() predicate.MailThread {
+	return mailthread.Or(mailthread.SubjectIsNil(), mailthread.SubjectEQ(""))
 }
 
 func relationshipMailThreadCount(compare string, n int) predicate.Relationship {
