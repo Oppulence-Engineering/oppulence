@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -848,6 +850,13 @@ func (s *Service) ListRelationshipsFiltered(
 		if degraded := relationshipSheetSourceDegradationMatch(needle); degraded != nil {
 			parts = append(parts, degraded)
 		}
+		searchedAt := time.Now()
+		if quiet := relationshipSheetQuietMatch(needle, searchedAt); quiet != nil {
+			parts = append(parts, quiet)
+		}
+		if risk := relationshipSheetRiskMatch(needle); risk != nil {
+			parts = append(parts, risk)
+		}
 		if sheetPhraseMatches("no action is currently recommended", needle) {
 			parts = append(parts, relationship.Not(
 				relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen)),
@@ -1229,6 +1238,239 @@ func relationshipSheetSourceDegradationMatch(needle string) predicate.Relationsh
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// relationshipSheetQuietMatch matches the quiet-account sentence. The day count
+// and the stage are part of the sentence, so "Prospects … within 30 days" stays
+// off an active customer, and a company under the stage's usual silence does
+// not match. A departed contact prints a different sentence.
+func relationshipSheetQuietMatch(needle string, now time.Time) predicate.Relationship {
+	if days, cohort, usual, ok := parseQuietSentence(needle); ok {
+		for _, lifecycle := range quietSearchLifecycles() {
+			if normalizePersonSearch(quietAccountCohort(lifecycle)) != cohort {
+				continue
+			}
+			if int(lifecycleQuietCooldown(lifecycle).Hours()/24) != usual {
+				continue
+			}
+			return relationship.And(
+				relationshipQuietFor(now, lifecycle, days),
+				relationship.Not(relationshipHasDepartedContact()),
+			)
+		}
+		return relationship.IDEQ(uuid.Nil)
+	}
+	var preds []predicate.Relationship
+	if sheetPhraseMatches("quiet account", needle) ||
+		sheetPhraseMatches("no recorded interaction", needle) {
+		preds = append(preds, relationshipShowsQuietAccount(now))
+	}
+	for _, lifecycle := range quietSearchLifecycles() {
+		usual := int(lifecycleQuietCooldown(lifecycle).Hours() / 24)
+		clause := normalizePersonSearch(fmt.Sprintf(
+			"%s are usually contacted again within %d days.",
+			quietAccountCohort(lifecycle), usual,
+		))
+		if sheetPhraseMatches(clause, needle) {
+			preds = append(preds, relationship.And(
+				relationshipQuietFor(now, lifecycle, 0),
+				relationship.Not(relationshipHasDepartedContact()),
+			))
+		}
+	}
+	if sheetPhraseMatches("mail to that address is no longer delivered", needle) ||
+		sheetPhraseMatches("because there is nobody here to reply", needle) {
+		preds = append(preds, relationshipShowsDepartedQuiet(now))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func quietSearchLifecycles() []string {
+	return []string{
+		"prospect", "evaluation", "contracting", "onboarding",
+		"active_customer", "renewal", "former_customer",
+	}
+}
+
+func parseQuietSentence(needle string) (days int, cohort string, usual int, ok bool) {
+	const prefix = "no recorded interaction for "
+	const daysMark = " days "
+	const tail = " are usually contacted again within "
+	const suffix = " days"
+	if !strings.HasPrefix(needle, prefix) || !strings.HasSuffix(needle, suffix) {
+		return 0, "", 0, false
+	}
+	body := strings.TrimSuffix(strings.TrimPrefix(needle, prefix), suffix)
+	dayText, rest, found := strings.Cut(body, daysMark)
+	if !found {
+		return 0, "", 0, false
+	}
+	cohort, usualText, found := strings.Cut(rest, tail)
+	if !found || cohort == "" || usualText == "" {
+		return 0, "", 0, false
+	}
+	var err error
+	days, err = strconv.Atoi(dayText)
+	if err != nil || days < 0 {
+		return 0, "", 0, false
+	}
+	usual, err = strconv.Atoi(usualText)
+	if err != nil || usual < 0 {
+		return 0, "", 0, false
+	}
+	return days, cohort, usual, true
+}
+
+func relationshipShowsQuietAccount(now time.Time) predicate.Relationship {
+	parts := make([]predicate.Relationship, 0, len(quietSearchLifecycles()))
+	for _, lifecycle := range quietSearchLifecycles() {
+		parts = append(parts, relationshipQuietFor(now, lifecycle, 0))
+	}
+	return relationship.And(relationship.Or(parts...), relationship.Not(relationshipHasDepartedContact()))
+}
+
+func relationshipShowsDepartedQuiet(now time.Time) predicate.Relationship {
+	parts := make([]predicate.Relationship, 0, len(quietSearchLifecycles()))
+	for _, lifecycle := range quietSearchLifecycles() {
+		parts = append(parts, relationshipQuietFor(now, lifecycle, 0))
+	}
+	return relationship.And(relationship.Or(parts...), relationshipHasDepartedContact())
+}
+
+func relationshipQuietFor(now time.Time, lifecycle string, exactDays int) predicate.Relationship {
+	usual := int(lifecycleQuietCooldown(lifecycle).Hours() / 24)
+	if usual <= 0 {
+		return relationship.IDEQ(uuid.Nil)
+	}
+	var age predicate.Relationship
+	if exactDays > 0 {
+		if exactDays < usual {
+			return relationship.IDEQ(uuid.Nil)
+		}
+		age = relationshipQuietForExactly(now, exactDays)
+	} else {
+		age = relationshipQuietForAtLeast(now, usual)
+	}
+	return relationship.And(
+		relationship.LifecycleEQ(lifecycle),
+		age,
+		relationship.Not(relationshipHasDegradedDependency()),
+	)
+}
+
+func relationshipQuietForAtLeast(now time.Time, days int) predicate.Relationship {
+	cutoff := now.UTC().Add(-time.Duration(days) * 24 * time.Hour)
+	return relationship.And(
+		relationship.LastTouchAtNotNil(),
+		relationship.LastTouchAtLTE(cutoff),
+	)
+}
+
+func relationshipQuietForExactly(now time.Time, days int) predicate.Relationship {
+	newest := now.UTC().Add(-time.Duration(days) * 24 * time.Hour)
+	oldest := now.UTC().Add(-time.Duration(days+1) * 24 * time.Hour)
+	return relationship.And(
+		relationship.LastTouchAtNotNil(),
+		relationship.LastTouchAtLTE(newest),
+		relationship.LastTouchAtGT(oldest),
+	)
+}
+
+func relationshipHasDepartedContact() predicate.Relationship {
+	return relationship.HasParticipantsWith(
+		relationshipparticipant.HasPersonWith(
+			person.EmploymentStatusEQ("departed"),
+			person.StatusEQ("active"),
+		),
+	)
+}
+
+// relationshipSheetRiskMatch matches the unresolved-risk sentence. "1 unresolved
+// risk" stays off a company whose queue says "2 unresolved risks", and a
+// critical company with no risks does not match.
+func relationshipSheetRiskMatch(needle string) predicate.Relationship {
+	var exact []predicate.Relationship
+	for _, health := range []string{"critical", "needs_attention"} {
+		for n := 1; n <= 40; n++ {
+			if needle != normalizePersonSearch(unresolvedRiskExplanation(n, health)) {
+				continue
+			}
+			exact = append(exact, relationship.And(
+				relationship.HealthEQ(health),
+				relationshipRiskCount("=", n),
+			))
+		}
+	}
+	if len(exact) == 1 {
+		return exact[0]
+	}
+	if len(exact) > 1 {
+		return relationship.Or(exact...)
+	}
+	var preds []predicate.Relationship
+	if needle == "unresolved risk" {
+		preds = append(preds, relationshipHasUnresolvedRisk())
+	}
+	if needle == "unresolved risks" {
+		preds = append(preds, relationship.And(
+			relationshipHasUnresolvedRisk(),
+			relationshipRiskCount(">=", 2),
+		))
+	}
+	if sheetPhraseMatches("this company is critical", needle) {
+		preds = append(preds, relationship.And(
+			relationship.HealthEQ("critical"),
+			relationshipRiskCount(">=", 1),
+		))
+	}
+	if sheetPhraseMatches("this company needs attention", needle) {
+		preds = append(preds, relationship.And(
+			relationship.HealthEQ("needs_attention"),
+			relationshipRiskCount(">=", 1),
+		))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func relationshipHasUnresolvedRisk() predicate.Relationship {
+	return relationship.And(
+		relationship.HealthIn("critical", "needs_attention"),
+		relationshipRiskCount(">=", 1),
+	)
+}
+
+func relationshipRiskCount(compare string, n int) predicate.Relationship {
+	if compare != "=" && compare != ">=" && compare != "<>" {
+		compare = "="
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(relationship.FieldRisks)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(fmt.Sprintf("jsonb_array_length(coalesce(%s, '[]'::jsonb))", column))
+			} else {
+				b.WriteString(fmt.Sprintf("json_array_length(coalesce(%s, '[]'))", column))
+			}
+			b.WriteString(" ")
+			b.WriteString(compare)
+			b.WriteString(" ")
+			b.Arg(n)
+		}))
+	})
 }
 
 // relationshipDegradedCanonicalSet is the company whose degraded connectors

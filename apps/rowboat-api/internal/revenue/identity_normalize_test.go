@@ -925,6 +925,230 @@ func TestRelationshipSearchFindsTheSourceWarning(t *testing.T) {
 	assertCompanyQuery("reconnecting", "Quill Atelier", "Cedar Mill", "Lumen Packet")
 }
 
+func TestRelationshipSearchFindsTheQuietAccount(t *testing.T) {
+	f := newFixture(t)
+	now := time.Now().UTC()
+	quietAt := now.Add(-40 * 24 * time.Hour)
+	recentAt := now.Add(-5 * 24 * time.Hour)
+	quill, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(quill.ID).
+		SetLifecycle("prospect").SetLastTouchAt(quietAt).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	lumen, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(lumen.ID).
+		SetLifecycle("active_customer").SetLastTouchAt(quietAt).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	harbor, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Ledger",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(harbor.ID).
+		SetLifecycle("prospect").SetLastTouchAt(recentAt).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	cedar, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Mill", ResourceRefs: []string{"hubspot:company:cedar"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(cedar.ID).
+		SetLifecycle("prospect").SetLastTouchAt(quietAt).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	mesa, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Clay",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(mesa.ID).
+		SetLifecycle("prospect").SetLastTouchAt(quietAt).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("hubspot").SetSourceAccountID("default").
+		SetStatus("stale").SetCompleteness("stale").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	departed, err := f.client.Person.Create().
+		SetDisplayName("Ada Mesa").
+		SetEmploymentStatus("departed").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetRelationship(mesa).SetPerson(departed).
+		SetDisplayName("Ada Mesa").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	page, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 100, 0)
+	if err != nil || page == nil {
+		t.Fatal(err)
+	}
+	got := map[string]string{}
+	for _, item := range page.Items {
+		if item.Edges.Relationship == nil {
+			continue
+		}
+		if item.ReasonCode == "quiet_account" || item.ReasonCode == "contact_departed" {
+			got[item.Edges.Relationship.DisplayName] = item.Explanation
+		}
+	}
+	days := int(time.Since(quietAt).Hours() / 24)
+	prospectSentence := quietAccountExplanation("prospect", days, 30)
+	customerSentence := quietAccountExplanation("active_customer", days, 21)
+	if got["Quill Atelier"] != prospectSentence {
+		t.Fatalf("quill explanation = %q, want %q", got["Quill Atelier"], prospectSentence)
+	}
+	if got["Lumen Packet"] != customerSentence {
+		t.Fatalf("lumen explanation = %q, want %q", got["Lumen Packet"], customerSentence)
+	}
+	if _, ok := got["Harbor Ledger"]; ok {
+		t.Fatalf("harbor explanation = %q", got["Harbor Ledger"])
+	}
+	if _, ok := got["Cedar Mill"]; ok {
+		t.Fatalf("cedar explanation = %q", got["Cedar Mill"])
+	}
+	if !strings.Contains(got["Mesa Clay"], "Ada Mesa has left") {
+		t.Fatalf("mesa explanation = %q", got["Mesa Clay"])
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery(prospectSentence, "Quill Atelier")
+	assertCompanyQuery(customerSentence, "Lumen Packet")
+	assertCompanyQuery("Quiet account", "Quill Atelier", "Lumen Packet")
+	assertCompanyQuery("No recorded interaction", "Quill Atelier", "Lumen Packet")
+	assertCompanyQuery("Prospects are usually contacted again within 30 days", "Quill Atelier")
+	assertCompanyQuery("mail to that address is no longer delivered", "Mesa Clay")
+	assertCompanyQuery("because there is nobody here to reply", "Mesa Clay")
+}
+
+func TestRelationshipSearchFindsTheUnresolvedRisk(t *testing.T) {
+	f := newFixture(t)
+	quill, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(quill.ID).
+		SetHealth("critical").SetRisks([]string{"renewal slip"}).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	lumen, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(lumen.ID).
+		SetHealth("needs_attention").SetRisks([]string{"renewal slip", "late invoice"}).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	harbor, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Ledger",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(harbor.ID).
+		SetHealth("critical").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	cedar, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Mill",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(cedar.ID).
+		SetHealth("healthy").SetRisks([]string{"renewal slip"}).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	page, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 100, 0)
+	if err != nil || page == nil {
+		t.Fatal(err)
+	}
+	got := map[string]string{}
+	for _, item := range page.Items {
+		if item.ReasonCode != "unresolved_risk" || item.Edges.Relationship == nil {
+			continue
+		}
+		got[item.Edges.Relationship.DisplayName] = item.Explanation
+	}
+	if got["Quill Atelier"] != "1 unresolved risk. This company is critical." {
+		t.Fatalf("quill explanation = %q", got["Quill Atelier"])
+	}
+	if got["Lumen Packet"] != "2 unresolved risks. This company needs attention." {
+		t.Fatalf("lumen explanation = %q", got["Lumen Packet"])
+	}
+	if _, ok := got["Harbor Ledger"]; ok || got["Cedar Mill"] != "" {
+		t.Fatalf("explanations = %v", got)
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("1 unresolved risk. This company is critical.", "Quill Atelier")
+	assertCompanyQuery("2 unresolved risks. This company needs attention.", "Lumen Packet")
+	assertCompanyQuery("Unresolved risk", "Quill Atelier", "Lumen Packet")
+	assertCompanyQuery("unresolved risks", "Lumen Packet")
+	assertCompanyQuery("This company is critical.", "Quill Atelier")
+}
+
 func TestRelationshipSearchFindsTheDetailSource(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
