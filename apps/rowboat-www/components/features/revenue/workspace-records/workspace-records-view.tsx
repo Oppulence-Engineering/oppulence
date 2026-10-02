@@ -434,6 +434,11 @@ export function enrichmentEvidence<T extends { dimension: string; status: string
   );
 }
 
+/** A failed profile load is not the same as a person with no sourced details. */
+export function personEvidenceFailureCopy(): string {
+  return "Profile details could not load. Try again.";
+}
+
 const EVIDENCE_EXTRACTOR_LABELS: Record<string, string> = {
   email_signature: "From their email signature",
   email_header: "From an email header",
@@ -548,6 +553,9 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
   const [creating, setCreating] = React.useState(false);
   const [selected, setSelected] = React.useState<RelationshipPerson | null>(null);
   const [attributes, setAttributes] = React.useState<RelationshipPersonAttribute[]>([]);
+  const [attributesStatus, setAttributesStatus] = React.useState<"loading" | "ready" | "error">(
+    "ready",
+  );
   const [removing, setRemoving] = React.useState(false);
   const peopleQuery = usePersons(debouncedQuery);
   const [extraPeople, setExtraPeople] = React.useState<RelationshipPerson[]>([]);
@@ -608,12 +616,18 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
     }
   }, [debouncedQuery, extraPeople.length, hasMorePeople, loadingMorePeople, onError, peoplePage.length]);
 
-  const openPerson = async (person: RelationshipPerson) => {
+  const loadPersonAttributes = async (person: RelationshipPerson, recover = false) => {
+    const samePerson = selected?.id === person.id;
     setSelected(person);
-    setAttributes([]);
+    if (!samePerson) setAttributes([]);
+    setAttributesStatus("loading");
     try {
       setAttributes(await getPersonAttributes(person.id));
+      setAttributesStatus("ready");
+      if (recover) onError("");
     } catch (error) {
+      if (!samePerson) setAttributes([]);
+      setAttributesStatus("error");
       onError(errMessage(error, "Could not load this profile."));
     }
   };
@@ -756,7 +770,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                       className="flex h-auto w-full items-center justify-start gap-2 px-0 py-0 text-left font-normal hover:bg-transparent"
                       type="button"
                       variant="ghost"
-                      onClick={() => void openPerson(person)}
+                      onClick={() => void loadPersonAttributes(person)}
                     >
                       <Avatar className="size-6 rounded-none" size="sm">
                         <AvatarFallback className="rounded-none border border-border bg-background-100 text-[10px] font-semibold text-primary/60">
@@ -852,7 +866,9 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
       {selected ? (
         <PersonSheet
           attributes={attributes}
+          attributesStatus={attributesStatus}
           onClose={() => setSelected(null)}
+          onReload={() => void loadPersonAttributes(selected, true)}
           onRemove={() => void removeSelectedPerson()}
           person={selected}
           removing={removing}
@@ -962,13 +978,17 @@ function CreatePersonDialog({
 function PersonSheet({
   person,
   attributes,
+  attributesStatus,
   onClose,
+  onReload,
   onRemove,
   removing,
 }: {
   person: RelationshipPerson;
   attributes: RelationshipPersonAttribute[];
+  attributesStatus: "loading" | "ready" | "error";
   onClose: () => void;
+  onReload: () => void;
   onRemove: () => void;
   removing: boolean;
 }) {
@@ -1070,7 +1090,24 @@ function PersonSheet({
           <h3 className="mt-8 border-b border-border pb-2 text-xs font-medium uppercase tracking-wide text-primary/45">
             Where details came from
           </h3>
-          {evidence.length === 0 ? (
+          {attributesStatus === "error" && evidence.length > 0 ? (
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className="text-sm text-primary/70">{personEvidenceFailureCopy()}</p>
+              <Button onClick={onReload} size="sm" type="button" variant="outline">
+                Try again
+              </Button>
+            </div>
+          ) : null}
+          {attributesStatus === "loading" && evidence.length === 0 ? (
+            <p className="py-4 text-sm text-primary/45">Loading profile details…</p>
+          ) : attributesStatus === "error" && evidence.length === 0 ? (
+            <div className="flex items-center justify-between gap-3 py-4">
+              <p className="text-sm text-primary/70">{personEvidenceFailureCopy()}</p>
+              <Button onClick={onReload} size="sm" type="button" variant="outline">
+                Try again
+              </Button>
+            </div>
+          ) : evidence.length === 0 ? (
             <p className="py-4 text-sm text-primary/45">No extra details yet.</p>
           ) : (
             <ul className="divide-y divide-border">

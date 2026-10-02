@@ -139,6 +139,7 @@ import {
   taskListFailureCopy,
   taskCompaniesFailureCopy,
   enrichmentEvidence,
+  personEvidenceFailureCopy,
   personEnrichmentLabel,
   personEvidenceProvenance,
   personEvidenceLabel,
@@ -1324,6 +1325,9 @@ describe("people directory copy", () => {
     expect(source).not.toContain("Add prompts or a reusable note structure");
     expect(source).not.toContain("Quarterly account review");
     expect(source).toContain('errMessage(error, "Could not load this profile.")');
+    expect(source).toContain("personEvidenceFailureCopy()");
+    expect(source).toContain('attributesStatus === "error" && evidence.length === 0');
+    expect(personEvidenceFailureCopy()).toBe("Profile details could not load. Try again.");
     expect(source).toContain("deletePerson(selected.id)");
     expect(source).toContain('errMessage(error, "Could not remove this person.")');
     expect(source).toContain("removePersonConfirmCopy(person.displayName)");
@@ -1365,6 +1369,42 @@ describe("people directory copy", () => {
     expect(confirm).not.toHaveBeenCalled();
     confirm.mockRestore();
     records.people = [];
+  });
+
+  it("says profile details failed instead of claiming there are none", async () => {
+    cleanup();
+    records.people = [
+      {
+        id: "person-1",
+        displayName: "Morgan Hale",
+        aliases: [],
+        status: "active",
+        relationshipCount: 0,
+        attributesVersion: 0,
+        primaryEmail: "morgan@harbor.example",
+      },
+    ];
+    mocks.getPersonAttributes.mockRejectedValueOnce(new Error("attributes unavailable"));
+    const onError = vi.fn();
+    const user = userEvent.setup();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <PeopleView onError={onError} onNotice={vi.fn()} />
+      </QueryClientProvider>,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Open Morgan Hale" }));
+    expect(await screen.findByText(personEvidenceFailureCopy())).toBeVisible();
+    expect(screen.queryByText("No extra details yet.")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByText("No extra details yet.")).toBeVisible();
+    expect(screen.queryByText(personEvidenceFailureCopy())).not.toBeInTheDocument();
+    expect(onError).toHaveBeenCalledWith("");
+    records.people = [];
+    mocks.getPersonAttributes.mockReset();
+    mocks.getPersonAttributes.mockImplementation(async () => []);
+    cleanup();
   });
 
   it("says people failed to load instead of claiming the directory is empty", async () => {
