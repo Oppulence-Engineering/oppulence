@@ -1028,6 +1028,26 @@ export function earlierNotesLabel(): string {
   return "Show earlier notes";
 }
 
+/** More companies are not the same thing as notes that were already found. */
+export function notesRemainderLabel(hasEarlierNotes: boolean): string {
+  return hasEarlierNotes ? earlierNotesLabel() : nextNoteCompaniesLabel();
+}
+
+export function notesEmptyDescription(hasEarlierNotes: boolean): string {
+  return hasEarlierNotes
+    ? "Earlier notes are still on these companies."
+    : "More companies are still in this list.";
+}
+
+export function notesTabContinues(
+  noteCount: number,
+  hasEarlierNotes: boolean,
+  hasMoreCompanies: boolean,
+): boolean {
+  if (hasEarlierNotes) return true;
+  return noteCount > 0 && hasMoreCompanies;
+}
+
 /** A copied link walks this many earlier pages before asking the reader to continue. */
 export const NOTE_LINK_SEEK_PAGES = 8;
 
@@ -1098,6 +1118,10 @@ export function NotesView({
     primedNotes.current === null
       ? notesPage?.nextRelationshipOffset !== undefined
       : nextRelationshipOffset !== undefined;
+  const hasEarlierNotes =
+    primedNotes.current === null
+      ? (notesPage?.timelineCursors?.length ?? 0) > 0
+      : timelineCursors.length > 0;
   const loading = notesQuery.isPending;
   const [editing, setEditing] = React.useState<
     WorkspaceNote | { template?: NoteTemplateResource } | null
@@ -1311,7 +1335,10 @@ export function NotesView({
           >
             <Note className="size-4" /> Notes{" "}
             <Badge className="font-normal text-primary/40" variant="secondary">
-              {noteCountLabel(notes.length, hasMoreNotes)}
+              {noteCountLabel(
+                notes.length,
+                notesTabContinues(notes.length, hasEarlierNotes, hasMoreCompanies),
+              )}
             </Badge>
           </TabsTrigger>
           <TabsTrigger
@@ -1489,7 +1516,7 @@ export function NotesView({
                 type="button"
                 variant="outline"
               >
-                {earlierNotesLabel()}
+                {notesRemainderLabel(hasEarlierNotes)}
               </Button>
             ) : (
               <Button
@@ -1503,7 +1530,7 @@ export function NotesView({
           }
           description={
             hasMoreNotes ? (
-              "Earlier notes are still on these companies."
+              notesEmptyDescription(hasEarlierNotes)
             ) : (
               <>
                 No notes yet! Create your first
@@ -1575,7 +1602,7 @@ export function NotesView({
                   type="button"
                   variant="outline"
                 >
-                  {loadingMoreNotes ? "Loading…" : earlierNotesLabel()}
+                  {loadingMoreNotes ? "Loading…" : notesRemainderLabel(hasEarlierNotes)}
                 </Button>
               ) : null}
               {hasMoreFavorites ? (
@@ -1705,7 +1732,7 @@ export function NotesView({
               type="button"
               variant="outline"
             >
-              {earlierNotesLabel()}
+              {notesRemainderLabel(hasEarlierNotes)}
             </Button>
           ) : null}
         </div>

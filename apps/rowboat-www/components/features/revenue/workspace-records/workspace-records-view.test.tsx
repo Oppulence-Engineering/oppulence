@@ -131,6 +131,9 @@ import {
   noteNeedsCompanyCopy,
   noteCountLabel,
   earlierNotesLabel,
+  notesEmptyDescription,
+  notesRemainderLabel,
+  notesTabContinues,
   NOTE_LINK_SEEK_PAGES,
   templateCountLabel,
   nextTemplatesLabel,
@@ -361,6 +364,37 @@ describe("durable note templates and favorites", () => {
     ).toBeEnabled();
     expect(screen.queryByText("No companies yet")).toBeNull();
     expect(screen.queryByRole("button", { name: "Add a company" })).toBeNull();
+  });
+
+  it("does not claim earlier notes when only more companies remain", async () => {
+    mocks.fetchWorkspaceNotes.mockResolvedValue({
+      notes: [],
+      relationships: [{ id: "relationship-1", kind: "organization", displayName: "Acme" }],
+      failedTimelineCount: 0,
+      hasMoreNotes: true,
+      nextRelationshipOffset: 200,
+      timelineCursors: [],
+    });
+    mocks.fetchMoreWorkspaceNotes.mockResolvedValue({
+      notes: [],
+      relationships: [
+        { id: "relationship-hidden", kind: "organization", displayName: "Hidden Account Co" },
+      ],
+      failedTimelineCount: 0,
+      hasMoreNotes: false,
+      timelineCursors: [],
+    });
+    const user = userEvent.setup();
+    renderNotes();
+
+    expect(await screen.findByText(notesEmptyDescription(false))).toBeInTheDocument();
+    expect(screen.queryByText(notesEmptyDescription(true))).toBeNull();
+    expect(screen.getByRole("tab", { name: /^Notes/ })).not.toHaveTextContent("0+");
+    await user.click(screen.getByRole("button", { name: notesRemainderLabel(false) }));
+
+    expect(mocks.fetchMoreWorkspaceNotes).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText(/No notes yet/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: notesRemainderLabel(false) })).toBeNull();
   });
 
   it("opens the company named on a meeting note", async () => {
@@ -999,6 +1033,13 @@ describe("task due order", () => {
     expect(noteCountLabel(1, true)).toBe("1+");
     expect(noteCountLabel(2, false)).toBe("2");
     expect(earlierNotesLabel()).toBe("Show earlier notes");
+    expect(notesRemainderLabel(true)).toBe("Show earlier notes");
+    expect(notesRemainderLabel(false)).toBe("Show the next companies");
+    expect(notesEmptyDescription(true)).toBe("Earlier notes are still on these companies.");
+    expect(notesEmptyDescription(false)).toBe("More companies are still in this list.");
+    expect(notesTabContinues(0, false, true)).toBe(false);
+    expect(notesTabContinues(0, true, false)).toBe(true);
+    expect(notesTabContinues(2, false, true)).toBe(true);
     expect(templateCountLabel(100, false)).toBe("100");
     expect(templateCountLabel(100, true)).toBe("100+");
     expect(nextTemplatesLabel()).toBe("Show the next templates");
