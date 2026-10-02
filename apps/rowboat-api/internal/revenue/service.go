@@ -1457,6 +1457,25 @@ func relationshipSheetCompletenessMatch(needle string) predicate.Relationship {
 		sheetPhraseMatches("identity review is required before acting on this relationship.", needle) {
 		preds = append(preds, relationshipShowsAmbiguousHeading(now))
 	}
+	if sheetPhraseMatches("details need a refresh", needle) ||
+		sheetPhraseMatches("a required source is stale or disconnected.", needle) {
+		preds = append(preds, relationshipShowsStaleHeading(now))
+	}
+	if sheetPhraseMatches("updating from connected sources", needle) {
+		preds = append(preds, relationshipShowsRebuildingHeading(now))
+	}
+	if sheetPhraseMatches("a required source is rebuilding; partial state is visible.", needle) {
+		preds = append(preds, relationshipShowsSourceRebuilding(now))
+	}
+	if sheetPhraseMatches("accepted evidence is waiting for the durable relationship projector.", needle) {
+		preds = append(preds, relationship.And(
+			relationshipHasDueProjection(now),
+			relationship.Not(relationshipHasDeadProjection(now)),
+		))
+	}
+	if sheetPhraseMatches("relationship projection requires operator repair before this state is safe to act on.", needle) {
+		preds = append(preds, relationshipHasDeadProjection(now))
+	}
 	for n := 1; n <= 20; n++ {
 		phrase := fmt.Sprintf("%d identity reviews block acting.", n)
 		if n == 1 {
@@ -1664,6 +1683,21 @@ func relationshipHasUnresolvedIdentity() predicate.Relationship {
 }
 
 func relationshipHasBlockingProjection(now time.Time) predicate.Relationship {
+	return relationship.Or(
+		relationshipHasDeadProjection(now),
+		relationshipHasDueProjection(now),
+	)
+}
+
+func relationshipHasDeadProjection(now time.Time) predicate.Relationship {
+	return relationshipProjectionIn(now, "dead")
+}
+
+func relationshipHasDueProjection(now time.Time) predicate.Relationship {
+	return relationshipProjectionIn(now, "pending", "running", "failed")
+}
+
+func relationshipProjectionIn(now time.Time, statuses ...string) predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
 			b.WriteString(fmt.Sprintf(
@@ -1674,12 +1708,45 @@ func relationshipHasBlockingProjection(now time.Time) predicate.Relationship {
 				relationshipprojectionjob.FieldEvaluatedAt,
 			))
 			b.Arg(now)
-			b.WriteString(fmt.Sprintf(
-				" AND %s IN ('dead', 'pending', 'running', 'failed'))",
-				relationshipprojectionjob.FieldStatus,
-			))
+			b.WriteString(fmt.Sprintf(" AND %s IN (", relationshipprojectionjob.FieldStatus))
+			for i, status := range statuses {
+				if i > 0 {
+					b.WriteString(", ")
+				}
+				b.Arg(status)
+			}
+			b.WriteString("))")
 		}))
 	})
+}
+
+// relationshipShowsStaleHeading is "Details need a refresh". The first connector
+// stop is stale or disconnected, and a projector wait has not replaced it.
+func relationshipShowsStaleHeading(now time.Time) predicate.Relationship {
+	return relationship.And(
+		relationship.Not(relationshipHasUnresolvedIdentity()),
+		relationship.Not(relationshipHasBlockingProjection(now)),
+		relationshipFirstSourceStop(false),
+	)
+}
+
+// relationshipShowsSourceRebuilding is the rebuilding sentence for a connector.
+// A projector wait uses the same heading and a different sentence.
+func relationshipShowsSourceRebuilding(now time.Time) predicate.Relationship {
+	return relationship.And(
+		relationship.Not(relationshipHasUnresolvedIdentity()),
+		relationship.Not(relationshipHasBlockingProjection(now)),
+		relationshipFirstSourceStop(true),
+	)
+}
+
+// relationshipShowsRebuildingHeading is "Updating from connected sources".
+func relationshipShowsRebuildingHeading(now time.Time) predicate.Relationship {
+	return relationship.Or(
+		relationshipHasDeadProjection(now),
+		relationshipHasDueProjection(now),
+		relationshipShowsSourceRebuilding(now),
+	)
 }
 
 func relationshipHasSourceDependency() predicate.Relationship {
@@ -1807,6 +1874,71 @@ func relationshipHasEarlySourceStop() predicate.Relationship {
 			b.WriteString(")))")
 		}))
 	})
+}
+
+// relationshipFirstSourceStop matches the earliest connector row that stops
+// completeness. rebuilding selects a rebuild. Otherwise the stop is stale or
+// disconnected. Rows are ordered by source, then account, matching the sheet.
+func relationshipFirstSourceStop(rebuilding bool) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipsourcestatus.Table)
+			b.WriteString(" AS stop WHERE stop.")
+			b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND stop.")
+			b.WriteString(relationshipsourcestatus.FieldCompleteness)
+			if rebuilding {
+				b.WriteString(" = 'rebuilding'")
+			} else {
+				b.WriteString(" IN ('stale', 'disconnected')")
+			}
+			b.WriteString(" AND ")
+			writeDependentSource(b, s, "stop")
+			b.WriteString(" AND NOT EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipsourcestatus.Table)
+			b.WriteString(" AS earlier WHERE earlier.")
+			b.WriteString(relationshipsourcestatus.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND earlier.")
+			b.WriteString(relationshipsourcestatus.FieldCompleteness)
+			b.WriteString(" IN ('stale', 'disconnected', 'rebuilding') AND ")
+			writeDependentSource(b, s, "earlier")
+			b.WriteString(" AND (lower(earlier.")
+			b.WriteString(relationshipsourcestatus.FieldSource)
+			b.WriteString(") < lower(stop.")
+			b.WriteString(relationshipsourcestatus.FieldSource)
+			b.WriteString(") OR (lower(earlier.")
+			b.WriteString(relationshipsourcestatus.FieldSource)
+			b.WriteString(") = lower(stop.")
+			b.WriteString(relationshipsourcestatus.FieldSource)
+			b.WriteString(") AND lower(earlier.")
+			b.WriteString(relationshipsourcestatus.FieldSourceAccountID)
+			b.WriteString(") < lower(stop.")
+			b.WriteString(relationshipsourcestatus.FieldSourceAccountID)
+			b.WriteString(")))))")
+		}))
+	})
+}
+
+func writeDependentSource(b *sql.Builder, s *sql.Selector, alias string) {
+	statusSource := alias + "." + relationshipsourcestatus.FieldSource
+	b.WriteString("((lower(")
+	b.WriteString(statusSource)
+	b.WriteString(") IN ('gmail', 'calendar', 'google') AND ")
+	writeRelationshipDependsOn(b, s, []string{"gmail", "calendar", "google"}, []string{"email", "gmail", "calendar"})
+	b.WriteString(") OR (lower(")
+	b.WriteString(statusSource)
+	b.WriteString(") = 'slack' AND ")
+	writeRelationshipDependsOn(b, s, []string{"slack"}, []string{"slack"})
+	b.WriteString(") OR (lower(")
+	b.WriteString(statusSource)
+	b.WriteString(") IN ('hubspot', 'crm') AND ")
+	writeRelationshipDependsOn(b, s, []string{"hubspot", "crm"}, []string{"hubspot", "crm", "crm_task", "task"})
+	b.WriteString("))")
 }
 
 func sheetPhraseMatches(phrase, needle string) bool {

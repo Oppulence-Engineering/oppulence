@@ -605,6 +605,125 @@ func TestRelationshipSearchFindsTheCompletenessHeading(t *testing.T) {
 	assertCompanyQuery("Details are current")
 }
 
+func TestRelationshipSearchFindsTheRefreshHeading(t *testing.T) {
+	f := newFixture(t)
+	quill, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier", ResourceRefs: []string{"hubspot:company:quill"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	lumen, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet", ResourceRefs: []string{"slack:channel:lumen"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cedar, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Mill",
+		ResourceRefs: []string{"google:company:cedar", "slack:channel:cedar"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	harbor, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Ledger",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	northwind, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Northwind",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mesa Clay",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("hubspot").SetSourceAccountID("default").
+		SetStatus("stale").SetCompleteness("stale").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("slack").SetSourceAccountID("default").
+		SetStatus("rebuilding").SetCompleteness("rebuilding").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("google").SetSourceAccountID("default").
+		SetStatus("degraded").SetCompleteness("disconnected").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	past := time.Now().Add(-time.Minute)
+	if _, err := f.client.RelationshipProjectionJob.Create().
+		SetWorkspace(ws).SetRelationship(harbor).SetUser(f.user).
+		SetIdempotencyKey("harbor-waiting").SetStatus("pending").SetEvaluatedAt(past).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipProjectionJob.Create().
+		SetWorkspace(ws).SetRelationship(northwind).SetUser(f.user).
+		SetIdempotencyKey("northwind-repair").SetStatus("dead").SetEvaluatedAt(past).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertStatus := func(id uuid.UUID, status, explanation string) {
+		t.Helper()
+		model, err := f.svc.MissionControl(f.ctx, f.user, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if model.Completeness.Status != status || model.Completeness.Explanation != explanation {
+			t.Fatalf("completeness = %+v, want %s / %s", model.Completeness, status, explanation)
+		}
+	}
+	assertStatus(quill.ID, "stale", "A required source is stale or disconnected.")
+	assertStatus(lumen.ID, "rebuilding", "A required source is rebuilding; partial state is visible.")
+	assertStatus(cedar.ID, "stale", "A required source is stale or disconnected.")
+	assertStatus(harbor.ID, "rebuilding", "Accepted evidence is waiting for the durable relationship projector.")
+	assertStatus(northwind.ID, "rebuilding", "Relationship projection requires operator repair before this state is safe to act on.")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Details need a refresh", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("A required source is stale or disconnected", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("Updating from connected sources", "Lumen Packet", "Harbor Ledger", "Northwind")
+	assertCompanyQuery("A required source is rebuilding; partial state is visible", "Lumen Packet")
+	assertCompanyQuery("Accepted evidence is waiting for the durable relationship projector", "Harbor Ledger")
+	assertCompanyQuery("Relationship projection requires operator repair before this state is safe to act on", "Northwind")
+	assertCompanyQuery("Some details are still missing", "Mesa Clay")
+	assertCompanyQuery("refresh")
+}
+
 func TestRelationshipSearchFindsTheSheetReviewAndRecommendation(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
