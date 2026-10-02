@@ -327,6 +327,10 @@ export function workflowRunsFailureCopy(): string {
   return "Runs could not load. Try again.";
 }
 
+export function workflowRunsRefreshCopy(): string {
+  return "Could not refresh runs. Try again.";
+}
+
 /** A failed template list is not a catalog the workspace has not created yet. */
 export function workflowTemplatesFailureCopy(): string {
   return "Templates could not load. Try again.";
@@ -1334,7 +1338,7 @@ function WorkflowEditor({
     editable &&
     (name.trim() !== taskTitle(task) || JSON.stringify(workflow) !== JSON.stringify(original));
   const scopedRunsQuery = useWorkflowRuns({ slug: task.slug });
-  const scopedRuns = scopedRunsQuery.isSuccess
+  const scopedRuns = scopedRunsQuery.data
     ? (scopedRunsQuery.data.pages.flatMap((page) => page.runs) as CloudRun[])
     : null;
   const {
@@ -1345,7 +1349,7 @@ function WorkflowEditor({
     task.slug,
     runs,
     scopedRuns,
-    scopedRunsQuery.isSuccess && scopedRunsQuery.hasNextPage,
+    Boolean(scopedRunsQuery.data) && scopedRunsQuery.hasNextPage,
   );
   const settingsPageRun = runs.find((run) => run.slug === task.slug);
   const settingsLastRunReason = workflowLastRunReason(task, settingsPageRun);
@@ -1485,12 +1489,29 @@ function WorkflowEditor({
                   <CaretRight className="size-4 text-muted-foreground" />
                 </Button>
               ))}
-              {taskRuns.length === 0 && !scopedRunsQuery.isError ? (
+              {scopedRunsQuery.isError && (taskRuns.length > 0 || scopedRunsQuery.data) ? (
+                <div
+                  className={
+                    "flex items-center justify-between gap-3 border-b border-border px-3 py-2"
+                  }
+                >
+                  <p className="text-xs text-muted-foreground">{workflowRunsRefreshCopy()}</p>
+                  <Button
+                    onClick={() => void scopedRunsQuery.refetch()}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Try again
+                  </Button>
+                </div>
+              ) : null}
+              {taskRuns.length === 0 && (scopedRunsQuery.data || !scopedRunsQuery.isError) ? (
                 <p className="p-8 text-center text-xs text-muted-foreground">
                   {taskRunsSettled ? "No runs yet." : "Loading runs…"}
                 </p>
               ) : null}
-              {scopedRunsQuery.isError ? (
+              {scopedRunsQuery.isError && taskRuns.length === 0 && !scopedRunsQuery.data ? (
                 <div className="flex flex-col items-center gap-3 p-8 text-center">
                   <p className="text-xs text-muted-foreground">{workflowRunsFailureCopy()}</p>
                   <Button

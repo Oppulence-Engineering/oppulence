@@ -71,6 +71,15 @@ function useConsolePreferences() {
   return { query, mutation };
 }
 
+/** A failed preference refresh keeps the form that already loaded. */
+export function preferenceFormIsHidden(isError: boolean, loaded: boolean): boolean {
+  return isError && !loaded;
+}
+
+export function preferenceRefreshCopy(subject: string): string {
+  return `Could not refresh your ${subject}.`;
+}
+
 function PreferenceLoadState({ message, retry }: { message: string; retry: () => void }) {
   return (
     <div className="flex items-center justify-between gap-3 p-4" role="alert">
@@ -463,12 +472,19 @@ function ProfileCard() {
       }
       title="Profile"
     >
-      {query.isError ? (
+      {preferenceFormIsHidden(query.isError, query.data != null) ? (
         <PreferenceLoadState
           message="Could not load your profile preference."
           retry={() => void query.refetch()}
         />
       ) : (
+        <>
+        {query.isError ? (
+          <PreferenceLoadState
+            message={preferenceRefreshCopy("profile preference")}
+            retry={() => void query.refetch()}
+          />
+        ) : null}
         <div className="space-y-6 py-2">
           <div>
             <FieldLabel
@@ -491,6 +507,7 @@ function ProfileCard() {
             ) : null}
           </div>
         </div>
+        </>
       )}
     </SettingsRow>
   );
@@ -541,12 +558,19 @@ function DefaultsCard() {
       }
       title="Chat defaults"
     >
-      {query.isError ? (
+      {preferenceFormIsHidden(query.isError, query.data != null) ? (
         <PreferenceLoadState
           message="Could not load your default agent."
           retry={() => void query.refetch()}
         />
       ) : (
+        <>
+        {query.isError ? (
+          <PreferenceLoadState
+            message={preferenceRefreshCopy("default agent")}
+            retry={() => void query.refetch()}
+          />
+        ) : null}
         <div className="space-y-6 px-4 py-6">
           <div>
             <FieldLabel
@@ -555,8 +579,25 @@ function DefaultsCard() {
             >
               Default agent
             </FieldLabel>
+            {state === "error" ? (
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <p className="text-xs text-destructive">
+                  {agents.length === 0 ? "Could not load agents." : "Could not refresh agents."}
+                </p>
+                <Button
+                  onClick={() => void agentsQuery.refetch()}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  Retry
+                </Button>
+              </div>
+            ) : null}
             <Select
-              disabled={query.isLoading || state === "loading"}
+              disabled={
+                query.isLoading || state === "loading" || (state === "error" && agents.length === 0)
+              }
               onValueChange={setAgent}
               value={agent || undefined}
             >
@@ -591,6 +632,7 @@ function DefaultsCard() {
             ) : null}
           </div>
         </div>
+        </>
       )}
     </SettingsRow>
   );
@@ -808,12 +850,19 @@ function UsageDataCard() {
       description="This choice follows your account across signed-in devices."
       title="Privacy"
     >
-      {query.isError ? (
+      {preferenceFormIsHidden(query.isError, query.data != null) ? (
         <PreferenceLoadState
           message="Could not load your analytics preference."
           retry={() => void query.refetch()}
         />
       ) : (
+        <>
+        {query.isError ? (
+          <PreferenceLoadState
+            message={preferenceRefreshCopy("analytics preference")}
+            retry={() => void query.refetch()}
+          />
+        ) : null}
         <div className="settings-row">
           <div className="settings-row-copy">
             <p className="settings-row-label">Share anonymous usage data</p>
@@ -834,6 +883,7 @@ function UsageDataCard() {
             onCheckedChange={update}
           />
         </div>
+        </>
       )}
     </SettingsRow>
   );

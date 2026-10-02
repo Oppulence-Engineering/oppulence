@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   helpDestination,
+  preferenceFormIsHidden,
+  preferenceRefreshCopy,
   sessionWorkspaceCopy,
 } from "@/components/features/settings/app-settings/app-settings";
 
@@ -110,6 +112,22 @@ describe("SettingsView", () => {
     expect(source).not.toContain("mailbox metadata defaults");
     expect(source).not.toContain("this console");
     expect(source).not.toContain("the console");
+    expect(preferenceFormIsHidden(true, false)).toBe(true);
+    expect(preferenceFormIsHidden(true, true)).toBe(false);
+    expect(preferenceFormIsHidden(false, false)).toBe(false);
+    expect(
+      source.match(/preferenceFormIsHidden\(query\.isError, query\.data != null\)/g),
+    ).toHaveLength(3);
+    expect(preferenceRefreshCopy("profile preference")).toBe(
+      "Could not refresh your profile preference.",
+    );
+    expect(preferenceRefreshCopy("default agent")).toBe("Could not refresh your default agent.");
+    expect(preferenceRefreshCopy("analytics preference")).toBe(
+      "Could not refresh your analytics preference.",
+    );
+    expect(source).toContain(
+      'agents.length === 0 ? "Could not load agents." : "Could not refresh agents."',
+    );
   });
 
   it("talks about an organization only when one is attached", () => {

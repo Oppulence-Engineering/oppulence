@@ -28,6 +28,7 @@ import {
   workflowStepLabel,
   workflowListFailureCopy,
   workflowRunsFailureCopy,
+  workflowRunsRefreshCopy,
   workflowTemplatesFailureCopy,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
@@ -107,6 +108,7 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain("Clear search");
     expect(workflowListFailureCopy()).toBe("Workflows could not load. Try again.");
     expect(workflowRunsFailureCopy()).toBe("Runs could not load. Try again.");
+    expect(workflowRunsRefreshCopy()).toBe("Could not refresh runs. Try again.");
     expect(workflowTemplatesFailureCopy()).toBe("Templates could not load. Try again.");
     expect(source).toContain("templatesFailed");
     expect(source).toContain("Loading templates…");
@@ -570,7 +572,13 @@ describe("CloudWorkflowsView", () => {
     );
     expect(source).toContain("useWorkflowRuns({ slug: task.slug })");
     expect(source).toContain('taskRunsSettled ? "No runs yet." : "Loading runs…"');
-    expect(source).toContain("taskRuns.length === 0 && !scopedRunsQuery.isError");
+    expect(source).toContain(
+      "taskRuns.length === 0 && (scopedRunsQuery.data || !scopedRunsQuery.isError)",
+    );
+    expect(source).toContain(
+      "scopedRunsQuery.isError && (taskRuns.length > 0 || scopedRunsQuery.data)",
+    );
+    expect(source).toContain("Boolean(scopedRunsQuery.data) && scopedRunsQuery.hasNextPage");
     expect(source).toContain("scopedRunsQuery.refetch()");
     const runsAt = source.indexOf('value="runs"');
     const runsPane = source.slice(runsAt - 80, runsAt + 500);
