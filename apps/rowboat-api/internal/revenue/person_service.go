@@ -174,6 +174,11 @@ func personVisibleLabelMatch(term string) predicate.Person {
 	if strings.Contains("not known", needle) {
 		preds = append(preds, personPrintsNotKnown())
 	}
+	// "Where details came from" is empty until a fact other than the name exists.
+	// A typed fact says "Added by you". A signature says where it was read.
+	if evidence := personSheetEvidenceMatch(needle); evidence != nil {
+		preds = append(preds, evidence)
+	}
 	if n, ok := exactPersonDetailCount(needle); ok {
 		preds = append(preds, personDetailCount(n))
 	}
@@ -192,6 +197,121 @@ func personVisibleLabelMatch(term string) predicate.Person {
 		return nil
 	}
 	return person.Or(preds...)
+}
+
+// personEvidenceExtractorPhrases are the sentences under a fact when the
+// extractor is named and the teammate did not type it. The sheet prefers
+// these over the source name.
+var personEvidenceExtractorPhrases = map[string]string{
+	"email_signature":      "from their email signature",
+	"email_header":         "from an email header",
+	"calendar_invite":      "from a calendar invite",
+	"transcript_intro":     "from a transcript",
+	"crm_field":            "from the crm",
+	"display_name_header":  "from the name on the record",
+	"mail_delivery_report": "their mail server reported this",
+	"parallel":             "from public web research",
+}
+
+// personEvidenceSourcePhrases are the fallback sentences when the extractor
+// has no phrase of its own. A user-typed fact is "Added by you" instead.
+var personEvidenceSourcePhrases = map[string]string{
+	"gmail":        "gmail",
+	"calendar":     "calendar",
+	"slack":        "slack",
+	"hubspot":      "hubspot",
+	"meeting":      "a meeting",
+	"desktop_note": "a note",
+	"voice_note":   "a voice note",
+	"browser":      "the browser",
+	"crm":          "the crm",
+	"web":          "the web",
+}
+
+func personEvidenceLabeledExtractors() []string {
+	extractors := make([]string, 0, len(personEvidenceExtractorPhrases)+1)
+	for extractor := range personEvidenceExtractorPhrases {
+		extractors = append(extractors, extractor)
+	}
+	// user_entry prints "Added by you" even when the source is not user.
+	extractors = append(extractors, "user_entry")
+	return extractors
+}
+
+// personSheetEvidenceMatch matches the provenance section. A short fragment
+// such as "details" or "you" is not enough, because those letters sit inside
+// the sentence without being the sentence a teammate typed.
+func personSheetEvidenceMatch(needle string) predicate.Person {
+	var preds []predicate.Person
+	if sheetPhraseMatches("no extra details yet", needle) {
+		preds = append(preds, person.Not(personHasVisibleEvidence()))
+	}
+	if sheetPhraseMatches("added by you", needle) {
+		preds = append(preds, personEvidenceAddedByYou())
+	}
+	for extractor, phrase := range personEvidenceExtractorPhrases {
+		if sheetPhraseMatches(phrase, needle) {
+			preds = append(preds, personEvidenceByExtractor(extractor))
+		}
+	}
+	for source, phrase := range personEvidenceSourcePhrases {
+		if sheetPhraseMatches(phrase, needle) {
+			preds = append(preds, personEvidenceBySource(source))
+		}
+	}
+	if sheetPhraseMatches("recorded in this workspace", needle) {
+		preds = append(preds, personEvidenceRecordedHere())
+	}
+	if len(preds) == 0 {
+		return nil
+	}
+	return person.Or(preds...)
+}
+
+func visiblePersonEvidence(extra ...predicate.PersonAttribute) []predicate.PersonAttribute {
+	base := []predicate.PersonAttribute{
+		personattribute.StatusEQ("active"),
+		personattribute.DimensionNotIn("display_name", "alias"),
+	}
+	return append(base, extra...)
+}
+
+func personHasVisibleEvidence() predicate.Person {
+	return person.HasAttributesWith(visiblePersonEvidence()...)
+}
+
+func personEvidenceAddedByYou() predicate.Person {
+	return person.Or(
+		person.HasAttributesWith(visiblePersonEvidence(personattribute.SourceEQ("user"))...),
+		person.HasAttributesWith(visiblePersonEvidence(
+			personattribute.SourceNEQ("user"),
+			personattribute.ExtractorEQ("user_entry"),
+		)...),
+	)
+}
+
+func personEvidenceByExtractor(extractor string) predicate.Person {
+	return person.HasAttributesWith(visiblePersonEvidence(
+		personattribute.SourceNEQ("user"),
+		personattribute.ExtractorEQ(extractor),
+	)...)
+}
+
+func personEvidenceBySource(source string) predicate.Person {
+	return person.HasAttributesWith(visiblePersonEvidence(
+		personattribute.SourceEQ(source),
+		personattribute.ExtractorNotIn(personEvidenceLabeledExtractors()...),
+	)...)
+}
+
+func personEvidenceRecordedHere() predicate.Person {
+	return person.HasAttributesWith(visiblePersonEvidence(
+		personattribute.SourceNotIn(
+			"gmail", "calendar", "slack", "hubspot", "meeting",
+			"desktop_note", "voice_note", "browser", "crm", "user", "web",
+		),
+		personattribute.ExtractorNotIn(personEvidenceLabeledExtractors()...),
+	)...)
 }
 
 // relativeLabelWindow is the timestamp range that relativeTime prints as this

@@ -993,6 +993,137 @@ func TestPersonSearchFindsTheLastInteraction(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsTheSheetEvidence(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	create := func(name string) *ent.Person {
+		t.Helper()
+		row, err := f.client.Person.Create().
+			SetDisplayName(name).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	casey := create("Casey Quinn")
+	indira := create("Indira Cole")
+	quill := create("Quill Morse")
+	nia := create("Nia Holt")
+	mira := create("Mira Chen")
+	if err := upsertPersonAttributes(f.ctx, f.client, ws, f.user, casey, nil, []PersonAttributeInput{
+		{
+			Dimension: "display_name", Value: "Casey Quinn", SourceType: "user_correction",
+			Source: "user", Extractor: "user_entry", Confidence: 1, ObservedAt: now,
+			ExternalID: "casey-name",
+		},
+		{
+			Dimension: "alias", Value: "Case", SourceType: "user_correction",
+			Source: "user", Extractor: "user_entry", Confidence: 1, ObservedAt: now,
+			ExternalID: "casey-alias",
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CorrectPerson(f.ctx, f.user, indira.ID, PersonCorrectionInput{
+		Dimension: "department", Value: "Finance",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := upsertPersonAttributes(f.ctx, f.client, ws, f.user, quill, nil, []PersonAttributeInput{{
+		Dimension: "title", Value: "Designer", SourceType: "source_fact",
+		Source: "gmail", Extractor: "email_signature", Confidence: 0.8, ObservedAt: now,
+		ExternalID: "quill-title",
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := upsertPersonAttributes(f.ctx, f.client, ws, f.user, nia, nil, []PersonAttributeInput{{
+		Dimension: "title", Value: "Writer", SourceType: "source_fact",
+		Source: "gmail", Extractor: "unknown", Confidence: 0.6, ObservedAt: now,
+		ExternalID: "nia-title",
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := upsertPersonAttributes(f.ctx, f.client, ws, f.user, mira, nil, []PersonAttributeInput{{
+		Dimension: "department", Value: "Ops", SourceType: "source_fact",
+		Source: "gmail", Extractor: "user_entry", Confidence: 0.9, ObservedAt: now,
+		ExternalID: "mira-department",
+	}}); err != nil {
+		t.Fatal(err)
+	}
+
+	names := func(query string) []string {
+		t.Helper()
+		found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := []string{}
+		for _, row := range found.Persons {
+			got = append(got, row.DisplayName)
+		}
+		return got
+	}
+	one := func(query, want string) {
+		t.Helper()
+		got := names(query)
+		if len(got) != 1 || got[0] != want {
+			t.Fatalf("query %q = %v", query, got)
+		}
+	}
+	one("No extra details yet", "Casey Quinn")
+	one("extra details", "Casey Quinn")
+	one("From their email signature", "Quill Morse")
+	one("Gmail", "Nia Holt")
+	added := names("Added by you")
+	if len(added) != 2 || !containsAll(added, "Indira Cole", "Mira Chen") {
+		t.Fatalf("added by you = %v", added)
+	}
+	for _, query := range []string{"details", "you", "yet"} {
+		if got := names(query); len(got) != 0 {
+			t.Fatalf("query %q = %v", query, got)
+		}
+	}
+
+	attr, err := f.client.PersonAttribute.Query().
+		Where(
+			personattribute.HasPersonWith(person.IDEQ(quill.ID)),
+			personattribute.DimensionEQ("title"),
+		).Only(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.RetractPersonAttribute(f.ctx, f.user, quill.ID, attr.ID, "wrong title"); err != nil {
+		t.Fatal(err)
+	}
+	if got := names("From their email signature"); len(got) != 0 {
+		t.Fatalf("retracted signature = %v", got)
+	}
+	after := names("No extra details yet")
+	if len(after) != 2 || !containsAll(after, "Casey Quinn", "Quill Morse") {
+		t.Fatalf("after retract = %v", after)
+	}
+}
+
+func containsAll(got []string, wants ...string) bool {
+	seen := map[string]bool{}
+	for _, name := range got {
+		seen[name] = true
+	}
+	for _, want := range wants {
+		if !seen[want] {
+			return false
+		}
+	}
+	return true
+}
+
 func withRole(in RelationshipParticipantInput, role string) RelationshipParticipantInput {
 	in.Role = role
 	return in
