@@ -129,6 +129,14 @@ describe("CommunicationPrivacySettings", () => {
         rulesLoaded: true,
       }),
     ).toBe("Could not refresh privacy rules. Try again.");
+    expect(
+      privacyLoadNotice({
+        accountEntered: true,
+        policyFailed: true,
+        rulesFailed: true,
+        rulesLoaded: true,
+      }),
+    ).toBe("Mailbox policy could not load. Could not refresh privacy rules. Try again.");
   });
 
   it("keeps saved privacy rules when a refresh fails", async () => {

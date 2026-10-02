@@ -58,8 +58,14 @@ export function privacyLoadNotice(input: {
   const policyLoaded = input.policyLoaded === true;
   const rulesLoaded = input.rulesLoaded === true;
   if (input.policyFailed && input.rulesFailed) {
-    if (policyLoaded || rulesLoaded) {
+    if (policyLoaded && rulesLoaded) {
       return "Could not refresh mailbox policy and privacy rules. Try again.";
+    }
+    if (policyLoaded) {
+      return "Could not refresh mailbox policy. Privacy rules could not load. Try again.";
+    }
+    if (rulesLoaded) {
+      return "Mailbox policy could not load. Could not refresh privacy rules. Try again.";
     }
     return "Mailbox policy and privacy rules could not load. Try again.";
   }
