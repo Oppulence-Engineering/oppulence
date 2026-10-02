@@ -573,8 +573,41 @@ func TestPersonSearchSQLUsesPostgresPlaceholders(t *testing.T) {
 	if !strings.Contains(query, "ESCAPE '!'") || !strings.Contains(query, "$1") {
 		t.Fatalf("postgres search = %s", query)
 	}
-	if len(args) != 4 || args[0] != "%dogfood label%" {
+	if len(args) != len(personSearchColumns) || args[0] != "%dogfood label%" {
 		t.Fatalf("args = %#v", args)
+	}
+}
+
+func TestPersonSearchFindsVisibleRoleFacts(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Morgan Lee").
+		SetPrimaryEmail("morgan@other.example").
+		SetOrgName("Other Co").
+		SetTitle("Revenue Operations Lead").
+		SetDepartment("Customer Success").
+		SetLocation("Austin Metro").
+		SetSeniority("director").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	for _, query := range []string{
+		"Revenue Operations",
+		"Customer Success",
+		"Austin Metro",
+		"director",
+		"revenue_operations",
+	} {
+		found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query})
+		if err != nil || found == nil || len(found.Persons) != 1 || found.Persons[0].DisplayName != "Morgan Lee" {
+			t.Fatalf("query %q = %+v err=%v", query, found, err)
+		}
 	}
 }
 

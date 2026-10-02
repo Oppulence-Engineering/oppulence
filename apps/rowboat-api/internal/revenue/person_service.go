@@ -72,6 +72,10 @@ func (s *Service) ListPersons(
 			person.PrimaryEmailContainsFold(term),
 			person.OrgNameContainsFold(term),
 			person.OrgDomainContainsFold(term),
+			person.TitleContainsFold(term),
+			person.SeniorityContainsFold(term),
+			person.DepartmentContainsFold(term),
+			person.LocationContainsFold(term),
 			personNormalizedContains(term),
 		))
 	}
@@ -94,23 +98,32 @@ func (s *Service) ListPersons(
 	return &PersonListPage{Persons: rows, HasMore: hasMore}, nil
 }
 
-// personNormalizedContains matches the company title a teammate sees. A domain
-// stored as dogfood-label.example is shown as "Dogfood Label", and that phrase
-// has to find the person even though the stored value uses a hyphen and a dot.
+// personNormalizedContains matches the words a teammate sees. A domain stored
+// as dogfood-label.example is shown as "Dogfood Label", and a role stored as
+// revenue_operations is shown with a space. Those phrases have to find the
+// person even though the stored value uses a hyphen, an underscore, or a dot.
 func personNormalizedContains(term string) predicate.Person {
 	needle := "%" + escapePersonSearchLike(normalizePersonSearch(term)) + "%"
 	return predicate.Person(func(s *sql.Selector) {
-		parts := make([]*sql.Predicate, 0, 4)
-		for _, field := range []string{
-			person.FieldDisplayName,
-			person.FieldPrimaryEmail,
-			person.FieldOrgName,
-			person.FieldOrgDomain,
-		} {
+		parts := make([]*sql.Predicate, 0, len(personSearchColumns))
+		for _, field := range personSearchColumns {
 			parts = append(parts, normalizedSearchLike(s, field, needle))
 		}
 		s.Where(sql.Or(parts...))
 	})
+}
+
+// personSearchColumns are the facts printed on the people directory: the
+// person, their company, the role (title or seniority), department, and city.
+var personSearchColumns = []string{
+	person.FieldDisplayName,
+	person.FieldPrimaryEmail,
+	person.FieldOrgName,
+	person.FieldOrgDomain,
+	person.FieldTitle,
+	person.FieldSeniority,
+	person.FieldDepartment,
+	person.FieldLocation,
 }
 
 // normalizedSearchLike compares a stored name after hyphens, underscores, and
