@@ -2111,6 +2111,98 @@ func TestRelationshipSearchFindsSuggestionTitles(t *testing.T) {
 	_ = harbor
 }
 
+func TestRelationshipSearchFindsFocusedReview(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveClaim := func(rel *ent.Relationship, kind string, confidence, speaker float64, externalID string) {
+		t.Helper()
+		facts, err := json.Marshal(map[string]any{
+			"conversation_claims": []map[string]any{{
+				"id": externalID, "kind": kind, "value": "Noted in the call",
+				"confidence": confidence, "speakerConfidence": speaker, "speakerLabel": "Other",
+			}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(externalID).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(externalID).
+			SetNormalizedFactsJSON(string(facts)).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	quill := makeCompany("Quill Atelier")
+	cedar := makeCompany("Cedar Mill")
+	lumen := makeCompany("Lumen Packet")
+	makeCompany("Harbor Ledger")
+	saveClaim(quill, "objection", 0.5, 1, "review-quill")
+	saveClaim(cedar, "risk", 0.7, 0.4, "review-cedar")
+	saveClaim(lumen, "stakeholder", 0.8, 1, "review-lumen")
+	labelsOf := func(rel *ent.Relationship) []string {
+		t.Helper()
+		intelligence, err := f.svc.RelationshipIntelligenceFor(f.ctx, rel)
+		if err != nil {
+			t.Fatal(err)
+		}
+		labels := make([]string, 0, len(intelligence.ReviewItems))
+		for _, item := range intelligence.ReviewItems {
+			labels = append(labels, item.Label)
+		}
+		return labels
+	}
+	if got := labelsOf(quill); !hasName(got, "Low-confidence material claim") || !hasName(got, "Confirm the low-confidence wording") || hasName(got, "Resolve the speaker for a material statement") {
+		t.Fatalf("quill review = %v", got)
+	}
+	if got := labelsOf(cedar); !hasName(got, "Resolve the speaker for a material statement") || hasName(got, "Confirm the low-confidence wording") {
+		t.Fatalf("cedar review = %v", got)
+	}
+	if got := labelsOf(lumen); !hasName(got, "Confirm the stakeholder identity or role") || hasName(got, "Low-confidence material claim") {
+		t.Fatalf("lumen review = %v", got)
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Low-confidence material claim", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("Confirm the low-confidence wording", "Quill Atelier")
+	assertCompanyQuery("The wording", "Quill Atelier")
+	assertCompanyQuery("Resolve the speaker for a material statement", "Cedar Mill")
+	assertCompanyQuery("Who said it", "Cedar Mill")
+	assertCompanyQuery("Who this is", "Lumen Packet")
+	assertCompanyQuery("Focused evidence review", "Quill Atelier", "Cedar Mill", "Lumen Packet")
+	assertCompanyQuery("Focused evidence review (2)", "Quill Atelier", "Cedar Mill")
+	assertCompanyQuery("Focused evidence review (1)", "Lumen Packet")
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {

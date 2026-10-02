@@ -1964,6 +1964,23 @@ func relationshipSheetSuggestionMatch(needle string) predicate.Relationship {
 	if sheetPhraseMatches("risk raised in a conversation", needle) {
 		preds = append(preds, relationshipHasConversationClaimKind("risk"))
 	}
+	if n, atLeast, ok := focusedReviewCount(needle); ok {
+		preds = append(preds, relationshipReviewCount(n, atLeast))
+	} else if sheetPhraseMatches("focused evidence review", needle) {
+		preds = append(preds, relationshipHasReviewClaim("any"))
+	}
+	if sheetPhraseMatches("low-confidence material claim", needle) || sheetPhraseMatches("what was said", needle) {
+		preds = append(preds, relationshipHasReviewClaim("claim"))
+	}
+	if sheetPhraseMatches("resolve the speaker for a material statement", needle) || sheetPhraseMatches("who said it", needle) {
+		preds = append(preds, relationshipHasReviewClaim("speaker"))
+	}
+	if sheetPhraseMatches("confirm the low-confidence wording", needle) || sheetPhraseMatches("the wording", needle) {
+		preds = append(preds, relationshipHasReviewClaim("word"))
+	}
+	if sheetPhraseMatches("confirm the stakeholder identity or role", needle) || sheetPhraseMatches("who this is", needle) {
+		preds = append(preds, relationshipHasReviewClaim("entity"))
+	}
 	switch len(preds) {
 	case 0:
 		return nil
@@ -1975,6 +1992,25 @@ func relationshipSheetSuggestionMatch(needle string) predicate.Relationship {
 }
 
 func relationshipHasConversationClaimKind(kind string) predicate.Relationship {
+	return relationshipHasConversationClaim(func(b *sql.Builder, s *sql.Selector) {
+		if s.Dialect() == dialect.Postgres {
+			b.WriteString("claim->>'kind' = ")
+		} else {
+			b.WriteString("json_extract(claim.value, '$.kind') = ")
+		}
+		b.Arg(kind)
+	})
+}
+
+// relationshipHasReviewClaim matches a focused-review card. A missing confidence
+// is 0, which is how the sheet reads a claim that never stored one.
+func relationshipHasReviewClaim(mode string) predicate.Relationship {
+	return relationshipHasConversationClaim(func(b *sql.Builder, s *sql.Selector) {
+		writeReviewClaimCondition(b, s, mode)
+	})
+}
+
+func relationshipHasConversationClaim(match func(*sql.Builder, *sql.Selector)) predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
 			obs := relationshipobservation.Table
@@ -1991,9 +2027,7 @@ func relationshipHasConversationClaimKind(kind string) predicate.Relationship {
 				b.WriteString(facts)
 				b.WriteString("::jsonb->'conversation_claims') = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements(")
 				b.WriteString(facts)
-				b.WriteString("::jsonb->'conversation_claims') AS claim WHERE claim->>'kind' = ")
-				b.Arg(kind)
-				b.WriteString(")")
+				b.WriteString("::jsonb->'conversation_claims') AS claim WHERE ")
 			} else {
 				b.WriteString("json_valid(")
 				b.WriteString(facts)
@@ -2001,11 +2035,120 @@ func relationshipHasConversationClaimKind(kind string) predicate.Relationship {
 				b.WriteString(facts)
 				b.WriteString(", '$.conversation_claims') = 'array' AND EXISTS (SELECT 1 FROM json_each(")
 				b.WriteString(facts)
-				b.WriteString(", '$.conversation_claims') AS claim WHERE json_extract(claim.value, '$.kind') = ")
-				b.Arg(kind)
-				b.WriteString(")")
+				b.WriteString(", '$.conversation_claims') AS claim WHERE ")
 			}
-			b.WriteString(")")
+			match(b, s)
+			b.WriteString("))")
+		}))
+	})
+}
+
+func writeReviewClaimCondition(b *sql.Builder, s *sql.Selector, mode string) {
+	confidence := reviewClaimNumber(s, "confidence")
+	speaker := reviewClaimNumber(s, "speakerConfidence")
+	kind := "claim->>'kind'"
+	if s.Dialect() != dialect.Postgres {
+		kind = "json_extract(claim.value, '$.kind')"
+	}
+	switch mode {
+	case "speaker":
+		b.WriteString(speaker)
+		b.WriteString(" < 0.75")
+	case "word":
+		b.WriteString(confidence)
+		b.WriteString(" < 0.65")
+	case "entity":
+		b.WriteString(kind)
+		b.WriteString(" = 'stakeholder' AND ")
+		b.WriteString(confidence)
+		b.WriteString(" < 0.85")
+	case "any":
+		b.WriteString("(")
+		b.WriteString(confidence)
+		b.WriteString(" < 0.75 OR ")
+		b.WriteString(speaker)
+		b.WriteString(" < 0.75 OR (")
+		b.WriteString(kind)
+		b.WriteString(" = 'stakeholder' AND ")
+		b.WriteString(confidence)
+		b.WriteString(" < 0.85))")
+	default:
+		b.WriteString(confidence)
+		b.WriteString(" < 0.75")
+	}
+}
+
+func reviewClaimNumber(s *sql.Selector, field string) string {
+	if s.Dialect() == dialect.Postgres {
+		return fmt.Sprintf("COALESCE((claim->>'%s')::double precision, 0)", field)
+	}
+	return fmt.Sprintf("COALESCE(json_extract(claim.value, '$.%s'), 0)", field)
+}
+
+func focusedReviewCount(needle string) (n int, atLeast bool, ok bool) {
+	const prefix = "focused evidence review ("
+	if !strings.HasPrefix(needle, prefix) || !strings.HasSuffix(needle, ")") {
+		return 0, false, false
+	}
+	body := strings.TrimSuffix(strings.TrimPrefix(needle, prefix), ")")
+	atLeast = strings.HasSuffix(body, "+")
+	body = strings.TrimSuffix(body, "+")
+	parsed, err := strconv.Atoi(body)
+	if err != nil || parsed < 0 || strconv.Itoa(parsed) != body {
+		return 0, false, false
+	}
+	return parsed, atLeast, true
+}
+
+func relationshipReviewCount(n int, atLeast bool) predicate.Relationship {
+	compare := "="
+	if atLeast {
+		compare = ">="
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			obs := relationshipobservation.Table
+			facts := "obs." + relationshipobservation.FieldNormalizedFactsJSON
+			b.WriteString("(SELECT COALESCE(SUM(")
+			b.WriteString("(CASE WHEN ")
+			b.WriteString(reviewClaimNumber(s, "confidence"))
+			b.WriteString(" < 0.75 THEN 1 ELSE 0 END) + (CASE WHEN ")
+			b.WriteString(reviewClaimNumber(s, "speakerConfidence"))
+			b.WriteString(" < 0.75 THEN 1 ELSE 0 END) + (CASE WHEN ")
+			b.WriteString(reviewClaimNumber(s, "confidence"))
+			b.WriteString(" < 0.65 THEN 1 ELSE 0 END) + (CASE WHEN ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("claim->>'kind'")
+			} else {
+				b.WriteString("json_extract(claim.value, '$.kind')")
+			}
+			b.WriteString(" = 'stakeholder' AND ")
+			b.WriteString(reviewClaimNumber(s, "confidence"))
+			b.WriteString(" < 0.85 THEN 1 ELSE 0 END)), 0) FROM ")
+			b.WriteString(obs)
+			b.WriteString(" AS obs")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(", LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'conversation_claims') = 'array' THEN ")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'conversation_claims' ELSE '[]'::jsonb END) AS claim WHERE obs.")
+			} else {
+				b.WriteString(", json_each(")
+				b.WriteString(facts)
+				b.WriteString(", '$.conversation_claims') AS claim WHERE json_valid(")
+				b.WriteString(facts)
+				b.WriteString(") AND json_type(")
+				b.WriteString(facts)
+				b.WriteString(", '$.conversation_claims') = 'array' AND obs.")
+			}
+			b.WriteString(relationshipobservation.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(") ")
+			b.WriteString(compare)
+			b.WriteString(" ")
+			b.Arg(n)
 		}))
 	})
 }
@@ -3241,6 +3384,10 @@ func sheetPhraseMatches(phrase, needle string) bool {
 	if needle == "" {
 		return false
 	}
+	// The search box folds hyphens, underscores, and periods into spaces
+	// before this comparison. The printed sentence has to fold the same way,
+	// or "Low-confidence material claim" never matches the words on the card.
+	phrase = normalizePersonSearch(phrase)
 	if needle == phrase {
 		return true
 	}
