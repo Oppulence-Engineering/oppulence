@@ -30,6 +30,7 @@ import {
   workflowRunsFailureCopy,
   workflowRunsRefreshCopy,
   workflowTemplatesFailureCopy,
+  workflowTemplatesRefreshCopy,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
   calledModelLabel,
@@ -110,7 +111,11 @@ describe("CloudWorkflowsView", () => {
     expect(workflowRunsFailureCopy()).toBe("Runs could not load. Try again.");
     expect(workflowRunsRefreshCopy()).toBe("Could not refresh runs. Try again.");
     expect(workflowTemplatesFailureCopy()).toBe("Templates could not load. Try again.");
+    expect(workflowTemplatesRefreshCopy()).toBe("Could not refresh templates. Try again.");
     expect(source).toContain("templatesFailed");
+    expect(source).toContain("templatesQuery.isError && templates.length === 0");
+    expect(source).toContain("templatesQuery.isError && templates.length > 0");
+    expect(source).toContain("workflowTemplatesRefreshCopy()");
     expect(source).toContain("Loading templates…");
     expect(source).toContain("tasksQuery.isPending && !tasksQuery.isError");
     expect(source).toContain("tasksQuery.isError && tasks.length === 0");

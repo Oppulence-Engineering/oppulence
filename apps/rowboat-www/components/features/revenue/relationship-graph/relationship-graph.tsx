@@ -63,7 +63,11 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import { errMessage } from "@/components/features/revenue/shared/shared";
+import {
+  errMessage,
+  ListRefreshFailure,
+  listRefreshFailureCopy,
+} from "@/components/features/revenue/shared/shared";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
 import {
@@ -1493,11 +1497,14 @@ export function RelationshipGraphWorkspace({
       setLoadingEarlierEvidence(false);
     }
   };
-  // The canvas already explains a failed load and offers Retry. Sending the
-  // same failure to the page banner left it sitting on every other tab.
-  const loadError = graphQuery.error
-    ? friendlyRevenueError(errMessage(graphQuery.error, "Could not load the company graph."))
-    : null;
+  // The canvas explains a first load that never arrived. A later refresh still
+  // has the graph, so the sentence stays on the canvas instead of the page banner.
+  const loadError =
+    graphQuery.error && !loadedGraph
+      ? friendlyRevenueError(errMessage(graphQuery.error, "Could not load the company graph."))
+      : null;
+  const graphRefreshError =
+    graphQuery.error && loadedGraph ? listRefreshFailureCopy("the company graph") : null;
   const savedViewsQuery = useConsoleResources("graph_saved_view", graphSavedViews);
   const remoteSavedViews = savedViewsQuery.data?.items ?? [];
   const [extraSavedViews, setExtraSavedViews] = React.useState<GraphSavedViewResource[]>([]);
@@ -2206,6 +2213,10 @@ export function RelationshipGraphWorkspace({
           </Button>
         </div>
       </div>
+      ) : null}
+
+      {graphRefreshError ? (
+        <ListRefreshFailure message={graphRefreshError} onRetry={() => void load()} />
       ) : null}
 
       <div

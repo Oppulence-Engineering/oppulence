@@ -86,6 +86,11 @@ export function approvalListFailureCopy(): string {
   return "Agent approvals could not load. Try again.";
 }
 
+/** A failed refresh is not a queue that never loaded. */
+export function approvalRefreshFailureCopy(): string {
+  return "Could not refresh agent approvals. Try again.";
+}
+
 export function ActionsView() {
   const queryClient = useQueryClient();
   const proposalsQuery = usePendingActionProposals();
@@ -110,9 +115,13 @@ export function ActionsView() {
   }, [proposalsQuery.data]);
 
   React.useEffect(() => {
-    if (!proposalsQuery.error || unavailable) return;
-    setError(actionFailure(proposalsQuery.error, "Could not load action proposals."));
-  }, [proposalsQuery.error, unavailable]);
+    const shown = (localProposals ?? proposalsQuery.data ?? []).length;
+    if (!proposalsQuery.error || unavailable || shown === 0) {
+      setError((current) => (current === approvalRefreshFailureCopy() ? null : current));
+      return;
+    }
+    setError(approvalRefreshFailureCopy());
+  }, [localProposals, proposalsQuery.data, proposalsQuery.error, unavailable]);
 
   const load = React.useCallback(async () => {
     setError(null);
@@ -218,7 +227,19 @@ export function ActionsView() {
       {error ? (
         <Alert className="m-3 border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-300">
           <WarningCircle weight="fill" className="mt-0.5 shrink-0" />
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription className="flex items-center justify-between gap-3">
+            <span>{error}</span>
+            {error === approvalRefreshFailureCopy() ? (
+              <Button
+                onClick={() => void proposalsQuery.refetch()}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                Try again
+              </Button>
+            ) : null}
+          </AlertDescription>
         </Alert>
       ) : null}
 

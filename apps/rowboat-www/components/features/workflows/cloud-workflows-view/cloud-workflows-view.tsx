@@ -336,6 +336,10 @@ export function workflowTemplatesFailureCopy(): string {
   return "Templates could not load. Try again.";
 }
 
+export function workflowTemplatesRefreshCopy(): string {
+  return "Could not refresh templates. Try again.";
+}
+
 export function runWhereFilterName(value: string): string {
   const current = value === "api" ? "Cloud" : value === "desktop" ? "Desktop" : "Cloud or desktop";
   return comboboxFilterName("Where it runs", current);
@@ -521,12 +525,14 @@ export function workflowLibrarySearchText(
 function CreateWorkflowDialog({
   templates,
   templatesFailed = false,
+  templatesStale = false,
   templatesLoading = false,
   onRetryTemplates,
   onCreated,
 }: {
   templates: CloudTaskTemplate[];
   templatesFailed?: boolean;
+  templatesStale?: boolean;
   templatesLoading?: boolean;
   onRetryTemplates?: () => void;
   onCreated: (task: CloudTask) => void;
@@ -626,6 +632,21 @@ function CreateWorkflowDialog({
           <TabsContent className="pt-4" value="templates">
             <ScrollArea className="h-80 pr-3">
               <div className="divide-y divide-border border border-border">
+                {templatesStale ? (
+                  <div className="flex items-center justify-between gap-3 p-3">
+                    <p className="text-xs text-muted-foreground">
+                      {workflowTemplatesRefreshCopy()}
+                    </p>
+                    <Button
+                      onClick={onRetryTemplates}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      Try again
+                    </Button>
+                  </div>
+                ) : null}
                 {templates
                   .filter((template) => !template.firstParty)
                   .map((template) => {
@@ -654,7 +675,8 @@ function CreateWorkflowDialog({
                       </div>
                     );
                   })}
-                {templates.filter((template) => !template.firstParty).length === 0 ? (
+                {templates.filter((template) => !template.firstParty).length === 0 &&
+                !templatesStale ? (
                   templatesFailed ? (
                     <div className="flex flex-col items-center gap-3 p-6 text-center">
                       <p className="text-xs text-muted-foreground">
@@ -714,6 +736,7 @@ function WorkflowLibrary({
   runs,
   templates,
   templatesFailed = false,
+  templatesStale = false,
   templatesLoading = false,
   busy,
   loadFailed = false,
@@ -727,6 +750,7 @@ function WorkflowLibrary({
   runs: CloudRun[];
   templates: CloudTaskTemplate[];
   templatesFailed?: boolean;
+  templatesStale?: boolean;
   templatesLoading?: boolean;
   busy: boolean;
   loadFailed?: boolean;
@@ -776,6 +800,7 @@ function WorkflowLibrary({
             onRetryTemplates={onRetryTemplates}
             templates={templates}
             templatesFailed={templatesFailed}
+            templatesStale={templatesStale}
             templatesLoading={templatesLoading}
           />
         </div>
@@ -1949,7 +1974,8 @@ export function CloudWorkflowsView({
           onRetryTemplates={() => {
             void templatesQuery.refetch();
           }}
-          templatesFailed={templatesQuery.isError}
+          templatesFailed={templatesQuery.isError && templates.length === 0}
+          templatesStale={templatesQuery.isError && templates.length > 0}
           templatesLoading={templatesQuery.isPending}
           runs={runs}
           tasks={tasks}
