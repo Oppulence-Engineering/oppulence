@@ -149,6 +149,29 @@ describe("CommandPalette semantic mail search", () => {
     );
   });
 
+  it("keeps a mail match past the first six", async () => {
+    const user = userEvent.setup();
+    fetchers.fetchSemanticSearch.mockResolvedValue({
+      available: true,
+      matches: Array.from({ length: 8 }, (_, index) => ({
+        classification: "commitment",
+        counterparty: "Ada",
+        score: 0.8,
+        subject: `Cedar mail ${index + 1}`,
+        summary: "A promise.",
+        threadId: `thread-${index + 1}`,
+      })),
+    });
+
+    renderPalette(requiredProps);
+    await user.click(screen.getByRole("button", { name: /search mail/i }));
+    await user.type(screen.getByRole("textbox", { name: "Command search" }), "cedar mail");
+
+    expect(await screen.findByText("Cedar mail 8")).toBeVisible();
+    expect(screen.getByText("Cedar mail 7")).toBeVisible();
+    expect(screen.getByText("Cedar mail 1")).toBeVisible();
+  });
+
   it("distinguishes an unavailable workspace capability from a search failure", async () => {
     const user = userEvent.setup();
     fetchers.fetchSemanticSearch.mockResolvedValue({ available: false, matches: [] });

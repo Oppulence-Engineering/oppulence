@@ -178,7 +178,7 @@ export function CommandPalette({
   const hasMoreCompanies =
     laterCompanyHasMore ??
     (accountPage.length > 0 && relationshipPageHasMore(accountsQuery.data));
-  const mailMatches: SemanticMatch[] = (mailQuery.data?.matches ?? []).slice(0, 6);
+  const mailMatches: SemanticMatch[] = mailQuery.data?.matches ?? [];
   React.useEffect(() => {
     setExtraCompanies([]);
     setLaterCompanyHasMore(null);
