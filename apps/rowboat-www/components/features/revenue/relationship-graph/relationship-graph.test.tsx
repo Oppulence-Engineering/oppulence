@@ -62,6 +62,7 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain("graphCanvasCapLabel(visible.nodes.length, graph.nodes.length)");
     expect(graphNextCompaniesLabel()).toBe("Show the next companies");
     expect(source).toContain("graphNextCompaniesLabel()");
+    expect(source).toContain("onLoadMoreCompanies?.()");
     expect(source).toContain("Could not load the next companies.");
     expect(graphEarlierEvidenceLabel()).toBe("Show earlier evidence");
     expect(graphEvidencePage("relationship")).toBe(100);

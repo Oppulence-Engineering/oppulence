@@ -1352,11 +1352,18 @@ function GraphCanvasEmpty({ totalNodes, onReset }: { totalNodes: number; onReset
 
 export function RelationshipGraphWorkspace({
   relationships,
+  hasMoreCompanies = false,
+  loadingMoreCompanies = false,
+  onLoadMoreCompanies,
   onOpenRelationship,
   onError,
   onNotice,
 }: {
   relationships: RevenueRelationship[];
+  /** The account menu only lists companies the directory has already loaded. */
+  hasMoreCompanies?: boolean;
+  loadingMoreCompanies?: boolean;
+  onLoadMoreCompanies?: () => void;
   onOpenRelationship: (id: string) => void;
   onError: (message: string) => void;
   onNotice: (message: string) => void;
@@ -1872,6 +1879,23 @@ export function RelationshipGraphWorkspace({
                     {companyName(relationship)}
                   </SelectItem>
                 ))}
+                {hasMoreCompanies ? (
+                  <Button
+                    className={
+                      "sticky bottom-0 z-10 h-8 w-full justify-start rounded-none " +
+                      "border-t border-border bg-background px-2 text-[12px]"
+                    }
+                    disabled={loadingMoreCompanies}
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      onLoadMoreCompanies?.();
+                    }}
+                    type="button"
+                    variant="ghost"
+                  >
+                    {loadingMoreCompanies ? "Loading…" : graphNextCompaniesLabel()}
+                  </Button>
+                ) : null}
               </SelectContent>
             </Select>
           ) : null}

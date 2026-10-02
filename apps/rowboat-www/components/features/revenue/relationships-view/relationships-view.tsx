@@ -981,6 +981,9 @@ export function RelationshipsView({
       {surface === "graph" ? (
         <RelationshipGraphWorkspace
           relationships={companies}
+          hasMoreCompanies={hasMoreCompanies}
+          loadingMoreCompanies={loadingMoreCompanies}
+          onLoadMoreCompanies={() => void loadMoreCompanies()}
           onOpenRelationship={openDetail}
           onError={onError}
           onNotice={onNotice}
