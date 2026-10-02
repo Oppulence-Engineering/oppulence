@@ -69,6 +69,11 @@ export function attentionNextPageLabel(): string {
   return "Show the next companies in the queue";
 }
 
+/** An empty band names the loaded page when later companies are still unread. */
+export function attentionBandEmptyCopy(hasMore: boolean): string {
+  return hasMore ? "Nothing loaded is in this band." : "No companies in this band.";
+}
+
 /** The companies past the first screen, in the same words as the header. */
 export function attentionQueueRemainderLabel(hidden: number): string {
   return hidden === 1 ? "Show the other 1 company" : `Show the other ${hidden} companies`;
@@ -242,7 +247,7 @@ export function AttentionQueueSurface({
               ) : visible.length === 0 ? (
                 <tr className="h-[37px] border-[var(--border)] border-b">
                   <td className="px-2.5 text-[var(--text-secondary)]" colSpan={4}>
-                    No companies in this band.
+                    {attentionBandEmptyCopy(hasMore)}
                   </td>
                 </tr>
               ) : (

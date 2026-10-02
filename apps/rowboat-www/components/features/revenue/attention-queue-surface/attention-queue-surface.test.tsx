@@ -18,6 +18,7 @@ vi.mock("@/lib/revenue/revenue", () => ({
 import {
   AttentionQueueSurface,
   attentionBand,
+  attentionBandEmptyCopy,
   attentionNextPageLabel,
   attentionQueueCountLabel,
   attentionQueueRemainderLabel,
@@ -102,6 +103,32 @@ describe("AttentionQueueSurface", () => {
 
     expect(screen.getByText("No companies in this band.")).toBeInTheDocument();
     expect(screen.getByText("0 companies")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Show the next companies in the queue" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps looking when a band is empty only on the loaded page", async () => {
+    const user = userEvent.setup();
+    const onLoadMore = vi.fn();
+    render(
+      <AttentionQueueSurface
+        hasMore
+        items={[item("attn-risk", "Acme", "high", "No reply in 14 days")]}
+        onActionError={vi.fn()}
+        onChanged={vi.fn()}
+        onLoadMore={onLoadMore}
+        onOpenRelationship={vi.fn()}
+      />,
+    );
+
+    await user.selectOptions(screen.getByRole("combobox", { name: "Attention band" }), "stable");
+
+    expect(screen.getByText("Nothing loaded is in this band.")).toBeInTheDocument();
+    expect(screen.queryByText("No companies in this band.")).not.toBeInTheDocument();
+    expect(screen.getByText("0+")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Show the next companies in the queue" }));
+    expect(onLoadMore).toHaveBeenCalledOnce();
   });
 
   it("selects a reason without opening the company", async () => {
@@ -237,6 +264,8 @@ describe("attention queue count", () => {
     expect(attentionQueueCountLabel(10, 50, true)).toBe("10 of 50+");
     expect(attentionQueueCountLabel(50, 50, true)).toBe("50+");
     expect(attentionNextPageLabel()).toBe("Show the next companies in the queue");
+    expect(attentionBandEmptyCopy(false)).toBe("No companies in this band.");
+    expect(attentionBandEmptyCopy(true)).toBe("Nothing loaded is in this band.");
   });
 });
 
