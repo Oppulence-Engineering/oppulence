@@ -2394,7 +2394,12 @@ export function governanceReceiptRemainder(hidden: number): string {
 }
 
 /** The mail heading says when the first page is not the whole timeline. */
-export function communicationTimelineTitle(shown: number, hasMore: boolean): string {
+export function communicationTimelineTitle(
+  shown: number,
+  hasMore: boolean,
+  failed = false,
+): string {
+  if (failed && shown === 0) return "Email & meeting timeline";
   return hasMore
     ? `Email & meeting timeline (${shown}+)`
     : `Email & meeting timeline (${shown})`;
@@ -2405,7 +2410,8 @@ export function earlierMailLabel(): string {
 }
 
 /** Activity history uses the same honest count as mail. */
-export function activityHistoryTitle(shown: number, hasMore: boolean): string {
+export function activityHistoryTitle(shown: number, hasMore: boolean, failed = false): string {
+  if (failed && shown === 0) return "Activity history";
   return hasMore ? `Activity history (${shown}+)` : `Activity history (${shown})`;
 }
 
@@ -2422,8 +2428,44 @@ function pageCursor(page: {
 }
 
 /** The change list says when the two newest snapshots are not the whole history. */
-export function relationshipChangeTitle(shown: number, hasMore: boolean): string {
+export function relationshipChangeTitle(shown: number, hasMore: boolean, failed = false): string {
+  if (failed && shown === 0) return "What changed";
   return hasMore ? `What changed (${shown}+)` : `What changed (${shown})`;
+}
+
+/** A failed company-sheet pane is not an empty history. */
+export function sheetPaneFailureCopy(noun: string): string {
+  return `${noun} could not load. Try again.`;
+}
+
+/** A later reload failed, so the history already on screen stays. */
+export function sheetPaneRefreshCopy(noun: string): string {
+  return `Could not refresh ${noun}. Try again.`;
+}
+
+/**
+ * A pane that fails on a later load keeps what it already showed. A first look
+ * at a company has nothing to keep.
+ */
+export function applySheetPane<T>(input: {
+  sameCompany: boolean;
+  current: readonly T[];
+  failed: boolean;
+  next: readonly T[] | null;
+}): T[] {
+  if (!input.failed && input.next) return [...input.next];
+  if (input.sameCompany) return [...input.current];
+  return [];
+}
+
+export async function captureSheetPane<T>(
+  load: () => Promise<T>,
+): Promise<{ ok: true; value: T } | { ok: false }> {
+  try {
+    return { ok: true, value: await load() };
+  } catch {
+    return { ok: false };
+  }
 }
 
 export function earlierChangesLabel(): string {
@@ -2939,6 +2981,12 @@ export function RelationshipSheet({
   const [governanceExpanded, setGovernanceExpanded] = React.useState(false);
   const [changes, setChanges] = React.useState<RelationshipStateSnapshot[]>([]);
   const [changesHasMore, setChangesHasMore] = React.useState(false);
+  const [historyFailed, setHistoryFailed] = React.useState(false);
+  const [mailFailed, setMailFailed] = React.useState(false);
+  const [changesFailed, setChangesFailed] = React.useState(false);
+  const [duplicatesFailed, setDuplicatesFailed] = React.useState(false);
+  const [attributesFailed, setAttributesFailed] = React.useState(false);
+  const paneCompanyRef = React.useRef<string | null>(null);
   const [loadingEarlierChanges, setLoadingEarlierChanges] = React.useState(false);
   const [extraReviewItems, setExtraReviewItems] = React.useState<ConversationReviewItem[]>([]);
   const [extraReceipts, setExtraReceipts] = React.useState<
@@ -2990,9 +3038,27 @@ export function RelationshipSheet({
   );
 
   const load = React.useCallback(async () => {
+    const sameCompany = paneCompanyRef.current === id;
+    if (!sameCompany) {
+      paneCompanyRef.current = id;
+      setTimeline([]);
+      setCommunicationTimeline([]);
+      setChanges([]);
+      setTimelineHasMore(false);
+      setCommunicationHasMore(false);
+      setChangesHasMore(false);
+      setTimelineCursor(undefined);
+      setCommunicationCursor(undefined);
+      setHistoryFailed(false);
+      setMailFailed(false);
+      setChangesFailed(false);
+      setDuplicatesFailed(false);
+      setAttributesFailed(false);
+      setSheetDuplicates(emptySheetDuplicatePages());
+      setPersonAttributes({});
+    }
     setLoading(true);
     setLoadError(null);
-    setSheetDuplicates(emptySheetDuplicatePages());
     setLoadingSheetDuplicates(false);
     setExtraReviewItems([]);
     setExtraReceipts([]);
@@ -3001,60 +3067,117 @@ export function RelationshipSheet({
     setLoadingEarlierEvidence(false);
     try {
       const nextData = await getRelationship(id);
+      if (sheetIdRef.current !== id) return;
       setData(nextData);
 
-      const emptyIdentityPage = { candidates: [] as RelationshipIdentityCandidate[], hasMore: false };
-      const [nextTimeline, nextCommunicationTimeline, nextChanges, pending, deferred, resolved] =
+      const [timelinePane, mailPane, changesPane, pendingPane, deferredPane, resolvedPane] =
         await Promise.all([
-          getRelationshipTimelinePage(id).catch(() => ({
-            observations: [] as RelationshipObservation[],
-            hasMore: false as boolean,
-            nextBefore: undefined as string | undefined,
-          })),
-          getRelationshipCommunicationTimeline(id).catch(() => ({
-            items: [] as CommunicationTimelineItem[],
-            hasMore: false as boolean,
-            nextBefore: undefined as string | undefined,
-          })),
-          getRelationshipChanges(id).catch(() => ({
-            snapshots: [] as RelationshipStateSnapshot[],
-            hasMore: false,
-          })),
-          listIdentityCandidates("pending", id).catch(() => emptyIdentityPage),
-          listIdentityCandidates("deferred", id).catch(() => emptyIdentityPage),
-          listIdentityCandidates("resolved", id).catch(() => emptyIdentityPage),
+          captureSheetPane(() => getRelationshipTimelinePage(id)),
+          captureSheetPane(() => getRelationshipCommunicationTimeline(id)),
+          captureSheetPane(() => getRelationshipChanges(id)),
+          captureSheetPane(() => listIdentityCandidates("pending", id)),
+          captureSheetPane(() => listIdentityCandidates("deferred", id)),
+          captureSheetPane(() => listIdentityCandidates("resolved", id)),
         ]);
-      setTimeline(nextTimeline.observations);
-      setTimelineHasMore(nextTimeline.hasMore);
-      setTimelineCursor(pageCursor(nextTimeline));
-      setCommunicationTimeline(nextCommunicationTimeline.items);
-      setCommunicationHasMore(nextCommunicationTimeline.hasMore);
-      setCommunicationCursor(pageCursor(nextCommunicationTimeline));
-      setChanges(nextChanges.snapshots);
-      setChangesHasMore(nextChanges.hasMore);
+      if (sheetIdRef.current !== id) return;
+      setTimeline((current) =>
+        applySheetPane({
+          sameCompany,
+          current,
+          failed: !timelinePane.ok,
+          next: timelinePane.ok ? timelinePane.value.observations : null,
+        }),
+      );
+      if (timelinePane.ok) {
+        setTimelineHasMore(timelinePane.value.hasMore);
+        setTimelineCursor(pageCursor(timelinePane.value));
+      } else if (!sameCompany) {
+        setTimelineHasMore(false);
+        setTimelineCursor(undefined);
+      }
+      setHistoryFailed(!timelinePane.ok);
+      setCommunicationTimeline((current) =>
+        applySheetPane({
+          sameCompany,
+          current,
+          failed: !mailPane.ok,
+          next: mailPane.ok ? mailPane.value.items : null,
+        }),
+      );
+      if (mailPane.ok) {
+        setCommunicationHasMore(mailPane.value.hasMore);
+        setCommunicationCursor(pageCursor(mailPane.value));
+      } else if (!sameCompany) {
+        setCommunicationHasMore(false);
+        setCommunicationCursor(undefined);
+      }
+      setMailFailed(!mailPane.ok);
+      setChanges((current) =>
+        applySheetPane({
+          sameCompany,
+          current,
+          failed: !changesPane.ok,
+          next: changesPane.ok ? changesPane.value.snapshots : null,
+        }),
+      );
+      if (changesPane.ok) setChangesHasMore(changesPane.value.hasMore);
+      else if (!sameCompany) setChangesHasMore(false);
+      setChangesFailed(!changesPane.ok);
       setEvidenceReviewHasMore(Boolean(nextData.intelligence?.observationPageHasMore));
       setEvidenceReviewOffset(
         nextData.intelligence?.observationPageHasMore ? INTELLIGENCE_OBSERVATION_PAGE : 0,
       );
-      setSheetDuplicates({
-        ...emptySheetDuplicatePages(),
-        pending: identityCandidateRows(pending),
-        deferred: identityCandidateRows(deferred),
-        resolved: identityCandidateRows(resolved),
-        pendingHasMore: identityCandidatePageHasMore(pending),
-        deferredHasMore: identityCandidatePageHasMore(deferred),
-        resolvedHasMore: identityCandidatePageHasMore(resolved),
+      setSheetDuplicates((current) => {
+        const base = sameCompany ? current : emptySheetDuplicatePages();
+        if (pendingPane.ok && deferredPane.ok && resolvedPane.ok) {
+          return {
+            ...emptySheetDuplicatePages(),
+            pending: identityCandidateRows(pendingPane.value),
+            deferred: identityCandidateRows(deferredPane.value),
+            resolved: identityCandidateRows(resolvedPane.value),
+            pendingHasMore: identityCandidatePageHasMore(pendingPane.value),
+            deferredHasMore: identityCandidatePageHasMore(deferredPane.value),
+            resolvedHasMore: identityCandidatePageHasMore(resolvedPane.value),
+          };
+        }
+        return {
+          ...base,
+          pending: pendingPane.ok ? identityCandidateRows(pendingPane.value) : base.pending,
+          deferred: deferredPane.ok ? identityCandidateRows(deferredPane.value) : base.deferred,
+          resolved: resolvedPane.ok ? identityCandidateRows(resolvedPane.value) : base.resolved,
+          extraPending: pendingPane.ok ? [] : base.extraPending,
+          extraDeferred: deferredPane.ok ? [] : base.extraDeferred,
+          extraResolved: resolvedPane.ok ? [] : base.extraResolved,
+          pendingHasMore: pendingPane.ok
+            ? identityCandidatePageHasMore(pendingPane.value)
+            : base.pendingHasMore,
+          deferredHasMore: deferredPane.ok
+            ? identityCandidatePageHasMore(deferredPane.value)
+            : base.deferredHasMore,
+          resolvedHasMore: resolvedPane.ok
+            ? identityCandidatePageHasMore(resolvedPane.value)
+            : base.resolvedHasMore,
+        };
       });
+      setDuplicatesFailed(!pendingPane.ok || !deferredPane.ok || !resolvedPane.ok);
       const people = nextData.participants
         .map((participant) => participant.person?.id)
         .filter((personId): personId is string => Boolean(personId));
-      const attributes = await Promise.all(
-        [...new Set(people)].map(
-          async (personId) =>
-            [personId, await getPersonAttributes(personId).catch(() => [])] as const,
-        ),
+      const attributePanes = await Promise.all(
+        [...new Set(people)].map(async (personId) => {
+          const pane = await captureSheetPane(() => getPersonAttributes(personId));
+          return [personId, pane] as const;
+        }),
       );
-      setPersonAttributes(Object.fromEntries(attributes));
+      if (sheetIdRef.current !== id) return;
+      setPersonAttributes((current) => {
+        const next = sameCompany ? { ...current } : {};
+        for (const [personId, pane] of attributePanes) {
+          if (pane.ok) next[personId] = pane.value;
+        }
+        return next;
+      });
+      setAttributesFailed(attributePanes.some(([, pane]) => !pane.ok));
     } catch (error) {
       const message = errMessage(error, "Could not load this company.");
       setLoadError(message);
@@ -3630,6 +3753,18 @@ export function RelationshipSheet({
                   }
                 />
 
+                {duplicatesFailed ? (
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <EmptyText>
+                      {identityCandidates.length > 0
+                        ? sheetPaneRefreshCopy("duplicates")
+                        : sheetPaneFailureCopy("Duplicates")}
+                    </EmptyText>
+                    <Button onClick={() => void load()} size="sm" type="button" variant="outline">
+                      Try again
+                    </Button>
+                  </div>
+                ) : null}
                 <IdentityReviewInbox
                   candidates={identityCandidates}
                   hasMore={hasMoreSheetDuplicates}
@@ -3949,6 +4084,23 @@ export function RelationshipSheet({
                     data-capability="person-management"
                   >
                     <SectionTitle title={`People (${data.participants.length})`} />
+                    {attributesFailed ? (
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <EmptyText>
+                          {Object.values(personAttributes).some((rows) => rows.length > 0)
+                            ? sheetPaneRefreshCopy("profile details")
+                            : sheetPaneFailureCopy("Profile details")}
+                        </EmptyText>
+                        <Button
+                          onClick={() => void load()}
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                        >
+                          Try again
+                        </Button>
+                      </div>
+                    ) : null}
                     {data.participants.length === 0 ? (
                       <EmptyText>None recorded.</EmptyText>
                     ) : (
@@ -4231,7 +4383,9 @@ export function RelationshipSheet({
                 </section>
 
                 <section data-capability="contradiction-resolution">
-                  <SectionTitle title={relationshipChangeTitle(changes.length, changesHasMore)} />
+                  <SectionTitle
+                    title={relationshipChangeTitle(changes.length, changesHasMore, changesFailed)}
+                  />
                   {data.intelligence?.delta.changes.length ? (
                     <ul className="mb-3 flex flex-col gap-2">
                       {data.intelligence.delta.changes.map((change) => (
@@ -4309,9 +4463,13 @@ export function RelationshipSheet({
                       {data.intelligence.delta.recommendationReason}
                     </p>
                   ) : null}
-                  {changes.length === 0 ? (
-                    <EmptyText>Nothing has changed yet.</EmptyText>
-                  ) : (
+                  <SheetPaneStatus
+                    count={changes.length}
+                    empty="Nothing has changed yet."
+                    failed={changesFailed}
+                    noun="Changes"
+                    onRetry={() => void load()}
+                  >
                     <ul className="flex flex-col gap-2">
                       {changes.map((snapshot) => (
                         <li key={snapshot.id} className="flex gap-3 border-l border-border pl-3">
@@ -4327,7 +4485,7 @@ export function RelationshipSheet({
                         </li>
                       ))}
                     </ul>
-                  )}
+                  </SheetPaneStatus>
                   {changesHasMore ? (
                     <Button
                       className="mt-2"
@@ -4397,11 +4555,16 @@ export function RelationshipSheet({
                     title={communicationTimelineTitle(
                       communicationTimeline.length,
                       communicationHasMore,
+                      mailFailed,
                     )}
                   />
-                  {communicationTimeline.length === 0 ? (
-                    <EmptyText>No mail or meetings yet.</EmptyText>
-                  ) : (
+                  <SheetPaneStatus
+                    count={communicationTimeline.length}
+                    empty="No mail or meetings yet."
+                    failed={mailFailed}
+                    noun="Mail and meetings"
+                    onRetry={() => void load()}
+                  >
                     <ul className="flex flex-col divide-y divide-primary/10 rounded-none border border-border">
                       {communicationTimeline.map((item) => (
                         <li key={item.id} className="p-3">
@@ -4425,7 +4588,7 @@ export function RelationshipSheet({
                         </li>
                       ))}
                     </ul>
-                  )}
+                  </SheetPaneStatus>
                   {communicationHasMore && communicationCursor?.before ? (
                     <Button
                       className="mt-2"
@@ -4441,10 +4604,16 @@ export function RelationshipSheet({
                 </section>
 
                 <section id={`${id}:history`} className="scroll-mt-16">
-                  <SectionTitle title={activityHistoryTitle(timeline.length, timelineHasMore)} />
-                  {timeline.length === 0 ? (
-                    <EmptyText>Nothing recorded yet.</EmptyText>
-                  ) : (
+                  <SectionTitle
+                    title={activityHistoryTitle(timeline.length, timelineHasMore, historyFailed)}
+                  />
+                  <SheetPaneStatus
+                    count={timeline.length}
+                    empty="Nothing recorded yet."
+                    failed={historyFailed}
+                    noun="Activity"
+                    onRetry={() => void load()}
+                  >
                     <ul className="flex flex-col divide-y divide-primary/10 rounded-none border border-border">
                       {timeline.map((observation) => (
                         <li key={observation.id} className="p-3">
@@ -4482,7 +4651,7 @@ export function RelationshipSheet({
                         </li>
                       ))}
                     </ul>
-                  )}
+                  </SheetPaneStatus>
                   {timelineHasMore && timelineCursor?.before ? (
                     <Button
                       className="mt-2"
@@ -4722,6 +4891,47 @@ function SectionTitle({ title }: { title: string }) {
 
 function EmptyText({ children }: { children: React.ReactNode }) {
   return <p className="text-xs text-primary/45">{children}</p>;
+}
+
+function SheetPaneStatus({
+  failed,
+  count,
+  empty,
+  noun,
+  onRetry,
+  children,
+}: {
+  failed: boolean;
+  count: number;
+  empty: string;
+  noun: string;
+  onRetry: () => void;
+  children: React.ReactNode;
+}) {
+  const retry = (
+    <Button onClick={onRetry} size="sm" type="button" variant="outline">
+      Try again
+    </Button>
+  );
+  if (failed && count === 0) {
+    return (
+      <div className="flex items-center justify-between gap-3">
+        <EmptyText>{sheetPaneFailureCopy(noun)}</EmptyText>
+        {retry}
+      </div>
+    );
+  }
+  return (
+    <>
+      {failed ? (
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <p className="text-[13px] text-primary/70">{sheetPaneRefreshCopy(noun)}</p>
+          {retry}
+        </div>
+      ) : null}
+      {count === 0 ? <EmptyText>{empty}</EmptyText> : children}
+    </>
+  );
 }
 
 function TwoColumnList({

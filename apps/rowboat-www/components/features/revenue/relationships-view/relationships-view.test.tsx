@@ -42,6 +42,10 @@ import {
   communicationTimelineTitle,
   earlierMailLabel,
   activityHistoryTitle,
+  applySheetPane,
+  captureSheetPane,
+  sheetPaneFailureCopy,
+  sheetPaneRefreshCopy,
   earlierActivityLabel,
   relationshipChangeTitle,
   earlierChangesLabel,
@@ -344,7 +348,7 @@ describe("RelationshipsView", () => {
     );
   });
 
-  it("describes a company record without model jargon", () => {
+  it("describes a company record without model jargon", async () => {
     expect(
       companyReviewCopy({ previousReviewedStateVersion: 0, changedSinceReview: false }),
     ).toEqual({ change: "Not reviewed yet.", footer: "Not reviewed yet." });
@@ -640,14 +644,34 @@ describe("RelationshipsView", () => {
     expect(source).toContain('placeholder="Why is this wrong?"');
     expect(source).toContain("Save this transcript");
     expect(source).toContain("No mail or meetings yet.");
+    expect(source).toContain("captureSheetPane(() => getRelationshipTimelinePage(id))");
+    expect(source).not.toContain("observations: [] as RelationshipObservation[]");
+    expect(sheetPaneFailureCopy("Activity")).toBe("Activity could not load. Try again.");
+    expect(sheetPaneRefreshCopy("activity")).toBe("Could not refresh activity. Try again.");
+    expect(
+      applySheetPane({ sameCompany: true, current: ["kept"], failed: true, next: null }),
+    ).toEqual(["kept"]);
+    expect(
+      applySheetPane({ sameCompany: false, current: ["old"], failed: true, next: null }),
+    ).toEqual([]);
+    expect(
+      applySheetPane({ sameCompany: true, current: ["kept"], failed: false, next: ["next"] }),
+    ).toEqual(["next"]);
+    await expect(captureSheetPane(async () => "ok")).resolves.toEqual({ ok: true, value: "ok" });
+    await expect(captureSheetPane(async () => Promise.reject(new Error("down")))).resolves.toEqual({
+      ok: false,
+    });
     expect(communicationTimelineTitle(2, true)).toBe("Email & meeting timeline (2+)");
     expect(communicationTimelineTitle(3, false)).toBe("Email & meeting timeline (3)");
+    expect(communicationTimelineTitle(0, false, true)).toBe("Email & meeting timeline");
     expect(earlierMailLabel()).toBe("Show earlier mail and meetings");
     expect(activityHistoryTitle(50, true)).toBe("Activity history (50+)");
     expect(activityHistoryTitle(51, false)).toBe("Activity history (51)");
+    expect(activityHistoryTitle(0, false, true)).toBe("Activity history");
     expect(earlierActivityLabel()).toBe("Show earlier activity");
     expect(relationshipChangeTitle(2, true)).toBe("What changed (2+)");
     expect(relationshipChangeTitle(3, false)).toBe("What changed (3)");
+    expect(relationshipChangeTitle(0, false, true)).toBe("What changed");
     expect(earlierChangesLabel()).toBe("Show earlier changes");
     expect(focusedReviewTitle(0, true)).toBe("Focused evidence review (0+)");
     expect(focusedReviewTitle(1, false)).toBe("Focused evidence review (1)");
@@ -655,13 +679,23 @@ describe("RelationshipsView", () => {
     expect(governanceReceiptRemainder(1)).toBe("Show the other 1 receipt");
     expect(governanceReceiptRemainder(4)).toBe("Show the other 4 receipts");
     expect(source).toContain(
-      "communicationTimelineTitle(\n                      communicationTimeline.length,\n                      communicationHasMore,\n                    )",
+      [
+        "communicationTimelineTitle(",
+        "                      communicationTimeline.length,",
+        "                      communicationHasMore,",
+        "                      mailFailed,",
+        "                    )",
+      ].join("\n"),
     );
-    expect(source).toContain("activityHistoryTitle(timeline.length, timelineHasMore)");
+    expect(source).toContain(
+      "activityHistoryTitle(timeline.length, timelineHasMore, historyFailed)",
+    );
     expect(source).toContain("governanceReceiptRemainder(hiddenReceipts)");
     expect(source).toContain("earlierMailLabel()");
     expect(source).toContain("earlierActivityLabel()");
-    expect(source).toContain("relationshipChangeTitle(changes.length, changesHasMore)");
+    expect(source).toContain(
+      "relationshipChangeTitle(changes.length, changesHasMore, changesFailed)",
+    );
     expect(source).toContain("earlierChangesLabel()");
     expect(source).toContain("focusedReviewTitle(items.length, hasMore)");
     expect(source).toContain("earlierEvidenceLabel()");
