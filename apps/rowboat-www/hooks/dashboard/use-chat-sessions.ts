@@ -42,10 +42,11 @@ export function chatSessionsLoadError(
   earlierError: string | null,
   remoteFailed: boolean,
   hasSessions = false,
+  remoteLoaded = false,
 ): string | null {
   if (earlierError) return earlierError;
   if (!remoteFailed) return null;
-  return hasSessions ? CHAT_SESSIONS_REFRESH_ERROR : CHAT_SESSIONS_LOAD_ERROR;
+  return hasSessions || remoteLoaded ? CHAT_SESSIONS_REFRESH_ERROR : CHAT_SESSIONS_LOAD_ERROR;
 }
 
 type UseChatSessionsOptions = {
@@ -190,6 +191,7 @@ export function useChatSessions({
       earlierSessionsError,
       remoteSessionsQuery.isError,
       sessions.length > 0,
+      remoteSessionsQuery.data != null,
     ),
   };
 }

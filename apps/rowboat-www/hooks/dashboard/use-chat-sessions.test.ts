@@ -1,6 +1,9 @@
+import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { chatSessionsLoadError } from "./use-chat-sessions";
+
+const source = fs.readFileSync(new URL("./use-chat-sessions.ts", import.meta.url), "utf8");
 
 describe("chatSessionsLoadError", () => {
   it("names a failed first page instead of an empty history", () => {
@@ -14,10 +17,14 @@ describe("chatSessionsLoadError", () => {
     );
   });
 
-  it("names a failed refresh when conversations are already listed", () => {
+  it("names a failed refresh when the history page already arrived", () => {
     expect(chatSessionsLoadError(null, true, true)).toBe(
       "Could not refresh conversations. Try again.",
     );
+    expect(chatSessionsLoadError(null, true, false, true)).toBe(
+      "Could not refresh conversations. Try again.",
+    );
+    expect(source).toContain("remoteSessionsQuery.data != null");
     expect(chatSessionsLoadError(null, false, true)).toBeNull();
   });
 });

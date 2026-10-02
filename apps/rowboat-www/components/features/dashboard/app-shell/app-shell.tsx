@@ -7,6 +7,7 @@ import { useTheme } from "next-themes";
 import { useConsolePreferences } from "@/hooks/queries/use-console";
 import { sidebarShortcutTitle } from "@/lib/a11y/sidebar-shortcut";
 import { friendlyAgentError } from "@/lib/agents/agent-history";
+import { CHAT_SESSIONS_LOAD_ERROR } from "@/hooks/dashboard/use-chat-sessions";
 import { friendlyRevenueError } from "@/lib/revenue/revenue";
 import { useRelationshipSourceStatuses } from "@/hooks/queries/use-relationship-sources";
 import {
@@ -1109,7 +1110,7 @@ export function AppShellSidebar({
             </div>
             {sessions.length === 0 && loadingSessions ? (
               <SidebarEmptyHint>Loading…</SidebarEmptyHint>
-            ) : sessions.length === 0 && !sessionsLoadError ? (
+            ) : sessions.length === 0 && sessionsLoadError !== CHAT_SESSIONS_LOAD_ERROR ? (
               <SidebarEmptyHint>No conversations yet</SidebarEmptyHint>
             ) : (
               sessions.map((session) => (

@@ -58,7 +58,9 @@ describe("AppShellSidebar", () => {
     expect(source).toContain("Show earlier conversations");
     expect(source).toContain("onLoadMoreSessions");
     expect(source).toContain("sessionsLoadError");
-    expect(source).toContain("sessions.length === 0 && !sessionsLoadError");
+    expect(source).toContain(
+      "sessions.length === 0 && sessionsLoadError !== CHAT_SESSIONS_LOAD_ERROR",
+    );
     expect(source).toContain("sessions.length === 0 && loadingSessions");
     expect(source).toContain("sessionsLoadError && !loadingSessions");
     expect(source).toContain("onRetrySessions");
