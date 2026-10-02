@@ -449,6 +449,25 @@ function shownWorkflowError(cause: unknown, fallback: string): string {
   return friendlyAgentError(cause instanceof Error ? cause.message : fallback);
 }
 
+/** A missing schedule is not "no next run". The em dash stays for a real empty clock. */
+export function scheduleNextRunLabel(
+  nextDueAt: string | null | undefined,
+  missing: boolean,
+): string {
+  if (missing) return "Could not load the next run.";
+  return scheduleMomentLabel(nextDueAt);
+}
+
+/** A 401 or 429 still uses the provider sentence. Any other miss names load versus refresh. */
+export function scheduleLoadNotice(cause: unknown, hadSchedule: boolean): string {
+  const raw = cause instanceof Error ? cause.message : "";
+  if (raw) {
+    const friendly = friendlyAgentError(raw);
+    if (friendly !== raw) return friendly;
+  }
+  return hadSchedule ? "Could not refresh the schedule. Try again." : "Could not load schedule";
+}
+
 function runFailureCopy(run: CloudRun): string {
   const message = run.error ?? "";
   const friendly = friendlyAgentError(message, "run");
@@ -1365,6 +1384,7 @@ function WorkflowEditor({
   task,
   templates,
   schedule,
+  scheduleMissing,
   runs,
   selectedRun,
   events,
@@ -1384,6 +1404,7 @@ function WorkflowEditor({
   task: CloudTask;
   templates: CloudTaskTemplate[];
   schedule: CloudSchedule | null;
+  scheduleMissing: boolean;
   runs: CloudRun[];
   selectedRun: CloudRun | null;
   events: CloudRunEvent[];
@@ -1665,7 +1686,9 @@ function WorkflowEditor({
                     <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
                       Next run
                     </p>
-                    <p className="mt-2 text-[13px]">{scheduleMomentLabel(schedule?.nextDueAt)}</p>
+                    <p className="mt-2 text-[13px]">
+                      {scheduleNextRunLabel(schedule?.nextDueAt, scheduleMissing)}
+                    </p>
                   </div>
                 </div>
                 <div className="border-t border-border p-4">
@@ -1785,6 +1808,10 @@ export function CloudWorkflowsView({
     "ready",
   );
   const [schedule, setSchedule] = React.useState<CloudSchedule | null>(null);
+  const [scheduleMissing, setScheduleMissing] = React.useState(false);
+  const scheduleRef = React.useRef<CloudSchedule | null>(null);
+  scheduleRef.current = schedule;
+  const scheduleNoticeRef = React.useRef<string | null>(null);
   const [screen, setScreen] = React.useState<"library" | "editor" | "runs">(
     workflowOpeningScreen(focus, initialSlug, initialRunId),
   );
@@ -1883,20 +1910,34 @@ export function CloudWorkflowsView({
     };
   }, [initialRunId, initialSlug, selectRun]);
 
+  const clearScheduleNotice = React.useCallback(() => {
+    const notice = scheduleNoticeRef.current;
+    scheduleNoticeRef.current = null;
+    if (notice) setError((current) => (current === notice ? null : current));
+  }, []);
+
   React.useEffect(() => {
     if (!selectedTaskSlug || screen !== "editor") return;
     let cancelled = false;
     void getCloudSchedule(selectedTaskSlug)
       .then((value) => {
-        if (!cancelled) setSchedule(value);
+        if (cancelled) return;
+        setSchedule(value);
+        setScheduleMissing(false);
+        clearScheduleNotice();
       })
       .catch((cause) => {
-        if (!cancelled) setError(shownWorkflowError(cause, "Could not load schedule"));
+        if (cancelled) return;
+        const hadSchedule = scheduleRef.current != null;
+        const notice = scheduleLoadNotice(cause, hadSchedule);
+        scheduleNoticeRef.current = notice;
+        setScheduleMissing(!hadSchedule);
+        setError(notice);
       });
     return () => {
       cancelled = true;
     };
-  }, [screen, selectedTaskRevision, selectedTaskSlug]);
+  }, [clearScheduleNotice, screen, selectedTaskRevision, selectedTaskSlug]);
 
   React.useEffect(() => {
     if (!selectedRunID || !selectedRunSlug || !selectedRunStatus) return;
@@ -2014,13 +2055,19 @@ export function CloudWorkflowsView({
           onCreated={(task) => {
             replaceTask(task);
             setSchedule(null);
+            setScheduleMissing(false);
+            clearScheduleNotice();
             setScreen("editor");
           }}
           onRefresh={() => void refresh()}
           onSelect={(task) => {
+            if (task.slug !== selectedSlug) {
+              setSchedule(null);
+              setScheduleMissing(false);
+              clearScheduleNotice();
+            }
             setSelectedSlug(task.slug);
             selectRun(null);
-            setSchedule(null);
             setScreen("editor");
           }}
           loadFailed={tasksQuery.isError && tasks.length === 0}
@@ -2128,12 +2175,15 @@ export function CloudWorkflowsView({
               );
               selectRun(null);
               setSchedule(null);
+              setScheduleMissing(false);
+              clearScheduleNotice();
               setSelectedSlug("");
               setScreen("library");
             })
           }
           runs={runs}
           schedule={schedule}
+          scheduleMissing={scheduleMissing}
           selectedRun={selectedRun}
           task={selectedTask}
         />

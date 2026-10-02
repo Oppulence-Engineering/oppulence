@@ -33,6 +33,8 @@ import {
   workflowTemplatesRefreshCopy,
   workflowLibraryNotice,
   workflowRefreshCopy,
+  scheduleNextRunLabel,
+  scheduleLoadNotice,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
   calledModelLabel,
@@ -255,7 +257,8 @@ describe("CloudWorkflowsView", () => {
     expect(source).not.toContain("{readableEnum(run.trigger)}");
     expect(source).toContain("workflowName={taskTitle(task)}");
     expect(source).toContain('friendlyAgentError(message, "run")');
-    expect(source.match(/setError\(shownWorkflowError\(cause,/g)).toHaveLength(9);
+    expect(source.match(/setError\(shownWorkflowError\(cause,/g)).toHaveLength(8);
+    expect(source).toContain("scheduleLoadNotice(cause, hadSchedule)");
     expect(source).toContain("friendlyAgentError(error.message)");
     expect(source).toContain("workflowLibraryNotice(");
     expect(source).toContain("cause instanceof Error ? cause.message : fallback");
@@ -351,8 +354,23 @@ describe("CloudWorkflowsView", () => {
       "Oct 1, 4:00 AM (Oct 1, 8:00 AM UTC)",
     );
     expect(scheduleMomentLabel(null, "America/New_York")).toBe("—");
+    expect(scheduleNextRunLabel(null, true)).toBe("Could not load the next run.");
+    expect(scheduleNextRunLabel("2026-10-01T08:00:00Z", false)).toBe(
+      scheduleMomentLabel("2026-10-01T08:00:00Z"),
+    );
+    expect(scheduleNextRunLabel(null, false)).toBe("—");
+    expect(scheduleLoadNotice(new Error("Workflow request failed (500)"), false)).toBe(
+      "Could not load schedule",
+    );
+    expect(scheduleLoadNotice(new Error("Workflow request failed (500)"), true)).toBe(
+      "Could not refresh the schedule. Try again.",
+    );
+    expect(scheduleLoadNotice(new Error("status 401 missing authentication header"), true)).toBe(
+      "The AI provider rejected the API key for this workspace. Nothing was charged.",
+    );
     expect(source).toContain("scheduleMomentLabel(lastRunAt)");
-    expect(source).toContain("scheduleMomentLabel(schedule?.nextDueAt)");
+    expect(source).toContain("scheduleNextRunLabel(schedule?.nextDueAt, scheduleMissing)");
+    expect(source).toContain("if (task.slug !== selectedSlug)");
     expect(source).toContain("return scheduleMomentLabel(value)");
     expect(
       scheduleLabel({
