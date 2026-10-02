@@ -26,6 +26,8 @@ import {
   deleteWorkflowConfirmCopy,
   workflowLibrarySearchText,
   workflowStepLabel,
+  workflowListFailureCopy,
+  workflowRunsFailureCopy,
 } from "@/components/features/workflows/cloud-workflows-view/cloud-workflows-view";
 import {
   calledModelLabel,
@@ -102,7 +104,11 @@ describe("CloudWorkflowsView", () => {
   it("treats a workflow search miss as a filter, not an empty library", () => {
     expect(source).toContain("No workflows match this search. Try another phrase.");
     expect(source).toContain("Clear search");
-    expect(source).toContain("query.trim()\n                  ? []");
+    expect(workflowListFailureCopy()).toBe("Workflows could not load. Try again.");
+    expect(workflowRunsFailureCopy()).toBe("Runs could not load. Try again.");
+    expect(source).toContain("tasksQuery.isError && tasks.length === 0");
+    expect(source).toContain("runsQuery.isError && runs.length === 0");
+    expect(source).toContain("loadFailed || query.trim()");
     expect(source).toContain("Start from a trigger or schedule");
     expect(source).toContain("aria-label={`Use ${name}`}");
   });

@@ -27,6 +27,11 @@ import {
 } from "@/lib/revenue/revenue";
 import type { RevenueLeakScan } from "@/lib/revenue/types";
 
+/** A failed audit list is not a workspace that has never been audited. */
+export function auditListFailureCopy(): string {
+  return "Audits could not load. Try again.";
+}
+
 export function ScansView({
   scans,
   activeScan,
@@ -36,7 +41,9 @@ export function ScansView({
   hasMoreAudits = false,
   loadingEarlierAudits = false,
   earlierAuditsError = null,
+  loadFailed = false,
   onLoadEarlierAudits,
+  onRetry,
   onScan,
 }: {
   scans: RevenueLeakScan[];
@@ -50,7 +57,10 @@ export function ScansView({
   hasMoreAudits?: boolean;
   loadingEarlierAudits?: boolean;
   earlierAuditsError?: string | null;
+  /** The audit list request failed and no audits are on screen. */
+  loadFailed?: boolean;
   onLoadEarlierAudits?: () => void;
+  onRetry?: () => void;
   onScan: () => void;
 }) {
   const rows = React.useMemo(() => {
@@ -81,7 +91,19 @@ export function ScansView({
         </Button>
       </div>
 
-      {rows.length === 0 ? (
+      {loadFailed && rows.length === 0 ? (
+        <WorkspaceEmptyState
+          action={
+            <Button onClick={onRetry} size="sm" type="button" variant="outline">
+              Try again
+            </Button>
+          }
+          description={auditListFailureCopy()}
+          image="audits"
+          learnMore={[]}
+          title="Audits"
+        />
+      ) : rows.length === 0 ? (
         <WorkspaceEmptyState
           action={
             <Button

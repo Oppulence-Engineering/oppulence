@@ -317,6 +317,16 @@ export function runTriggerFilterName(value: string): string {
   return comboboxFilterName("Trigger", value === "all" ? "All triggers" : triggerLabel(value));
 }
 
+/** A failed workflow list is not a library the workspace has not created yet. */
+export function workflowListFailureCopy(): string {
+  return "Workflows could not load. Try again.";
+}
+
+/** A failed run list is not a filter that matched nothing. */
+export function workflowRunsFailureCopy(): string {
+  return "Runs could not load. Try again.";
+}
+
 export function runWhereFilterName(value: string): string {
   const current = value === "api" ? "Cloud" : value === "desktop" ? "Desktop" : "Cloud or desktop";
   return comboboxFilterName("Where it runs", current);
@@ -669,16 +679,20 @@ function WorkflowLibrary({
   runs,
   templates,
   busy,
+  loadFailed = false,
   onCreated,
   onRefresh,
+  onRetryLoad,
   onSelect,
 }: {
   tasks: CloudTask[];
   runs: CloudRun[];
   templates: CloudTaskTemplate[];
   busy: boolean;
+  loadFailed?: boolean;
   onCreated: (task: CloudTask) => void;
   onRefresh: () => void;
+  onRetryLoad?: () => void;
   onSelect: (task: CloudTask) => void;
 }) {
   const [query, setQuery] = React.useState("");
@@ -842,20 +856,26 @@ function WorkflowLibrary({
           {filtered.length === 0 ? (
             <WorkspaceEmptyState
               action={
-                query.trim() ? (
+                loadFailed ? (
+                  <Button onClick={onRetryLoad} size="sm" type="button" variant="outline">
+                    Try again
+                  </Button>
+                ) : query.trim() ? (
                   <Button onClick={() => setQuery("")} size="sm" type="button" variant="outline">
                     Clear search
                   </Button>
                 ) : undefined
               }
               description={
-                query.trim()
-                  ? "No workflows match this search. Try another phrase."
-                  : "Create a workflow to automate recurring company follow-up."
+                loadFailed
+                  ? workflowListFailureCopy()
+                  : query.trim()
+                    ? "No workflows match this search. Try another phrase."
+                    : "Create a workflow to automate recurring company follow-up."
               }
               image="workflows"
               learnMore={
-                query.trim()
+                loadFailed || query.trim()
                   ? []
                   : [
                       { label: "Start from a trigger or schedule" },
@@ -1054,6 +1074,8 @@ function WorkflowRuns({
   onLoadMore,
   onCancel,
   onRetry,
+  loadFailed = false,
+  onReload,
 }: {
   runs: CloudRun[];
   selectedRun: CloudRun | null;
@@ -1075,6 +1097,9 @@ function WorkflowRuns({
   onLoadMore: () => void;
   onCancel: () => void;
   onRetry: () => void;
+  /** The run list request failed and no runs are on screen. */
+  loadFailed?: boolean;
+  onReload?: () => void;
 }) {
   const selectedTask = tasks.find((task) => task.slug === selectedRun?.slug);
   return (
@@ -1165,7 +1190,14 @@ function WorkflowRuns({
                 <CaretRight className="size-4 text-muted-foreground" />
               </Button>
             ))}
-            {runs.length === 0 ? (
+            {loadFailed ? (
+              <div className="flex flex-col items-center gap-3 p-10 text-center">
+                <p className="text-xs text-muted-foreground">{workflowRunsFailureCopy()}</p>
+                <Button onClick={onReload} size="sm" type="button" variant="outline">
+                  Try again
+                </Button>
+              </div>
+            ) : runs.length === 0 ? (
               <p className="p-10 text-center text-xs text-muted-foreground">
                 No runs match these filters.
               </p>
@@ -1831,6 +1863,10 @@ export function CloudWorkflowsView({
             setSchedule(null);
             setScreen("editor");
           }}
+          loadFailed={tasksQuery.isError && tasks.length === 0}
+          onRetryLoad={() => {
+            void tasksQuery.refetch();
+          }}
           runs={runs}
           tasks={tasks}
           templates={templates}
@@ -1861,6 +1897,10 @@ export function CloudWorkflowsView({
               await invalidateRuns();
             })
           }
+          loadFailed={runsQuery.isError && runs.length === 0}
+          onReload={() => {
+            void runsQuery.refetch();
+          }}
           onSelectRun={selectRun}
           onStatusFilter={setStatusFilter}
           onTriggerFilter={setTriggerFilter}

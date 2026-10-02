@@ -81,6 +81,11 @@ function Ref({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** A failed approval request is not an empty approval queue. */
+export function approvalListFailureCopy(): string {
+  return "Agent approvals could not load. Try again.";
+}
+
 export function ActionsView() {
   const queryClient = useQueryClient();
   const proposalsQuery = usePendingActionProposals();
@@ -222,6 +227,22 @@ export function ActionsView() {
       ) : disabled ? (
         <ActionsEmpty
           description="Agent approvals are not switched on for this workspace yet. When they are, every action an agent proposes will wait here before anything happens."
+          title="Agent approvals"
+        />
+      ) : proposalsQuery.isError && !unavailable && proposals.length === 0 ? (
+        <ActionsEmpty
+          action={
+            <Button
+              onClick={() => void proposalsQuery.refetch()}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              Try again
+            </Button>
+          }
+          description={approvalListFailureCopy()}
+          learnMore={[]}
           title="Agent approvals"
         />
       ) : proposals.length === 0 ? (
@@ -375,15 +396,26 @@ function ExecutedNote({ proposal }: { proposal: ActionProposal }) {
   );
 }
 
-function ActionsEmpty({ title, description }: { title: string; description: React.ReactNode }) {
+function ActionsEmpty({
+  title,
+  description,
+  action,
+  learnMore = [
+    { label: "Nothing happens until you approve" },
+    { label: "A record of what you approved" },
+  ],
+}: {
+  title: string;
+  description: React.ReactNode;
+  action?: React.ReactNode;
+  learnMore?: { label: string }[];
+}) {
   return (
     <WorkspaceEmptyState
+      action={action}
       description={description}
       image="actions"
-      learnMore={[
-        { label: "Nothing happens until you approve" },
-        { label: "A record of what you approved" },
-      ]}
+      learnMore={learnMore}
       title={title}
     />
   );

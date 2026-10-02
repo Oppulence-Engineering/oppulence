@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { auditListFailureCopy } from "@/components/features/revenue/scans-view/scans-view";
+
 const source = fs.readFileSync(path.join(import.meta.dirname, "scans-view.tsx"), "utf8");
 
 describe("ScansView", () => {
@@ -20,6 +22,9 @@ describe("ScansView", () => {
     expect(source).toContain("Nothing is sent without approval");
     expect(source).toContain("auditFailureCopy(scan.error)");
     expect(source).not.toContain("{scan.error}");
+    expect(auditListFailureCopy()).toBe("Audits could not load. Try again.");
+    expect(source).toContain("loadFailed && rows.length === 0");
+    expect(source).toContain("auditListFailureCopy()");
     expect(source).toContain("Show earlier audits");
     expect(source).toContain("earlierAuditsError");
     expect(source).not.toContain("Promise Leak Audit explained");

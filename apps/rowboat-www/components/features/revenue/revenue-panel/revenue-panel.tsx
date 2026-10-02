@@ -527,6 +527,10 @@ export function RevenuePanel({
             scanning={scanning}
             needsConnect={connectBeforeAudit}
             needsReconnect={reconnectBeforeAudit}
+            loadFailed={scanListQuery.isError}
+            onRetry={() => {
+              void scanListQuery.refetch();
+            }}
             hasMoreAudits={scanListQuery.hasMoreAudits}
             loadingEarlierAudits={scanListQuery.loadingEarlierAudits}
             earlierAuditsError={scanListQuery.earlierAuditsError}
