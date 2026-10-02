@@ -29,6 +29,7 @@ import {
   calledModelLabel,
   readableEnum,
   runEventBody,
+  transcriptNextEventsLabel,
   triggerLabel,
   runEventLabel,
   runReference,
@@ -126,7 +127,7 @@ describe("CloudWorkflowsView", () => {
     expect(source).not.toContain("{readableEnum(run.trigger)}");
     expect(source).toContain("workflowName={taskTitle(task)}");
     expect(source).toContain('friendlyAgentError(message, "run")');
-    expect(source.match(/setError\(shownWorkflowError\(cause,/g)).toHaveLength(8);
+    expect(source.match(/setError\(shownWorkflowError\(cause,/g)).toHaveLength(9);
     expect(source).toContain("friendlyAgentError(queryCause.message)");
     expect(source).toContain("cause instanceof Error ? cause.message : fallback");
   });
@@ -190,6 +191,11 @@ describe("CloudWorkflowsView", () => {
     expect(source).toContain("Loading the transcript…");
     expect(source).toContain('transcriptStatus === "ready"');
     expect(source).toContain("No transcript events yet.");
+    expect(transcriptNextEventsLabel()).toBe("Show the next events");
+    expect(source).toContain("transcriptNextEventsLabel()");
+    expect(source).toContain(
+      "listCloudRunEvents(selectedRunSlug, selectedRunID, transcriptNextSeq)",
+    );
     expect(source).not.toContain("JSON.stringify(event.event");
     expect(runReference("sched-temporal-c9522e0b-4fc9-47a3-9fbf-434c9faf2262")).toBe("c9522e0b");
     expect(runReference("241dea88-95d9-4d7b-add0-075e93288cdd")).toBe("241dea88");

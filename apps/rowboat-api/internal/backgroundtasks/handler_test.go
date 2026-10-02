@@ -759,3 +759,42 @@ func TestListRunsExactPageIsNotAnotherPage(t *testing.T) {
 		t.Fatalf("last page cursor=%q len=%d", next.NextCursor, len(next.Runs))
 	}
 }
+
+func TestListRunEventsExactPageIsNotAnotherPage(t *testing.T) {
+	client, u, router := setupTest(t)
+	ctx := auth.WithInternal(context.Background())
+	task := client.BackgroundTask.Create().
+		SetUser(u).SetSlug("exact-events").SetName("Exact Events").
+		SetInstructions("x").SetExecutionTarget("api").
+		SaveX(ctx)
+	run := client.BackgroundTaskRun.Create().
+		SetUser(u).SetTask(task).
+		SetRunID("exact-event-run").SetTrigger("manual").SetStatus("succeeded").SetExecutor("api").
+		SaveX(ctx)
+	for seq := 1; seq <= 2; seq++ {
+		client.BackgroundTaskRunEvent.Create().
+			SetUser(u).SetTask(task).SetRun(run).
+			SetSeq(seq).SetEventType("note").
+			SetEventJSON(`{"message":"Event ` + strconv.Itoa(seq) + `"}`).
+			SaveX(ctx)
+	}
+
+	exact := authedJSON(t, router, u, http.MethodGet, "/v1/background-tasks/exact-events/runs/exact-event-run/events?limit=2", nil)
+	if exact.Code != http.StatusOK || strings.Contains(exact.Body.String(), "nextSeq") {
+		t.Fatalf("exact page = %d %s", exact.Code, exact.Body.String())
+	}
+	client.BackgroundTaskRunEvent.Create().
+		SetUser(u).SetTask(task).SetRun(run).
+		SetSeq(3).SetEventType("note").
+		SetEventJSON(`{"message":"Event 3"}`).
+		SaveX(ctx)
+	page := authedJSON(t, router, u, http.MethodGet, "/v1/background-tasks/exact-events/runs/exact-event-run/events?limit=2", nil)
+	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), `"nextSeq":2`) || strings.Contains(page.Body.String(), "Event 3") {
+		t.Fatalf("full page = %d %s", page.Code, page.Body.String())
+	}
+	next := authedJSON(t, router, u, http.MethodGet, "/v1/background-tasks/exact-events/runs/exact-event-run/events?limit=2&afterSeq=2", nil)
+	body := next.Body.String()
+	if next.Code != http.StatusOK || strings.Contains(body, "nextSeq") || !strings.Contains(body, "Event 3") {
+		t.Fatalf("last page = %d %s", next.Code, body)
+	}
+}

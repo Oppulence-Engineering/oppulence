@@ -77,6 +77,43 @@ func TestListAgentsIncludesBuiltins(t *testing.T) {
 	}
 }
 
+func TestListEventsExactPageIsNotAnotherPage(t *testing.T) {
+	h, u := setupHandler(t)
+	ctx := auth.WithUser(context.Background(), u)
+	sess := h.client.AgentSession.Create().
+		SetUser(u).SetSessionID("s-events").SetAgentSlug("assistant").
+		SaveX(ctx)
+	for seq := 1; seq <= 2; seq++ {
+		h.client.AgentSessionEvent.Create().
+			SetUser(u).SetSession(sess).SetSeq(seq).SetEventType("message").
+			SetEventJSON(`{"text":"one"}`).
+			SaveX(ctx)
+	}
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/v1/agent-sessions/s-events/events?limit=2", nil).WithContext(ctx)
+	h.ListEvents(rec, withURLParam(req, "id", "s-events"))
+	if rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), "nextSeq") {
+		t.Fatalf("exact page = %d %s", rec.Code, rec.Body.String())
+	}
+	h.client.AgentSessionEvent.Create().
+		SetUser(u).SetSession(sess).SetSeq(3).SetEventType("message").
+		SetEventJSON(`{"text":"three"}`).
+		SaveX(ctx)
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/v1/agent-sessions/s-events/events?limit=2", nil).WithContext(ctx)
+	h.ListEvents(rec, withURLParam(req, "id", "s-events"))
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"nextSeq":2`) || strings.Contains(rec.Body.String(), "three") {
+		t.Fatalf("full page = %d %s", rec.Code, rec.Body.String())
+	}
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/v1/agent-sessions/s-events/events?limit=2&afterSeq=2", nil).WithContext(ctx)
+	h.ListEvents(rec, withURLParam(req, "id", "s-events"))
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK || strings.Contains(body, "nextSeq") || !strings.Contains(body, "three") {
+		t.Fatalf("last page = %d %s", rec.Code, body)
+	}
+}
+
 func TestListSessionsOffsetSkipsTheNewest(t *testing.T) {
 	h, u := setupHandler(t)
 	ctx := auth.WithUser(context.Background(), u)

@@ -426,7 +426,21 @@ export const CloudScheduleSchema = z.object({
 export type CloudSchedule = z.infer<typeof CloudScheduleSchema>;
 
 const TaskListSchema = z.object({ tasks: z.array(CloudTaskSchema) });
-const EventListSchema = z.object({ events: z.array(CloudRunEventSchema) });
+const EventListSchema = z.object({
+  events: z.array(CloudRunEventSchema),
+  nextSeq: z.number().int().nullish(),
+});
+
+/** One transcript page. nextSeq is absent when this page is the end. */
+export type CloudRunEventPage = {
+  events: CloudRunEvent[];
+  nextSeq: number | null;
+};
+
+/** The transcript page is 500 events. The inspector keeps going only when another event exists. */
+export function transcriptNextEventsLabel(): string {
+  return "Show the next events";
+}
 
 async function workflowRequest<T>(
   path: string,
@@ -622,13 +636,19 @@ export async function retryCloudRun(run: CloudRun): Promise<CloudRun> {
   );
 }
 
-export async function listCloudRunEvents(slug: string, runId: string): Promise<CloudRunEvent[]> {
-  return (
-    await workflowRequest(
-      `/background-tasks/${encodeURIComponent(slug)}/runs/${encodeURIComponent(runId)}/events`,
-      EventListSchema,
-    )
-  ).events;
+export async function listCloudRunEvents(
+  slug: string,
+  runId: string,
+  afterSeq?: number,
+): Promise<CloudRunEventPage> {
+  const params = new URLSearchParams();
+  if (afterSeq != null) params.set("afterSeq", String(afterSeq));
+  const query = params.size > 0 ? `?${params.toString()}` : "";
+  const path =
+    `/background-tasks/${encodeURIComponent(slug)}/runs/${encodeURIComponent(runId)}/events` +
+    query;
+  const page = await workflowRequest(path, EventListSchema);
+  return { events: page.events, nextSeq: page.nextSeq ?? null };
 }
 
 export function taskCron(task: CloudTask): string {

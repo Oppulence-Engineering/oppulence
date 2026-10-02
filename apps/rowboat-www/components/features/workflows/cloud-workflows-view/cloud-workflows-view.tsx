@@ -77,6 +77,7 @@ import {
   instantiateCloudTemplate,
   listCloudRunEvents,
   retryCloudRun,
+  transcriptNextEventsLabel,
   taskCron,
   taskVisualWorkflow,
   readableEnum,
@@ -790,20 +791,26 @@ function RunInspector({
   run,
   events,
   transcriptStatus,
+  transcriptHasMore = false,
+  loadingMoreEvents = false,
   busy,
   workflowName,
   taskExecutionTarget,
   onCancel,
   onRetry,
+  onLoadMoreEvents,
 }: {
   run: CloudRun | null;
   events: CloudRunEvent[];
   transcriptStatus: "loading" | "ready" | "error";
+  transcriptHasMore?: boolean;
+  loadingMoreEvents?: boolean;
   busy: boolean;
   workflowName?: string;
   taskExecutionTarget?: "api" | "desktop";
   onCancel: () => void;
   onRetry: () => void;
+  onLoadMoreEvents?: () => void;
 }) {
   if (!run)
     return (
@@ -921,6 +928,20 @@ function RunInspector({
             {events.length === 0 && transcriptStatus === "ready" ? (
               <li className="text-muted-foreground">No transcript events yet.</li>
             ) : null}
+            {transcriptHasMore ? (
+              <li>
+                <Button
+                  className="w-full rounded-none"
+                  disabled={loadingMoreEvents}
+                  onClick={onLoadMoreEvents}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  {loadingMoreEvents ? "Loading…" : transcriptNextEventsLabel()}
+                </Button>
+              </li>
+            ) : null}
           </ol>
         </ScrollArea>
       </div>
@@ -933,6 +954,9 @@ function WorkflowRuns({
   selectedRun,
   events,
   transcriptStatus,
+  transcriptHasMore = false,
+  loadingMoreEvents = false,
+  onLoadMoreEvents,
   busy,
   tasks,
   nextCursor,
@@ -951,6 +975,9 @@ function WorkflowRuns({
   selectedRun: CloudRun | null;
   events: CloudRunEvent[];
   transcriptStatus: "loading" | "ready" | "error";
+  transcriptHasMore?: boolean;
+  loadingMoreEvents?: boolean;
+  onLoadMoreEvents?: () => void;
   busy: boolean;
   tasks: CloudTask[];
   nextCursor?: string;
@@ -1076,10 +1103,13 @@ function WorkflowRuns({
         <RunInspector
           busy={busy}
           events={events}
+          loadingMoreEvents={loadingMoreEvents}
           onCancel={onCancel}
+          onLoadMoreEvents={onLoadMoreEvents}
           onRetry={onRetry}
           run={selectedRun}
           taskExecutionTarget={selectedTask?.executionTarget}
+          transcriptHasMore={transcriptHasMore}
           transcriptStatus={transcriptStatus}
           workflowName={selectedRun ? runTitle(selectedRun, tasks) : undefined}
         />
@@ -1096,6 +1126,9 @@ function WorkflowEditor({
   selectedRun,
   events,
   transcriptStatus,
+  transcriptHasMore = false,
+  loadingMoreEvents = false,
+  onLoadMoreEvents,
   busy,
   onBack,
   onRun,
@@ -1112,6 +1145,9 @@ function WorkflowEditor({
   selectedRun: CloudRun | null;
   events: CloudRunEvent[];
   transcriptStatus: "loading" | "ready" | "error";
+  transcriptHasMore?: boolean;
+  loadingMoreEvents?: boolean;
+  onLoadMoreEvents?: () => void;
   busy: boolean;
   onBack: () => void;
   onRun: () => void;
@@ -1310,10 +1346,13 @@ function WorkflowEditor({
               <RunInspector
                 busy={busy}
                 events={events}
+                loadingMoreEvents={loadingMoreEvents}
                 onCancel={onCancel}
+                onLoadMoreEvents={onLoadMoreEvents}
                 onRetry={onRetry}
                 run={selectedRun}
                 taskExecutionTarget={task.executionTarget}
+                transcriptHasMore={transcriptHasMore}
                 transcriptStatus={transcriptStatus}
                 workflowName={taskTitle(task)}
               />
@@ -1463,6 +1502,9 @@ export function CloudWorkflowsView({
   const [selectedSlug, setSelectedSlug] = React.useState(initialSlug || "");
   const [selectedRun, setSelectedRun] = React.useState<CloudRun | null>(null);
   const [events, setEvents] = React.useState<CloudRunEvent[]>([]);
+  const [transcriptNextSeq, setTranscriptNextSeq] = React.useState<number | null>(null);
+  const [loadingMoreEvents, setLoadingMoreEvents] = React.useState(false);
+  const transcriptExtended = React.useRef(false);
   const [transcriptRunId, setTranscriptRunId] = React.useState<string | null>(null);
   const [transcriptPhase, setTranscriptPhase] = React.useState<"loading" | "ready" | "error">(
     "ready",
@@ -1513,6 +1555,7 @@ export function CloudWorkflowsView({
   const selectRun = React.useCallback((run: CloudRun | null) => {
     setSelectedRun(run);
     setEvents([]);
+    setTranscriptNextSeq(null);
     setTranscriptRunId(run?.runId ?? null);
     setTranscriptPhase(run ? "loading" : "ready");
     if (run) setSelectedSlug(run.slug);
@@ -1580,6 +1623,7 @@ export function CloudWorkflowsView({
   React.useEffect(() => {
     if (!selectedRunID || !selectedRunSlug || !selectedRunStatus) return;
     let cancelled = false;
+    transcriptExtended.current = false;
     const load = async () => {
       try {
         const [nextEvents, nextRun] = await Promise.all([
@@ -1587,7 +1631,12 @@ export function CloudWorkflowsView({
           getCloudRun(selectedRunSlug, selectedRunID),
         ]);
         if (!cancelled) {
-          setEvents(nextEvents);
+          setEvents((current) => {
+            const pageIds = new Set(nextEvents.events.map((event) => event.id));
+            const later = current.filter((event) => !pageIds.has(event.id));
+            return later.length > 0 ? [...nextEvents.events, ...later] : nextEvents.events;
+          });
+          if (!transcriptExtended.current) setTranscriptNextSeq(nextEvents.nextSeq);
           setSelectedRun(nextRun);
           setTranscriptRunId(selectedRunID);
           setTranscriptPhase("ready");
@@ -1614,6 +1663,31 @@ export function CloudWorkflowsView({
       window.clearInterval(timer);
     };
   }, [queryClient, selectedRunID, selectedRunSlug, selectedRunStatus]);
+
+  const loadMoreEvents = async () => {
+    if (
+      !selectedRunSlug ||
+      !selectedRunID ||
+      transcriptNextSeq == null ||
+      loadingMoreEvents
+    ) {
+      return;
+    }
+    setLoadingMoreEvents(true);
+    try {
+      const page = await listCloudRunEvents(selectedRunSlug, selectedRunID, transcriptNextSeq);
+      transcriptExtended.current = true;
+      setEvents((current) => {
+        const seen = new Set(current.map((event) => event.id));
+        return [...current, ...page.events.filter((event) => !seen.has(event.id))];
+      });
+      setTranscriptNextSeq(page.nextSeq);
+    } catch (cause) {
+      setError(shownWorkflowError(cause, "Could not load more events"));
+    } finally {
+      setLoadingMoreEvents(false);
+    }
+  };
 
   const perform = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -1679,6 +1753,9 @@ export function CloudWorkflowsView({
         <WorkflowRuns
           busy={busy}
           events={events}
+          loadingMoreEvents={loadingMoreEvents}
+          onLoadMoreEvents={() => void loadMoreEvents()}
+          transcriptHasMore={transcriptNextSeq != null}
           transcriptStatus={transcriptStatus}
           executorFilter={executorFilter}
           nextCursor={nextCursor}
@@ -1711,6 +1788,9 @@ export function CloudWorkflowsView({
         <WorkflowEditor
           busy={busy}
           events={events}
+          loadingMoreEvents={loadingMoreEvents}
+          onLoadMoreEvents={() => void loadMoreEvents()}
+          transcriptHasMore={transcriptNextSeq != null}
           transcriptStatus={transcriptStatus}
           templates={templates}
           key={`${selectedTask.id}:${selectedTask.revision}`}

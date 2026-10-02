@@ -325,18 +325,22 @@ func (h *Handler) ListEvents(w http.ResponseWriter, r *http.Request) {
 	if limit > maxLimit {
 		limit = maxLimit
 	}
-	events, err := q.Limit(limit).All(r.Context())
+	events, err := q.Limit(limit + 1).All(r.Context())
 	if err != nil {
 		h.log.Error("list agent session events", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not list events", "internal_error")
 		return
+	}
+	hasMore := limit > 0 && len(events) > limit
+	if hasMore {
+		events = events[:limit]
 	}
 	views := make([]agentworkflow.StreamEvent, 0, len(events))
 	for _, ev := range events {
 		views = append(views, agentworkflow.StreamEvent{Seq: ev.Seq, Type: ev.EventType, TurnSeq: ev.TurnSeq, Data: []byte(ev.EventJSON)})
 	}
 	resp := map[string]any{"events": views}
-	if len(events) == limit {
+	if hasMore && len(events) > 0 {
 		resp["nextSeq"] = events[len(events)-1].Seq
 	}
 	httpx.WriteJSON(w, http.StatusOK, resp)
