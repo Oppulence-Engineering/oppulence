@@ -287,6 +287,7 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain("Follow-up proposed. It still needs your approval.");
     expect(source).toContain("Sending check finished.");
     expect(source).toContain("Saved views unavailable · Retry");
+    expect(source).toContain("savedViewsQuery.isError && savedViewResources.length === 0");
     expect(source).not.toContain("policy evaluation");
     expect(source).not.toContain("Graph deep link");
     expect(source).not.toContain("Views offline");

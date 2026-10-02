@@ -1575,7 +1575,7 @@ export function NotesView({
         </div>
       </div>
       ) : null}
-      {tab === "templates" && templatesQuery.isError ? (
+      {tab === "templates" && failedListIsEmpty(templatesQuery.isError, templates.length) ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
           <p className="text-sm text-destructive">
             {explainedRevenueError(templatesQuery.error, "Could not load note templates.")}
@@ -1584,12 +1584,18 @@ export function NotesView({
             <ArrowClockwise /> Retry
           </Button>
         </div>
-      ) : tab === "templates" && templatesQuery.isLoading ? (
+      ) : tab === "templates" && templatesQuery.isPending && templates.length === 0 ? (
         <div className="p-4">
           <ListSkeleton />
         </div>
       ) : tab === "templates" ? (
         <div className="min-h-0 flex-1 overflow-auto p-4">
+          {templatesQuery.isError ? (
+            <ListRefreshFailure
+              message={listRefreshFailureCopy("note templates")}
+              onRetry={() => void templatesQuery.refetch()}
+            />
+          ) : null}
           <div className="mb-3 flex items-center justify-between">
             <Label className="text-sm font-medium">Reusable note templates</Label>
             <Button size="sm" onClick={() => setEditingTemplate("new")}>
@@ -1728,7 +1734,7 @@ export function NotesView({
                   {favoriteNotesLabel(favoriteNotes.length, unresolvedFavorites)}
                 </Badge>
               </Label>
-              {favoritesQuery.isError ? (
+              {favoritesQuery.isError && favoriteNotes.length === 0 ? (
                 <div className="flex items-center gap-3 border border-destructive/30 p-3">
                   <p className="text-xs text-destructive">
                     {explainedRevenueError(favoritesQuery.error, "Could not load favorites.")}
@@ -1737,7 +1743,15 @@ export function NotesView({
                     Retry
                   </Button>
                 </div>
-              ) : favoriteNotes.length ? (
+              ) : (
+                <>
+                  {favoritesQuery.isError ? (
+                    <ListRefreshFailure
+                      message={listRefreshFailureCopy("favorites")}
+                      onRetry={() => void favoritesQuery.refetch()}
+                    />
+                  ) : null}
+                  {favoriteNotes.length ? (
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-2">
                   {favoriteNotes.map((note) => (
                     <Button
@@ -1759,6 +1773,8 @@ export function NotesView({
                     </CardDescription>
                   </CardContent>
                 </Card>
+                  )}
+                </>
               )}
               {favoriteNotes.length > 0 && unresolvedFavorites > 0 ? (
                 <p className="mt-2 text-xs text-primary/55">

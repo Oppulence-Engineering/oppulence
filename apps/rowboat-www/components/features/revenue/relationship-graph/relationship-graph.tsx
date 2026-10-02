@@ -1535,9 +1535,10 @@ export function RelationshipGraphWorkspace({
     () => (typeof window === "undefined" ? [] : readLegacyGraphViews(window.localStorage)),
     [],
   );
-  const savedViews: RelationshipGraphSavedView[] = savedViewsQuery.isError
-    ? legacyViews
-    : savedViewResources.map((resource) => ({
+  const savedViews: RelationshipGraphSavedView[] =
+    savedViewsQuery.isError && savedViewResources.length === 0
+      ? legacyViews
+      : savedViewResources.map((resource) => ({
         id: resource.id,
         label: resource.name,
         createdAt: resource.createdAt,

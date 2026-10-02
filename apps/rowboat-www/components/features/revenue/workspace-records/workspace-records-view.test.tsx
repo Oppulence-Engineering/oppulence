@@ -547,6 +547,67 @@ describe("durable note templates and favorites", () => {
     expect(screen.getAllByRole("button", { name: "New template" })).toHaveLength(1);
   });
 
+  it("keeps loaded note templates when the refresh fails", async () => {
+    const user = userEvent.setup();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <NotesView onError={vi.fn()} onNotice={vi.fn()} />
+      </QueryClientProvider>,
+    );
+
+    await user.click(await screen.findByRole("tab", { name: /Templates/ }));
+    expect(await screen.findByText("Weekly review")).toBeVisible();
+
+    mocks.fetchConsoleResources.mockImplementation(async (kind: string) => {
+      if (kind === "note_template") throw new Error("templates unavailable");
+      return [
+        {
+          ...timestamps,
+          id: "22222222-2222-4222-8222-222222222222",
+          kind,
+          payload: { noteId: "note-1" },
+        },
+      ];
+    });
+    await client.invalidateQueries({ queryKey: ["console", "resources", "note_template"] });
+
+    expect(await screen.findByText(listRefreshFailureCopy("note templates"))).toBeVisible();
+    expect(screen.getByText("Weekly review")).toBeVisible();
+    expect(screen.queryByText("Could not load note templates.")).not.toBeInTheDocument();
+  });
+
+  it("keeps loaded favorites when the refresh fails", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <NotesView onError={vi.fn()} onNotice={vi.fn()} />
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Account review", exact: true }),
+    ).toBeVisible();
+
+    mocks.fetchConsoleResources.mockImplementation(async (kind: string) => {
+      if (kind === "note_favorite") throw new Error("favorites unavailable");
+      return [
+        {
+          ...timestamps,
+          id: "11111111-1111-4111-8111-111111111111",
+          kind,
+          name: "Weekly review",
+          payload: { title: "Weekly review", body: "Wins and risks" },
+        },
+      ];
+    });
+    await client.invalidateQueries({ queryKey: ["console", "resources", "note_favorite"] });
+
+    expect(await screen.findByText(listRefreshFailureCopy("favorites"))).toBeVisible();
+    expect(screen.getByRole("button", { name: "Account review", exact: true })).toBeVisible();
+    expect(screen.queryByText("Could not load favorites.")).not.toBeInTheDocument();
+  });
+
   it("applies a durable template to a new note", async () => {
     const user = userEvent.setup();
     renderNotes();
