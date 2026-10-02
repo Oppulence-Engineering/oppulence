@@ -49,5 +49,8 @@ describe("AuditSheet", () => {
     );
     expect(source).toContain("policyReasonLabel(code)");
     expect(source).not.toContain("font-mono text-[10px]");
+    expect(source).toContain("setSheetError(message)");
+    expect(source).toContain('errMessage(e, "Could not load the history.")');
+    expect(source).toContain('errMessage(e, "Could not record the outcome.")');
   });
 });

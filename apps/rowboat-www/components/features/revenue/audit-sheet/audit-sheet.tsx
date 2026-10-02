@@ -112,14 +112,18 @@ export function AuditSheet({
   const [loading, setLoading] = React.useState(false);
   const [outcome, setOutcome] = React.useState<RecordOutcomeInput["kind"]>("replied");
   const [logging, setLogging] = React.useState(false);
+  const [sheetError, setSheetError] = React.useState<string | null>(null);
 
   const load = React.useCallback(
     async (id: string) => {
       setLoading(true);
+      setSheetError(null);
       try {
         setAudit(await getAudit(id));
       } catch (e) {
-        onError(errMessage(e, "Could not load the history."));
+        const message = errMessage(e, "Could not load the history.");
+        setSheetError(message);
+        onError(message);
       } finally {
         setLoading(false);
       }
@@ -130,6 +134,7 @@ export function AuditSheet({
   React.useEffect(() => {
     if (action) {
       setAudit(null);
+      setSheetError(null);
       void load(action.id);
     }
   }, [action, load]);
@@ -139,6 +144,7 @@ export function AuditSheet({
   const logOutcome = async () => {
     setLogging(true);
     onError("");
+    setSheetError(null);
     try {
       await recordOutcome(action.id, {
         kind: outcome,
@@ -148,7 +154,9 @@ export function AuditSheet({
       capture(RevenueEvents.OutcomeLogged, { kind: outcome });
       await load(action.id);
     } catch (e) {
-      onError(errMessage(e, "Could not record the outcome."));
+      const message = errMessage(e, "Could not record the outcome.");
+      setSheetError(message);
+      onError(message);
     } finally {
       setLogging(false);
     }
@@ -163,6 +171,24 @@ export function AuditSheet({
             {ACTION_TYPE_LABELS[action.actionType] ?? action.actionType} — {action.recipientEmail}
           </SheetDescription>
         </SheetHeader>
+        {sheetError ? (
+          <div className="border-b border-destructive/30 px-4 py-2">
+            <p className="text-sm text-destructive" role="alert">
+              {sheetError}
+            </p>
+            {!audit ? (
+              <Button
+                className="mt-2"
+                onClick={() => void load(action.id)}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                Try again
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
 
         <div
           className="flex flex-1 flex-col gap-6 px-4 py-5"

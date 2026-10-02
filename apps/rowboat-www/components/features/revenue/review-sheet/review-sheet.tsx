@@ -194,6 +194,7 @@ export function ReviewSheet({
   const [upsell, setUpsell] = React.useState(false);
   const [original, setOriginal] = React.useState<string | null>(null);
   const [loadingOriginal, setLoadingOriginal] = React.useState(false);
+  const [actionError, setActionError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (action) {
@@ -204,6 +205,7 @@ export function ReviewSheet({
       setRejectReason("");
       setUpsell(false);
       setOriginal(null);
+      setActionError(null);
     }
   }, [action]);
 
@@ -245,6 +247,7 @@ export function ReviewSheet({
   ) => {
     setBusy(key);
     onError("");
+    setActionError(null);
     try {
       const updated = await fn();
       onPatched(updated);
@@ -255,11 +258,12 @@ export function ReviewSheet({
         setUpsell(true); // acting is a paid step; show the upgrade prompt inline
         return;
       }
-      onError(
+      const message =
         e instanceof RevenueAPIError
           ? e.message
-          : errMessage(e, "The action could not be completed."),
-      );
+          : errMessage(e, "The action could not be completed.");
+      setActionError(message);
+      onError(message);
     } finally {
       setBusy(null);
     }
@@ -269,13 +273,16 @@ export function ReviewSheet({
     if (!action) return;
     setLoadingOriginal(true);
     onError("");
+    setActionError(null);
     try {
       setOriginal(await getSourceBody(action.id));
     } catch (e) {
       if (e instanceof RevenueAPIError && e.status === 404) {
         setOriginal("(The original email body is not available.)");
       } else {
-        onError(errMessage(e, "Could not load the original email."));
+        const message = errMessage(e, "Could not load the original email.");
+        setActionError(message);
+        onError(message);
       }
     } finally {
       setLoadingOriginal(false);
@@ -285,12 +292,15 @@ export function ReviewSheet({
   const upgrade = async () => {
     setBusy("upgrade");
     onError("");
+    setActionError(null);
     capture(RevenueEvents.UpgradeClicked, { from: "review_sheet" });
     try {
       const url = await startCheckout("pro");
       window.location.assign(url);
     } catch (e) {
-      onError(errMessage(e, "Could not start checkout."));
+      const message = errMessage(e, "Could not start checkout.");
+      setActionError(message);
+      onError(message);
       setBusy(null);
     }
   };
@@ -365,6 +375,14 @@ export function ReviewSheet({
           <SheetTitle>{ACTION_TYPE_LABELS[action.actionType] ?? action.actionType}</SheetTitle>
           <SheetDescription>{action.reason}</SheetDescription>
         </SheetHeader>
+        {actionError ? (
+          <p
+            className="border-b border-destructive/30 px-4 py-2 text-sm text-destructive"
+            role="alert"
+          >
+            {actionError}
+          </p>
+        ) : null}
 
         <div className="flex flex-1 flex-col gap-5 px-4 py-5">
           {upsell ? (

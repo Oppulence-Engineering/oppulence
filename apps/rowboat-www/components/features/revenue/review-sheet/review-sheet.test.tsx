@@ -53,5 +53,7 @@ describe("ReviewSheet", () => {
     expect(source).toContain("dismissReasonLabel(action.dismissReason)");
     expect(source).toContain("snoozeWakeCopy(action.snoozedUntil)");
     expect(source).toContain("<AlertTitle>Dismissed</AlertTitle>");
+    expect(source).toContain("setActionError(message)");
+    expect(source).toContain('errMessage(e, "Could not load the original email.")');
   });
 });
