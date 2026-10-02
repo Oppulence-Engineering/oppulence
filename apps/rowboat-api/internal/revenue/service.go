@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
@@ -857,6 +858,12 @@ func (s *Service) ListRelationshipsFiltered(
 		if risk := relationshipSheetRiskMatch(needle); risk != nil {
 			parts = append(parts, risk)
 		}
+		if outcome := relationshipSheetActionOutcomeMatch(needle); outcome != nil {
+			parts = append(parts, outcome)
+		}
+		if overdue := relationshipSheetOverdueMatch(needle, searchedAt); overdue != nil {
+			parts = append(parts, overdue)
+		}
 		if sheetPhraseMatches("no action is currently recommended", needle) {
 			parts = append(parts, relationship.Not(
 				relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen)),
@@ -1450,6 +1457,168 @@ func relationshipHasUnresolvedRisk() predicate.Relationship {
 	return relationship.And(
 		relationship.HealthIn("critical", "needs_attention"),
 		relationshipRiskCount(">=", 1),
+	)
+}
+
+// relationshipSheetActionOutcomeMatch matches the sentence for a send that
+// failed, may have gone through, or needs a manual review. "The email action
+// failed" stays off a company whose failed send was Slack.
+func relationshipSheetActionOutcomeMatch(needle string) predicate.Relationship {
+	type outcomeWarning struct {
+		phrase string
+		pred   predicate.Relationship
+	}
+	channels := []string{"email", "slack", "call", "crm_task", "crm", "task", "calendar"}
+	warnings := make([]outcomeWarning, 0, len(channels)*3)
+	for _, channel := range channels {
+		kind := strings.ToLower(attentionTokenLabel(channel))
+		warnings = append(warnings,
+			outcomeWarning{
+				normalizePersonSearch(actionOutcomeExplanation(channel, ExecFailed, "")),
+				relationshipHasActionOutcome(kind, "failed"),
+			},
+			outcomeWarning{
+				normalizePersonSearch(actionOutcomeExplanation(channel, ExecAmbiguous, "")),
+				relationshipHasActionOutcome(kind, "ambiguous"),
+			},
+			outcomeWarning{
+				normalizePersonSearch(actionOutcomeExplanation(channel, "pending", "manual_review")),
+				relationshipHasActionOutcome(kind, "manual_review"),
+			},
+		)
+	}
+	for _, warning := range warnings {
+		if needle == warning.phrase {
+			return warning.pred
+		}
+	}
+	var preds []predicate.Relationship
+	if needle == "action needs review" {
+		preds = append(preds, relationshipHasActionOutcome("", "any"))
+	}
+	for _, warning := range warnings {
+		if sheetPhraseMatches(warning.phrase, needle) {
+			preds = append(preds, warning.pred)
+		}
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func relationshipHasActionOutcome(kind, mode string) predicate.Relationship {
+	return relationship.HasActionsWith(revenueActionOutcome(kind, mode))
+}
+
+func revenueActionOutcome(kind, mode string) predicate.RevenueAction {
+	preds := make([]predicate.RevenueAction, 0, 2)
+	if kind != "" {
+		preds = append(preds, revenueActionChannelIs(kind))
+	}
+	switch mode {
+	case "failed":
+		preds = append(preds, revenueaction.ExecutionStatusEQ(ExecFailed))
+	case "ambiguous":
+		preds = append(preds, revenueaction.ExecutionStatusEQ(ExecAmbiguous))
+	case "manual_review":
+		preds = append(preds, revenueaction.And(
+			revenueaction.ReconciliationStatusEQ("manual_review"),
+			revenueaction.Not(revenueaction.ExecutionStatusEQ(ExecFailed)),
+			revenueaction.Not(revenueaction.ExecutionStatusEQ(ExecAmbiguous)),
+		))
+	default:
+		preds = append(preds, revenueaction.Or(
+			revenueaction.ExecutionStatusEQ(ExecFailed),
+			revenueaction.ExecutionStatusEQ(ExecAmbiguous),
+			revenueaction.ReconciliationStatusEQ("manual_review"),
+		))
+	}
+	if len(preds) == 1 {
+		return preds[0]
+	}
+	return revenueaction.And(preds...)
+}
+
+func revenueActionChannelIs(kind string) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("trim(lower(replace(replace(")
+			b.WriteString(s.C(revenueaction.FieldChannel))
+			b.WriteString(", '_', ' '), '.', ' '))) = ")
+			b.Arg(kind)
+		}))
+	})
+}
+
+// relationshipSheetOverdueMatch matches the overdue-promise sentence, including
+// the day count. One day and three days are different sentences.
+func relationshipSheetOverdueMatch(needle string, now time.Time) predicate.Relationship {
+	for days := 1; days <= 120; days++ {
+		if needle == normalizePersonSearch(overdueCommitmentExplanation(days)) {
+			return relationship.HasCommitmentsWith(overdueCommitmentWindow(now, days))
+		}
+	}
+	var preds []predicate.Relationship
+	if needle == "overdue promise" || sheetPhraseMatches("a confirmed commitment is overdue", needle) {
+		preds = append(preds, relationship.HasCommitmentsWith(overdueCommitmentAny(now)))
+	}
+	for days := 1; days <= 120; days++ {
+		phrase := normalizePersonSearch(overdueCommitmentExplanation(days))
+		if sheetPhraseMatches(phrase, needle) {
+			preds = append(preds, relationship.HasCommitmentsWith(overdueCommitmentWindow(now, days)))
+		}
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func overdueCommitmentAny(now time.Time) predicate.Commitment {
+	return commitment.And(
+		overdueCommitmentEligible(),
+		commitment.DueAtLTE(now.UTC()),
+	)
+}
+
+func overdueCommitmentWindow(now time.Time, days int) predicate.Commitment {
+	if days < 1 {
+		days = 1
+	}
+	var window predicate.Commitment
+	if days == 1 {
+		window = commitment.And(
+			commitment.DueAtLTE(now.UTC()),
+			commitment.DueAtGT(now.UTC().Add(-48*time.Hour)),
+		)
+	} else {
+		newest := now.UTC().Add(-time.Duration(days) * 24 * time.Hour)
+		oldest := now.UTC().Add(-time.Duration(days+1) * 24 * time.Hour)
+		window = commitment.And(
+			commitment.DueAtLTE(newest),
+			commitment.DueAtGT(oldest),
+		)
+	}
+	return commitment.And(overdueCommitmentEligible(), window)
+}
+
+func overdueCommitmentEligible() predicate.Commitment {
+	return commitment.And(
+		commitment.StatusEQ("open"),
+		commitment.DueAtNotNil(),
+		commitment.Or(
+			commitment.UserConfirmedEQ(true),
+			commitment.Not(commitment.AcceptanceEQ("candidate")),
+		),
 	)
 }
 

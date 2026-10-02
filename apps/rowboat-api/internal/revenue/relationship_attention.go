@@ -117,6 +117,14 @@ func lifecycleQuietCooldown(lifecycle string) time.Duration {
 
 // quietAccountExplanation says how long the company has been quiet and which
 // stage usually hears back sooner. The stored cooldown is not the sentence.
+func overdueCommitmentExplanation(days int) string {
+	suffix := "s"
+	if days == 1 {
+		suffix = ""
+	}
+	return fmt.Sprintf("A confirmed commitment is overdue by %d day%s.", days, suffix)
+}
+
 func quietAccountExplanation(lifecycle string, quietDays, usualDays int) string {
 	return fmt.Sprintf(
 		"No recorded interaction for %d days. %s are usually contacted again within %d days.",
@@ -394,7 +402,7 @@ func (s *Service) RefreshRelationshipAttention(ctx context.Context, u *ent.User)
 				}
 				candidates = append(candidates, attentionCandidate{
 					Relationship: rel, ReasonCode: "overdue_commitment",
-					Explanation:         fmt.Sprintf("A confirmed commitment is overdue by %d day%s.", days, map[bool]string{true: "", false: "s"}[days == 1]),
+					Explanation:         overdueCommitmentExplanation(days),
 					TriggeringObjectRef: "commitment:" + promised.ID.String(), EvidenceRefs: evidenceRefs,
 					RankScore: score, UrgencyBand: urgencyBand(score),
 					RankFactors:        map[string]int{"overdue_days": min(days*3, 30), "confirmed_commitment": 70},

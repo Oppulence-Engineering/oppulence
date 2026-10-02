@@ -1149,6 +1149,168 @@ func TestRelationshipSearchFindsTheUnresolvedRisk(t *testing.T) {
 	assertCompanyQuery("This company is critical.", "Quill Atelier")
 }
 
+func TestRelationshipSearchFindsTheActionOutcome(t *testing.T) {
+	f := newFixture(t)
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	makeAction := func(rel *ent.Relationship, channel, reason string) *ent.RevenueAction {
+		t.Helper()
+		action, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+			RelationshipID: rel.ID, ActionType: "warm_follow_up", Channel: channel, Detector: DetectorManual,
+			Reason: reason, PriorityScore: 40,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return action
+	}
+	quill := makeCompany("Quill Atelier")
+	lumen := makeCompany("Lumen Packet")
+	harbor := makeCompany("Harbor Ledger")
+	cedar := makeCompany("Cedar Mill")
+	failed := makeAction(quill, "email", "Send the failed note.")
+	failed.Update().SetExecutionStatus(ExecFailed).SaveX(f.ctx)
+	ambiguous := makeAction(lumen, "slack", "Send the slack note.")
+	ambiguous.Update().SetExecutionStatus(ExecAmbiguous).SaveX(f.ctx)
+	manual := makeAction(cedar, "call", "Call them back.")
+	manual.Update().SetReconciliationStatus("manual_review").SaveX(f.ctx)
+	makeAction(harbor, "email", "Send the ordinary note.")
+
+	page, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 100, 0)
+	if err != nil || page == nil {
+		t.Fatal(err)
+	}
+	got := map[string]string{}
+	for _, item := range page.Items {
+		if item.ReasonCode != "action_outcome_review" || item.Edges.Relationship == nil {
+			continue
+		}
+		got[item.Edges.Relationship.DisplayName] = item.Explanation
+	}
+	if got["Quill Atelier"] != "The email action failed. Review it before trying again." {
+		t.Fatalf("quill explanation = %q", got["Quill Atelier"])
+	}
+	if got["Lumen Packet"] != "The slack action may have gone through. Review it before trying again." {
+		t.Fatalf("lumen explanation = %q", got["Lumen Packet"])
+	}
+	if got["Cedar Mill"] != "The call action needs a manual review before it can be tried again." {
+		t.Fatalf("cedar explanation = %q", got["Cedar Mill"])
+	}
+	if _, ok := got["Harbor Ledger"]; ok {
+		t.Fatalf("harbor explanation = %q", got["Harbor Ledger"])
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("The email action failed. Review it before trying again.", "Quill Atelier")
+	assertCompanyQuery("The slack action may have gone through. Review it before trying again.", "Lumen Packet")
+	assertCompanyQuery("The call action needs a manual review before it can be tried again.", "Cedar Mill")
+	assertCompanyQuery("Action needs review", "Quill Atelier", "Lumen Packet", "Cedar Mill")
+	assertCompanyQuery("action failed", "Quill Atelier")
+	assertCompanyQuery("may have gone through", "Lumen Packet")
+}
+
+func TestRelationshipSearchFindsTheOverduePromise(t *testing.T) {
+	f := newFixture(t)
+	now := time.Now().UTC()
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	quill := makeCompany("Quill Atelier")
+	harbor := makeCompany("Harbor Ledger")
+	lumen := makeCompany("Lumen Packet")
+	due := now.Add(-72 * time.Hour)
+	if _, err := f.client.Commitment.Create().
+		SetWorkspace(ws).SetRelationship(quill).SetUser(f.user).
+		SetDirection("promised_by_me").SetText("Send the revised packet").
+		SetStatus("open").SetDueAt(due).SetConfidence(1).SetUserConfirmed(true).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Commitment.Create().
+		SetWorkspace(ws).SetRelationship(harbor).SetUser(f.user).
+		SetDirection("promised_by_me").SetText("Send the draft").
+		SetStatus("open").SetDueAt(due).SetConfidence(1).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Commitment.Create().
+		SetWorkspace(ws).SetRelationship(lumen).SetUser(f.user).
+		SetDirection("promised_by_me").SetText("Send the future note").
+		SetStatus("open").SetDueAt(now.Add(48 * time.Hour)).SetConfidence(1).SetUserConfirmed(true).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	page, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 100, 0)
+	if err != nil || page == nil {
+		t.Fatal(err)
+	}
+	got := map[string]string{}
+	for _, item := range page.Items {
+		if item.ReasonCode != "overdue_commitment" || item.Edges.Relationship == nil {
+			continue
+		}
+		got[item.Edges.Relationship.DisplayName] = item.Explanation
+	}
+	days := max(1, int(time.Since(due).Hours()/24))
+	sentence := overdueCommitmentExplanation(days)
+	if got["Quill Atelier"] != sentence {
+		t.Fatalf("quill explanation = %q, want %q", got["Quill Atelier"], sentence)
+	}
+	if _, ok := got["Harbor Ledger"]; ok {
+		t.Fatalf("harbor explanation = %q", got["Harbor Ledger"])
+	}
+	if _, ok := got["Lumen Packet"]; ok {
+		t.Fatalf("lumen explanation = %q", got["Lumen Packet"])
+	}
+	found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: sentence})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if names := namesOf(found.Relationships); len(names) != 1 || names[0] != "Quill Atelier" {
+		t.Fatalf("sentence = %v", names)
+	}
+	label, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Overdue promise"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if names := namesOf(label.Relationships); len(names) != 1 || names[0] != "Quill Atelier" {
+		t.Fatalf("label = %v", names)
+	}
+}
+
 func TestRelationshipSearchFindsTheDetailSource(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
