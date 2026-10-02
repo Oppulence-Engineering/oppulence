@@ -3034,6 +3034,7 @@ export function RelationshipSheet({
   const [confirmingDeletion, setConfirmingDeletion] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [loadError, setLoadError] = React.useState<string | null>(null);
+  const [actionError, setActionError] = React.useState<string | null>(null);
   const [activeSection, setActiveSection] = React.useState<
     "overview" | "history" | "emails" | "commitments" | "people"
   >("overview");
@@ -3201,6 +3202,7 @@ export function RelationshipSheet({
 
   React.useEffect(() => {
     setActiveSection("overview");
+    setActionError(null);
     setConfirmingPersonId(null);
     setConfirmingDeletion(false);
     setGovernanceExpanded(false);
@@ -3208,13 +3210,16 @@ export function RelationshipSheet({
 
   const act = async (key: string, operation: () => Promise<unknown>): Promise<boolean> => {
     setBusy(key);
+    setActionError(null);
     try {
       await operation();
       await load();
       onChanged();
       return true;
     } catch (error) {
-      onError(errMessage(error, "Could not update this company."));
+      const message = errMessage(error, "Could not update this company.");
+      setActionError(message);
+      onError(message);
       return false;
     } finally {
       setBusy(null);
@@ -3415,6 +3420,14 @@ export function RelationshipSheet({
             Ask Oppulence
           </Button>
         </SheetHeader>
+        {actionError ? (
+          <p
+            className="border-b border-destructive/30 px-4 py-2 text-sm text-destructive"
+            role="alert"
+          >
+            {actionError}
+          </p>
+        ) : null}
         {!data ? (
           <div className="flex flex-col gap-3 px-4 py-6">
             {seed ? (
