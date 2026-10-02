@@ -832,6 +832,94 @@ func TestRelationshipSearchFindsTheMissingNextStep(t *testing.T) {
 	assertCompanyQuery("step")
 }
 
+func TestRelationshipSearchFindsTheDetailSource(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	lumen, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CorrectRelationship(f.ctx, f.user, lumen.ID, RelationshipCorrectionInput{
+		Dimension: "health", Value: "healthy", Reason: "The account is healthy.",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	harbor, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Ledger",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	harbor, err = f.svc.GetRelationship(f.ctx, harbor.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rank, ok := relationshipAssertionAuthorityRank("source_fact")
+	if !ok {
+		t.Fatal("source_fact rank")
+	}
+	if _, err := f.client.RelationshipAssertion.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(harbor).
+		SetDimension("lifecycle").SetValue("prospect").
+		SetSourceType("source_fact").SetAuthorityRank(rank).
+		SetValidFrom(harbor.CreatedAt).
+		SetValueSchemaVersion(relationshipAssertionValueSchemaVersion).
+		SetProjectorCompatVersion(relationshipProjectorVersion).
+		SetSupportingObservationIds([]string{}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	lumenModel, err := f.svc.MissionControl(f.ctx, f.user, lumen.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if health := lumenModel.Evidence["health"]; !health.Supported || health.Authority != "user_correction" {
+		t.Fatalf("lumen health = %+v", health)
+	}
+	harborModel, err := f.svc.MissionControl(f.ctx, f.user, harbor.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if lifecycle := harborModel.Evidence["lifecycle"]; lifecycle.Supported ||
+		lifecycle.MissingReason != "The winning assertion has no accessible source evidence reference." {
+		t.Fatalf("harbor lifecycle = %+v", lifecycle)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Confirmed by a person", "Lumen Packet")
+	assertCompanyQuery("This detail has no source you can open", "Harbor Ledger")
+	assertCompanyQuery("Nothing connected has filled this in", "Quill Atelier", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("Not filled in yet", "Quill Atelier", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("From a connected source")
+	assertCompanyQuery("person")
+}
+
 func TestRelationshipSearchFindsTheSheetReviewAndRecommendation(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

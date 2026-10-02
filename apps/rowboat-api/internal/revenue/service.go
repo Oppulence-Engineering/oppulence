@@ -822,6 +822,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if counts := relationshipSheetDetailCountMatch(needle); counts != nil {
 			parts = append(parts, counts)
 		}
+		if sources := relationshipSheetDetailSourceMatch(needle); sources != nil {
+			parts = append(parts, sources)
+		}
 		if completeness := relationshipSheetCompletenessMatch(needle); completeness != nil {
 			parts = append(parts, completeness)
 		}
@@ -1466,6 +1469,148 @@ func relationshipSupportedDetailCount(n int, now time.Time) predicate.Relationsh
 			b.Arg(n)
 		}))
 	})
+}
+
+// relationshipSheetDetailSourceMatch matches the badges under "See where each
+// detail came from". A correction says a person confirmed it. A claim with no
+// observation says there is nothing to open. An empty detail says nothing
+// connected has filled it in.
+func relationshipSheetDetailSourceMatch(needle string) predicate.Relationship {
+	now := time.Now()
+	var preds []predicate.Relationship
+	for phrase, sourceType := range map[string]string{
+		"confirmed by a person":   "user_correction",
+		"from a connected source": "source_fact",
+		"from a workspace rule":   "deterministic",
+		"public research":         "external_research",
+		"suggested":               "ai_inference",
+	} {
+		if sheetPhraseMatches(phrase, needle) {
+			preds = append(preds, relationshipHasDetailSource(sourceType, now))
+		}
+	}
+	if needle == "not filled in yet" {
+		preds = append(preds, relationship.Not(
+			relationshipSupportedDetailCount(len(relationshipProjectionDimensions), now),
+		))
+	}
+	if sheetPhraseMatches("nothing connected has filled this in.", needle) {
+		preds = append(preds, relationshipHasUnfilledDetail(now))
+	}
+	if sheetPhraseMatches("this detail has no source you can open.", needle) {
+		preds = append(preds, relationshipHasDetailWithoutEvidence(now))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func relationshipHasDetailSource(sourceType string, now time.Time) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipassertion.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(relationshipassertion.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			b.WriteString(relationshipassertion.FieldSourceType)
+			b.WriteString(" = ")
+			b.Arg(sourceType)
+			b.WriteString(" AND ")
+			writeProjectionDimensionIn(b)
+			b.WriteString(" AND ")
+			writeSupportedAssertionTail(b, s, now)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func relationshipHasUnfilledDetail(now time.Time) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		parts := make([]*sql.Predicate, 0, len(relationshipProjectionDimensions))
+		for _, dimension := range relationshipProjectionDimensions {
+			dim := dimension
+			parts = append(parts, sql.Not(sql.P(func(b *sql.Builder) {
+				b.WriteString("EXISTS (SELECT 1 FROM ")
+				b.WriteString(relationshipassertion.Table)
+				b.WriteString(" WHERE ")
+				b.WriteString(relationshipassertion.RelationshipColumn)
+				b.WriteString(" = ")
+				b.WriteString(s.C(relationship.FieldID))
+				b.WriteString(" AND ")
+				b.WriteString(relationshipassertion.FieldDimension)
+				b.WriteString(" = ")
+				b.Arg(dim)
+				b.WriteString(" AND ")
+				writeCurrentAssertionWindow(b, now)
+				b.WriteString(")")
+			})))
+		}
+		s.Where(sql.Or(parts...))
+	})
+}
+
+func relationshipHasDetailWithoutEvidence(now time.Time) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			col := relationshipassertion.FieldSupportingObservationIds
+			empty := fmt.Sprintf("json_array_length(coalesce(%s, '[]')) = 0", col)
+			if s.Dialect() == dialect.Postgres {
+				empty = fmt.Sprintf("jsonb_array_length(coalesce(%s, '[]'::jsonb)) = 0", col)
+			}
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipassertion.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(relationshipassertion.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			writeProjectionDimensionIn(b)
+			b.WriteString(" AND ")
+			writeCurrentAssertionWindow(b, now)
+			b.WriteString(" AND ")
+			b.WriteString(relationshipassertion.FieldSourceType)
+			b.WriteString(" <> 'user_correction' AND ")
+			b.WriteString(relationshipassertion.ObservationColumn)
+			b.WriteString(" IS NULL AND ")
+			b.WriteString(empty)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeProjectionDimensionIn(b *sql.Builder) {
+	b.WriteString(relationshipassertion.FieldDimension)
+	b.WriteString(" IN (")
+	for i, dimension := range relationshipProjectionDimensions {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.Arg(dimension)
+	}
+	b.WriteByte(')')
+}
+
+func writeCurrentAssertionWindow(b *sql.Builder, now time.Time) {
+	b.WriteString(relationshipassertion.FieldStatus)
+	b.WriteString(" IN ('accepted', 'active') AND ")
+	b.WriteString(relationshipassertion.FieldValidFrom)
+	b.WriteString(" <= ")
+	b.Arg(now)
+	b.WriteString(" AND (")
+	b.WriteString(relationshipassertion.FieldValidTo)
+	b.WriteString(" IS NULL OR ")
+	b.WriteString(relationshipassertion.FieldValidTo)
+	b.WriteString(" > ")
+	b.Arg(now)
+	b.WriteByte(')')
 }
 
 func writeSupportedAssertionTail(b *sql.Builder, s *sql.Selector, now time.Time) {
