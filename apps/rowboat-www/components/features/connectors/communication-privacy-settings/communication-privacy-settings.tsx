@@ -42,6 +42,35 @@ export function privacyRuleLabel(kind: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+/** A failed rules request is not an empty protected-address list. */
+export function privacyRulesEmptyCopy(): string {
+  return "No protected or blocked addresses yet.";
+}
+
+export function privacyLoadNotice(input: {
+  accountEntered: boolean;
+  policyFailed: boolean;
+  rulesFailed: boolean;
+}): string | null {
+  if (!input.accountEntered) return null;
+  if (input.policyFailed && input.rulesFailed) {
+    return "Mailbox policy and privacy rules could not load. Try again.";
+  }
+  if (input.policyFailed) return "Mailbox policy could not load. Try again.";
+  if (input.rulesFailed) return "Privacy rules could not load. Try again.";
+  return null;
+}
+
+export async function retryPrivacyLoad(
+  policy: { isError: boolean; refetch: () => Promise<unknown> },
+  rules: { isError: boolean; refetch: () => Promise<unknown> },
+): Promise<void> {
+  await Promise.all([
+    policy.isError ? policy.refetch() : Promise.resolve(),
+    rules.isError ? rules.refetch() : Promise.resolve(),
+  ]);
+}
+
 export function CommunicationPrivacySettings() {
   const queryClient = useQueryClient();
   const [accountId, setAccountId] = React.useState("");
@@ -63,16 +92,12 @@ export function CommunicationPrivacySettings() {
     if (rulesQuery.data) setRules(rulesQuery.data);
   }, [rulesQuery.data]);
 
-  React.useEffect(() => {
-    if (policyQuery.error || rulesQuery.error) {
-      const error = policyQuery.error || rulesQuery.error;
-      setStatus(
-        friendlyRevenueError(
-          error instanceof Error ? error.message : "Could not load mailbox policy.",
-        ),
-      );
-    }
-  }, [policyQuery.error, rulesQuery.error]);
+  const accountEntered = trimmedAccountId.length > 0;
+  const loadNotice = privacyLoadNotice({
+    accountEntered,
+    policyFailed: policyQuery.isError,
+    rulesFailed: rulesQuery.isError,
+  });
 
   const refresh = React.useCallback(async () => {
     if (!trimmedAccountId) return;
@@ -138,6 +163,10 @@ export function CommunicationPrivacySettings() {
           value={accountId}
         />
       </div>
+
+      {accountEntered && !policy && policyQuery.isPending ? (
+        <p className="settings-inline-notice">Loading mailbox policy…</p>
+      ) : null}
 
       {policy ? (
         <>
@@ -252,6 +281,24 @@ export function CommunicationPrivacySettings() {
             </li>
           ))}
         </ul>
+      ) : accountEntered && rulesQuery.isPending ? (
+        <p className="settings-inline-notice">Loading privacy rules…</p>
+      ) : accountEntered && rulesQuery.isSuccess ? (
+        <p className="settings-inline-notice">{privacyRulesEmptyCopy()}</p>
+      ) : null}
+
+      {loadNotice ? (
+        <div className="settings-row">
+          <p className="settings-inline-notice">{loadNotice}</p>
+          <Button
+            onClick={() => void retryPrivacyLoad(policyQuery, rulesQuery)}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            Try again
+          </Button>
+        </div>
       ) : null}
 
       {status ? <p className="settings-inline-notice">{status}</p> : null}

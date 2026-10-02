@@ -2480,6 +2480,11 @@ export function taskListFailureCopy(): string {
   return "Tasks could not load. Try again.";
 }
 
+/** The company menu can fail while the task list itself loaded. */
+export function taskCompaniesFailureCopy(): string {
+  return "Companies could not load. Try again.";
+}
+
 const TASK_FILTER_LABEL = {
   all: "All tasks",
   today: "Due today",
@@ -2651,8 +2656,13 @@ export function TasksView({
   }, [companyOffset, directoryRows.length, hasMoreCompanies, loadingMoreCompanies, onError]);
 
   React.useEffect(() => {
-    const error = actionsQuery.error ?? relationshipsQuery.error;
-    if (error) onError(errMessage(error, "Could not load tasks."));
+    if (actionsQuery.error) {
+      onError(errMessage(actionsQuery.error, "Could not load tasks."));
+      return;
+    }
+    if (relationshipsQuery.error) {
+      onError(errMessage(relationshipsQuery.error, "Could not load companies."));
+    }
   }, [actionsQuery.error, onError, relationshipsQuery.error]);
   const names = new Map(
     relationships.map((relationship) => [relationship.id, companyName(relationship)]),
@@ -2740,6 +2750,21 @@ export function TasksView({
           </Button>
         </div>
       </div>
+      {relationshipsQuery.isError && !actionsQuery.isError ? (
+        <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+          <p className="text-[13px] text-primary/70">{taskCompaniesFailureCopy()}</p>
+          <Button
+            onClick={() =>
+              void refetchClearingBanner(() => relationshipsQuery.refetch(), onError)
+            }
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            Try again
+          </Button>
+        </div>
+      ) : null}
       {loading ? (
         <div className="p-4">
           <ListSkeleton />

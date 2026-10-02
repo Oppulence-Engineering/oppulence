@@ -33,6 +33,8 @@ const records = vi.hoisted(() => ({
   actionsError: null as Error | null,
   peopleRefetch: vi.fn(async () => undefined),
   actionsRefetch: vi.fn(async () => undefined),
+  relationshipsError: null as Error | null,
+  relationshipsRefetch: vi.fn(async () => ({ isError: false })),
 }));
 
 vi.mock("@/lib/console/console", () => ({
@@ -95,7 +97,10 @@ vi.mock("@/hooks/queries/use-relationships", () => ({
   useRelationships: () => ({
     data: [{ id: "relationship-1", kind: "company", displayName: "Acme" }],
     isPending: false,
-    error: null,
+    isError: records.relationshipsError != null,
+    error: records.relationshipsError,
+    refetch: records.relationshipsRefetch,
+    dataUpdatedAt: 1,
   }),
   usePersons: () => ({
     data: records.peopleError ? undefined : records.people,
@@ -131,6 +136,7 @@ import {
   peopleListFailureCopy,
   noteListFailureCopy,
   taskListFailureCopy,
+  taskCompaniesFailureCopy,
   enrichmentEvidence,
   personEnrichmentLabel,
   personEvidenceProvenance,
@@ -1139,9 +1145,38 @@ describe("task due order", () => {
     expect(source).not.toContain("=== ACTION_QUEUE_PAGE");
     expect(source).toContain("No tasks yet! Create your first");
     expect(taskListFailureCopy()).toBe("Tasks could not load. Try again.");
+    expect(taskCompaniesFailureCopy()).toBe("Companies could not load. Try again.");
     expect(source).toContain("actionsQuery.isError");
+    expect(source).toContain("relationshipsQuery.isError && !actionsQuery.isError");
     expect(source).toContain("taskListFailureCopy()");
+    expect(source).toContain("taskCompaniesFailureCopy()");
+    expect(source).toContain(
+      'onError(errMessage(relationshipsQuery.error, "Could not load companies."))',
+    );
     expect(source).toContain("onOpenCompany(task.relationshipId)");
+  });
+
+  it("keeps the task list when only the company directory failed", async () => {
+    cleanup();
+    records.relationshipsError = new Error("directory down");
+    records.relationshipsRefetch.mockClear();
+    const onError = vi.fn();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <TasksView onError={onError} onNotice={vi.fn()} onOpenCompany={vi.fn()} />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("Call the harbor")).toBeVisible();
+    expect(screen.getByText(taskCompaniesFailureCopy())).toBeVisible();
+    expect(screen.queryByText(taskListFailureCopy())).not.toBeInTheDocument();
+    expect(onError).toHaveBeenCalledWith("directory down");
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(records.relationshipsRefetch).toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledWith("");
+    records.relationshipsError = null;
+    cleanup();
   });
 
   it("opens the company named on a task", async () => {
