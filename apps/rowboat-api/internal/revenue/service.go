@@ -797,6 +797,13 @@ func (s *Service) ListRelationshipsFiltered(
 				relationshipTextBlank(relationship.FieldSummary),
 			))
 		}
+		if strings.Contains("not filled in", needle) {
+			parts = append(parts, relationship.Or(
+				relationshipTextBlank(relationship.FieldAccountDomain),
+				relationshipTextBlank(relationship.FieldPrimaryEmail),
+				relationshipCategoriesBlank(),
+			))
+		}
 		q.Where(relationship.Or(parts...))
 	}
 	rows, err := q.
@@ -1117,6 +1124,27 @@ func relationshipTextBlank(field string) predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
 			b.WriteString(fmt.Sprintf("trim(coalesce(%s, '')) = ''", s.C(field)))
+		}))
+	})
+}
+
+// relationshipCategoriesBlank matches a category cell that reads "Not filled in".
+// A list of blank tags is the same as no list.
+func relationshipCategoriesBlank() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(relationship.FieldCompanyCategories)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(fmt.Sprintf(
+					"NOT EXISTS (SELECT 1 FROM jsonb_array_elements_text(coalesce(%s, '[]'::jsonb)) AS category WHERE trim(category) <> '')",
+					column,
+				))
+				return
+			}
+			b.WriteString(fmt.Sprintf(
+				"NOT EXISTS (SELECT 1 FROM json_each(coalesce(%s, '[]')) WHERE trim(json_each.value) <> '')",
+				column,
+			))
 		}))
 	})
 }

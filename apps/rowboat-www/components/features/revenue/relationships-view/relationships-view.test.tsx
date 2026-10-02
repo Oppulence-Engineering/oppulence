@@ -99,8 +99,9 @@ describe("RelationshipsView", () => {
   it("prints every category on the company row", () => {
     expect(companyCategoriesLabel(["ledger", "atelier"])).toBe("ledger, atelier");
     expect(companyCategoriesLabel(["  packet  "])).toBe("packet");
-    expect(companyCategoriesLabel([])).toBe("—");
-    expect(companyCategoriesLabel(undefined)).toBe("—");
+    expect(companyCategoriesLabel([])).toBe("Not filled in");
+    expect(companyCategoriesLabel(undefined)).toBe("Not filled in");
+    expect(companyCategoriesLabel(["  ", ""])).toBe("Not filled in");
     expect(source).toContain("companyCategoriesLabel(relationship.categories)");
     expect(source).not.toContain("relationship.categories?.[0]");
   });

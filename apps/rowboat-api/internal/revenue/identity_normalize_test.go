@@ -425,6 +425,47 @@ func TestRelationshipSearchFindsTheQuietCompany(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsNotFilledIn(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	blankTags, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Northwind Quiet",
+		AccountDomain: "northwind.example", PrimaryEmail: "ada@northwind.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(blankTags.ID).
+		SetCompanyCategories([]string{"  "}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	filled, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+		AccountDomain: "lumen.example", PrimaryEmail: "ada@lumen.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(filled.ID).
+		SetCompanyCategories([]string{"Logistics"}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Not filled in"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := namesOf(found.Relationships)
+	if len(got) != 2 || got[0] != "Northwind Quiet" || got[1] != "Quill Atelier" {
+		t.Fatalf("not filled in = %v", got)
+	}
+}
+
 func TestRelationshipSearchFindsEngagementAndSentiment(t *testing.T) {
 	f := newFixture(t)
 	declining, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

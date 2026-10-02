@@ -568,7 +568,7 @@ export function companyCategoriesLabel(
   categories: readonly string[] | null | undefined,
 ): string {
   const names = (categories ?? []).map((item) => item.trim()).filter(Boolean);
-  if (names.length === 0) return "—";
+  if (names.length === 0) return "Not filled in";
   return names.join(", ");
 }
 
@@ -1323,7 +1323,7 @@ export function RelationshipsView({
                           <span className="text-primary/65">{relationship.accountDomain}</span>
                         ) : (
                           <Badge className="font-normal text-primary/35" variant="ghost">
-                            —
+                            Not filled in
                           </Badge>
                         )}
                       </TableCell>
