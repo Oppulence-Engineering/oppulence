@@ -959,14 +959,23 @@ func (s *Service) relationshipIntelligenceAt(
 			})
 		}
 	}
+	shownClaimCue := map[string]bool{}
 	for _, claim := range result.Claims {
-		if claim.Kind == "objection" || claim.Kind == "risk" {
-			result.LiveCues = append(result.LiveCues, RelationshipLiveCue{
-				ID: "claim:" + claim.ID, Kind: "unresolved_objection", Title: "Unresolved objection",
-				Detail: claim.Value, Severity: "attention", EvidenceID: claim.ObservationID,
-			})
-			break
+		if claim.Kind != "objection" && claim.Kind != "risk" {
+			continue
 		}
+		if shownClaimCue[claim.Kind] {
+			continue
+		}
+		shownClaimCue[claim.Kind] = true
+		title := "Unresolved objection"
+		if claim.Kind == "risk" {
+			title = "Risk raised in a conversation"
+		}
+		result.LiveCues = append(result.LiveCues, RelationshipLiveCue{
+			ID: "claim:" + claim.ID, Kind: "unresolved_objection", Title: title,
+			Detail: claim.Value, Severity: "attention", EvidenceID: claim.ObservationID,
+		})
 	}
 	if rel.Lifecycle == "renewal" {
 		result.LiveCues = append(result.LiveCues, RelationshipLiveCue{

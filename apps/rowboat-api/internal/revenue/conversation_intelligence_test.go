@@ -141,6 +141,20 @@ func TestConversationEvidenceMaterializesEvidenceActionsReviewDeltaAndCues(t *te
 	if len(intelligence.Delta.Changes) == 0 || len(intelligence.LiveCues) == 0 {
 		t.Fatalf("delta and full-history cue cards must be derived: %#v", intelligence)
 	}
+	for _, cue := range intelligence.LiveCues {
+		if cue.Title == "Unresolved objection" {
+			t.Fatalf("risk claim was titled as an objection: %#v", intelligence.LiveCues)
+		}
+	}
+	foundRiskCue := false
+	for _, cue := range intelligence.LiveCues {
+		if cue.Title == "Risk raised in a conversation" && cue.Detail == "Security review may delay renewal" {
+			foundRiskCue = true
+		}
+	}
+	if !foundRiskCue {
+		t.Fatalf("risk cue missing: %#v", intelligence.LiveCues)
+	}
 
 	var claimReview ConversationReviewItem
 	for _, item := range intelligence.ReviewItems {

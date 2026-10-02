@@ -2011,6 +2011,106 @@ func TestRelationshipSearchFindsTheDisagreement(t *testing.T) {
 	assertCompanyQuery("A stronger source already chose the current value.", "Cedar Mill")
 }
 
+func TestRelationshipSearchFindsSuggestionTitles(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name, lifecycle string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if lifecycle != "" {
+			if _, err := f.client.Relationship.UpdateOneID(row.ID).SetLifecycle(lifecycle).Save(f.ctx); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return row
+	}
+	saveClaim := func(rel *ent.Relationship, kind, value, externalID string) {
+		t.Helper()
+		facts, err := json.Marshal(map[string]any{
+			"conversation_claims": []map[string]any{{
+				"id": externalID, "kind": kind, "value": value,
+			}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(externalID).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(externalID).
+			SetNormalizedFactsJSON(string(facts)).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	quill := makeCompany("Quill Atelier", "")
+	cedar := makeCompany("Cedar Mill", "")
+	harbor := makeCompany("Harbor Ledger", "renewal")
+	saveClaim(quill, "objection", "The price is too high", "claim-quill-objection")
+	saveClaim(cedar, "risk", "Security review may slip", "claim-cedar-risk")
+	intelligence, err := f.svc.RelationshipIntelligenceFor(f.ctx, quill)
+	if err != nil {
+		t.Fatal(err)
+	}
+	objectionSeen := false
+	for _, cue := range intelligence.LiveCues {
+		if cue.Title == "Unresolved objection" && cue.Detail == "The price is too high" {
+			objectionSeen = true
+		}
+		if cue.Title == "Risk raised in a conversation" {
+			t.Fatalf("objection company showed a risk cue: %#v", intelligence.LiveCues)
+		}
+	}
+	if !objectionSeen {
+		t.Fatalf("objection cue missing: %#v", intelligence.LiveCues)
+	}
+	cedarIntelligence, err := f.svc.RelationshipIntelligenceFor(f.ctx, cedar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	riskSeen := false
+	for _, cue := range cedarIntelligence.LiveCues {
+		if cue.Title == "Risk raised in a conversation" && cue.Detail == "Security review may slip" {
+			riskSeen = true
+		}
+		if cue.Title == "Unresolved objection" {
+			t.Fatalf("risk claim was titled as an objection: %#v", cedarIntelligence.LiveCues)
+		}
+	}
+	if !riskSeen {
+		t.Fatalf("risk cue missing: %#v", cedarIntelligence.LiveCues)
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Unresolved objection", "Quill Atelier")
+	assertCompanyQuery("Risk raised in a conversation", "Cedar Mill")
+	assertCompanyQuery("Renewal context", "Harbor Ledger")
+	_ = harbor
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {

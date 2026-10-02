@@ -871,6 +871,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if contradiction := relationshipSheetContradictionMatch(needle); contradiction != nil {
 			parts = append(parts, contradiction)
 		}
+		if suggestion := relationshipSheetSuggestionMatch(needle); suggestion != nil {
+			parts = append(parts, suggestion)
+		}
 		if sheetPhraseMatches("no action is currently recommended", needle) {
 			parts = append(parts, relationship.Not(
 				relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen)),
@@ -1946,6 +1949,65 @@ func writeContradictionSideCount(b *sql.Builder, s *sql.Selector) {
 	b.WriteString("COALESCE(json_array_length(json_extract(")
 	b.WriteString(column)
 	b.WriteString(", '$.sides')), 0)")
+}
+
+// relationshipSheetSuggestionMatch matches suggestion titles the sheet prints
+// from the company stage or from a conversation claim. A risk is not an objection.
+func relationshipSheetSuggestionMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	if sheetPhraseMatches("renewal context", needle) {
+		preds = append(preds, relationship.LifecycleEQ("renewal"))
+	}
+	if sheetPhraseMatches("unresolved objection", needle) {
+		preds = append(preds, relationshipHasConversationClaimKind("objection"))
+	}
+	if sheetPhraseMatches("risk raised in a conversation", needle) {
+		preds = append(preds, relationshipHasConversationClaimKind("risk"))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func relationshipHasConversationClaimKind(kind string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			obs := relationshipobservation.Table
+			facts := "obs." + relationshipobservation.FieldNormalizedFactsJSON
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(obs)
+			b.WriteString(" AS obs WHERE obs.")
+			b.WriteString(relationshipobservation.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("jsonb_typeof(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'conversation_claims') = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'conversation_claims') AS claim WHERE claim->>'kind' = ")
+				b.Arg(kind)
+				b.WriteString(")")
+			} else {
+				b.WriteString("json_valid(")
+				b.WriteString(facts)
+				b.WriteString(") AND json_type(")
+				b.WriteString(facts)
+				b.WriteString(", '$.conversation_claims') = 'array' AND EXISTS (SELECT 1 FROM json_each(")
+				b.WriteString(facts)
+				b.WriteString(", '$.conversation_claims') AS claim WHERE json_extract(claim.value, '$.kind') = ")
+				b.Arg(kind)
+				b.WriteString(")")
+			}
+			b.WriteString(")")
+		}))
+	})
 }
 
 func overdueCommitmentAny(now time.Time) predicate.Commitment {
