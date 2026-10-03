@@ -1614,11 +1614,19 @@ func updateRelationshipSourceStatus(
 			status.DisconnectedAt != nil || status.RevokedAt != nil || len(status.MissingScopes) > 0 {
 			return nil
 		}
+		occurred := input.OccurredAt.UTC()
+		if status.LastObservationAt != nil && status.LastObservationAt.UTC().After(occurred) {
+			occurred = status.LastObservationAt.UTC()
+		}
+		received := input.ReceivedAt.UTC()
+		if status.LastSuccessAt != nil && status.LastSuccessAt.UTC().After(received) {
+			received = status.LastSuccessAt.UTC()
+		}
 		update := status.Update().
-			SetLastSuccessAt(input.ReceivedAt.UTC()).
-			SetLastObservationAt(input.OccurredAt.UTC()).
-			SetLastProviderEventAt(input.OccurredAt.UTC()).
-			SetLastSyncAt(input.ReceivedAt.UTC()).
+			SetLastSuccessAt(received).
+			SetLastObservationAt(occurred).
+			SetLastProviderEventAt(occurred).
+			SetLastSyncAt(received).
 			SetLagSeconds(0).
 			ClearLastError().
 			ClearErrorCode()

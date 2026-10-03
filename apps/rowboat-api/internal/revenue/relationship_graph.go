@@ -705,6 +705,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 					evidenceRefs = append(evidenceRefs, evidence.ID.String())
 					addEdge("supports", "supports", evidenceNodeID, actionNodeID, true, nil, []string{evidence.ID.String()})
 					ensureGraphSourceNode(nodes, sourceNodeID, relationshipID, evidence.Source, "", sourceStatuses, aggregate.AsOf)
+					noteGraphSourceObservation(nodes, sourceNodeID, occurredAt, aggregate.AsOf)
 					addEdge("observed_from", "observed from", evidenceNodeID, sourceNodeID, true, nil, []string{evidence.ID.String()})
 				}
 				actionNode := nodes[actionNodeID]
@@ -730,6 +731,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 				}
 				addEdge("supports", "supports", observationNodeID, relationshipNodeID, true, nil, []string{observation.ID.String()})
 				ensureGraphSourceNode(nodes, sourceNodeID, relationshipID, observation.Source, observation.SourceAccountID, sourceStatuses, aggregate.AsOf)
+				noteGraphSourceObservation(nodes, sourceNodeID, occurredAt, aggregate.AsOf)
 				addEdge("observed_from", "observed from", observationNodeID, sourceNodeID, true, nil, []string{observation.ID.String()})
 			}
 		}
@@ -1002,6 +1004,31 @@ func ensureGraphSourceNode(
 			"missingScopes": status.MissingScopes,
 		}
 	}
+	nodes[nodeID] = node
+}
+
+// A company's meeting row uses that company's newest meeting. A shared source
+// clock would let another company's older meeting make this one look old.
+func noteGraphSourceObservation(
+	nodes map[string]relationshipGraphNodeDTO,
+	nodeID string,
+	occurredAt time.Time,
+	asOf time.Time,
+) {
+	node, ok := nodes[nodeID]
+	if !ok {
+		return
+	}
+	switch node.Status {
+	case "disconnected", "reconnect_required", "revoked", "failed":
+		return
+	}
+	stamp := occurredAt.UTC()
+	if node.OccurredAt != nil && !stamp.After(node.OccurredAt.UTC()) {
+		return
+	}
+	node.OccurredAt = &stamp
+	node.Freshness = graphFreshness(stamp, asOf)
 	nodes[nodeID] = node
 }
 

@@ -944,3 +944,85 @@ func graphCompanyNode(t *testing.T, f *fixture, rel *ent.Relationship) relations
 	t.Fatal("relationship node missing")
 	return relationshipGraphNodeDTO{}
 }
+
+func TestGraphSourceFreshnessFollowsThatCompanysMeeting(t *testing.T) {
+	f := newFixture(t)
+	asOf := time.Now().UTC().Add(time.Minute)
+	f.svc.now = func() time.Time { return asOf }
+	fresh, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quay Fresh", PrimaryEmail: "buyer@quay-fresh.example", AccountDomain: "quay-fresh.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	aged, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quay Aged", PrimaryEmail: "buyer@quay-aged.example", AccountDomain: "quay-aged.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ingest := func(rel *ent.Relationship, text string, when time.Time) {
+		t.Helper()
+		if _, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+			RelationshipID: rel.ID, DisplayName: rel.DisplayName, PrimaryEmail: rel.PrimaryEmail,
+			AccountDomain: rel.AccountDomain, Source: "meeting", ExternalID: "meeting:" + rel.ID.String(),
+			SourceVersion: "1", EventType: "commitment_confirmed", OccurredAt: when, ReceivedAt: when,
+			Summary: text, Facts: map[string]any{
+				"user_confirmed": true, "commitment_text": text, "commitment_direction": "promised_by_them",
+				"evidence_quote": text,
+			},
+		}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ingest(aged, "Send the other note", asOf.Add(-5*24*time.Hour))
+	ingest(fresh, "Send the quay note", asOf.Add(-time.Hour))
+
+	aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{Scope: "portfolio", Depth: 2, AsOf: asOf})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dto := buildRelationshipGraphDTO(aggregate, asOf)
+	freshness := map[string]string{}
+	for _, node := range dto.Nodes {
+		if node.Kind == "source" && node.Source == "meeting" {
+			freshness[node.RelationshipID] = node.Freshness
+		}
+	}
+	if freshness[fresh.ID.String()] != "current" || freshness[aged.ID.String()] != "aging" {
+		t.Fatalf("meeting freshness = %#v", freshness)
+	}
+}
+
+func TestOlderObservationDoesNotRewindSourceClock(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 10, 3, 12, 0, 0, 0, time.UTC)
+	recent := RelationshipObservationInput{Source: "meeting", OccurredAt: now, ReceivedAt: now}
+	if err := updateRelationshipSourceStatus(f.ctx, f.client, ws, f.user, recent); err != nil {
+		t.Fatal(err)
+	}
+	older := recent
+	older.OccurredAt = now.Add(-5 * 24 * time.Hour)
+	older.ReceivedAt = older.OccurredAt
+	if err := updateRelationshipSourceStatus(f.ctx, f.client, ws, f.user, older); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := f.client.RelationshipSourceStatus.Query().All(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, row := range rows {
+		if row.Source != "meeting" || row.LastObservationAt == nil {
+			continue
+		}
+		if row.LastObservationAt.Before(now) {
+			t.Fatalf("source clock rewound to %s", row.LastObservationAt)
+		}
+		return
+	}
+	t.Fatal("meeting source missing")
+}
