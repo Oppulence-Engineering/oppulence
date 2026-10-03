@@ -79,6 +79,20 @@ export function commitmentTimelineStatus(
   return { label: "Open", variant: "amber" };
 }
 
+/**
+ * The company highlight is the same set the commitments list calls open:
+ * still outstanding, and already confirmed. An extraction waiting for review
+ * and a dispute are not that number.
+ */
+export function openCommitmentCount(
+  commitments: readonly { status: string; acceptance?: string | null }[],
+): number {
+  return commitments.filter(
+    (item) =>
+      item.status === "open" && item.acceptance !== "candidate" && item.acceptance !== "disputed",
+  ).length;
+}
+
 /** Promises past the overview preview, in the same words as the company record. */
 export function commitmentPreviewRemainder(hidden: number): string {
   return hidden === 1 ? "Show the other 1 commitment" : `Show the other ${hidden} commitments`;

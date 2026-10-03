@@ -46,6 +46,7 @@ import {
   accountAttentionFromHealth,
   commitmentPreviewRemainder,
   mapCommitmentsToAccountTimeline,
+  openCommitmentCount,
 } from "@/components/features/revenue/account-mission-control-surface/account-mission-control-surface";
 import {
   clearCompanyGraphURL,
@@ -3801,10 +3802,7 @@ export function RelationshipSheet({
                     ],
                     ["People", String(data.participants.length)],
                     ["Email threads", String(data.emailThreads.length)],
-                    [
-                      "Open commitments",
-                      String(data.commitments.filter((item) => item.status === "open").length),
-                    ],
+                    ["Open commitments", String(openCommitmentCount(data.commitments))],
                   ].map(([label, value]) => (
                     <div key={label} className="min-h-24 rounded-none border border-border p-3">
                       <p className="text-[11px] text-primary/40">{label}</p>

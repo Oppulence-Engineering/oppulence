@@ -11,6 +11,7 @@ import {
   commitmentTimelineLabel,
   commitmentTimelineStatus,
   mapCommitmentsToAccountTimeline,
+  openCommitmentCount,
 } from "./account-mission-control-surface";
 import type { RelationshipCommitment } from "@/lib/revenue/types";
 
@@ -85,6 +86,18 @@ describe("AccountMissionControlSurface", () => {
     );
     expect(row?.detail).toBe("Send the waived note.");
     expect(row?.statusLabel).toBe("Waived");
+  });
+
+  it("counts confirmed open promises and leaves reviews and disputes out", () => {
+    expect(
+      openCommitmentCount([
+        promise({ status: "open", acceptance: "accepted" }),
+        promise({ id: "guess", status: "open", acceptance: "candidate" }),
+        promise({ id: "fight", status: "open", acceptance: "disputed" }),
+        promise({ id: "done", status: "waived", acceptance: "accepted" }),
+        promise({ id: "miss", status: "missed", acceptance: "accepted" }),
+      ]),
+    ).toBe(1);
   });
 
   it("names a mutual promise as mutual", () => {
