@@ -26,12 +26,12 @@ import type { RelationshipAttentionItem } from "@/lib/revenue/types";
 
 const COLUMNS = [
   { name: "Company", icon: TypeText },
-  { name: "Health", icon: TagIcon },
+  { name: "Urgency", icon: TagIcon },
   { name: "Score", icon: TypeNumber },
   { name: "Why now", icon: TypeText },
 ] as const;
 
-function healthBadge(item: RelationshipAttentionItem) {
+function urgencyBadge(item: RelationshipAttentionItem) {
   const band = attentionBand(item);
   if (band === "at_risk") return { label: "At risk", variant: "red" as const };
   if (band === "watch") return { label: "Watch", variant: "amber" as const };
@@ -40,7 +40,7 @@ function healthBadge(item: RelationshipAttentionItem) {
 
 export type AttentionBand = "all" | "at_risk" | "watch" | "stable";
 
-/** The health badge and the band filter share one reading of urgency. */
+/** The urgency badge and the band filter share one reading of urgency. */
 export function attentionBand(item: RelationshipAttentionItem): Exclude<AttentionBand, "all"> {
   if (item.urgencyBand === "critical" || item.urgencyBand === "high") return "at_risk";
   if (item.urgencyBand === "normal") return "watch";
@@ -272,7 +272,7 @@ export function AttentionQueueSurface({
                 </tr>
               ) : (
                 shown.map((item) => {
-                  const health = healthBadge(item);
+                  const health = urgencyBadge(item);
                   const isSelected = selected?.id === item.id;
                   return (
                     <tr

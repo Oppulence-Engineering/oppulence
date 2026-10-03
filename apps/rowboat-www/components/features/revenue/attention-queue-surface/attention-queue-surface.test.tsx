@@ -63,6 +63,9 @@ describe("AttentionQueueSurface", () => {
     expect(
       screen.getByText("No reply in 14 days", { selector: "[data-slot=attention-reason]" }),
     ).toBeVisible();
+    expect(screen.getByRole("columnheader", { name: "Urgency" })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "Health" })).not.toBeInTheDocument();
+    expect(screen.getAllByText("At risk").length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "Filter" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Open items" })).not.toBeInTheDocument();
   });
