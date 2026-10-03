@@ -42,6 +42,7 @@ import {
   ListRefreshFailure,
   listRefreshFailureCopy,
   ListSkeleton,
+  priorityTone,
   refetchClearingBanner,
 } from "@/components/features/revenue/shared/shared";
 import { cn } from "@/lib/utils";
@@ -361,10 +362,10 @@ export function ImpactView({
                       {a.reason}
                     </Label>
                     <Badge
-                      className="shrink-0 tabular-nums font-normal text-primary/40"
+                      className="shrink-0 font-normal text-primary/40"
                       variant="secondary"
                     >
-                      {a.priority}
+                      {priorityTone(a.priority).label}
                     </Badge>
                   </li>
                 );

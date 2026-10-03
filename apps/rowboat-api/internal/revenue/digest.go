@@ -99,6 +99,18 @@ var detectorDisplay = map[string]string{
 	"manual":                    "Added by you",
 }
 
+// digestPriorityLabel uses the same bands as the recovery card. A raw score
+// in the email read as a different fact from the High shown in the app.
+func digestPriorityLabel(score int) string {
+	if score >= 70 {
+		return "High"
+	}
+	if score >= 40 {
+		return "Medium"
+	}
+	return "Low"
+}
+
 // detectorLabel is the name a digest shows. A missing map entry used to
 // send an empty badge, so a due promise and a conversation pack had no signal.
 func detectorLabel(key string) string {
@@ -137,13 +149,13 @@ func RenderDigest(d *Digest, appURL string) (subject, htmlBody, textBody string)
 		}
 		h.WriteString(`<div style="border:1px solid #eee;border-radius:4px;padding:12px;margin-bottom:8px">`)
 		fmt.Fprintf(&h,
-			`<div style="display:flex;justify-content:space-between"><strong style="font-size:14px">%s</strong><span style="color:#999;font-size:12px">priority %d</span></div>`,
-			html.EscapeString(recipient), a.Priority)
+			`<div style="display:flex;justify-content:space-between"><strong style="font-size:14px">%s</strong><span style="color:#999;font-size:12px">%s</span></div>`,
+			html.EscapeString(recipient), html.EscapeString(digestPriorityLabel(a.Priority)))
 		fmt.Fprintf(&h, `<div style="color:#888;font-size:12px;margin:2px 0 4px">%s</div>`, html.EscapeString(a.Detector))
 		fmt.Fprintf(&h, `<div style="color:#444;font-size:13px">%s</div>`, html.EscapeString(a.Reason))
 		h.WriteString(`</div>`)
 
-		fmt.Fprintf(&t, "• [%d] %s — %s\n  %s\n", a.Priority, recipient, a.Detector, a.Reason)
+		fmt.Fprintf(&t, "• %s — %s (%s)\n  %s\n", recipient, a.Detector, digestPriorityLabel(a.Priority), a.Reason)
 	}
 
 	fmt.Fprintf(&h,

@@ -30,6 +30,18 @@ func (f *fakeEmail) Send(_ context.Context, m email.Message) error {
 }
 func (f *fakeEmail) Enabled() bool { return f.enabled }
 
+func TestDigestPriorityLabelMatchesRecoveryBands(t *testing.T) {
+	if digestPriorityLabel(80) != "High" || digestPriorityLabel(70) != "High" {
+		t.Fatal("70 and above are High")
+	}
+	if digestPriorityLabel(40) != "Medium" || digestPriorityLabel(69) != "Medium" {
+		t.Fatal("40 through 69 are Medium")
+	}
+	if digestPriorityLabel(0) != "Low" || digestPriorityLabel(39) != "Low" {
+		t.Fatal("below 40 is Low")
+	}
+}
+
 func TestDetectorLabelNamesEveryActionDetector(t *testing.T) {
 	for _, key := range []string{
 		"requested_follow_up_due",
@@ -83,6 +95,12 @@ func TestDigestComposeAndRender(t *testing.T) {
 	}
 	if !strings.Contains(textBody, "buyer@example.com") {
 		t.Fatalf("text body missing recipient: %q", textBody)
+	}
+	if !strings.Contains(htmlBody, "High") || strings.Contains(htmlBody, "priority 80") {
+		t.Fatalf("html should name the band, got %q", htmlBody)
+	}
+	if !strings.Contains(textBody, "(High)") {
+		t.Fatalf("text should name the band, got %q", textBody)
 	}
 	// HTML-escaping: a crafted recipient must not inject markup.
 	dg.Top[0].Recipient = `<script>x</script>@evil.com`

@@ -39,6 +39,8 @@ describe("ImpactView", () => {
     expect(source).toContain("attentionReasonLabel(risk.reason)");
     expect(source).toContain("attentionReasonLabel(d.detector)");
     expect(source).toContain("digestSignalLabel(a.detector)");
+    expect(source).toContain("priorityTone(a.priority).label");
+    expect(source).not.toContain("{a.priority}");
     expect(source).toContain("recoveryOpenCount(data.open, taskCount)");
     expect(source).toContain("data.openTasks");
     expect(source).toContain("data.atRiskRelationships");
