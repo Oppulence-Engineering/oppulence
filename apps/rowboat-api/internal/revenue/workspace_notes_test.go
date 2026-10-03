@@ -291,6 +291,45 @@ func TestListWorkspaceNotesKeepsTheFirstWriteAfterALaterEdit(t *testing.T) {
 	}
 }
 
+func TestListWorkspaceNotesNamesABlankTitleLikeTheCard(t *testing.T) {
+	f := newFixture(t)
+	company, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Blank Note Co", AccountDomain: "blank-note.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	at := time.Date(2026, 9, 8, 12, 0, 0, 0, time.UTC)
+	if _, err := f.svc.IngestRelationshipObservationCandidates(f.ctx, f.user, []RelationshipObservationInput{
+		{
+			RelationshipID: company.ID, Source: "desktop_note", ExternalID: "blank-note",
+			EventType: "note", OccurredAt: at, Summary: "   ",
+			Facts: map[string]any{"noteId": "blank-note", "title": "   ", "body": "   "},
+		},
+		{
+			RelationshipID: company.ID, Source: "desktop_note", ExternalID: "summary-note",
+			EventType: "note", OccurredAt: at.Add(time.Hour), Summary: "  From the summary  ",
+			Facts: map[string]any{"noteId": "summary-note", "title": "  ", "body": "Kept"},
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	page, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 10, 0, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(page.Notes) != 2 {
+		t.Fatalf("notes = %+v", page.Notes)
+	}
+	if page.Notes[0].Title != "From the summary" || page.Notes[0].Body != "Kept" {
+		t.Fatalf("summary note = %+v", page.Notes[0])
+	}
+	if page.Notes[1].Title != "Untitled note" || page.Notes[1].Body != "   " {
+		t.Fatalf("blank note = %+v, want the card fallback", page.Notes[1])
+	}
+}
+
 func TestWorkspaceNotesRouteIsMounted(t *testing.T) {
 	router := chi.NewRouter()
 	NewHandler(nil, zap.NewNop()).Mount(router)

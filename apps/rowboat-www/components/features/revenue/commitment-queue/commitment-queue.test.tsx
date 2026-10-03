@@ -16,6 +16,7 @@ import {
   formatMissingEvidence,
   missingEvidenceLabel,
   REGISTER_VIEWS,
+  registerCompanyLabel,
   registerPartyLabels,
   registerCountLabel,
   registerEmptyAccountsDetail,
@@ -131,6 +132,12 @@ describe("CommitmentQueue", () => {
   });
 
   it("names both sides of a mutual promise", async () => {
+    expect(registerCompanyLabel("  ")).toBe("Unknown company");
+    expect(registerCompanyLabel("Acme")).toBe("Acme");
+    expect(registerPartyLabels({ direction: "promised_by_me", relationshipName: "   " })).toEqual({
+      owner: "You",
+      counterparty: "Unknown company",
+    });
     expect(registerPartyLabels({ direction: "mutual", relationshipName: "Acme" })).toEqual({
       owner: "You and Acme",
       counterparty: "You and Acme",

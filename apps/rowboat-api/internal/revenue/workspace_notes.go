@@ -329,7 +329,7 @@ func workspaceNoteFromObservation(row *ent.RelationshipObservation, company *ent
 		title = strings.TrimSpace(row.Summary)
 	}
 	if title == "" {
-		title = "Untitled"
+		title = "Untitled note"
 	}
 	body, _ := facts["body"].(string)
 	note := WorkspaceNote{

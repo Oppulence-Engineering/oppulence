@@ -194,6 +194,25 @@ function useNoteAuthor() {
   return { label, mark: initials(label) };
 }
 
+/** A blank title and the old "Untitled" fallback are the same note. */
+export function noteTitleLabel(title?: string | null): string {
+  const trimmed = title?.trim() ?? "";
+  if (!trimmed || trimmed === "Untitled") return "Untitled note";
+  return trimmed;
+}
+
+/** The editor starts empty when the title is only the fallback. */
+export function noteEditorTitle(title?: string | null): string {
+  const label = noteTitleLabel(title);
+  return label === "Untitled note" ? "" : label;
+}
+
+/** A blank body is the same sentence on the note card. */
+export function noteBodyPreview(body?: string | null): string {
+  const trimmed = body?.trim() ?? "";
+  return trimmed || "This note has no content.";
+}
+
 const notePlugins = [
   createPlatePlugin({ key: "bold", node: { isLeaf: true }, render: { as: "strong" } }),
   createPlatePlugin({ key: "italic", node: { isLeaf: true }, render: { as: "em" } }),
@@ -1820,7 +1839,7 @@ export function NotesView({
                       variant="outline"
                     >
                       <BookmarkSimple weight="fill" />
-                      <span className="truncate">{note.title || "Untitled note"}</span>
+                      <span className="truncate">{noteTitleLabel(note.title)}</span>
                     </Button>
                   ))}
                 </div>
@@ -1924,10 +1943,10 @@ export function NotesView({
                         ) : null}
                       </div>
                       <CardTitle className="mt-3 text-[15px] text-primary">
-                        {note.title || "Untitled note"}
+                        {noteTitleLabel(note.title)}
                       </CardTitle>
                       <CardDescription className="line-clamp-2 text-[13px]">
-                        {note.body || "This note has no content."}
+                        {noteBodyPreview(note.body)}
                       </CardDescription>
                     </CardHeader>
                     <CardFooter className="flex h-10 items-center justify-between border-t px-4 text-[12px] text-primary/50">
@@ -1948,8 +1967,8 @@ export function NotesView({
                       <Button
                         aria-label={
                           favoriteIds.has(note.externalId)
-                            ? `Remove ${note.title} from favorites`
-                            : `Add ${note.title} to favorites`
+                            ? `Remove ${noteTitleLabel(note.title)} from favorites`
+                            : `Add ${noteTitleLabel(note.title)} to favorites`
                         }
                         disabled={favoriteMutation.isPending}
                         onClick={(event) => {
@@ -2167,7 +2186,7 @@ function NoteDialog({
 }) {
   const noteId = React.useRef(note?.externalId || crypto.randomUUID()).current;
   const [title, setTitle] = React.useState(
-    note?.title === "Untitled note" ? "" : note?.title || template?.payload.title || "",
+    note ? noteEditorTitle(note.title) : template?.payload.title || "",
   );
   // A new note is not already about the first company. Autosave would file
   // it there before anyone chose.

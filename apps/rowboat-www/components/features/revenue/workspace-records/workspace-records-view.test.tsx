@@ -1129,6 +1129,11 @@ import {
   groupWorkspaceNotes,
   plateText,
 } from "@/lib/revenue/revenue-records";
+import {
+  noteBodyPreview,
+  noteEditorTitle,
+  noteTitleLabel,
+} from "@/components/features/revenue/workspace-records/workspace-records-view";
 import { workspaceNoteActivityLabel } from "@/lib/revenue/revenue";
 import type { RelationshipObservation, RevenueRelationship } from "@/lib/revenue/types";
 
@@ -1204,6 +1209,42 @@ describe("workspace record notes", () => {
       ],
     );
     expect(notes[0]?.relationshipName).toBe("Northwind");
+  });
+
+  it("names a blank note the same way the card does", () => {
+    const notes = collapseWorkspaceNotes(
+      [relationship],
+      [
+        [
+          observation("event-blank", "2026-09-06T12:00:00Z", "note", {
+            noteId: "note-blank",
+            title: "   ",
+            body: "   ",
+          }),
+          observation("event-legacy", "2026-09-07T12:00:00Z", "note", {
+            noteId: "note-legacy",
+            title: "Untitled",
+          }),
+        ],
+      ],
+    );
+    expect(notes.map((note) => note.title)).toEqual(["Untitled", "Untitled note"]);
+    expect(noteTitleLabel("   ")).toBe("Untitled note");
+    expect(noteTitleLabel("Untitled")).toBe("Untitled note");
+    expect(noteTitleLabel("Harbor packet")).toBe("Harbor packet");
+    expect(noteEditorTitle("Untitled")).toBe("");
+    expect(noteEditorTitle("Untitled note")).toBe("");
+    expect(noteEditorTitle("Harbor packet")).toBe("Harbor packet");
+    expect(noteBodyPreview("   ")).toBe("This note has no content.");
+    expect(noteBodyPreview("Harbor packet")).toBe("Harbor packet");
+    const viewSource = fs.readFileSync(
+      path.join(import.meta.dirname, "workspace-records-view.tsx"),
+      "utf8",
+    );
+    expect(viewSource).toContain("noteTitleLabel(note.title)");
+    expect(viewSource).toContain("noteBodyPreview(note.body)");
+    expect(viewSource).not.toContain('note.title || "Untitled note"');
+    expect(viewSource).not.toContain('note.body || "This note has no content."');
   });
 
   it("keeps Plate blocks readable in note previews", () => {

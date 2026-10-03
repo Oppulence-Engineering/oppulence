@@ -273,6 +273,11 @@ function nextAction(
   return "Watch connected sources for fulfillment or a reply.";
 }
 
+/** The promise row and the parties use one company name. Spaces are not a name. */
+export function registerCompanyLabel(name?: string | null): string {
+  return name?.trim() || "Unknown company";
+}
+
 /**
  * A mutual promise has no single promiser. Without a named person, the
  * register used to say the company promised it to the company.
@@ -284,7 +289,7 @@ export function registerPartyLabels(entry: {
   beneficiaryParticipantRef?: string;
   counterpartyParticipantRef?: string;
 }): { owner: string; counterparty: string } {
-  const relationshipName = entry.relationshipName?.trim() || "Unknown company";
+  const relationshipName = registerCompanyLabel(entry.relationshipName);
   const namedOwner = entry.ownerParticipantRef?.trim() || "";
   const namedBeneficiary = entry.beneficiaryParticipantRef?.trim() || "";
   const namedCounterparty = entry.counterpartyParticipantRef?.trim() || "";
@@ -306,7 +311,7 @@ export function registerPartyLabels(entry: {
 function toQueueItems(entries: RegisterEntry[], now = new Date()): CommitmentQueueItem[] {
   return entries
     .map((entry): CommitmentQueueItem => {
-      const relationshipName = entry.relationshipName || "Unknown company";
+      const relationshipName = registerCompanyLabel(entry.relationshipName);
       const { owner, counterparty } = registerPartyLabels(entry);
       const due = entry.dueAt ? new Date(entry.dueAt).getTime() : undefined;
       const closed = ["met", "waived", "cancelled", "superseded"].includes(entry.state);

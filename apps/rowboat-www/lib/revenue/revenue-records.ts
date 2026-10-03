@@ -131,9 +131,11 @@ export function collapseWorkspaceNotes(
       const noteId = String(observation.normalizedFacts.noteId || observation.externalId);
       const current = latest.get(noteId);
       if (current && current.occurredAt >= observation.occurredAt) return;
+      const storedTitle = String(observation.normalizedFacts.title ?? "").trim();
+      const summaryTitle = String(observation.summary ?? "").trim();
       latest.set(noteId, {
         externalId: noteId,
-        title: String(observation.normalizedFacts.title || observation.summary || "Untitled"),
+        title: storedTitle || summaryTitle || "Untitled note",
         body: String(observation.normalizedFacts.body || ""),
         content: observation.normalizedFacts.content,
         meetingLinked: Boolean(observation.normalizedFacts.meetingLinked),
