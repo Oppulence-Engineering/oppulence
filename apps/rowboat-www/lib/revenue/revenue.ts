@@ -1151,6 +1151,15 @@ export function sharedPlanVersionLabel(version: number): string {
   return `Version ${number}`;
 }
 
+/**
+ * The page removes the token from the address as soon as it is read. A second
+ * pass, including the development double render, still has the token.
+ */
+export function planResponseToken(hash: string, remembered: string): string {
+  const next = hash.replace(/^#/, "").trim();
+  return next || remembered.trim();
+}
+
 /** A ranking part is a stored slug. The review sheet names the factor. */
 export function priorityComponentLabel(key: string): string {
   const known = PRIORITY_COMPONENT_LABELS[key];

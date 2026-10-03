@@ -28,6 +28,7 @@ import {
   listScans,
   relationshipSourceHealth,
   semanticSearch,
+  planResponseToken,
   sharedPlanOwnerLabel,
   sharedPlanVersionLabel,
 } from "@/lib/revenue/revenue";
@@ -570,12 +571,17 @@ it("names a shared plan without the stored hash or a redacted owner", () => {
   expect(sharedPlanOwnerLabel("jordan@northpier.example")).toBe("jordan@northpier.example");
   expect(sharedPlanVersionLabel(2)).toBe("Version 2");
   expect(sharedPlanVersionLabel(0)).toBe("Version 1");
+  expect(planResponseToken("#response-token", "")).toBe("response-token");
+  expect(planResponseToken("", "response-token")).toBe("response-token");
+  expect(planResponseToken("#", "response-token")).toBe("response-token");
+  expect(planResponseToken("", "")).toBe("");
   const page = fs.readFileSync(
     path.join(import.meta.dirname, "../../app/plan-response/page.tsx"),
     "utf8",
   );
   expect(page).toContain("sharedPlanVersionLabel(plan.currentRevision.version)");
   expect(page).toContain("sharedPlanOwnerLabel(item.ownerParticipantRef)");
+  expect(page).toContain("planResponseToken(window.location.hash, rememberedToken.current)");
   expect(page).not.toContain("plan.currentRevision.revisionHash");
   expect(page).not.toContain("Owner: {item.ownerParticipantRef}");
   expect(page).not.toContain("Opening the scoped plan");

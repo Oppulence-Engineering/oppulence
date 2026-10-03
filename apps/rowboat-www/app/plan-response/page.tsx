@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@oppulence/ui/components/button";
 import { Input } from "@oppulence/ui/components/input";
 
-import { sharedPlanOwnerLabel, sharedPlanVersionLabel } from "@/lib/revenue/revenue";
+import {
+  planResponseToken,
+  sharedPlanOwnerLabel,
+  sharedPlanVersionLabel,
+} from "@/lib/revenue/revenue";
 
 type PublicPlan = {
   planId: string;
@@ -42,20 +46,30 @@ export default function PlanResponsePage() {
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const rememberedToken = useRef("");
 
   useEffect(() => {
-    const nextToken = window.location.hash.slice(1).trim();
+    const nextToken = planResponseToken(window.location.hash, rememberedToken.current);
     window.history.replaceState(null, "", window.location.pathname);
     if (!nextToken) {
       setError("This plan link is missing its private response token.");
       return;
     }
+    rememberedToken.current = nextToken;
     setToken(nextToken);
+    setError("");
+    let cancelled = false;
     void planCall(nextToken)
-      .then((body) => setPlan(body.plan as PublicPlan))
-      .catch((cause) =>
-        setError(cause instanceof Error ? cause.message : "The plan is unavailable."),
-      );
+      .then((body) => {
+        if (!cancelled) setPlan(body.plan as PublicPlan);
+      })
+      .catch((cause) => {
+        if (cancelled) return;
+        setError(cause instanceof Error ? cause.message : "The plan is unavailable.");
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const respond = async (kind: "confirm" | "blocked" | "completed" | "comment") => {
