@@ -315,7 +315,9 @@ func personEvidenceRecordedHere() predicate.Person {
 }
 
 // relativeLabelWindow is the timestamp range that relativeTime prints as this
-// phrase. "3 days ago" is the Last interaction cell, not a stored string.
+// phrase. "3 days ago" and "3 days from now" are the Last interaction cell,
+// not a stored string. A meeting that has not happened yet still lands in
+// that cell, so the future phrase has to find the same row.
 func relativeLabelWindow(needle string, now time.Time) (relativeWindow, bool) {
 	past := strings.HasSuffix(needle, " ago")
 	future := strings.HasSuffix(needle, " from now")
@@ -363,7 +365,14 @@ func relativeLabelWindow(needle string, now time.Time) (relativeWindow, bool) {
 		return relativeWindow{}, false
 	}
 	if future {
-		return relativeWindow{after: now.Add(minAbs).Add(-time.Nanosecond), until: now.Add(maxAbs)}, false
+		// The present itself reads "1 min ago". A future phrase starts after now
+		// when the bucket includes the present, and the far edge belongs to the
+		// next phrase: 3.5 days rounds to "4 days from now".
+		after := now.Add(minAbs)
+		if minAbs > 0 {
+			after = after.Add(-time.Nanosecond)
+		}
+		return relativeWindow{after: after, until: now.Add(maxAbs).Add(-time.Nanosecond)}, true
 	}
 	return relativeWindow{after: now.Add(-maxAbs), until: now.Add(-minAbs)}, true
 }
@@ -394,8 +403,10 @@ func relativeMax(base string) int {
 	}
 }
 
-// relativeWindow is exclusive on the older side and inclusive on the newer
-// side for a past label. Callers use GT(after) and LTE(until).
+// relativeWindow is the open-closed range callers compare with GT(after) and
+// LTE(until). A past label is exclusive on the older side and inclusive on
+// the newer side. A future label keeps the near edge and leaves the far edge
+// for the next phrase, which is what relativeTime prints.
 type relativeWindow struct {
 	after time.Time
 	until time.Time

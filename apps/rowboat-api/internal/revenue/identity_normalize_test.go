@@ -1624,6 +1624,46 @@ func TestRelationshipSearchFindsTheLastInteraction(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsAFutureLastInteraction(t *testing.T) {
+	f := newFixture(t)
+	ahead, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(ahead.ID).
+		SetLastTouchAt(time.Now().Add(3*24*time.Hour + time.Hour)).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	behind, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(behind.ID).
+		SetLastTouchAt(time.Now().Add(-10 * 24 * time.Hour)).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "3 days from now"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(found.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
+		t.Fatalf("3 days from now = %v", got)
+	}
+	past, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "3 days ago"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(past.Relationships); len(got) != 0 {
+		t.Fatalf("3 days ago = %v", got)
+	}
+}
+
 func TestRelationshipSearchFindsTheQuietCompany(t *testing.T) {
 	f := newFixture(t)
 	quiet, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

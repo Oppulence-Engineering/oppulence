@@ -993,6 +993,62 @@ func TestPersonSearchFindsTheLastInteraction(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsAFutureLastInteraction(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ahead := time.Now().Add(3*24*time.Hour + time.Hour)
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Casey Quinn").
+		SetLastInteractionAt(ahead).
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Morgan Lee").
+		SetLastInteractionAt(time.Now().Add(-10 * 24 * time.Hour)).
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "3 days from now"})
+	if err != nil || found == nil || len(found.Persons) != 1 || found.Persons[0].DisplayName != "Casey Quinn" {
+		t.Fatalf("3 days from now = %+v err=%v", found, err)
+	}
+}
+
+func TestRelativeLabelWindowKeepsAFuturePhraseWithTheNextBucket(t *testing.T) {
+	now := time.Date(2026, 10, 2, 12, 0, 0, 0, time.UTC)
+	window, ok := relativeLabelWindow("3 days from now", now)
+	if !ok {
+		t.Fatal("3 days from now")
+	}
+	inside := now.Add(3*24*time.Hour + time.Hour)
+	boundary := now.Add(3*24*time.Hour + 12*time.Hour)
+	if !inside.After(window.after) || inside.After(window.until) {
+		t.Fatalf("inside %s not in (%s, %s]", inside, window.after, window.until)
+	}
+	if !boundary.After(window.until) {
+		t.Fatalf("3.5 days %s still in 3-day window until %s", boundary, window.until)
+	}
+	next, ok := relativeLabelWindow("4 days from now", now)
+	if !ok {
+		t.Fatal("4 days from now")
+	}
+	if !boundary.After(next.after) || boundary.After(next.until) {
+		t.Fatalf("3.5 days %s not in 4-day window (%s, %s]", boundary, next.after, next.until)
+	}
+	ago, ok := relativeLabelWindow("3 days ago", now)
+	if !ok || !inside.After(ago.until) {
+		t.Fatalf("future instant matched ago window until %s ok=%v", ago.until, ok)
+	}
+}
+
 func TestPersonSearchFindsTheSheetEvidence(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
