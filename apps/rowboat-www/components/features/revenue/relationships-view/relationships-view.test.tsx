@@ -725,8 +725,12 @@ describe("RelationshipsView", () => {
     expect(completenessProductLabel("partial")).toBe("Some details are still missing");
     expect(completenessProductLabel("complete")).toBe("Details are current");
     expect(completenessProductLabel("custom_status")).toBe("Custom Status");
-    expect(identityReviewBlockCopy(1)).toBe("1 identity review blocks acting.");
-    expect(identityReviewBlockCopy(2)).toBe("2 identity reviews block acting.");
+    expect(identityReviewBlockCopy(1)).toBe(
+      "1 possible duplicate must be reviewed before you act.",
+    );
+    expect(identityReviewBlockCopy(2)).toBe(
+      "2 possible duplicates must be reviewed before you act.",
+    );
     expect(source).toContain("identityReviewBlockCopy(model.completeness.unresolvedIdentityCount)");
     expect(detailSourceLabel("ai_inference", true)).toBe("Suggested");
     expect(detailSourceLabel("external_research", true)).toBe("Public research");
@@ -1025,6 +1029,8 @@ describe("RelationshipsView", () => {
     expect(identityImpactLabel("observations", 2)).toBe("2 recorded events");
     expect(identityImpactLabel("participants", 1)).toBe("1 person");
     expect(identityImpactLabel("evidence", 2)).toBe("2 supporting records");
+    expect(identityImpactLabel("commitments", 1)).toBe("1 promise");
+    expect(identityImpactLabel("commitments", 4)).toBe("4 promises");
     expect(identityDecisionLabel("keep_separate")).toBe("Keep separate");
     expect(identityDecisionLabel("move_evidence")).toBe("Move the evidence");
     expect(identityDecisionLabel("defer")).toBe("Decide later");

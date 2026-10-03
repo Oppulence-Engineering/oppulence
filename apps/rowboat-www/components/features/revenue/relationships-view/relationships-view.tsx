@@ -1887,7 +1887,7 @@ export function identityImpactLabel(kind: string, count: number): string {
     case "participants":
       return noun("person", "people");
     case "commitments":
-      return noun("commitment", "commitments");
+      return noun("promise", "promises");
     case "actions":
       return noun("action", "actions");
     case "evidence":
@@ -2071,10 +2071,11 @@ export function completenessProductLabel(status: string): string {
   return labels[status] ?? relationshipLabel(status);
 }
 
-/** One pending identity review blocks acting. Several reviews block acting. */
+/** A possible duplicate blocks acting until someone reviews it. */
 export function identityReviewBlockCopy(count: number): string {
-  if (count === 1) return "1 identity review blocks acting.";
-  return `${count} identity reviews block acting.`;
+  const total = Number.isFinite(count) ? Math.max(0, Math.round(count)) : 0;
+  if (total === 1) return "1 possible duplicate must be reviewed before you act.";
+  return `${total} possible duplicates must be reviewed before you act.`;
 }
 
 /**

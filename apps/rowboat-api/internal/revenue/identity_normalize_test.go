@@ -843,6 +843,7 @@ func TestRelationshipSearchFindsTheCompletenessHeading(t *testing.T) {
 	assertCompanyQuery("Needs a review before you act", "Lumen Packet", "Harbor Ledger")
 	assertCompanyQuery("Identity review is required before acting on this relationship", "Lumen Packet", "Harbor Ledger")
 	assertCompanyQuery("1 identity review blocks acting", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("1 possible duplicate must be reviewed before you act", "Lumen Packet", "Harbor Ledger")
 	assertCompanyQuery("Details are current")
 }
 

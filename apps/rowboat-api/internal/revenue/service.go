@@ -3532,12 +3532,21 @@ func relationshipSheetCompletenessMatch(needle string) predicate.Relationship {
 		preds = append(preds, relationshipHasDeadProjection(now))
 	}
 	for n := 1; n <= 20; n++ {
-		phrase := fmt.Sprintf("%d identity reviews block acting.", n)
-		if n == 1 {
-			phrase = "1 identity review blocks acting."
+		phrases := []string{
+			fmt.Sprintf("%d identity reviews block acting.", n),
+			fmt.Sprintf("%d possible duplicates must be reviewed before you act.", n),
 		}
-		if sheetPhraseMatches(phrase, needle) {
-			preds = append(preds, relationshipIdentityReviewCount(n))
+		if n == 1 {
+			phrases = []string{
+				"1 identity review blocks acting.",
+				"1 possible duplicate must be reviewed before you act.",
+			}
+		}
+		for _, phrase := range phrases {
+			if sheetPhraseMatches(phrase, needle) {
+				preds = append(preds, relationshipIdentityReviewCount(n))
+				break
+			}
 		}
 	}
 	switch len(preds) {
