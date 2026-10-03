@@ -100,12 +100,12 @@ func (s *Service) OpenPromisesReport(
 		item := ReportItem{
 			CommitmentID: row.ID.String(),
 			Direction:    row.Direction,
-			Text:         row.Text,
+			Text:         strings.TrimSpace(row.Text),
 			State:        commitmentRegisterState(row, now),
 			DueAt:        row.DueAt,
 			DuePhrase:    row.DuePhrase,
 			Owner:        row.OwnerParticipantRef,
-			SourceQuote:  row.SourcePhrase,
+			SourceQuote:  strings.TrimSpace(row.SourcePhrase),
 		}
 		if rel, relErr := row.Edges.RelationshipOrErr(); relErr == nil && rel != nil {
 			item.Account = reportAccountTitle(rel)
@@ -114,10 +114,23 @@ func (s *Service) OpenPromisesReport(
 			item.Account = "Unattributed"
 		}
 		if evidences, evidenceErr := row.Edges.EvidencesOrErr(); evidenceErr == nil && len(evidences) > 0 {
-			evidence := evidences[0]
-			item.SourceQuote = evidence.Excerpt
-			item.SourceURI = evidence.SourceURI
-			item.OccurredAt = &evidence.OccurredAt
+			// Evidences are oldest first. A blank excerpt is not a citation,
+			// so the report keeps walking until it finds the sentence. The
+			// source link stays with that sentence. If every excerpt is blank,
+			// the promise's own phrase remains and the first row still supplies
+			// the link.
+			cited := evidences[0]
+			for _, evidence := range evidences {
+				if strings.TrimSpace(evidence.Excerpt) != "" {
+					cited = evidence
+					break
+				}
+			}
+			if excerpt := strings.TrimSpace(cited.Excerpt); excerpt != "" {
+				item.SourceQuote = excerpt
+			}
+			item.SourceURI = cited.SourceURI
+			item.OccurredAt = &cited.OccurredAt
 		}
 		report.ByAccount[item.Account]++
 		switch row.Direction {

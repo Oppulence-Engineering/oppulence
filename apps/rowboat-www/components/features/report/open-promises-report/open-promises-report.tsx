@@ -523,6 +523,11 @@ function ScanningStep({
   );
 }
 
+/** A blank excerpt is not a citation. Spaces are not a sentence. */
+export function reportSourceQuote(quote?: string | null): string {
+  return quote?.trim() ?? "";
+}
+
 function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string }) {
   const [downloading, setDownloading] = React.useState(false);
   const [downloadError, setDownloadError] = React.useState<string | null>(null);
@@ -614,9 +619,9 @@ function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string
             </div>
             <p className="mt-1.5 text-[14px] leading-snug text-primary">{item.text}</p>
             {/* Every claim carries its citation, or it is not made. */}
-            {item.sourceQuote ? (
+            {reportSourceQuote(item.sourceQuote) ? (
               <blockquote className="mt-2.5 border-l-2 border-border pl-3 text-[13px] italic leading-relaxed text-primary/55">
-                {item.sourceQuote}
+                {reportSourceQuote(item.sourceQuote)}
               </blockquote>
             ) : null}
             {item.occurredAt || safeResearchCitationURL(item.sourceUri ?? "") ? (

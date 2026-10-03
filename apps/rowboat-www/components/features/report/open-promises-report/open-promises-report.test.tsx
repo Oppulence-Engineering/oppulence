@@ -3,9 +3,20 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { reportSourceQuote } from "./open-promises-report";
+
 const source = fs.readFileSync(path.join(import.meta.dirname, "open-promises-report.tsx"), "utf8");
 
 describe("OpenPromisesReportClient", () => {
+  it("keeps a source sentence when the stored excerpt is blank", () => {
+    expect(reportSourceQuote("   ")).toBe("");
+    expect(reportSourceQuote("  I'll send the harbor note.  ")).toBe(
+      "I'll send the harbor note.",
+    );
+    expect(source).toContain("reportSourceQuote(item.sourceQuote)");
+    expect(source).not.toContain("{item.sourceQuote}");
+  });
+
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function OpenPromisesReportClient");
   });

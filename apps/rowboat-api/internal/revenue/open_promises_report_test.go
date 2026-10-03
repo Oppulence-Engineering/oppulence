@@ -279,6 +279,89 @@ func TestOpenPromisesReportNamesAMutualPromise(t *testing.T) {
 	}
 }
 
+func TestOpenPromisesReportKeepsTheSourcePhraseWhenTheExcerptIsBlank(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	scanID := startedScan(t, f, 90)
+	rel := f.relationship(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	due := now.Add(10 * 24 * time.Hour)
+	phrase := "I'll send the harbor note."
+	row, err := f.client.Commitment.Create().
+		SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+		SetDirection("promised_by_me").SetText("  Send the harbor note  ").
+		SetConfidence(0.9).SetSourcePhrase("  "+phrase+"  ").
+		SetAcceptance("internally_confirmed").SetUserConfirmed(true).
+		SetDueAt(due).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	blank, err := f.client.RevenueEvidence.Create().
+		SetWorkspace(ws).AddRelationships(rel).SetUser(f.user).
+		SetSource("gmail").SetSourceRecordID("blank-excerpt").
+		SetContentHash("sha256:blank-excerpt").SetExcerpt("   ").
+		SetSourceURI("https://mail.google.com/mail/u/0/#inbox/harbor-note").
+		SetOccurredAt(now.Add(-time.Hour)).SetObservedAt(now.Add(-time.Hour)).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := row.Update().AddEvidences(blank).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	report, err := f.svc.OpenPromisesReport(f.ctx, f.user, mustParseUUID(t, scanID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(report.Items) != 1 {
+		t.Fatalf("items = %#v", report.Items)
+	}
+	item := report.Items[0]
+	if item.Text != "Send the harbor note" {
+		t.Fatalf("text = %q", item.Text)
+	}
+	if item.SourceQuote != phrase {
+		t.Fatalf("blank excerpt erased the source phrase: %q", item.SourceQuote)
+	}
+	if item.SourceURI == "" || item.OccurredAt == nil {
+		t.Fatalf("blank excerpt also dropped the source link: %#v", item)
+	}
+	doc := report.Markdown()
+	if !strings.Contains(doc, "> "+phrase) {
+		t.Fatalf("markdown dropped the source phrase:\n%s", doc)
+	}
+
+	quoted, err := f.client.RevenueEvidence.Create().
+		SetWorkspace(ws).AddRelationships(rel).SetUser(f.user).
+		SetSource("gmail").SetSourceRecordID("spaced-excerpt").
+		SetContentHash("sha256:spaced-excerpt").SetExcerpt("  From the mail.  ").
+		SetSourceURI("https://mail.google.com/mail/u/0/#inbox/from-the-mail").
+		SetOccurredAt(now.Add(-30*time.Minute)).SetObservedAt(now.Add(-30*time.Minute)).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := row.Update().AddEvidences(quoted).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	report, err = f.svc.OpenPromisesReport(f.ctx, f.user, mustParseUUID(t, scanID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(report.Items) != 1 || report.Items[0].SourceQuote != "From the mail." {
+		t.Fatalf("spaced excerpt = %#v", report.Items)
+	}
+	if report.Items[0].SourceURI != "https://mail.google.com/mail/u/0/#inbox/from-the-mail" {
+		t.Fatalf("blank older excerpt was cited instead of the sentence: %q", report.Items[0].SourceURI)
+	}
+}
+
 func mustParseUUID(t *testing.T, raw string) uuid.UUID {
 	t.Helper()
 	id, err := uuid.Parse(raw)
