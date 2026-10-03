@@ -415,6 +415,16 @@ function statusLabel(value: string) {
   return labels[value] || value.replaceAll("_", " ");
 }
 
+/**
+ * The list already says Review for an extraction nobody confirmed, including
+ * one the register clock would call at risk. The open record used the clock
+ * word instead, so the same promise read At risk once it was opened.
+ */
+export function commitmentDetailStatus(item: { state: string; acceptance: string }): string {
+  if (item.acceptance === "candidate") return "Review";
+  return statusLabel(item.state);
+}
+
 /** Urgency is overdue, due soon, open, or closed. Promise status uses a different map. */
 export function urgencyLabel(urgency: string): string {
   switch (urgency) {
@@ -1320,16 +1330,16 @@ export function CommitmentQueue({
                 <div>
                   <dt className="text-[12px] text-primary/45">Status</dt>
                   <dd className="mt-1">
-                    <StatusBadge state={selected.state} />
+                    <StatusBadge acceptance={selected.acceptance} state={selected.state} />
                   </dd>
                 </div>
                 <Fact
                   label="Evidence missing"
-                    value={
-                      selected.missingEvidence.length
-                        ? formatMissingEvidence(selected.missingEvidence)
-                        : "None"
-                    }
+                  value={
+                    selected.missingEvidence.length
+                      ? formatMissingEvidence(selected.missingEvidence)
+                      : "None"
+                  }
                 />
               </dl>
             </div>
@@ -1358,11 +1368,8 @@ export function CommitmentQueue({
               <TabsContent className="mx-auto w-full max-w-4xl p-6" value="overview">
                 <h3 className="text-sm font-medium text-primary/60">Highlights</h3>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  <DetailCard
-                    label="Urgency"
-                    value={urgencyLabel(selected.urgency)}
-                  />
-                  <DetailCard label="Promise status" value={statusLabel(selected.state)} />
+                  <DetailCard label="Urgency" value={urgencyLabel(selected.urgency)} />
+                  <DetailCard label="Promise status" value={commitmentDetailStatus(selected)} />
                   <DetailCard label="Acceptance" value={acceptanceLabel(selected.acceptance)} />
                   <DetailCard
                     label="Evidence completeness"
@@ -1664,19 +1671,23 @@ function Fact({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StatusBadge({ state }: { state: string }) {
+function StatusBadge({ state, acceptance }: { state: string; acceptance: string }) {
+  const review = acceptance === "candidate";
   return (
     <Badge
       variant="outline"
       className={cn(
         "rounded-[2px]",
-        state === "met" && "border-emerald-500/40 text-emerald-600 dark:text-emerald-400",
-        state === "at_risk" && "border-amber-500/40 text-amber-600 dark:text-amber-400",
-        (state === "missed" || state === "disputed") &&
+        !review &&
+          state === "met" &&
+          "border-emerald-500/40 text-emerald-600 dark:text-emerald-400",
+        (review || state === "at_risk") && "border-amber-500/40 text-amber-600 dark:text-amber-400",
+        !review &&
+          (state === "missed" || state === "disputed") &&
           "border-red-500/40 text-red-600 dark:text-red-400",
       )}
     >
-      {statusLabel(state)}
+      {commitmentDetailStatus({ state, acceptance })}
     </Badge>
   );
 }

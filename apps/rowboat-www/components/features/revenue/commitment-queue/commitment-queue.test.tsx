@@ -12,6 +12,7 @@ import type { ComponentProps } from "react";
 
 import {
   CommitmentQueue,
+  commitmentDetailStatus,
   commitmentSearchText,
   formatMissingEvidence,
   missingEvidenceLabel,
@@ -302,12 +303,15 @@ describe("CommitmentQueue", () => {
     expect(component).toHaveTextContent("Taylor");
     expect(component).toHaveTextContent("Morgan");
     expect(component).toHaveTextContent("Due within 72h");
-    await userEvent.click(screen.getByRole("tab", { name: "Evidence" }));
-    expect(component).toHaveTextContent("I will send the signed security packet by Friday.");
+    expect(screen.getByText("Promise status").parentElement?.parentElement).toHaveTextContent(
+      "At risk",
+    );
     expect(screen.getAllByText("At risk").length).toBeGreaterThan(0);
     for (const label of screen.getAllByText("At risk")) {
       expect(label).not.toHaveClass("capitalize");
     }
+    await userEvent.click(screen.getByRole("tab", { name: "Evidence" }));
+    expect(component).toHaveTextContent("I will send the signed security packet by Friday.");
     const queueSource = fs.readFileSync(
       path.join(import.meta.dirname, "commitment-queue.tsx"),
       "utf8",
@@ -317,6 +321,29 @@ describe("CommitmentQueue", () => {
       screen.queryByRole("button", { name: /Run 6-month Promise Leak Audit/ }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Connect Gmail & Calendar/ })).toBeEnabled();
+  });
+
+  it("keeps an unconfirmed due-soon promise in Review after it is opened", async () => {
+    expect(commitmentDetailStatus({ state: "at_risk", acceptance: "candidate" })).toBe("Review");
+    expect(commitmentDetailStatus({ state: "open", acceptance: "accepted" })).toBe("Open");
+    expect(commitmentDetailStatus({ state: "at_risk", acceptance: "accepted" })).toBe("At risk");
+
+    render(
+      <CommitmentQueue
+        aria-label="Client commitments"
+        {...props({ entries: entries("candidate") })}
+      />,
+    );
+    await userEvent.click(screen.getByText("Acme"));
+
+    const promiseStatus = screen.getByText("Promise status").parentElement?.parentElement;
+    expect(promiseStatus).toHaveTextContent("Review");
+    expect(promiseStatus).not.toHaveTextContent("At risk");
+    const recordStatus = screen.getByText("Record details").parentElement;
+    expect(recordStatus).toHaveTextContent("Review");
+    expect(recordStatus).not.toHaveTextContent("At risk");
+    expect(screen.getByText("Needs confirmation")).toBeInTheDocument();
+    expect(screen.getAllByText("Review").length).toBeGreaterThan(0);
   });
 
   it("does not send a stale Google source through OAuth", () => {
