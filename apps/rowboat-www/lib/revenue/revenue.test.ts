@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  ApproveRevenueAction200Response,
+  RejectRevenueAction200Response,
+} from "@/lib/api/generated/zod/revenue/revenue";
 import { dashboardRequest } from "@/lib/auth/dashboard-fetch";
 import {
   attentionReasonLabel,
@@ -520,4 +524,35 @@ it("interactionCountLabel does not invent a zero", () => {
   expect(interactionCountLabel(undefined)).toBe("—");
   expect(interactionCountLabel(null)).toBe("—");
   expect(interactionCountLabel(0)).toBe("0 email threads");
+});
+
+// The queue returns the company name beside the action. Reject and approve
+// return that same record. A strict schema that omitted the name treated a
+// successful reject as a version mismatch.
+it("accepts the company name on an action the API just changed", () => {
+  const action = {
+    id: "d6fd056f-5c9a-44d6-b9a6-4b93b3bf5cb9",
+    relationshipId: "9339e7b0-f28c-4df9-ad86-5007f3571ed1",
+    relationshipName: "North Pier",
+    actionType: "follow_up_task",
+    channel: "task",
+    detector: "manual",
+    revision: 1,
+    revisionHash: "sha256:e308f29126c4c170a775e6dc1d42b657520ff3e07f1a5f47507395f796bf5e0a",
+    reason: "Send the pier note",
+    priorityScore: 0,
+    queueStatus: "open",
+    policyStatus: "pending",
+    approvalStatus: "rejected",
+    executionStatus: "pending",
+    executionOwner: "rowboat",
+    executionMode: "draft",
+    createdAt: "2026-10-03T08:00:27.050027Z",
+    updatedAt: "2026-10-03T08:00:27.092945Z",
+    evidence: [],
+  };
+  expect(RejectRevenueAction200Response.safeParse(action).success).toBe(true);
+  expect(
+    ApproveRevenueAction200Response.safeParse({ ...action, approvalStatus: "approved" }).success,
+  ).toBe(true);
 });
