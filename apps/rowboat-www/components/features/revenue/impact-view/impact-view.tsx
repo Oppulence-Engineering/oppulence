@@ -68,6 +68,17 @@ export function overdueDirectionLines(
 }
 
 /**
+ * A real overdue promise is counted as at least one day. Zero means none are
+ * past due, so the line must not say "0 days".
+ */
+export function longestOverdueCopy(days: number): string {
+  const shown = Number.isFinite(days) ? Math.max(0, Math.round(days)) : 0;
+  if (shown === 0) return "None";
+  if (shown === 1) return "1 day";
+  return `${shown} days`;
+}
+
+/**
  * Impact's relationship total counts People records too. The "of N companies"
  * line is about companies, so a person saved from People is not a company.
  * The directory is paged. A full first page is not the portfolio, and the
@@ -312,7 +323,7 @@ export function ImpactView({
             {overdueDirectionLines(data).map((line) => (
               <Line key={line.label} label={line.label} value={line.value} />
             ))}
-            <Line label="Longest overdue" value={data.longestOverdueDays} suffix=" days" />
+            <Line label="Longest overdue" value={longestOverdueCopy(data.longestOverdueDays)} />
           </dl>
           <div className="border-t border-border p-4 md:border-t-0">
             <p className="mb-2 text-xs font-medium text-primary/55">Why companies are exposed</p>
@@ -526,7 +537,7 @@ function Line({
   suffix = "",
 }: {
   label: string;
-  value: number;
+  value: number | string;
   tone?: "good";
   suffix?: string;
 }) {
@@ -539,7 +550,7 @@ function Line({
         asChild
         className={cn(
           "tabular-nums font-normal",
-          tone === "good" && value > 0
+          tone === "good" && typeof value === "number" && value > 0
             ? "text-emerald-600 dark:text-emerald-400"
             : "text-primary/80",
         )}

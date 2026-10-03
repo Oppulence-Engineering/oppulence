@@ -10,6 +10,7 @@ import {
   impactRefreshCopy,
   digestSignalLabel,
   impactAccountTotal,
+  longestOverdueCopy,
   overdueDirectionLines,
 } from "./impact-view";
 
@@ -78,6 +79,15 @@ describe("ImpactView", () => {
     expect(source).not.toContain("No active relationship risks.");
     expect(source).not.toContain("underlying relationship records");
     expect(source).not.toContain("Promises missed");
+  });
+
+  it("says there is no longest overdue when nothing is past due", () => {
+    expect(longestOverdueCopy(0)).toBe("None");
+    expect(longestOverdueCopy(1)).toBe("1 day");
+    expect(longestOverdueCopy(3)).toBe("3 days");
+    expect(longestOverdueCopy(Number.NaN)).toBe("None");
+    expect(source).toContain("longestOverdueCopy(data.longestOverdueDays)");
+    expect(source).not.toContain('suffix=" days"');
   });
 
   it("calls an open past-due promise overdue, and keeps a mutual one in the total", () => {
