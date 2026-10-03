@@ -99,6 +99,7 @@ import {
   identityImpactLabel,
   identityMatchDetail,
   sourceListedOnConnectionsPage,
+  sourcesNeedingRepair,
   identityMatchLabel,
   participantRoleLabel,
   recommendationApprovalLabel,
@@ -337,6 +338,11 @@ describe("RelationshipsView", () => {
     expect(source).toContain("aria-label={companyStageFilterName(lifecycle)}");
     expect(source).not.toContain(">All health</SelectItem>");
     expect(source).toContain(">All stages</SelectItem>");
+    expect(sourcesNeedingRepair([])).toBe(0);
+    expect(sourcesNeedingRepair([{ status: "live" }, { status: "reconnect_required" }])).toBe(1);
+    expect(sourcesNeedingRepair([{ status: "connected" }, { status: "backfilling" }])).toBe(0);
+    expect(source).toContain("sourcesNeedingRepair(sources)");
+    expect(source).not.toContain("companyAttention.length + identityCandidates.length");
     expect(source).toContain("<Sparkle /> Sources");
     expect(source).toContain("Sources and company details");
     expect(source).not.toContain(">All lifecycle</SelectItem>");

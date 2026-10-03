@@ -1215,12 +1215,8 @@ export function RelationshipsView({
             <details className="group relative ml-auto">
               <summary className="flex h-8 cursor-pointer list-none items-center gap-2 rounded-none border border-border bg-background px-3 text-[12px] text-primary/65 outline-none hover:bg-background-100 hover:text-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                 <Sparkle /> Sources
-                {companyAttention.length + identityCandidates.length > 0 ? (
-                  <Badge variant="secondary">
-                    {hasMoreAttention || hasMoreDuplicates
-                      ? `${companyAttention.length + identityCandidates.length}+`
-                      : companyAttention.length + identityCandidates.length}
-                  </Badge>
+                {sourcesNeedingRepair(sources) > 0 ? (
+                  <Badge variant="secondary">{sourcesNeedingRepair(sources)}</Badge>
                 ) : null}
               </summary>
               <div className="absolute right-0 top-9 z-30 grid min-w-0 max-h-[70vh] w-[640px] max-w-[calc(100vw-320px)] gap-4 overflow-x-hidden overflow-y-auto rounded-none border border-border bg-background p-4 shadow-2xl">
@@ -1659,6 +1655,16 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
  * in this menu, but that page has no Slack connection, so Connect would
  * leave the person on a list that cannot finish the job.
  */
+/**
+ * The Sources button counts sources that need repair. Attention rows and
+ * duplicate reviews are not sources, so they do not add to this number.
+ */
+export function sourcesNeedingRepair(statuses: readonly { status: string }[]): number {
+  return statuses.filter(
+    (source) => !["connected", "backfilling", "live"].includes(source.status),
+  ).length;
+}
+
 export function sourceListedOnConnectionsPage(source: string): boolean {
   return source === "google" || source === "hubspot";
 }
