@@ -267,6 +267,7 @@ function nextAction(
   if (state === "missed") return "Acknowledge with the counterparty or renegotiate.";
   if (state === "disputed") return "Clarify the promise with the counterparty.";
   if (blocked) return "Resolve the blocker or renegotiate the promise.";
+  if (missing[0] === "confirmation") return "Confirm or correct this promise.";
   if (missing.length > 0) return `Confirm or correct ${missingEvidenceLabel(missing[0])}.`;
   if (urgency === "overdue") return "Draft a recovery message or task now.";
   if (urgency === "due_soon") return "Review and warn the owner before it is overdue.";

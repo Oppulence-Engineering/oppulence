@@ -343,6 +343,8 @@ describe("CommitmentQueue", () => {
     expect(recordStatus).toHaveTextContent("Review");
     expect(recordStatus).not.toHaveTextContent("At risk");
     expect(screen.getByText("Needs confirmation")).toBeInTheDocument();
+    expect(screen.getByText("Confirm or correct this promise.")).toBeInTheDocument();
+    expect(screen.queryByText("Confirm or correct confirmation.")).not.toBeInTheDocument();
     expect(screen.getAllByText("Review").length).toBeGreaterThan(0);
   });
 
