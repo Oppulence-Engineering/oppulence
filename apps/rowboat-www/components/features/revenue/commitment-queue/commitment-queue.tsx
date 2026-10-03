@@ -199,10 +199,15 @@ export interface CommitmentQueueProps extends Omit<
   onLoadMoreAccounts?: () => void;
 }
 
-/** The header count says when this page is not the whole register. */
-export function registerCountLabel(shown: number, hasMore: boolean): string {
-  const noun = shown === 1 ? "commitment" : "commitments";
-  return hasMore ? `${shown}+ ${noun}` : `${shown} ${noun}`;
+/**
+ * The header count says when this page is not the whole register.
+ * Zero in this view is not zero in the register when another view holds a promise.
+ */
+export function registerCountLabel(shown: number, hasMore: boolean, heldElsewhere = false): string {
+  const count = Number.isFinite(shown) ? Math.max(0, Math.round(shown)) : 0;
+  if (count === 0 && heldElsewhere) return "None in this view";
+  const noun = count === 1 ? "commitment" : "commitments";
+  return hasMore ? `${count}+ ${noun}` : `${count} ${noun}`;
 }
 
 /** A search of the loaded page is not a search of promises still past it. */
@@ -751,7 +756,11 @@ export function CommitmentQueue({
     >
       <SimProductPanel className="mx-3 mt-3 flex min-h-0 flex-1 flex-col">
         <SimProductHeader
-          actions={registerCountLabel(filtered.length, hasMorePromises)}
+          actions={registerCountLabel(
+            filtered.length,
+            hasMorePromises,
+            Boolean(elsewhere) || otherPromisesPending,
+          )}
           icon={TableIcon}
           title="Commitment register"
         />

@@ -754,6 +754,8 @@ it("points at the view that holds a promise this view does not", () => {
   );
   expect(screen.getByRole("heading", { name: "No promises we made" })).toBeInTheDocument();
   expect(screen.getByText("1 promise they made is in What they owe us.")).toBeInTheDocument();
+  expect(screen.getByText("None in this view")).toBeInTheDocument();
+  expect(screen.queryByText("0 commitments")).not.toBeInTheDocument();
   expect(screen.queryByText("No commitments yet")).not.toBeInTheDocument();
 });
 
@@ -934,13 +936,17 @@ it("keeps promises past the first register page one click away", () => {
   expect(registerCountLabel(200, true)).toBe("200+ commitments");
   expect(registerCountLabel(1, true)).toBe("1+ commitment");
   expect(registerCountLabel(201, false)).toBe("201 commitments");
+  expect(registerCountLabel(0, false)).toBe("0 commitments");
+  expect(registerCountLabel(0, false, true)).toBe("None in this view");
+  expect(registerCountLabel(1, false, true)).toBe("1 commitment");
   expect(registerRemainderLabel()).toBe("Show the next promises");
   expect(registerMissTitle(true)).toBe("No loaded promises match this view");
   expect(registerMissTitle(false)).toBe("No commitments match this view");
   expect(registerMissDetail(true)).toBe("Show the next promises to keep looking.");
   expect(registerMissDetail(false)).toBe("Change the filter or search query.");
   const source = fs.readFileSync(path.join(import.meta.dirname, "commitment-queue.tsx"), "utf8");
-  expect(source).toContain("registerCountLabel(filtered.length, hasMorePromises)");
+  expect(source).toContain("registerCountLabel(");
+  expect(source).toContain("Boolean(elsewhere) || otherPromisesPending");
   expect(source).not.toContain("filtered.length === items.length");
   expect(source).toContain("registerRemainderLabel()");
   expect(source).toContain("onLoadMorePromises");
