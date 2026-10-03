@@ -199,7 +199,12 @@ export function parseRelationshipGraphQuery(query) {
     // The row is titled "Meeting follow-up". A hyphen must not become a
     // different word, and the word meeting in that title is not a source.
     meetingFollowUp: /\bmeeting follow_ups?\b|\bmeeting follow ups?\b/.test(normalized),
+    // "Promise follow-up" is that row. The word promise is not a request for
+    // every promise, and a meeting follow-up is a different row.
+    promiseFollowUp: /\bpromise follow_ups?\b|\bpromise follow ups?\b/.test(normalized),
     followUp: /\bfollow_ups?\b|\bfollow ups?\b/.test(normalized),
+    // "Customer risk" is that follow-up. The word risk is not a request for risk nodes.
+    customerRisk: /\bcustomer risks?\b/.test(normalized),
     changed:
       /\bchanged\b|\bsince (?:my )?last review\b|\bchanged since review\b|\bsince you last looked\b|\byou last looked\b/.test(
         normalized,
@@ -211,8 +216,23 @@ export function parseRelationshipGraphQuery(query) {
   };
 
   for (const [alias, kind] of Object.entries(GRAPH_QUERY_NODE_ALIASES)) {
-    // "at risk" is the promise badge. The word risk is not a request for risk nodes.
-    if (alias === "risk" && /\bat risk\b|\bat_risk\b/.test(normalized)) continue;
+    // "at risk" is the promise badge. "Customer risk" is the follow-up title.
+    // Neither phrase is a request for risk nodes.
+    if (
+      alias === "risk" &&
+      (/\bat risk\b|\bat_risk\b/.test(normalized) || /\bcustomer risks?\b/.test(normalized))
+    ) {
+      continue;
+    }
+    if (
+      (alias === "promise" ||
+        alias === "promises" ||
+        alias === "commitment" ||
+        alias === "commitments") &&
+      /\bpromise follow_ups?\b|\bpromise follow ups?\b/.test(normalized)
+    ) {
+      continue;
+    }
     if (new RegExp(`\\b${alias}\\b`).test(normalized) && !filters.nodeKinds.includes(kind)) {
       filters.nodeKinds.push(kind);
     }
@@ -361,8 +381,11 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bawaiting_approval\b/g, " ")
     .replace(/\bmeeting follow_ups?\b/g, " ")
     .replace(/\bmeeting follow ups?\b/g, " ")
+    .replace(/\bpromise follow_ups?\b/g, " ")
+    .replace(/\bpromise follow ups?\b/g, " ")
     .replace(/\bfollow_ups?\b/g, " ")
-    .replace(/\bfollow ups?\b/g, " ");
+    .replace(/\bfollow ups?\b/g, " ")
+    .replace(/\bcustomer risks?\b/g, " ");
   filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
@@ -388,7 +411,9 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.current) applied.push("up to date");
   if (filters.aging) applied.push("getting old");
   if (filters.meetingFollowUp) applied.push("meeting follow-up");
+  else if (filters.promiseFollowUp) applied.push("promise follow-up");
   else if (filters.followUp) applied.push("follow-up");
+  if (filters.customerRisk) applied.push("customer risk");
   if (filters.changed) applied.push("changed since you last looked");
   if (filters.hideIsolated) applied.push("hide unconnected");
   if (filters.freeText.length) applied.push(`text: ${filters.freeText.join(" ")}`);
@@ -494,11 +519,23 @@ export function queryRelationshipGraph(graph, query, options = {}) {
       const label = normalizedGraphValue(node.label).replaceAll("-", "_");
       return /\bmeeting\b/.test(label) && /\bfollow_ups?\b/.test(label);
     });
+  } else if (filters.promiseFollowUp) {
+    constrainBy((node) => {
+      if (node.kind !== "action") return false;
+      const label = normalizedGraphValue(node.label).replaceAll("-", "_");
+      return /\bpromise\b/.test(label) && /\bfollow_ups?\b/.test(label);
+    });
   } else if (filters.followUp) {
     constrainBy((node) => {
       if (node.kind !== "action") return false;
       const label = normalizedGraphValue(node.label).replaceAll("-", "_");
       return /\bfollow_ups?\b/.test(label);
+    });
+  }
+  if (filters.customerRisk) {
+    constrainBy((node) => {
+      if (node.kind !== "action") return false;
+      return /\bcustomer risks?\b/.test(normalizedGraphValue(node.label));
     });
   }
   if (filters.changed) {

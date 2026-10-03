@@ -404,6 +404,12 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryAnswer("2 relationships match follow-up.", 2)).toBe(
       "2 companies match follow-up.",
     );
+    expect(graphQueryAnswer("1 relationship matches customer risk.", 2)).toBe(
+      "1 company matches customer risk.",
+    );
+    expect(graphQueryAnswer("1 relationship matches promise follow-up.", 2)).toBe(
+      "1 company matches promise follow-up.",
+    );
     expect(graphQueryAnswer("1 relationship matches they owe us.", 1)).toBe(
       "1 company matches they owe us.",
     );

@@ -462,6 +462,80 @@ test("asking meeting follow-up finds the row with that title", () => {
   assert.deepEqual(anyFollowUp.relationshipIds.sort(), ["follow", "warm"]);
 });
 
+test("asking customer risk finds that follow-up and leaves other companies", () => {
+  const parsed = parseRelationshipGraphQuery("customer risk");
+  assert.equal(parsed.filters.customerRisk, true);
+  assert.deepEqual(parsed.filters.nodeKinds, []);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["customer risk"]);
+
+  const atRisk = parseRelationshipGraphQuery("at risk");
+  assert.equal(atRisk.filters.customerRisk, false);
+  assert.equal(atRisk.filters.atRisk, true);
+  assert.deepEqual(atRisk.filters.nodeKinds, []);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:cedar", kind: "relationship", label: "Quay Cedar" },
+      {
+        id: "action:cedar",
+        kind: "action",
+        label: "Customer risk",
+        relationshipId: "cedar",
+        status: "open",
+      },
+      { id: "relationship:quiet", kind: "relationship", label: "Quay Quiet" },
+      {
+        id: "action:quiet",
+        kind: "action",
+        label: "Meeting follow-up",
+        relationshipId: "quiet",
+        status: "open",
+      },
+    ],
+    edges: [],
+  };
+  const result = queryRelationshipGraph(graph, "customer risk");
+  assert.deepEqual(result.relationshipIds, ["cedar"]);
+  assert.equal(result.visibleNodeIds.includes("relationship:quiet"), false);
+  assert.equal(result.answer, "1 relationship matches customer risk.");
+});
+
+test("asking promise follow-up leaves a meeting follow-up", () => {
+  const parsed = parseRelationshipGraphQuery("promise follow-up");
+  assert.equal(parsed.filters.promiseFollowUp, true);
+  assert.equal(parsed.filters.followUp, true);
+  assert.deepEqual(parsed.filters.nodeKinds, []);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["promise follow-up"]);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:maple", kind: "relationship", label: "Quay Maple" },
+      {
+        id: "action:maple",
+        kind: "action",
+        label: "Promise follow-up",
+        relationshipId: "maple",
+        status: "open",
+      },
+      { id: "relationship:quiet", kind: "relationship", label: "Quay Quiet" },
+      {
+        id: "action:quiet",
+        kind: "action",
+        label: "Meeting follow-up",
+        relationshipId: "quiet",
+        status: "open",
+      },
+    ],
+    edges: [],
+  };
+  const result = queryRelationshipGraph(graph, "promise follow-up");
+  assert.deepEqual(result.relationshipIds, ["maple"]);
+  assert.equal(result.visibleNodeIds.includes("relationship:quiet"), false);
+  assert.equal(result.answer, "1 relationship matches promise follow-up.");
+});
+
 test("asking they owe us keeps that side of the promise", () => {
   const parsed = parseRelationshipGraphQuery("what they owe us");
   assert.equal(parsed.filters.direction, "promised_by_them");
