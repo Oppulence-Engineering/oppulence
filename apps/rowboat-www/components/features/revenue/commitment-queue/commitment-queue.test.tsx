@@ -14,6 +14,7 @@ import {
   CommitmentQueue,
   commitmentDetailStatus,
   commitmentSearchText,
+  evidenceGapFact,
   formatMissingEvidence,
   missingEvidenceLabel,
   REGISTER_VIEWS,
@@ -131,6 +132,11 @@ describe("CommitmentQueue", () => {
     expect(missingEvidenceLabel("recipient")).toBe("who it was promised to");
     expect(formatMissingEvidence(["promiser", "due date"])).toBe("who promised, due date");
     expect(formatMissingEvidence([])).toBe("");
+    expect(evidenceGapFact([])).toEqual({ label: "Evidence", value: "Complete" });
+    expect(evidenceGapFact(["promiser", "exact quote"])).toEqual({
+      label: "Evidence missing",
+      value: "who promised, exact quote",
+    });
   });
 
   it("names both sides of a mutual promise", async () => {
@@ -947,7 +953,7 @@ it("finds a promise by the status and score printed on the row", async () => {
   ).toBe(
     [
       "Acme Taylor Morgan Send the signed security packet 65 At risk",
-      "Due within 72h At risk Accepted Missing Not confirmed None Complete Watch",
+      "Due within 72h At risk Accepted Missing Not confirmed Evidence Complete Watch",
     ].join(" "),
   );
   const undated = commitmentSearchText({

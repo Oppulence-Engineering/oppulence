@@ -247,6 +247,16 @@ export function formatMissingEvidence(items: readonly string[]): string {
   return items.map(missingEvidenceLabel).join(", ");
 }
 
+/**
+ * An empty gap used to read "Evidence missing / None", which sounds like the
+ * quote is gone. The record says the evidence is complete until a field is
+ * actually absent.
+ */
+export function evidenceGapFact(items: readonly string[]): { label: string; value: string } {
+  if (items.length === 0) return { label: "Evidence", value: "Complete" };
+  return { label: "Evidence missing", value: formatMissingEvidence(items) };
+}
+
 function missingEvidence(entry: RegisterEntry) {
   const missing: string[] = [];
   if (!entry.ownerParticipantRef?.trim()) missing.push("promiser");
@@ -521,10 +531,13 @@ function registerPreviewStatus(item: CommitmentQueueItem) {
 /** Search matches the words on the row and the words on the open promise. */
 export function commitmentSearchText(item: CommitmentQueueItem): string {
   const missing = formatMissingEvidence(item.missingEvidence);
+  const gap = evidenceGapFact(item.missingEvidence);
   const evidence =
     item.missingEvidence.length > 0
-      ? [missing, `${item.missingEvidence.length} items missing`, `Missing ${missing}`].join(" ")
-      : "None Complete";
+      ? [gap.label, missing, `${item.missingEvidence.length} items missing`, `Missing ${missing}`].join(
+          " ",
+        )
+      : `${gap.label} ${gap.value}`;
   return [
     item.relationshipName,
     item.owner,
@@ -1350,14 +1363,7 @@ export function CommitmentQueue({
                     <StatusBadge acceptance={selected.acceptance} state={selected.state} />
                   </dd>
                 </div>
-                <Fact
-                  label="Evidence missing"
-                  value={
-                    selected.missingEvidence.length
-                      ? formatMissingEvidence(selected.missingEvidence)
-                      : "None"
-                  }
-                />
+                <Fact {...evidenceGapFact(selected.missingEvidence)} />
               </dl>
             </div>
           </aside>
