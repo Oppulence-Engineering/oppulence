@@ -2150,6 +2150,24 @@ function governanceFallback(value: string): string {
   return humanize(split);
 }
 
+/** A blank subject is the same sentence the directory search uses. */
+export function mailThreadSubjectLabel(subject?: string | null): string {
+  const trimmed = subject?.trim() ?? "";
+  return trimmed || "Email conversation";
+}
+
+/** A blank address is the same party line the directory search uses. */
+export function mailThreadPartyLabel(email?: string | null): string {
+  const trimmed = email?.trim() ?? "";
+  return trimmed || "Gmail";
+}
+
+/** The count line is "1 message" or "N messages," including a missing count. */
+export function mailMessageCountLabel(count: number): string {
+  const n = Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
+  return n === 1 ? "1 message" : `${String(n)} messages`;
+}
+
 /** A Gmail thread stores who spoke last. The company sheet says what that means. */
 export function mailReplyLabel(state: string): string {
   switch (state) {
@@ -3760,11 +3778,11 @@ export function RelationshipSheet({
                         <li key={thread.id} className="flex items-start justify-between gap-4 p-3">
                           <div className="min-w-0">
                             <p className="truncate text-xs font-medium text-primary">
-                              {thread.subject || "Email conversation"}
+                              {mailThreadSubjectLabel(thread.subject)}
                             </p>
                             <p className="mt-1 truncate text-[11px] text-primary/45">
-                              {thread.counterpartyEmail || "Gmail"} · {thread.messageCount}{" "}
-                              {thread.messageCount === 1 ? "message" : "messages"}
+                              {mailThreadPartyLabel(thread.counterpartyEmail)} ·{" "}
+                              {mailMessageCountLabel(thread.messageCount)}
                             </p>
                           </div>
                           <div className="shrink-0 text-right">

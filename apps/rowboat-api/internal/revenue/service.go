@@ -819,6 +819,12 @@ func (s *Service) ListRelationshipsFiltered(
 		if mail := relationshipSheetMailMatch(needle); mail != nil {
 			parts = append(parts, mail)
 		}
+		// The subject and the address are the first two lines of each thread.
+		// Searching either word has to open that company.
+		parts = append(parts, relationship.HasMailThreadsWith(mailthread.Or(
+			mailthread.SubjectContainsFold(value),
+			mailthread.CounterpartyEmailContainsFold(value),
+		)))
 		if review := relationshipSheetReviewMatch(u.ID, needle); review != nil {
 			parts = append(parts, review)
 		}
@@ -2926,9 +2932,11 @@ func relationshipOpenActionCount(compare string, n int) predicate.Relationship {
 
 // relationshipSheetMailMatch matches the mail section on the company sheet.
 // An empty mailbox says "No Gmail threads linked yet." A thread with no
-// subject says "Email conversation," a missing time says "Unknown date," and
-// the reply state says who speaks next. A one-word fragment of a longer
-// sentence stays out, so "gmail" does not mean a company with no mail.
+// subject says "Email conversation," a blank address says "Gmail," a missing
+// time says "Unknown date," and the reply state says who speaks next. The
+// count line is "1 message" or "N messages." A one-word fragment of a longer
+// sentence stays out, so "gmail" finds a thread whose party line is the
+// fallback and does not mean a company with no mail.
 func relationshipSheetMailMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
 	if sheetPhraseMatches("no gmail threads linked yet", needle) {
@@ -2936,6 +2944,12 @@ func relationshipSheetMailMatch(needle string) predicate.Relationship {
 	}
 	if sheetPhraseMatches("email conversation", needle) {
 		preds = append(preds, relationship.HasMailThreadsWith(mailThreadSubjectBlank()))
+	}
+	if needle == "gmail" {
+		preds = append(preds, relationship.HasMailThreadsWith(mailThreadCounterpartyBlank()))
+	}
+	if n, ok := exactMailMessageCount(needle); ok {
+		preds = append(preds, relationship.HasMailThreadsWith(mailthread.MessageCountEQ(n)))
 	}
 	if sheetPhraseMatches("unknown date", needle) {
 		preds = append(preds, relationship.HasMailThreadsWith(mailthread.LastActivityAtIsNil()))
@@ -3956,7 +3970,36 @@ func sheetPhraseMatches(phrase, needle string) bool {
 }
 
 func mailThreadSubjectBlank() predicate.MailThread {
-	return mailthread.Or(mailthread.SubjectIsNil(), mailthread.SubjectEQ(""))
+	return mailThreadTextBlank(mailthread.FieldSubject)
+}
+
+func mailThreadCounterpartyBlank() predicate.MailThread {
+	return mailThreadTextBlank(mailthread.FieldCounterpartyEmail)
+}
+
+// mailThreadTextBlank matches a thread field the sheet prints as a fallback.
+// Spaces are the same as an empty value.
+func mailThreadTextBlank(field string) predicate.MailThread {
+	return predicate.MailThread(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(fmt.Sprintf("trim(coalesce(%s, '')) = ''", s.C(field)))
+		}))
+	})
+}
+
+func exactMailMessageCount(needle string) (int, bool) {
+	var n int
+	if _, err := fmt.Sscanf(needle, "%d message", &n); err != nil || n < 0 {
+		return 0, false
+	}
+	label := fmt.Sprintf("%d messages", n)
+	if n == 1 {
+		label = "1 message"
+	}
+	if needle != label {
+		return 0, false
+	}
+	return n, true
 }
 
 func relationshipMailThreadCount(compare string, n int) predicate.Relationship {

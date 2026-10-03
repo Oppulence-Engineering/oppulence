@@ -52,6 +52,9 @@ import {
   earlierChangesLabel,
   focusedReviewTitle,
   earlierEvidenceLabel,
+  mailThreadSubjectLabel,
+  mailThreadPartyLabel,
+  mailMessageCountLabel,
   mailReplyLabel,
   reviewEvidenceKindLabel,
   mutualPlanStatusLabel,
@@ -456,6 +459,18 @@ describe("RelationshipsView", () => {
       "Scheduled to be deleted after transcription",
     );
     expect(governanceExcerptLabel("not_retained")).toBe("No audio was kept");
+    expect(mailThreadSubjectLabel("   ")).toBe("Email conversation");
+    expect(mailThreadSubjectLabel("The quill invoice")).toBe("The quill invoice");
+    expect(mailThreadPartyLabel("  ")).toBe("Gmail");
+    expect(mailThreadPartyLabel(" ada@northwind.example ")).toBe("ada@northwind.example");
+    expect(mailMessageCountLabel(0)).toBe("0 messages");
+    expect(mailMessageCountLabel(1)).toBe("1 message");
+    expect(mailMessageCountLabel(2)).toBe("2 messages");
+    expect(mailMessageCountLabel(Number.NaN)).toBe("0 messages");
+    expect(source).toContain("mailThreadSubjectLabel(thread.subject)");
+    expect(source).toContain("mailThreadPartyLabel(thread.counterpartyEmail)");
+    expect(source).toContain("mailMessageCountLabel(thread.messageCount)");
+    expect(source).not.toContain('thread.subject || "Email conversation"');
     expect(mailReplyLabel("needs_reply")).toBe("Needs a reply");
     expect(mailReplyLabel("awaiting_reply")).toBe("Waiting on them");
     expect(mailReplyLabel("quiet")).toBe("Quiet");

@@ -411,6 +411,7 @@ func TestRelationshipSearchFindsTheSheetMailWords(t *testing.T) {
 		SetUser(f.user).
 		SetProviderThreadID("quill-quiet").
 		SetSubject("The quill invoice").
+		SetMessageCount(1).
 		SetLastActivityAt(when).
 		SetReplyState("quiet").
 		SetRelationship(quiet).
@@ -420,7 +421,8 @@ func TestRelationshipSearchFindsTheSheetMailWords(t *testing.T) {
 	if _, err := f.client.MailThread.Create().
 		SetUser(f.user).
 		SetProviderThreadID("harbor-blank").
-		SetSubject("").
+		SetSubject("   ").
+		SetCounterpartyEmail("   ").
 		SetReplyState("needs_reply").
 		SetRelationship(harbor).
 		Save(f.ctx); err != nil {
@@ -436,6 +438,8 @@ func TestRelationshipSearchFindsTheSheetMailWords(t *testing.T) {
 		SetUser(f.user).
 		SetProviderThreadID("northwind-wait").
 		SetSubject("The northwind note").
+		SetCounterpartyEmail("ada@northwind.example").
+		SetMessageCount(2).
 		SetLastActivityAt(when).
 		SetReplyState("awaiting_reply").
 		SetRelationship(waiting).
@@ -465,7 +469,13 @@ func TestRelationshipSearchFindsTheSheetMailWords(t *testing.T) {
 	assertCompanyQuery("Needs a reply", "Harbor Ledger")
 	assertCompanyQuery("Waiting on them", "Northwind Ledger")
 	assertCompanyQuery("Quiet", "Quill Atelier")
-	assertCompanyQuery("gmail")
+	assertCompanyQuery("gmail", "Quill Atelier", "Harbor Ledger")
+	assertCompanyQuery("the quill invoice", "Quill Atelier")
+	assertCompanyQuery("quill invoice", "Quill Atelier")
+	assertCompanyQuery("ada@northwind.example", "Northwind Ledger")
+	assertCompanyQuery("1 message", "Quill Atelier")
+	assertCompanyQuery("2 messages", "Northwind Ledger")
+	assertCompanyQuery("0 messages", "Harbor Ledger")
 	assertCompanyQuery("date")
 }
 
