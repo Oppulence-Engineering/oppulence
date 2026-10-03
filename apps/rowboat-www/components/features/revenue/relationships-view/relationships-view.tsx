@@ -2177,7 +2177,7 @@ export function companyEmailDetail(email: string | null | undefined): {
 
 /** Record badges sit together. The dimension has to travel with the value. */
 export function recordDetailBadge(label: string, value: string): string {
-  return `${label} · ${relationshipLabel(value)}`;
+  return `${label} · ${companyRecordLabel(value)}`;
 }
 
 /**

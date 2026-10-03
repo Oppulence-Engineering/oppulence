@@ -478,6 +478,7 @@ describe("RelationshipsView", () => {
     expect(source).toContain("missionControlStateAnswer(model.evidence)");
     expect(source).not.toContain("String(model.evidence.lifecycle?.value ?? \"unknown\")");
     expect(recordDetailBadge("Sentiment", "unknown")).toBe("Sentiment · Unknown");
+    expect(recordDetailBadge("Health", "needs_attention")).toBe("Health · Needs attention");
     expect(source).toContain("companyReviewCopy(model)");
     expect(source).toContain("reviewCopy.footer !== reviewCopy.change");
     expect(source).toContain('comboboxFilterName("Detail", humanize(dimension))');
