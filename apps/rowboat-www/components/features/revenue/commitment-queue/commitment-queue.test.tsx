@@ -1210,6 +1210,9 @@ it("does not offer a meeting import that opens the company directory", () => {
   expect(source).toContain("openCompanyCreate(onOpenAccounts)");
   expect(source).toContain('if (filter === "overdue" && item.urgency !== "overdue") return false;');
   expect(source).not.toContain('subscribeDueCommitments(() => setFilter("due"))');
+  expect(source).toContain("promiseDueDay(selected.dueAt)");
+  expect(source).not.toContain("new Date(selected.dueAt).toLocaleString()");
+  expect(source).not.toContain("new Date(selected.dueAt).toLocaleDateString()");
   expect(source).toContain(
     "data-[state=active]:bg-background-200 data-[state=active]:text-primary",
   );

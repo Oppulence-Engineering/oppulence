@@ -8,7 +8,7 @@ import type { ComponentPropsWithoutRef } from "react";
 
 import { cn } from "@oppulence/ui/lib/utils";
 import { SimProductPanel } from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
-import { promiseDirectionLabel } from "@/lib/revenue/revenue-records";
+import { promiseDirectionLabel, promiseDueDay } from "@/lib/revenue/revenue-records";
 import type { RelationshipCommitment } from "@/lib/revenue/types";
 
 export type AccountTimelineItem = {
@@ -154,16 +154,8 @@ export function commitmentPreviewRemainder(hidden: number): string {
  * promise due late on the 20th does not read as the 19th.
  */
 export function commitmentTimelineDue(dueAt?: string | null): string | undefined {
-  if (!dueAt?.trim()) return undefined;
-  const date = new Date(dueAt);
-  if (Number.isNaN(date.getTime())) return undefined;
-  const day = date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-  return `Due: ${day}`;
+  const day = promiseDueDay(dueAt);
+  return day ? `Due: ${day}` : undefined;
 }
 
 /** Maps live register rows into the Sim account timeline rows. */

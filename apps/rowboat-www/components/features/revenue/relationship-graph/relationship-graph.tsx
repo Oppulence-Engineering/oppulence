@@ -15,7 +15,7 @@ import {
   consoleResourceRows,
   fetchConsoleResources,
 } from "@/hooks/queries/utils/fetch-console";
-import { companyName, promiseDirectionLabel } from "@/lib/revenue/revenue-records";
+import { companyName, promiseDirectionLabel, promiseDueDay } from "@/lib/revenue/revenue-records";
 import { getRelationshipGraph } from "@/lib/revenue/revenue";
 import {
   activitySourceLabel,
@@ -769,7 +769,7 @@ function Inspector({
               "other",
               node.confidence === undefined ? undefined : `${Math.round(node.confidence * 100)}%`,
             ],
-            ["Due", "other", node.dueAt ? new Date(node.dueAt).toLocaleDateString() : undefined],
+            ["Due", "other", promiseDueDay(node.dueAt)],
           ] as const
         )
           .filter((entry) => entry[2])

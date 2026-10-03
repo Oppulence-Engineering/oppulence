@@ -161,6 +161,8 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphPromiseDirection("local-user")).toBeUndefined();
     expect(graphPromiseDirection("")).toBeUndefined();
     expect(source).toContain("graphPromiseDirection(node.metadata.direction)");
+    expect(source).toContain("promiseDueDay(node.dueAt)");
+    expect(source).not.toContain("node.dueAt ? new Date(node.dueAt).toLocaleDateString()");
     expect(graphNodeFieldLabel("action", "status", "open")).toBe("Held");
     expect(graphNodeFieldLabel("action", "status", "snoozed")).toBe("Snoozed");
     expect(graphNodeFieldLabel("action", "policy", "passed")).toBe("Cleared");

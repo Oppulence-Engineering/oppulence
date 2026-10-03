@@ -383,6 +383,22 @@ export function promiseDirectionLabel(direction: string | null | undefined): str
   return "we owe them";
 }
 
+/**
+ * The company card, the graph, and the register name this UTC day. A local
+ * calendar turned a promise due early on the 20th into the 19th.
+ */
+export function promiseDueDay(dueAt: string | null | undefined): string | undefined {
+  if (!dueAt?.trim()) return undefined;
+  const date = new Date(dueAt);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 /** Open promises used to print the UTC date prefix. The reader sees their own day. */
 export function promiseDueLabel(dueAt: string | null | undefined): string {
   if (!dueAt) return "due unspecified";

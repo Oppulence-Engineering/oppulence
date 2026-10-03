@@ -31,6 +31,7 @@ import { Spinner } from "@oppulence/ui/components/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
 import type { AppendCommitmentTransitionInput } from "@/hooks/queries/utils/mutate-append-commitment-transition";
 import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
+import { promiseDueDay } from "@/lib/revenue/revenue-records";
 import {
   auditFailureCopy,
   examinedConversationCount,
@@ -705,8 +706,8 @@ export function commitmentSearchText(item: CommitmentQueueItem): string {
     urgencyLabel(item.urgency),
     statusLabel(item.state),
     acceptanceLabel(item.acceptance),
-    item.dueAt ? new Date(item.dueAt).toLocaleString() : "Missing",
-    item.dueAt ? new Date(item.dueAt).toLocaleDateString() : "Not confirmed",
+    promiseDueDay(item.dueAt) ?? "Missing",
+    promiseDueDay(item.dueAt) ?? "Not confirmed",
     evidence,
     item.nextAction,
   ].join(" ");
@@ -1563,7 +1564,7 @@ export function CommitmentQueue({
                 <Fact label="To" value={selected.counterparty} />
                 <Fact
                   label="Due date"
-                  value={selected.dueAt ? new Date(selected.dueAt).toLocaleString() : "Missing"}
+                  value={promiseDueDay(selected.dueAt) ?? "Missing"}
                 />
                 <div>
                   <dt className="text-[12px] text-primary/45">Status</dt>
@@ -1615,9 +1616,7 @@ export function CommitmentQueue({
                   <DetailCard
                     label="Due"
                     value={
-                      selected.dueAt
-                        ? new Date(selected.dueAt).toLocaleDateString()
-                        : "Not confirmed"
+                      promiseDueDay(selected.dueAt) ?? "Not confirmed"
                     }
                   />
                 </div>
