@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@oppulence/ui/components/button";
 import { Input } from "@oppulence/ui/components/input";
 
+import { sharedPlanOwnerLabel, sharedPlanVersionLabel } from "@/lib/revenue/revenue";
+
 type PublicPlan = {
   planId: string;
   status: string;
@@ -77,30 +79,34 @@ export default function PlanResponsePage() {
   return (
     <main className="mx-auto min-h-screen max-w-2xl px-6 py-16">
       <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-        Oppulence mutual action plan
+        Shared plan
       </p>
       <h1 className="mt-3 text-3xl font-semibold">Review the shared plan</h1>
       {error ? (
         <p className="mt-6 border border-destructive/40 p-4 text-sm text-destructive">{error}</p>
       ) : null}
       {!plan && !error ? (
-        <p className="mt-6 text-sm text-muted-foreground">Opening the scoped plan…</p>
+        <p className="mt-6 text-sm text-muted-foreground">Opening the plan…</p>
       ) : null}
       {plan ? (
         <section className="mt-8 space-y-5">
           <p className="text-sm text-muted-foreground">
-            Revision {plan.currentRevision.version} · {plan.currentRevision.revisionHash}
+            {sharedPlanVersionLabel(plan.currentRevision.version)}
           </p>
           <ul className="space-y-3">
-            {plan.currentRevision.items.map((item) => (
-              <li key={item.itemId} className="border border-border p-4">
-                <p className="font-medium">{item.title}</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Owner: {item.ownerParticipantRef}
-                  {item.dueAt ? ` · Due ${new Date(item.dueAt).toLocaleDateString()}` : ""}
-                </p>
-              </li>
-            ))}
+            {plan.currentRevision.items.map((item) => {
+              const owner = sharedPlanOwnerLabel(item.ownerParticipantRef);
+              const due = item.dueAt ? `Due ${new Date(item.dueAt).toLocaleDateString()}` : "";
+              const detail = [owner ? `Owner: ${owner}` : "", due].filter(Boolean).join(" · ");
+              return (
+                <li key={item.itemId} className="border border-border p-4">
+                  <p className="font-medium">{item.title}</p>
+                  {detail ? (
+                    <p className="mt-1 text-sm text-muted-foreground">{detail}</p>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
           {sent ? (
             <p className="border border-emerald-500/40 bg-emerald-500/5 p-4 text-sm">
@@ -130,14 +136,13 @@ export default function PlanResponsePage() {
                   variant="outline"
                   onClick={() => void respond("comment")}
                 >
-                  Send correction/comment
+                  Send a comment
                 </Button>
               </div>
             </>
           )}
           <p className="text-xs text-muted-foreground">
-            This private link exposes only this plan revision—never the account, transcript, or
-            source evidence.
+            This link shows only this plan.
           </p>
         </section>
       ) : null}

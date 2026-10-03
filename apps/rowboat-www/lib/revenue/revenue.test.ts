@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -25,6 +28,8 @@ import {
   listScans,
   relationshipSourceHealth,
   semanticSearch,
+  sharedPlanOwnerLabel,
+  sharedPlanVersionLabel,
 } from "@/lib/revenue/revenue";
 
 vi.mock("@/lib/auth/dashboard-fetch", () => ({
@@ -555,4 +560,23 @@ it("accepts the company name on an action the API just changed", () => {
   expect(
     ApproveRevenueAction200Response.safeParse({ ...action, approvalStatus: "approved" }).success,
   ).toBe(true);
+});
+
+it("names a shared plan without the stored hash or a redacted owner", () => {
+  expect(sharedPlanOwnerLabel("plan-participant")).toBe("");
+  expect(sharedPlanOwnerLabel("local-user")).toBe("");
+  expect(sharedPlanOwnerLabel("9c8dfa9b-a7b2-46ea-982c-622a914c00e5")).toBe("");
+  expect(sharedPlanOwnerLabel("Jordan Buyer")).toBe("Jordan Buyer");
+  expect(sharedPlanOwnerLabel("jordan@northpier.example")).toBe("jordan@northpier.example");
+  expect(sharedPlanVersionLabel(2)).toBe("Version 2");
+  expect(sharedPlanVersionLabel(0)).toBe("Version 1");
+  const page = fs.readFileSync(
+    path.join(import.meta.dirname, "../../app/plan-response/page.tsx"),
+    "utf8",
+  );
+  expect(page).toContain("sharedPlanVersionLabel(plan.currentRevision.version)");
+  expect(page).toContain("sharedPlanOwnerLabel(item.ownerParticipantRef)");
+  expect(page).not.toContain("plan.currentRevision.revisionHash");
+  expect(page).not.toContain("Owner: {item.ownerParticipantRef}");
+  expect(page).not.toContain("Opening the scoped plan");
 });

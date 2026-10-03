@@ -1133,6 +1133,24 @@ export function actionReasonCopy(reason: string | null | undefined): string {
   return raw;
 }
 
+/**
+ * A shared-plan link redacts the owner to an internal token. A person or an
+ * email still has a name.
+ */
+export function sharedPlanOwnerLabel(owner?: string | null): string {
+  const who = (owner ?? "").trim();
+  if (!who || who === "plan-participant") return "";
+  if (/^[0-9a-f-]{36}$/i.test(who)) return "";
+  if (/^[a-z0-9_:-]+$/.test(who)) return "";
+  return who;
+}
+
+/** The link names the version. The stored hash stays off the page. */
+export function sharedPlanVersionLabel(version: number): string {
+  const number = Number.isFinite(version) && version > 0 ? Math.floor(version) : 1;
+  return `Version ${number}`;
+}
+
 /** A ranking part is a stored slug. The review sheet names the factor. */
 export function priorityComponentLabel(key: string): string {
   const known = PRIORITY_COMPONENT_LABELS[key];
