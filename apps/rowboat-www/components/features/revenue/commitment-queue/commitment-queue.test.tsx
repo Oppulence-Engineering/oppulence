@@ -29,8 +29,10 @@ import {
   registerMissDetail,
   registerMissTitle,
   registerNextCompaniesLabel,
+  registerAccountScopeCopy,
   registerRemainderLabel,
   registerRowStatus,
+  registerSharedPromiseCopy,
   urgencyLabel,
 } from "./commitment-queue";
 import type {
@@ -239,8 +241,31 @@ describe("CommitmentQueue", () => {
       />,
     );
     expect(screen.getByText("Select one company to see every promise for it.")).toBeVisible();
+    expect(registerAccountScopeCopy([{ direction: "mutual", relationshipName: "Quay Mutual" }])).toBe(
+      "Quay Mutual has a shared promise. Choose it to see that promise.",
+    );
+    expect(registerSharedPromiseCopy([{ direction: "mutual", relationshipName: "Quay Mutual" }])).toBe(
+      "1 shared promise with Quay Mutual. Choose Quay Mutual in By company.",
+    );
     expect(screen.getByRole("combobox", { name: "Company, Choose a company" })).toBeVisible();
     expect(screen.queryByText(/one relationship/)).toBeNull();
+    cleanup();
+    render(
+      <CommitmentQueue
+        aria-label="Client commitments"
+        {...props({
+          view: "by_account",
+          accounts: [{ id: "acct-1", label: "Quay Mutual" }],
+          otherPromises: [{ direction: "mutual", relationshipName: "Quay Mutual" }],
+        })}
+      />,
+    );
+    expect(
+      screen.getByText("Quay Mutual has a shared promise. Choose it to see that promise."),
+    ).toBeVisible();
+    expect(screen.queryByText("1 shared promise is in By company.")).toBeNull();
+    const source = fs.readFileSync(path.join(import.meta.dirname, "commitment-queue.tsx"), "utf8");
+    expect(source).toContain("registerAccountScopeCopy(otherPromises)");
   });
 
   it("names the company chosen on the by-account menu", () => {
@@ -778,7 +803,7 @@ it("points at the view that holds a promise this view does not", () => {
     registerElsewhereCopy("they_owe", [{ direction: "promised_by_me" }, { direction: "mutual" }]),
   ).toEqual({
     title: "No promises they made",
-    detail: "1 promise we made is in What we owe. 1 shared promise is in By company.",
+    detail: "1 promise we made is in What we owe. 1 shared promise. Choose the company in By company.",
   });
   expect(registerElsewhereCopy("changed", [{ direction: "promised_by_them" }])).toEqual({
     title: "No promises changed in the last 7 days",

@@ -190,7 +190,7 @@ export interface CommitmentQueueProps extends Omit<
    * Open promises in every direction. This view's query hides the others, so an
    * empty page can still point at the view that holds them.
    */
-  otherPromises?: readonly { direction?: string | null }[];
+  otherPromises?: readonly LocatedPromise[];
   /** The other-view list is still loading. An empty page must not say none exist yet. */
   otherPromisesPending?: boolean;
   /** The company directory page is full and a later page may hold more accounts. */
@@ -224,21 +224,64 @@ export function registerMissDetail(hasMore: boolean): string {
   return hasMore ? "Show the next promises to keep looking." : "Change the filter or search query.";
 }
 
+type LocatedPromise = {
+  direction?: string | null;
+  relationshipName?: string | null;
+};
+
+function locatedCompanyNames(promises: readonly LocatedPromise[]): string[] {
+  const names: string[] = [];
+  for (const row of promises) {
+    const name = row.relationshipName?.trim();
+    if (name && !names.includes(name)) names.push(name);
+  }
+  return names;
+}
+
+/**
+ * A shared promise is not on What we owe or What they owe us. By company
+ * lists it only after that company is chosen, so the sentence names the choice.
+ */
+export function registerSharedPromiseCopy(promises: readonly LocatedPromise[] | undefined): string {
+  const shared = (promises ?? []).filter((row) => row.direction === "mutual");
+  if (shared.length === 0) return "";
+  const names = locatedCompanyNames(shared);
+  const noun = shared.length === 1 ? "1 shared promise" : `${shared.length} shared promises`;
+  if (names.length === 1) {
+    const company = names[0];
+    return `${noun} with ${company}. Choose ${company} in By company.`;
+  }
+  return `${noun}. Choose the company in By company.`;
+}
+
+/** By company starts with no company. A shared promise waiting there names itself. */
+export function registerAccountScopeCopy(promises: readonly LocatedPromise[] | undefined): string {
+  const shared = (promises ?? []).filter((row) => row.direction === "mutual");
+  const names = locatedCompanyNames(shared);
+  if (shared.length === 1 && names.length === 1) {
+    return `${names[0]} has a shared promise. Choose it to see that promise.`;
+  }
+  if (shared.length > 1 && names.length === 1) {
+    return `${names[0]} has ${shared.length} shared promises. Choose it to see them.`;
+  }
+  if (shared.length > 0) return "Shared promises are filed by company. Choose one to see them.";
+  return "Select one company to see every promise for it.";
+}
+
 /** Where an open promise lives when this slice does not list it. */
 export function registerPromiseLocationCopy(
-  promises: readonly { direction?: string | null }[] | undefined,
+  promises: readonly LocatedPromise[] | undefined,
 ): string {
   const rows = promises ?? [];
   const theirs = rows.filter((row) => row.direction === "promised_by_them").length;
   const ours = rows.filter((row) => row.direction === "promised_by_me").length;
-  const shared = rows.filter((row) => row.direction === "mutual").length;
   const lines: string[] = [];
   if (ours === 1) lines.push("1 promise we made is in What we owe.");
   else if (ours > 1) lines.push(`${ours} promises we made are in What we owe.`);
   if (theirs === 1) lines.push("1 promise they made is in What they owe us.");
   else if (theirs > 1) lines.push(`${theirs} promises they made are in What they owe us.`);
-  if (shared === 1) lines.push("1 shared promise is in By company.");
-  else if (shared > 1) lines.push(`${shared} shared promises are in By company.`);
+  const shared = registerSharedPromiseCopy(rows);
+  if (shared) lines.push(shared);
   return lines.join(" ");
 }
 
@@ -249,7 +292,7 @@ export function registerPromiseLocationCopy(
  */
 export function registerElsewhereCopy(
   view: string,
-  promises: readonly { direction?: string | null }[] | undefined,
+  promises: readonly LocatedPromise[] | undefined,
 ): { title: string; detail: string } | null {
   const rows = promises ?? [];
   const located = registerPromiseLocationCopy(promises);
@@ -1141,7 +1184,7 @@ export function CommitmentQueue({
             </h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
               {view === "by_account"
-                ? "Select one company to see every promise for it."
+                ? registerAccountScopeCopy(otherPromises)
                 : "Use a name or email to see what that person has promised."}
             </p>
           </div>
