@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { actionReasonCopy } from "@/lib/revenue/revenue";
+
 const source = fs.readFileSync(path.join(import.meta.dirname, "relationships-view.tsx"), "utf8");
 
 import {
@@ -496,6 +498,16 @@ describe("RelationshipsView", () => {
     ).toBe("Lifecycle, Supporting evidence");
     expect(source).toContain("missionControlChangeAnswer(model.changes, \"State changed\")");
     expect(source).toContain("missionControlStateAnswer(model.evidence)");
+    expect(source).toContain("actionReasonCopy(model.activeRecommendation?.reason)");
+    expect(source).toContain("actionReasonCopy(action.reason)");
+    expect(
+      actionReasonCopy(
+        "You confirmed this follow-up from source evidence meeting/commitment:harbor-rank.",
+      ),
+    ).toBe("You confirmed this follow-up from the meeting.");
+    expect(actionReasonCopy("You confirmed this follow-up from the meeting.")).toBe(
+      "You confirmed this follow-up from the meeting.",
+    );
     expect(source).not.toContain("String(model.evidence.lifecycle?.value ?? \"unknown\")");
     expect(recordDetailBadge("Sentiment", "unknown")).toBe("Sentiment · Unknown");
     expect(recordDetailBadge("Health", "needs_attention")).toBe("Health · Needs attention");
@@ -507,6 +519,17 @@ describe("RelationshipsView", () => {
     expect(source).toContain('disabled={busy === "recovery" || data.commitments.length === 0}');
     expect(completenessExplanationCopy("No source connection has completed its first useful sync.")).toBe(
       "Connect a source before these details can fill in.",
+    );
+    expect(
+      completenessExplanationCopy(
+        "One or more material values have no accessible supporting evidence.",
+      ),
+    ).toBe("Some details have no source you can open.");
+    expect(completenessExplanationCopy("Required source evidence is current.")).toBe(
+      "The details you can open are up to date.",
+    );
+    expect(completenessExplanationCopy("A required source is stale or disconnected.")).toBe(
+      "A source needs reconnecting.",
     );
     expect(completenessExplanationCopy("Details are already current.")).toBe(
       "Details are already current.",

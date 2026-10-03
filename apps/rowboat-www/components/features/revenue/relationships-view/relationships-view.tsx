@@ -101,6 +101,8 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@oppulence/ui/components/toggle-group";
 import {
   ACTION_TYPE_LABELS,
+  actionReasonCopy,
+  completenessExplanationCopy,
   acknowledgeMissionControl,
   decideIdentityCandidate,
   type DecideRelationshipIdentityCandidateInput,
@@ -2772,12 +2774,7 @@ export function deleteConversationConfirmCopy(): string {
   return "Delete shared conversation evidence for this company? Device and provider copies will remain pending until separately confirmed.";
 }
 
-export function completenessExplanationCopy(explanation: string): string {
-  if (explanation.trim() === "No source connection has completed its first useful sync.") {
-    return "Connect a source before these details can fill in.";
-  }
-  return explanation;
-}
+export { completenessExplanationCopy };
 
 /**
  * Cue text is stored with the company. A missing next step is not a meeting,
@@ -2924,7 +2921,9 @@ function MissionControlOverview({
           } else if (question.key === "evidence") {
             answer = `${supported} of ${total} details come from a source you can open.`;
           } else if (question.key === "action") {
-            answer = model.activeRecommendation?.reason || "No action is currently recommended.";
+            answer =
+              actionReasonCopy(model.activeRecommendation?.reason) ||
+              "No action is currently recommended.";
           }
           return (
             <div key={question.key} className="border border-border p-3">
@@ -4217,7 +4216,9 @@ export function RelationshipSheet({
                               <p className="text-sm font-medium text-primary">
                                 {ACTION_TYPE_LABELS[action.actionType] ?? humanize(action.actionType)}
                               </p>
-                              <p className="mt-1 text-xs text-primary/60">{action.reason}</p>
+                              <p className="mt-1 text-xs text-primary/60">
+                                {actionReasonCopy(action.reason)}
+                              </p>
                             </div>
                             <ModeChip mode={action.executionMode} />
                           </div>

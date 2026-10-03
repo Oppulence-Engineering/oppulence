@@ -265,8 +265,9 @@ func TestConfirmedMeetingCommitmentBecomesSharedCommitmentExactlyOnce(t *testing
 		action.ExecutionStatus != "pending" {
 		t.Fatalf("unexpected follow-up action: %#v", action)
 	}
-	if !strings.Contains(action.Reason, input.ExternalID) {
-		t.Fatalf("follow-up reason must cite the immutable observation: %q", action.Reason)
+	if action.Reason != "You confirmed this follow-up from the meeting." ||
+		strings.Contains(action.Reason, input.ExternalID) {
+		t.Fatalf("follow-up reason = %q", action.Reason)
 	}
 	if len(action.Edges.Evidences) != 1 || action.Edges.Evidences[0].Source != "meeting" {
 		t.Fatalf("follow-up must link the confirmed meeting evidence: %#v", action.Edges.Evidences)

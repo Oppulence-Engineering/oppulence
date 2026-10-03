@@ -737,10 +737,7 @@ func (s *Service) createConfirmedCommitmentAction(
 		"Hi,\n\nFollowing up on our meeting, I wanted to confirm the next step: %s\n\nBest,",
 		strings.TrimSuffix(text, ".")+".",
 	)
-	reason := fmt.Sprintf(
-		"You confirmed this follow-up from source evidence meeting/%s.",
-		input.ExternalID,
-	)
+	reason := "You confirmed this follow-up from the meeting."
 	learningLift, err := s.outcomeLearningLift(ctx, client, ws, "meeting_follow_up", "email")
 	if err != nil {
 		return err

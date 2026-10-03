@@ -3494,7 +3494,8 @@ func relationshipSheetCompletenessMatch(needle string) predicate.Relationship {
 	if sheetPhraseMatches("connect a source before these details can fill in.", needle) {
 		preds = append(preds, relationshipConnectSourceCopy(now))
 	}
-	if sheetPhraseMatches("one or more material values have no accessible supporting evidence.", needle) {
+	if sheetPhraseMatches("one or more material values have no accessible supporting evidence.", needle) ||
+		sheetPhraseMatches("some details have no source you can open.", needle) {
 		preds = append(preds, relationshipMaterialGapCopy(now))
 	}
 	if sheetPhraseMatches("some details are still missing", needle) {
@@ -3508,13 +3509,15 @@ func relationshipSheetCompletenessMatch(needle string) predicate.Relationship {
 		preds = append(preds, relationshipShowsAmbiguousHeading(now))
 	}
 	if sheetPhraseMatches("details need a refresh", needle) ||
-		sheetPhraseMatches("a required source is stale or disconnected.", needle) {
+		sheetPhraseMatches("a required source is stale or disconnected.", needle) ||
+		sheetPhraseMatches("a source needs reconnecting.", needle) {
 		preds = append(preds, relationshipShowsStaleHeading(now))
 	}
 	if sheetPhraseMatches("updating from connected sources", needle) {
 		preds = append(preds, relationshipShowsRebuildingHeading(now))
 	}
-	if sheetPhraseMatches("a required source is rebuilding; partial state is visible.", needle) {
+	if sheetPhraseMatches("a required source is rebuilding; partial state is visible.", needle) ||
+		sheetPhraseMatches("a source is still updating, so only some details are shown.", needle) {
 		preds = append(preds, relationshipShowsSourceRebuilding(now))
 	}
 	if sheetPhraseMatches("accepted evidence is waiting for the durable relationship projector.", needle) {

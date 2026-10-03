@@ -14,6 +14,7 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "review-sheet.tsx"
 describe("ReviewSheet", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function ReviewSheet");
+    expect(source).toContain("actionReasonCopy(action.reason)");
   });
 
   it("names an uncertain provider check", () => {

@@ -24,6 +24,8 @@ describe("QueueView", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function QueueView");
     expect(source).toContain("recoveryQueueActions(recoveryRows)");
+    expect(source).toContain("actionReasonCopy(action.reason)");
+    expect(source).not.toContain("{action.reason}");
     expect(source).toContain("listNeverLoaded(actionsQuery.isError, actionsQuery.data)");
     expect(source).toContain("actionsQuery.data != null && actions.length === 0");
     expect(source).toContain('listRefreshFailureCopy("recovery")');

@@ -64,6 +64,7 @@ import {
 } from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
 import {
   ACTION_TYPE_LABELS,
+  actionReasonCopy,
   auditLaunchLabel,
   createAction,
   DETECTOR_LABELS,
@@ -575,7 +576,7 @@ function ActionCard({
             <Chip className="ml-auto">{recoveryStatusLabel(action.queueStatus)}</Chip>
           </div>
           <p className="mt-1.5 line-clamp-2 text-sm text-[var(--text-secondary)]">
-            {action.reason}
+            {actionReasonCopy(action.reason)}
           </p>
           {sendFailure ? (
             <p className="mt-1.5 text-sm text-amber-700 dark:text-amber-300">{sendFailure}</p>

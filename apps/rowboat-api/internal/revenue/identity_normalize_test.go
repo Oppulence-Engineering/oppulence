@@ -767,6 +767,7 @@ func TestRelationshipSearchFindsTheCompletenessCopy(t *testing.T) {
 	}
 	assertCompanyQuery("Connect a source before these details can fill in", "Quill Atelier")
 	assertCompanyQuery("One or more material values have no accessible supporting evidence", "Lumen Packet")
+	assertCompanyQuery("Some details have no source you can open", "Lumen Packet")
 	assertCompanyQuery("source")
 	assertCompanyQuery("missing")
 }

@@ -1096,6 +1096,43 @@ export const PRIORITY_COMPONENT_LABELS: Record<string, string> = {
   preferred_channel: "Preferred channel",
 };
 
+const COMPLETENESS_EXPLANATIONS: Record<string, string> = {
+  "No source connection has completed its first useful sync.":
+    "Connect a source before these details can fill in.",
+  "One or more material values have no accessible supporting evidence.":
+    "Some details have no source you can open.",
+  "Required source evidence is current.": "The details you can open are up to date.",
+  "Identity review is required before acting on this relationship.":
+    "Confirm who this company is before you act.",
+  "A required source is rebuilding; partial state is visible.":
+    "A source is still updating, so only some details are shown.",
+  "A required source is stale or disconnected.": "A source needs reconnecting.",
+  "Backfill is incomplete; only partial state is shown.":
+    "Older history is still loading, so only some details are shown.",
+  "A required source scope is missing.": "A source is missing permission for something we need.",
+  "Accepted evidence is waiting for the durable relationship projector.":
+    "Accepted details are still being saved.",
+  "Relationship projection requires operator repair before this state is safe to act on.":
+    "This company needs a repair before you act on it.",
+};
+
+/** Completeness text is stored for the model. The sheet says what the person can do. */
+export function completenessExplanationCopy(explanation: string): string {
+  const raw = explanation.trim();
+  return COMPLETENESS_EXPLANATIONS[raw] ?? raw;
+}
+
+const CONFIRMED_FOLLOW_UP_REASON =
+  /^You confirmed this follow-up from source evidence meeting\/.+\.$/;
+
+/** A confirmed meeting stored the observation id in the reason. The queue names the meeting. */
+export function actionReasonCopy(reason: string | null | undefined): string {
+  const raw = reason?.trim() ?? "";
+  if (!raw) return "";
+  if (CONFIRMED_FOLLOW_UP_REASON.test(raw)) return "You confirmed this follow-up from the meeting.";
+  return raw;
+}
+
 /** A ranking part is a stored slug. The review sheet names the factor. */
 export function priorityComponentLabel(key: string): string {
   const known = PRIORITY_COMPONENT_LABELS[key];

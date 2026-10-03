@@ -33,6 +33,7 @@ import {
 import { Textarea } from "@oppulence/ui/components/textarea";
 import {
   ACTION_TYPE_LABELS,
+  actionReasonCopy,
   approveAction,
   DETECTOR_LABELS,
   dismissAction,
@@ -156,7 +157,8 @@ export function reconciliationErrorCopy(error: string | null | undefined): strin
 function governedSourceLine(action: RevenueAction) {
   const evidence = action.evidence[0];
   if (!evidence) {
-    return action.reason ? `Source: ${action.reason}` : undefined;
+    const reason = actionReasonCopy(action.reason);
+    return reason ? `Source: ${reason}` : undefined;
   }
   const date = new Date(evidence.occurredAt).toLocaleDateString(undefined, {
     month: "short",
@@ -378,7 +380,7 @@ export function ReviewSheet({
             </Button>
           </div>
           <SheetTitle>{ACTION_TYPE_LABELS[action.actionType] ?? action.actionType}</SheetTitle>
-          <SheetDescription>{action.reason}</SheetDescription>
+          <SheetDescription>{actionReasonCopy(action.reason)}</SheetDescription>
         </SheetHeader>
         {actionError ? (
           <p
