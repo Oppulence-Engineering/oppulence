@@ -170,9 +170,10 @@ describe("CommitmentQueue", () => {
     expect(screen.getAllByText("You and Acme").length).toBeGreaterThan(1);
   });
 
-  it("asks for an account when that view has none selected", () => {
+  it("asks for a company when that view has none selected", () => {
+    expect(REGISTER_VIEWS.find((view) => view.id === "by_account")?.label).toBe("By company");
     expect(REGISTER_VIEWS.find((view) => view.id === "by_account")?.hint).toBe(
-      "Every promise for one account.",
+      "Every promise for one company.",
     );
     expect(REGISTER_VIEWS.find((view) => view.id === "they_owe")?.hint).toBe(
       "Promises they made to us.",
@@ -189,8 +190,8 @@ describe("CommitmentQueue", () => {
         })}
       />,
     );
-    expect(screen.getByText("Select one account to see every promise for it.")).toBeVisible();
-    expect(screen.getByRole("combobox", { name: "Account, Choose an account" })).toBeVisible();
+    expect(screen.getByText("Select one company to see every promise for it.")).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Company, Choose a company" })).toBeVisible();
     expect(screen.queryByText(/one relationship/)).toBeNull();
   });
 
@@ -204,7 +205,7 @@ describe("CommitmentQueue", () => {
         })}
       />,
     );
-    expect(screen.getByRole("combobox", { name: "Account, Acme" })).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Company, Acme" })).toBeVisible();
   });
 
   it("opens the recovery queue from the empty register without claiming an approval", async () => {
@@ -219,7 +220,7 @@ describe("CommitmentQueue", () => {
     expect(onOpenRecoveryQueue).toHaveBeenCalledOnce();
   });
 
-  it("loads a company past the directory page into By account", async () => {
+  it("loads a company past the directory page into By company", async () => {
     Element.prototype.hasPointerCapture ??= () => false;
     Element.prototype.setPointerCapture ??= () => undefined;
     Element.prototype.releasePointerCapture ??= () => undefined;
@@ -235,7 +236,7 @@ describe("CommitmentQueue", () => {
         })}
       />,
     );
-    await userEvent.click(screen.getByRole("combobox", { name: "Account, Choose an account" }));
+    await userEvent.click(screen.getByRole("combobox", { name: "Company, Choose a company" }));
     expect(screen.queryByRole("option", { name: "Hidden Account Co" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: registerNextCompaniesLabel() }));
     expect(onLoadMoreAccounts).toHaveBeenCalledOnce();
@@ -258,7 +259,7 @@ describe("CommitmentQueue", () => {
   it("asks for the next companies when the loaded page has none", () => {
     expect(registerEmptyAccountsTitle(false)).toBe("No companies yet");
     expect(registerEmptyAccountsDetail(true)).toBe(
-      "Show the next companies before choosing an account.",
+      "Show the next companies before choosing a company.",
     );
     render(
       <CommitmentQueue
@@ -287,8 +288,8 @@ describe("CommitmentQueue", () => {
     expect(
       screen.queryByText("Select one account to see its two-sided promise history."),
     ).toBeNull();
-    expect(screen.queryByText("Select one account to see every promise for it.")).toBeNull();
-    expect(screen.queryByRole("combobox", { name: "Account, Choose an account" })).toBeNull();
+    expect(screen.queryByText("Select one company to see every promise for it.")).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Company, Choose a company" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Add a company" }));
     expect(onOpenAccounts).toHaveBeenCalledOnce();
   });

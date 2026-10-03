@@ -121,8 +121,8 @@ export const REGISTER_VIEWS: { id: RegisterView; label: string; hint: string }[]
   },
   {
     id: "by_account",
-    label: "By account",
-    hint: "Every promise for one account.",
+    label: "By company",
+    hint: "Every promise for one company.",
   },
   {
     id: "by_owner",
@@ -207,7 +207,7 @@ export function registerRemainderLabel(): string {
   return "Show the next promises";
 }
 
-/** The By account menu only holds the companies already loaded. */
+/** The By company menu only holds the companies already loaded. */
 export function registerNextCompaniesLabel(): string {
   return "Show the next companies";
 }
@@ -218,7 +218,7 @@ export function registerEmptyAccountsTitle(hasMoreAccounts: boolean): string {
 
 export function registerEmptyAccountsDetail(hasMoreAccounts: boolean): string {
   return hasMoreAccounts
-    ? "Show the next companies before choosing an account."
+    ? "Show the next companies before choosing a company."
     : "Add a company before this view can show its promise history.";
 }
 
@@ -475,12 +475,12 @@ export function commitmentFilterName(value: string): string {
 }
 
 /**
- * The By account menu's accessible name replaced its value, so a selected
- * company was still announced as "Choose account".
+ * The By company menu's accessible name replaced its value, so a selected
+ * company was still announced as "Choose a company".
  */
 export function registerAccountName(label: string | null | undefined): string {
-  const choice = label?.trim() || "Choose an account";
-  return comboboxFilterName("Account", choice);
+  const choice = label?.trim() || "Choose a company";
+  return comboboxFilterName("Company", choice);
 }
 
 const REGISTER_COLUMNS = [
@@ -702,7 +702,7 @@ export function CommitmentQueue({
                 )}
                 className="h-8 w-44"
               >
-                <SelectValue placeholder="Choose an account" />
+                <SelectValue placeholder="Choose a company" />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-none">
                 {accounts.map((account) => (
@@ -981,11 +981,11 @@ export function CommitmentQueue({
         ) : scopeMissing ? (
           <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
             <h2 className="text-[20px] font-semibold leading-6 text-primary">
-              {view === "by_account" ? "Choose an account" : "Enter an owner"}
+              {view === "by_account" ? "Choose a company" : "Enter an owner"}
             </h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
               {view === "by_account"
-                ? "Select one account to see every promise for it."
+                ? "Select one company to see every promise for it."
                 : "Use a name or email to see what that person has promised."}
             </p>
           </div>
