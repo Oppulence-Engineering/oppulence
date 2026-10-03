@@ -373,6 +373,12 @@ function linesFromActivity(value: unknown): string[] {
       if (due) lines.push(due);
       continue;
     }
+    if (key === "evidence_quote") {
+      const quote = activityScalar(item);
+      const promise = activityScalar(record.commitment_text);
+      if (quote && quote !== promise) lines.push(`Quote: ${quote}`);
+      continue;
+    }
     if (
       key === "owner_participant_ref" ||
       key === "counterparty_participant_ref" ||

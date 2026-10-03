@@ -125,6 +125,13 @@ describe("source product copy", () => {
     const joined = lines.join("\n");
     expect(joined).not.toMatch(/promised_by_me|user_confirmed|session-1|local-user|meeting-counterparty|true/);
     expect(
+      activityEvidenceLines(null, {
+        commitment_text: "Send the quay quote",
+        evidence_quote: "Send the quay quote",
+        commitment_direction: "promised_by_them",
+      }),
+    ).toEqual(["Promise: Send the quay quote", "Direction: They owe us"]);
+    expect(
       activityEvidenceLines(null, { commitment_direction: "promised_by_them" }),
     ).toEqual(["Direction: They owe us"]);
     expect(activityEvidenceLines(null, { commitment_direction: "mutual" })).toEqual([
