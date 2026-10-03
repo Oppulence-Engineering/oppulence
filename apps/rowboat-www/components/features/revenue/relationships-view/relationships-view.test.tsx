@@ -63,6 +63,10 @@ import {
   mailMessageCountLabel,
   mailReplyLabel,
   reviewEvidenceKindLabel,
+  mutualPlanApproveLabel,
+  mutualPlanHeading,
+  mutualPlanItemLine,
+  mutualPlanShareLabel,
   mutualPlanStatusLabel,
   deletionReceiptStatusLabel,
   rankingFactorLabel,
@@ -539,6 +543,30 @@ describe("RelationshipsView", () => {
     expect(reviewEvidenceKindLabel("speaker")).toBe("Who said it");
     expect(reviewEvidenceKindLabel("claim")).toBe("What was said");
     expect(mutualPlanStatusLabel("internally_approved")).toBe("Approved in this workspace");
+    expect(mutualPlanHeading("draft", 1)).toBe("Draft · Version 1");
+    expect(mutualPlanHeading("internally_approved", 2)).toBe(
+      "Approved in this workspace · Version 2",
+    );
+    expect(mutualPlanItemLine("Send the harbor note", "jordan@northpier.example")).toBe(
+      "Send the harbor note · jordan@northpier.example",
+    );
+    expect(mutualPlanItemLine("Send the harbor note", "Jordan Buyer")).toBe(
+      "Send the harbor note · Jordan Buyer",
+    );
+    expect(mutualPlanItemLine("Send the harbor note", "plan-participant")).toBe(
+      "Send the harbor note",
+    );
+    expect(mutualPlanItemLine("Send the harbor note", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5")).toBe(
+      "Send the harbor note",
+    );
+    expect(mutualPlanApproveLabel()).toBe("Approve this plan");
+    expect(mutualPlanShareLabel()).toBe("Draft an email to share this plan");
+    expect(source).toContain("mutualPlanHeading(plan.status, plan.currentRevision.version)");
+    expect(source).toContain("mutualPlanItemLine(item.title, item.ownerParticipantRef)");
+    expect(source).toContain("mutualPlanApproveLabel()");
+    expect(source).toContain("mutualPlanShareLabel()");
+    expect(source).not.toContain("Queue exact revision for sharing");
+    expect(source).not.toContain("{item.title} · {item.ownerParticipantRef}");
     expect(deletionReceiptStatusLabel("partial")).toBe("Some copies are still there");
     expect(relationshipChangeLabel("next_action")).toBe("Next action");
     expect(relationshipChangeLabel("risks")).toBe("Risks");
@@ -562,7 +590,7 @@ describe("RelationshipsView", () => {
     expect(source).toContain("rankingFactorLabel(factor.factor)");
     expect(source).not.toContain("humanize(factor.factor)");
     expect(source).toContain("reviewEvidenceKindLabel(item.kind)");
-    expect(source).toContain("mutualPlanStatusLabel(plan.status)");
+    expect(source).toContain("mutualPlanHeading(plan.status, plan.currentRevision.version)");
     expect(source).toContain("deletionReceiptStatusLabel(data.intelligence.deletionReceipts[0].status)");
     expect(source).not.toContain("{item.kind}");
     expect(source).not.toContain("humanize(plan.status)");

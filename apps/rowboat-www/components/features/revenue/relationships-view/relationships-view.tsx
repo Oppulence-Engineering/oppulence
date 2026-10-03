@@ -2302,6 +2302,35 @@ export function mutualPlanStatusLabel(status: string): string {
   }
 }
 
+/** The plan heading names the version. The stored word is "revision". */
+export function mutualPlanHeading(status: string, version: number): string {
+  const label = mutualPlanStatusLabel(status);
+  const number = Number.isFinite(version) && version > 0 ? Math.floor(version) : 1;
+  return `${label} · Version ${number}`;
+}
+
+/**
+ * A plan step names its owner when that owner is a person. A redacted token
+ * and a bare id are not a name.
+ */
+export function mutualPlanItemLine(title: string, owner?: string | null): string {
+  const name = title.trim() || "Untitled step";
+  const who = (owner ?? "").trim();
+  if (!who || who === "plan-participant") return name;
+  if (/^[0-9a-f-]{36}$/i.test(who)) return name;
+  if (/^[a-z0-9_:-]+$/.test(who)) return name;
+  return `${name} · ${who}`;
+}
+
+export function mutualPlanApproveLabel(): string {
+  return "Approve this plan";
+}
+
+/** Sharing writes a draft email. It does not send the plan. */
+export function mutualPlanShareLabel(): string {
+  return "Draft an email to share this plan";
+}
+
 /** A deletion receipt status is how far the delete got, not a one-word token. */
 export function deletionReceiptStatusLabel(status: string): string {
   switch (status) {
@@ -4488,12 +4517,12 @@ export function RelationshipSheet({
                       {data.intelligence.mutualActionPlans.map((plan) => (
                         <li key={plan.planId} className="border border-border p-3 text-xs">
                           <p className="font-medium text-primary">
-                            {mutualPlanStatusLabel(plan.status)} · revision {plan.currentRevision.version}
+                            {mutualPlanHeading(plan.status, plan.currentRevision.version)}
                           </p>
                           <ul className="mt-1 list-disc pl-4 text-primary/60">
                             {plan.currentRevision.items.map((item) => (
                               <li key={item.itemId}>
-                                {item.title} · {item.ownerParticipantRef}
+                                {mutualPlanItemLine(item.title, item.ownerParticipantRef)}
                               </li>
                             ))}
                           </ul>
@@ -4508,7 +4537,7 @@ export function RelationshipSheet({
                                   )
                                 }
                               >
-                                Approve revision
+                                {mutualPlanApproveLabel()}
                               </Button>
                             ) : null}
                             {plan.status === "internally_approved" ? (
@@ -4521,7 +4550,7 @@ export function RelationshipSheet({
                                   )
                                 }
                               >
-                                Queue exact revision for sharing
+                                {mutualPlanShareLabel()}
                               </Button>
                             ) : null}
                           </div>
