@@ -1141,7 +1141,7 @@ it("finds a promise by the status and score printed on the row", async () => {
   ).toBe(
     [
       "Acme Taylor Morgan Send the signed security packet 65 At risk",
-      "Due within 72h At risk Accepted Missing Not confirmed Evidence Complete Watch",
+      "Due within 72h due soon At risk Accepted Missing Not confirmed Evidence Complete Watch",
     ].join(" "),
   );
   const undated = commitmentSearchText({
@@ -1181,6 +1181,7 @@ it("finds a promise by the status and score printed on the row", async () => {
     currentEventVersion: 1,
   });
   expect(overdue).toContain("Overdue");
+  expect(overdue).toContain("past due");
   expect(overdue).not.toContain("Not confirmed");
   expect(overdue).not.toContain("Missing");
 });

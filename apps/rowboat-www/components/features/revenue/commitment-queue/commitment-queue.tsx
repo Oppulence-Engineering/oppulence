@@ -715,13 +715,17 @@ export function commitmentSearchText(item: CommitmentQueueItem): string {
     String(item.confidence),
     registerRowStatus(item).label,
     urgencyLabel(item.urgency),
+    item.urgency === "due_soon" ? "due soon" : "",
+    item.urgency === "overdue" ? "past due" : "",
     statusLabel(item.state),
     acceptanceLabel(item.acceptance),
     promiseDueDay(item.dueAt) ?? "Missing",
     promiseDueDay(item.dueAt) ?? "Not confirmed",
     evidence,
     item.nextAction,
-  ].join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export function CommitmentQueue({

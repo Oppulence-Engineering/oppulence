@@ -177,6 +177,10 @@ export function parseRelationshipGraphQuery(query) {
     edgeKinds: [],
     overdue: /\boverdue\b|\bpast due\b|\bpast_due\b/.test(normalized),
     atRisk: /\bat risk\b|\bat_risk\b/.test(normalized),
+    dueSoon:
+      /\bdue soon\b|\bdue_soon\b|\bdue within 72h\b|\bwithin 72h\b|\bdue within 72 hours\b|\bwithin 72 hours\b/.test(
+        normalized,
+      ),
     stale: /\bstale\b|\boutdated\b|\bout of date\b/.test(normalized),
     changed:
       /\bchanged\b|\bsince (?:my )?last review\b|\bchanged since review\b|\bsince you last looked\b|\byou last looked\b/.test(
@@ -283,7 +287,13 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bpast due\b/g, " ")
     .replace(/\bpast_due\b/g, " ")
     .replace(/\bat risk\b/g, " ")
-    .replace(/\bat_risk\b/g, " ");
+    .replace(/\bat_risk\b/g, " ")
+    .replace(/\bdue within 72 hours\b/g, " ")
+    .replace(/\bwithin 72 hours\b/g, " ")
+    .replace(/\bdue within 72h\b/g, " ")
+    .replace(/\bwithin 72h\b/g, " ")
+    .replace(/\bdue soon\b/g, " ")
+    .replace(/\bdue_soon\b/g, " ");
   filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
@@ -300,6 +310,7 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.edgeKinds.length) applied.push(`edges: ${filters.edgeKinds.join(", ")}`);
   if (filters.overdue) applied.push("overdue promises");
   if (filters.atRisk) applied.push("at risk");
+  if (filters.dueSoon) applied.push("due soon");
   if (filters.stale) applied.push("out of date");
   if (filters.changed) applied.push("changed since you last looked");
   if (filters.hideIsolated) applied.push("hide unconnected");
@@ -360,6 +371,13 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     constrainBy(
       (node) => node.kind === "commitment" && normalizedGraphValue(node.status) === "at_risk",
     );
+  }
+  if (filters.dueSoon) {
+    constrainBy((node) => {
+      if (node.kind !== "commitment" || normalizedGraphValue(node.status) !== "at_risk") return false;
+      const dueAt = node.dueAt ? new Date(node.dueAt) : null;
+      return Boolean(dueAt && Number.isFinite(dueAt.getTime()) && dueAt >= asOf);
+    });
   }
   if (filters.approvalStatus.length) {
     constrainBy(

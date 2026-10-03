@@ -263,6 +263,47 @@ test("asking at risk finds the promise marked at risk", () => {
   assert.deepEqual(attention.relationshipIds, ["attention"]);
 });
 
+test("asking due soon keeps a promise that is not past due yet", () => {
+  const asOf = "2026-10-03T12:00:00.000Z";
+  const parsed = parseRelationshipGraphQuery("due within 72h");
+  assert.equal(parsed.filters.dueSoon, true);
+  assert.equal(parsed.filters.atRisk, false);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.ok(parsed.applied.includes("due soon"));
+
+  const soon = parseRelationshipGraphQuery("due soon");
+  assert.equal(soon.filters.dueSoon, true);
+  assert.deepEqual(soon.filters.freeText, []);
+
+  const graph = {
+    asOf,
+    nodes: [
+      { id: "relationship:soon", kind: "relationship", label: "Quay Soon" },
+      {
+        id: "commitment:soon",
+        kind: "commitment",
+        label: "Send the quay soon",
+        relationshipId: "soon",
+        status: "at_risk",
+        dueAt: "2026-10-04T15:00:00.000Z",
+      },
+      { id: "relationship:late", kind: "relationship", label: "Quay Late" },
+      {
+        id: "commitment:late",
+        kind: "commitment",
+        label: "Send the quay late",
+        relationshipId: "late",
+        status: "at_risk",
+        dueAt: "2026-09-01T15:00:00.000Z",
+      },
+    ],
+    edges: [],
+  };
+  const result = queryRelationshipGraph(graph, "due soon");
+  assert.deepEqual(result.relationshipIds, ["soon"]);
+  assert.equal(result.answer, "1 relationship matches due soon.");
+});
+
 test("an up to date detail is not out of date", () => {
   const asOf = "2026-10-03T12:00:00.000Z";
   const current = {
