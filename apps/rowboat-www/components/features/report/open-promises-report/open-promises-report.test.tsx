@@ -4,6 +4,8 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  reportConnectDescription,
+  reportKnownPromiseCopy,
   reportRiskLabel,
   reportReviewLabel,
   reportSourceQuote,
@@ -25,6 +27,17 @@ describe("OpenPromisesReportClient", () => {
     expect(reportStateBadge("at_risk")).toBe("At risk");
     expect(reportStateBadge("review")).toBe("Review");
     expect(reportStateBadge("open")).toBeNull();
+    expect(reportKnownPromiseCopy(0)).toBe("");
+    expect(reportKnownPromiseCopy(1)).toBe("1 promise is already in Commitments.");
+    expect(reportKnownPromiseCopy(2, true)).toBe("2+ promises are already in Commitments.");
+    expect(reportConnectDescription(false, "", "6 months")).toBe(
+      "Oppulence reads the last 6 months to find promises. Nothing is sent, written, or replied to on your behalf.",
+    );
+    expect(reportConnectDescription(false, "1 promise is already in Commitments.", "6 months")).toBe(
+      "1 promise is already in Commitments. Oppulence reads the last 6 months to find promises in mail. Nothing is sent, written, or replied to on your behalf.",
+    );
+    expect(source).toContain("reportKnownPromiseCopy(");
+    expect(source).toContain("reportConnectDescription(");
     expect(source).toContain("reportStateBadge(item.state)");
     expect(source).toContain("{badge}");
     expect(source).not.toContain(">at risk<");

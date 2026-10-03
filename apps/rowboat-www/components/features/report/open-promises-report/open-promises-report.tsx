@@ -5,7 +5,7 @@ import "client-only";
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRightIcon, CircleNotchIcon, ExportIcon, PlugsIcon, WarningIcon } from "@/lib/icons";
 import {
   useOpenPromisesReport,
@@ -13,6 +13,16 @@ import {
   useReportScanList,
 } from "@/hooks/queries/use-report";
 import { useRelationshipSourceStatuses } from "@/hooks/queries/use-relationship-sources";
+import {
+  commitmentPageHasMore,
+  commitmentRows,
+  fetchCommitments,
+} from "@/hooks/queries/utils/fetch-commitments";
+import {
+  COMMITMENT_REGISTER_STALE_TIME,
+  commitmentKeys,
+} from "@/hooks/queries/utils/commitment-keys";
+import { REGISTER_PAGE_SIZE } from "@/lib/revenue/commitment-register-filter";
 import { reportKeys } from "@/hooks/queries/utils/report-keys";
 import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-source-keys";
 import { useReportScanParam } from "@/hooks/dashboard/use-product-route-state";
@@ -101,6 +111,18 @@ function ReportBody() {
   });
   const googleSource = sourcesQuery.data?.find((source) => source.source === "google");
   const health = relationshipSourceHealth(sourcesQuery.data ?? []);
+  const connectGate = health === "not_connected" || health === "needs_reconnect";
+  const knownPromises = useQuery({
+    queryKey: [...commitmentKeys.lists(), "report-known"],
+    queryFn: ({ signal }) =>
+      fetchCommitments({ state: ["open", "at_risk"], limit: REGISTER_PAGE_SIZE }, signal),
+    enabled: connectGate,
+    staleTime: COMMITMENT_REGISTER_STALE_TIME,
+  });
+  const knownCopy = reportKnownPromiseCopy(
+    commitmentRows(knownPromises.data).length,
+    commitmentPageHasMore(knownPromises.data),
+  );
 
   const scansQuery = useReportScanList();
   const {
@@ -273,13 +295,14 @@ function ReportBody() {
         both until the source list is in the cache, so the connect step is
         not hydrated over this loading line.
       */}
-      {sourcesQuery.isPending || (!scanId && scansQuery.isPending) ? (
+      {sourcesQuery.isPending || (!scanId && scansQuery.isPending) || (connectGate && knownPromises.isPending) ? (
         <p className="flex items-center gap-2 text-[13px] text-primary/55">
           <CircleNotchIcon className="size-4 animate-spin" /> Loading your report.
         </p>
       ) : health === "not_connected" ? (
         <GoogleConnectionStep
           busy={connecting}
+          knownCopy={knownCopy}
           onConnect={() => {
             void connectGoogle();
           }}
@@ -287,6 +310,7 @@ function ReportBody() {
       ) : health === "needs_reconnect" ? (
         <GoogleConnectionStep
           busy={connecting}
+          knownCopy={knownCopy}
           onConnect={() => {
             void connectGoogle();
           }}
@@ -422,10 +446,12 @@ function GoogleEvidenceSyncState({
 
 function GoogleConnectionStep({
   busy,
+  knownCopy = "",
   onConnect,
   reconnect = false,
 }: {
   busy: boolean;
+  knownCopy?: string;
   onConnect: () => void;
   reconnect?: boolean;
 }) {
@@ -443,11 +469,11 @@ function GoogleConnectionStep({
           {busy ? "Connecting…" : reconnect ? "Reconnect Google" : "Connect Gmail & Calendar"}
         </Button>
       }
-      description={
-        reconnect
-          ? "Google stopped accepting the authorization, so we cannot read your mail. Reconnect to run the audit."
-          : `Oppulence reads the last ${REVENUE_EVIDENCE_LOOKBACK_LABEL} to find promises. Nothing is sent, written, or replied to on your behalf.`
-      }
+      description={reportConnectDescription(
+        reconnect,
+        knownCopy,
+        REVENUE_EVIDENCE_LOOKBACK_LABEL,
+      )}
       image="openPromises"
       learnMore={[
         { label: "See the message each promise came from" },
@@ -521,6 +547,30 @@ function ScanningStep({
       </p>
     </section>
   );
+}
+
+/** Promises already on the record are not hidden behind the mail connection. */
+export function reportKnownPromiseCopy(count: number, hasMore = false): string {
+  const total = Number.isFinite(count) ? Math.max(0, Math.round(count)) : 0;
+  if (total <= 0) return "";
+  if (hasMore) return `${total}+ promises are already in Commitments.`;
+  if (total === 1) return "1 promise is already in Commitments.";
+  return `${total} promises are already in Commitments.`;
+}
+
+/** Connecting mail looks for more promises. It does not erase the ones already recorded. */
+export function reportConnectDescription(
+  reconnect: boolean,
+  known: string,
+  lookback: string,
+): string {
+  const recorded = known.trim();
+  const next = reconnect
+    ? "Google stopped accepting the authorization, so we cannot read your mail. Reconnect to run the audit."
+    : recorded
+      ? `Oppulence reads the last ${lookback} to find promises in mail. Nothing is sent, written, or replied to on your behalf.`
+      : `Oppulence reads the last ${lookback} to find promises. Nothing is sent, written, or replied to on your behalf.`;
+  return recorded ? `${recorded} ${next}` : next;
 }
 
 /** A blank excerpt is not a citation. Spaces are not a sentence. */
