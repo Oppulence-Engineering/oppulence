@@ -469,7 +469,10 @@ describe("RelationshipsView", () => {
   it("describes a company record without model jargon", async () => {
     expect(
       companyReviewCopy({ previousReviewedStateVersion: 0, changedSinceReview: false }),
-    ).toEqual({ change: "Not reviewed yet.", footer: "Not reviewed yet." });
+    ).toEqual({
+      change: "No account details have changed yet.",
+      footer: "Not reviewed yet.",
+    });
     expect(
       companyReviewCopy({ previousReviewedStateVersion: 2, changedSinceReview: false }),
     ).toEqual({

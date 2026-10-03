@@ -2096,7 +2096,10 @@ export function companyReviewCopy(model: {
   changedSinceReview: boolean;
 }): { change: string; footer: string } {
   if (!model.changedSinceReview && model.previousReviewedStateVersion <= 0) {
-    return { change: "Not reviewed yet.", footer: "Not reviewed yet." };
+    return {
+      change: "No account details have changed yet.",
+      footer: "Not reviewed yet.",
+    };
   }
   return {
     change: "Nothing changed since your last review.",
