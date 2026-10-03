@@ -2232,15 +2232,22 @@ export function missionControlStateAnswer(
  * The question asks what should happen next. The stored reason says why the
  * recommendation exists, so the action name has to lead.
  */
-export function missionControlActionAnswer(recommendation?: {
-  actionType?: string | null;
-  reason?: string | null;
-} | null): string {
+export function missionControlActionAnswer(
+  recommendation?: {
+    actionType?: string | null;
+    reason?: string | null;
+  } | null,
+  commitments?: readonly { status?: string; text?: string; acceptance?: string }[],
+): string {
   const type = recommendation?.actionType?.trim() ?? "";
   const reason = actionReasonCopy(recommendation?.reason);
   const label = type ? (ACTION_TYPE_LABELS[type] ?? humanize(type)) : "";
   if (label && reason) return `${label}. ${reason}`;
-  return label || reason || "No action is currently recommended.";
+  if (label || reason) return label || reason;
+  const open = missionControlPromiseAnswer(commitments ?? []);
+  if (!open) return "No action is currently recommended.";
+  const sentence = open.endsWith(".") ? open : `${open}.`;
+  return `${sentence} No follow-up is drafted.`;
 }
 
 /** The eight details are account fields. The promise is a separate record. */
@@ -3102,7 +3109,7 @@ function MissionControlOverview({
           } else if (question.key === "evidence") {
             answer = accountDetailSourceCopy(openable, total, true);
           } else if (question.key === "action") {
-            answer = missionControlActionAnswer(model.activeRecommendation);
+            answer = missionControlActionAnswer(model.activeRecommendation, commitments);
           }
           return (
             <div key={question.key} className="border border-border p-3">
@@ -4431,7 +4438,7 @@ export function RelationshipSheet({
                 <section data-capability="governed-actions">
                   <SectionTitle title={`Recommendations (${data.recommendations.length})`} />
                   {data.recommendations.length === 0 ? (
-                    <EmptyText>No action is currently recommended.</EmptyText>
+                    <EmptyText>{missionControlActionAnswer(null, data.commitments)}</EmptyText>
                   ) : (
                     <ul className="flex flex-col gap-2">
                       {data.recommendations.map((action) => (

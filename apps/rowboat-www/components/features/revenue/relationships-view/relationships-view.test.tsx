@@ -579,6 +579,26 @@ describe("RelationshipsView", () => {
     expect(source).toContain("missionControlStateAnswer(model.evidence, commitments)");
     expect(missionControlActionAnswer(null)).toBe("No action is currently recommended.");
     expect(
+      missionControlActionAnswer(null, [
+        { status: "open", acceptance: "internally_confirmed", text: "Send the quay review" },
+      ]),
+    ).toBe("Open promise: Send the quay review. No follow-up is drafted.");
+    expect(
+      missionControlActionAnswer(null, [
+        { status: "open", acceptance: "internally_confirmed", text: "Send the packet" },
+        { status: "open", acceptance: "accepted", text: "Book the review" },
+      ]),
+    ).toBe("2 open promises. No follow-up is drafted.");
+    expect(
+      missionControlActionAnswer(
+        {
+          actionType: "meeting_follow_up",
+          reason: "You confirmed this follow-up from the meeting.",
+        },
+        [{ status: "open", acceptance: "internally_confirmed", text: "Send the packet" }],
+      ),
+    ).toBe("Meeting follow-up. You confirmed this follow-up from the meeting.");
+    expect(
       missionControlActionAnswer({
         actionType: "meeting_follow_up",
         reason: "You confirmed this follow-up from the meeting.",
@@ -593,7 +613,8 @@ describe("RelationshipsView", () => {
     expect(missionControlActionAnswer({ reason: "Send the harbor note" })).toBe(
       "Send the harbor note",
     );
-    expect(source).toContain("missionControlActionAnswer(model.activeRecommendation)");
+    expect(source).toContain("missionControlActionAnswer(model.activeRecommendation, commitments)");
+    expect(source).toContain("missionControlActionAnswer(null, data.commitments)");
     expect(source).toContain("actionReasonCopy(recommendation?.reason)");
     expect(source).toContain("actionReasonCopy(action.reason)");
     expect(
