@@ -181,7 +181,9 @@ export function parseRelationshipGraphQuery(query) {
       /\bchanged\b|\bsince (?:my )?last review\b|\bchanged since review\b|\bsince you last looked\b|\byou last looked\b/.test(
         normalized,
       ),
-    hideIsolated: /\bconnected\b|\bhide isolated\b/.test(normalized),
+    hideIsolated: /\bconnected\b|\bhide isolated\b|\bunconnected\b|\bhide unconnected\b/.test(
+      normalized,
+    ),
     freeText: [],
   };
 
@@ -273,7 +275,10 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\byou last looked\b/g, " ")
     .replace(/\bsince my last review\b/g, " ")
     .replace(/\bsince last review\b/g, " ")
-    .replace(/\bchanged since review\b/g, " ");
+    .replace(/\bchanged since review\b/g, " ")
+    .replace(/\bhide unconnected\b/g, " ")
+    .replace(/\bunconnected\b/g, " ")
+    .replace(/\bhide isolated\b/g, " ");
   filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
@@ -291,6 +296,7 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.overdue) applied.push("overdue promises");
   if (filters.stale) applied.push("out of date");
   if (filters.changed) applied.push("changed since you last looked");
+  if (filters.hideIsolated) applied.push("hide unconnected");
   if (filters.freeText.length) applied.push(`text: ${filters.freeText.join(" ")}`);
 
   return { raw, normalized, filters, applied };
@@ -440,6 +446,29 @@ export function queryRelationshipGraph(graph, query, options = {}) {
       visible.add(edge.source);
       visible.add(edge.target);
     }
+  }
+  if (filters.hideIsolated) {
+    const connected = new Set();
+    for (const edge of edges) {
+      if (!edgeKindCandidates.has(edge.id)) continue;
+      if (visible.has(edge.source) && visible.has(edge.target)) {
+        connected.add(edge.source);
+        connected.add(edge.target);
+      }
+    }
+    for (const nodeId of [...visible]) {
+      if (!connected.has(nodeId)) visible.delete(nodeId);
+    }
+    for (const nodeId of [...matched]) {
+      if (!visible.has(nodeId)) matched.delete(nodeId);
+    }
+    const remaining = new Set();
+    for (const node of nodes) {
+      if (node.kind !== "relationship" || !visible.has(node.id)) continue;
+      for (const relationshipId of graphNodeRelationshipIds(node)) remaining.add(relationshipId);
+    }
+    relationshipIds = constrained ? graphSetIntersection(relationshipIds, remaining) : remaining;
+    constrained = true;
   }
   const matchedEdgeIds = new Set(
     edges

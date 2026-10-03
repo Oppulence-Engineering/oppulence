@@ -290,6 +290,44 @@ test("the graph's own change and freshness words are the filter, not a text sear
   assert.equal(datedGraph.answer, "1 relationship matches out of date.");
 });
 
+test("hide unconnected drops a company with nothing linked", () => {
+  const parsed = parseRelationshipGraphQuery("hide unconnected");
+  assert.equal(parsed.filters.hideIsolated, true);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["hide unconnected"]);
+
+  const isolated = parseRelationshipGraphQuery("hide isolated");
+  assert.equal(isolated.filters.hideIsolated, true);
+  assert.deepEqual(isolated.filters.freeText, []);
+
+  const result = queryRelationshipGraph(
+    {
+      nodes: [
+        { id: "relationship:linked", kind: "relationship", label: "Quay Linked" },
+        {
+          id: "commitment:linked",
+          kind: "commitment",
+          label: "Send the quay link",
+          relationshipId: "linked",
+        },
+        { id: "relationship:alone", kind: "relationship", label: "Quay Alone" },
+      ],
+      edges: [
+        {
+          id: "edge:linked",
+          source: "relationship:linked",
+          target: "commitment:linked",
+          kind: "has_commitment",
+        },
+      ],
+    },
+    "hide unconnected",
+  );
+  assert.deepEqual(result.relationshipIds, ["linked"]);
+  assert.equal(result.visibleNodeIds.includes("relationship:alone"), false);
+  assert.equal(result.answer, "1 relationship matches hide unconnected.");
+});
+
 test("graph questions use the stage and health words a person would type", () => {
   const active = parseRelationshipGraphQuery("active customer");
   assert.deepEqual(active.filters.lifecycle, ["active_customer"]);

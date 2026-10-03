@@ -355,6 +355,10 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryFilterLabel("changed since you last looked")).toBe(
       "changed since you last looked",
     );
+    expect(graphQueryFilterLabel("hide unconnected")).toBe("hide unconnected");
+    expect(graphQueryAnswer("1 relationship matches hide unconnected.", 2)).toBe(
+      "1 company matches hide unconnected.",
+    );
     expect(graphQueryFilterLabel("sources: desktop_note")).not.toContain("desktop_note");
     expect(graphQueryFilterLabel("approval: pending")).not.toContain("pending");
     expect(source).toContain("Building the company graph");
