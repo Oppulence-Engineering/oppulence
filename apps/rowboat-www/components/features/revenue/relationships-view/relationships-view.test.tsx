@@ -549,6 +549,84 @@ describe("RelationshipsView", () => {
         ],
       ),
     ).toBe("Lifecycle: Prospect · 2 open promises.");
+    const riskNow = Date.parse("2026-10-03T19:00:00Z");
+    expect(
+      missionControlPromiseAnswer(
+        [
+          {
+            status: "open",
+            acceptance: "internally_confirmed",
+            text: "Send the quay risk",
+            dueAt: "2026-10-01T15:00:00Z",
+          },
+        ],
+        riskNow,
+      ),
+    ).toBe("At risk promise: Send the quay risk");
+    expect(
+      missionControlStateAnswer(
+        { lifecycle: { supported: false, value: "prospect" } },
+        [
+          {
+            status: "open",
+            acceptance: "internally_confirmed",
+            text: "Send the quay risk",
+            dueAt: "2026-10-05T12:00:00Z",
+          },
+        ],
+        riskNow,
+      ),
+    ).toBe("At risk promise: Send the quay risk");
+    expect(
+      missionControlPromiseAnswer(
+        [
+          {
+            status: "open",
+            acceptance: "internally_confirmed",
+            text: "Send the quay due",
+            dueAt: "2026-10-20T15:00:00Z",
+          },
+        ],
+        riskNow,
+      ),
+    ).toBe("Open promise: Send the quay due");
+    expect(
+      missionControlPromiseAnswer(
+        [
+          {
+            status: "open",
+            acceptance: "internally_confirmed",
+            text: "Send the packet",
+            dueAt: "2026-10-20T15:00:00Z",
+          },
+          {
+            status: "open",
+            acceptance: "accepted",
+            text: "Send the quay risk",
+            dueAt: "2026-10-01T15:00:00Z",
+          },
+        ],
+        riskNow,
+      ),
+    ).toBe("1 open promise and 1 promise at risk.");
+    expect(
+      missionControlPromiseAnswer(
+        [
+          {
+            status: "open",
+            acceptance: "internally_confirmed",
+            text: "Send the quay risk",
+            dueAt: "2026-10-01T15:00:00Z",
+          },
+          {
+            status: "at_risk",
+            acceptance: "accepted",
+            text: "Book the review",
+          },
+        ],
+        riskNow,
+      ),
+    ).toBe("2 promises are at risk.");
     expect(accountDetailSourceCopy(0, 8)).toBe("0 of 8 account details have a source");
     expect(accountDetailSourceCopy(0, 8, true)).toBe(
       "0 of 8 account details come from a source you can open.",
@@ -583,6 +661,20 @@ describe("RelationshipsView", () => {
         { status: "open", acceptance: "internally_confirmed", text: "Send the quay review" },
       ]),
     ).toBe("Open promise: Send the quay review. No follow-up is drafted.");
+    expect(
+      missionControlActionAnswer(
+        null,
+        [
+          {
+            status: "open",
+            acceptance: "internally_confirmed",
+            text: "Send the quay risk",
+            dueAt: "2026-10-01T15:00:00Z",
+          },
+        ],
+        Date.parse("2026-10-03T19:00:00Z"),
+      ),
+    ).toBe("At risk promise: Send the quay risk. No follow-up is drafted.");
     expect(
       missionControlActionAnswer(null, [
         { status: "open", acceptance: "internally_confirmed", text: "Send the packet" },

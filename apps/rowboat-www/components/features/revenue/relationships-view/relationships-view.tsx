@@ -2190,20 +2190,50 @@ export function missionControlChangeAnswer(
 }
 
 /**
- * A confirmed open promise is true now. A candidate is still a guess, and a
- * closed promise is no longer the current fact.
+ * Same clock as the company card and the register. A promise due inside this
+ * window is at risk even while its stored status stays "open".
+ */
+const PROMISE_AT_RISK_WINDOW_MS = 72 * 60 * 60 * 1000;
+
+function promiseDueAtRisk(dueAt: string | null | undefined, now: number): boolean {
+  if (!dueAt?.trim()) return false;
+  const due = Date.parse(dueAt);
+  return Number.isFinite(due) && due < now + PROMISE_AT_RISK_WINDOW_MS;
+}
+
+/**
+ * A confirmed promise is true now. A candidate is still a guess, and a closed
+ * promise is no longer the current fact. The company card calls a promise due
+ * inside 72 hours "At risk", so this answer uses that same word.
  */
 export function missionControlPromiseAnswer(
-  commitments: readonly { status?: string; text?: string; acceptance?: string }[],
+  commitments: readonly {
+    status?: string;
+    text?: string;
+    acceptance?: string;
+    dueAt?: string | null;
+  }[],
+  now = Date.now(),
 ): string {
-  const texts = commitments
-    .filter((item) => (item.status || "open") === "open")
+  const rows = commitments
+    .filter((item) => (item.status || "open") === "open" || item.status === "at_risk")
     .filter((item) => item.acceptance !== "candidate" && item.acceptance !== "disputed")
-    .map((item) => item.text?.trim() ?? "")
-    .filter(Boolean);
-  if (texts.length === 1) return `Open promise: ${texts[0]}`;
-  if (texts.length > 1) return `${texts.length} open promises.`;
-  return "";
+    .map((item) => ({
+      text: item.text?.trim() ?? "",
+      atRisk: item.status === "at_risk" || promiseDueAtRisk(item.dueAt, now),
+    }))
+    .filter((item) => item.text);
+  if (rows.length === 0) return "";
+  if (rows.length === 1) {
+    return rows[0].atRisk ? `At risk promise: ${rows[0].text}` : `Open promise: ${rows[0].text}`;
+  }
+  const atRisk = rows.filter((row) => row.atRisk).length;
+  const open = rows.length - atRisk;
+  if (atRisk === 0) return `${open} open promises.`;
+  if (open === 0) return `${atRisk} promises are at risk.`;
+  const openLabel = open === 1 ? "1 open promise" : `${open} open promises`;
+  const riskLabel = atRisk === 1 ? "1 promise at risk" : `${atRisk} promises at risk`;
+  return `${openLabel} and ${riskLabel}.`;
 }
 
 export function missionControlStateAnswer(
@@ -2211,7 +2241,13 @@ export function missionControlStateAnswer(
     lifecycle?: { supported?: boolean; value?: unknown };
     health?: { supported?: boolean; value?: unknown };
   },
-  commitments: readonly { status?: string; text?: string; acceptance?: string }[] = [],
+  commitments: readonly {
+    status?: string;
+    text?: string;
+    acceptance?: string;
+    dueAt?: string | null;
+  }[] = [],
+  now = Date.now(),
 ): string {
   const shown = (item: { supported?: boolean; value?: unknown } | undefined) => {
     if (!item?.supported || item.value == null) return "";
@@ -2223,7 +2259,7 @@ export function missionControlStateAnswer(
     lifecycle ? `Lifecycle: ${companyRecordLabel(lifecycle)}` : "",
     health ? `Health: ${companyRecordLabel(health)}` : "",
   ].filter(Boolean);
-  const promise = missionControlPromiseAnswer(commitments);
+  const promise = missionControlPromiseAnswer(commitments, now);
   if (promise) parts.push(promise);
   if (parts.length === 0) return "No supported answer yet.";
   return parts.join(" · ");
@@ -2238,14 +2274,20 @@ export function missionControlActionAnswer(
     actionType?: string | null;
     reason?: string | null;
   } | null,
-  commitments?: readonly { status?: string; text?: string; acceptance?: string }[],
+  commitments?: readonly {
+    status?: string;
+    text?: string;
+    acceptance?: string;
+    dueAt?: string | null;
+  }[],
+  now = Date.now(),
 ): string {
   const type = recommendation?.actionType?.trim() ?? "";
   const reason = actionReasonCopy(recommendation?.reason);
   const label = type ? (ACTION_TYPE_LABELS[type] ?? humanize(type)) : "";
   if (label && reason) return `${label}. ${reason}`;
   if (label || reason) return label || reason;
-  const open = missionControlPromiseAnswer(commitments ?? []);
+  const open = missionControlPromiseAnswer(commitments ?? [], now);
   if (!open) return "No action is currently recommended.";
   const sentence = open.endsWith(".") ? open : `${open}.`;
   return `${sentence} No follow-up is drafted.`;
@@ -3050,7 +3092,12 @@ function MissionControlOverview({
   onRetract,
 }: {
   model: MissionControlReadModel;
-  commitments: readonly { status?: string; text?: string; acceptance?: string }[];
+  commitments: readonly {
+    status?: string;
+    text?: string;
+    acceptance?: string;
+    dueAt?: string | null;
+  }[];
   emailThreadCount: number;
   busy: boolean;
   onAcknowledge: () => void;
