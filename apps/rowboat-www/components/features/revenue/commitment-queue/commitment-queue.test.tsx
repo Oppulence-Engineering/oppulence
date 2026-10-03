@@ -33,6 +33,7 @@ import {
   registerRemainderLabel,
   registerRowStatus,
   registerSharedPromiseCopy,
+  sourceWatchCopy,
   urgencyLabel,
 } from "./commitment-queue";
 import type {
@@ -462,6 +463,50 @@ describe("CommitmentQueue", () => {
     const source = fs.readFileSync(path.join(import.meta.dirname, "commitment-queue.tsx"), "utf8");
     expect(source).toContain("registerRowStatus(item)");
     expect(source).not.toContain('label: "Confirmed"');
+  });
+
+  it("names the next step from whether Google is connected", async () => {
+    expect(sourceWatchCopy({ connected: false, needsReconnect: false })).toBe(
+      "Connect Gmail and Calendar to watch for fulfillment or a reply.",
+    );
+    expect(sourceWatchCopy({ connected: false, needsReconnect: true })).toBe(
+      "Reconnect Google to watch for fulfillment or a reply.",
+    );
+    expect(sourceWatchCopy({ connected: true, needsReconnect: false })).toBe(
+      "Watch connected sources for fulfillment or a reply.",
+    );
+
+    const open = {
+      ...entries("internally_confirmed")[0],
+      id: "commitment-watch",
+      state: "open" as const,
+      dueAt: "2026-12-01T15:00:00.000Z",
+      text: "Send the quay watch",
+      relationshipName: "Quay Watch",
+    };
+    const { unmount } = render(
+      <CommitmentQueue aria-label="Client commitments" {...props({ entries: [open] })} />,
+    );
+    await userEvent.click(screen.getByText("Quay Watch"));
+    expect(
+      screen.getByText("Connect Gmail and Calendar to watch for fulfillment or a reply."),
+    ).toBeVisible();
+    expect(
+      screen.queryByText("Watch connected sources for fulfillment or a reply."),
+    ).not.toBeInTheDocument();
+    unmount();
+
+    render(
+      <CommitmentQueue
+        aria-label="Client commitments"
+        {...props({ entries: [open], sources: brokenSources })}
+      />,
+    );
+    await userEvent.click(screen.getByText("Quay Watch"));
+    expect(screen.getByText("Reconnect Google to watch for fulfillment or a reply.")).toBeVisible();
+
+    const source = fs.readFileSync(path.join(import.meta.dirname, "commitment-queue.tsx"), "utf8");
+    expect(source).toContain("sourceWatchCopy({ connected: googleConnected, needsReconnect: googleNeedsReconnect })");
   });
 
   it("does not send a stale Google source through OAuth", () => {

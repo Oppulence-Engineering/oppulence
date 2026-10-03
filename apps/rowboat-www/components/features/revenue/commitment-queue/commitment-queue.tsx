@@ -385,11 +385,22 @@ function missingEvidence(entry: RegisterEntry) {
   return missing;
 }
 
+/**
+ * An open, complete promise used to say "watch connected sources" while the
+ * workspace had none. The next step names the connection that is actually missing.
+ */
+export function sourceWatchCopy(input: { connected: boolean; needsReconnect: boolean }): string {
+  if (input.needsReconnect) return "Reconnect Google to watch for fulfillment or a reply.";
+  if (!input.connected) return "Connect Gmail and Calendar to watch for fulfillment or a reply.";
+  return "Watch connected sources for fulfillment or a reply.";
+}
+
 function nextAction(
   state: string,
   missing: string[],
   urgency: CommitmentQueueItem["urgency"],
   blocked = false,
+  watch = sourceWatchCopy({ connected: false, needsReconnect: false }),
 ) {
   if (state === "met") return "Closed from observed or confirmed evidence.";
   if (state === "waived") return "Released by the counterparty. No action required.";
@@ -401,7 +412,7 @@ function nextAction(
   if (missing.length > 0) return `Confirm or correct ${missingEvidenceLabel(missing[0])}.`;
   if (urgency === "overdue") return "Draft a recovery message or task now.";
   if (urgency === "due_soon") return "Review and warn the owner before it is overdue.";
-  return "Watch connected sources for fulfillment or a reply.";
+  return watch;
 }
 
 /** The promise row and the parties use one company name. Spaces are not a name. */
@@ -447,7 +458,11 @@ export function registerPartyLabels(entry: {
   };
 }
 
-function toQueueItems(entries: RegisterEntry[], now = new Date()): CommitmentQueueItem[] {
+function toQueueItems(
+  entries: RegisterEntry[],
+  now = new Date(),
+  watch = sourceWatchCopy({ connected: false, needsReconnect: false }),
+): CommitmentQueueItem[] {
   return entries
     .map((entry): CommitmentQueueItem => {
       const relationshipName = registerCompanyLabel(entry.relationshipName);
@@ -476,7 +491,13 @@ function toQueueItems(entries: RegisterEntry[], now = new Date()): CommitmentQue
         blocker: entry.blocker,
         quote: entry.sourcePhrase,
         missingEvidence: missing,
-        nextAction: nextAction(entry.state, missing, urgency, Boolean(entry.blocker?.trim())),
+        nextAction: nextAction(
+          entry.state,
+          missing,
+          urgency,
+          Boolean(entry.blocker?.trim()),
+          watch,
+        ),
         urgency,
         confidence: Math.round((entry.confidence ?? 0) * 100),
         currentEventVersion: entry.currentEventVersion ?? 0,
@@ -753,7 +774,28 @@ export function CommitmentQueue({
     setFulfilling(false);
     setRecordError(null);
   }, [selected?.id]);
-  const items = React.useMemo(() => toQueueItems(entries), [entries]);
+  const google = sources.find((source) => source.source === "google");
+  const googleNeedsReconnect = sourceNeedsReconnect(google);
+  // A past failure is history; the source status says whether it is still true.
+  // After a successful reconnect the old 401 must stop demanding another one —
+  // it becomes "that audit did not finish", with a retry.
+  const failure = scanFailure(failedScan, googleNeedsReconnect);
+  // Coverage, read straight from the scan. An older scan that predates
+  // these counters reports zero for them, so fall back to the sweep total
+  // rather than claiming nothing was examined.
+  const skipped = latestScan?.threadsSkipped ?? 0;
+  const snippetOnly = latestScan?.threadsSnippetOnly ?? 0;
+  const examined = examinedConversationCount(latestScan);
+  const googleConnected = !googleNeedsReconnect && sourceConnected(google);
+  const items = React.useMemo(
+    () =>
+      toQueueItems(
+        entries,
+        new Date(),
+        sourceWatchCopy({ connected: googleConnected, needsReconnect: googleNeedsReconnect }),
+      ),
+    [entries, googleConnected, googleNeedsReconnect],
+  );
   const elsewhere =
     items.length === 0
       ? registerElsewhereCopy(overdueOnly ? "overdue" : view, otherPromises)
@@ -796,20 +838,6 @@ export function CommitmentQueue({
     const needle = query.trim().toLowerCase();
     return !needle || commitmentSearchText(item).toLowerCase().includes(needle);
   });
-  const google = sources.find((source) => source.source === "google");
-  const googleNeedsReconnect = sourceNeedsReconnect(google);
-  // A past failure is history; the source status says whether it is still true.
-  // After a successful reconnect the old 401 must stop demanding another one —
-  // it becomes "that audit did not finish", with a retry.
-  const failure = scanFailure(failedScan, googleNeedsReconnect);
-  // Coverage, read straight from the scan. An older scan that predates
-  // these counters reports zero for them, so fall back to the sweep total
-  // rather than claiming nothing was examined.
-  const skipped = latestScan?.threadsSkipped ?? 0;
-  const snippetOnly = latestScan?.threadsSnippetOnly ?? 0;
-  const examined = examinedConversationCount(latestScan);
-  const googleConnected = !googleNeedsReconnect && sourceConnected(google);
-
   const transition = async (
     item: CommitmentQueueItem,
     kind: AppendCommitmentTransitionInput["kind"],
