@@ -11,6 +11,7 @@ import {
   digestSignalLabel,
   impactAccountTotal,
   funnelBarPercent,
+  impactExposureTitle,
   longestOverdueCopy,
   statReadsAsGood,
   overdueDirectionLines,
@@ -81,6 +82,13 @@ describe("ImpactView", () => {
     expect(source).not.toContain("No active relationship risks.");
     expect(source).not.toContain("underlying relationship records");
     expect(source).not.toContain("Promises missed");
+  });
+
+  it("reserves missed communication for a promise that is past due", () => {
+    expect(impactExposureTitle(0)).toBe("What is putting these companies at risk now");
+    expect(impactExposureTitle(1)).toBe("What missed communication is putting at risk now");
+    expect(impactExposureTitle(Number.NaN)).toBe("What is putting these companies at risk now");
+    expect(source).toContain("impactExposureTitle(data.overdueCommitments)");
   });
 
   it("keeps a zero or an unknown rate in the normal color", () => {

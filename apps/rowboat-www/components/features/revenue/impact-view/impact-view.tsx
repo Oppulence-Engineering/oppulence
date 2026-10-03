@@ -68,6 +68,16 @@ export function overdueDirectionLines(
 }
 
 /**
+ * "Missed" means a promise is already past due. An open follow-up that is
+ * still on time is exposure, and the heading has to say that.
+ */
+export function impactExposureTitle(overdue: number): string {
+  const count = Number.isFinite(overdue) ? Math.max(0, Math.round(overdue)) : 0;
+  if (count > 0) return "What missed communication is putting at risk now";
+  return "What is putting these companies at risk now";
+}
+
+/**
  * A zero count is an empty bar. The two-percent floor is only so a small
  * non-zero count stays visible next to a much larger one.
  */
@@ -295,7 +305,7 @@ export function ImpactView({
               Company exposure
             </Badge>
             <CardTitle className="mt-1 text-base text-primary">
-              What missed communication is putting at risk now
+              {impactExposureTitle(data.overdueCommitments)}
             </CardTitle>
             <CardDescription className="mt-1 max-w-3xl text-xs text-primary/50">
               The score is deterministic: each company contributes its highest open risk rank,
