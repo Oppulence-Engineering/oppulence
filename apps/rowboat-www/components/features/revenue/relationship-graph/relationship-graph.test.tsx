@@ -354,7 +354,11 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphInspectorPrompt(2).body).toBe(
       "Select a company or a person to see how it connects.",
     );
-    expect(source).toContain("graphInspectorPrompt(graph.nodes.length)");
+    expect(graphInspectorPrompt(4, 0)).toEqual({
+      title: "Nothing to inspect",
+      body: "Nothing in this view can be selected.",
+    });
+    expect(source).toContain("graphInspectorPrompt(graph.nodes.length, visibleCount)");
     expect(source).toContain("Select a company or a person to see how it connects.");
     expect(source).not.toContain("or evidence item");
     expect(source).not.toContain("evidence item");
