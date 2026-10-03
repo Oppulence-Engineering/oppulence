@@ -122,7 +122,7 @@ func overdueCommitmentExplanation(days int) string {
 	if days == 1 {
 		suffix = ""
 	}
-	return fmt.Sprintf("A confirmed commitment is overdue by %d day%s.", days, suffix)
+	return fmt.Sprintf("A confirmed promise is overdue by %d day%s.", days, suffix)
 }
 
 func quietAccountExplanation(lifecycle string, quietDays, usualDays int) string {

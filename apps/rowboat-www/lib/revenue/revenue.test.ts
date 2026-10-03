@@ -29,6 +29,7 @@ import {
   relationshipSourceHealth,
   semanticSearch,
   planResponseToken,
+  attentionExplanationCopy,
   sharedPlanOwnerLabel,
   sharedPlanVersionLabel,
 } from "@/lib/revenue/revenue";
@@ -561,6 +562,16 @@ it("accepts the company name on an action the API just changed", () => {
   expect(
     ApproveRevenueAction200Response.safeParse({ ...action, approvalStatus: "approved" }).success,
   ).toBe(true);
+});
+
+it("names an overdue promise in an older attention sentence", () => {
+  expect(attentionExplanationCopy("A confirmed commitment is overdue by 1 day.")).toBe(
+    "A confirmed promise is overdue by 1 day.",
+  );
+  expect(attentionExplanationCopy("A confirmed commitment is overdue by 3 days.")).toBe(
+    "A confirmed promise is overdue by 3 days.",
+  );
+  expect(attentionExplanationCopy("No reply in 14 days")).toBe("No reply in 14 days");
 });
 
 it("names a shared plan without the stored hash or a redacted owner", () => {

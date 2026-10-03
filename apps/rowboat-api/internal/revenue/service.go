@@ -1609,7 +1609,9 @@ func relationshipSheetOverdueMatch(needle string, now time.Time) predicate.Relat
 		}
 	}
 	var preds []predicate.Relationship
-	if needle == "overdue promise" || sheetPhraseMatches("a confirmed commitment is overdue", needle) {
+	if needle == "overdue promise" ||
+		sheetPhraseMatches("a confirmed commitment is overdue", needle) ||
+		sheetPhraseMatches("a confirmed promise is overdue", needle) {
 		preds = append(preds, relationship.HasCommitmentsWith(overdueCommitmentAny(now)))
 	}
 	for days := 1; days <= 120; days++ {

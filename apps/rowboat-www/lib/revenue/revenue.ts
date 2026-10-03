@@ -1001,6 +1001,19 @@ const ATTENTION_REASON_LABELS: Record<string, string> = {
   recommendation: "Suggested follow-up",
 };
 
+const STORED_OVERDUE_PROMISE =
+  /^A confirmed commitment is overdue by (\d+) day(s?)\.$/;
+
+/** Older attention rows said commitment. The company sheet says promise. */
+export function attentionExplanationCopy(explanation: string | null | undefined): string {
+  const raw = explanation?.trim() ?? "";
+  const match = STORED_OVERDUE_PROMISE.exec(raw);
+  if (!match?.[1]) return raw;
+  const days = Number(match[1]);
+  const suffix = days === 1 ? "" : "s";
+  return `A confirmed promise is overdue by ${days} day${suffix}.`;
+}
+
 /** Impact lists attention reason codes. The queue already has a sentence. */
 export function attentionReasonLabel(reason: string): string {
   const known = ATTENTION_REASON_LABELS[reason] ?? DETECTOR_LABELS[reason];

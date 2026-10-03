@@ -1550,6 +1550,13 @@ func TestRelationshipSearchFindsTheOverduePromise(t *testing.T) {
 	if names := namesOf(label.Relationships); len(names) != 1 || names[0] != "Quill Atelier" {
 		t.Fatalf("label = %v", names)
 	}
+	legacy, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "A confirmed commitment is overdue"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if names := namesOf(legacy.Relationships); len(names) != 1 || names[0] != "Quill Atelier" {
+		t.Fatalf("legacy sentence = %v", names)
+	}
 }
 
 func TestRelationshipSearchFindsNeedsRefresh(t *testing.T) {

@@ -67,6 +67,26 @@ describe("AttentionQueueSurface", () => {
     expect(screen.queryByRole("button", { name: "Open items" })).not.toBeInTheDocument();
   });
 
+  it("names an overdue promise when the stored sentence says commitment", () => {
+    render(
+      <AttentionQueueSurface
+        items={[
+          item(
+            "attn-overdue",
+            "Quay Overdue",
+            "high",
+            "A confirmed commitment is overdue by 2 days.",
+          ),
+        ]}
+        onActionError={vi.fn()}
+        onChanged={vi.fn()}
+        onOpenRelationship={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByText("A confirmed promise is overdue by 2 days.").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/confirmed commitment/)).toBeNull();
+  });
+
   it("names a quiet company when the reason has no sentence", () => {
     render(
       <AttentionQueueSurface

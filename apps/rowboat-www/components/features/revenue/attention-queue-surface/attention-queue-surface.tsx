@@ -17,6 +17,7 @@ import {
   SimProductToolbar,
 } from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
 import {
+  attentionExplanationCopy,
   attentionReasonLabel,
   decideRelationshipAttention,
   shownRequestError,
@@ -294,7 +295,8 @@ export function AttentionQueueSurface({
                         {item.rankScore}
                       </td>
                       <td className="truncate px-2.5 text-[var(--text-secondary)]">
-                        {item.explanation || attentionReasonLabel(item.reasonCode)}
+                        {attentionExplanationCopy(item.explanation) ||
+                          attentionReasonLabel(item.reasonCode)}
                       </td>
                     </tr>
                   );
@@ -328,7 +330,8 @@ export function AttentionQueueSurface({
         {selected && !loading ? (
           <div className="border-[var(--border)] border-t px-3 py-2">
             <p className="text-sm text-[var(--text-primary)]" data-slot="attention-reason">
-              {selected.explanation || attentionReasonLabel(selected.reasonCode)}
+              {attentionExplanationCopy(selected.explanation) ||
+                attentionReasonLabel(selected.reasonCode)}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <span className="mr-1 text-sm text-[var(--text-secondary)]">

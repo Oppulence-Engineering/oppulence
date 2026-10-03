@@ -13,6 +13,15 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 )
 
+func TestOverduePromiseExplanationNamesThePromise(t *testing.T) {
+	if got := overdueCommitmentExplanation(1); got != "A confirmed promise is overdue by 1 day." {
+		t.Fatalf("one day = %q", got)
+	}
+	if got := overdueCommitmentExplanation(3); got != "A confirmed promise is overdue by 3 days." {
+		t.Fatalf("three days = %q", got)
+	}
+}
+
 func TestRelationshipAttentionRunnerPaginatesAllActiveWorkspaces(t *testing.T) {
 	f := newFixture(t)
 	now := time.Date(2026, 8, 2, 12, 0, 0, 0, time.UTC)
