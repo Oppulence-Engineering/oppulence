@@ -1309,7 +1309,13 @@ export function graphQueryAnswer(answer: string, companyCount: number, hasMore =
   const rewritten = answer
     .replace(/\b1 relationship matches\b/g, "1 company matches")
     .replace(/\b(\d+) relationships match\b/g, (_, count: string) => `${count} companies match`)
-    .replace(/\btext: /g, "");
+    .replace(/ (match(?:es)?) (.*)\.$/, (_, verb: string, rest: string) => {
+      const labeled = String(rest)
+        .split(" · ")
+        .map((part) => graphQueryFilterLabel(part))
+        .join(" · ");
+      return ` ${verb} ${labeled}.`;
+    });
   if (hasMore && /^0 companies match\b/.test(rewritten)) return graphQueryMissLabel();
   return rewritten;
 }

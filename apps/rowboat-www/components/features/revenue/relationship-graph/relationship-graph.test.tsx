@@ -246,7 +246,15 @@ describe("RelationshipGraphWorkspace", () => {
     );
     expect(graphQueryAnswer("1 relationship matches the query.", 2)).toBe("1 company matches the query.");
     expect(graphQueryAnswer("1 relationship matches text: dogfood.", 2)).toBe(
-      "1 company matches dogfood.",
+      "1 company matches Dogfood.",
+    );
+    expect(
+      graphQueryAnswer(
+        "0 relationships match nodes: note · approval: pending · sources: gmail, desktop_note.",
+        1,
+      ),
+    ).toBe(
+      "0 companies match Included: Note · Approval: Awaiting approval · Sources: Gmail, A note.",
     );
     expect(graphQueryAnswer("2 relationships match overdue commitments.", 2)).toBe(
       "2 companies match overdue commitments.",
@@ -255,7 +263,7 @@ describe("RelationshipGraphWorkspace", () => {
       graphQueryMissLabel(),
     );
     expect(graphQueryAnswer("0 relationships match text: quillhaven.", 200, false)).toBe(
-      "0 companies match quillhaven.",
+      "0 companies match Quillhaven.",
     );
     expect(graphQueryFilterLabel("text: dogfood")).toBe("Dogfood");
     expect(graphQueryFilterLabel("lifecycle: renewal")).toBe("Renewal");
