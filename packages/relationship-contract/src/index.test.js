@@ -128,6 +128,29 @@ test("natural-language graph queries stay deterministic and evidence-linked", ()
   assert.match(withoutDependency.answer, /0 relationships match/);
 });
 
+test("graph questions use the stage and health words a person would type", () => {
+  const active = parseRelationshipGraphQuery("active customer");
+  assert.deepEqual(active.filters.lifecycle, ["active_customer"]);
+  assert.deepEqual(active.applied, ["lifecycle: active_customer"]);
+
+  const former = parseRelationshipGraphQuery("former customer");
+  assert.deepEqual(former.filters.lifecycle, ["former_customer"]);
+  assert.deepEqual(former.applied, ["lifecycle: former_customer"]);
+
+  const attention = parseRelationshipGraphQuery("needs attention");
+  assert.deepEqual(attention.filters.health, ["needs_attention"]);
+  assert.deepEqual(attention.applied, ["health: needs_attention"]);
+
+  const atRisk = parseRelationshipGraphQuery("at risk");
+  assert.deepEqual(atRisk.filters.health, ["needs_attention"]);
+  assert.deepEqual(atRisk.filters.nodeKinds, []);
+  assert.deepEqual(atRisk.applied, ["health: needs_attention"]);
+
+  const risks = parseRelationshipGraphQuery("show risks");
+  assert.deepEqual(risks.filters.nodeKinds, ["risk"]);
+  assert.deepEqual(risks.filters.health, []);
+});
+
 test("saved graph views normalize shareable state", () => {
   const view = createRelationshipGraphSavedView({
     label: "Renewal risks",

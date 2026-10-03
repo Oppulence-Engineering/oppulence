@@ -175,19 +175,32 @@ export function parseRelationshipGraphQuery(query) {
   };
 
   for (const [alias, kind] of Object.entries(GRAPH_QUERY_NODE_ALIASES)) {
+    // "at risk" is a health phrase. The word risk is not a request for risk nodes.
+    if (alias === "risk" && /\bat risk\b/.test(normalized)) continue;
     if (new RegExp(`\\b${alias}\\b`).test(normalized) && !filters.nodeKinds.includes(kind)) {
       filters.nodeKinds.push(kind);
     }
   }
   for (const lifecycle of GRAPH_QUERY_LIFECYCLES) {
     const aliases = lifecycle === "renewal" ? ["renewal", "renewals", "renewing"] : [lifecycle];
-    if (aliases.some((alias) => new RegExp(`\\b${alias}\\b`).test(normalized))) {
+    if (
+      aliases.some((alias) => new RegExp(`\\b${alias.replaceAll("_", "[ _]")}\\b`).test(normalized)) &&
+      !filters.lifecycle.includes(lifecycle)
+    ) {
       filters.lifecycle.push(lifecycle);
     }
   }
-  if (/\bneeds attention\b|\bat risk\b/.test(normalized)) filters.health.push("needs_attention");
+  if (
+    (/\bneeds attention\b|\bat risk\b/.test(normalized)) &&
+    !filters.health.includes("needs_attention")
+  ) {
+    filters.health.push("needs_attention");
+  }
   for (const health of GRAPH_QUERY_HEALTH) {
-    if (new RegExp(`\\b${health.replaceAll("_", "[ _]")}\\b`).test(normalized)) {
+    if (
+      new RegExp(`\\b${health.replaceAll("_", "[ _]")}\\b`).test(normalized) &&
+      !filters.health.includes(health)
+    ) {
       filters.health.push(health);
     }
   }
