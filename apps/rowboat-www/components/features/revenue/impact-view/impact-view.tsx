@@ -33,7 +33,7 @@ import {
   TableRow,
 } from "@oppulence/ui/components/table";
 
-import { attentionReasonLabel, auditLaunchLabel } from "@/lib/revenue/revenue";
+import { actionReasonCopy, attentionReasonLabel, auditLaunchLabel } from "@/lib/revenue/revenue";
 import { detectorsWithoutTasks, recoveryOpenCount } from "@/lib/revenue/revenue-records";
 import type { RevenueImpact } from "@/lib/revenue/types";
 import {
@@ -155,6 +155,17 @@ export function digestSignalLabel(detector: string): string {
   if (value === "Manual") return "Added by you";
   if (/^[a-z0-9_]+$/.test(value)) return attentionReasonLabel(value);
   return value;
+}
+
+/** The emailed digest names who the loop is for. The preview names them too. */
+export function digestLoopCopy(action: {
+  recipient?: string | null;
+  reason?: string | null;
+}): string {
+  const who = action.recipient?.trim() || "a contact";
+  const why = actionReasonCopy(action.reason);
+  if (!why) return who;
+  return `${who}. ${why}`;
 }
 
 function DigestLoadNotice({ onRetry }: { onRetry: () => void }) {
@@ -404,7 +415,7 @@ export function ImpactView({
                           {signal}
                         </Badge>
                       ) : null}
-                      {a.reason}
+                      {digestLoopCopy(a)}
                     </Label>
                     <Badge
                       className="shrink-0 font-normal text-primary/40"

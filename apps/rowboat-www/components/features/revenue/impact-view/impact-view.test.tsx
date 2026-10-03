@@ -8,6 +8,7 @@ import {
   digestRefreshCopy,
   impactEmptyBody,
   impactRefreshCopy,
+  digestLoopCopy,
   digestSignalLabel,
   impactAccountTotal,
   funnelBarPercent,
@@ -133,6 +134,27 @@ describe("ImpactView", () => {
       { label: "Overdue from them", value: 1 },
       { label: "Overdue together", value: 1 },
     ]);
+  });
+
+  it("names who a digest loop is for", () => {
+    expect(
+      digestLoopCopy({
+        recipient: "buyer@quay.example",
+        reason: "You confirmed this follow-up from the meeting.",
+      }),
+    ).toBe("buyer@quay.example. You confirmed this follow-up from the meeting.");
+    expect(digestLoopCopy({ recipient: "  ", reason: "Waiting on a reply." })).toBe(
+      "a contact. Waiting on a reply.",
+    );
+    expect(
+      digestLoopCopy({
+        recipient: "ada@acme.example",
+        reason: "You confirmed this follow-up from source evidence meeting/abc.",
+      }),
+    ).toBe("ada@acme.example. You confirmed this follow-up from the meeting.");
+    expect(digestLoopCopy({ recipient: "ada@acme.example", reason: "" })).toBe("ada@acme.example");
+    expect(source).toContain("digestLoopCopy(a)");
+    expect(source).not.toContain("{a.reason}");
   });
 
   it("names a digest signal that arrived as a stored token", () => {
