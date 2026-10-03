@@ -464,10 +464,15 @@ export function urgencyLabel(urgency: string): string {
   }
 }
 
-function acceptanceLabel(value: string) {
+/**
+ * Internal confirmation means this workspace agrees the promise was made.
+ * "Confirmed" alone sat next to "Mark accepted" and sounded like the same step.
+ * Acceptance is the later state, once the other party has accepted it.
+ */
+export function acceptanceLabel(value: string) {
   const labels: Record<string, string> = {
     candidate: "Needs confirmation",
-    internally_confirmed: "Confirmed",
+    internally_confirmed: "Confirmed in this workspace",
     offered: "Offered",
     accepted: "Accepted",
     disputed: "Disputed",
@@ -616,6 +621,29 @@ export function CommitmentQueue({
     setRecordError(null);
   }, [selected?.id]);
   const items = React.useMemo(() => toQueueItems(entries), [entries]);
+  // The open record is a snapshot from the click. A saved transition refetches
+  // the register, and this replaces that snapshot so the button and the
+  // acceptance card leave the step that just finished.
+  React.useEffect(() => {
+    setSelected((current) => {
+      if (!current) return current;
+      const fresh = items.find((item) => item.id === current.id);
+      if (!fresh) return current;
+      if (
+        fresh.acceptance === current.acceptance &&
+        fresh.state === current.state &&
+        fresh.currentEventVersion === current.currentEventVersion &&
+        fresh.text === current.text &&
+        fresh.dueAt === current.dueAt &&
+        fresh.blocker === current.blocker &&
+        fresh.nextAction === current.nextAction &&
+        fresh.urgency === current.urgency
+      ) {
+        return current;
+      }
+      return fresh;
+    });
+  }, [items]);
   // An empty select cannot be "chosen". That case is a missing company, not a
   // prompt to pick one.
   const noAccounts = view === "by_account" && accounts.length === 0 && !hasMoreAccounts;
@@ -1442,7 +1470,7 @@ export function CommitmentQueue({
                           disabled={busy !== null}
                           onClick={() => void transition(selected, "accepted")}
                         >
-                          <Check /> Mark accepted
+                          <Check /> They accepted
                         </ActionButton>
                       ) : null}
                       {selected.acceptance === "accepted" || selected.acceptance === "offered" ? (

@@ -14,6 +14,7 @@ import {
   CommitmentQueue,
   commitmentDetailStatus,
   commitmentSearchText,
+  acceptanceLabel,
   evidenceGapFact,
   formatMissingEvidence,
   missingEvidenceLabel,
@@ -132,6 +133,9 @@ describe("CommitmentQueue", () => {
     expect(missingEvidenceLabel("recipient")).toBe("who it was promised to");
     expect(formatMissingEvidence(["promiser", "due date"])).toBe("who promised, due date");
     expect(formatMissingEvidence([])).toBe("");
+    expect(acceptanceLabel("internally_confirmed")).toBe("Confirmed in this workspace");
+    expect(acceptanceLabel("accepted")).toBe("Accepted");
+    expect(acceptanceLabel("candidate")).toBe("Needs confirmation");
     expect(evidenceGapFact([])).toEqual({ label: "Evidence", value: "Complete" });
     expect(evidenceGapFact(["promiser", "exact quote"])).toEqual({
       label: "Evidence missing",
@@ -550,6 +554,35 @@ describe("CommitmentQueue", () => {
     expect(await screen.findByText("Closed from observed or confirmed evidence.")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Mark fulfilled" })).not.toBeInTheDocument();
     confirm.mockRestore();
+  });
+
+  it("replaces the open record after the other party accepts", async () => {
+    const user = userEvent.setup();
+    const onTransition = vi.fn(async () => true);
+    const { rerender } = render(
+      <CommitmentQueue {...props({ entries: entries("internally_confirmed"), onTransition })} />,
+    );
+
+    await user.click(screen.getByText("Acme"));
+    expect(screen.getByText("Confirmed in this workspace")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Mark accepted" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "They accepted" }));
+
+    await waitFor(() =>
+      expect(onTransition).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "commitment-1", acceptance: "internally_confirmed" }),
+        expect.objectContaining({
+          kind: "accepted",
+          idempotencyKey: "commitment-queue:accepted:commitment-1:v3",
+        }),
+      ),
+    );
+
+    rerender(<CommitmentQueue {...props({ entries: entries("accepted"), onTransition })} />);
+
+    expect(screen.getByText("Accepted")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "They accepted" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Confirmed in this workspace")).not.toBeInTheDocument();
   });
 
   it("records confirmation and correction through transition callbacks", async () => {
