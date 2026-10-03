@@ -767,6 +767,14 @@ func TestRelationshipSearchFindsTheCompletenessCopy(t *testing.T) {
 	}
 	assertCompanyQuery("Connect a source before these details can fill in", "Quill Atelier")
 	assertCompanyQuery("One or more material values have no accessible supporting evidence", "Lumen Packet")
+	if _, err := f.svc.CorrectRelationship(f.ctx, f.user, quill.ID, RelationshipCorrectionInput{
+		Dimension: "lifecycle", Value: "prospect", Reason: "The buyer is a prospect.",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	assertCompanyQuery("Connect a source before these details can fill in")
+	assertCompanyQuery("7 account details still need a source", "Quill Atelier")
+	assertCompanyQuery("1 account detail still needs a source")
 	assertCompanyQuery("Some details have no source you can open", "Lumen Packet")
 	assertCompanyQuery("source")
 	assertCompanyQuery("missing")

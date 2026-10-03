@@ -3525,8 +3525,20 @@ func relationshipSheetCompletenessMatch(needle string) predicate.Relationship {
 		preds = append(preds, relationshipConnectSourceCopy(now))
 	}
 	if sheetPhraseMatches("one or more material values have no accessible supporting evidence.", needle) ||
-		sheetPhraseMatches("some details have no source you can open.", needle) {
+		sheetPhraseMatches("some details have no source you can open.", needle) ||
+		sheetPhraseMatches("account details have no source you can open.", needle) {
 		preds = append(preds, relationshipMaterialGapCopy(now))
+	}
+	detailTotal := len(relationshipProjectionDimensions)
+	for supported := 1; supported < detailTotal; supported++ {
+		rest := detailTotal - supported
+		phrase := fmt.Sprintf("%d account details still need a source.", rest)
+		if rest == 1 {
+			phrase = "1 account detail still needs a source."
+		}
+		if sheetPhraseMatches(phrase, needle) {
+			preds = append(preds, relationshipRemainingDetailCopy(supported, now))
+		}
 	}
 	if sheetPhraseMatches("some details are still missing", needle) {
 		preds = append(preds, relationshipShowsPartialHeading(now))
@@ -3593,17 +3605,39 @@ func relationshipConnectSourceCopy(now time.Time) predicate.Relationship {
 		relationship.Not(relationshipHasUnresolvedIdentity()),
 		relationship.Not(relationshipHasBlockingProjection(now)),
 		relationship.Not(relationshipGmailExplanation(now)),
+		// A correction already filled a detail. That company no longer says
+		// every detail is waiting on a connector.
+		relationshipSupportedDetailCount(0, now),
 	)
 }
 
 func relationshipMaterialGapCopy(now time.Time) predicate.Relationship {
+	return relationshipMaterialGapAt(0, now)
+}
+
+func relationshipMaterialGapAt(supported int, now time.Time) predicate.Relationship {
 	return relationship.And(
 		relationshipHasSourceDependency(),
 		relationship.Not(relationshipHasUnresolvedIdentity()),
 		relationship.Not(relationshipHasBlockingProjection(now)),
 		relationship.Not(relationshipHasEarlySourceStop()),
-		relationship.Not(relationshipSupportedDetailCount(len(relationshipProjectionDimensions), now)),
+		relationshipSupportedDetailCount(supported, now),
 		relationship.Not(relationshipGmailExplanation(now)),
+	)
+}
+
+// relationshipRemainingDetailCopy matches the sheet once some details have a
+// source and the rest do not. A reconnect or a rebuild uses its own sentence.
+func relationshipRemainingDetailCopy(supported int, now time.Time) predicate.Relationship {
+	return relationship.Or(
+		relationship.And(
+			relationship.Not(relationshipHasSourceDependency()),
+			relationship.Not(relationshipHasUnresolvedIdentity()),
+			relationship.Not(relationshipHasBlockingProjection(now)),
+			relationship.Not(relationshipGmailExplanation(now)),
+			relationshipSupportedDetailCount(supported, now),
+		),
+		relationshipMaterialGapAt(supported, now),
 	)
 }
 

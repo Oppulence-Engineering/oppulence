@@ -109,6 +109,7 @@ import {
   ACTION_TYPE_LABELS,
   actionReasonCopy,
   completenessExplanationCopy,
+  missionControlGapCopy,
   acknowledgeMissionControl,
   decideIdentityCandidate,
   type DecideRelationshipIdentityCandidateInput,
@@ -3046,7 +3047,7 @@ function MissionControlOverview({
             <p className="mt-1 text-xs text-primary/60">
               {emailThreadCount > 0 && supported === 0
                 ? `${emailThreadCount} Gmail ${emailThreadCount === 1 ? "thread is" : "threads are"} linked. Health and status still need a clearer source.`
-                : completenessExplanationCopy(model.completeness.explanation)}
+                : missionControlGapCopy(model.completeness.explanation, supported, total)}
             </p>
           </div>
           <Badge variant="outline" className="rounded-none font-normal">

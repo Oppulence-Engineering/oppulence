@@ -1135,6 +1135,30 @@ export function completenessExplanationCopy(explanation: string): string {
   return COMPLETENESS_EXPLANATIONS[raw] ?? raw;
 }
 
+/**
+ * The badge already counts details that have a source. These two stored
+ * sentences claim that none do, so they only fit when the count is still zero.
+ */
+export function missionControlGapCopy(
+  explanation: string,
+  supported: number,
+  total: number,
+): string {
+  const shown = Number.isFinite(supported) ? Math.max(0, Math.round(supported)) : 0;
+  const all = Number.isFinite(total) ? Math.max(0, Math.round(total)) : 0;
+  const raw = explanation.trim();
+  const deniesEverySource =
+    raw === "No source connection has completed its first useful sync." ||
+    raw === "One or more material values have no accessible supporting evidence.";
+  if (deniesEverySource && shown > 0 && all > shown) {
+    const rest = all - shown;
+    return rest === 1
+      ? "1 account detail still needs a source."
+      : `${rest} account details still need a source.`;
+  }
+  return completenessExplanationCopy(explanation);
+}
+
 const CONFIRMED_FOLLOW_UP_REASON =
   /^You confirmed this follow-up from source evidence meeting\/.+\.$/;
 

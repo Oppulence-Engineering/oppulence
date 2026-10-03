@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { actionReasonCopy } from "@/lib/revenue/revenue";
+import { actionReasonCopy, missionControlGapCopy } from "@/lib/revenue/revenue";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "relationships-view.tsx"), "utf8");
 
@@ -601,6 +601,30 @@ describe("RelationshipsView", () => {
     expect(completenessExplanationCopy("No source connection has completed its first useful sync.")).toBe(
       "Connect a source before these details can fill in.",
     );
+    expect(
+      missionControlGapCopy("No source connection has completed its first useful sync.", 0, 8),
+    ).toBe("Connect a source before these details can fill in.");
+    expect(
+      missionControlGapCopy("No source connection has completed its first useful sync.", 1, 8),
+    ).toBe("7 account details still need a source.");
+    expect(
+      missionControlGapCopy(
+        "One or more material values have no accessible supporting evidence.",
+        7,
+        8,
+      ),
+    ).toBe("1 account detail still needs a source.");
+    expect(
+      missionControlGapCopy(
+        "One or more material values have no accessible supporting evidence.",
+        0,
+        8,
+      ),
+    ).toBe("Account details have no source you can open.");
+    expect(
+      missionControlGapCopy("A required source is stale or disconnected.", 3, 8),
+    ).toBe("A source needs reconnecting.");
+    expect(source).toContain("missionControlGapCopy(model.completeness.explanation, supported, total)");
     expect(
       completenessExplanationCopy(
         "One or more material values have no accessible supporting evidence.",
