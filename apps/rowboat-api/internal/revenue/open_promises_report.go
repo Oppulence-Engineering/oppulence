@@ -97,11 +97,19 @@ func (s *Service) OpenPromisesReport(
 		Truncated:    len(more) > 0,
 	}
 	for _, row := range rows {
+		state := commitmentRegisterState(row, now)
+		// An extraction waiting for review stays Review on this document
+		// even when the due date is soon. The register clock would call
+		// that same row at risk. The company record and the graph already
+		// say Review.
+		if row.Acceptance == "candidate" {
+			state = "review"
+		}
 		item := ReportItem{
 			CommitmentID: row.ID.String(),
 			Direction:    row.Direction,
 			Text:         strings.TrimSpace(row.Text),
-			State:        commitmentRegisterState(row, now),
+			State:        state,
 			DueAt:        row.DueAt,
 			DuePhrase:    row.DuePhrase,
 			Owner:        row.OwnerParticipantRef,

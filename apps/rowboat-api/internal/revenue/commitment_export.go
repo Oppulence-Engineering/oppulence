@@ -143,6 +143,8 @@ func registerStateLabel(state string) string {
 		return "Disputed"
 	case RegisterOpen:
 		return "Open"
+	case "review":
+		return "Review"
 	default:
 		return strings.ToUpper(state[:1]) + strings.ReplaceAll(state[1:], "_", " ")
 	}

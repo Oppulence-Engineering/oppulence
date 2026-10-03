@@ -165,8 +165,66 @@ func TestOpenPromisesReportShowsUnconfirmedCandidates(t *testing.T) {
 	if len(report.Items) != 1 {
 		t.Fatalf("the report hid the scan's own candidates: %#v", report.Items)
 	}
-	if !strings.Contains(report.Markdown(), "I'll get that over to you Thursday.") {
+	if report.Items[0].State != "review" {
+		t.Fatalf("an unconfirmed extraction was not held for review: %#v", report.Items[0])
+	}
+	doc := report.Markdown()
+	if !strings.Contains(doc, "I'll get that over to you Thursday.") {
 		t.Fatal("the report dropped the verbatim source quote")
+	}
+	if !strings.Contains(doc, "state **Review**") {
+		t.Fatalf("markdown named the guess as a confirmed state:\n%s", doc)
+	}
+}
+
+// A guessed promise due inside the at-risk window is still waiting for a
+// person. The company record and the graph say Review. A confirmed promise
+// due in that same window stays At risk and still leads the page.
+func TestOpenPromisesReportKeepsADueSoonGuessInReview(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	scanID := startedScan(t, f, 90)
+	rel := f.relationship(t)
+	confirmedDue := now.Add(48 * time.Hour)
+	guessDue := now.Add(12 * time.Hour)
+	seedReportCommitment(t, f, rel, "promised_by_me", "Send the confirmed note", "", &confirmedDue, now.Add(-time.Hour))
+
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	evidence, err := f.client.RevenueEvidence.Create().
+		SetWorkspace(ws).AddRelationships(rel).SetUser(f.user).
+		SetSource("gmail").SetSourceRecordID("guess-message").SetContentHash("sha256:guess").
+		SetExcerpt("I'll send the guessed note.").SetOccurredAt(now.Add(-time.Hour)).
+		SetObservedAt(now.Add(-time.Hour)).Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Commitment.Create().SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+		SetDirection("promised_by_me").SetText("Send the guessed note").SetConfidence(0.7).
+		SetSourcePhrase("I'll send the guessed note.").SetAcceptance("candidate").
+		SetDueAt(guessDue).AddEvidences(evidence).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	report, err := f.svc.OpenPromisesReport(f.ctx, f.user, mustParseUUID(t, scanID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(report.Items) != 2 {
+		t.Fatalf("report dropped a promise: %#v", report.Items)
+	}
+	if report.Items[0].State != RegisterAtRisk || report.Items[0].Text != "Send the confirmed note" {
+		t.Fatalf("a confirmed risk no longer led the report: %#v", report.Items[0])
+	}
+	if report.Items[1].State != "review" || report.Items[1].Text != "Send the guessed note" {
+		t.Fatalf("a due-soon guess was treated as a confirmed risk: %#v", report.Items[1])
+	}
+	doc := report.Markdown()
+	if !strings.Contains(doc, "state **At risk**") || !strings.Contains(doc, "state **Review**") {
+		t.Fatalf("markdown mixed the two states:\n%s", doc)
 	}
 }
 
@@ -294,7 +352,7 @@ func TestOpenPromisesReportKeepsTheSourcePhraseWhenTheExcerptIsBlank(t *testing.
 	row, err := f.client.Commitment.Create().
 		SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
 		SetDirection("promised_by_me").SetText("  Send the harbor note  ").
-		SetConfidence(0.9).SetSourcePhrase("  "+phrase+"  ").
+		SetConfidence(0.9).SetSourcePhrase("  " + phrase + "  ").
 		SetAcceptance("internally_confirmed").SetUserConfirmed(true).
 		SetDueAt(due).
 		Save(f.ctx)
@@ -342,7 +400,7 @@ func TestOpenPromisesReportKeepsTheSourcePhraseWhenTheExcerptIsBlank(t *testing.
 		SetSource("gmail").SetSourceRecordID("spaced-excerpt").
 		SetContentHash("sha256:spaced-excerpt").SetExcerpt("  From the mail.  ").
 		SetSourceURI("https://mail.google.com/mail/u/0/#inbox/from-the-mail").
-		SetOccurredAt(now.Add(-30*time.Minute)).SetObservedAt(now.Add(-30*time.Minute)).
+		SetOccurredAt(now.Add(-30 * time.Minute)).SetObservedAt(now.Add(-30 * time.Minute)).
 		Save(f.ctx)
 	if err != nil {
 		t.Fatal(err)

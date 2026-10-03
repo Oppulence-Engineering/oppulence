@@ -533,6 +533,18 @@ export function reportRiskLabel(): string {
   return "At risk";
 }
 
+/** An extraction no person has confirmed. The company record and the graph say the same word. */
+export function reportReviewLabel(): string {
+  return "Review";
+}
+
+/** A badge only when the row is a confirmed risk or still waiting for review. */
+export function reportStateBadge(state: string): string | null {
+  if (state === "at_risk") return reportRiskLabel();
+  if (state === "review") return reportReviewLabel();
+  return null;
+}
+
 function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string }) {
   const [downloading, setDownloading] = React.useState(false);
   const [downloadError, setDownloadError] = React.useState<string | null>(null);
@@ -603,54 +615,57 @@ function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string
       ) : null}
 
       <ol className="flex flex-col gap-3">
-        {report.items.map((item) => (
-          <li key={item.commitmentId} className="border border-border bg-background p-4">
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-              <Label className="text-[13px] font-medium text-primary">{item.account}</Label>
-              <Label className="text-[12px] font-normal text-primary/45">
-                {promiseDirectionLabel(item.direction)}
-              </Label>
-              {item.state === "at_risk" ? (
-                <Badge
-                  className="rounded-none border-amber-500/40 px-1.5 py-0.5 text-[11px] font-normal text-amber-500"
-                  variant="outline"
-                >
-                  {reportRiskLabel()}
-                </Badge>
-              ) : null}
-              <Label className="ml-auto text-[12px] font-normal text-primary/45">
-                {promiseDueLabel(item.dueAt)}
-              </Label>
-            </div>
-            <p className="mt-1.5 text-[14px] leading-snug text-primary">{item.text}</p>
-            {/* Every claim carries its citation, or it is not made. */}
-            {reportSourceQuote(item.sourceQuote) ? (
-              <blockquote className="mt-2.5 border-l-2 border-border pl-3 text-[13px] italic leading-relaxed text-primary/55">
-                {reportSourceQuote(item.sourceQuote)}
-              </blockquote>
-            ) : null}
-            {item.occurredAt || safeResearchCitationURL(item.sourceUri ?? "") ? (
-              <p className="mt-2 text-[12px] text-primary/45">
-                {item.occurredAt
-                  ? `Source observed ${new Date(item.occurredAt).toLocaleString()}`
-                  : "Source"}
-                {safeResearchCitationURL(item.sourceUri ?? "") ? (
-                  <>
-                    {" · "}
-                    <a
-                      className="underline underline-offset-2 hover:text-primary"
-                      href={safeResearchCitationURL(item.sourceUri ?? "") as string}
-                      rel="noreferrer"
-                      target="_blank"
-                    >
-                      Open source
-                    </a>
-                  </>
+        {report.items.map((item) => {
+          const badge = reportStateBadge(item.state);
+          return (
+            <li key={item.commitmentId} className="border border-border bg-background p-4">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <Label className="text-[13px] font-medium text-primary">{item.account}</Label>
+                <Label className="text-[12px] font-normal text-primary/45">
+                  {promiseDirectionLabel(item.direction)}
+                </Label>
+                {badge ? (
+                  <Badge
+                    className="rounded-none border-amber-500/40 px-1.5 py-0.5 text-[11px] font-normal text-amber-500"
+                    variant="outline"
+                  >
+                    {badge}
+                  </Badge>
                 ) : null}
-              </p>
-            ) : null}
-          </li>
-        ))}
+                <Label className="ml-auto text-[12px] font-normal text-primary/45">
+                  {promiseDueLabel(item.dueAt)}
+                </Label>
+              </div>
+              <p className="mt-1.5 text-[14px] leading-snug text-primary">{item.text}</p>
+              {/* Every claim carries its citation, or it is not made. */}
+              {reportSourceQuote(item.sourceQuote) ? (
+                <blockquote className="mt-2.5 border-l-2 border-border pl-3 text-[13px] italic leading-relaxed text-primary/55">
+                  {reportSourceQuote(item.sourceQuote)}
+                </blockquote>
+              ) : null}
+              {item.occurredAt || safeResearchCitationURL(item.sourceUri ?? "") ? (
+                <p className="mt-2 text-[12px] text-primary/45">
+                  {item.occurredAt
+                    ? `Source observed ${new Date(item.occurredAt).toLocaleString()}`
+                    : "Source"}
+                  {safeResearchCitationURL(item.sourceUri ?? "") ? (
+                    <>
+                      {" · "}
+                      <a
+                        className="underline underline-offset-2 hover:text-primary"
+                        href={safeResearchCitationURL(item.sourceUri ?? "") as string}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        Open source
+                      </a>
+                    </>
+                  ) : null}
+                </p>
+              ) : null}
+            </li>
+          );
+        })}
       </ol>
     </>
   );

@@ -1104,7 +1104,8 @@ export interface OpenPromisesReportItem {
   account: string;
   direction: string;
   text: string;
-  state: RegisterState;
+  /** Register states, plus "review" for an extraction no person has confirmed. */
+  state: RegisterState | "review";
   dueAt?: string;
   duePhrase?: string;
   owner?: string;
