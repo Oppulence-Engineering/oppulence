@@ -20,6 +20,7 @@ import {
   attentionForCompanyDirectory,
   companyDirectoryTitle,
   companyHealthFilterName,
+  companyRecordLabel,
   companyListEmptyCopy,
   companyListFailureCopy,
   companyStageFilterName,
@@ -302,7 +303,17 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("Profile enrichment");
     expect(source).toContain(">Any health</SelectItem>");
     expect(companyHealthFilterName("all")).toBe("Health, Any health");
-    expect(companyHealthFilterName("needs_attention")).toBe("Health, Needs Attention");
+    expect(companyHealthFilterName("needs_attention")).toBe("Health, Needs attention");
+    expect(companyRecordLabel("needs_attention")).toBe("Needs attention");
+    expect(companyRecordLabel("healthy")).toBe("Healthy");
+    expect(companyRecordLabel("active_customer")).toBe("Active Customer");
+    expect(source).toContain("companyRecordLabel(relationship.health)");
+    expect(source).toContain("companyRecordLabel(data.relationship.health)");
+    expect(source).toContain("companyRecordLabel(data.relationship.lifecycle)");
+    expect(source).toContain("companyRecordLabel(data.relationship.engagement)");
+    expect(source).not.toContain("humanize(relationship.health)");
+    expect(source).not.toContain("humanize(data.relationship.health)");
+    expect(source).not.toContain('"text-[13px] font-normal capitalize"');
     expect(companyStageFilterName("all")).toBe("Stage, All stages");
     expect(companyStageFilterName("evaluation")).toBe("Stage, Evaluation");
     expect(source).toContain("aria-label={companyHealthFilterName(health)}");
@@ -470,7 +481,7 @@ describe("RelationshipsView", () => {
     expect(source).toContain("companyReviewCopy(model)");
     expect(source).toContain("reviewCopy.footer !== reviewCopy.change");
     expect(source).toContain('comboboxFilterName("Detail", humanize(dimension))');
-    expect(source).toContain('comboboxFilterName("Value", humanize(value))');
+    expect(source).toContain('comboboxFilterName("Value", companyRecordLabel(value))');
     expect(source).not.toContain("Reviewed {new Date(model.asOf)");
     expect(source).toContain('disabled={busy === "recovery" || data.commitments.length === 0}');
     expect(completenessExplanationCopy("No source connection has completed its first useful sync.")).toBe(

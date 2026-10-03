@@ -691,13 +691,27 @@ export function companyListFailureCopy(): string {
   return "Companies could not load. Try again.";
 }
 
+/**
+ * Company health, stage, and engagement use the graph's words. A stored
+ * needs_attention is "Needs attention" there. Title-casing every word made
+ * the company list say "Needs Attention".
+ */
+export function companyRecordLabel(value: string): string {
+  switch (value) {
+    case "needs_attention":
+      return "Needs attention";
+    default:
+      return humanize(value);
+  }
+}
+
 /** Health and stage are comboboxes. The visible word is the choice, not the name. */
 export function companyHealthFilterName(value: string): string {
-  return comboboxFilterName("Health", value === "all" ? "Any health" : humanize(value));
+  return comboboxFilterName("Health", value === "all" ? "Any health" : companyRecordLabel(value));
 }
 
 export function companyStageFilterName(value: string): string {
-  return comboboxFilterName("Stage", value === "all" ? "All stages" : humanize(value));
+  return comboboxFilterName("Stage", value === "all" ? "All stages" : companyRecordLabel(value));
 }
 
 export function RelationshipsView({
@@ -1155,7 +1169,7 @@ export function RelationshipsView({
                 <SelectItem value="all">Any health</SelectItem>
                 {HEALTH_OPTIONS.map((value) => (
                   <SelectItem key={value} value={value}>
-                    {humanize(value)}
+                    {companyRecordLabel(value)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -1172,7 +1186,7 @@ export function RelationshipsView({
                 <SelectItem value="all">All stages</SelectItem>
                 {LIFECYCLE_OPTIONS.map((value) => (
                   <SelectItem key={value} value={value}>
-                    {humanize(value)}
+                    {companyRecordLabel(value)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -1495,12 +1509,12 @@ export function RelationshipsView({
                         <TableCell className="border-r px-3">
                           <Badge
                             className={cn(
-                              "text-[13px] font-normal capitalize",
+                              "text-[13px] font-normal",
                               HEALTH_TONE[relationship.health] ?? HEALTH_TONE.unknown,
                             )}
                             variant="outline"
                           >
-                            {humanize(relationship.health)}
+                            {companyRecordLabel(relationship.health)}
                           </Badge>
                         </TableCell>
                       ) : null}
@@ -3735,16 +3749,16 @@ export function RelationshipSheet({
                   <dt className="text-primary/40">People</dt>
                   <dd className="text-primary/75">{data.participants.length}</dd>
                   <dt className="text-primary/40">Lifecycle</dt>
-                  <dd className="capitalize text-primary/75">
-                    {humanize(data.relationship.lifecycle)}
+                  <dd className="text-primary/75">
+                    {companyRecordLabel(data.relationship.lifecycle)}
                   </dd>
                   <dt className="text-primary/40">Health</dt>
-                  <dd className="capitalize text-primary/75">
-                    {humanize(data.relationship.health)}
+                  <dd className="text-primary/75">
+                    {companyRecordLabel(data.relationship.health)}
                   </dd>
                   <dt className="text-primary/40">Engagement</dt>
-                  <dd className="capitalize text-primary/75">
-                    {humanize(data.relationship.engagement)}
+                  <dd className="text-primary/75">
+                    {companyRecordLabel(data.relationship.engagement)}
                   </dd>
                   <dt className="text-primary/40">Last activity</dt>
                   <dd className="text-primary/75">
@@ -3816,8 +3830,8 @@ export function RelationshipSheet({
 
                 <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                   {[
-                    ["Health", humanize(data.relationship.health)],
-                    ["Engagement", humanize(data.relationship.engagement)],
+                    ["Health", companyRecordLabel(data.relationship.health)],
+                    ["Engagement", companyRecordLabel(data.relationship.engagement)],
                     [
                       "Last interaction",
                       companyLastActivityLabel(data.relationship.lastTouchAt),
@@ -4989,13 +5003,13 @@ function StateCorrection({
           </SelectContent>
         </Select>
         <Select value={value} onValueChange={setValue}>
-          <SelectTrigger aria-label={comboboxFilterName("Value", humanize(value))} size="sm">
+          <SelectTrigger aria-label={comboboxFilterName("Value", companyRecordLabel(value))} size="sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="app-shell rounded-none">
             {options.map((item) => (
               <SelectItem key={item} value={item}>
-                {humanize(item)}
+                {companyRecordLabel(item)}
               </SelectItem>
             ))}
           </SelectContent>
