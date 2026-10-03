@@ -38,7 +38,10 @@ import {
   priorityTone,
   refetchClearingBanner,
 } from "@/components/features/revenue/shared/shared";
-import { AttentionQueueSurface } from "@/components/features/revenue/attention-queue-surface/attention-queue-surface";
+import {
+  AttentionQueueSurface,
+  attentionCompanyCount,
+} from "@/components/features/revenue/attention-queue-surface/attention-queue-surface";
 import { useAskOppulence } from "@/components/features/dashboard/dashboard-shell/dashboard-shell";
 import { revenueParsers, revenueUrlKeys } from "@/app/(product)/app/revenue/search-params";
 import { subscribeCompanyCreate } from "@/lib/dashboard/company-create-request";
@@ -890,6 +893,7 @@ export function RelationshipsView({
     ),
     companies,
   );
+  const attentionCompanies = attentionCompanyCount(companyAttention);
 
   React.useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 180);
@@ -1233,8 +1237,8 @@ export function RelationshipsView({
                 </div>
                 {companyAttention.length > 0 ? (
                   <p className="text-[12px] text-primary/55">
-                    {hasMoreAttention ? `${companyAttention.length}+` : companyAttention.length}{" "}
-                    {companyAttention.length === 1 ? "company" : "companies"} in the{" "}
+                    {hasMoreAttention ? `${attentionCompanies}+` : attentionCompanies}{" "}
+                    {attentionCompanies === 1 ? "company" : "companies"} in the{" "}
                     <button
                       className="underline hover:text-primary"
                       onClick={() =>

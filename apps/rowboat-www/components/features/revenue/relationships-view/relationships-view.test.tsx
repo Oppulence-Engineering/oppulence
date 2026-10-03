@@ -353,7 +353,8 @@ describe("RelationshipsView", () => {
       'window.confirm(\n                              "Delete shared conversation evidence',
     );
     expect(source).not.toContain("for this relationship?");
-    expect(source).toContain('companyAttention.length === 1 ? "company" : "companies"');
+    expect(source).toContain('attentionCompanies === 1 ? "company" : "companies"');
+    expect(source).toContain("attentionCompanyCount(companyAttention)");
     expect(companyDomainHref("acme.com")).toBe("https://acme.com");
     expect(companyDomainHref("  https://acme.com/about  ")).toBe("https://acme.com/about");
     expect(companyDomainHref("http://acme.com")).toBe("http://acme.com");

@@ -47,6 +47,11 @@ export function attentionBand(item: RelationshipAttentionItem): Exclude<Attentio
   return "stable";
 }
 
+/** The queue counts companies. Two reasons about one company are still one company. */
+export function attentionCompanyCount(items: readonly { relationshipId: string }[]): number {
+  return new Set(items.map((item) => item.relationshipId).filter(Boolean)).size;
+}
+
 /** The queue counts companies. One row is one company, not a user account. */
 export function companyCountLabel(count: number): string {
   return count === 1 ? "1 company" : `${count} companies`;
@@ -127,6 +132,15 @@ export function AttentionQueueSurface({
   const visible = filterAttentionItems(items, band);
   const shown = showAll ? visible : visible.slice(0, ATTENTION_QUEUE_PAGE);
   const hidden = visible.length - shown.length;
+  const shownCompanies = attentionCompanyCount(shown);
+  const visibleCompanies = attentionCompanyCount(visible);
+  const shownCompanyIds = new Set(shown.map((item) => item.relationshipId));
+  const hiddenCompanies = new Set(
+    visible
+      .filter((item) => !shownCompanyIds.has(item.relationshipId))
+      .map((item) => item.relationshipId)
+      .filter(Boolean),
+  ).size;
   const selected = visible.find((item) => item.id === selectedId) ?? visible[0] ?? null;
 
   React.useEffect(() => {
@@ -197,7 +211,9 @@ export function AttentionQueueSurface({
             </h2>
           }
           actions={
-            loading ? "Loading…" : attentionQueueCountLabel(shown.length, visible.length, hasMore)
+            loading
+              ? "Loading…"
+              : attentionQueueCountLabel(shownCompanies, visibleCompanies, hasMore)
           }
         />
         <SimProductToolbar>
@@ -308,9 +324,13 @@ export function AttentionQueueSurface({
 
         {hidden > 0 || hasMore ? (
           <div className="flex flex-wrap gap-2 border-[var(--border)] border-t px-3 py-2">
-            {hidden > 0 ? (
+            {hiddenCompanies > 0 ? (
               <Button onClick={() => setShowAll(true)} size="sm" type="button" variant="outline">
-                {attentionQueueRemainderLabel(hidden)}
+                {attentionQueueRemainderLabel(hiddenCompanies)}
+              </Button>
+            ) : hidden > 0 ? (
+              <Button onClick={() => setShowAll(true)} size="sm" type="button" variant="outline">
+                Show the other reasons
               </Button>
             ) : null}
             {hasMore ? (

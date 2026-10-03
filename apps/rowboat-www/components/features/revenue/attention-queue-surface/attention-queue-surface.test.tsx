@@ -87,6 +87,31 @@ describe("AttentionQueueSurface", () => {
     expect(screen.queryByText(/confirmed commitment/)).toBeNull();
   });
 
+  it("counts one company when it has two reasons", () => {
+    const shared = item("attn-overdue", "Quay Overdue", "high", "A confirmed promise is overdue by 3 days.");
+    render(
+      <AttentionQueueSurface
+        items={[
+          shared,
+          {
+            ...item(
+              "attn-meeting",
+              "Quay Overdue",
+              "high",
+              "You confirmed this follow-up from the meeting.",
+            ),
+            relationshipId: shared.relationshipId,
+          },
+        ]}
+        onActionError={vi.fn()}
+        onChanged={vi.fn()}
+        onOpenRelationship={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("1 company")).toBeInTheDocument();
+    expect(screen.queryByText("2 companies")).not.toBeInTheDocument();
+  });
+
   it("names a quiet company when the reason has no sentence", () => {
     render(
       <AttentionQueueSurface
