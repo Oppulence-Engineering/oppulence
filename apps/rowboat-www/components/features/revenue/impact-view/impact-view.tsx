@@ -132,6 +132,18 @@ export function impactRefreshCopy(): string {
   return listRefreshFailureCopy("impact");
 }
 
+/** A promise already in Commitments stays visible when Impact has nothing else to score. */
+export function recordedPromisePrefix(count: number | undefined, hasMore = false): string {
+  const total = Number.isFinite(count) ? Math.max(0, Math.round(count ?? 0)) : 0;
+  if (total <= 0) return "";
+  const sentence = hasMore
+    ? `${total}+ promises are already in Commitments.`
+    : total === 1
+      ? "1 promise is already in Commitments."
+      : `${total} promises are already in Commitments.`;
+  return `${sentence} `;
+}
+
 /**
  * An empty impact page with a dead Google grant cannot run an audit. The
  * button already says reconnect. The sentence has to say that too.
@@ -139,14 +151,22 @@ export function impactRefreshCopy(): string {
 export function impactEmptyBody(input: {
   needsConnect: boolean;
   needsReconnect: boolean;
+  knownPromiseCount?: number;
+  knownPromiseHasMore?: boolean;
 }): string {
+  const prefix = recordedPromisePrefix(input.knownPromiseCount, input.knownPromiseHasMore);
   if (input.needsReconnect) {
-    return "Reconnect Google. Replies, meetings, and wins show up here after an audit.";
+    return `${prefix}Reconnect Google. Replies, meetings, and wins show up here after an audit.`;
   }
   if (input.needsConnect) {
-    return "Connect Gmail and Calendar. Replies, meetings, and wins show up here after an audit.";
+    return `${prefix}Connect Gmail and Calendar. Replies, meetings, and wins show up here after an audit.`;
   }
-  return "Run an audit and start reviewing actions — replies, meetings, and wins show up here as they come in.";
+  return `${prefix}Run an audit and start reviewing actions — replies, meetings, and wins show up here as they come in.`;
+}
+
+/** Digest email is off for this workspace. The card is a preview, not a sent message. */
+export function digestPreviewBadge(): string {
+  return "Preview of open loops";
 }
 
 export function digestSignalLabel(detector: string): string {
@@ -157,7 +177,7 @@ export function digestSignalLabel(detector: string): string {
   return value;
 }
 
-/** The emailed digest names who the loop is for. The preview names them too. */
+/** The digest names who the loop is for. The preview names them too. */
 export function digestLoopCopy(action: {
   recipient?: string | null;
   reason?: string | null;
@@ -185,6 +205,9 @@ export function ImpactView({
   scanning = false,
   needsReconnect = false,
   needsConnect = false,
+  knownPromiseCount = 0,
+  knownPromiseHasMore = false,
+  knownPromisesPending = false,
 }: {
   onError: (m: string) => void;
   /** Same audit the Audits and Recovery empty states start. Omitted in tests that only retry a failed load. */
@@ -194,6 +217,11 @@ export function ImpactView({
   needsReconnect?: boolean;
   /** No mailbox is connected, so `onScan` opens connections instead of a scan. */
   needsConnect?: boolean;
+  /** Open or at-risk promises already in Commitments. */
+  knownPromiseCount?: number;
+  knownPromiseHasMore?: boolean;
+  /** The empty sentence waits so it does not hide a promise that is still loading. */
+  knownPromisesPending?: boolean;
 }) {
   const impactQuery = useImpactBundle();
   const relationshipsQuery = useRelationships();
@@ -252,6 +280,7 @@ export function ImpactView({
       scanningLabel: "Auditing…",
       runLabel: "Run Promise Leak Audit",
     });
+    if (knownPromisesPending) return <ListSkeleton rows={2} />;
     return (
       <div className="flex min-h-full flex-col" data-slot="impact-view">
         {impactQuery.isError ? (
@@ -259,7 +288,12 @@ export function ImpactView({
         ) : null}
         {digestFailed && digestTop.length === 0 ? <DigestLoadNotice onRetry={reload} /> : null}
         <EmptyBlock
-        body={impactEmptyBody({ needsConnect, needsReconnect })}
+        body={impactEmptyBody({
+          needsConnect,
+          needsReconnect,
+          knownPromiseCount,
+          knownPromiseHasMore,
+        })}
         image="impact"
         learnMore={[{ label: "Track recovery outcomes" }, { label: "Measure company risk" }]}
         title="Impact"
@@ -383,7 +417,7 @@ export function ImpactView({
       </Card>
 
       {digestFailed && digestTop.length === 0 ? <DigestLoadNotice onRetry={reload} /> : null}
-      {/* weekly digest preview — the same summary the email is built from */}
+      {/* Queue preview. Digest email stays off, matching Notifications. */}
       {digestTop.length ? (
         <Card className="gap-3 py-4">
           <CardHeader className="px-4 pb-0">
@@ -391,7 +425,7 @@ export function ImpactView({
               <EnvelopeSimple weight="fill" className="size-4 text-primary/55" />
               <CardTitle className="text-sm text-primary">Your weekly digest</CardTitle>
               <Badge className="font-normal text-primary/45" variant="secondary">
-                emailed while you have open loops
+                {digestPreviewBadge()}
               </Badge>
             </div>
           </CardHeader>

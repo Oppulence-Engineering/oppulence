@@ -9,7 +9,9 @@ import {
   impactEmptyBody,
   impactRefreshCopy,
   digestLoopCopy,
+  digestPreviewBadge,
   digestSignalLabel,
+  recordedPromisePrefix,
   impactAccountTotal,
   funnelBarPercent,
   impactExposureTitle,
@@ -66,6 +68,18 @@ describe("ImpactView", () => {
     expect(impactEmptyBody({ needsConnect: false, needsReconnect: false })).toContain(
       "Run an audit",
     );
+    expect(recordedPromisePrefix(0)).toBe("");
+    expect(recordedPromisePrefix(1)).toBe("1 promise is already in Commitments. ");
+    expect(recordedPromisePrefix(2, true)).toBe("2+ promises are already in Commitments. ");
+    expect(
+      impactEmptyBody({ needsConnect: true, needsReconnect: false, knownPromiseCount: 1 }),
+    ).toBe(
+      "1 promise is already in Commitments. Connect Gmail and Calendar. Replies, meetings, and wins show up here after an audit.",
+    );
+    expect(digestPreviewBadge()).toBe("Preview of open loops");
+    expect(source).toContain("digestPreviewBadge()");
+    expect(source).toContain("knownPromiseCount");
+    expect(source).not.toContain("emailed while you have open loops");
     expect(source).toContain("if (!impactQuery.error || impactQuery.data) return;");
     expect(source).toContain("message={impactRefreshCopy()}");
     expect(source).toContain("digest?.openCount");
