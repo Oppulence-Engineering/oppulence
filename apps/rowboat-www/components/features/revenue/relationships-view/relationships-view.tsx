@@ -2239,6 +2239,18 @@ export function recordDetailBadge(label: string, value: string): string {
 }
 
 /**
+ * A new company stores lifecycle as "prospect" and health as "unknown" before
+ * any source exists. Those defaults are not a stage or a health reading.
+ */
+export function supportedRecordValue(
+  stored: string,
+  evidence: { supported?: boolean } | undefined,
+): string {
+  if (!evidence?.supported) return "Not known";
+  return companyRecordLabel(stored);
+}
+
+/**
  * The policy version is a hash. Privacy should say whether any decision
  * was recorded, not show that identifier.
  */
@@ -3793,19 +3805,35 @@ export function RelationshipSheet({
                 <p className="mb-3 text-xs font-medium text-primary/55">Record details</p>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline" className="rounded-none">
-                    {recordDetailBadge("Lifecycle", data.relationship.lifecycle)}
+                    Lifecycle ·{" "}
+                    {supportedRecordValue(
+                      data.relationship.lifecycle,
+                      data.missionControl.evidence.lifecycle,
+                    )}
                   </Badge>
                   <Badge
                     variant="outline"
                     className={`rounded-none ${HEALTH_TONE[data.relationship.health]}`}
                   >
-                    {recordDetailBadge("Health", data.relationship.health)}
+                    Health ·{" "}
+                    {supportedRecordValue(
+                      data.relationship.health,
+                      data.missionControl.evidence.health,
+                    )}
                   </Badge>
                   <Badge variant="secondary">
-                    {recordDetailBadge("Engagement", data.relationship.engagement)}
+                    Engagement ·{" "}
+                    {supportedRecordValue(
+                      data.relationship.engagement,
+                      data.missionControl.evidence.engagement,
+                    )}
                   </Badge>
                   <Badge variant="secondary">
-                    {recordDetailBadge("Sentiment", data.relationship.sentiment)}
+                    Sentiment ·{" "}
+                    {supportedRecordValue(
+                      data.relationship.sentiment,
+                      data.missionControl.evidence.sentiment,
+                    )}
                   </Badge>
                 </div>
                 <dl className="mt-5 grid grid-cols-[88px_minmax(0,1fr)] gap-x-3 gap-y-3 text-xs">
@@ -3909,15 +3937,24 @@ export function RelationshipSheet({
                   <dd className="text-primary/75">{data.participants.length}</dd>
                   <dt className="text-primary/40">Lifecycle</dt>
                   <dd className="text-primary/75">
-                    {companyRecordLabel(data.relationship.lifecycle)}
+                    {supportedRecordValue(
+                      data.relationship.lifecycle,
+                      data.missionControl.evidence.lifecycle,
+                    )}
                   </dd>
                   <dt className="text-primary/40">Health</dt>
                   <dd className="text-primary/75">
-                    {companyRecordLabel(data.relationship.health)}
+                    {supportedRecordValue(
+                      data.relationship.health,
+                      data.missionControl.evidence.health,
+                    )}
                   </dd>
                   <dt className="text-primary/40">Engagement</dt>
                   <dd className="text-primary/75">
-                    {companyRecordLabel(data.relationship.engagement)}
+                    {supportedRecordValue(
+                      data.relationship.engagement,
+                      data.missionControl.evidence.engagement,
+                    )}
                   </dd>
                   <dt className="text-primary/40">Last activity</dt>
                   <dd className="text-primary/75">
@@ -3989,8 +4026,20 @@ export function RelationshipSheet({
 
                 <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                   {[
-                    ["Health", companyRecordLabel(data.relationship.health)],
-                    ["Engagement", companyRecordLabel(data.relationship.engagement)],
+                    [
+                      "Health",
+                      supportedRecordValue(
+                        data.relationship.health,
+                        data.missionControl.evidence.health,
+                      ),
+                    ],
+                    [
+                      "Engagement",
+                      supportedRecordValue(
+                        data.relationship.engagement,
+                        data.missionControl.evidence.engagement,
+                      ),
+                    ],
                     [
                       "Last interaction",
                       companyLastActivityLabel(data.relationship.lastTouchAt),

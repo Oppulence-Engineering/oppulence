@@ -40,6 +40,7 @@ import {
   missionControlPromiseAnswer,
   missionControlStateAnswer,
   recordDetailBadge,
+  supportedRecordValue,
   completenessExplanationCopy,
   privacyDecisionCopy,
   capturePolicyLabel,
@@ -332,9 +333,9 @@ describe("RelationshipsView", () => {
     expect(companyRecordLabel("active_customer")).toBe("Active customer");
     expect(companyRecordLabel("former_customer")).toBe("Former customer");
     expect(source).toContain("companyRecordLabel(relationship.health)");
-    expect(source).toContain("companyRecordLabel(data.relationship.health)");
-    expect(source).toContain("companyRecordLabel(data.relationship.lifecycle)");
-    expect(source).toContain("companyRecordLabel(data.relationship.engagement)");
+    expect(source).toContain("supportedRecordValue(\n                      data.relationship.lifecycle,");
+    expect(source).toContain("supportedRecordValue(\n                      data.relationship.health,");
+    expect(source).toContain("supportedRecordValue(\n                      data.relationship.engagement,");
     expect(source).not.toContain("humanize(relationship.health)");
     expect(source).not.toContain("humanize(data.relationship.health)");
     expect(source).not.toContain('"text-[13px] font-normal capitalize"');
@@ -557,6 +558,11 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("String(model.evidence.lifecycle?.value ?? \"unknown\")");
     expect(recordDetailBadge("Sentiment", "unknown")).toBe("Sentiment · Unknown");
     expect(recordDetailBadge("Health", "needs_attention")).toBe("Health · Needs attention");
+    expect(supportedRecordValue("prospect", { supported: false })).toBe("Not known");
+    expect(supportedRecordValue("prospect", { supported: true })).toBe("Prospect");
+    expect(supportedRecordValue("unknown", undefined)).toBe("Not known");
+    expect(supportedRecordValue("healthy", { supported: true })).toBe("Healthy");
+    expect(supportedRecordValue("needs_attention", { supported: true })).toBe("Needs attention");
     expect(source).toContain("companyReviewCopy(model)");
     expect(source).toContain("reviewCopy.footer !== reviewCopy.change");
     expect(source).toContain('comboboxFilterName("Detail", humanize(dimension))');
