@@ -328,6 +328,7 @@ describe("RelationshipsView", () => {
     expect(source).toContain(">Any health</SelectItem>");
     expect(companyHealthFilterName("all")).toBe("Health, Any health");
     expect(companyHealthFilterName("needs_attention")).toBe("Health, Needs attention");
+    expect(companyRecordLabel("unknown")).toBe("Not known");
     expect(companyRecordLabel("needs_attention")).toBe("Needs attention");
     expect(companyRecordLabel("healthy")).toBe("Healthy");
     expect(companyRecordLabel("active_customer")).toBe("Active customer");
@@ -473,7 +474,7 @@ describe("RelationshipsView", () => {
       footer: "Nothing new since your last review.",
     });
     expect(companyStateAnswer("prospect", "unknown")).toBe(
-      "Lifecycle: Prospect · Health: Unknown",
+      "Lifecycle: Prospect · Health: Not known",
     );
     expect(companyStateAnswer("active_customer", "needs_attention")).toBe(
       "Lifecycle: Active customer · Health: Needs attention",
@@ -560,7 +561,7 @@ describe("RelationshipsView", () => {
       "You confirmed this follow-up from the meeting.",
     );
     expect(source).not.toContain("String(model.evidence.lifecycle?.value ?? \"unknown\")");
-    expect(recordDetailBadge("Sentiment", "unknown")).toBe("Sentiment · Unknown");
+    expect(recordDetailBadge("Sentiment", "unknown")).toBe("Sentiment · Not known");
     expect(recordDetailBadge("Health", "needs_attention")).toBe("Health · Needs attention");
     expect(supportedRecordValue("prospect", { supported: false })).toBe("Not known");
     expect(supportedRecordValue("prospect", { supported: true })).toBe("Prospect");

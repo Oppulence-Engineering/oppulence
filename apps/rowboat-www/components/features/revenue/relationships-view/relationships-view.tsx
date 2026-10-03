@@ -708,6 +708,8 @@ export function companyListFailureCopy(): string {
  */
 export function companyRecordLabel(value: string): string {
   switch (value) {
+    case "unknown":
+      return "Not known";
     case "needs_attention":
       return "Needs attention";
     case "active_customer":
