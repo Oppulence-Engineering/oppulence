@@ -15,6 +15,7 @@ export type AccountTimelineItem = {
   id: string;
   label: string;
   detail: string;
+  due?: string;
   statusLabel: string;
   statusVariant: "green" | "amber" | "red";
 };
@@ -125,6 +126,23 @@ export function commitmentPreviewRemainder(hidden: number): string {
   return hidden === 1 ? "Show the other 1 commitment" : `Show the other ${hidden} commitments`;
 }
 
+/**
+ * The activity names the day in UTC. The company card uses that same day so a
+ * promise due late on the 20th does not read as the 19th.
+ */
+export function commitmentTimelineDue(dueAt?: string | null): string | undefined {
+  if (!dueAt?.trim()) return undefined;
+  const date = new Date(dueAt);
+  if (Number.isNaN(date.getTime())) return undefined;
+  const day = date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  return `Due: ${day}`;
+}
+
 /** Maps live register rows into the Sim account timeline rows. */
 export function mapCommitmentsToAccountTimeline(
   commitments: RelationshipCommitment[],
@@ -137,6 +155,7 @@ export function mapCommitmentsToAccountTimeline(
       id: commitment.id,
       label: commitmentTimelineLabel(commitment.direction),
       detail: commitment.text.trim(),
+      due: commitmentTimelineDue(commitment.dueAt),
       statusLabel: status.label,
       statusVariant: status.variant,
     };
@@ -205,6 +224,9 @@ export function AccountMissionControlSurface({
                   <Badge variant={item.statusVariant}>{item.statusLabel}</Badge>
                 </div>
                 <span className="text-[var(--text-primary)]">{item.detail}</span>
+                {item.due ? (
+                  <span className="text-[var(--text-muted)] text-xs">{item.due}</span>
+                ) : null}
               </li>
             ))}
           </ul>

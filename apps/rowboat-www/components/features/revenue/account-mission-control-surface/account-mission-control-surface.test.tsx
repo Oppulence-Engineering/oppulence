@@ -14,6 +14,7 @@ import {
   AccountMissionControlSurface,
   atRiskPromiseCount,
   commitmentPreviewRemainder,
+  commitmentTimelineDue,
   commitmentTimelineLabel,
   commitmentTimelineStatus,
   mapCommitmentsToAccountTimeline,
@@ -95,6 +96,15 @@ describe("AccountMissionControlSurface", () => {
     expect(row?.detail).toBe("Send the waived note.");
     expect(row?.statusLabel).toBe("Waived");
     expect(row?.label).toBe("They owe us");
+    expect(row?.due).toBeUndefined();
+    const [dated] = mapCommitmentsToAccountTimeline(
+      [promise({ dueAt: "2026-10-20T15:00:00Z", text: "Send the quay due" })],
+      1,
+      now,
+    );
+    expect(dated?.due).toBe("Due: Oct 20, 2026");
+    expect(commitmentTimelineDue("not-a-date")).toBeUndefined();
+    expect(commitmentTimelineDue("")).toBeUndefined();
   });
 
   it("counts confirmed open promises and leaves reviews and disputes out", () => {
@@ -123,6 +133,28 @@ describe("AccountMissionControlSurface", () => {
       "2 promises are due soon. Reconcile to check the follow-up.",
     );
     expect(promiseFollowUpEmptyCopy(0)).toBe("No promises are due for a follow-up.");
+  });
+
+  it("shows the due day on the company promise", () => {
+    render(
+      <AccountMissionControlSurface
+        accountName="Quay Due"
+        showHeader={false}
+        items={[
+          {
+            id: "1",
+            label: "They owe us",
+            detail: "Send the quay due",
+            due: "Due: Oct 20, 2026",
+            statusLabel: "Open",
+            statusVariant: "amber",
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByText("Due: Oct 20, 2026")).toBeVisible();
+    expect(source).toContain("commitmentTimelineDue(commitment.dueAt)");
+    expect(source).toContain("{item.due}");
   });
 
   it("names who owes the promise", () => {
