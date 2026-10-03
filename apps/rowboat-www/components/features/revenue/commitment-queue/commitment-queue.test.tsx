@@ -154,6 +154,41 @@ describe("CommitmentQueue", () => {
         counterpartyParticipantRef: "Morgan",
       }),
     ).toEqual({ owner: "Acme", counterparty: "You" });
+    expect(
+      registerPartyLabels({
+        direction: "promised_by_me",
+        relationshipName: "Harbor Record",
+        ownerParticipantRef: "local-user",
+        counterpartyParticipantRef: "meeting-counterparty",
+      }),
+    ).toEqual({ owner: "You", counterparty: "Harbor Record" });
+    expect(
+      registerPartyLabels({
+        direction: "promised_by_them",
+        relationshipName: "Harbor Record",
+        ownerParticipantRef: "meeting-counterparty",
+        counterpartyParticipantRef: "local-user",
+      }),
+    ).toEqual({ owner: "Harbor Record", counterparty: "You" });
+    expect(
+      registerPartyLabels({
+        direction: "mutual",
+        relationshipName: "Harbor Record",
+        ownerParticipantRef: "local-user",
+        counterpartyParticipantRef: "meeting-counterparty",
+      }),
+    ).toEqual({
+      owner: "You and Harbor Record",
+      counterparty: "You and Harbor Record",
+    });
+    expect(
+      registerPartyLabels({
+        direction: "promised_by_me",
+        relationshipName: "Harbor Record",
+        ownerParticipantRef: "Taylor",
+        counterpartyParticipantRef: "Morgan",
+      }),
+    ).toEqual({ owner: "Taylor", counterparty: "Morgan" });
     const mutual = {
       ...entries()[0],
       id: "commitment-mutual",

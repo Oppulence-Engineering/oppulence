@@ -283,6 +283,14 @@ export function registerCompanyLabel(name?: string | null): string {
   return name?.trim() || "Unknown company";
 }
 
+/** Meeting ingest stores these when nobody was named. They are not people. */
+const UNNAMED_PARTICIPANT_REFS = new Set(["local-user", "meeting-counterparty"]);
+
+function participantName(ref?: string): string {
+  const name = ref?.trim() || "";
+  return name && !UNNAMED_PARTICIPANT_REFS.has(name) ? name : "";
+}
+
 /**
  * A mutual promise has no single promiser. Without a named person, the
  * register used to say the company promised it to the company.
@@ -295,9 +303,9 @@ export function registerPartyLabels(entry: {
   counterpartyParticipantRef?: string;
 }): { owner: string; counterparty: string } {
   const relationshipName = registerCompanyLabel(entry.relationshipName);
-  const namedOwner = entry.ownerParticipantRef?.trim() || "";
-  const namedBeneficiary = entry.beneficiaryParticipantRef?.trim() || "";
-  const namedCounterparty = entry.counterpartyParticipantRef?.trim() || "";
+  const namedOwner = participantName(entry.ownerParticipantRef);
+  const namedBeneficiary = participantName(entry.beneficiaryParticipantRef);
+  const namedCounterparty = participantName(entry.counterpartyParticipantRef);
   const both = `You and ${relationshipName}`;
   if (entry.direction === "mutual") {
     return {
