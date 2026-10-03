@@ -1781,12 +1781,22 @@ func projectRelationshipStateAt(
 	if err != nil {
 		return nil, err
 	}
-	if len(changed) == 0 && rel.StateHash == "" {
+	if len(changed) == 0 && rel.StateHash == "" && len(selected) == 0 {
 		return rel.Update().
 			SetStateHash(stateHash).
 			SetProjectorVersion(relationshipProjectorVersion).
 			SetProjectedAt(evaluatedAt).
 			Save(ctx)
+	}
+	// The stored stage can already be "prospect". The first correction still
+	// makes that stage true, so the record has to say it changed.
+	if len(changed) == 0 && rel.StateHash == "" {
+		for _, dimension := range relationshipProjectionDimensions {
+			if selected[dimension] == nil {
+				continue
+			}
+			changed = append(changed, projectionChangeKey(dimension))
+		}
 	}
 	if len(changed) == 0 && rel.StateHash == stateHash && rel.ProjectorVersion == relationshipProjectorVersion {
 		return rel.Update().SetProjectedAt(evaluatedAt).Save(ctx)
@@ -1966,6 +1976,17 @@ func resetRelationshipProjectionDimension(state *RelationshipState, dimension st
 		state.Risks = []string{}
 	case "milestone":
 		state.Milestones = []string{}
+	}
+}
+
+func projectionChangeKey(dimension string) string {
+	switch dimension {
+	case "risk":
+		return "risks"
+	case "milestone":
+		return "milestones"
+	default:
+		return dimension
 	}
 }
 
