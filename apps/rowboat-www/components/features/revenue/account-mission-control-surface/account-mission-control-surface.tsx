@@ -47,22 +47,33 @@ export function commitmentTimelineStatus(
   label: string;
   variant: AccountTimelineItem["statusVariant"];
 } {
-  if (["met", "fulfilled", "waived"].includes(commitment.status)) {
-    return { label: "Kept", variant: "green" };
+  // The register already separates these. A waived promise was released, and a
+  // missed one was missed. Neither is a promise that was kept or is merely at risk.
+  switch (commitment.status) {
+    case "met":
+    case "fulfilled":
+      return { label: "Kept", variant: "green" };
+    case "waived":
+      return { label: "Waived", variant: "amber" };
+    case "missed":
+      return { label: "Missed", variant: "red" };
+    case "cancelled":
+      return { label: "Cancelled", variant: "amber" };
+    case "superseded":
+      return { label: "Superseded", variant: "amber" };
+    default:
+      break;
   }
   // "at_risk" is never stored. A disputed promise keeps status "open" and
   // records the dispute on acceptance, so both have to be read here.
-  if (
-    ["at_risk", "missed", "disputed"].includes(commitment.status) ||
-    commitment.acceptance === "disputed"
-  ) {
-    return { label: "At risk", variant: "red" };
+  if (commitment.status === "disputed" || commitment.acceptance === "disputed") {
+    return { label: "Disputed", variant: "red" };
   }
   if (commitment.acceptance === "candidate") {
     return { label: "Review", variant: "amber" };
   }
   const due = commitment.dueAt ? Date.parse(commitment.dueAt) : Number.NaN;
-  if (Number.isFinite(due) && due < now + AT_RISK_WINDOW_MS) {
+  if (commitment.status === "at_risk" || (Number.isFinite(due) && due < now + AT_RISK_WINDOW_MS)) {
     return { label: "At risk", variant: "red" };
   }
   return { label: "Open", variant: "amber" };
@@ -84,7 +95,7 @@ export function mapCommitmentsToAccountTimeline(
     return {
       id: commitment.id,
       label: commitmentTimelineLabel(commitment.direction),
-      detail: commitment.text,
+      detail: commitment.text.trim(),
       statusLabel: status.label,
       statusVariant: status.variant,
     };

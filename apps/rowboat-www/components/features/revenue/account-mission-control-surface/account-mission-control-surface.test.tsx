@@ -10,6 +10,7 @@ import {
   commitmentPreviewRemainder,
   commitmentTimelineLabel,
   commitmentTimelineStatus,
+  mapCommitmentsToAccountTimeline,
 } from "./account-mission-control-surface";
 import type { RelationshipCommitment } from "@/lib/revenue/types";
 
@@ -60,7 +61,7 @@ describe("AccountMissionControlSurface", () => {
         promise({ acceptance: "disputed", dueAt: "2026-11-01T12:00:00Z" }),
         now,
       ).label,
-    ).toBe("At risk");
+    ).toBe("Disputed");
     expect(
       commitmentTimelineStatus(
         promise({ acceptance: "candidate", dueAt: "2026-09-29T12:00:00Z" }),
@@ -68,6 +69,22 @@ describe("AccountMissionControlSurface", () => {
       ).label,
     ).toBe("Review");
     expect(commitmentTimelineStatus(promise({ status: "fulfilled" }), now).label).toBe("Kept");
+    expect(commitmentTimelineStatus(promise({ status: "waived" }), now).label).toBe("Waived");
+    expect(commitmentTimelineStatus(promise({ status: "missed" }), now).label).toBe("Missed");
+    expect(commitmentTimelineStatus(promise({ status: "cancelled" }), now).label).toBe("Cancelled");
+    expect(commitmentTimelineStatus(promise({ status: "superseded" }), now).label).toBe(
+      "Superseded",
+    );
+  });
+
+  it("prints the promise sentence without surrounding space", () => {
+    const [row] = mapCommitmentsToAccountTimeline(
+      [promise({ text: "  Send the waived note.  ", status: "waived" })],
+      1,
+      now,
+    );
+    expect(row?.detail).toBe("Send the waived note.");
+    expect(row?.statusLabel).toBe("Waived");
   });
 
   it("names a mutual promise as mutual", () => {
