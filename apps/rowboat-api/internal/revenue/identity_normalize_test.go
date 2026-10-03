@@ -17,6 +17,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 )
 
@@ -173,6 +174,80 @@ func TestRelationshipSearchFindsABlankCompanyName(t *testing.T) {
 	miss, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "zzzz-not-a-company"})
 	if err != nil || len(miss.Relationships) != 0 {
 		t.Fatalf("unrelated search = %v err=%v", namesOf(miss.Relationships), err)
+	}
+}
+
+func TestRecoveryNamesACompanyLikeTheDirectory(t *testing.T) {
+	f := newFixture(t)
+	domain, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "harbor-graph.example", AccountDomain: "harbor-graph.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	typed, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Billing @ Northwind", AccountDomain: "northwind.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	blank, err := f.client.Relationship.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetKind("company").
+		SetDisplayName("   ").
+		SetResourceRefs([]string{}).
+		SetRisks([]string{}).
+		SetMilestones([]string{}).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[uuid.UUID]string{
+		domain.ID: "Harbor Graph",
+		typed.ID:  "Billing @ Northwind",
+		blank.ID:  "Unknown company",
+	}
+	for id, title := range want {
+		action, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+			RelationshipID: id, ActionType: "warm_follow_up", Channel: "email",
+			Reason: "Send the harbor note", ExecutionMode: ExecModeDraft, PriorityScore: 30,
+		})
+		if err != nil {
+			t.Fatalf("action %s: %v", title, err)
+		}
+		loaded, err := f.client.RevenueAction.Query().
+			Where(revenueaction.IDEQ(action.ID)).
+			WithRelationship().
+			Only(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := actionToDTO(loaded).RelationshipName; got != title {
+			t.Fatalf("recovery name = %q, want %q", got, title)
+		}
+		row, err := f.client.Commitment.Create().
+			SetWorkspace(ws).
+			SetRelationshipID(id).
+			SetUser(f.user).
+			SetDirection("promised_by_me").
+			SetText("Send the harbor note").
+			SetConfidence(1).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		record, err := f.svc.ExportCommitment(f.ctx, f.user, row.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if record.Account != title {
+			t.Fatalf("exported account = %q, want %q", record.Account, title)
+		}
 	}
 }
 

@@ -723,7 +723,7 @@ func relationshipAttentionToDTO(item *ent.RelationshipAttentionItem) (relationsh
 		return relationshipAttentionDTO{}, err
 	}
 	return relationshipAttentionDTO{
-		ID: item.ID.String(), Version: item.Version, RelationshipID: rel.ID.String(), RelationshipName: rel.DisplayName,
+		ID: item.ID.String(), Version: item.Version, RelationshipID: rel.ID.String(), RelationshipName: reportAccountTitle(rel),
 		ReasonCode: item.ReasonCode, Explanation: item.Explanation, TriggeringObjectRef: item.TriggeringObjectRef,
 		EvidenceRefs: jsonSlice(item.EvidenceRefs), UrgencyBand: item.UrgencyBand, RankScore: item.RankScore, RankFactors: item.RankFactorsJSON,
 		SourceRequirements: item.SourceRequirements, RecommendationID: item.RecommendationID,
@@ -973,7 +973,7 @@ func actionToDTO(a *ent.RevenueAction) actionDTO {
 	}
 	if rel, err := a.Edges.RelationshipOrErr(); err == nil {
 		dto.RelationshipID = rel.ID.String()
-		dto.RelationshipName = rel.DisplayName
+		dto.RelationshipName = reportAccountTitle(rel)
 	}
 	return dto
 }

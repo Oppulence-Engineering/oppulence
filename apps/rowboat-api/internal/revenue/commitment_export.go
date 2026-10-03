@@ -99,7 +99,7 @@ func (s *Service) ExportCommitment(
 		History:      []ExportedTransition{},
 	}
 	if rel, relErr := row.Edges.RelationshipOrErr(); relErr == nil && rel != nil {
-		record.Account = rel.DisplayName
+		record.Account = reportAccountTitle(rel)
 	}
 	if evidences, evErr := row.Edges.EvidencesOrErr(); evErr == nil {
 		for _, evidence := range evidences {
