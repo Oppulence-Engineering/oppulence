@@ -149,6 +149,24 @@ test("graph questions use the stage and health words a person would type", () =>
   const risks = parseRelationshipGraphQuery("show risks");
   assert.deepEqual(risks.filters.nodeKinds, ["risk"]);
   assert.deepEqual(risks.filters.health, []);
+
+  const customers = parseRelationshipGraphQuery("active customers");
+  assert.deepEqual(customers.filters.lifecycle, ["active_customer"]);
+  assert.deepEqual(customers.filters.freeText, []);
+  assert.deepEqual(customers.applied, ["lifecycle: active_customer"]);
+
+  const healthy = parseRelationshipGraphQuery("healthy companies");
+  assert.deepEqual(healthy.filters.health, ["healthy"]);
+  assert.deepEqual(healthy.filters.nodeKinds, ["relationship"]);
+  assert.deepEqual(healthy.filters.freeText, []);
+
+  const pending = parseRelationshipGraphQuery("pending approval");
+  assert.deepEqual(pending.filters.approvalStatus, ["pending"]);
+  assert.deepEqual(pending.filters.freeText, []);
+  assert.deepEqual(pending.applied, ["approval: pending"]);
+
+  const notes = parseRelationshipGraphQuery("desktop notes");
+  assert.deepEqual(notes.filters.sources, ["desktop_note"]);
 });
 
 test("saved graph views normalize shareable state", () => {

@@ -88,6 +88,8 @@ const GRAPH_QUERY_STOP_WORDS = new Set([
 const GRAPH_QUERY_NODE_ALIASES = {
   account: "relationship",
   accounts: "relationship",
+  company: "relationship",
+  companies: "relationship",
   relationship: "relationship",
   relationships: "relationship",
   people: "person",
@@ -184,7 +186,9 @@ export function parseRelationshipGraphQuery(query) {
   for (const lifecycle of GRAPH_QUERY_LIFECYCLES) {
     const aliases = lifecycle === "renewal" ? ["renewal", "renewals", "renewing"] : [lifecycle];
     if (
-      aliases.some((alias) => new RegExp(`\\b${alias.replaceAll("_", "[ _]")}\\b`).test(normalized)) &&
+      aliases.some((alias) =>
+        new RegExp(`\\b${alias.replaceAll("_", "[ _]")}s?\\b`).test(normalized),
+      ) &&
       !filters.lifecycle.includes(lifecycle)
     ) {
       filters.lifecycle.push(lifecycle);
@@ -208,7 +212,7 @@ export function parseRelationshipGraphQuery(query) {
     if (new RegExp(`\\b${status}\\b`).test(normalized)) filters.approvalStatus.push(status);
   }
   for (const source of GRAPH_QUERY_SOURCES) {
-    if (new RegExp(`\\b${source.replaceAll("_", "[ _]")}\\b`).test(normalized)) {
+    if (new RegExp(`\\b${source.replaceAll("_", "[ _]")}s?\\b`).test(normalized)) {
       filters.sources.push(source);
     }
   }
@@ -238,6 +242,8 @@ export function parseRelationshipGraphQuery(query) {
     "outdated",
     "overdue",
     "pending",
+    "approval",
+    "approvals",
     "rejected",
     "renewal",
     "renewals",
@@ -245,10 +251,15 @@ export function parseRelationshipGraphQuery(query) {
     "review",
     "stale",
   ]);
+  const recognizedToken = (token) => {
+    if (GRAPH_QUERY_STOP_WORDS.has(token) || recognized.has(token)) return true;
+    // "customers" is the same word as the stage token "customer".
+    return token.endsWith("s") && recognized.has(token.slice(0, -1));
+  };
   filters.freeText = normalized
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
-    .filter((token) => token && !GRAPH_QUERY_STOP_WORDS.has(token) && !recognized.has(token));
+    .filter((token) => token && !recognizedToken(token));
 
   const applied = [];
   if (filters.lifecycle.length) applied.push(`lifecycle: ${filters.lifecycle.join(", ")}`);
