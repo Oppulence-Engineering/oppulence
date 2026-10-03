@@ -191,6 +191,11 @@ export function parseRelationshipGraphQuery(query) {
     // The company card says Kept. The stored status is still met.
     kept: /\bkept\b|\bkept_promises?\b/.test(normalized),
     stale: /\bstale\b|\boutdated\b|\bout of date\b/.test(normalized),
+    // The row says Up to date or Getting old. The stored freshness is current or aging.
+    current:
+      /\bup to date\b|\bup_to_date\b/.test(normalized) &&
+      !/\bnot up to date\b|\bnot_up_to_date\b/.test(normalized),
+    aging: /\bgetting old\b|\bgetting_old\b/.test(normalized),
     changed:
       /\bchanged\b|\bsince (?:my )?last review\b|\bchanged since review\b|\bsince you last looked\b|\byou last looked\b/.test(
         normalized,
@@ -300,6 +305,12 @@ export function parseRelationshipGraphQuery(query) {
   // These phrases are the filter. Leaving "since" or "date" behind turns the
   // question into a text search and hides the company that actually changed.
   const withoutFilterPhrases = normalized
+    .replace(/\bnot up to date\b/g, " ")
+    .replace(/\bnot_up_to_date\b/g, " ")
+    .replace(/\bup to date\b/g, " ")
+    .replace(/\bup_to_date\b/g, " ")
+    .replace(/\bgetting old\b/g, " ")
+    .replace(/\bgetting_old\b/g, " ")
     .replace(/\bout of date\b/g, " ")
     .replace(/\bsince you last looked\b/g, " ")
     .replace(/\byou last looked\b/g, " ")
@@ -361,6 +372,8 @@ export function parseRelationshipGraphQuery(query) {
   else if (filters.direction === "promised_by_me") applied.push("we owe them");
   if (filters.kept) applied.push("kept");
   if (filters.stale) applied.push("out of date");
+  if (filters.current) applied.push("up to date");
+  if (filters.aging) applied.push("getting old");
   if (filters.changed) applied.push("changed since you last looked");
   if (filters.hideIsolated) applied.push("hide unconnected");
   if (filters.freeText.length) applied.push(`text: ${filters.freeText.join(" ")}`);
@@ -453,6 +466,12 @@ export function queryRelationshipGraph(graph, query, options = {}) {
   }
   if (filters.stale) {
     constrainBy((node) => normalizedGraphValue(node.freshness) === "stale");
+  }
+  if (filters.current) {
+    constrainBy((node) => normalizedGraphValue(node.freshness) === "current");
+  }
+  if (filters.aging) {
+    constrainBy((node) => normalizedGraphValue(node.freshness) === "aging");
   }
   if (filters.changed) {
     constrainBy((node) => node.kind === "relationship" && Boolean(node.changedSinceReview));

@@ -494,6 +494,59 @@ test("an up to date detail is not out of date", () => {
   assert.equal(stale.answer, "1 relationship matches out of date.");
 });
 
+test("asking up to date keeps a current detail and leaves an older one", () => {
+  const parsed = parseRelationshipGraphQuery("up to date");
+  assert.equal(parsed.filters.current, true);
+  assert.equal(parsed.filters.stale, false);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["up to date"]);
+
+  const hyphenated = parseRelationshipGraphQuery("up-to-date");
+  assert.equal(hyphenated.filters.current, true);
+  assert.deepEqual(hyphenated.filters.freeText, []);
+
+  const denied = parseRelationshipGraphQuery("not up to date");
+  assert.equal(denied.filters.current, false);
+  assert.deepEqual(denied.filters.freeText, []);
+
+  const aging = parseRelationshipGraphQuery("getting old");
+  assert.equal(aging.filters.aging, true);
+  assert.equal(aging.filters.current, false);
+  assert.deepEqual(aging.filters.freeText, []);
+  assert.deepEqual(aging.applied, ["getting old"]);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:fresh", kind: "relationship", label: "Quay Fresh" },
+      {
+        id: "evidence:fresh",
+        kind: "evidence",
+        label: "The quay note",
+        relationshipId: "fresh",
+        freshness: "current",
+      },
+      { id: "relationship:aged", kind: "relationship", label: "Quay Aged" },
+      {
+        id: "evidence:aged",
+        kind: "evidence",
+        label: "The older note",
+        relationshipId: "aged",
+        freshness: "aging",
+      },
+    ],
+    edges: [],
+  };
+  const current = queryRelationshipGraph(graph, "up to date");
+  assert.deepEqual(current.relationshipIds, ["fresh"]);
+  assert.equal(current.visibleNodeIds.includes("relationship:aged"), false);
+  assert.equal(current.answer, "1 relationship matches up to date.");
+
+  const older = queryRelationshipGraph(graph, "getting old");
+  assert.deepEqual(older.relationshipIds, ["aged"]);
+  assert.equal(older.visibleNodeIds.includes("relationship:fresh"), false);
+  assert.equal(older.answer, "1 relationship matches getting old.");
+});
+
 test("the graph's own change and freshness words are the filter, not a text search", () => {
   const looked = parseRelationshipGraphQuery("changed since you last looked");
   assert.equal(looked.filters.changed, true);

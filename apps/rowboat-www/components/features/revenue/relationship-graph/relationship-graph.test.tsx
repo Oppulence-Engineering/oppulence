@@ -389,6 +389,14 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryAnswer("1 relationship matches approval: pending.", 1)).toBe(
       "1 company matches Approval: Awaiting approval.",
     );
+    expect(graphQueryFilterLabel("up to date")).toBe("up to date");
+    expect(graphQueryAnswer("1 relationship matches up to date.", 2)).toBe(
+      "1 company matches up to date.",
+    );
+    expect(graphQueryFilterLabel("getting old")).toBe("getting old");
+    expect(graphQueryAnswer("1 relationship matches getting old.", 2)).toBe(
+      "1 company matches getting old.",
+    );
     expect(graphQueryAnswer("1 relationship matches they owe us.", 1)).toBe(
       "1 company matches they owe us.",
     );
