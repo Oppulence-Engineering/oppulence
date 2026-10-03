@@ -943,6 +943,36 @@ describe("durable note templates and favorites", () => {
     vi.useRealTimers();
   });
 
+  it("does not call a later edit a note created today", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const now = new Date(2026, 9, 3, 12, 0, 0);
+    vi.setSystemTime(now);
+    mocks.fetchWorkspaceNotes.mockResolvedValue({
+      notes: [
+        {
+          externalId: "note-1",
+          title: "August note",
+          body: "Touched in October",
+          relationshipId: "relationship-1",
+          relationshipName: "Acme",
+          occurredAt: now.toISOString(),
+          createdAt: "2026-08-01T12:00:00Z",
+          eventType: "note",
+        },
+      ],
+      relationships: [{ id: "relationship-1", kind: "organization", displayName: "Acme" }],
+      failedTimelineCount: 0,
+      hasMoreNotes: false,
+      timelineCursors: [],
+    });
+    renderNotes();
+
+    expect(await screen.findByText("Earlier")).toBeInTheDocument();
+    expect(screen.queryByText("Created today")).not.toBeInTheDocument();
+    expect(screen.getByText("Edited 1 min ago")).toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
   it("says notes failed to load instead of claiming there are no notes", async () => {
     mocks.fetchWorkspaceNotes.mockRejectedValue(new Error("boom"));
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -1099,6 +1129,7 @@ import {
   groupWorkspaceNotes,
   plateText,
 } from "@/lib/revenue/revenue-records";
+import { workspaceNoteActivityLabel } from "@/lib/revenue/revenue";
 import type { RelationshipObservation, RevenueRelationship } from "@/lib/revenue/types";
 
 const relationship = {
@@ -1219,6 +1250,24 @@ describe("workspace record notes", () => {
         (group) => group.label,
       ),
     ).toEqual(["Earlier", "Created today"]);
+
+    const editedToday = {
+      ...note("edited", today),
+      createdAt: earlier,
+    };
+    expect(
+      groupWorkspaceNotes([editedToday], now, true).map((group) => [
+        group.label,
+        group.notes.map((item) => item.externalId),
+      ]),
+    ).toEqual([["Earlier", ["edited"]]]);
+    expect(workspaceNoteActivityLabel(editedToday)).toMatch(/^Edited /);
+    expect(
+      workspaceNoteActivityLabel({
+        occurredAt: "2026-10-02T00:00:30Z",
+        createdAt: "2026-10-02T00:00:00Z",
+      }),
+    ).not.toMatch(/^Edited /);
   });
 });
 

@@ -42,6 +42,21 @@ describe("workspace notes from later timeline pages", () => {
       "Earlier desk note",
     ]);
   });
+
+  it("keeps the first write when a later edit arrives", () => {
+    const edited = {
+      externalId: "note-1",
+      title: "Newer",
+      body: "",
+      relationshipId: "company-1",
+      relationshipName: "Queue Page Co",
+      occurredAt: "2026-10-02T00:00:00Z",
+      createdAt: "2026-08-01T00:00:00Z",
+      eventType: "note",
+    };
+    const previous = { ...edited, occurredAt: "2026-09-01T00:00:00Z", createdAt: undefined };
+    expect(mergeWorkspaceNotes([previous], [edited])[0]?.createdAt).toBe("2026-08-01T00:00:00Z");
+  });
 });
 
 describe("company titles shared with people and attention", () => {

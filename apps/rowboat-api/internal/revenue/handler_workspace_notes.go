@@ -20,6 +20,7 @@ type workspaceNoteDTO struct {
 	RelationshipID   string    `json:"relationshipId"`
 	RelationshipName string    `json:"relationshipName"`
 	OccurredAt       time.Time `json:"occurredAt"`
+	CreatedAt        time.Time `json:"createdAt"`
 	EventType        string    `json:"eventType"`
 }
 
@@ -68,6 +69,7 @@ func (h *Handler) ListWorkspaceNotes(w http.ResponseWriter, r *http.Request) {
 			RelationshipID:   note.RelationshipID,
 			RelationshipName: note.RelationshipName,
 			OccurredAt:       note.OccurredAt,
+			CreatedAt:        note.CreatedAt,
 			EventType:        note.EventType,
 		})
 	}

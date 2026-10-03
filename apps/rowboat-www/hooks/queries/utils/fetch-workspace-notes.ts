@@ -27,6 +27,7 @@ const WorkspaceNoteSchema = z.object({
   relationshipId: z.string(),
   relationshipName: z.string(),
   occurredAt: z.string(),
+  createdAt: z.string().optional(),
   eventType: z.string(),
 });
 

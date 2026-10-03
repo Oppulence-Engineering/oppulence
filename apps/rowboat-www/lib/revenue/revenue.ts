@@ -1111,6 +1111,23 @@ export function snoozeWakeCopy(until: string | null | undefined): string {
   return `Comes back ${when}.`;
 }
 
+/**
+ * A save more than a minute after the first write is an edit. Autosave can
+ * write twice in the same moment, and that is still the note being created.
+ */
+export function workspaceNoteActivityLabel(note: {
+  createdAt?: string;
+  occurredAt: string;
+}): string {
+  const activity = relativeTime(note.occurredAt);
+  const created = Date.parse(note.createdAt?.trim() || note.occurredAt);
+  const edited = Date.parse(note.occurredAt);
+  if (Number.isFinite(created) && Number.isFinite(edited) && edited - created > 60_000) {
+    return `Edited ${activity}`;
+  }
+  return activity;
+}
+
 export function relativeTime(iso?: string | null): string {
   if (!iso) return "";
   const then = new Date(iso).getTime();

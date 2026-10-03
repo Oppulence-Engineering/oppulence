@@ -158,6 +158,7 @@ import {
   getPersonAttributes,
   ingestRelationshipObservations,
   relativeTime,
+  workspaceNoteActivityLabel,
   safeResearchCitationURL,
   webAddressHref,
 } from "@/lib/revenue/revenue";
@@ -1942,7 +1943,7 @@ export function NotesView({
                         <Label className="font-normal">{author.label}</Label>
                       </div>
                       <Badge className="font-normal" variant="secondary">
-                        {relativeTime(note.occurredAt)}
+                        {workspaceNoteActivityLabel(note)}
                       </Badge>
                       <Button
                         aria-label={

@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
@@ -35,8 +36,11 @@ type WorkspaceNote struct {
 	LiveLinked       bool
 	RelationshipID   string
 	RelationshipName string
-	OccurredAt       time.Time
-	EventType        string
+	// OccurredAt is the latest save. CreatedAt is the first write, so an edit
+	// does not move the note into "created today".
+	OccurredAt time.Time
+	CreatedAt  time.Time
+	EventType  string
 }
 
 // WorkspaceNotePage is one page of collapsed notes. Newest is the default.
@@ -65,8 +69,21 @@ func (s *Service) ListWorkspaceNotes(ctx context.Context, u *ent.User, limit, of
 		return nil, err
 	}
 	live := collapseWorkspaceNotes(rows)
+	created := earliestNoteWrite(rows)
 	if oldest {
-		slices.Reverse(live)
+		// Oldest is the first write. Reversing the latest-save order put a
+		// note edited today behind one that was written later and left alone.
+		slices.SortStableFunc(live, func(a, b WorkspaceNote) int {
+			left, right := created[a.ExternalID], created[b.ExternalID]
+			switch {
+			case left.Before(right):
+				return -1
+			case right.Before(left):
+				return 1
+			default:
+				return strings.Compare(a.ExternalID, b.ExternalID)
+			}
+		})
 	}
 	if offset > len(live) {
 		offset = len(live)
@@ -76,7 +93,20 @@ func (s *Service) ListWorkspaceNotes(ctx context.Context, u *ent.User, limit, of
 	if end > len(live) {
 		end = len(live)
 	}
-	return &WorkspaceNotePage{Notes: live[offset:end], HasMore: hasMore}, nil
+	page := live[offset:end]
+	// Newest stops once the page is full, which can be before the first write
+	// of a note that was edited again later.
+	lookedUp, err := s.noteCreationTimes(ctx, ws.ID, noteExternalIDs(page))
+	if err != nil {
+		return nil, err
+	}
+	for id, at := range lookedUp {
+		if prev, ok := created[id]; !ok || at.Before(prev) {
+			created[id] = at
+		}
+	}
+	stampNoteCreatedAt(page, created)
+	return &WorkspaceNotePage{Notes: page, HasMore: hasMore}, nil
 }
 
 func normalizeWorkspaceNotePage(limit, offset int) (int, int, error) {
@@ -190,6 +220,106 @@ func workspaceNoteID(row *ent.RelationshipObservation, facts map[string]any) str
 		}
 	}
 	return strings.TrimSpace(row.ExternalID)
+}
+
+func noteExternalIDs(notes []WorkspaceNote) []string {
+	ids := make([]string, 0, len(notes))
+	seen := make(map[string]struct{}, len(notes))
+	for _, note := range notes {
+		id := strings.TrimSpace(note.ExternalID)
+		if id == "" {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+// earliestNoteWrite is the first revision present in rows already read.
+func earliestNoteWrite(rows []*ent.RelationshipObservation) map[string]time.Time {
+	created := make(map[string]time.Time, len(rows))
+	for _, row := range rows {
+		if row == nil {
+			continue
+		}
+		facts := map[string]any{}
+		_ = json.Unmarshal([]byte(row.NormalizedFactsJSON), &facts)
+		noteID := workspaceNoteID(row, facts)
+		if noteID == "" {
+			continue
+		}
+		at := row.OccurredAt.UTC()
+		if prev, ok := created[noteID]; !ok || at.Before(prev) {
+			created[noteID] = at
+		}
+	}
+	return created
+}
+
+func stampNoteCreatedAt(notes []WorkspaceNote, created map[string]time.Time) {
+	for i := range notes {
+		at, ok := created[notes[i].ExternalID]
+		if !ok || at.IsZero() {
+			at = notes[i].OccurredAt
+		}
+		notes[i].CreatedAt = at.UTC()
+	}
+}
+
+// noteCreationTimes reads the first write for notes whose earlier revisions
+// were not in the page scan. The note id lives in the facts, and each save
+// gets a new external id.
+func (s *Service) noteCreationTimes(ctx context.Context, workspaceID uuid.UUID, ids []string) (map[string]time.Time, error) {
+	created := make(map[string]time.Time, len(ids))
+	if len(ids) == 0 {
+		return created, nil
+	}
+	wanted := make(map[string]struct{}, len(ids))
+	match := make([]predicate.RelationshipObservation, 0, len(ids)*2)
+	for _, id := range ids {
+		wanted[id] = struct{}{}
+		match = append(match, relationshipobservation.ExternalIDEQ(id))
+		if needle, ok := noteIDJSONNeedle(id); ok {
+			match = append(match, relationshipobservation.NormalizedFactsJSONContains(needle))
+		}
+	}
+	rows, err := s.client.RelationshipObservation.Query().
+		Where(
+			relationshipobservation.HasWorkspaceWith(revenueworkspace.IDEQ(workspaceID)),
+			relationshipobservation.SourceEQ("desktop_note"),
+			relationshipobservation.EventTypeIn("note", "note_deleted"),
+			relationshipobservation.Or(match...),
+		).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		facts := map[string]any{}
+		_ = json.Unmarshal([]byte(row.NormalizedFactsJSON), &facts)
+		noteID := workspaceNoteID(row, facts)
+		if _, ok := wanted[noteID]; !ok {
+			continue
+		}
+		at := row.OccurredAt.UTC()
+		if prev, seen := created[noteID]; !seen || at.Before(prev) {
+			created[noteID] = at
+		}
+	}
+	return created, nil
+}
+
+// noteIDJSONNeedle matches the compact facts encoding. The closing quote keeps
+// a shorter id from matching a longer one.
+func noteIDJSONNeedle(id string) (string, bool) {
+	if id == "" || strings.ContainsAny(id, `"\`) {
+		return "", false
+	}
+	return `"noteId":"` + id + `"`, true
 }
 
 func workspaceNoteFromObservation(row *ent.RelationshipObservation, company *ent.Relationship, facts map[string]any, noteID string) WorkspaceNote {

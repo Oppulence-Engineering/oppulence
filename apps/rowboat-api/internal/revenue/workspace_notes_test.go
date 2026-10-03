@@ -115,6 +115,10 @@ func TestListWorkspaceNotesCollapsesEditsAndSkipsOtherCompanies(t *testing.T) {
 		!page.Notes[0].LiveLinked || page.Notes[0].ExternalID != "cedar-edit" || page.Notes[0].Content == nil {
 		t.Fatalf("newest note = %+v", page.Notes[0])
 	}
+	if !page.Notes[0].CreatedAt.Equal(sept(2, 12)) || !page.Notes[0].OccurredAt.Equal(sept(3, 12)) {
+		t.Fatalf("edited note times created=%s occurred=%s, want the first write and the later save",
+			page.Notes[0].CreatedAt, page.Notes[0].OccurredAt)
+	}
 	if page.Notes[1].Title != "Pine title" || page.Notes[1].RelationshipName != "Pine Notes" {
 		t.Fatalf("older note = %+v", page.Notes[1])
 	}
@@ -234,6 +238,56 @@ func TestListWorkspaceNotesOldestStartsAtTheFirstNote(t *testing.T) {
 	newest, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 1, 0, "newest")
 	if err != nil || len(newest.Notes) != 1 || newest.Notes[0].Title != "Cedar newest" {
 		t.Fatalf("newest page = %+v err=%v", newest, err)
+	}
+}
+
+func TestListWorkspaceNotesKeepsTheFirstWriteAfterALaterEdit(t *testing.T) {
+	f := newFixture(t)
+	company, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar First Write", AccountDomain: "cedar-first-write.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstWrite := time.Date(2026, 8, 1, 12, 0, 0, 0, time.UTC)
+	laterNote := time.Date(2026, 10, 2, 12, 0, 0, 0, time.UTC)
+	edited := time.Date(2026, 10, 3, 12, 0, 0, 0, time.UTC)
+	notes := []RelationshipObservationInput{
+		{
+			RelationshipID: company.ID, Source: "desktop_note", ExternalID: "first-write-original",
+			EventType: "note", OccurredAt: firstWrite, Summary: "August note",
+			Facts: map[string]any{"noteId": "first-write", "title": "August note", "body": "Written in August"},
+		},
+		{
+			RelationshipID: company.ID, Source: "desktop_note", ExternalID: "october-note",
+			EventType: "note", OccurredAt: laterNote, Summary: "October note",
+			Facts: map[string]any{"noteId": "october-note", "title": "October note", "body": "Written in October"},
+		},
+		{
+			RelationshipID: company.ID, Source: "desktop_note", ExternalID: "first-write-edit",
+			EventType: "note", OccurredAt: edited, Summary: "August note",
+			Facts: map[string]any{"noteId": "first-write", "title": "August note", "body": "Edited in October"},
+		},
+	}
+	if _, err := f.svc.IngestRelationshipObservationCandidates(f.ctx, f.user, notes); err != nil {
+		t.Fatal(err)
+	}
+
+	newest, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 1, 0, "newest")
+	if err != nil || len(newest.Notes) != 1 || newest.Notes[0].ExternalID != "first-write" {
+		t.Fatalf("newest page = %+v err=%v", newest, err)
+	}
+	if !newest.Notes[0].CreatedAt.Equal(firstWrite) || !newest.Notes[0].OccurredAt.Equal(edited) {
+		t.Fatalf("created=%s occurred=%s, want the August write and the October edit",
+			newest.Notes[0].CreatedAt, newest.Notes[0].OccurredAt)
+	}
+
+	oldest, err := f.svc.ListWorkspaceNotes(f.ctx, f.user, 1, 0, "oldest")
+	if err != nil || !oldest.HasMore || len(oldest.Notes) != 1 || oldest.Notes[0].ExternalID != "first-write" {
+		t.Fatalf("oldest page = %+v err=%v", oldest, err)
+	}
+	if !oldest.Notes[0].CreatedAt.Equal(firstWrite) {
+		t.Fatalf("oldest created=%s, want the August write", oldest.Notes[0].CreatedAt)
 	}
 }
 

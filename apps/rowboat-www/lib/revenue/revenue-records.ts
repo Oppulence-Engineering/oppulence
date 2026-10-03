@@ -73,6 +73,8 @@ export type WorkspaceNote = {
   relationshipId: string;
   relationshipName: string;
   occurredAt: string;
+  /** First write. Absent on a response that only knows the latest save. */
+  createdAt?: string;
   eventType: string;
 };
 
@@ -156,9 +158,30 @@ export function mergeWorkspaceNotes(
   const latest = new Map(current.map((note) => [note.externalId, note]));
   for (const note of next) {
     const existing = latest.get(note.externalId);
-    if (!existing || note.occurredAt > existing.occurredAt) latest.set(note.externalId, note);
+    const createdAt = earlierNoteTime(existing?.createdAt, note.createdAt);
+    if (!existing || note.occurredAt > existing.occurredAt) {
+      latest.set(note.externalId, createdAt ? { ...note, createdAt } : note);
+      continue;
+    }
+    if (createdAt && existing.createdAt !== createdAt) {
+      latest.set(note.externalId, { ...existing, createdAt });
+    }
   }
   return [...latest.values()];
+}
+
+function earlierNoteTime(left?: string, right?: string): string | undefined {
+  const times = [left, right].map((value) => value?.trim() ?? "").filter(Boolean);
+  if (!times.length) return undefined;
+  return times.reduce((earliest, value) => (value < earliest ? value : earliest));
+}
+
+/** The day buckets follow the first write. A later save stays on the card. */
+export function workspaceNoteCreatedAt(note: {
+  createdAt?: string;
+  occurredAt: string;
+}): string {
+  return note.createdAt?.trim() || note.occurredAt;
 }
 
 export type WorkspaceNoteDay = "today" | "yesterday" | "earlier";
@@ -367,11 +390,11 @@ export function promiseDueLabel(dueAt: string | null | undefined): string {
 }
 
 /**
- * The notes list used to title every note "Created today". Day buckets keep
- * that label for notes from the current local day and separate the rest.
- * A timestamp in the future stays with today so a clock skew does not invent
- * a fourth section. DST makes a local-day delta 23 or 25 hours, so the day
- * count is rounded.
+ * The notes list used to title every note "Created today", including one that
+ * was only edited today. Day buckets follow the first write. A timestamp in
+ * the future stays with today so a clock skew does not invent a fourth
+ * section. DST makes a local-day delta 23 or 25 hours, so the day count is
+ * rounded.
  */
 export function workspaceNoteDay(occurredAt: string, now: Date): WorkspaceNoteDay {
   const occurred = new Date(occurredAt);
@@ -398,7 +421,7 @@ export function groupWorkspaceNotes(
     yesterday: [],
     earlier: [],
   };
-  for (const note of notes) buckets[workspaceNoteDay(note.occurredAt, now)].push(note);
+  for (const note of notes) buckets[workspaceNoteDay(workspaceNoteCreatedAt(note), now)].push(note);
   const order: WorkspaceNoteDay[] = newestFirst
     ? ["today", "yesterday", "earlier"]
     : ["earlier", "yesterday", "today"];
