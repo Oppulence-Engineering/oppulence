@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   activityEvidenceLines,
   activityHeading,
+  activityOutcomeSummary,
   enumLabel,
   mailAccessReason,
   missingScopeLabels,
@@ -109,6 +110,29 @@ describe("source product copy", () => {
     expect(activityHeading("custom_feed", "custom.event_name")).toBe(
       "Custom Feed · Custom Event Name",
     );
+    expect(activityHeading("gmail", "action.outcome.meeting_booked")).toBe(
+      "Gmail · Meeting booked",
+    );
+    expect(activityHeading("user", "action.outcome.bad_recommendation")).toBe(
+      "Added by you · Not a good suggestion",
+    );
+    expect(activityHeading("gmail", "action.outcome.replied")).toBe("Gmail · They replied");
+    expect(activityOutcomeSummary("Action outcome observed: meeting booked.")).toBe(
+      "Meeting booked",
+    );
+    expect(activityOutcomeSummary("The harbor packet arrived")).toBeNull();
+    expect(activityHeading("gmail", "action.outcome.meeting_booked")).not.toContain(
+      "action.outcome",
+    );
+    expect(
+      activityEvidenceLines(null, {
+        outcome_kind: "meeting_booked",
+        provider_source: "gmail",
+        action_id: "a21f0000-0000-4000-8000-000000000009",
+        recommendation_revision: 1,
+        channel: "email",
+      }).join("\n"),
+    ).not.toMatch(/outcome_kind|action_id|meeting_booked|recommendation_revision/);
     expect(activityHeading("gmail", "thread.updated")).not.toContain("thread.updated");
     expect(activityHeading("desktop_note", "note")).not.toContain("desktop_note");
     expect(mailAccessReason("mailbox_owner")).toBe("Your mailbox");

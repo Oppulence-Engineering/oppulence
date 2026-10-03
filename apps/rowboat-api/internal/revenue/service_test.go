@@ -749,6 +749,9 @@ func TestOutcomesIdempotent(t *testing.T) {
 	if len(timeline) != 1 || timeline[0].EventType != "action.outcome.replied" {
 		t.Fatalf("outcome was not published once into relationship history: %#v", timeline)
 	}
+	if timeline[0].Summary != "They replied" {
+		t.Fatalf("outcome summary = %q", timeline[0].Summary)
+	}
 }
 
 // Duplicate detector dedupe keys collapse to one queue item.

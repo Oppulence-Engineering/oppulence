@@ -158,9 +158,45 @@ export function activitySourceLabel(source: string): string {
   return ACTIVITY_SOURCE_LABELS[key] ?? enumLabel(key);
 }
 
+const ACTION_OUTCOME_LABELS: Record<string, string> = {
+  sent: "Message sent",
+  delivered: "Delivered",
+  bounced: "Bounced",
+  replied: "They replied",
+  meeting_booked: "Meeting booked",
+  won: "Won",
+  lost: "Lost",
+  dismissed: "Dismissed",
+  bad_recommendation: "Not a good suggestion",
+  deal_advanced: "Deal moved forward",
+  onboarding_progressed: "Onboarding moved forward",
+  renewed: "Renewed",
+  escalated: "Escalated",
+  churned: "They left",
+  corrected: "Corrected",
+};
+
+/** An outcome kind is stored on the activity. The timeline names the result. */
+export function actionOutcomeLabel(kind: string): string {
+  const key = kind.trim().toLowerCase().replaceAll(" ", "_");
+  return ACTION_OUTCOME_LABELS[key] ?? enumLabel(key);
+}
+
+/**
+ * Older history stored "Action outcome observed: meeting booked." The sentence
+ * a person reads is the same label as the heading.
+ */
+export function activityOutcomeSummary(summary: string): string | null {
+  const observed = /^Action outcome observed: ([^.]+)\.$/i.exec(summary.trim());
+  if (!observed) return null;
+  return actionOutcomeLabel(observed[1]);
+}
+
 /** A stored event type becomes a short activity name. Dots are not words. */
 export function activityEventLabel(eventType: string): string {
   const key = eventType.trim().toLowerCase();
+  const outcome = /^action\.outcome\.(.+)$/.exec(key);
+  if (outcome) return actionOutcomeLabel(outcome[1]);
   return ACTIVITY_EVENT_LABELS[key] ?? enumLabel(key);
 }
 
@@ -223,6 +259,11 @@ const HIDDEN_ACTIVITY_KEYS = new Set([
   "liveLinked",
   "externalId",
   "contentHash",
+  "outcome_kind",
+  "provider_source",
+  "action_id",
+  "recommendation_revision",
+  "channel",
 ]);
 
 const ACTIVITY_FACT_LABELS: Record<string, string> = {

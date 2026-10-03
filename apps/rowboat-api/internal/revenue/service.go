@@ -5391,10 +5391,47 @@ func appendOutcomeObservation(
 		SetSource(source).SetSourceAccountID("outcome").SetExternalID(externalID).
 		SetSourceVersion(fmt.Sprintf("action-revision-%d", action.Revision)).
 		SetEventType("action.outcome." + in.Kind).SetOccurredAt(in.OccurredAt.UTC()).SetReceivedAt(in.OccurredAt.UTC()).
-		SetSummary("Action outcome observed: " + strings.ReplaceAll(in.Kind, "_", " ") + ".").
+		SetSummary(actionOutcomeSummary(in.Kind)).
 		SetNormalizedFactsJSON(string(rawFacts)).SetContentHash(fmt.Sprintf("%x", digest[:])).
 		Save(ctx)
 	return err
+}
+
+func actionOutcomeSummary(kind string) string {
+	switch strings.ToLower(strings.TrimSpace(kind)) {
+	case "sent":
+		return "Message sent"
+	case "delivered":
+		return "Delivered"
+	case "bounced":
+		return "Bounced"
+	case "replied":
+		return "They replied"
+	case "meeting_booked":
+		return "Meeting booked"
+	case "won":
+		return "Won"
+	case "lost":
+		return "Lost"
+	case "dismissed":
+		return "Dismissed"
+	case "bad_recommendation":
+		return "Not a good suggestion"
+	case "deal_advanced":
+		return "Deal moved forward"
+	case "onboarding_progressed":
+		return "Onboarding moved forward"
+	case "renewed":
+		return "Renewed"
+	case "escalated":
+		return "Escalated"
+	case "churned":
+		return "They left"
+	case "corrected":
+		return "Corrected"
+	default:
+		return "Action recorded"
+	}
 }
 
 // isValidationError reports whether err is an ent field validation error

@@ -278,6 +278,10 @@ describe("RelationshipsView", () => {
     expect(companyDomainLabel("   ")).toBe("Not filled in");
     expect(activitySummaryLabel("   ")).toBe("Open the source");
     expect(activitySummaryLabel("The harbor packet arrived")).toBe("The harbor packet arrived");
+    expect(activitySummaryLabel("Action outcome observed: meeting booked.")).toBe("Meeting booked");
+    expect(activitySummaryLabel("Action outcome observed: bad recommendation.")).toBe(
+      "Not a good suggestion",
+    );
     expect(communicationPreviewLabel("   ")).toBe("No message preview");
     expect(communicationPreviewLabel("Invoice packet")).toBe("Invoice packet");
     expect(evidenceExcerptLabel("   ")).toBe("Evidence excerpt unavailable");

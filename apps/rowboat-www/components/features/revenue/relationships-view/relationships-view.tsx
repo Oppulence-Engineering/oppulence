@@ -208,6 +208,7 @@ import {
 import {
   activityEvidenceLines,
   activityHeading,
+  activityOutcomeSummary,
   activitySourceLabel,
   enumLabel as humanize,
   participantRoleLabel,
@@ -2231,6 +2232,8 @@ export function communicationPreviewLabel(subject?: string | null): string {
 /** Activity history uses this when an observation has no summary. */
 export function activitySummaryLabel(summary?: string | null): string {
   const trimmed = summary?.trim() ?? "";
+  const outcome = activityOutcomeSummary(trimmed);
+  if (outcome) return outcome;
   return trimmed || "Open the source";
 }
 
