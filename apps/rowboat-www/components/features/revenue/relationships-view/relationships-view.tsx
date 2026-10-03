@@ -2734,6 +2734,14 @@ export function communicationTimelineEmptyCopy(hasMeetingActivity: boolean): str
   return "No Gmail or calendar events yet.";
 }
 
+/** Overview email activity is Gmail threads. A confirmed meeting is not one of them. */
+export function emailActivityEmptyCopy(hasMeetingActivity: boolean): string {
+  if (hasMeetingActivity) {
+    return "No Gmail threads linked yet. Confirmed meetings are in Activity.";
+  }
+  return "No Gmail threads linked yet.";
+}
+
 /** Activity history uses the same honest count as mail. */
 export function activityHistoryTitle(shown: number, hasMore: boolean, failed = false): string {
   if (failed && shown === 0) return "Activity history";
@@ -4090,7 +4098,9 @@ export function RelationshipSheet({
                 <section id={`${id}:emails`} className="scroll-mt-16">
                   <SectionTitle title={`Email activity (${data.emailThreads.length})`} />
                   {data.emailThreads.length === 0 ? (
-                    <EmptyText>No Gmail threads linked yet.</EmptyText>
+                    <EmptyText>
+                      {emailActivityEmptyCopy(timeline.some((item) => item.source === "meeting"))}
+                    </EmptyText>
                   ) : (
                     <ul className="flex flex-col divide-y divide-primary/10 rounded-none border border-border">
                       {data.emailThreads.map((thread) => (

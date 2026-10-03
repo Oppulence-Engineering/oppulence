@@ -54,6 +54,7 @@ import {
   governanceExcerptLabel,
   governanceReceiptRemainder,
   communicationTimelineEmptyCopy,
+  emailActivityEmptyCopy,
   communicationTimelineTitle,
   earlierMailLabel,
   activityHistoryTitle,
@@ -938,6 +939,12 @@ describe("RelationshipsView", () => {
     expect(source).toContain('timeline.some((item) => item.source === "meeting")');
     expect(source).not.toContain("No mail or meetings yet.");
     expect(communicationTimelineEmptyCopy(false)).toBe("No Gmail or calendar events yet.");
+    expect(emailActivityEmptyCopy(false)).toBe("No Gmail threads linked yet.");
+    expect(emailActivityEmptyCopy(true)).toBe(
+      "No Gmail threads linked yet. Confirmed meetings are in Activity.",
+    );
+    expect(source).toContain("emailActivityEmptyCopy(");
+    expect(source).not.toContain(">No Gmail threads linked yet.</EmptyText>");
     expect(communicationTimelineEmptyCopy(true)).toBe(
       "No Gmail or calendar events yet. Confirmed meetings are in Activity.",
     );

@@ -64,6 +64,8 @@ describe("AttentionQueueSurface", () => {
       screen.getByText("No reply in 14 days", { selector: "[data-slot=attention-reason]" }),
     ).toBeVisible();
     expect(screen.getByRole("columnheader", { name: "Urgency" })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "Score" })).not.toBeInTheDocument();
+    expect(screen.queryByText("0.8")).not.toBeInTheDocument();
     expect(screen.queryByRole("columnheader", { name: "Health" })).not.toBeInTheDocument();
     expect(screen.getAllByText("At risk").length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "Filter" })).not.toBeInTheDocument();
@@ -290,6 +292,8 @@ describe("AttentionQueueSurface", () => {
       "utf8",
     );
     expect(source).not.toContain("window.prompt");
+    expect(source).not.toContain("{item.rankScore}");
+    expect(source).not.toContain('name: "Score"');
     prompt.mockRestore();
   });
 });

@@ -3,7 +3,7 @@
 import "client-only";
 
 import { Badge } from "@sim/emcn";
-import { Layout, TagIcon, TypeNumber, TypeText } from "@sim/emcn/icons";
+import { Layout, TagIcon, TypeText } from "@sim/emcn/icons";
 import * as React from "react";
 import { Check } from "@/lib/icons";
 
@@ -27,7 +27,6 @@ import type { RelationshipAttentionItem } from "@/lib/revenue/types";
 const COLUMNS = [
   { name: "Company", icon: TypeText },
   { name: "Urgency", icon: TagIcon },
-  { name: "Score", icon: TypeNumber },
   { name: "Why now", icon: TypeText },
 ] as const;
 
@@ -260,13 +259,13 @@ export function AttentionQueueSurface({
             <tbody>
               {loading ? (
                 <tr className="h-[37px] border-[var(--border)] border-b">
-                  <td className="px-2.5 text-[var(--text-secondary)]" colSpan={4}>
+                  <td className="px-2.5 text-[var(--text-secondary)]" colSpan={COLUMNS.length}>
                     Loading attention queue…
                   </td>
                 </tr>
               ) : visible.length === 0 ? (
                 <tr className="h-[37px] border-[var(--border)] border-b">
-                  <td className="px-2.5 text-[var(--text-secondary)]" colSpan={4}>
+                  <td className="px-2.5 text-[var(--text-secondary)]" colSpan={COLUMNS.length}>
                     {attentionBandEmptyCopy(hasMore)}
                   </td>
                 </tr>
@@ -306,9 +305,6 @@ export function AttentionQueueSurface({
                       </td>
                       <td className="border-[var(--border)] border-r px-2.5">
                         <Badge variant={health.variant}>{health.label}</Badge>
-                      </td>
-                      <td className="border-[var(--border)] border-r px-2.5 tabular-nums">
-                        {item.rankScore}
                       </td>
                       <td className="truncate px-2.5 text-[var(--text-secondary)]">
                         {attentionExplanationCopy(item.explanation) ||
