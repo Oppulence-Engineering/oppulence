@@ -102,6 +102,7 @@ export function impactRefreshCopy(): string {
 export function digestSignalLabel(detector: string): string {
   const value = detector.trim();
   if (!value) return "";
+  if (value === "Manual") return "Added by you";
   if (/^[a-z0-9_]+$/.test(value)) return attentionReasonLabel(value);
   return value;
 }
@@ -454,7 +455,7 @@ export function ImpactView({
             <Table>
               <TableHeader>
                 <TableRow className="text-xs text-primary/45 hover:bg-transparent">
-                  <TableHead className="font-normal">Detector</TableHead>
+                  <TableHead className="font-normal">Signal</TableHead>
                   <TableHead className="text-right font-normal">Surfaced</TableHead>
                   <TableHead className="text-right font-normal">Handled</TableHead>
                   <TableHead className="text-right font-normal">Handled %</TableHead>

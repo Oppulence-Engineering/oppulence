@@ -53,6 +53,9 @@ func TestDetectorLabelNamesEveryActionDetector(t *testing.T) {
 	if detectorLabel("conversation_action_pack") != "Conversation action pack" {
 		t.Fatalf("conversation_action_pack labeled %q", detectorLabel("conversation_action_pack"))
 	}
+	if detectorLabel("manual") != "Added by you" {
+		t.Fatalf("manual labeled %q", detectorLabel("manual"))
+	}
 }
 
 func TestDigestComposeAndRender(t *testing.T) {

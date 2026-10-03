@@ -96,7 +96,7 @@ var detectorDisplay = map[string]string{
 	"former_customer_reconnect": "Former customer",
 	"conversation_action_pack":  "Conversation action pack",
 	"commitment_due":            "Promise due",
-	"manual":                    "Manual",
+	"manual":                    "Added by you",
 }
 
 // detectorLabel is the name a digest shows. A missing map entry used to

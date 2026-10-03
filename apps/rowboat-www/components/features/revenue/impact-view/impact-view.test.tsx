@@ -88,7 +88,11 @@ describe("ImpactView", () => {
     expect(digestSignalLabel("commitment_due")).toBe("Promise due");
     expect(digestSignalLabel("conversation_action_pack")).toBe("Conversation action pack");
     expect(digestSignalLabel("Follow-up due")).toBe("Follow-up due");
+    expect(digestSignalLabel("manual")).toBe("Added by you");
+    expect(digestSignalLabel("Manual")).toBe("Added by you");
     expect(digestSignalLabel("")).toBe("");
+    expect(source).toContain(">Signal</TableHead>");
+    expect(source).not.toContain(">Detector</TableHead>");
   });
 
   it("counts companies in the account total and leaves a person out", () => {
