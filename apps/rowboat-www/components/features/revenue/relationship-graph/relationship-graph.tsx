@@ -1100,6 +1100,8 @@ export function graphDetailLabel(value: string): string {
       return "Needs review";
     case "needs_attention":
       return "Needs attention";
+    case "at_risk":
+      return "At risk";
     case "active_customer":
       return "Active customer";
     case "former_customer":
@@ -1312,21 +1314,51 @@ export function graphQueryAnswer(answer: string, companyCount: number, hasMore =
   return rewritten;
 }
 
+/**
+ * A question chip names each filter the way the inspector already names that
+ * field. "Sources: desktop note" and "Approval: pending" are the stored tokens.
+ */
+function graphQueryTokenLabel(kind: string, token: string): string {
+  const raw = token.trim();
+  if (!raw) return "";
+  switch (kind) {
+    case "lifecycle":
+    case "health":
+      return graphDetailLabel(raw);
+    case "approval":
+      return graphNodeFieldLabel("action", "approval", raw);
+    case "sources":
+      return activitySourceLabel(raw);
+    case "nodes":
+      return KIND_LABEL[raw as RelationshipGraphNode["kind"]] ?? enumLabel(raw);
+    case "edges":
+      return enumLabel(raw);
+    case "text": {
+      const words = raw.replaceAll("_", " ");
+      return words.charAt(0).toUpperCase() + words.slice(1);
+    }
+    default:
+      return enumLabel(raw);
+  }
+}
+
 /** Parsed filters are query tokens such as "lifecycle: renewal". Show the value. */
 export function graphQueryFilterLabel(filter: string): string {
   const named = /^([^:]+): (.+)$/.exec(filter);
   if (!named) return filter;
   const kind = named[1] ?? "";
-  const value = (named[2] ?? "").replaceAll("_", " ");
-  if (kind === "lifecycle" || kind === "health" || kind === "text") {
-    return value.charAt(0).toUpperCase() + value.slice(1);
-  }
+  const labels = (named[2] ?? "")
+    .split(",")
+    .map((part) => graphQueryTokenLabel(kind, part))
+    .filter(Boolean);
+  if (!labels.length) return filter;
+  const value = labels.join(", ");
+  if (kind === "lifecycle" || kind === "health" || kind === "text") return value;
   const titles: Record<string, string> = {
     nodes: "Included",
     approval: "Approval",
     sources: "Sources",
     edges: "Connections",
-    text: "Text",
   };
   const title = titles[kind];
   return title ? `${title}: ${value}` : filter;

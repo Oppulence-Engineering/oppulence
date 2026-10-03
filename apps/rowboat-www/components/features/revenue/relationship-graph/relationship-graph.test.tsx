@@ -260,8 +260,21 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryFilterLabel("text: dogfood")).toBe("Dogfood");
     expect(graphQueryFilterLabel("lifecycle: renewal")).toBe("Renewal");
     expect(graphQueryFilterLabel("lifecycle: active_customer")).toBe("Active customer");
+    expect(graphQueryFilterLabel("lifecycle: active_customer, former_customer")).toBe(
+      "Active customer, Former customer",
+    );
     expect(graphQueryFilterLabel("health: at_risk")).toBe("At risk");
+    expect(graphQueryFilterLabel("health: needs_attention, critical")).toBe(
+      "Needs attention, Critical",
+    );
+    expect(graphQueryFilterLabel("sources: gmail, desktop_note")).toBe("Sources: Gmail, A note");
+    expect(graphQueryFilterLabel("sources: voice_note")).toBe("Sources: A voice note");
+    expect(graphQueryFilterLabel("approval: pending")).toBe("Approval: Awaiting approval");
+    expect(graphQueryFilterLabel("nodes: relationship, evidence")).toBe("Included: Company, Detail");
+    expect(graphQueryFilterLabel("edges: blocks")).toBe("Connections: Blocks");
     expect(graphQueryFilterLabel("overdue commitments")).toBe("overdue commitments");
+    expect(graphQueryFilterLabel("sources: desktop_note")).not.toContain("desktop_note");
+    expect(graphQueryFilterLabel("approval: pending")).not.toContain("pending");
     expect(source).toContain("Building the company graph");
     expect(source).not.toContain("Building authorized graph");
     expect(graphInspectorPrompt(0)).toEqual({
