@@ -33,6 +33,7 @@ import {
   nextSavedViewsLabel,
   graphAskChanges,
   graphCanReset,
+  graphFiltersCleared,
   graphQueryAnswer,
   graphQueryMissLabel,
   graphEdgeLabel,
@@ -286,6 +287,29 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphCanReset(fresh, "overdue promises")).toBe(true);
     expect(graphCanReset(fresh, "", "saved-view")).toBe(true);
     expect(source).toContain("disabled={!graphCanReset(viewState, queryDraft, activeSavedViewId)}");
+    expect(graphFiltersCleared({
+      ...fresh,
+      scope: "relationship",
+      relationshipId: "company-1",
+      query: "quillhaven",
+      hideIsolated: true,
+      changedSinceReview: true,
+      focusDepth: 2,
+      selectedNodeId: "node-1",
+      asOf: "2026-09-01T15:00:00.000Z",
+      layout: "radial",
+      density: 1,
+    })).toEqual({
+      ...fresh,
+      scope: "relationship",
+      relationshipId: "company-1",
+      layout: "radial",
+      density: 1,
+      selectedNodeId: undefined,
+      asOf: undefined,
+    });
+    expect(source).toContain("onReset={clearFilters}");
+    expect(source).not.toContain("onReset={reset}");
     expect(source).toContain("setActiveSavedViewId(undefined);");
     expect(source).toContain("How far to look");
     expect(source).toContain("Nearby");

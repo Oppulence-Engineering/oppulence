@@ -1427,6 +1427,24 @@ export function graphCanReset(
   );
 }
 
+/**
+ * The empty canvas says Reset filters. That clears the question and the
+ * checkboxes. The company that was open stays open.
+ */
+export function graphFiltersCleared(
+  state: RelationshipGraphSavedViewState,
+): RelationshipGraphSavedViewState {
+  return {
+    ...state,
+    query: "",
+    hideIsolated: false,
+    changedSinceReview: false,
+    focusDepth: 0,
+    selectedNodeId: undefined,
+    asOf: undefined,
+  };
+}
+
 /** Ask rewrites the question and clears the selected company. Skip a click that would do neither. */
 export function graphAskChanges(
   draft: string,
@@ -2105,6 +2123,13 @@ export function RelationshipGraphWorkspace({
     setResetSignal((value) => value + 1);
   };
 
+  const clearFilters = () => {
+    setViewState((current) => graphFiltersCleared(current));
+    setQueryDraft("");
+    setActiveSavedViewId(undefined);
+    setResetSignal((value) => value + 1);
+  };
+
   return (
     <section
       className="overflow-hidden rounded-[2px] border border-border bg-background"
@@ -2525,12 +2550,12 @@ export function RelationshipGraphWorkspace({
               edges={visible.edges}
               empty={graphCanvasEmptyState(graph.nodes.length)}
               nodes={visible.nodes}
-              onReset={reset}
+              onReset={clearFilters}
               onSelectNode={selectNode}
               selectedNodeId={viewState.selectedNodeId}
             />
           ) : !visible.nodes.length ? (
-            <GraphCanvasEmpty onReset={reset} totalNodes={graph.nodes.length} />
+            <GraphCanvasEmpty onReset={clearFilters} totalNodes={graph.nodes.length} />
           ) : (
             <ReactFlowProvider>
               <GraphCanvas
