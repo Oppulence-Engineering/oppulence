@@ -149,6 +149,13 @@ describe("source product copy", () => {
     expect(
       sourceConnectionLabel({ source: "google", status: "live", completeness: "complete" }),
     ).toBe("Active");
+    expect(
+      sourceConnectionLabel({ source: "meeting", status: "stale", completeness: "stale" }),
+    ).toBe("Out of date");
+    expect(
+      sourceConnectionLabel({ source: "desktop_note", status: "stale", completeness: "stale" }),
+    ).toBe("Out of date");
+    expect(sourceConnectionLabel({ source: "user", status: "stale" })).toBe("Out of date");
     expect(sourceConnectionLabel({ source: "google", status: "not_connected" })).toBe(
       "Not connected",
     );

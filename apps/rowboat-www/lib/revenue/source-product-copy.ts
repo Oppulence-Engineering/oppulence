@@ -139,7 +139,9 @@ export function sourceConnectionLabel(source: {
     source.backfillPhase === "queued" ||
     source.backfillPhase === "running";
   const supportsResync = ["google", "slack", "hubspot"].includes(source.source.toLowerCase());
-  const stale = supportsResync && !stopped && !syncing && source.status === "stale";
+  // A missed cadence is the same state on a meeting as on Gmail. Only a
+  // half-finished history sync is limited to sources that can be refreshed.
+  const stale = !stopped && !syncing && source.status === "stale";
   const incomplete =
     supportsResync && !stopped && !syncing && !stale && source.completeness !== "complete";
   if (stopped) {
