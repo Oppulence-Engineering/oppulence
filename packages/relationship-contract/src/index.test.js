@@ -173,6 +173,47 @@ test("a kept promise is not still overdue", () => {
   assert.deepEqual(late.relationshipIds, ["late"]);
 });
 
+test("asking past due finds a late promise", () => {
+  const asOf = "2026-10-03T12:00:00.000Z";
+  const parsed = parseRelationshipGraphQuery("past due");
+  assert.equal(parsed.filters.overdue, true);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.ok(parsed.applied.includes("overdue promises"));
+  assert.equal(parsed.applied.some((item) => item.startsWith("text:")), false);
+
+  const hyphenated = parseRelationshipGraphQuery("past-due");
+  assert.equal(hyphenated.filters.overdue, true);
+  assert.deepEqual(hyphenated.filters.freeText, []);
+
+  const late = queryRelationshipGraph(
+    {
+      asOf,
+      nodes: [
+        { id: "relationship:late", kind: "relationship", label: "Quay Late" },
+        {
+          id: "commitment:late",
+          kind: "commitment",
+          label: "Send the quay late",
+          relationshipId: "late",
+          status: "open",
+          dueAt: "2026-09-01T15:00:00.000Z",
+        },
+      ],
+      edges: [
+        {
+          id: "edge:late",
+          source: "relationship:late",
+          target: "commitment:late",
+          kind: "has_commitment",
+        },
+      ],
+    },
+    "past due",
+  );
+  assert.deepEqual(late.relationshipIds, ["late"]);
+  assert.equal(late.answer, "1 relationship matches overdue promises.");
+});
+
 test("an up to date detail is not out of date", () => {
   const asOf = "2026-10-03T12:00:00.000Z";
   const current = {

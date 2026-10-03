@@ -175,7 +175,7 @@ export function parseRelationshipGraphQuery(query) {
     approvalStatus: [],
     sources: [],
     edgeKinds: [],
-    overdue: /\boverdue\b/.test(normalized),
+    overdue: /\boverdue\b|\bpast due\b|\bpast_due\b/.test(normalized),
     stale: /\bstale\b|\boutdated\b|\bout of date\b/.test(normalized),
     changed:
       /\bchanged\b|\bsince (?:my )?last review\b|\bchanged since review\b|\bsince you last looked\b|\byou last looked\b/.test(
@@ -278,7 +278,9 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bchanged since review\b/g, " ")
     .replace(/\bhide unconnected\b/g, " ")
     .replace(/\bunconnected\b/g, " ")
-    .replace(/\bhide isolated\b/g, " ");
+    .replace(/\bhide isolated\b/g, " ")
+    .replace(/\bpast due\b/g, " ")
+    .replace(/\bpast_due\b/g, " ");
   filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
