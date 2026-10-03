@@ -181,6 +181,13 @@ export function parseRelationshipGraphQuery(query) {
       /\bdue soon\b|\bdue_soon\b|\bdue within 72h\b|\bwithin 72h\b|\bdue within 72 hours\b|\bwithin 72 hours\b/.test(
         normalized,
       ),
+    direction: /\bthey owe us\b|\bwhat they owe\b|\bthey owe\b/.test(normalized)
+      ? "promised_by_them"
+      : /\bwe both owe\b|\bshared promises?\b/.test(normalized)
+        ? "mutual"
+        : /\bwe owe them\b|\bwhat we owe\b|\bwe owe\b/.test(normalized)
+          ? "promised_by_me"
+          : "",
     stale: /\bstale\b|\boutdated\b|\bout of date\b/.test(normalized),
     changed:
       /\bchanged\b|\bsince (?:my )?last review\b|\bchanged since review\b|\bsince you last looked\b|\byou last looked\b/.test(
@@ -293,7 +300,18 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bdue within 72h\b/g, " ")
     .replace(/\bwithin 72h\b/g, " ")
     .replace(/\bdue soon\b/g, " ")
-    .replace(/\bdue_soon\b/g, " ");
+    .replace(/\bdue_soon\b/g, " ")
+    .replace(/\bwhat they owe us\b/g, " ")
+    .replace(/\bthey owe us\b/g, " ")
+    .replace(/\bwhat they owe\b/g, " ")
+    .replace(/\bthey owe\b/g, " ")
+    .replace(/\bwhat we owe them\b/g, " ")
+    .replace(/\bwe owe them\b/g, " ")
+    .replace(/\bwhat we owe\b/g, " ")
+    .replace(/\bwe both owe\b/g, " ")
+    .replace(/\bwe owe\b/g, " ")
+    .replace(/\bshared promises\b/g, " ")
+    .replace(/\bshared promise\b/g, " ");
   filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
@@ -311,6 +329,9 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.overdue) applied.push("overdue promises");
   if (filters.atRisk) applied.push("at risk");
   if (filters.dueSoon) applied.push("due soon");
+  if (filters.direction === "promised_by_them") applied.push("they owe us");
+  else if (filters.direction === "mutual") applied.push("we both owe");
+  else if (filters.direction === "promised_by_me") applied.push("we owe them");
   if (filters.stale) applied.push("out of date");
   if (filters.changed) applied.push("changed since you last looked");
   if (filters.hideIsolated) applied.push("hide unconnected");
@@ -377,6 +398,12 @@ export function queryRelationshipGraph(graph, query, options = {}) {
       if (node.kind !== "commitment" || normalizedGraphValue(node.status) !== "at_risk") return false;
       const dueAt = node.dueAt ? new Date(node.dueAt) : null;
       return Boolean(dueAt && Number.isFinite(dueAt.getTime()) && dueAt >= asOf);
+    });
+  }
+  if (filters.direction) {
+    constrainBy((node) => {
+      if (node.kind !== "commitment") return false;
+      return normalizedGraphValue(node.metadata?.direction) === filters.direction;
     });
   }
   if (filters.approvalStatus.length) {

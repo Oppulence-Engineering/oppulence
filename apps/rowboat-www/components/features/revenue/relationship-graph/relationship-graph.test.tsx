@@ -379,6 +379,10 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryFilterLabel("overdue promises")).toBe("overdue promises");
     expect(graphQueryFilterLabel("at risk")).toBe("at risk");
     expect(graphQueryFilterLabel("due soon")).toBe("due soon");
+    expect(graphQueryFilterLabel("they owe us")).toBe("they owe us");
+    expect(graphQueryAnswer("1 relationship matches they owe us.", 1)).toBe(
+      "1 company matches they owe us.",
+    );
     expect(graphQueryAnswer("1 relationship matches due soon.", 1)).toBe(
       "1 company matches due soon.",
     );

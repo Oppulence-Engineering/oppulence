@@ -304,6 +304,50 @@ test("asking due soon keeps a promise that is not past due yet", () => {
   assert.equal(result.answer, "1 relationship matches due soon.");
 });
 
+test("asking they owe us keeps that side of the promise", () => {
+  const parsed = parseRelationshipGraphQuery("what they owe us");
+  assert.equal(parsed.filters.direction, "promised_by_them");
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["they owe us"]);
+
+  const ours = parseRelationshipGraphQuery("what we owe");
+  assert.equal(ours.filters.direction, "promised_by_me");
+  assert.deepEqual(ours.filters.freeText, []);
+  assert.ok(ours.applied.includes("we owe them"));
+
+  const shared = parseRelationshipGraphQuery("we both owe");
+  assert.equal(shared.filters.direction, "mutual");
+  assert.deepEqual(shared.filters.freeText, []);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:theirs", kind: "relationship", label: "Quay Owe" },
+      {
+        id: "commitment:theirs",
+        kind: "commitment",
+        label: "Send the quay owe",
+        relationshipId: "theirs",
+        status: "open",
+        metadata: { direction: "promised_by_them" },
+      },
+      { id: "relationship:ours", kind: "relationship", label: "Quay Ours" },
+      {
+        id: "commitment:ours",
+        kind: "commitment",
+        label: "Send the quay ours",
+        relationshipId: "ours",
+        status: "open",
+        metadata: { direction: "promised_by_me" },
+      },
+    ],
+    edges: [],
+  };
+  const result = queryRelationshipGraph(graph, "they owe us");
+  assert.deepEqual(result.relationshipIds, ["theirs"]);
+  assert.equal(result.visibleNodeIds.includes("relationship:ours"), false);
+  assert.equal(result.answer, "1 relationship matches they owe us.");
+});
+
 test("an up to date detail is not out of date", () => {
   const asOf = "2026-10-03T12:00:00.000Z";
   const current = {
