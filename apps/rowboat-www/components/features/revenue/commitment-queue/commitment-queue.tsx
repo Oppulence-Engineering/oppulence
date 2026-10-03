@@ -31,7 +31,11 @@ import { Spinner } from "@oppulence/ui/components/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
 import type { AppendCommitmentTransitionInput } from "@/hooks/queries/utils/mutate-append-commitment-transition";
 import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
-import { auditFailureCopy, REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue/revenue";
+import {
+  auditFailureCopy,
+  examinedConversationCount,
+  REVENUE_EVIDENCE_LOOKBACK_LABEL,
+} from "@/lib/revenue/revenue";
 import {
   Dialog,
   DialogContent,
@@ -609,11 +613,9 @@ export function CommitmentQueue({
   // Coverage, read straight from the scan. An older scan that predates
   // these counters reports zero for them, so fall back to the sweep total
   // rather than claiming nothing was examined.
-  const swept = latestScan?.threadsSeen ?? 0;
   const skipped = latestScan?.threadsSkipped ?? 0;
   const snippetOnly = latestScan?.threadsSnippetOnly ?? 0;
-  const deepRead = latestScan?.threadsDeepRead ?? 0;
-  const examined = deepRead + snippetOnly > 0 || skipped > 0 ? deepRead + snippetOnly : swept;
+  const examined = examinedConversationCount(latestScan);
   const googleConnected = !googleNeedsReconnect && sourceConnected(google);
 
   const transition = async (

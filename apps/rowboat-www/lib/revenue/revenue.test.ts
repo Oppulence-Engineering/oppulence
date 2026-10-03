@@ -4,6 +4,7 @@ import { dashboardRequest } from "@/lib/auth/dashboard-fetch";
 import {
   attentionReasonLabel,
   auditFailureCopy,
+  examinedConversationCount,
   companyLinkedInAction,
   companyLinkedInURL,
   explainedRevenueError,
@@ -32,6 +33,24 @@ vi.mock("@/lib/auth/dashboard-fetch", () => ({
 const mockFetch = vi.mocked(dashboardRequest);
 
 beforeEach(() => mockFetch.mockReset());
+
+describe("examined conversations", () => {
+  it("counts what was read once coverage is known", () => {
+    expect(
+      examinedConversationCount({
+        threadsSeen: 90,
+        threadsDeepRead: 8,
+        threadsSnippetOnly: 2,
+        threadsSkipped: 80,
+      }),
+    ).toBe(10);
+  });
+
+  it("keeps the sweep total when an older audit has no coverage", () => {
+    expect(examinedConversationCount({ threadsSeen: 12 })).toBe(12);
+    expect(examinedConversationCount(null)).toBe(0);
+  });
+});
 
 describe("attention reason labels", () => {
   it("names an exposure reason instead of the stored code", () => {

@@ -15,6 +15,11 @@ describe("ScansView", () => {
     expect(source).toContain("export function ScansView");
     expect(source).toContain(">Companies</TableHead>");
     expect(source).not.toContain(">Relationships</TableHead>");
+    expect(source).toContain(">Conversations</TableHead>");
+    expect(source).toContain(">Follow-up signals</TableHead>");
+    expect(source).toContain("examinedConversationCount(scan)");
+    expect(source).not.toContain(">Threads</TableHead>");
+    expect(source).not.toContain(">Candidates</TableHead>");
     expect(source).toContain("follow-ups that have gone quiet");
     expect(source).toContain("to find promises in your mail.");
     expect(source).toContain("Run Promise Leak Audit");

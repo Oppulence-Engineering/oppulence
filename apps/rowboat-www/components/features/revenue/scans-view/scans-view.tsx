@@ -26,6 +26,7 @@ import {
 import {
   auditFailureCopy,
   auditLaunchLabel,
+  examinedConversationCount,
   relativeTime,
   REVENUE_EVIDENCE_LOOKBACK_LABEL,
 } from "@/lib/revenue/revenue";
@@ -167,8 +168,8 @@ export function ScansView({
               <TableRow className="h-10 border-border px-3 text-[12px] text-primary/45 hover:bg-transparent">
                 <TableHead className="h-10 min-w-[220px] px-3 text-primary/45">Audit</TableHead>
                 <TableHead className="h-10 w-[70px] px-3 text-primary/45">Window</TableHead>
-                <TableHead className="h-10 w-[100px] px-3 text-primary/45">Threads</TableHead>
-                <TableHead className="h-10 w-[100px] px-3 text-primary/45">Candidates</TableHead>
+                <TableHead className="h-10 w-[120px] px-3 text-primary/45">Conversations</TableHead>
+                <TableHead className="h-10 w-[140px] px-3 text-primary/45">Follow-up signals</TableHead>
                 <TableHead className="h-10 w-[100px] px-3 text-primary/45">Drafts</TableHead>
                 <TableHead className="h-10 w-[100px] px-3 text-primary/45">Companies</TableHead>
               </TableRow>
@@ -252,10 +253,17 @@ function ScanRow({ scan }: { scan: RevenueLeakScan }) {
           {scan.lookbackDays}d
         </Badge>
       </TableCell>
-      <TableCell className="w-[100px] px-3 tabular-nums text-primary/65">
-        {scan.threadsSeen ?? 0}
+      <TableCell
+        className="w-[120px] px-3 tabular-nums text-primary/65"
+        title={
+          (scan.threadsSkipped ?? 0) > 0
+            ? `${scan.threadsSkipped} were not conversations`
+            : undefined
+        }
+      >
+        {examinedConversationCount(scan)}
       </TableCell>
-      <TableCell className="w-[100px] px-3 tabular-nums text-primary/65">
+      <TableCell className="w-[140px] px-3 tabular-nums text-primary/65">
         {scan.candidatesSeen ?? 0}
       </TableCell>
       <TableCell className="w-[100px] px-3 tabular-nums text-primary/65">

@@ -421,6 +421,27 @@ export function googleAuditLaunch(sources: RelationshipSourceStatus[]): GoogleAu
  * The report lists more than one audit in a picker. The stored status is a
  * slug. The audits page already names the same states in sentences.
  */
+/**
+ * The register and the audits list share this count. threadsSeen is everything
+ * swept, including newsletters the audit never judged. Once coverage is
+ * recorded, the number is the conversations that were actually read.
+ */
+export function examinedConversationCount(
+  scan?: {
+    threadsSeen?: number;
+    threadsDeepRead?: number;
+    threadsSnippetOnly?: number;
+    threadsSkipped?: number;
+  } | null,
+): number {
+  if (!scan) return 0;
+  const swept = scan.threadsSeen ?? 0;
+  const skipped = scan.threadsSkipped ?? 0;
+  const snippetOnly = scan.threadsSnippetOnly ?? 0;
+  const deepRead = scan.threadsDeepRead ?? 0;
+  return deepRead + snippetOnly > 0 || skipped > 0 ? deepRead + snippetOnly : swept;
+}
+
 export function auditHistoryLabel(status: string): string {
   switch (status) {
     case "completed":
