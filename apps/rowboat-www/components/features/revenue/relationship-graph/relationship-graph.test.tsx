@@ -102,7 +102,10 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphAsOfLabel("not-a-date")).toBe("As of not-a-date");
     expect(graphAsOfLabel("2026-09-30T13:00:00.000Z")).toMatch(/^As of /);
     expect(graphChangedDetail(["next_action", "health"])).toBe(
-      "Changed since your last review: Next Action, Health.",
+      "Changed since your last review: Next action, Health.",
+    );
+    expect(graphChangedDetail(["evidence"])).toBe(
+      "Changed since your last review: Supporting evidence.",
     );
     expect(graphChangedDetail([])).toBe("Changed since your last review.");
     expect(graphChangedDetail(["next_action"])).not.toContain("next_action");

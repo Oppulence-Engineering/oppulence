@@ -5,6 +5,7 @@ import "client-only";
 import * as React from "react";
 import {
   queryRelationshipGraph,
+  RELATIONSHIP_DIMENSION_LABELS,
   relationshipGraphNeighborhood,
 } from "@oppulence/relationship-contract";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -1239,9 +1240,22 @@ export function graphNodeSummaryLabel(node: {
   return "—";
 }
 
-/** A review note names the fields that moved. Stored tokens are not those names. */
+/** A review note names the fields that moved. The company record already says "Next action". */
 export function graphChangedDetail(dimensions: readonly string[]): string {
-  const labels = dimensions.map((dimension) => enumLabel(dimension)).filter((label) => label !== "Unknown");
+  const labels = dimensions
+    .map((dimension) => {
+      switch (dimension) {
+        case "evidence":
+          return "Supporting evidence";
+        case "risks":
+          return "Risks";
+        case "milestones":
+          return "Milestones";
+        default:
+          return RELATIONSHIP_DIMENSION_LABELS[dimension] ?? enumLabel(dimension);
+      }
+    })
+    .filter((label) => label !== "Unknown");
   if (!labels.length) return "Changed since your last review.";
   return `Changed since your last review: ${labels.join(", ")}.`;
 }
