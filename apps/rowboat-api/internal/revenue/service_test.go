@@ -752,6 +752,34 @@ func TestOutcomesIdempotent(t *testing.T) {
 	if timeline[0].Summary != "They replied" {
 		t.Fatalf("outcome summary = %q", timeline[0].Summary)
 	}
+	rel, err := f.client.Relationship.Get(f.ctx, actionRelationshipID(storedAction))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rel.LastTouchAt == nil {
+		t.Fatal("a reply must count as last activity")
+	}
+}
+
+func TestDismissedOutcomeDoesNotCountAsLastActivity(t *testing.T) {
+	f := newFixture(t)
+	action := f.action(t, ExecModeDraft)
+	if _, err := f.svc.AppendOutcome(f.ctx, f.user, action.ID, OutcomeInput{
+		Kind: "dismissed", Source: "user", SourceEventID: "dismiss-1",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	stored, err := f.svc.GetAction(f.ctx, action.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel, err := f.client.Relationship.Get(f.ctx, actionRelationshipID(stored))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rel.LastTouchAt != nil {
+		t.Fatalf("dismissing a suggestion counted as activity: %s", rel.LastTouchAt)
+	}
 }
 
 // Duplicate detector dedupe keys collapse to one queue item.

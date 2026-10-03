@@ -5394,7 +5394,32 @@ func appendOutcomeObservation(
 		SetSummary(actionOutcomeSummary(in.Kind)).
 		SetNormalizedFactsJSON(string(rawFacts)).SetContentHash(fmt.Sprintf("%x", digest[:])).
 		Save(ctx)
+	if err != nil {
+		return err
+	}
+	if !outcomeCountsAsActivity(in.Kind) {
+		return nil
+	}
+	current, err := client.Relationship.Get(ctx, rel.ID)
+	if err != nil {
+		return err
+	}
+	if current.LastTouchAt != nil && !in.OccurredAt.After(current.LastTouchAt.UTC()) {
+		return nil
+	}
+	_, err = current.Update().SetLastTouchAt(in.OccurredAt.UTC()).Save(ctx)
 	return err
+}
+
+// A dismissal or a correction is a review inside this workspace. It is not
+// evidence that someone at the company was reached.
+func outcomeCountsAsActivity(kind string) bool {
+	switch strings.ToLower(strings.TrimSpace(kind)) {
+	case "dismissed", "bad_recommendation", "corrected":
+		return false
+	default:
+		return true
+	}
 }
 
 func actionOutcomeSummary(kind string) string {

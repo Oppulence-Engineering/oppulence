@@ -28,6 +28,7 @@ import {
   companyReviewCopy,
   companyDescriptionCopy,
   companyLastActivityLabel,
+  recommendationPriorityLabel,
   companyEmailDetail,
   companyEmailHref,
   companyNextActionCopy,
@@ -756,6 +757,11 @@ describe("RelationshipsView", () => {
     ).toMatch(/ago$/);
     expect(source).toContain("companyLastActivityLabel(relationship.lastTouchAt)");
     expect(source).toContain("companyLastActivityLabel(data.relationship.lastTouchAt)");
+    expect(recommendationPriorityLabel(80)).toBe("High");
+    expect(recommendationPriorityLabel(40)).toBe("Medium");
+    expect(recommendationPriorityLabel(0)).toBe("Low");
+    expect(source).toContain("recommendationPriorityLabel(action.priorityScore)");
+    expect(source).not.toContain("priority {action.priorityScore}");
     expect(companyDescriptionCopy({})).toBe("No description yet");
     expect(companyDescriptionCopy({ summary: "  " })).toBe("No description yet");
     expect(companyDescriptionCopy({ summary: "Builds boats" })).toBe("Builds boats");

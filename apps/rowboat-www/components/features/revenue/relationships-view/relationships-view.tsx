@@ -35,6 +35,7 @@ import {
   listNeverLoaded,
   listRefreshFailureCopy,
   ModeChip,
+  priorityTone,
   refetchClearingBanner,
 } from "@/components/features/revenue/shared/shared";
 import { AttentionQueueSurface } from "@/components/features/revenue/attention-queue-surface/attention-queue-surface";
@@ -2101,6 +2102,11 @@ export function companyDescriptionCopy(record: {
 export function companyLastActivityLabel(lastTouchAt?: string | null): string {
   const label = lastTouchAt ? relativeTime(lastTouchAt) : "";
   return label || "No activity";
+}
+
+/** Recovery already names the band. The company card should not print the raw score. */
+export function recommendationPriorityLabel(score: number): string {
+  return priorityTone(score).label;
 }
 
 export function companyNextActionCopy(record: {
@@ -4200,7 +4206,7 @@ export function RelationshipSheet({
                               {attentionReasonLabel(action.detector)}
                             </Badge>
                             <Badge className="font-normal" variant="secondary">
-                              priority {action.priorityScore}
+                              {recommendationPriorityLabel(action.priorityScore)}
                             </Badge>
                             <Badge className="font-normal" variant="secondary">
                               {recommendationPolicyLabel(action.policyStatus)}
