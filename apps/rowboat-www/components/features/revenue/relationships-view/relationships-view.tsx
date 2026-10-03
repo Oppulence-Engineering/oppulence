@@ -4100,7 +4100,7 @@ export function RelationshipSheet({
                     ["overview", "Overview"],
                     ["history", "Activity"],
                     ["emails", `Emails ${data.emailThreads.length}`],
-                    ["commitments", `Commitments ${data.commitments.length}`],
+                    ["commitments", `Promises ${data.commitments.length}`],
                     ["people", `People ${data.participants.length}`],
                   ] as const
                 ).map(([section, label]) => (
@@ -4172,7 +4172,7 @@ export function RelationshipSheet({
                     ],
                     ["People", String(data.participants.length)],
                     ["Email threads", String(data.emailThreads.length)],
-                    ["Open commitments", String(openCommitmentCount(data.commitments))],
+                    ["Open promises", String(openCommitmentCount(data.commitments))],
                   ].map(([label, value]) => (
                     <div key={label} className="min-h-24 rounded-none border border-border p-3">
                       <p className="text-[11px] text-primary/40">{label}</p>
@@ -4726,7 +4726,7 @@ export function RelationshipSheet({
                     )}
                   </section>
                   <section id={`${id}:commitments`} className="scroll-mt-16">
-                    <SectionTitle title={`Commitments (${data.commitments.length})`} />
+                    <SectionTitle title={`Promises (${data.commitments.length})`} />
                     <AccountMissionControlSurface
                       accountName={companyName(data.relationship)}
                       className="mt-2"

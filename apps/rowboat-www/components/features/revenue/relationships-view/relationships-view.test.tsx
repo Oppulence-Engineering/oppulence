@@ -1086,6 +1086,9 @@ describe("RelationshipsView", () => {
     expect(source).toContain("companyNextActionCopy(relationship)");
     expect(source).toContain("commitmentPreviewRemainder(hiddenCommitments)");
     expect(source).toContain("openCommitmentCount(data.commitments)");
+    expect(source).toContain("`Promises ${data.commitments.length}`");
+    expect(source).toContain("`Promises (${data.commitments.length})`");
+    expect(source).toContain('["Open promises", String(openCommitmentCount(data.commitments))]');
     expect(source).not.toContain(
       '["Open commitments", String(data.commitments.filter((item) => item.status === "open").length)]',
     );

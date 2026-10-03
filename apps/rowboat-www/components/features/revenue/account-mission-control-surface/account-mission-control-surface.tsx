@@ -146,7 +146,7 @@ export function promiseFollowUpEmptyCopy(atRiskCount: number, overdueCount = 0):
 
 /** Promises past the overview preview, in the same words as the company record. */
 export function commitmentPreviewRemainder(hidden: number): string {
-  return hidden === 1 ? "Show the other 1 commitment" : `Show the other ${hidden} commitments`;
+  return hidden === 1 ? "Show the other 1 promise" : `Show the other ${hidden} promises`;
 }
 
 /**

@@ -50,8 +50,8 @@ describe("AccountMissionControlSurface", () => {
   });
 
   it("names the promises still off the overview", () => {
-    expect(commitmentPreviewRemainder(1)).toBe("Show the other 1 commitment");
-    expect(commitmentPreviewRemainder(6)).toBe("Show the other 6 commitments");
+    expect(commitmentPreviewRemainder(1)).toBe("Show the other 1 promise");
+    expect(commitmentPreviewRemainder(6)).toBe("Show the other 6 promises");
   });
 
   it("marks a past-due open promise at risk, and leaves a later one open", () => {
