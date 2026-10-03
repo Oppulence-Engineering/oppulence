@@ -410,6 +410,15 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryAnswer("1 relationship matches promise follow-up.", 2)).toBe(
       "1 company matches promise follow-up.",
     );
+    expect(graphQueryAnswer("1 relationship matches calendar hold.", 3)).toBe(
+      "1 company matches calendar hold.",
+    );
+    expect(graphQueryAnswer("1 relationship matches crm update.", 3)).toBe(
+      "1 company matches crm update.",
+    );
+    expect(graphQueryAnswer("1 relationship matches meeting recap.", 3)).toBe(
+      "1 company matches meeting recap.",
+    );
     expect(graphQueryAnswer("1 relationship matches they owe us.", 1)).toBe(
       "1 company matches they owe us.",
     );

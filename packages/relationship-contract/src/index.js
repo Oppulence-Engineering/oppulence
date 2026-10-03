@@ -205,6 +205,10 @@ export function parseRelationshipGraphQuery(query) {
     followUp: /\bfollow_ups?\b|\bfollow ups?\b/.test(normalized),
     // "Customer risk" is that follow-up. The word risk is not a request for risk nodes.
     customerRisk: /\bcustomer risks?\b/.test(normalized),
+    // These titles contain a source word. The row is the follow-up, not that source.
+    calendarHold: /\bcalendar holds?\b/.test(normalized),
+    crmUpdate: /\bcrm updates?\b/.test(normalized),
+    meetingRecap: /\bmeeting recaps?\b/.test(normalized),
     changed:
       /\bchanged\b|\bsince (?:my )?last review\b|\bchanged since review\b|\bsince you last looked\b|\byou last looked\b/.test(
         normalized,
@@ -282,7 +286,10 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bmeeting follow_ups?\b/g, " ")
     .replace(/\bmeeting follow ups?\b/g, " ")
     .replace(/\bfollow_ups?\b/g, " ")
-    .replace(/\bfollow ups?\b/g, " ");
+    .replace(/\bfollow ups?\b/g, " ")
+    .replace(/\bcalendar holds?\b/g, " ")
+    .replace(/\bmeeting recaps?\b/g, " ")
+    .replace(/\bcrm updates?\b/g, " ");
   for (const source of GRAPH_QUERY_SOURCES) {
     if (new RegExp(`\\b${source.replaceAll("_", "[ _]")}s?\\b`).test(withoutFollowUpTitle)) {
       filters.sources.push(source);
@@ -385,7 +392,10 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bpromise follow ups?\b/g, " ")
     .replace(/\bfollow_ups?\b/g, " ")
     .replace(/\bfollow ups?\b/g, " ")
-    .replace(/\bcustomer risks?\b/g, " ");
+    .replace(/\bcustomer risks?\b/g, " ")
+    .replace(/\bcalendar holds?\b/g, " ")
+    .replace(/\bmeeting recaps?\b/g, " ")
+    .replace(/\bcrm updates?\b/g, " ");
   filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
@@ -414,6 +424,9 @@ export function parseRelationshipGraphQuery(query) {
   else if (filters.promiseFollowUp) applied.push("promise follow-up");
   else if (filters.followUp) applied.push("follow-up");
   if (filters.customerRisk) applied.push("customer risk");
+  if (filters.calendarHold) applied.push("calendar hold");
+  if (filters.crmUpdate) applied.push("crm update");
+  if (filters.meetingRecap) applied.push("meeting recap");
   if (filters.changed) applied.push("changed since you last looked");
   if (filters.hideIsolated) applied.push("hide unconnected");
   if (filters.freeText.length) applied.push(`text: ${filters.freeText.join(" ")}`);
@@ -536,6 +549,24 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     constrainBy((node) => {
       if (node.kind !== "action") return false;
       return /\bcustomer risks?\b/.test(normalizedGraphValue(node.label));
+    });
+  }
+  if (filters.calendarHold) {
+    constrainBy((node) => {
+      if (node.kind !== "action") return false;
+      return /\bcalendar holds?\b/.test(normalizedGraphValue(node.label));
+    });
+  }
+  if (filters.crmUpdate) {
+    constrainBy((node) => {
+      if (node.kind !== "action") return false;
+      return /\bcrm updates?\b/.test(normalizedGraphValue(node.label));
+    });
+  }
+  if (filters.meetingRecap) {
+    constrainBy((node) => {
+      if (node.kind !== "action") return false;
+      return /\bmeeting recaps?\b/.test(normalizedGraphValue(node.label));
     });
   }
   if (filters.changed) {
