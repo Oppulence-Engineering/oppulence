@@ -377,6 +377,10 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphEdgeLabel("supersedes")).toBe("replaces");
     expect(graphEdgeLabel("owns")).toBe("owns");
     expect(graphQueryFilterLabel("overdue promises")).toBe("overdue promises");
+    expect(graphQueryFilterLabel("at risk")).toBe("at risk");
+    expect(graphQueryAnswer("1 relationship matches at risk.", 1)).toBe(
+      "1 company matches at risk.",
+    );
     expect(graphQueryFilterLabel("out of date")).toBe("out of date");
     expect(graphQueryFilterLabel("changed since you last looked")).toBe(
       "changed since you last looked",

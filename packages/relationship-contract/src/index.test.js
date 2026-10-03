@@ -214,6 +214,55 @@ test("asking past due finds a late promise", () => {
   assert.equal(late.answer, "1 relationship matches overdue promises.");
 });
 
+test("asking at risk finds the promise marked at risk", () => {
+  const asOf = "2026-10-03T12:00:00.000Z";
+  const parsed = parseRelationshipGraphQuery("at-risk");
+  assert.equal(parsed.filters.atRisk, true);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.filters.health, []);
+
+  const graph = {
+    asOf,
+    nodes: [
+      {
+        id: "relationship:risk",
+        kind: "relationship",
+        label: "Quay Risk",
+        health: "unknown",
+      },
+      {
+        id: "commitment:risk",
+        kind: "commitment",
+        label: "Send the quay risk",
+        relationshipId: "risk",
+        status: "at_risk",
+        dueAt: "2026-10-04T15:00:00.000Z",
+      },
+      {
+        id: "relationship:attention",
+        kind: "relationship",
+        label: "Quay Attention",
+        health: "needs_attention",
+      },
+    ],
+    edges: [
+      {
+        id: "edge:risk",
+        source: "relationship:risk",
+        target: "commitment:risk",
+        kind: "has_commitment",
+      },
+    ],
+  };
+  const result = queryRelationshipGraph(graph, "at risk");
+  assert.deepEqual(result.relationshipIds, ["risk"]);
+  assert.equal(result.visibleNodeIds.includes("relationship:attention"), false);
+  assert.equal(result.answer, "1 relationship matches at risk.");
+
+  const attention = queryRelationshipGraph(graph, "needs attention");
+  assert.deepEqual(attention.relationshipIds, ["attention"]);
+});
+
 test("an up to date detail is not out of date", () => {
   const asOf = "2026-10-03T12:00:00.000Z";
   const current = {
@@ -383,9 +432,11 @@ test("graph questions use the stage and health words a person would type", () =>
   assert.deepEqual(attention.applied, ["health: needs_attention"]);
 
   const atRisk = parseRelationshipGraphQuery("at risk");
-  assert.deepEqual(atRisk.filters.health, ["needs_attention"]);
+  assert.equal(atRisk.filters.atRisk, true);
+  assert.deepEqual(atRisk.filters.health, []);
   assert.deepEqual(atRisk.filters.nodeKinds, []);
-  assert.deepEqual(atRisk.applied, ["health: needs_attention"]);
+  assert.deepEqual(atRisk.filters.freeText, []);
+  assert.deepEqual(atRisk.applied, ["at risk"]);
 
   const risks = parseRelationshipGraphQuery("show risks");
   assert.deepEqual(risks.filters.nodeKinds, ["risk"]);

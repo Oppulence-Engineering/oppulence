@@ -176,6 +176,7 @@ export function parseRelationshipGraphQuery(query) {
     sources: [],
     edgeKinds: [],
     overdue: /\boverdue\b|\bpast due\b|\bpast_due\b/.test(normalized),
+    atRisk: /\bat risk\b|\bat_risk\b/.test(normalized),
     stale: /\bstale\b|\boutdated\b|\bout of date\b/.test(normalized),
     changed:
       /\bchanged\b|\bsince (?:my )?last review\b|\bchanged since review\b|\bsince you last looked\b|\byou last looked\b/.test(
@@ -188,8 +189,8 @@ export function parseRelationshipGraphQuery(query) {
   };
 
   for (const [alias, kind] of Object.entries(GRAPH_QUERY_NODE_ALIASES)) {
-    // "at risk" is a health phrase. The word risk is not a request for risk nodes.
-    if (alias === "risk" && /\bat risk\b/.test(normalized)) continue;
+    // "at risk" is the promise badge. The word risk is not a request for risk nodes.
+    if (alias === "risk" && /\bat risk\b|\bat_risk\b/.test(normalized)) continue;
     if (new RegExp(`\\b${alias}\\b`).test(normalized) && !filters.nodeKinds.includes(kind)) {
       filters.nodeKinds.push(kind);
     }
@@ -206,7 +207,7 @@ export function parseRelationshipGraphQuery(query) {
     }
   }
   if (
-    (/\bneeds attention\b|\bat risk\b/.test(normalized)) &&
+    /\bneeds attention\b/.test(normalized) &&
     !filters.health.includes("needs_attention")
   ) {
     filters.health.push("needs_attention");
@@ -280,7 +281,9 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bunconnected\b/g, " ")
     .replace(/\bhide isolated\b/g, " ")
     .replace(/\bpast due\b/g, " ")
-    .replace(/\bpast_due\b/g, " ");
+    .replace(/\bpast_due\b/g, " ")
+    .replace(/\bat risk\b/g, " ")
+    .replace(/\bat_risk\b/g, " ");
   filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
@@ -296,6 +299,7 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.sources.length) applied.push(`sources: ${filters.sources.join(", ")}`);
   if (filters.edgeKinds.length) applied.push(`edges: ${filters.edgeKinds.join(", ")}`);
   if (filters.overdue) applied.push("overdue promises");
+  if (filters.atRisk) applied.push("at risk");
   if (filters.stale) applied.push("out of date");
   if (filters.changed) applied.push("changed since you last looked");
   if (filters.hideIsolated) applied.push("hide unconnected");
@@ -351,6 +355,11 @@ export function queryRelationshipGraph(graph, query, options = {}) {
       const dueAt = node.dueAt ? new Date(node.dueAt) : null;
       return Boolean(dueAt && Number.isFinite(dueAt.getTime()) && dueAt < asOf);
     });
+  }
+  if (filters.atRisk) {
+    constrainBy(
+      (node) => node.kind === "commitment" && normalizedGraphValue(node.status) === "at_risk",
+    );
   }
   if (filters.approvalStatus.length) {
     constrainBy(
