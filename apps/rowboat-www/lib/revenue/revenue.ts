@@ -1113,7 +1113,7 @@ const COMPLETENESS_EXPLANATIONS: Record<string, string> = {
   "No source connection has completed its first useful sync.":
     "Connect a source before these details can fill in.",
   "One or more material values have no accessible supporting evidence.":
-    "Some details have no source you can open.",
+    "Account details have no source you can open.",
   "Required source evidence is current.": "The details you can open are up to date.",
   "Identity review is required before acting on this relationship.":
     "Confirm who this company is before you act.",

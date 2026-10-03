@@ -36,6 +36,8 @@ import {
   companyNextActionCopy,
   companyStateAnswer,
   missionControlChangeAnswer,
+  accountDetailSourceCopy,
+  missionControlPromiseAnswer,
   missionControlStateAnswer,
   recordDetailBadge,
   completenessExplanationCopy,
@@ -501,6 +503,35 @@ describe("RelationshipsView", () => {
         health: { supported: true, value: "needs_attention" },
       }),
     ).toBe("Lifecycle: Active customer · Health: Needs attention");
+    expect(missionControlPromiseAnswer([])).toBe("");
+    expect(
+      missionControlPromiseAnswer([
+        { status: "open", acceptance: "candidate", text: "Guess the packet" },
+        { status: "fulfilled", acceptance: "accepted", text: "Already sent" },
+      ]),
+    ).toBe("");
+    expect(
+      missionControlStateAnswer(
+        { lifecycle: { supported: false, value: "prospect" } },
+        [{ status: "open", acceptance: "internally_confirmed", text: "Send the packet" }],
+      ),
+    ).toBe("Open promise: Send the packet");
+    expect(
+      missionControlStateAnswer(
+        { lifecycle: { supported: true, value: "prospect" } },
+        [
+          { status: "open", acceptance: "accepted", text: "Send the packet" },
+          { status: "open", acceptance: "internally_confirmed", text: "Book the review" },
+        ],
+      ),
+    ).toBe("Lifecycle: Prospect · 2 open promises.");
+    expect(accountDetailSourceCopy(0, 8)).toBe("0 of 8 account details have a source");
+    expect(accountDetailSourceCopy(0, 8, true)).toBe(
+      "0 of 8 account details come from a source you can open.",
+    );
+    expect(source).toContain("missionControlStateAnswer(model.evidence, commitments)");
+    expect(source).toContain("accountDetailSourceCopy(supported, total)");
+    expect(source).toContain("accountDetailSourceCopy(supported, total, true)");
     expect(missionControlChangeAnswer([], "State changed")).toBe("State changed");
     expect(missionControlChangeAnswer([{ dimension: "evidence" }], "State changed")).toBe(
       "Supporting evidence changed.",
@@ -512,7 +543,7 @@ describe("RelationshipsView", () => {
       ),
     ).toBe("Lifecycle, Supporting evidence");
     expect(source).toContain("missionControlChangeAnswer(model.changes, \"State changed\")");
-    expect(source).toContain("missionControlStateAnswer(model.evidence)");
+    expect(source).toContain("missionControlStateAnswer(model.evidence, commitments)");
     expect(source).toContain("actionReasonCopy(model.activeRecommendation?.reason)");
     expect(source).toContain("actionReasonCopy(action.reason)");
     expect(
@@ -539,7 +570,7 @@ describe("RelationshipsView", () => {
       completenessExplanationCopy(
         "One or more material values have no accessible supporting evidence.",
       ),
-    ).toBe("Some details have no source you can open.");
+    ).toBe("Account details have no source you can open.");
     expect(completenessExplanationCopy("Required source evidence is current.")).toBe(
       "The details you can open are up to date.",
     );

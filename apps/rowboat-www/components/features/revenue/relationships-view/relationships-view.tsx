@@ -2164,10 +2164,30 @@ export function missionControlChangeAnswer(
   return labels.join(", ");
 }
 
-export function missionControlStateAnswer(evidence: {
-  lifecycle?: { supported?: boolean; value?: unknown };
-  health?: { supported?: boolean; value?: unknown };
-}): string {
+/**
+ * A confirmed open promise is true now. A candidate is still a guess, and a
+ * closed promise is no longer the current fact.
+ */
+export function missionControlPromiseAnswer(
+  commitments: readonly { status?: string; text?: string; acceptance?: string }[],
+): string {
+  const texts = commitments
+    .filter((item) => (item.status || "open") === "open")
+    .filter((item) => item.acceptance !== "candidate" && item.acceptance !== "disputed")
+    .map((item) => item.text?.trim() ?? "")
+    .filter(Boolean);
+  if (texts.length === 1) return `Open promise: ${texts[0]}`;
+  if (texts.length > 1) return `${texts.length} open promises.`;
+  return "";
+}
+
+export function missionControlStateAnswer(
+  evidence: {
+    lifecycle?: { supported?: boolean; value?: unknown };
+    health?: { supported?: boolean; value?: unknown };
+  },
+  commitments: readonly { status?: string; text?: string; acceptance?: string }[] = [],
+): string {
   const shown = (item: { supported?: boolean; value?: unknown } | undefined) => {
     if (!item?.supported || item.value == null) return "";
     return String(item.value).trim();
@@ -2178,8 +2198,19 @@ export function missionControlStateAnswer(evidence: {
     lifecycle ? `Lifecycle: ${companyRecordLabel(lifecycle)}` : "",
     health ? `Health: ${companyRecordLabel(health)}` : "",
   ].filter(Boolean);
+  const promise = missionControlPromiseAnswer(commitments);
+  if (promise) parts.push(promise);
   if (parts.length === 0) return "No supported answer yet.";
   return parts.join(" · ");
+}
+
+/** The eight details are account fields. The promise is a separate record. */
+export function accountDetailSourceCopy(supported: number, total: number, trust = false): string {
+  const shown = Number.isFinite(supported) ? Math.max(0, Math.round(supported)) : 0;
+  const all = Number.isFinite(total) ? Math.max(0, Math.round(total)) : 0;
+  return trust
+    ? `${shown} of ${all} account details come from a source you can open.`
+    : `${shown} of ${all} account details have a source`;
 }
 
 /**
@@ -2922,12 +2953,14 @@ export function detailSourceLabel(authority: string | undefined, supported: bool
 
 function MissionControlOverview({
   model,
+  commitments,
   emailThreadCount,
   busy,
   onAcknowledge,
   onRetract,
 }: {
   model: MissionControlReadModel;
+  commitments: readonly { status?: string; text?: string; acceptance?: string }[];
   emailThreadCount: number;
   busy: boolean;
   onAcknowledge: () => void;
@@ -2964,7 +2997,7 @@ function MissionControlOverview({
             </p>
           </div>
           <Badge variant="outline" className="rounded-none font-normal">
-            {supported} of {total} details have a source
+            {accountDetailSourceCopy(supported, total)}
           </Badge>
         </div>
         {model.completeness.unresolvedIdentityCount > 0 ? (
@@ -2978,13 +3011,13 @@ function MissionControlOverview({
         {MISSION_CONTROL_QUESTIONS.map((question) => {
           let answer = "No supported answer yet.";
           if (question.key === "state") {
-            answer = missionControlStateAnswer(model.evidence);
+            answer = missionControlStateAnswer(model.evidence, commitments);
           } else if (question.key === "change") {
             answer = model.changedSinceReview
               ? missionControlChangeAnswer(model.changes, "State changed")
               : reviewCopy.change;
           } else if (question.key === "evidence") {
-            answer = `${supported} of ${total} details come from a source you can open.`;
+            answer = accountDetailSourceCopy(supported, total, true);
           } else if (question.key === "action") {
             answer =
               actionReasonCopy(model.activeRecommendation?.reason) ||
@@ -4008,6 +4041,7 @@ export function RelationshipSheet({
 
                 <MissionControlOverview
                   model={data.missionControl}
+                  commitments={data.commitments}
                   emailThreadCount={data.emailThreads.length}
                   busy={Boolean(busy)}
                   onAcknowledge={() =>
