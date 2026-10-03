@@ -700,6 +700,10 @@ export function companyRecordLabel(value: string): string {
   switch (value) {
     case "needs_attention":
       return "Needs attention";
+    case "active_customer":
+      return "Active customer";
+    case "former_customer":
+      return "Former customer";
     default:
       return humanize(value);
   }
@@ -2111,7 +2115,7 @@ export function companyNextActionCopy(record: {
 
 /** Lifecycle and health are stored tokens. The sheet names which is which. */
 export function companyStateAnswer(lifecycle: string, health: string): string {
-  return `Lifecycle: ${relationshipLabel(lifecycle)} · Health: ${relationshipLabel(health)}`;
+  return `Lifecycle: ${companyRecordLabel(lifecycle)} · Health: ${companyRecordLabel(health)}`;
 }
 
 /**
@@ -2148,8 +2152,8 @@ export function missionControlStateAnswer(evidence: {
   const lifecycle = shown(evidence.lifecycle);
   const health = shown(evidence.health);
   const parts = [
-    lifecycle ? `Lifecycle: ${relationshipLabel(lifecycle)}` : "",
-    health ? `Health: ${relationshipLabel(health)}` : "",
+    lifecycle ? `Lifecycle: ${companyRecordLabel(lifecycle)}` : "",
+    health ? `Health: ${companyRecordLabel(health)}` : "",
   ].filter(Boolean);
   if (parts.length === 0) return "No supported answer yet.";
   return parts.join(" · ");

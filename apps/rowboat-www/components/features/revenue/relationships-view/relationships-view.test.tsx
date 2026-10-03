@@ -306,7 +306,8 @@ describe("RelationshipsView", () => {
     expect(companyHealthFilterName("needs_attention")).toBe("Health, Needs attention");
     expect(companyRecordLabel("needs_attention")).toBe("Needs attention");
     expect(companyRecordLabel("healthy")).toBe("Healthy");
-    expect(companyRecordLabel("active_customer")).toBe("Active Customer");
+    expect(companyRecordLabel("active_customer")).toBe("Active customer");
+    expect(companyRecordLabel("former_customer")).toBe("Former customer");
     expect(source).toContain("companyRecordLabel(relationship.health)");
     expect(source).toContain("companyRecordLabel(data.relationship.health)");
     expect(source).toContain("companyRecordLabel(data.relationship.lifecycle)");
@@ -440,6 +441,9 @@ describe("RelationshipsView", () => {
     expect(companyStateAnswer("prospect", "unknown")).toBe(
       "Lifecycle: Prospect · Health: Unknown",
     );
+    expect(companyStateAnswer("active_customer", "needs_attention")).toBe(
+      "Lifecycle: Active customer · Health: Needs attention",
+    );
     expect(
       missionControlStateAnswer({
         lifecycle: { supported: false, value: "prospect" },
@@ -464,6 +468,12 @@ describe("RelationshipsView", () => {
         health: { supported: true, value: "healthy" },
       }),
     ).toBe("Lifecycle: Prospect · Health: Healthy");
+    expect(
+      missionControlStateAnswer({
+        lifecycle: { supported: true, value: "active_customer" },
+        health: { supported: true, value: "needs_attention" },
+      }),
+    ).toBe("Lifecycle: Active customer · Health: Needs attention");
     expect(missionControlChangeAnswer([], "State changed")).toBe("State changed");
     expect(missionControlChangeAnswer([{ dimension: "evidence" }], "State changed")).toBe(
       "Supporting evidence changed.",

@@ -1099,6 +1099,10 @@ export function graphDetailLabel(value: string): string {
       return "Needs review";
     case "needs_attention":
       return "Needs attention";
+    case "active_customer":
+      return "Active customer";
+    case "former_customer":
+      return "Former customer";
     case "stale":
       return "Out of date";
     default:

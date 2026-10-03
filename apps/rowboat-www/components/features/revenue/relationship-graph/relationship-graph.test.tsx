@@ -109,6 +109,11 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphDetailLabel("historical_unknown")).toBe("Not recorded for this date");
     expect(graphDetailLabel("review_required")).toBe("Needs review");
     expect(graphDetailLabel("needs_attention")).toBe("Needs attention");
+    expect(graphDetailLabel("active_customer")).toBe("Active customer");
+    expect(graphDetailLabel("former_customer")).toBe("Former customer");
+    expect(graphNodeFieldLabel("relationship", "lifecycle", "active_customer")).toBe(
+      "Active customer",
+    );
     expect(graphDetailLabel("stale")).toBe("Out of date");
     expect(graphDetailLabel("historical_unknown")).not.toContain("historical_unknown");
     expect(graphDetailLabel("open")).toBe("Open");
@@ -251,6 +256,7 @@ describe("RelationshipGraphWorkspace", () => {
     );
     expect(graphQueryFilterLabel("text: dogfood")).toBe("Dogfood");
     expect(graphQueryFilterLabel("lifecycle: renewal")).toBe("Renewal");
+    expect(graphQueryFilterLabel("lifecycle: active_customer")).toBe("Active customer");
     expect(graphQueryFilterLabel("health: at_risk")).toBe("At risk");
     expect(graphQueryFilterLabel("overdue commitments")).toBe("overdue commitments");
     expect(source).toContain("Building the company graph");
