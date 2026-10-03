@@ -234,17 +234,32 @@ export function recoveryEmptyDescription(filter: string): string {
  * The open queue is empty because mail cannot be read. The button already
  * names reconnect or connect. Telling the reader to run an audit disagrees.
  */
+/** A promise already in Commitments stays visible when Recovery has no draft. */
+export function recordedRecoveryPrefix(count: number | undefined, hasMore = false): string {
+  const total = Number.isFinite(count) ? Math.max(0, Math.round(count ?? 0)) : 0;
+  if (total <= 0) return "";
+  const sentence = hasMore
+    ? `${total}+ promises are already in Commitments.`
+    : total === 1
+      ? "1 promise is already in Commitments."
+      : `${total} promises are already in Commitments.`;
+  return `${sentence} `;
+}
+
 export function recoveryOpenEmptyCopy(input: {
   needsConnect: boolean;
   needsReconnect: boolean;
+  knownPromiseCount?: number;
+  knownPromiseHasMore?: boolean;
 }): string {
+  const prefix = recordedRecoveryPrefix(input.knownPromiseCount, input.knownPromiseHasMore);
   if (input.needsReconnect) {
-    return "No recovery drafts yet. Reconnect Google before an audit can find promises to recover.";
+    return `${prefix}No recovery drafts yet. Reconnect Google before an audit can find promises to recover.`;
   }
   if (input.needsConnect) {
-    return "No recovery drafts yet. Connect Gmail and Calendar before an audit can find promises to recover.";
+    return `${prefix}No recovery drafts yet. Connect Gmail and Calendar before an audit can find promises to recover.`;
   }
-  return "No recovery drafts yet! Run an audit or draft recovery from a promise.";
+  return `${prefix}No recovery drafts yet! Run an audit or draft recovery from a promise.`;
 }
 
 /** A follow-up is stored on a company. The empty workspace has nothing to attach it to. */
@@ -272,6 +287,9 @@ export function QueueView({
   scanning,
   needsReconnect = false,
   needsConnect = false,
+  knownPromiseCount = 0,
+  knownPromiseHasMore = false,
+  knownPromisesPending = false,
   onOpenCompanies,
 }: {
   workspace: RevenueWorkspace | null;
@@ -283,6 +301,11 @@ export function QueueView({
   needsReconnect?: boolean;
   /** No mailbox is connected, so `onScan` opens connections instead of a scan. */
   needsConnect?: boolean;
+  /** Open or at-risk promises already in Commitments. */
+  knownPromiseCount?: number;
+  knownPromiseHasMore?: boolean;
+  /** The empty sentence waits so it does not hide a promise that is still loading. */
+  knownPromisesPending?: boolean;
   /** Opens the company directory when a new action has nothing to attach to. */
   onOpenCompanies?: () => void;
 }) {
@@ -463,7 +486,16 @@ export function QueueView({
                   )}
                 </Button>
               }
-              description={recoveryOpenEmptyCopy({ needsConnect, needsReconnect })}
+              description={
+                knownPromisesPending
+                  ? "Checking Commitments for promises already on the record."
+                  : recoveryOpenEmptyCopy({
+                      needsConnect,
+                      needsReconnect,
+                      knownPromiseCount,
+                      knownPromiseHasMore,
+                    })
+              }
               image="recovery"
               learnMore={[
                 { label: "Approve recovery before sending" },
