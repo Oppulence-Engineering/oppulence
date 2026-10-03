@@ -225,6 +225,10 @@ export function parseRelationshipGraphQuery(query) {
   ) {
     filters.health.push("needs_attention");
   }
+  // The company row says Not known. The stored health is unknown.
+  if (/\bnot known\b|\bnot_known\b/.test(normalized) && !filters.health.includes("unknown")) {
+    filters.health.push("unknown");
+  }
   for (const health of GRAPH_QUERY_HEALTH) {
     if (
       new RegExp(`\\b${health.replaceAll("_", "[ _]")}\\b`).test(normalized) &&
@@ -233,8 +237,17 @@ export function parseRelationshipGraphQuery(query) {
       filters.health.push(health);
     }
   }
+  // The follow-up row says Awaiting approval. The stored approval is pending.
+  if (
+    /\bawaiting approvals?\b|\bawaiting_approvals?\b/.test(normalized) &&
+    !filters.approvalStatus.includes("pending")
+  ) {
+    filters.approvalStatus.push("pending");
+  }
   for (const status of ["pending", "approved", "rejected"]) {
-    if (new RegExp(`\\b${status}\\b`).test(normalized)) filters.approvalStatus.push(status);
+    if (new RegExp(`\\b${status}\\b`).test(normalized) && !filters.approvalStatus.includes(status)) {
+      filters.approvalStatus.push(status);
+    }
   }
   for (const source of GRAPH_QUERY_SOURCES) {
     if (new RegExp(`\\b${source.replaceAll("_", "[ _]")}s?\\b`).test(normalized)) {
@@ -254,6 +267,7 @@ export function parseRelationshipGraphQuery(query) {
     ...GRAPH_QUERY_SOURCES.flatMap((value) => value.split("_")),
     "attention",
     "at",
+    "awaiting",
     "approved",
     "blocked",
     "changed",
@@ -264,6 +278,7 @@ export function parseRelationshipGraphQuery(query) {
     "hide",
     "isolated",
     "kept",
+    "known",
     "last",
     "outdated",
     "overdue",
@@ -317,7 +332,13 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bshared promise\b/g, " ")
     .replace(/\bkept_promises\b/g, " ")
     .replace(/\bkept_promise\b/g, " ")
-    .replace(/\bkept\b/g, " ");
+    .replace(/\bkept\b/g, " ")
+    .replace(/\bnot known\b/g, " ")
+    .replace(/\bnot_known\b/g, " ")
+    .replace(/\bawaiting approvals\b/g, " ")
+    .replace(/\bawaiting approval\b/g, " ")
+    .replace(/\bawaiting_approvals\b/g, " ")
+    .replace(/\bawaiting_approval\b/g, " ");
   filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)

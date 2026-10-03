@@ -382,6 +382,13 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryFilterLabel("they owe us")).toBe("they owe us");
     expect(graphQueryFilterLabel("kept")).toBe("kept");
     expect(graphQueryAnswer("1 relationship matches kept.", 1)).toBe("1 company matches kept.");
+    expect(graphQueryFilterLabel("health: unknown")).toBe("Not known");
+    expect(graphQueryAnswer("1 relationship matches health: unknown.", 1)).toBe(
+      "1 company matches Not known.",
+    );
+    expect(graphQueryAnswer("1 relationship matches approval: pending.", 1)).toBe(
+      "1 company matches Approval: Awaiting approval.",
+    );
     expect(graphQueryAnswer("1 relationship matches they owe us.", 1)).toBe(
       "1 company matches they owe us.",
     );

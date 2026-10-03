@@ -342,6 +342,68 @@ test("asking kept finds a promise the company card calls kept", () => {
   assert.equal(result.answer, "1 relationship matches kept.");
 });
 
+test("asking not known finds a company whose health is unknown", () => {
+  const parsed = parseRelationshipGraphQuery("not known");
+  assert.deepEqual(parsed.filters.health, ["unknown"]);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["health: unknown"]);
+
+  const hyphenated = parseRelationshipGraphQuery("not-known");
+  assert.deepEqual(hyphenated.filters.health, ["unknown"]);
+  assert.deepEqual(hyphenated.filters.freeText, []);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:plain", kind: "relationship", label: "Quay Plain", health: "unknown" },
+      { id: "relationship:healthy", kind: "relationship", label: "Quay Healthy", health: "healthy" },
+    ],
+    edges: [],
+  };
+  const result = queryRelationshipGraph(graph, "not known");
+  assert.deepEqual(result.relationshipIds, ["plain"]);
+  assert.equal(result.visibleNodeIds.includes("relationship:healthy"), false);
+  assert.equal(result.answer, "1 relationship matches health: unknown.");
+});
+
+test("asking awaiting approval finds a follow-up that is still pending", () => {
+  const parsed = parseRelationshipGraphQuery("awaiting approval");
+  assert.deepEqual(parsed.filters.approvalStatus, ["pending"]);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["approval: pending"]);
+
+  const hyphenated = parseRelationshipGraphQuery("awaiting-approval");
+  assert.deepEqual(hyphenated.filters.approvalStatus, ["pending"]);
+  assert.deepEqual(hyphenated.filters.freeText, []);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:plain", kind: "relationship", label: "Quay Plain" },
+      {
+        id: "action:plain",
+        kind: "action",
+        label: "Meeting follow-up",
+        relationshipId: "plain",
+        status: "open",
+        approvalStatus: "pending",
+      },
+      { id: "relationship:clear", kind: "relationship", label: "Quay Clear" },
+      {
+        id: "action:clear",
+        kind: "action",
+        label: "Meeting follow-up",
+        relationshipId: "clear",
+        status: "open",
+        approvalStatus: "approved",
+      },
+    ],
+    edges: [],
+  };
+  const result = queryRelationshipGraph(graph, "awaiting approval");
+  assert.deepEqual(result.relationshipIds, ["plain"]);
+  assert.equal(result.visibleNodeIds.includes("relationship:clear"), false);
+  assert.equal(result.answer, "1 relationship matches approval: pending.");
+});
+
 test("asking they owe us keeps that side of the promise", () => {
   const parsed = parseRelationshipGraphQuery("what they owe us");
   assert.equal(parsed.filters.direction, "promised_by_them");
