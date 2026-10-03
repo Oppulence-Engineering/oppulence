@@ -173,6 +173,52 @@ test("a kept promise is not still overdue", () => {
   assert.deepEqual(late.relationshipIds, ["late"]);
 });
 
+test("an up to date detail is not out of date", () => {
+  const asOf = "2026-10-03T12:00:00.000Z";
+  const current = {
+    asOf,
+    nodes: [
+      { id: "relationship:fresh", kind: "relationship", label: "Quay Fresh" },
+      {
+        id: "evidence:fresh",
+        kind: "evidence",
+        label: "The quay note",
+        relationshipId: "fresh",
+        freshness: "current",
+      },
+    ],
+    edges: [],
+  };
+  const parsed = parseRelationshipGraphQuery("outdated");
+  assert.equal(parsed.filters.stale, true);
+  assert.ok(parsed.applied.includes("out of date"));
+  assert.equal(parsed.applied.includes("stale evidence"), false);
+  const freshResult = queryRelationshipGraph(current, "outdated");
+  assert.deepEqual(freshResult.relationshipIds, []);
+  assert.equal(freshResult.answer, "0 relationships match out of date.");
+
+  const stale = queryRelationshipGraph(
+    {
+      asOf,
+      nodes: [
+        ...current.nodes,
+        { id: "relationship:old", kind: "relationship", label: "Quay Dated" },
+        {
+          id: "source:old",
+          kind: "source",
+          label: "Meeting",
+          relationshipId: "old",
+          freshness: "stale",
+        },
+      ],
+      edges: [],
+    },
+    "stale",
+  );
+  assert.deepEqual(stale.relationshipIds, ["old"]);
+  assert.equal(stale.answer, "1 relationship matches out of date.");
+});
+
 test("graph questions use the stage and health words a person would type", () => {
   const active = parseRelationshipGraphQuery("active customer");
   assert.deepEqual(active.filters.lifecycle, ["active_customer"]);

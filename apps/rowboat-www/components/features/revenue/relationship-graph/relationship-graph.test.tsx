@@ -238,6 +238,7 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphAskChanges("", { query: "", focusDepth: 1 })).toBe(true);
     expect(source).not.toContain("Changed since review");
     expect(source).not.toContain("overdue commitments");
+    expect(source).not.toContain("stale evidence");
     expect(graphLayoutLabel("force")).toBe("Grouped");
     expect(graphLayoutLabel("radial")).toBe("Circle");
     expect(graphLayoutLabel("timeline")).toBe("By time");
@@ -314,6 +315,9 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryAnswer("2 relationships match overdue promises.", 2)).toBe(
       "2 companies match overdue promises.",
     );
+    expect(graphQueryAnswer("1 relationship matches out of date.", 1)).toBe(
+      "1 company matches out of date.",
+    );
     expect(graphQueryAnswer("0 relationships match text: quillhaven.", 200, true)).toBe(
       graphQueryMissLabel(),
     );
@@ -343,6 +347,7 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphEdgeLabel("supersedes")).toBe("replaces");
     expect(graphEdgeLabel("owns")).toBe("owns");
     expect(graphQueryFilterLabel("overdue promises")).toBe("overdue promises");
+    expect(graphQueryFilterLabel("out of date")).toBe("out of date");
     expect(graphQueryFilterLabel("sources: desktop_note")).not.toContain("desktop_note");
     expect(graphQueryFilterLabel("approval: pending")).not.toContain("pending");
     expect(source).toContain("Building the company graph");
