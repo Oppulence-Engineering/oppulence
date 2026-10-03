@@ -62,6 +62,52 @@ func TestRelationshipGraphReturnsVersionedGovernedProjection(t *testing.T) {
 	}
 }
 
+func TestRelationshipGraphSourceUsesSourceFreshness(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	past := f.svc.now().UTC().Add(-2 * time.Hour)
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("meeting").SetSourceAccountID("default").
+		SetStatus("live").SetCompleteness("complete").
+		SetExpectedCadenceSeconds(60).
+		SetLastSuccessAt(past).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+		SetSource("meeting").SetExternalID("graph-stale-source").
+		SetEventType("note").SetOccurredAt(past).
+		SetReceivedAt(past).
+		SetSummary("A meeting note").SetContentHash("graph-stale-source").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	asOf := f.svc.now().UTC()
+	aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &rel.ID, Depth: 2, AsOf: asOf,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dto := buildRelationshipGraphDTO(aggregate, asOf)
+	for _, node := range dto.Nodes {
+		if node.Kind != "source" {
+			continue
+		}
+		if node.Status != "stale" {
+			t.Fatalf("source status = %q, want stale", node.Status)
+		}
+		return
+	}
+	t.Fatal("meeting source missing from the graph")
+}
+
 func TestRelationshipGraphRejectsFutureHistoricalBoundary(t *testing.T) {
 	f := newFixture(t)
 	_, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{

@@ -1200,6 +1200,26 @@ export function graphNodeFieldLabel(kind: string, field: GraphField, value: stri
         break;
     }
   }
+  if (kind === "source" && field === "status") {
+    switch (value) {
+      case "live":
+      case "connected":
+        return "Active";
+      case "stale":
+        return "Out of date";
+      case "reconnect_required":
+        return "Reconnect required";
+      case "disconnected":
+        return "Disconnected";
+      case "not_connected":
+        return "Not connected";
+      case "backfilling":
+      case "rebuilding":
+        return "Syncing";
+      default:
+        break;
+    }
+  }
   if (kind === "commitment" && field === "status") {
     switch (value) {
       case "at_risk":

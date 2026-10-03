@@ -131,6 +131,12 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphNodeSummaryLabel({ kind: "evidence", status: "Promise confirmed" })).toBe(
       "Promise confirmed",
     );
+    expect(graphNodeFieldLabel("source", "status", "live")).toBe("Active");
+    expect(graphNodeFieldLabel("source", "status", "connected")).toBe("Active");
+    expect(graphNodeFieldLabel("source", "status", "stale")).toBe("Out of date");
+    expect(graphNodeFieldLabel("source", "status", "reconnect_required")).toBe("Reconnect required");
+    expect(graphNodeFieldLabel("source", "status", "backfilling")).toBe("Syncing");
+    expect(graphNodeSummaryLabel({ kind: "source", status: "stale" })).toBe("Out of date");
     expect(graphNodeFieldLabel("commitment", "status", "open")).toBe("Open");
     expect(graphNodeFieldLabel("commitment", "status", "at_risk")).toBe("At risk");
     expect(graphNodeFieldLabel("commitment", "status", "met")).toBe("Met");

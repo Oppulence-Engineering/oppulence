@@ -213,6 +213,11 @@ func (s *Service) RelationshipGraph(
 	if err != nil {
 		return nil, err
 	}
+	// The sources list derives "stale" from the cadence. The stored row can
+	// still say "live" after that window, and the graph was printing that.
+	for _, status := range sources {
+		applySourceFreshness(status, filter.AsOf)
+	}
 
 	return &RelationshipGraphAggregate{
 		Relationships:      relationships,
