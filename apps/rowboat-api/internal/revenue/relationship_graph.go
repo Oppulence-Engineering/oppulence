@@ -467,9 +467,11 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 			// the participant UUID) and silently merged two people who shared a
 			// role address. The person layer resolves both cases properly; the
 			// string key remains only for rows the backfill has not reached.
+			var linked *ent.Person
 			identity := participant.ID.String()
-			if linked, err := participant.Edges.PersonOrErr(); err == nil && linked != nil {
-				identity = "person-id:" + linked.ID.String()
+			if person, err := participant.Edges.PersonOrErr(); err == nil && person != nil {
+				linked = person
+				identity = "person-id:" + person.ID.String()
 			} else if strings.TrimSpace(participant.Email) != "" {
 				identity = participant.Email
 			}
@@ -485,7 +487,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 					participantMetadata = nil
 				}
 				node = relationshipGraphNodeDTO{
-					ID: personNodeID, Kind: "person", Label: participant.DisplayName,
+					ID: personNodeID, Kind: "person", Label: graphPersonLabel(participant, linked),
 					Role: participantRole, Status: participantStatus,
 					RelationshipID: relationshipID, RelationshipIDs: []string{},
 					ResourceRef: participant.ID.String(), Metadata: participantMetadata,
@@ -701,6 +703,27 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 		dto.RelationshipID = aggregate.Relationships[0].ID.String()
 	}
 	return dto
+}
+
+// graphPersonLabel matches the people directory. A corrected name lives on the
+// person; the company membership still has the name from the original header.
+// A blank header falls back to the address, then to the same unknown label.
+func graphPersonLabel(participant *ent.RelationshipParticipant, linked *ent.Person) string {
+	if linked != nil {
+		if name := strings.TrimSpace(linked.DisplayName); name != "" {
+			return name
+		}
+		if email := strings.TrimSpace(linked.PrimaryEmail); email != "" {
+			return email
+		}
+	}
+	if name := strings.TrimSpace(participant.DisplayName); name != "" {
+		return name
+	}
+	if email := strings.TrimSpace(participant.Email); email != "" {
+		return email
+	}
+	return "Unknown person"
 }
 
 // graphActionLabel matches the titles Recovery and the company sheet use.

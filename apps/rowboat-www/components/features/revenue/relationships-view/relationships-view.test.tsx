@@ -15,6 +15,7 @@ import {
   companyDirectoryCount,
   companyCategoriesLabel,
   personSheetProfile,
+  personParticipantLabel,
   companyDirectoryRemainderLabel,
   attentionForCompanyDirectory,
   companyDirectoryTitle,
@@ -135,6 +136,20 @@ describe("RelationshipsView", () => {
       }),
     ).toEqual(["Finance lead", "Acme", "VP", "Lisbon"]);
     expect(source).toContain("personSheetProfile({");
+    expect(
+      personParticipantLabel({
+        displayName: "A. Harbor",
+        email: "ada@harbor-person.example",
+        person: { displayName: "Ada Harbor", primaryEmail: "ada@harbor-person.example" },
+      }),
+    ).toBe("Ada Harbor");
+    expect(
+      personParticipantLabel({ displayName: "   ", email: "bea@harbor-person.example" }),
+    ).toBe("bea@harbor-person.example");
+    expect(personParticipantLabel({ displayName: "Bea Cole" })).toBe("Bea Cole");
+    expect(personParticipantLabel({ displayName: "   " })).toBe("Unknown person");
+    expect(source).toContain("personParticipantLabel(participant)");
+    expect(source).not.toContain("{participant.displayName}");
     expect(source).not.toContain(
       'className="bg-background-100 text-[11px] capitalize text-primary/60"',
     );
@@ -811,7 +826,7 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("{source.source} · {source.status}");
     expect(source).toContain("mailAccessReason(item.access.reason)");
     expect(source).not.toContain("JSON.stringify(evidence[observation.id]");
-    expect(source).toContain("removePersonConfirmCopy(participant.displayName)");
+    expect(source).toContain("removePersonConfirmCopy(name)");
     expect(source).toContain("Confirm remove");
     expect(source).not.toContain("window.confirm(\n                                        `Remove ${participant.displayName}");
     expect(source).not.toContain("{observation.source} · {humanize(observation.eventType)}");

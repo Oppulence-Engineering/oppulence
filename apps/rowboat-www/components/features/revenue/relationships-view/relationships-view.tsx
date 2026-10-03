@@ -602,6 +602,24 @@ export function companyCategoriesLabel(
  * string is not one of those facts, and a blank title must not hide a role
  * that was saved on the company membership.
  */
+/**
+ * The people directory is the name after a correction. The company membership
+ * still stores the header the mail arrived with, which is a different string.
+ */
+export function personParticipantLabel(participant: {
+  displayName?: string | null;
+  email?: string | null;
+  person?: { displayName?: string | null; primaryEmail?: string | null } | null;
+}): string {
+  const canonical = participant.person?.displayName?.trim();
+  if (canonical) return canonical;
+  const header = participant.displayName?.trim();
+  if (header) return header;
+  const email = participant.email?.trim() || participant.person?.primaryEmail?.trim();
+  if (email) return email;
+  return "Unknown person";
+}
+
 export function personSheetProfile(input: {
   title?: string | null;
   fallbackTitle?: string | null;
@@ -4215,6 +4233,7 @@ export function RelationshipSheet({
                               attribute.sourceType === "external_research" &&
                               attribute.status !== "retracted",
                           );
+                          const name = personParticipantLabel(participant);
                           return (
                             <li
                               key={participant.id}
@@ -4222,7 +4241,7 @@ export function RelationshipSheet({
                             >
                               <div className={`min-w-0 ${departed ? "text-primary/50" : ""}`}>
                                 <p className="font-medium text-primary">
-                                  {participant.displayName}
+                                  {name}
                                   {participant.role
                                     ? ` · ${participantRoleLabel(participant.role)}`
                                     : ""}
@@ -4278,7 +4297,7 @@ export function RelationshipSheet({
                                 confirmingPersonId === person.id ? (
                                   <div className="flex max-w-xs shrink-0 flex-col items-end gap-2">
                                     <p className="text-right text-[12px] text-primary/70">
-                                      {removePersonConfirmCopy(participant.displayName)}
+                                      {removePersonConfirmCopy(name)}
                                     </p>
                                     <div className="flex gap-2">
                                       <Button

@@ -411,3 +411,90 @@ func TestRelationshipGraphNamesACompanyLikeTheDirectory(t *testing.T) {
 		}
 	}
 }
+
+func TestRelationshipGraphNamesAPersonLikeTheDirectory(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	company, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Person",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ada, err := f.client.Person.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetDisplayName("Ada Harbor").
+		SetPrimaryEmail("ada@harbor-person.example").
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetRelationship(company).
+		SetPerson(ada).
+		SetDisplayName("A. Harbor").
+		SetEmail("ada@harbor-person.example").
+		SetRole("contact").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetRelationship(company).
+		SetPerson(ada).
+		SetDisplayName("Ada H").
+		SetEmail("ada.h@harbor-person.example").
+		SetRole("champion").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetRelationship(company).
+		SetDisplayName("   ").
+		SetEmail("bea@harbor-person.example").
+		SetRole("contact").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetRelationship(company).
+		SetDisplayName("Bea Cole").
+		SetEmail("cole@harbor-person.example").
+		SetRole("contact").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &company.ID, Depth: 1, AsOf: f.svc.now(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dto := buildRelationshipGraphDTO(aggregate, f.svc.now())
+	got := map[string]int{}
+	for _, node := range dto.Nodes {
+		if node.Kind == "person" {
+			got[node.Label]++
+		}
+	}
+	if got["Ada Harbor"] != 1 || got["A. Harbor"] != 0 || got["Ada H"] != 0 {
+		t.Fatalf("directory name should be the only Ada node: %+v", got)
+	}
+	if got["bea@harbor-person.example"] != 1 {
+		t.Fatalf("blank header should use the address: %+v", got)
+	}
+	if got["Bea Cole"] != 1 {
+		t.Fatalf("typed header should stay: %+v", got)
+	}
+}
