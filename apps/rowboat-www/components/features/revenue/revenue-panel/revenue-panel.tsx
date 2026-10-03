@@ -21,7 +21,10 @@ import {
 import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-source-keys";
 import { revenueActionKeys } from "@/hooks/queries/utils/revenue-action-keys";
 import { downloadMarkdown } from "@/lib/content/download-markdown";
-import { subscribeDueCommitments } from "@/lib/dashboard/commitment-due-request";
+import {
+  dismissDueCommitments,
+  subscribeDueCommitments,
+} from "@/lib/dashboard/commitment-due-request";
 import { DashboardRequestError } from "@/lib/api/request-json";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
@@ -464,8 +467,12 @@ export function RevenuePanel({
             onLoadMorePromises={() => void loadMorePromises()}
             view={registerView}
             overdueOnly={Boolean(overdueBefore)}
-            onLeaveOverdue={() => setOverdueBefore(null)}
+            onLeaveOverdue={() => {
+              dismissDueCommitments();
+              setOverdueBefore(null);
+            }}
             onViewChange={(next) => {
+              dismissDueCommitments();
               setOverdueBefore(null);
               setRegisterView(next);
             }}
