@@ -28,6 +28,7 @@ import {
   companyStageFilterName,
   companySheetPositionLabel,
   companyReviewCopy,
+  reviewHasRecordedActivity,
   companyDescriptionCopy,
   companyLastActivityLabel,
   recommendationPriorityLabel,
@@ -476,6 +477,14 @@ describe("RelationshipsView", () => {
       change: "No account details have changed yet.",
       footer: "Not reviewed yet.",
     });
+    expect(reviewHasRecordedActivity([])).toBe(false);
+    expect(reviewHasRecordedActivity([{}])).toBe(true);
+    expect(
+      companyReviewCopy({ previousReviewedStateVersion: 0, changedSinceReview: false }, true),
+    ).toEqual({
+      change: "No account details have changed yet. Promises and meetings are in the sections below.",
+      footer: "Not reviewed yet.",
+    });
     expect(
       companyReviewCopy({ previousReviewedStateVersion: 2, changedSinceReview: false }),
     ).toEqual({
@@ -603,7 +612,7 @@ describe("RelationshipsView", () => {
     expect(supportedRecordValue("unknown", undefined)).toBe("Not known");
     expect(supportedRecordValue("healthy", { supported: true })).toBe("Healthy");
     expect(supportedRecordValue("needs_attention", { supported: true })).toBe("Needs attention");
-    expect(source).toContain("companyReviewCopy(model)");
+    expect(source).toContain("companyReviewCopy(model, reviewHasRecordedActivity(commitments))");
     expect(source).toContain("reviewCopy.footer !== reviewCopy.change");
     expect(source).toContain('comboboxFilterName("Detail", humanize(dimension))');
     expect(source).toContain('comboboxFilterName("Value", companyRecordLabel(value))');

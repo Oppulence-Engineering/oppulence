@@ -2102,13 +2102,21 @@ export function identityReviewBlockCopy(count: number): string {
  * asOf is the moment the company was loaded, not a review time. A company
  * that has never been reviewed must not claim it was reviewed just now.
  */
-export function companyReviewCopy(model: {
-  previousReviewedStateVersion: number;
-  changedSinceReview: boolean;
-}): { change: string; footer: string } {
+/** A promise or meeting is a record even when no account detail has moved. */
+export function reviewHasRecordedActivity(commitments: readonly unknown[]): boolean {
+  return commitments.length > 0;
+}
+
+export function companyReviewCopy(
+  model: {
+    previousReviewedStateVersion: number;
+    changedSinceReview: boolean;
+  },
+  hasRecordedActivity = false,
+): { change: string; footer: string } {
   if (!model.changedSinceReview && model.previousReviewedStateVersion <= 0) {
     return {
-      change: "No account details have changed yet.",
+      change: relationshipChangeEmptyCopy(hasRecordedActivity),
       footer: "Not reviewed yet.",
     };
   }
@@ -3044,7 +3052,7 @@ function MissionControlOverview({
   const supported = Object.values(model.evidence).filter((item) => item.supported).length;
   const openable = openableAccountDetailCount(model.evidence);
   const total = Object.keys(model.evidence).length;
-  const reviewCopy = companyReviewCopy(model);
+  const reviewCopy = companyReviewCopy(model, reviewHasRecordedActivity(commitments));
   return (
     <section
       aria-labelledby="mission-control-heading"
