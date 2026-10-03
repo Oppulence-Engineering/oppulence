@@ -12,6 +12,7 @@ import {
   impactAccountTotal,
   funnelBarPercent,
   longestOverdueCopy,
+  statReadsAsGood,
   overdueDirectionLines,
 } from "./impact-view";
 
@@ -80,6 +81,15 @@ describe("ImpactView", () => {
     expect(source).not.toContain("No active relationship risks.");
     expect(source).not.toContain("underlying relationship records");
     expect(source).not.toContain("Promises missed");
+  });
+
+  it("keeps a zero or an unknown rate in the normal color", () => {
+    expect(statReadsAsGood(0)).toBe(false);
+    expect(statReadsAsGood(2)).toBe(true);
+    expect(statReadsAsGood("—")).toBe(false);
+    expect(statReadsAsGood("0%")).toBe(false);
+    expect(statReadsAsGood("40%")).toBe(true);
+    expect(source).toContain("statReadsAsGood(value)");
   });
 
   it("leaves a zero funnel count empty and keeps a small count visible", () => {

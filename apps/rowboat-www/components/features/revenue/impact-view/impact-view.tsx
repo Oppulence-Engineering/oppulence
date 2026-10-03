@@ -525,13 +525,22 @@ export function ImpactView({
   );
 }
 
+/** A zero, or a rate that cannot be computed, is not a win. */
+export function statReadsAsGood(value: number | string): boolean {
+  if (typeof value === "number") return Number.isFinite(value) && value > 0;
+  const match = /^(\d+(?:\.\d+)?)%$/.exec(String(value).trim());
+  return match ? Number(match[1]) > 0 : false;
+}
+
 function Stat({ label, value, tone }: { label: string; value: number | string; tone?: "good" }) {
   return (
     <CardContent className="p-3">
       <div
         className={cn(
           "text-2xl font-semibold tabular-nums",
-          tone === "good" ? "text-emerald-600 dark:text-emerald-400" : "text-primary",
+          tone === "good" && statReadsAsGood(value)
+            ? "text-emerald-600 dark:text-emerald-400"
+            : "text-primary",
         )}
       >
         {value}
