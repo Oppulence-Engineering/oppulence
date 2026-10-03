@@ -8,6 +8,7 @@ import type { ComponentPropsWithoutRef } from "react";
 
 import { cn } from "@oppulence/ui/lib/utils";
 import { SimProductPanel } from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
+import { promiseDirectionLabel } from "@/lib/revenue/revenue-records";
 import type { RelationshipCommitment } from "@/lib/revenue/types";
 
 export type AccountTimelineItem = {
@@ -30,11 +31,10 @@ export type AccountMissionControlSurfaceProps = Omit<
   showHeader?: boolean;
 };
 
+/** The overview card uses the same direction words as the promise record. */
 export function commitmentTimelineLabel(direction: string) {
-  if (direction === "promised_by_me") return "Outbound promise";
-  if (direction === "promised_by_them") return "Inbound promise";
-  if (direction === "mutual") return "Mutual promise";
-  return "Commitment";
+  const label = promiseDirectionLabel(direction);
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 /** Same window the register uses. At risk is a fact about the clock, not a stored status. */

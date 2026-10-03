@@ -2,8 +2,13 @@
 
 import "@testing-library/jest-dom/vitest";
 
+import fs from "node:fs";
+import path from "node:path";
+
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+
+const source = fs.readFileSync(path.join(import.meta.dirname, "account-mission-control-surface.tsx"), "utf8");
 
 import {
   AccountMissionControlSurface,
@@ -89,6 +94,7 @@ describe("AccountMissionControlSurface", () => {
     );
     expect(row?.detail).toBe("Send the waived note.");
     expect(row?.statusLabel).toBe("Waived");
+    expect(row?.label).toBe("They owe us");
   });
 
   it("counts confirmed open promises and leaves reviews and disputes out", () => {
@@ -119,9 +125,13 @@ describe("AccountMissionControlSurface", () => {
     expect(promiseFollowUpEmptyCopy(0)).toBe("No promises are due for a follow-up.");
   });
 
-  it("names a mutual promise as mutual", () => {
-    expect(commitmentTimelineLabel("mutual")).toBe("Mutual promise");
-    expect(commitmentTimelineLabel("promised_by_me")).toBe("Outbound promise");
-    expect(commitmentTimelineLabel("promised_by_them")).toBe("Inbound promise");
+  it("names who owes the promise", () => {
+    expect(commitmentTimelineLabel("mutual")).toBe("We both owe");
+    expect(commitmentTimelineLabel("promised_by_me")).toBe("We owe them");
+    expect(commitmentTimelineLabel("promised_by_them")).toBe("They owe us");
+    expect(commitmentTimelineLabel("")).toBe("We owe them");
+    expect(source).toContain("promiseDirectionLabel(direction)");
+    expect(source).not.toContain("Outbound promise");
+    expect(source).not.toContain("Inbound promise");
   });
 });
