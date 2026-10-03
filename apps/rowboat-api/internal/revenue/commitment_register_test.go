@@ -471,3 +471,63 @@ func TestListCommitmentsExactPageIsNotAnotherPage(t *testing.T) {
 		t.Fatalf("next page = %+v err=%v", next, err)
 	}
 }
+
+func TestOwnerSearchUsesTheNameOnTheRegister(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	if rel.DisplayName != "Jordan Buyer" {
+		t.Fatalf("display name %q", rel.DisplayName)
+	}
+	due := time.Now().UTC().Add(10 * 24 * time.Hour)
+	seedCommitment(t, f, rel, "promised_by_me", "Send the quay note", "local-user", &due)
+	seedCommitment(t, f, rel, "promised_by_them", "Send the quay reply", "meeting-counterparty", &due)
+	seedCommitment(t, f, rel, "mutual", "Share the quay plan", "meeting-counterparty", &due)
+	seedCommitment(t, f, rel, "promised_by_me", "Mail the ledger", "alex@x.co", &due)
+
+	you, err := f.svc.ListCommitments(f.ctx, f.user, CommitmentFilter{Owner: "You"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if texts := commitmentTexts(you); !sameTexts(texts, "Send the quay note", "Share the quay plan") {
+		t.Fatalf("You matched %#v", texts)
+	}
+	company, err := f.svc.ListCommitments(f.ctx, f.user, CommitmentFilter{Owner: "Jordan Buyer"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if texts := commitmentTexts(company); !sameTexts(texts, "Send the quay reply", "Share the quay plan") {
+		t.Fatalf("company matched %#v", texts)
+	}
+	both, err := f.svc.ListCommitments(f.ctx, f.user, CommitmentFilter{Owner: "You and Jordan Buyer"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if texts := commitmentTexts(both); !sameTexts(texts, "Share the quay plan") {
+		t.Fatalf("both sides matched %#v", texts)
+	}
+}
+
+func commitmentTexts(rows []*ent.Commitment) []string {
+	texts := make([]string, 0, len(rows))
+	for _, row := range rows {
+		texts = append(texts, row.Text)
+	}
+	return texts
+}
+
+func sameTexts(got []string, want ...string) bool {
+	if len(got) != len(want) {
+		return false
+	}
+	seen := map[string]int{}
+	for _, text := range got {
+		seen[text]++
+	}
+	for _, text := range want {
+		seen[text]--
+		if seen[text] < 0 {
+			return false
+		}
+	}
+	return true
+}
