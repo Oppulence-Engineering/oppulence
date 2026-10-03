@@ -1132,6 +1132,9 @@ import {
 import {
   noteBodyPreview,
   noteEditorTitle,
+  noteTemplateBody,
+  noteTemplateEditorValue,
+  noteTemplateTitle,
   noteTitleLabel,
 } from "@/components/features/revenue/workspace-records/workspace-records-view";
 import { workspaceNoteActivityLabel } from "@/lib/revenue/revenue";
@@ -1245,6 +1248,42 @@ describe("workspace record notes", () => {
     expect(viewSource).toContain("noteBodyPreview(note.body)");
     expect(viewSource).not.toContain('note.title || "Untitled note"');
     expect(viewSource).not.toContain('note.body || "This note has no content."');
+  });
+
+  it("names a blank template the same way the card does", () => {
+    expect(noteTemplateTitle("   ")).toBe("Untitled template");
+    expect(noteTemplateTitle("Harbor review")).toBe("Harbor review");
+    expect(noteTemplateBody("   ")).toBe("Empty template");
+    expect(noteTemplateBody("Start with the packet")).toBe("Start with the packet");
+    expect(noteTemplateEditorValue({ payload: { body: "   " } })).toEqual([
+      { type: "p", children: [{ text: "" }] },
+    ]);
+    expect(
+      noteTemplateEditorValue({
+        payload: {
+          body: "  From the body  ",
+          content: [{ type: "p", children: [{ text: "   " }] }],
+        },
+      }),
+    ).toEqual([{ type: "p", children: [{ text: "From the body" }] }]);
+    expect(
+      noteTemplateEditorValue({
+        payload: {
+          body: "   ",
+          content: [{ type: "p", children: [{ text: "Kept paragraph" }] }],
+        },
+      }),
+    ).toEqual([{ type: "p", children: [{ text: "Kept paragraph" }] }]);
+    const viewSource = fs.readFileSync(
+      path.join(import.meta.dirname, "workspace-records-view.tsx"),
+      "utf8",
+    );
+    expect(viewSource).toContain("noteTemplateTitle(template.payload.title)");
+    expect(viewSource).toContain("noteTemplateBody(template.payload.body)");
+    expect(viewSource).toContain("noteTemplateEditorValue(template)");
+    expect(viewSource).toContain("body: body.trim()");
+    expect(viewSource).not.toContain('template.payload.body || "Empty template"');
+    expect(viewSource).not.toContain("template?.payload.body)");
   });
 
   it("keeps Plate blocks readable in note previews", () => {

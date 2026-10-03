@@ -213,6 +213,26 @@ export function noteBodyPreview(body?: string | null): string {
   return trimmed || "This note has no content.";
 }
 
+/** A blank template title is the same card heading. */
+export function noteTemplateTitle(title?: string | null): string {
+  return title?.trim() || "Untitled template";
+}
+
+/** A blank template body is the same card sentence. */
+export function noteTemplateBody(body?: string | null): string {
+  return body?.trim() || "Empty template";
+}
+
+/** The note editor starts empty when a template's text is only whitespace. */
+export function noteTemplateEditorValue(template: {
+  payload: { body?: string | null; content?: unknown };
+}): Value {
+  const stored = template.payload.content;
+  if (Array.isArray(stored) && plateText(stored).trim()) return stored as Value;
+  const body = template.payload.body?.trim() ?? "";
+  return [{ type: "p", children: [{ text: body }] }];
+}
+
 const notePlugins = [
   createPlatePlugin({ key: "bold", node: { isLeaf: true }, render: { as: "strong" } }),
   createPlatePlugin({ key: "italic", node: { isLeaf: true }, render: { as: "em" } }),
@@ -1673,13 +1693,13 @@ export function NotesView({
             <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
               {templates.map((template) => (
                 <Card className="gap-3 p-4" key={template.id}>
-                  <CardTitle>{template.payload.title}</CardTitle>
+                  <CardTitle>{noteTemplateTitle(template.payload.title)}</CardTitle>
                   <CardDescription className="line-clamp-3">
-                    {template.payload.body || "Empty template"}
+                    {noteTemplateBody(template.payload.body)}
                   </CardDescription>
                   <div className="mt-auto flex gap-2">
                     <Button
-                      aria-label={`Apply ${template.payload.title}`}
+                      aria-label={`Apply ${noteTemplateTitle(template.payload.title)}`}
                       size="sm"
                       onClick={() => {
                         setEditing({ template });
@@ -1689,7 +1709,7 @@ export function NotesView({
                       Apply
                     </Button>
                     <Button
-                      aria-label={`Edit ${template.payload.title}`}
+                      aria-label={`Edit ${noteTemplateTitle(template.payload.title)}`}
                       size="sm"
                       variant="outline"
                       onClick={() => setEditingTemplate(template)}
@@ -2063,16 +2083,17 @@ function TemplateDialog({
   onNotice: (message: string) => void;
 }) {
   const queryClient = useQueryClient();
-  const [title, setTitle] = React.useState(template?.payload.title ?? "");
-  const [body, setBody] = React.useState(template?.payload.body ?? "");
+  const [title, setTitle] = React.useState((template?.payload.title ?? "").trim());
+  const [body, setBody] = React.useState((template?.payload.body ?? "").trim());
   const mutation = useMutation({
     mutationFn: async (action: "save" | "delete") => {
       if (action === "delete" && template) return deleteConsoleResource(template.id);
-      const payload = { title: title.trim(), body };
-      if (template) return patchConsoleResource(template.id, { name: title.trim(), payload });
+      const trimmedTitle = title.trim();
+      const payload = { title: trimmedTitle, body: body.trim() };
+      if (template) return patchConsoleResource(template.id, { name: trimmedTitle, payload });
       return createConsoleResource({
         kind: "note_template",
-        name: title.trim(),
+        name: trimmedTitle,
         payload,
       });
     },
@@ -2186,18 +2207,14 @@ function NoteDialog({
 }) {
   const noteId = React.useRef(note?.externalId || crypto.randomUUID()).current;
   const [title, setTitle] = React.useState(
-    note ? noteEditorTitle(note.title) : template?.payload.title || "",
+    note ? noteEditorTitle(note.title) : (template?.payload.title ?? "").trim(),
   );
   // A new note is not already about the first company. Autosave would file
   // it there before anyone chose.
   const [relationshipId, setRelationshipId] = React.useState(note?.relationshipId || "");
-  const [content, setContent] = React.useState<Value>(() => {
-    if (template?.payload.content) return template.payload.content as Value;
-    if (template?.payload.body) {
-      return [{ type: "p", children: [{ text: template.payload.body }] }];
-    }
-    return plateValue(note);
-  });
+  const [content, setContent] = React.useState<Value>(() =>
+    template ? noteTemplateEditorValue(template) : plateValue(note),
+  );
   const [meetingLinked, setMeetingLinked] = React.useState(Boolean(note?.meetingLinked));
   const [maximized, setMaximized] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
