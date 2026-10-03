@@ -48,9 +48,12 @@ import { subscribeCompanyCreate } from "@/lib/dashboard/company-create-request";
 import {
   AccountMissionControlSurface,
   accountAttentionFromHealth,
+  atRiskPromiseCount,
   commitmentPreviewRemainder,
   mapCommitmentsToAccountTimeline,
   openCommitmentCount,
+  promiseFollowUpEmptyCopy,
+  promiseFollowUpTitle,
 } from "@/components/features/revenue/account-mission-control-surface/account-mission-control-surface";
 import {
   clearCompanyGraphURL,
@@ -4190,7 +4193,10 @@ export function RelationshipSheet({
                 <section data-capability="commitment-management">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <SectionTitle
-                      title={`Promises to follow up (${data.intelligence?.recoveryEvaluations.length ?? 0})`}
+                      title={promiseFollowUpTitle(
+                        data.intelligence?.recoveryEvaluations.length ?? 0,
+                        atRiskPromiseCount(data.commitments),
+                      )}
                     />
                     {/* No promises means there is nothing to reconcile. */}
                     <Button
@@ -4221,7 +4227,9 @@ export function RelationshipSheet({
                       ))}
                     </ul>
                   ) : (
-                    <EmptyText>No promises are due for a follow-up.</EmptyText>
+                    <EmptyText>
+                      {promiseFollowUpEmptyCopy(atRiskPromiseCount(data.commitments))}
+                    </EmptyText>
                   )}
                   {data.intelligence?.recommendationEvaluations.length ? (
                     <details className="mt-2 text-xs text-primary/55">

@@ -312,7 +312,9 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain(
       '<dd className="capitalize text-primary/75">{companyName(data.relationship)}</dd>',
     );
-    expect(source).toContain("Promises to follow up (");
+    expect(source).toContain("promiseFollowUpTitle(");
+    expect(source).toContain("promiseFollowUpEmptyCopy(atRiskPromiseCount(data.commitments))");
+    expect(source).not.toContain("No promises are due for a follow-up.");
     expect(source).not.toContain("Commitment recovery (");
     expect(source).not.toContain('aria-label="Show accounts"');
     expect(source).not.toContain('aria-label="Show relationship graph"');

@@ -7,11 +7,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   AccountMissionControlSurface,
+  atRiskPromiseCount,
   commitmentPreviewRemainder,
   commitmentTimelineLabel,
   commitmentTimelineStatus,
   mapCommitmentsToAccountTimeline,
   openCommitmentCount,
+  promiseFollowUpEmptyCopy,
+  promiseFollowUpTitle,
 } from "./account-mission-control-surface";
 import type { RelationshipCommitment } from "@/lib/revenue/types";
 
@@ -98,6 +101,22 @@ describe("AccountMissionControlSurface", () => {
         promise({ id: "miss", status: "missed", acceptance: "accepted" }),
       ]),
     ).toBe(1);
+  });
+
+  it("counts a due-soon promise as a follow-up before reconcile", () => {
+    const dueSoon = promise({ dueAt: "2026-10-02T12:00:00Z" });
+    const later = promise({ id: "later", dueAt: "2026-12-01T12:00:00Z" });
+    expect(atRiskPromiseCount([dueSoon, later], now)).toBe(1);
+    expect(promiseFollowUpTitle(0, 1)).toBe("Promises to follow up (1)");
+    expect(promiseFollowUpTitle(2, 1)).toBe("Promises to follow up (2)");
+    expect(promiseFollowUpTitle(0, 0)).toBe("Promises to follow up (0)");
+    expect(promiseFollowUpEmptyCopy(1)).toBe(
+      "A promise is due soon. Reconcile to check the follow-up.",
+    );
+    expect(promiseFollowUpEmptyCopy(2)).toBe(
+      "2 promises are due soon. Reconcile to check the follow-up.",
+    );
+    expect(promiseFollowUpEmptyCopy(0)).toBe("No promises are due for a follow-up.");
   });
 
   it("names a mutual promise as mutual", () => {

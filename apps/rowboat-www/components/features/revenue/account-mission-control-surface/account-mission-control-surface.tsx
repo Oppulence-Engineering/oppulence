@@ -93,6 +93,33 @@ export function openCommitmentCount(
   ).length;
 }
 
+/** The follow-up list uses the same clock as the promise badge. */
+export function atRiskPromiseCount(
+  commitments: readonly RelationshipCommitment[],
+  now = Date.now(),
+): number {
+  return commitments.filter((item) => commitmentTimelineStatus(item, now).label === "At risk").length;
+}
+
+/**
+ * Checked follow-ups win. Before that check, a promise already marked at risk
+ * is still a follow-up, so the heading must not say zero.
+ */
+export function promiseFollowUpTitle(evaluationCount: number, atRiskCount: number): string {
+  const checked = Number.isFinite(evaluationCount) ? Math.max(0, Math.round(evaluationCount)) : 0;
+  const waiting = Number.isFinite(atRiskCount) ? Math.max(0, Math.round(atRiskCount)) : 0;
+  const count = checked > 0 ? checked : waiting;
+  return `Promises to follow up (${count})`;
+}
+
+/** An empty check is not the same as a promise that is already due. */
+export function promiseFollowUpEmptyCopy(atRiskCount: number): string {
+  const count = Number.isFinite(atRiskCount) ? Math.max(0, Math.round(atRiskCount)) : 0;
+  if (count === 1) return "A promise is due soon. Reconcile to check the follow-up.";
+  if (count > 1) return `${count} promises are due soon. Reconcile to check the follow-up.`;
+  return "No promises are due for a follow-up.";
+}
+
 /** Promises past the overview preview, in the same words as the company record. */
 export function commitmentPreviewRemainder(hidden: number): string {
   return hidden === 1 ? "Show the other 1 commitment" : `Show the other ${hidden} commitments`;
