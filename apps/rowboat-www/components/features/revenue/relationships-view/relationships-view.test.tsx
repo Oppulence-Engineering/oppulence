@@ -49,6 +49,7 @@ import {
   governanceDeletionLabel,
   governanceExcerptLabel,
   governanceReceiptRemainder,
+  communicationTimelineEmptyCopy,
   communicationTimelineTitle,
   earlierMailLabel,
   activityHistoryTitle,
@@ -859,7 +860,13 @@ describe("RelationshipsView", () => {
     expect(source).toContain("Correct a detail");
     expect(source).toContain('placeholder="Why is this wrong?"');
     expect(source).toContain("Save this transcript");
-    expect(source).toContain("No mail or meetings yet.");
+    expect(source).toContain("communicationTimelineEmptyCopy(");
+    expect(source).toContain('timeline.some((item) => item.source === "meeting")');
+    expect(source).not.toContain("No mail or meetings yet.");
+    expect(communicationTimelineEmptyCopy(false)).toBe("No Gmail or calendar events yet.");
+    expect(communicationTimelineEmptyCopy(true)).toBe(
+      "No Gmail or calendar events yet. Confirmed meetings are in Activity.",
+    );
     expect(source).toContain("captureSheetPane(() => getRelationshipTimelinePage(id))");
     expect(source).not.toContain("observations: [] as RelationshipObservation[]");
     expect(sheetPaneFailureCopy("Activity")).toBe("Activity could not load. Try again.");

@@ -2647,6 +2647,17 @@ export function earlierMailLabel(): string {
   return "Show earlier mail and meetings";
 }
 
+/**
+ * This list is mailbox and calendar records. A confirmed meeting lives in
+ * Activity, so an empty list must not say there was no meeting.
+ */
+export function communicationTimelineEmptyCopy(hasMeetingActivity: boolean): string {
+  if (hasMeetingActivity) {
+    return "No Gmail or calendar events yet. Confirmed meetings are in Activity.";
+  }
+  return "No Gmail or calendar events yet.";
+}
+
 /** Activity history uses the same honest count as mail. */
 export function activityHistoryTitle(shown: number, hasMore: boolean, failed = false): string {
   if (failed && shown === 0) return "Activity history";
@@ -4820,7 +4831,9 @@ export function RelationshipSheet({
                   />
                   <SheetPaneStatus
                     count={communicationTimeline.length}
-                    empty="No mail or meetings yet."
+                    empty={communicationTimelineEmptyCopy(
+                      timeline.some((item) => item.source === "meeting"),
+                    )}
                     failed={mailFailed}
                     noun="Mail and meetings"
                     onRetry={() => void load()}
