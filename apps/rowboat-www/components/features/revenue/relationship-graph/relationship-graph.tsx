@@ -1085,6 +1085,21 @@ export function graphEvidenceChipLabel(evidence: {
  * The toolbar date is a moment to view, not a mode called "historical".
  * The banner uses the same words once a moment is chosen.
  */
+/**
+ * Approve already ends in e, so appending "d" spelled it. Reject does not:
+ * "Action rejectd." is what the inspector used to say after a successful reject.
+ */
+export function graphActionNotice(kind: "evaluate" | "approve" | "reject"): string {
+  switch (kind) {
+    case "evaluate":
+      return "Sending check finished.";
+    case "approve":
+      return "Action approved.";
+    case "reject":
+      return "Action rejected.";
+  }
+}
+
 export function graphAsOfLabel(asOf: string): string {
   const parsed = new Date(asOf);
   const when = Number.isNaN(parsed.getTime()) ? asOf : parsed.toLocaleString();
@@ -1909,7 +1924,7 @@ export function RelationshipGraphWorkspace({
       if (kind === "approve") await approveAction(actionId);
       if (kind === "reject")
         await rejectAction(actionId, "Rejected from relationship graph review.");
-      onNotice(kind === "evaluate" ? "Sending check finished." : `Action ${kind}d.`);
+      onNotice(graphActionNotice(kind));
       await load();
     } catch (error) {
       const verb = kind === "evaluate" ? "check" : kind;

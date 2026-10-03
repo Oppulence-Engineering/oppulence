@@ -7,6 +7,7 @@ import {
   accountGraphPrompt,
   graphCanvasEmptyState,
   graphInspectorPrompt,
+  graphActionNotice,
   graphAsOfLabel,
   graphChangedDetail,
   graphDetailLabel,
@@ -100,6 +101,11 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain("graphAsOfLabel(viewState.asOf)");
     expect(source).not.toContain("graph?.historical");
     expect(graphAsOfLabel("not-a-date")).toBe("As of not-a-date");
+    expect(graphActionNotice("evaluate")).toBe("Sending check finished.");
+    expect(graphActionNotice("approve")).toBe("Action approved.");
+    expect(graphActionNotice("reject")).toBe("Action rejected.");
+    expect(source).toContain("onNotice(graphActionNotice(kind))");
+    expect(source).not.toContain("`Action ${kind}d.`");
     expect(graphAsOfLabel("2026-09-30T13:00:00.000Z")).toMatch(/^As of /);
     expect(graphChangedDetail(["next_action", "health"])).toBe(
       "Changed since your last review: Next action, Health.",
