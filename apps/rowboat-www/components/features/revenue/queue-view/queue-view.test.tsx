@@ -73,6 +73,9 @@ describe("QueueView", () => {
         relationshipName: "Lumen Packet",
       }),
     ).toBe("Lumen Packet");
+    expect(source).toContain("priorityTone(action.priorityScore)");
+    expect(source).toContain("{tone.label}");
+    expect(source).not.toContain("{action.priorityScore}");
     expect(source).toContain("recoveryRecipientLabel(action)");
     expect(source).toContain("recoveryCompanyCaption(action)");
     expect(source).not.toContain('action.recipientEmail || "Unknown recipient"');

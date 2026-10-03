@@ -555,11 +555,8 @@ function ActionCard({
   return (
     <SimProductPanel className="overflow-hidden">
       <div className="flex items-start gap-4 px-4 py-3">
-        <div className="flex w-12 shrink-0 flex-col items-center">
-          <span className={cn("text-2xl font-semibold tabular-nums", tone.className)}>
-            {action.priorityScore}
-          </span>
-          <SimBadge className="mt-0.5" variant="amber">
+        <div className="flex shrink-0 flex-col items-center">
+          <SimBadge className={cn("mt-0.5", tone.className)} variant="amber">
             {tone.label}
           </SimBadge>
         </div>
