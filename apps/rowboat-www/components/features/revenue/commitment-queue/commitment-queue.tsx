@@ -1664,7 +1664,7 @@ function StatusBadge({ state }: { state: string }) {
     <Badge
       variant="outline"
       className={cn(
-        "rounded-[2px] capitalize",
+        "rounded-[2px]",
         state === "met" && "border-emerald-500/40 text-emerald-600 dark:text-emerald-400",
         state === "at_risk" && "border-amber-500/40 text-amber-600 dark:text-amber-400",
         (state === "missed" || state === "disputed") &&

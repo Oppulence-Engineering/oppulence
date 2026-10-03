@@ -593,6 +593,24 @@ export function companyCategoriesLabel(
 }
 
 /**
+ * The people row counts title, company, seniority, and location. A blank
+ * string is not one of those facts, and a blank title must not hide a role
+ * that was saved on the company membership.
+ */
+export function personSheetProfile(input: {
+  title?: string | null;
+  fallbackTitle?: string | null;
+  company?: string | null;
+  seniority?: string | null;
+  location?: string | null;
+}): string[] {
+  const title = input.title?.trim() || input.fallbackTitle?.trim() || "";
+  return [title, input.company, input.seniority, input.location]
+    .map((field) => field?.trim() ?? "")
+    .filter(Boolean);
+}
+
+/**
  * A filtered directory can be empty because nothing matched. That is not the
  * same as a workspace that has never had a company.
  */
@@ -3562,7 +3580,7 @@ export function RelationshipSheet({
                   <dd className="text-primary/75">{companyName(data.relationship)}</dd>
                   <dt className="text-primary/40">Category</dt>
                   <dd className="text-primary/75">
-                    {data.relationship.categories?.join(", ") || "Not filled in"}
+                    {companyCategoriesLabel(data.relationship.categories)}
                   </dd>
                   <dt className="text-primary/40">Description</dt>
                   <dd className="text-primary/75">
@@ -4140,12 +4158,13 @@ export function RelationshipSheet({
                         {data.participants.map((participant) => {
                           const person = participant.person;
                           const departed = person?.employmentStatus === "departed";
-                          const profile = [
-                            person?.title || participant.title,
-                            person ? personCompanyTitle(person) : undefined,
-                            person ? personSeniorityLabel(person.seniority) : undefined,
-                            person?.location,
-                          ].filter(Boolean);
+                          const profile = personSheetProfile({
+                            title: person?.title,
+                            fallbackTitle: participant.title,
+                            company: person ? personCompanyTitle(person) : undefined,
+                            seniority: person ? personSeniorityLabel(person.seniority) : undefined,
+                            location: person?.location,
+                          });
                           const cited = (personAttributes[person?.id ?? ""] ?? []).filter(
                             (attribute) =>
                               attribute.sourceType === "external_research" &&

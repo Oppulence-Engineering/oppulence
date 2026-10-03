@@ -10,6 +10,7 @@ import {
   companyName,
   companyDirectoryCount,
   companyCategoriesLabel,
+  personSheetProfile,
   companyDirectoryRemainderLabel,
   attentionForCompanyDirectory,
   companyDirectoryTitle,
@@ -111,7 +112,22 @@ describe("RelationshipsView", () => {
     expect(companyCategoriesLabel(undefined)).toBe("Not filled in");
     expect(companyCategoriesLabel(["  ", ""])).toBe("Not filled in");
     expect(source).toContain("companyCategoriesLabel(relationship.categories)");
+    expect(source).toContain("companyCategoriesLabel(data.relationship.categories)");
+    expect(source).not.toContain('data.relationship.categories?.join(", ")');
     expect(source).not.toContain("relationship.categories?.[0]");
+    expect(personSheetProfile({ title: "  ", fallbackTitle: "CFO", location: "  " })).toEqual([
+      "CFO",
+    ]);
+    expect(personSheetProfile({ title: "  ", location: "   " })).toEqual([]);
+    expect(
+      personSheetProfile({
+        title: "Finance lead",
+        company: "Acme",
+        seniority: "VP",
+        location: "Lisbon",
+      }),
+    ).toEqual(["Finance lead", "Acme", "VP", "Lisbon"]);
+    expect(source).toContain("personSheetProfile({");
     expect(source).not.toContain(
       'className="bg-background-100 text-[11px] capitalize text-primary/60"',
     );

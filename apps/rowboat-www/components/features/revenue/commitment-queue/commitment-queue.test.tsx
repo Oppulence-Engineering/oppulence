@@ -298,6 +298,14 @@ describe("CommitmentQueue", () => {
     await userEvent.click(screen.getByRole("tab", { name: "Evidence" }));
     expect(component).toHaveTextContent("I will send the signed security packet by Friday.");
     expect(screen.getAllByText("At risk").length).toBeGreaterThan(0);
+    for (const label of screen.getAllByText("At risk")) {
+      expect(label).not.toHaveClass("capitalize");
+    }
+    const queueSource = fs.readFileSync(
+      path.join(import.meta.dirname, "commitment-queue.tsx"),
+      "utf8",
+    );
+    expect(queueSource).not.toContain('"rounded-[2px] capitalize"');
     expect(
       screen.queryByRole("button", { name: /Run 6-month Promise Leak Audit/ }),
     ).not.toBeInTheDocument();
