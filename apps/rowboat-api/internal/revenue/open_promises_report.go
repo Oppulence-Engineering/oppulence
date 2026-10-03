@@ -20,9 +20,8 @@ var emailShapedAccount = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
 // The Open Promises report is the wedge (one-pager §11).
 //
 // Rather than demo the product, connect a prospect's sources and hand them a
-// document that says: here are the commitments your team made in the last 90
-// days that have no evidence of fulfilment, and here is the exact message that
-// created each one.
+// document that says: here are the promises from the last 90 days with no
+// evidence they were kept, and here is the exact message that created each one.
 //
 // The artifact sells itself and it is also the onboarding, so the sale and the
 // activation are one motion. That is why this lives next to the scan rather
@@ -213,7 +212,7 @@ func domainCompanyLabel(domain string) string {
 func (r *OpenPromisesReport) Markdown() string {
 	var b strings.Builder
 	b.WriteString("# Open promises\n\n")
-	fmt.Fprintf(&b, "Commitments found in the last %d days with no evidence of fulfilment.\n\n",
+	fmt.Fprintf(&b, "Promises from the last %d days with no evidence they were kept.\n\n",
 		r.LookbackDays)
 	fmt.Fprintf(&b, "- **%d** promises we made\n", r.OutboundCount)
 	fmt.Fprintf(&b, "- **%d** promises made to us\n", r.InboundCount)
@@ -236,7 +235,7 @@ func (r *OpenPromisesReport) Markdown() string {
 		accounts = append(accounts, account)
 	}
 	sort.Strings(accounts)
-	b.WriteString("| Account | Open promises |\n|---|---|\n")
+	b.WriteString("| Company | Open promises |\n|---|---|\n")
 	for _, account := range accounts {
 		fmt.Fprintf(&b, "| %s | %d |\n", account, r.ByAccount[account])
 	}

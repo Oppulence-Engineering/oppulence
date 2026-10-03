@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 )
 
 // One-pager §3: the exportable record is what makes the ledger useful in the
@@ -140,5 +142,49 @@ func TestExportedRecordUsesHumanStateNames(t *testing.T) {
 	}
 	if strings.Contains(doc, "at_risk") {
 		t.Fatalf("raw enum leaked into the document:\n%s", doc)
+	}
+}
+
+// The forwarded record names the company, the guess, and the history the way
+// the company page does. A raw token in that email reads as a database dump.
+func TestCommitmentRecordMarkdownUsesCompanyWords(t *testing.T) {
+	when := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	due := when.Add(12 * time.Hour)
+	record := &CommitmentRecord{
+		GeneratedAt: when,
+		Account:     "Harbor Ledger",
+		Direction:   "promised_by_me",
+		Text:        "Send the harbor note",
+		State:       exportedCommitmentState(&ent.Commitment{Status: "open", Acceptance: "candidate", DueAt: &due}, when),
+		DueAt:       &due,
+		Evidence: []ExportedEvidence{{
+			Source:      "gmail",
+			Excerpt:     "I'll send the harbor note.",
+			OccurredAt:  when,
+			ContentHash: "sha256:harbor",
+		}},
+		History: []ExportedTransition{{
+			Version:    1,
+			Kind:       "internally_confirmed",
+			ActorType:  "ai_candidate",
+			OccurredAt: when,
+		}},
+	}
+	doc := record.Markdown()
+	for _, want := range []string{
+		"| Company | Harbor Ledger |",
+		"| State | Review |",
+		"— Gmail, ",
+		"**Confirmed in this workspace**",
+		"(A suggestion)",
+	} {
+		if !strings.Contains(doc, want) {
+			t.Errorf("record missing %q\n---\n%s", want, doc)
+		}
+	}
+	for _, leaked := range []string{"| Account |", "at_risk", "internally_confirmed", "ai_candidate", "gmail,"} {
+		if strings.Contains(doc, leaked) {
+			t.Errorf("record leaked %q\n---\n%s", leaked, doc)
+		}
 	}
 }

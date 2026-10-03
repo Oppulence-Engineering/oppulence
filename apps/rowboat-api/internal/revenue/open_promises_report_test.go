@@ -56,10 +56,10 @@ func seedReportCommitment(
 	return row
 }
 
-// One-pager §11: the report says "here are the commitments your team made in
-// the last 90 days that have no evidence of fulfilment, and here is the exact
-// message that created each one." It is the sale and the onboarding at once,
-// so it must be readable with nothing else configured.
+// One-pager §11: the report says which promises from the last 90 days have no
+// evidence they were kept, and here is the exact message that created each
+// one. It is the sale and the onboarding at once, so it must be readable with
+// nothing else configured.
 func TestOpenPromisesReportShowsBothDirectionsWithSources(t *testing.T) {
 	f := newFixture(t)
 	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
@@ -113,7 +113,8 @@ func TestOpenPromisesReportShowsBothDirectionsWithSources(t *testing.T) {
 	doc := report.Markdown()
 	for _, want := range []string{
 		"# Open promises",
-		"last 90 days",
+		"Promises from the last 90 days with no evidence they were kept.",
+		"| Company | Open promises |",
 		"promises we made",
 		"promises made to us",
 		"Ship the migration",
@@ -128,6 +129,9 @@ func TestOpenPromisesReportShowsBothDirectionsWithSources(t *testing.T) {
 	}
 	if strings.Contains(doc, "https://example.com/old") {
 		t.Fatal("report cited evidence outside the scan window")
+	}
+	if strings.Contains(doc, "fulfilment") || strings.Contains(doc, "| Account |") {
+		t.Fatalf("report still talks about accounts or fulfilment:\n%s", doc)
 	}
 }
 
