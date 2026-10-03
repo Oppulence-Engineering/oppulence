@@ -1009,6 +1009,10 @@ it("does not offer a meeting import that opens the company directory", () => {
   expect(source).not.toContain("Import meeting evidence");
   expect(source).not.toContain("import reviewed meeting evidence");
   expect(source).not.toContain("two-sided");
+  expect(source).toContain(
+    "md:left-[var(--shell-sidebar-offset,calc(0.625rem+1px+var(--shell-sidebar-width,252px)))]",
+  );
+  expect(source).not.toContain("md:left-[285px]");
   expect(source).toContain("Add a company");
   expect(source).toContain("openCompanyCreate(onOpenAccounts)");
   expect(source).toContain('if (filter === "overdue" && item.urgency !== "overdue") return false;');

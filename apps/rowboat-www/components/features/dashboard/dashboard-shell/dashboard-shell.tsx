@@ -82,6 +82,12 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
     setSidebarOpen(!sidebarOpen);
   }, [setSidebarOpen, sidebarOpen]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    root.toggleAttribute("data-sidebar-collapsed", !sidebarOpen);
+    return () => root.removeAttribute("data-sidebar-collapsed");
+  }, [sidebarOpen]);
+
   /**
    * Shell shortcuts live with the controls they operate. The editable-target
    * guard prevents navigation chrome from consuming normal composer input.

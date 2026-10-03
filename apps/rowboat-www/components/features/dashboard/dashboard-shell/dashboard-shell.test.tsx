@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   clearSelectedResource: vi.fn(),
   setPaletteOpen: vi.fn(),
   setSidebarOpen: vi.fn(),
+  sidebarOpen: true,
 }));
 
 vi.mock("@/components/features/dashboard/app-shell/app-shell", () => ({
@@ -67,7 +68,7 @@ vi.mock("@/hooks/dashboard/use-product-route-state", () => ({
   }),
 }));
 vi.mock("@/lib/console/console-prefs", () => ({
-  useBooleanPref: () => [true, mocks.setSidebarOpen],
+  useBooleanPref: () => [mocks.sidebarOpen, mocks.setSidebarOpen],
 }));
 vi.mock("@/lib/icons", () => ({ SidebarSimple: () => <span aria-hidden /> }));
 
@@ -85,8 +86,13 @@ function AskAboutAcme() {
 describe("DashboardShell", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.sidebarOpen = true;
+    document.documentElement.removeAttribute("data-sidebar-collapsed");
   });
-  afterEach(cleanup);
+  afterEach(() => {
+    cleanup();
+    document.documentElement.removeAttribute("data-sidebar-collapsed");
+  });
 
   it("opens the company a palette result names", () => {
     const source = fs.readFileSync(path.join(import.meta.dirname, "dashboard-shell.tsx"), "utf8");
@@ -133,5 +139,25 @@ describe("DashboardShell", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Ask" }));
     expect(screen.getByLabelText("Command palette")).toHaveAttribute("data-seed", "");
+  });
+
+  it("tells portaled sheets when the rail is collapsed", () => {
+    const source = fs.readFileSync(path.join(import.meta.dirname, "dashboard-shell.tsx"), "utf8");
+    const theme = fs.readFileSync(
+      path.join(import.meta.dirname, "../../../../app/(product)/product-sim-theme.css"),
+      "utf8",
+    );
+    expect(source).toContain('root.toggleAttribute("data-sidebar-collapsed", !sidebarOpen)');
+    expect(theme).toContain("--shell-sidebar-screen-offset:");
+    expect(theme).toContain("--shell-sidebar-offset:");
+    expect(theme).toContain("html[data-sidebar-collapsed]");
+
+    render(<DashboardShell aria-label="Dashboard">Content</DashboardShell>);
+    expect(document.documentElement).not.toHaveAttribute("data-sidebar-collapsed");
+
+    cleanup();
+    mocks.sidebarOpen = false;
+    render(<DashboardShell aria-label="Dashboard">Content</DashboardShell>);
+    expect(document.documentElement).toHaveAttribute("data-sidebar-collapsed", "");
   });
 });

@@ -1230,7 +1230,7 @@ export function CommitmentQueue({
       </SimProductPanel>
 
       {selected ? (
-        <div className="fixed inset-y-0 right-0 z-40 flex bg-background md:left-[285px]">
+        <div className="fixed inset-y-0 right-0 z-40 flex bg-background md:left-[var(--shell-sidebar-offset,calc(0.625rem+1px+var(--shell-sidebar-width,252px)))]">
           <aside className="flex w-[320px] shrink-0 flex-col border-r border-border bg-background">
             <div className="flex h-12 items-center gap-2 border-b border-border px-3">
               <Button
