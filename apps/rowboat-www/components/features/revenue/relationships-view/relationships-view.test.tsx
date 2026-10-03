@@ -66,10 +66,14 @@ import {
   mailMessageCountLabel,
   mailReplyLabel,
   reviewEvidenceKindLabel,
+  acceptedPromiseLabel,
   mutualPlanApproveLabel,
   mutualPlanHeading,
   mutualPlanItemLine,
   mutualPlanShareLabel,
+  promiseLinkEndLabel,
+  promiseLinkKindLabel,
+  promiseLinkTitle,
   mutualPlanStatusLabel,
   deletionReceiptStatusLabel,
   rankingFactorLabel,
@@ -590,6 +594,22 @@ describe("RelationshipsView", () => {
     );
     expect(mutualPlanApproveLabel()).toBe("Approve this plan");
     expect(mutualPlanShareLabel()).toBe("Draft an email to share this plan");
+    expect(acceptedPromiseLabel("Send the cedar notes")).toBe("Accept “Send the cedar notes”");
+    expect(acceptedPromiseLabel("  ")).toBe("Accept “this promise”");
+    expect(promiseLinkTitle(2)).toBe("Promise links (2)");
+    expect(promiseLinkKindLabel("blocks")).toBe("Blocks");
+    expect(promiseLinkKindLabel("requires")).toBe("Requires");
+    expect(promiseLinkKindLabel("supersedes")).toBe("Replaces");
+    expect(promiseLinkEndLabel("")).toBe("Unknown promise");
+    expect(promiseLinkEndLabel("Send the cedar notes")).toBe("Send the cedar notes");
+    expect(source).toContain("acceptedPromiseLabel(item.text)");
+    expect(source).toContain("promiseLinkTitle(data.commitmentDependencies.length)");
+    expect(source).toContain("promiseLinkKindLabel(dependency.kind)");
+    expect(source).toContain("promiseLinkEndLabel(from?.text)");
+    expect(source).not.toContain("Confirm accepted:");
+    expect(source).not.toContain("Commitment graph");
+    expect(source).not.toContain("{dependency.kind}");
+    expect(source).not.toContain("Unknown commitment");
     expect(source).toContain("mutualPlanHeading(plan.status, plan.currentRevision.version)");
     expect(source).toContain("mutualPlanItemLine(item.title, item.ownerParticipantRef)");
     expect(source).toContain("mutualPlanApproveLabel()");

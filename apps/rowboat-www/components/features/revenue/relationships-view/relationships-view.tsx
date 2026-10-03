@@ -2342,6 +2342,35 @@ export function mutualPlanShareLabel(): string {
   return "Draft an email to share this plan";
 }
 
+/** A confirmed promise can be marked accepted. The button names that promise. */
+export function acceptedPromiseLabel(text: string): string {
+  const name = text.trim() || "this promise";
+  return `Accept “${name}”`;
+}
+
+/** Dependencies are a small graph. The sheet names the links. */
+export function promiseLinkTitle(count: number): string {
+  return `Promise links (${count})`;
+}
+
+export function promiseLinkKindLabel(kind: string): string {
+  switch (kind) {
+    case "blocks":
+      return "Blocks";
+    case "requires":
+      return "Requires";
+    case "supersedes":
+      return "Replaces";
+    default:
+      return humanize(kind);
+  }
+}
+
+export function promiseLinkEndLabel(text?: string | null): string {
+  const name = text?.trim() ?? "";
+  return name || "Unknown promise";
+}
+
 /** A deletion receipt status is how far the delete got, not a one-word token. */
 export function deletionReceiptStatusLabel(status: string): string {
   switch (status) {
@@ -4458,7 +4487,7 @@ export function RelationshipSheet({
                 {data.commitmentDependencies.length ? (
                   <section>
                     <SectionTitle
-                      title={`Commitment graph (${data.commitmentDependencies.length})`}
+                      title={promiseLinkTitle(data.commitmentDependencies.length)}
                     />
                     <ul className="mt-2 space-y-2 text-xs">
                       {data.commitmentDependencies.map((dependency) => {
@@ -4471,13 +4500,13 @@ export function RelationshipSheet({
                         return (
                           <li key={dependency.dependencyId} className="border border-border p-3">
                             <Label className="font-normal">
-                              {from?.text ?? "Unknown commitment"}
+                              {promiseLinkEndLabel(from?.text)}
                             </Label>
-                            <Badge variant="secondary" className="mx-2 capitalize">
-                              {dependency.kind}
+                            <Badge variant="secondary" className="mx-2">
+                              {promiseLinkKindLabel(dependency.kind)}
                             </Badge>
                             <Label className="font-normal">
-                              {to?.text ?? "Unknown commitment"}
+                              {promiseLinkEndLabel(to?.text)}
                             </Label>
                           </li>
                         );
@@ -4531,13 +4560,13 @@ export function RelationshipSheet({
                                 appendCommitmentTransition(id, item.id, {
                                   kind: "accepted",
                                   idempotencyKey: `user-accepted:${item.id}`,
-                                  reason: "User confirmed counterparty acceptance.",
+                                  reason: "They accepted this promise.",
                                   evidenceRefs: [`user-decision:${item.id}:accepted`],
                                 }),
                               )
                             }
                           >
-                            Confirm accepted: {item.text}
+                            {acceptedPromiseLabel(item.text)}
                           </Button>
                         ))}
                     </div>
