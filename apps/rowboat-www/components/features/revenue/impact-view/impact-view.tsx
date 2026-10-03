@@ -67,8 +67,8 @@ export function overdueDirectionLines(
 }
 
 /**
- * Impact's relationship total counts People records too. The "of N accounts"
- * line is about companies, so a person saved from People is not an account.
+ * Impact's relationship total counts People records too. The "of N companies"
+ * line is about companies, so a person saved from People is not a company.
  * The directory is paged. A full first page is not the portfolio, and the
  * count says another company may still be past it. Until that list has
  * loaded, the impact total is the only number available.
@@ -261,16 +261,16 @@ export function ImpactView({
               What missed communication is putting at risk now
             </CardTitle>
             <CardDescription className="mt-1 max-w-3xl text-xs text-primary/50">
-              The score is deterministic: each account contributes its highest open risk rank,
+              The score is deterministic: each company contributes its highest open risk rank,
               divided across the active portfolio. No invented contract or pipeline value.
             </CardDescription>
           </div>
           <Badge className="gap-2 font-normal text-primary/50" variant="secondary">
-            <WarningDiamond className="size-4 text-amber-500" /> Updated from live account state
+            <WarningDiamond className="size-4 text-amber-500" /> Updated from live company state
           </Badge>
         </CardHeader>
         {/* Exposure caused by a broken source is a statement about us, not
-            about the customer's accounts. Rendered as portfolio risk it reads
+            about the customer's companies. Rendered as portfolio risk it reads
             as "your business is on fire" when the truth is "we cannot see your
             mail" — so when degradation drives most of the exposure, that is
             said first, before any score. */}
@@ -278,18 +278,18 @@ export function ImpactView({
           <Alert className="rounded-none border-x-0 border-t border-amber-500/40 bg-amber-500/[0.06]">
             <WarningDiamond className="size-4 text-amber-500" />
             <AlertTitle className="text-[13px] text-primary">
-              This score reflects missing data, not account behaviour.
+              This score reflects missing data, not company behaviour.
             </AlertTitle>
             <AlertDescription className="text-[13px] text-primary/60">
-              {degradedCount} of {accountTotal} accounts are exposed because a connected source
+              {degradedCount} of {accountTotal} companies are exposed because a connected source
               stopped reporting. Reconnect it before reading these numbers as risk.
             </AlertDescription>
           </Alert>
         ) : null}
         <div className="grid grid-cols-2 divide-x divide-y divide-border md:grid-cols-4 md:divide-y-0">
           <Stat label="Portfolio risk score" value={`${riskScore}/100`} />
-          <Stat label={`At-risk accounts of ${accountTotal}`} value={atRiskShown} />
-          <Stat label="Critical accounts" value={data.criticalRelationships} />
+          <Stat label={`At-risk companies of ${accountTotal}`} value={atRiskShown} />
+          <Stat label="Critical companies" value={data.criticalRelationships} />
           <Stat label="Overdue promises" value={data.overdueCommitments} />
         </div>
         <div className="grid border-t border-border md:grid-cols-[1fr_1fr] md:divide-x md:divide-border">
@@ -300,7 +300,7 @@ export function ImpactView({
             <Line label="Longest overdue" value={data.longestOverdueDays} suffix=" days" />
           </dl>
           <div className="border-t border-border p-4 md:border-t-0">
-            <p className="mb-2 text-xs font-medium text-primary/55">Why accounts are exposed</p>
+            <p className="mb-2 text-xs font-medium text-primary/55">Why companies are exposed</p>
             {riskReasons.length ? (
               <ul className="space-y-1.5 text-sm">
                 {riskReasons.map((risk) => (
