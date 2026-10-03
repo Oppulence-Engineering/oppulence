@@ -686,6 +686,7 @@ function Inspector({
   const hiddenConnections = connected.length - shownConnections.length;
   const actionId = node.kind === "action" ? node.resourceRef : undefined;
   const evidenceNodes = graphDetailNodes(node, graph.nodes);
+  const inspectorSummary = graphInspectorSummary(node);
   const shownEvidence = expandedDetails ? evidenceNodes : evidenceNodes.slice(0, GRAPH_DETAIL_PAGE);
   const hiddenEvidence = evidenceNodes.length - shownEvidence.length;
 
@@ -709,8 +710,8 @@ function Inspector({
         </div>
       </div>
 
-      {node.summary ? (
-        <p className="mt-3 text-xs leading-5 text-primary/60">{node.summary}</p>
+      {inspectorSummary ? (
+        <p className="mt-3 text-xs leading-5 text-primary/60">{inspectorSummary}</p>
       ) : null}
       <div className="mt-4 border border-border bg-background px-2 py-2">
         <p className="font-mono text-[9px] uppercase tracking-wide text-primary/35">
@@ -1142,6 +1143,19 @@ export function graphEdgeLabel(label: string): string {
     default:
       return label.trim();
   }
+}
+
+/**
+ * A quote that repeats the node title is not a second fact. The confirmation
+ * still shows the promise sentence, because that title is the event name.
+ */
+export function graphInspectorSummary(node: {
+  label?: string | null;
+  summary?: string | null;
+}): string | undefined {
+  const summary = node.summary?.trim() ?? "";
+  if (!summary || summary === (node.label?.trim() ?? "")) return undefined;
+  return summary;
 }
 
 /**

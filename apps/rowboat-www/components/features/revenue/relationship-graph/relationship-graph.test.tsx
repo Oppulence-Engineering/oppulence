@@ -25,6 +25,7 @@ import {
   graphListRemainderLabel,
   graphDetailNodes,
   graphEvidenceChipLabel,
+  graphInspectorSummary,
   graphLayoutLabel,
   graphAccountChoice,
   graphSavedViewChoice,
@@ -394,6 +395,14 @@ describe("RelationshipGraphWorkspace", () => {
       ).map((item) => item.id),
     ).toEqual(["evidence:quote"]);
     expect(source).toContain("graphDetailNodes(node, graph.nodes)");
+    expect(graphInspectorSummary({ label: "Send the quay echo", summary: "Send the quay echo" })).toBeUndefined();
+    expect(graphInspectorSummary({ label: "Send the quay echo", summary: "  Send the quay echo  " })).toBeUndefined();
+    expect(graphInspectorSummary({ label: "Promise confirmed", summary: "Send the quay echo" })).toBe(
+      "Send the quay echo",
+    );
+    expect(graphInspectorSummary({ label: "Send the quay echo", summary: "   " })).toBeUndefined();
+    expect(source).toContain("graphInspectorSummary(node)");
+    expect(source).toContain("{inspectorSummary}");
     expect(source).toContain("graphEvidenceChipLabel(evidence)");
     expect(source).not.toContain('{evidence.source || "detail"}');
     expect(source).toContain('graphCountLabel(graphNodes.length, "item", "items")');
