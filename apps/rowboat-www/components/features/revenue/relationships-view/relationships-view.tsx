@@ -299,18 +299,40 @@ export function companyDomainLabel(domain: string | null | undefined): string {
   return domain?.trim() || "Not filled in";
 }
 
-/** A governed recommendation stores policy and approval as tokens. The card names the state. */
-export function recommendationStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    pending: "Pending",
-    passed: "Passed",
-    review_required: "Needs review",
-    blocked: "Blocked",
-    stale: "Out of date",
-    approved: "Approved",
-    rejected: "Rejected",
-  };
-  return labels[status] ?? humanize(status);
+/**
+ * Policy on a recommendation uses the words Recovery and the graph already
+ * use. A passed check is cleared, and a check that has not run is not pending
+ * approval.
+ */
+export function recommendationPolicyLabel(status: string): string {
+  switch (status) {
+    case "passed":
+      return "Cleared";
+    case "review_required":
+      return "Review required";
+    case "blocked":
+      return "Blocked";
+    case "stale":
+      return "Re-check needed";
+    case "pending":
+      return "Not checked";
+    default:
+      return humanize(status);
+  }
+}
+
+/** Approval on a recommendation uses the words the graph inspector already uses. */
+export function recommendationApprovalLabel(status: string): string {
+  switch (status) {
+    case "pending":
+      return "Awaiting approval";
+    case "approved":
+      return "Approved";
+    case "rejected":
+      return "Rejected";
+    default:
+      return humanize(status);
+  }
 }
 
 export { participantRoleLabel };
@@ -4131,7 +4153,7 @@ export function RelationshipSheet({
                               priority {action.priorityScore}
                             </Badge>
                             <Badge className="font-normal" variant="secondary">
-                              {recommendationStatusLabel(action.policyStatus)}
+                              {recommendationPolicyLabel(action.policyStatus)}
                             </Badge>
                           </div>
                           {action.evidence.length > 0 ? (
@@ -4179,7 +4201,7 @@ export function RelationshipSheet({
                             </div>
                           ) : (
                             <Badge variant="secondary" className="mt-3">
-                              {recommendationStatusLabel(action.approvalStatus)}
+                              {recommendationApprovalLabel(action.approvalStatus)}
                             </Badge>
                           )}
                         </li>
