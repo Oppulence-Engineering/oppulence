@@ -15,7 +15,7 @@ import {
   consoleResourceRows,
   fetchConsoleResources,
 } from "@/hooks/queries/utils/fetch-console";
-import { companyName } from "@/lib/revenue/revenue-records";
+import { companyName, promiseDirectionLabel } from "@/lib/revenue/revenue-records";
 import { getRelationshipGraph } from "@/lib/revenue/revenue";
 import {
   activitySourceLabel,
@@ -754,6 +754,11 @@ function Inspector({
           [
             ["Role", "other", node.role ? participantRoleLabel(node.role) : undefined],
             ["Status", "status", node.status],
+            [
+              "Direction",
+              "other",
+              node.kind === "commitment" ? graphPromiseDirection(node.metadata.direction) : undefined,
+            ],
             ["Health", "health", node.health],
             ["Lifecycle", "lifecycle", node.lifecycle],
             ["Approval", "approval", node.approvalStatus],
@@ -1123,6 +1128,18 @@ export function graphEdgeLabel(label: string): string {
     default:
       return label.trim();
   }
+}
+
+/**
+ * The company record says who owes a promise. The graph inspector used to
+ * leave that off, so an open promise had a status and no side.
+ */
+export function graphPromiseDirection(direction: unknown): string | undefined {
+  if (direction !== "promised_by_me" && direction !== "promised_by_them" && direction !== "mutual") {
+    return undefined;
+  }
+  const label = promiseDirectionLabel(direction);
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 /** A graph field is a stored token. A date before the record existed is not a status. */

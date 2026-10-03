@@ -13,6 +13,7 @@ import {
   graphDetailLabel,
   graphExecutionLabel,
   graphNodeFieldLabel,
+  graphPromiseDirection,
   graphNodeSummaryLabel,
   graphStateFromSearch,
   graphCountLabel,
@@ -146,6 +147,12 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphNodeFieldLabel("commitment", "status", "waived")).toBe("Waived");
     expect(graphNodeFieldLabel("commitment", "status", "missed")).toBe("Missed");
     expect(graphNodeFieldLabel("commitment", "status", "review")).toBe("Review");
+    expect(graphPromiseDirection("promised_by_them")).toBe("They owe us");
+    expect(graphPromiseDirection("promised_by_me")).toBe("We owe them");
+    expect(graphPromiseDirection("mutual")).toBe("We both owe");
+    expect(graphPromiseDirection("local-user")).toBeUndefined();
+    expect(graphPromiseDirection("")).toBeUndefined();
+    expect(source).toContain("graphPromiseDirection(node.metadata.direction)");
     expect(graphNodeFieldLabel("action", "status", "open")).toBe("Held");
     expect(graphNodeFieldLabel("action", "status", "snoozed")).toBe("Snoozed");
     expect(graphNodeFieldLabel("action", "policy", "passed")).toBe("Cleared");
