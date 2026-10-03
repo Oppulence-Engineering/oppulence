@@ -136,10 +136,7 @@ func personVisibleLabelMatch(term string) predicate.Person {
 	}
 	var preds []predicate.Person
 	if strings.Contains("individual contributor", needle) {
-		preds = append(preds, person.And(
-			personTextBlank(person.TitleIsNil, person.TitleEQ),
-			person.SeniorityEQ("ic"),
-		))
+		preds = append(preds, personPrintsIndividualContributor())
 	}
 	unfilled := strings.Contains("not filled in", needle)
 	filled := strings.Contains("detail filled in", needle)
@@ -152,14 +149,12 @@ func personVisibleLabelMatch(term string) predicate.Person {
 		preds = append(preds, person.Not(personUnfilled()))
 	}
 	if strings.Contains("view profile", needle) {
-		preds = append(preds, person.And(
-			person.LinkedinURLNotNil(),
-			person.LinkedinURLNEQ(""),
-		))
+		preds = append(preds, personPrintsViewProfile())
 	}
 	// The address sits under the name. A missing one is the words "No email".
+	// Spaces are the same as no address.
 	if strings.Contains("no email", needle) {
-		preds = append(preds, personTextBlank(person.PrimaryEmailIsNil, person.PrimaryEmailEQ))
+		preds = append(preds, personTextMissing(person.FieldPrimaryEmail))
 	}
 	// Another name is printed as "Also known as". The stored list is JSON.
 	if strings.Contains("also known as", needle) {
@@ -531,8 +526,7 @@ func personDetailCount(n int) predicate.Person {
 				}
 				column := s.C(field)
 				b.WriteString(fmt.Sprintf(
-					"(CASE WHEN %s IS NOT NULL AND %s <> '' THEN 1 ELSE 0 END)",
-					column,
+					"(CASE WHEN trim(coalesce(%s, '')) <> '' THEN 1 ELSE 0 END)",
 					column,
 				))
 			}
@@ -548,26 +542,56 @@ func personDetailCount(n int) predicate.Person {
 	})
 }
 
-func personTextBlank(isNil func() predicate.Person, eq func(string) predicate.Person) predicate.Person {
-	return person.Or(isNil(), eq(""))
-}
-
 // personUnfilled is the Details cell "Not filled in": no profile fact, and
 // employment still unknown. A primary email is the address under the name,
-// not one of those details.
+// not one of those details. Spaces are not a fact.
 func personUnfilled() predicate.Person {
 	return person.And(
-		personTextBlank(person.TitleIsNil, person.TitleEQ),
-		personTextBlank(person.SeniorityIsNil, person.SeniorityEQ),
-		personTextBlank(person.OrgNameIsNil, person.OrgNameEQ),
-		personTextBlank(person.OrgDomainIsNil, person.OrgDomainEQ),
-		personTextBlank(person.LocationIsNil, person.LocationEQ),
-		personTextBlank(person.LinkedinURLIsNil, person.LinkedinURLEQ),
-		personTextBlank(person.DepartmentIsNil, person.DepartmentEQ),
-		personTextBlank(person.TimezoneIsNil, person.TimezoneEQ),
-		personTextBlank(person.LocaleIsNil, person.LocaleEQ),
+		personTextMissing(person.FieldTitle),
+		personTextMissing(person.FieldSeniority),
+		personTextMissing(person.FieldOrgName),
+		personTextMissing(person.FieldOrgDomain),
+		personTextMissing(person.FieldLocation),
+		personTextMissing(person.FieldLinkedinURL),
+		personTextMissing(person.FieldDepartment),
+		personTextMissing(person.FieldTimezone),
+		personTextMissing(person.FieldLocale),
 		person.Or(person.EmploymentStatusEQ("unknown"), person.EmploymentStatusEQ("")),
 	)
+}
+
+// personPrintsIndividualContributor is a blank title with seniority "ic".
+// The Role cell then says "Individual contributor".
+func personPrintsIndividualContributor() predicate.Person {
+	return person.And(
+		personTextMissing(person.FieldTitle),
+		predicate.Person(func(s *sql.Selector) {
+			s.Where(sql.P(func(b *sql.Builder) {
+				b.WriteString(fmt.Sprintf(
+					"lower(trim(coalesce(%s, ''))) = 'ic'",
+					s.C(person.FieldSeniority),
+				))
+			}))
+		}),
+	)
+}
+
+// personPrintsViewProfile is the LinkedIn cell "View profile". A web address
+// qualifies. Spaces and another scheme, such as javascript:, do not.
+func personPrintsViewProfile() predicate.Person {
+	return predicate.Person(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			trimmed := fmt.Sprintf("trim(coalesce(%s, ''))", s.C(person.FieldLinkedinURL))
+			colon := "instr"
+			if s.Dialect() == dialect.Postgres {
+				colon = "strpos"
+			}
+			b.WriteString(fmt.Sprintf(
+				"%s <> '' AND (lower(%s) LIKE 'http://%%' OR lower(%s) LIKE 'https://%%' OR %s(%s, ':') = 0)",
+				trimmed, trimmed, trimmed, colon, trimmed,
+			))
+		}))
+	})
 }
 
 func personMatchAll() predicate.Person {
@@ -656,17 +680,23 @@ func personAliasContains(term string) predicate.Person {
 	})
 }
 
-// personHasAlias is a person whose row says "Also known as". An empty list is
-// "[]", two characters, so anything longer is another name.
+// personHasAlias is a person whose row says "Also known as". A list of blank
+// names is the same as no list.
 func personHasAlias() predicate.Person {
 	return predicate.Person(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
 			column := s.C(person.FieldAliases)
 			if s.Dialect() == dialect.Postgres {
-				b.WriteString(fmt.Sprintf("length(coalesce(%s::text, '')) > 2", column))
-			} else {
-				b.WriteString(fmt.Sprintf("length(coalesce(%s, '')) > 2", column))
+				b.WriteString(fmt.Sprintf(
+					"EXISTS (SELECT 1 FROM jsonb_array_elements_text(coalesce(%s, '[]'::jsonb)) AS alias WHERE trim(alias) <> '')",
+					column,
+				))
+				return
 			}
+			b.WriteString(fmt.Sprintf(
+				"EXISTS (SELECT 1 FROM json_each(coalesce(%s, '[]')) WHERE trim(json_each.value) <> '')",
+				column,
+			))
 		}))
 	})
 }

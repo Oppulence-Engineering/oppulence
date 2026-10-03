@@ -750,6 +750,74 @@ func TestPersonSearchFindsTheAlias(t *testing.T) {
 	}
 }
 
+func TestPersonSearchIgnoresBlankPrintedFacts(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	create := func(name string, apply func(*ent.PersonCreate)) {
+		t.Helper()
+		row := f.client.Person.Create().SetDisplayName(name).SetWorkspace(ws).SetUser(f.user)
+		if apply != nil {
+			apply(row)
+		}
+		if _, err := row.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	create("Blank Quinn", func(row *ent.PersonCreate) {
+		row.SetTitle("   ").
+			SetPrimaryEmail("   ").
+			SetLinkedinURL("   ").
+			SetAliases([]string{"  ", ""})
+	})
+	create("Indira Cole", func(row *ent.PersonCreate) {
+		row.SetTitle("   ").SetSeniority(" ic ")
+	})
+	create("Link Rivera", func(row *ent.PersonCreate) {
+		row.SetLinkedinURL("javascript:alert(1)")
+	})
+	create("Dee Cole", func(row *ent.PersonCreate) {
+		row.SetAliases([]string{"Dee"})
+	})
+	create("Morgan Lee", func(row *ent.PersonCreate) {
+		row.SetTitle("Account Executive").SetPrimaryEmail("morgan@lumen.example")
+	})
+
+	assertPeople := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := make([]string, 0, len(found.Persons))
+		for _, row := range found.Persons {
+			got = append(got, row.DisplayName)
+		}
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			seen := false
+			for _, gotName := range got {
+				if gotName == name {
+					seen = true
+				}
+			}
+			if !seen {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertPeople("Not filled in", "Blank Quinn", "Dee Cole")
+	assertPeople("1 detail filled in", "Indira Cole", "Link Rivera", "Morgan Lee")
+	assertPeople("No email", "Blank Quinn", "Indira Cole", "Link Rivera", "Dee Cole")
+	assertPeople("Also known as", "Dee Cole")
+	assertPeople("Individual contributor", "Indira Cole")
+	assertPeople("View profile")
+}
+
 func TestPersonSearchFindsTheTimezone(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
