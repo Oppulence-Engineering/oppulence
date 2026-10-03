@@ -722,12 +722,9 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 				observationNodeID := "evidence:" + observation.ID.String()
 				sourceNodeID := "source:" + relationshipID + ":" + observation.Source
 				occurredAt := observation.OccurredAt.UTC()
-				label := observation.Summary
-				if strings.TrimSpace(label) == "" {
-					label = graphEventLabel(observation.EventType)
-				}
+				label, detail := graphObservationPresentation(observation.EventType, observation.Summary)
 				nodes[observationNodeID] = relationshipGraphNodeDTO{
-					ID: observationNodeID, Kind: "evidence", Label: label,
+					ID: observationNodeID, Kind: "evidence", Label: label, Summary: detail,
 					RelationshipID: relationshipID, RelationshipIDs: []string{relationshipID},
 					Status: graphEventLabel(observation.EventType), Source: observation.Source,
 					Freshness: graphFreshness(occurredAt, aggregate.AsOf), OccurredAt: &occurredAt,
@@ -869,6 +866,21 @@ func graphSourceLabel(source string) string {
 	default:
 		return graphTokenLabel(source)
 	}
+}
+
+// graphObservationPresentation names an activity. A confirmed promise already
+// has its own node, so the activity keeps the event name and the sentence
+// moves to the detail. A note still uses its summary as the name.
+func graphObservationPresentation(eventType, summary string) (label, detail string) {
+	trimmed := strings.TrimSpace(summary)
+	eventLabel := graphEventLabel(eventType)
+	if strings.EqualFold(strings.TrimSpace(eventType), "commitment_confirmed") && trimmed != "" {
+		return eventLabel, trimmed
+	}
+	if trimmed == "" {
+		return eventLabel, ""
+	}
+	return trimmed, ""
 }
 
 // graphEventLabel is the activity name when an observation has no summary.

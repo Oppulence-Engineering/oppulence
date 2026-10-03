@@ -122,6 +122,56 @@ func TestRelationshipGraphRejectsFutureHistoricalBoundary(t *testing.T) {
 	}
 }
 
+func TestRelationshipGraphNamesAConfirmedPromiseOnce(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const sentence = "Send the quay detail"
+	if _, err := f.client.Commitment.Create().SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+		SetDirection("promised_by_them").SetText(sentence).SetConfidence(1).
+		SetAcceptance("internally_confirmed").SetCurrentEventVersion(2).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	occurred := f.svc.now().Add(-time.Minute)
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+		SetSource("meeting").SetExternalID("commitment:promised_by_them:quay-detail").
+		SetEventType("commitment_confirmed").SetOccurredAt(occurred).SetReceivedAt(occurred).
+		SetSummary(sentence).SetContentHash("quay-detail-confirmed").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	asOf := f.svc.now()
+	aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &rel.ID, Depth: 2, AsOf: asOf,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dto := buildRelationshipGraphDTO(aggregate, asOf)
+	var promise, activity relationshipGraphNodeDTO
+	for _, node := range dto.Nodes {
+		if node.Kind == "commitment" && node.Label == sentence {
+			promise = node
+		}
+		if node.Kind == "evidence" && node.Status == "Promise confirmed" {
+			activity = node
+		}
+	}
+	if promise.ID == "" {
+		t.Fatal("promise node missing")
+	}
+	if activity.Label != "Promise confirmed" || activity.Summary != sentence {
+		t.Fatalf("confirmed activity = label %q summary %q", activity.Label, activity.Summary)
+	}
+	noteLabel, noteDetail := graphObservationPresentation("note", "Graph evidence 101")
+	if noteLabel != "Graph evidence 101" || noteDetail != "" {
+		t.Fatalf("note activity = label %q detail %q", noteLabel, noteDetail)
+	}
+}
+
 func TestRelationshipGraphProjectsAPromiseLikeTheRegister(t *testing.T) {
 	f := newFixture(t)
 	rel := f.relationship(t)
