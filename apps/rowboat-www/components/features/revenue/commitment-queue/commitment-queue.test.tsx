@@ -34,6 +34,8 @@ import {
   registerRowStatus,
   registerSharedPromiseCopy,
   sourceWatchCopy,
+  promiseDueEditorValue,
+  promiseDueFromEditor,
   urgencyLabel,
 } from "./commitment-queue";
 import type {
@@ -1211,8 +1213,16 @@ it("does not offer a meeting import that opens the company directory", () => {
   expect(source).toContain('if (filter === "overdue" && item.urgency !== "overdue") return false;');
   expect(source).not.toContain('subscribeDueCommitments(() => setFilter("due"))');
   expect(source).toContain("promiseDueDay(selected.dueAt)");
+  expect(source).toContain("promiseDueEditorValue(selected.dueAt)");
+  expect(source).toContain("promiseDueFromEditor(correctedDueAt)");
   expect(source).not.toContain("new Date(selected.dueAt).toLocaleString()");
   expect(source).not.toContain("new Date(selected.dueAt).toLocaleDateString()");
+  expect(source).not.toContain("new Date(correctedDueAt)");
+  expect(promiseDueEditorValue("2026-10-20T03:00:00.000Z")).toBe("2026-10-20T03:00");
+  expect(promiseDueEditorValue("")).toBe("");
+  expect(promiseDueEditorValue("not-a-date")).toBe("");
+  expect(promiseDueFromEditor("2026-10-20T03:00")).toBe("2026-10-20T03:00:00.000Z");
+  expect(promiseDueFromEditor("")).toBeUndefined();
   expect(source).toContain(
     "data-[state=active]:bg-background-200 data-[state=active]:text-primary",
   );

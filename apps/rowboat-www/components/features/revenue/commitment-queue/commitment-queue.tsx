@@ -618,11 +618,22 @@ export function acceptanceLabel(value: string) {
   return labels[value] || value.replaceAll("_", " ");
 }
 
-function localDateTime(iso?: string) {
-  if (!iso) return "";
+/** The record names the UTC day. The editor has to open on that same day. */
+export function promiseDueEditorValue(iso?: string | null): string {
+  if (!iso?.trim()) return "";
   const date = new Date(iso);
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 16);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+}
+
+/** The editor shows the UTC day. Save that clock as UTC. */
+export function promiseDueFromEditor(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const date = new Date(trimmed.endsWith("Z") ? trimmed : `${trimmed}Z`);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toISOString();
 }
 
 const COMMITMENT_FILTER_LABEL: Record<string, string> = {
@@ -1550,7 +1561,7 @@ export function CommitmentQueue({
                     setRecordError(null);
                     setEditing(selected);
                     setCorrectedText(selected.text);
-                    setCorrectedDueAt(localDateTime(selected.dueAt));
+                    setCorrectedDueAt(promiseDueEditorValue(selected.dueAt));
                   }}
                 >
                   <PencilSimple /> Correct
@@ -1863,7 +1874,7 @@ export function CommitmentQueue({
                 if (!editing) return;
                 void transition(editing, "corrected", {
                   action: correctedText.trim(),
-                  dueAt: correctedDueAt ? new Date(correctedDueAt).toISOString() : undefined,
+                  dueAt: promiseDueFromEditor(correctedDueAt),
                   reason: "You corrected this promise.",
                 }).then((saved) => saved && setEditing(null));
               }}
