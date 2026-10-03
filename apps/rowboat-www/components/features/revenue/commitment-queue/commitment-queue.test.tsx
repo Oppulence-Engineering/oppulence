@@ -25,6 +25,7 @@ import {
   registerCountLabel,
   registerEmptyAccountsDetail,
   registerEmptyAccountsTitle,
+  registerElsewhereCopy,
   registerMissDetail,
   registerMissTitle,
   registerNextCompaniesLabel,
@@ -727,6 +728,33 @@ it("shows a register failure instead of the onboarding prompt", () => {
 
   expect(screen.getByText("The commitment register could not be loaded.")).toBeInTheDocument();
   expect(screen.queryByText(/Connect Gmail and Calendar to find/)).not.toBeInTheDocument();
+});
+
+it("points at the view that holds a promise this view does not", () => {
+  expect(registerElsewhereCopy("we_owe", [])).toBeNull();
+  expect(registerElsewhereCopy("we_owe", [{ direction: "promised_by_them" }])).toEqual({
+    title: "No promises we made",
+    detail: "1 promise they made is in What they owe us.",
+  });
+  expect(
+    registerElsewhereCopy("they_owe", [{ direction: "promised_by_me" }, { direction: "mutual" }]),
+  ).toEqual({
+    title: "No promises they made",
+    detail: "1 promise we made is in What we owe. 1 shared promise is in By company.",
+  });
+  expect(registerElsewhereCopy("changed", [{ direction: "promised_by_them" }])).toBeNull();
+  render(
+    <CommitmentQueue
+      {...props({
+        entries: [],
+        sources: [],
+        otherPromises: [{ direction: "promised_by_them" }],
+      })}
+    />,
+  );
+  expect(screen.getByRole("heading", { name: "No promises we made" })).toBeInTheDocument();
+  expect(screen.getByText("1 promise they made is in What they owe us.")).toBeInTheDocument();
+  expect(screen.queryByText("No commitments yet")).not.toBeInTheDocument();
 });
 
 it("keeps the empty register when its refresh fails", () => {

@@ -135,7 +135,11 @@ export function RevenuePanel({
     queryKey: [...commitmentKeys.lists(), "audit-known"],
     queryFn: ({ signal }) =>
       fetchCommitments({ state: ["open", "at_risk"], limit: REGISTER_PAGE_SIZE }, signal),
-    enabled: tab === "impact" || tab === "queue" || (tab === "scans" && waitingOnGoogle),
+    enabled:
+      tab === "impact" ||
+      tab === "queue" ||
+      tab === "commitments" ||
+      (tab === "scans" && waitingOnGoogle),
     staleTime: COMMITMENT_REGISTER_STALE_TIME,
   });
 
@@ -453,6 +457,8 @@ export function RevenuePanel({
         {tab === "commitments" ? (
           <CommitmentQueue
             entries={registerEntries}
+            otherPromises={commitmentRows(auditKnownPromises.data)}
+            otherPromisesPending={auditKnownPromises.isPending}
             hasMorePromises={hasMorePromises}
             loadingMorePromises={loadingMorePromises}
             onLoadMorePromises={() => void loadMorePromises()}

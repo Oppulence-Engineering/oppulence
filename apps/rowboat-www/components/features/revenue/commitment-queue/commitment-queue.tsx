@@ -186,6 +186,13 @@ export interface CommitmentQueueProps extends Omit<
   hasMorePromises?: boolean;
   loadingMorePromises?: boolean;
   onLoadMorePromises?: () => void;
+  /**
+   * Open promises in every direction. This view's query hides the others, so an
+   * empty page can still point at the view that holds them.
+   */
+  otherPromises?: readonly { direction?: string | null }[];
+  /** The other-view list is still loading. An empty page must not say none exist yet. */
+  otherPromisesPending?: boolean;
   /** The company directory page is full and a later page may hold more accounts. */
   hasMoreAccounts?: boolean;
   loadingMoreAccounts?: boolean;
@@ -205,6 +212,42 @@ export function registerMissTitle(hasMore: boolean): string {
 
 export function registerMissDetail(hasMore: boolean): string {
   return hasMore ? "Show the next promises to keep looking." : "Change the filter or search query.";
+}
+
+/**
+ * "What we owe" is empty when the only promise is one they made. That is not
+ * a workspace with no commitments.
+ */
+export function registerElsewhereCopy(
+  view: string,
+  promises: readonly { direction?: string | null }[] | undefined,
+): { title: string; detail: string } | null {
+  const rows = promises ?? [];
+  const theirs = rows.filter((row) => row.direction === "promised_by_them").length;
+  const ours = rows.filter((row) => row.direction === "promised_by_me").length;
+  const shared = rows.filter((row) => row.direction === "mutual").length;
+  const lines: string[] = [];
+  const sharedLine =
+    shared === 1
+      ? "1 shared promise is in By company."
+      : shared > 1
+        ? `${shared} shared promises are in By company.`
+        : "";
+  if (view === "we_owe") {
+    if (theirs === 1) lines.push("1 promise they made is in What they owe us.");
+    else if (theirs > 1) lines.push(`${theirs} promises they made are in What they owe us.`);
+    if (sharedLine) lines.push(sharedLine);
+    if (!lines.length) return null;
+    return { title: "No promises we made", detail: lines.join(" ") };
+  }
+  if (view === "they_owe") {
+    if (ours === 1) lines.push("1 promise we made is in What we owe.");
+    else if (ours > 1) lines.push(`${ours} promises we made are in What we owe.`);
+    if (sharedLine) lines.push(sharedLine);
+    if (!lines.length) return null;
+    return { title: "No promises they made", detail: lines.join(" ") };
+  }
+  return null;
 }
 
 export function registerRemainderLabel(): string {
@@ -595,6 +638,8 @@ export function CommitmentQueue({
   hasMoreAccounts = false,
   loadingMoreAccounts = false,
   onLoadMoreAccounts,
+  otherPromises,
+  otherPromisesPending = false,
   ...props
 }: CommitmentQueueProps) {
   const [query, setQuery] = React.useState("");
@@ -621,6 +666,7 @@ export function CommitmentQueue({
     setRecordError(null);
   }, [selected?.id]);
   const items = React.useMemo(() => toQueueItems(entries), [entries]);
+  const elsewhere = items.length === 0 ? registerElsewhereCopy(view, otherPromises) : null;
   // The open record is a snapshot from the click. A saved transition refetches
   // the register, and this replaces that snapshot so the button and the
   // acceptance card leave the step that just finished.
@@ -1093,15 +1139,22 @@ export function CommitmentQueue({
           <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[84px] text-center">
             <WorkspaceEmptyIllustration image="commitments" />
             <h2 className="text-[20px] font-semibold leading-6 text-primary">
-              {items.length === 0 ? "No commitments yet" : registerMissTitle(hasMorePromises)}
+              {items.length === 0
+                ? otherPromisesPending
+                  ? "Checking the other views"
+                  : (elsewhere?.title ?? "No commitments yet")
+                : registerMissTitle(hasMorePromises)}
             </h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
               {items.length === 0
-                ? googleConnected
-                  ? "No explicit promises were found. Run another audit after new conversations."
-                  : googleNeedsReconnect
-                    ? "Reconnect Google to resume finding who promised what, when it is due, and the message it came from."
-                    : "Connect Gmail and Calendar to find who promised what, when it is due, and the message it came from."
+                ? otherPromisesPending
+                  ? "Looking for promises in the other register views."
+                  : (elsewhere?.detail ??
+                    (googleConnected
+                      ? "No explicit promises were found. Run another audit after new conversations."
+                      : googleNeedsReconnect
+                        ? "Reconnect Google to resume finding who promised what, when it is due, and the message it came from."
+                        : "Connect Gmail and Calendar to find who promised what, when it is due, and the message it came from."))
                 : registerMissDetail(hasMorePromises)}
             </p>
             {items.length > 0 && hasMorePromises && onLoadMorePromises ? (
