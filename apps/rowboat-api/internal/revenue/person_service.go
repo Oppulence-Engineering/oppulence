@@ -186,7 +186,7 @@ func personVisibleLabelMatch(term string) predicate.Person {
 	if n, ok := exactPersonCompanyCount(needle); ok {
 		preds = append(preds, person.RelationshipCountEQ(n))
 	}
-	if window, ok := relativeLabelWindow(needle, time.Now()); ok {
+	if window, ok := visibleActivityWindow(needle, time.Now()); ok {
 		preds = append(preds, person.And(
 			person.LastInteractionAtNotNil(),
 			person.LastInteractionAtGT(window.after),
@@ -401,6 +401,73 @@ func relativeMax(base string) int {
 	default:
 		return 0
 	}
+}
+
+// visibleActivityWindow is the range whose Last interaction cell prints this
+// phrase. The first 30 days stay relative ("3 days ago"). A touch further
+// away prints the calendar day, and that day has to find the same row.
+func visibleActivityWindow(needle string, now time.Time) (relativeWindow, bool) {
+	if window, ok := relativeLabelWindow(needle, now); ok {
+		return window, true
+	}
+	return calendarLabelWindow(needle, now)
+}
+
+// calendarLabelWindow matches the date relativeTime prints once an instant is
+// at least 30 days from now. The cell is "Sep 3, 2026", including when the
+// query arrives lowercased. A day still inside that 30-day stretch is labeled
+// "N days ago", so this phrase does not claim it.
+func calendarLabelWindow(needle string, now time.Time) (relativeWindow, bool) {
+	parsed, ok := parseCalendarLabel(needle)
+	if !ok {
+		return relativeWindow{}, false
+	}
+	loc := now.Location()
+	start := time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, loc)
+	end := time.Date(start.Year(), start.Month(), start.Day()+1, 0, 0, 0, 0, loc)
+	last := end.Add(-time.Nanosecond)
+	pastCut := now.Add(-30 * 24 * time.Hour)
+	futureCut := now.Add(30 * 24 * time.Hour)
+	switch {
+	case !last.After(pastCut):
+		return relativeWindow{after: start.Add(-time.Nanosecond), until: last}, true
+	case !start.After(pastCut):
+		return relativeWindow{after: start.Add(-time.Nanosecond), until: pastCut}, true
+	case !start.Before(futureCut):
+		return relativeWindow{after: start.Add(-time.Nanosecond), until: last}, true
+	case !last.Before(futureCut):
+		return relativeWindow{after: futureCut.Add(-time.Nanosecond), until: last}, true
+	default:
+		return relativeWindow{}, false
+	}
+}
+
+func parseCalendarLabel(needle string) (time.Time, bool) {
+	fields := strings.Fields(needle)
+	if len(fields) != 3 {
+		return time.Time{}, false
+	}
+	month := fields[0]
+	if month == "" {
+		return time.Time{}, false
+	}
+	month = strings.ToUpper(month[:1]) + strings.ToLower(month[1:])
+	dayText := strings.TrimSuffix(fields[1], ",")
+	day, err := strconv.Atoi(dayText)
+	if err != nil || strconv.Itoa(day) != dayText && fmt.Sprintf("%02d", day) != dayText {
+		return time.Time{}, false
+	}
+	yearText := fields[2]
+	year, err := strconv.Atoi(yearText)
+	if err != nil || len(yearText) != 4 || strconv.Itoa(year) != yearText {
+		return time.Time{}, false
+	}
+	candidate := fmt.Sprintf("%s %d, %d", month, day, year)
+	parsed, err := time.Parse("Jan 2, 2006", candidate)
+	if err != nil || parsed.Format("Jan 2, 2006") != candidate {
+		return time.Time{}, false
+	}
+	return parsed, true
 }
 
 // relativeWindow is the open-closed range callers compare with GT(after) and

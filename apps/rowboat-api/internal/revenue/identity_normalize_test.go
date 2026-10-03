@@ -1664,6 +1664,51 @@ func TestRelationshipSearchFindsAFutureLastInteraction(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsACalendarLastInteraction(t *testing.T) {
+	f := newFixture(t)
+	datedAt := time.Now().Add(-45 * 24 * time.Hour)
+	label := datedAt.Format("Jan 2, 2006")
+	dated, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(dated.ID).
+		SetLastTouchAt(datedAt).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	recent, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	recentAt := time.Now().Add(-10 * 24 * time.Hour)
+	if _, err := f.client.Relationship.UpdateOneID(recent.ID).
+		SetLastTouchAt(recentAt).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: label})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(found.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
+		t.Fatalf("%s = %v", label, got)
+	}
+	inside, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{
+		Query: recentAt.Format("Jan 2, 2006"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(inside.Relationships); len(got) != 0 {
+		t.Fatalf("recent calendar day = %v", got)
+	}
+}
+
 func TestRelationshipSearchFindsTheQuietCompany(t *testing.T) {
 	f := newFixture(t)
 	quiet, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

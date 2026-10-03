@@ -792,7 +792,7 @@ func (s *Service) ListRelationshipsFiltered(
 		if columns := relationshipDirectoryColumnMatch(value); columns != nil {
 			parts = append(parts, columns)
 		}
-		if window, ok := relativeLabelWindow(value, time.Now()); ok {
+		if window, ok := visibleActivityWindow(value, time.Now()); ok {
 			parts = append(parts, relationship.And(
 				relationship.LastTouchAtNotNil(),
 				relationship.LastTouchAtGT(window.after),

@@ -1022,6 +1022,41 @@ func TestPersonSearchFindsAFutureLastInteraction(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsACalendarLastInteraction(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	datedAt := time.Now().Add(-45 * 24 * time.Hour)
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Casey Quinn").
+		SetLastInteractionAt(datedAt).
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	recentAt := time.Now().Add(-10 * 24 * time.Hour)
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Morgan Lee").
+		SetLastInteractionAt(recentAt).
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	label := datedAt.Format("Jan 2, 2006")
+	found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: label})
+	if err != nil || found == nil || len(found.Persons) != 1 || found.Persons[0].DisplayName != "Casey Quinn" {
+		t.Fatalf("%s = %+v err=%v", label, found, err)
+	}
+	inside, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: recentAt.Format("Jan 2, 2006")})
+	if err != nil || inside == nil || len(inside.Persons) != 0 {
+		t.Fatalf("recent calendar day = %+v err=%v", inside, err)
+	}
+}
+
 func TestRelativeLabelWindowKeepsAFuturePhraseWithTheNextBucket(t *testing.T) {
 	now := time.Date(2026, 10, 2, 12, 0, 0, 0, time.UTC)
 	window, ok := relativeLabelWindow("3 days from now", now)
@@ -1046,6 +1081,37 @@ func TestRelativeLabelWindowKeepsAFuturePhraseWithTheNextBucket(t *testing.T) {
 	ago, ok := relativeLabelWindow("3 days ago", now)
 	if !ok || !inside.After(ago.until) {
 		t.Fatalf("future instant matched ago window until %s ok=%v", ago.until, ok)
+	}
+}
+
+func TestCalendarLabelWindowKeepsThePrintedDay(t *testing.T) {
+	now := time.Date(2026, 10, 3, 12, 0, 0, 0, time.UTC)
+	window, ok := calendarLabelWindow("sep 3, 2026", now)
+	if !ok {
+		t.Fatal("sep 3, 2026")
+	}
+	early := time.Date(2026, 9, 3, 0, 0, 0, 0, time.UTC)
+	edge := now.Add(-30 * 24 * time.Hour)
+	later := edge.Add(time.Second)
+	if !early.After(window.after) || early.After(window.until) {
+		t.Fatalf("start of day %s not in (%s, %s]", early, window.after, window.until)
+	}
+	if !edge.After(window.after) || edge.After(window.until) {
+		t.Fatalf("30-day edge %s not in (%s, %s]", edge, window.after, window.until)
+	}
+	if !later.After(window.until) {
+		t.Fatalf("relative instant %s still in calendar window until %s", later, window.until)
+	}
+	if _, ok := calendarLabelWindow("sep 20, 2026", now); ok {
+		t.Fatal("a day inside 30 days still opened a calendar window")
+	}
+	ahead := now.Add(45 * 24 * time.Hour)
+	future, ok := calendarLabelWindow(strings.ToLower(ahead.Format("Jan 2, 2006")), now)
+	if !ok || !ahead.After(future.after) || ahead.After(future.until) {
+		t.Fatalf("future day %s not in (%s, %s] ok=%v", ahead, future.after, future.until, ok)
+	}
+	if _, ok := parseCalendarLabel("not a date"); ok {
+		t.Fatal("phrase parsed as a calendar day")
 	}
 }
 
