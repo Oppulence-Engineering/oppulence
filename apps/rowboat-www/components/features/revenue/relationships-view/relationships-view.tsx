@@ -2206,6 +2206,21 @@ export function missionControlStateAnswer(
   return parts.join(" · ");
 }
 
+/**
+ * The question asks what should happen next. The stored reason says why the
+ * recommendation exists, so the action name has to lead.
+ */
+export function missionControlActionAnswer(recommendation?: {
+  actionType?: string | null;
+  reason?: string | null;
+} | null): string {
+  const type = recommendation?.actionType?.trim() ?? "";
+  const reason = actionReasonCopy(recommendation?.reason);
+  const label = type ? (ACTION_TYPE_LABELS[type] ?? humanize(type)) : "";
+  if (label && reason) return `${label}. ${reason}`;
+  return label || reason || "No action is currently recommended.";
+}
+
 /** The eight details are account fields. The promise is a separate record. */
 export function accountDetailSourceCopy(supported: number, total: number, trust = false): string {
   const shown = Number.isFinite(supported) ? Math.max(0, Math.round(supported)) : 0;
@@ -3046,9 +3061,7 @@ function MissionControlOverview({
           } else if (question.key === "evidence") {
             answer = accountDetailSourceCopy(supported, total, true);
           } else if (question.key === "action") {
-            answer =
-              actionReasonCopy(model.activeRecommendation?.reason) ||
-              "No action is currently recommended.";
+            answer = missionControlActionAnswer(model.activeRecommendation);
           }
           return (
             <div key={question.key} className="border border-border p-3">

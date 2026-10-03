@@ -39,6 +39,7 @@ import {
   accountDetailSourceCopy,
   missionControlPromiseAnswer,
   missionControlStateAnswer,
+  missionControlActionAnswer,
   recordDetailBadge,
   supportedRecordValue,
   completenessExplanationCopy,
@@ -552,7 +553,24 @@ describe("RelationshipsView", () => {
     ).toBe("Lifecycle, Supporting evidence");
     expect(source).toContain("missionControlChangeAnswer(model.changes, \"State changed\")");
     expect(source).toContain("missionControlStateAnswer(model.evidence, commitments)");
-    expect(source).toContain("actionReasonCopy(model.activeRecommendation?.reason)");
+    expect(missionControlActionAnswer(null)).toBe("No action is currently recommended.");
+    expect(
+      missionControlActionAnswer({
+        actionType: "meeting_follow_up",
+        reason: "You confirmed this follow-up from the meeting.",
+      }),
+    ).toBe("Meeting follow-up. You confirmed this follow-up from the meeting.");
+    expect(
+      missionControlActionAnswer({
+        actionType: "meeting_follow_up",
+        reason: "You confirmed this follow-up from source evidence meeting/commitment:harbor-rank.",
+      }),
+    ).toBe("Meeting follow-up. You confirmed this follow-up from the meeting.");
+    expect(missionControlActionAnswer({ reason: "Send the harbor note" })).toBe(
+      "Send the harbor note",
+    );
+    expect(source).toContain("missionControlActionAnswer(model.activeRecommendation)");
+    expect(source).toContain("actionReasonCopy(recommendation?.reason)");
     expect(source).toContain("actionReasonCopy(action.reason)");
     expect(
       actionReasonCopy(
