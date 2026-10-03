@@ -497,10 +497,16 @@ export function registerAccountName(label: string | null | undefined): string {
 
 const REGISTER_COLUMNS = [
   { name: "Company", icon: TypeText },
-  { name: "Score", icon: TypeNumber },
+  { name: "Confidence", icon: TypeNumber },
   { name: "Status", icon: TagIcon },
   { name: "Contact", icon: TypeText },
 ] as const;
+
+/** The register score is how sure the promise is, on a percent scale. */
+export function registerConfidenceLabel(score: number): string {
+  const value = Number.isFinite(score) ? Math.max(0, Math.round(score)) : 0;
+  return `${value}%`;
+}
 
 function registerPreviewStatus(item: CommitmentQueueItem) {
   if (item.acceptance === "candidate") {
@@ -1194,7 +1200,7 @@ export function CommitmentQueue({
                         </span>
                       </td>
                       <td className="border-[var(--border)] border-r px-2.5 tabular-nums">
-                        {item.confidence}
+                        {registerConfidenceLabel(item.confidence)}
                       </td>
                       <td className="border-[var(--border)] border-r px-2.5">
                         <SimBadge variant={previewStatus.variant}>{previewStatus.label}</SimBadge>

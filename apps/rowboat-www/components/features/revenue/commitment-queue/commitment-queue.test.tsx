@@ -17,6 +17,7 @@ import {
   formatMissingEvidence,
   missingEvidenceLabel,
   REGISTER_VIEWS,
+  registerConfidenceLabel,
   registerCompanyLabel,
   registerPartyLabels,
   registerCountLabel,
@@ -335,6 +336,11 @@ describe("CommitmentQueue", () => {
     const component = screen.getByRole("region", { name: "Client commitments" });
     expect(component).toHaveAttribute("data-slot", "commitment-queue");
     expect(component).toHaveTextContent("Send the signed security packet");
+    expect(screen.getByRole("columnheader", { name: "Confidence" })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "Score" })).not.toBeInTheDocument();
+    expect(screen.getByText("65%")).toBeInTheDocument();
+    expect(registerConfidenceLabel(100)).toBe("100%");
+    expect(registerConfidenceLabel(0)).toBe("0%");
     await userEvent.click(screen.getByText("Acme"));
     expect(component).toHaveTextContent("Taylor");
     expect(component).toHaveTextContent("Morgan");
