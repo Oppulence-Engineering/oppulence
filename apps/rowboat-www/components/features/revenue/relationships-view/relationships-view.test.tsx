@@ -71,6 +71,7 @@ import {
   mutualPlanStatusLabel,
   deletionReceiptStatusLabel,
   rankingFactorLabel,
+  rankingFactorReason,
   relationshipChangeLabel,
   contradictionSourceLabel,
   contradictionReasonCopy,
@@ -592,8 +593,22 @@ describe("RelationshipsView", () => {
     expect(rankingFactorLabel("commitment_due_state")).toBe("Due date");
     expect(rankingFactorLabel("source_completeness")).toBe("Source coverage");
     expect(rankingFactorLabel("outcome_learning")).toBe("Earlier outcomes");
+    expect(rankingFactorReason("An accepted commitment is overdue.")).toBe(
+      "This promise is past due.",
+    );
+    expect(
+      rankingFactorReason(
+        "Bounded prior decisions and outcomes adjust ordering, never authority.",
+      ),
+    ).toBe("Earlier results change the order. They do not approve the action.");
+    expect(
+      rankingFactorReason("Fresh source coverage changes confidence in the queue position."),
+    ).toBe("How complete the sources are changes where this sits.");
+    expect(rankingFactorReason("This promise is past due.")).toBe("This promise is past due.");
     expect(source).toContain("rankingFactorLabel(factor.factor)");
+    expect(source).toContain("rankingFactorReason(factor.reason)");
     expect(source).not.toContain("humanize(factor.factor)");
+    expect(source).not.toContain("{factor.reason}");
     expect(source).toContain("reviewEvidenceKindLabel(item.kind)");
     expect(source).toContain("mutualPlanHeading(plan.status, plan.currentRevision.version)");
     expect(source).toContain("deletionReceiptStatusLabel(data.intelligence.deletionReceipts[0].status)");

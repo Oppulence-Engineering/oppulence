@@ -113,7 +113,7 @@ export function PriorityBreakdown({ action }: { action: RevenueAction }) {
     <Card className="gap-3 py-3">
       <CardHeader className="px-3 pb-0">
         <CardTitle className="text-sm font-medium text-primary">
-          Why this ranks {action.priorityScore}
+          Why this ranks {priorityTone(action.priorityScore).label.toLowerCase()}
         </CardTitle>
       </CardHeader>
       <CardContent className="px-3">

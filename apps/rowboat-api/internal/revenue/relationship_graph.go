@@ -769,7 +769,7 @@ func graphActionLabel(actionType string) string {
 	case "calendar_hold":
 		return "Calendar hold"
 	case "commitment_rescue":
-		return "Commitment rescue"
+		return "Promise follow-up"
 	default:
 		return strings.ReplaceAll(actionType, "_", " ")
 	}

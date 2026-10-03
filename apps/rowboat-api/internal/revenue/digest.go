@@ -95,7 +95,7 @@ var detectorDisplay = map[string]string{
 	"neglected_referral":        "Neglected referral",
 	"former_customer_reconnect": "Former customer",
 	"conversation_action_pack":  "Conversation action pack",
-	"commitment_due":            "Commitment due",
+	"commitment_due":            "Promise due",
 	"manual":                    "Manual",
 }
 

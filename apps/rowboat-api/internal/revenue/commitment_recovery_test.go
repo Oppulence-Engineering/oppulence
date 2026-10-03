@@ -80,6 +80,50 @@ func TestCommitmentRecoveryDedupesGovernedActionAndStoresRanking(t *testing.T) {
 	if err != nil || rankCount != 1 {
 		t.Fatalf("rank explanation was not persisted once: count=%d err=%v", rankCount, err)
 	}
+	var rescue *ent.RevenueAction
+	for _, action := range actions {
+		if action.ActionType == "commitment_rescue" {
+			rescue = action
+			break
+		}
+	}
+	if rescue == nil {
+		t.Fatal("recovery did not store a promise follow-up")
+	}
+	if rescue.ProposedSubject != "Following up on a promise" {
+		t.Fatalf("subject = %q", rescue.ProposedSubject)
+	}
+	if strings.Contains(rescue.PriorityComponentsJSON, "An accepted commitment") ||
+		strings.HasPrefix(strings.TrimSpace(rescue.PriorityComponentsJSON), "[") {
+		t.Fatalf("ranking breakdown = %s", rescue.PriorityComponentsJSON)
+	}
+	if !strings.Contains(rescue.PriorityComponentsJSON, `"commitment_due_state"`) {
+		t.Fatalf("ranking breakdown = %s", rescue.PriorityComponentsJSON)
+	}
+	rank, err := f.client.ConversationIntelligenceArtifact.Query().Where(
+		conversationintelligenceartifact.KindEQ("recommendation_evaluation"),
+	).Only(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(rank.PayloadJSON, "Bounded prior") || strings.Contains(rank.PayloadJSON, "commitment is overdue") {
+		t.Fatalf("stored ranking still uses the ranker rule: %s", rank.PayloadJSON)
+	}
+	if !strings.Contains(rank.PayloadJSON, "This promise is past due.") {
+		t.Fatalf("stored ranking = %s", rank.PayloadJSON)
+	}
+}
+
+func TestPriorityComponentsArrayBecomesARecord(t *testing.T) {
+	raw := `[{"factor":"commitment_due_state","value":"overdue","contribution":12,"reason":"An accepted commitment is overdue."}]`
+	got := string(priorityComponentsForAPI(raw))
+	if got != `{"commitment_due_state":12}` {
+		t.Fatalf("normalized components = %s", got)
+	}
+	kept := string(priorityComponentsForAPI(`{"outcome_learning":2}`))
+	if kept != `{"outcome_learning":2}` {
+		t.Fatalf("record components = %s", kept)
+	}
 }
 
 func TestCommitmentRecoveryReevaluatesWhenSourceFreshnessChanges(t *testing.T) {

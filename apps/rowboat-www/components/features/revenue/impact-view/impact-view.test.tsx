@@ -85,7 +85,7 @@ describe("ImpactView", () => {
   });
 
   it("names a digest signal that arrived as a stored token", () => {
-    expect(digestSignalLabel("commitment_due")).toBe("Commitment due");
+    expect(digestSignalLabel("commitment_due")).toBe("Promise due");
     expect(digestSignalLabel("conversation_action_pack")).toBe("Conversation action pack");
     expect(digestSignalLabel("Follow-up due")).toBe("Follow-up due");
     expect(digestSignalLabel("")).toBe("");

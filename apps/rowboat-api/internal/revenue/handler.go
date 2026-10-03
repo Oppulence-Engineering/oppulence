@@ -968,8 +968,8 @@ func actionToDTO(a *ent.RevenueAction) actionDTO {
 			})
 		}
 	}
-	if a.PriorityComponentsJSON != "" {
-		dto.PriorityComponents = json.RawMessage(a.PriorityComponentsJSON)
+	if components := priorityComponentsForAPI(a.PriorityComponentsJSON); len(components) > 0 {
+		dto.PriorityComponents = components
 	}
 	if rel, err := a.Edges.RelationshipOrErr(); err == nil {
 		dto.RelationshipID = rel.ID.String()

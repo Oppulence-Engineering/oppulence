@@ -218,6 +218,9 @@ func TestGraphActionLabelUsesTheProductTitle(t *testing.T) {
 	if got := graphActionLabel("follow_up_task"); got != "Follow-up task" {
 		t.Fatalf("follow_up_task label = %q", got)
 	}
+	if got := graphActionLabel("commitment_rescue"); got != "Promise follow-up" {
+		t.Fatalf("commitment_rescue label = %q", got)
+	}
 	if got := graphActionLabel("custom_signal"); got != "custom signal" {
 		t.Fatalf("unknown action label = %q", got)
 	}

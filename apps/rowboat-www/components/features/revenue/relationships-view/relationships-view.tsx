@@ -2417,6 +2417,26 @@ export function rankingFactorLabel(factor: string): string {
   }
 }
 
+const RANKING_FACTOR_REASONS: Record<string, string> = {
+  "An accepted commitment is overdue.": "This promise is past due.",
+  "An accepted commitment is due now.": "This promise is due now.",
+  "Fresh source coverage changes confidence in the queue position.":
+    "How complete the sources are changes where this sits.",
+  "More complete fresh evidence increases confidence in ordering.":
+    "How complete the sources are changes where this sits.",
+  "Bounded prior decisions and outcomes adjust ordering, never authority.":
+    "Earlier results change the order. They do not approve the action.",
+  "Recent evidence is more actionable than stale evidence.":
+    "Newer evidence matters more than older evidence.",
+  "The user has repeatedly retained this channel.": "You have kept this channel before.",
+};
+
+/** Older ranking rows stored the ranker rule. The inspection list says what changed. */
+export function rankingFactorReason(reason: string): string {
+  const raw = reason.trim();
+  return RANKING_FACTOR_REASONS[raw] ?? raw;
+}
+
 /**
  * Reconcile stores a classification token. The promise list names the
  * situation, and an older explanation that repeated the token is rewritten.
@@ -4175,7 +4195,7 @@ export function RelationshipSheet({
                           {evaluation.factors.map((factor) => (
                             <li key={factor.factor}>
                               {rankingFactorLabel(factor.factor)}: {factor.contribution >= 0 ? "+" : ""}
-                              {factor.contribution} · {factor.reason}
+                              {factor.contribution} · {rankingFactorReason(factor.reason)}
                             </li>
                           ))}
                         </ul>

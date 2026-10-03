@@ -1021,7 +1021,7 @@ export const DETECTOR_LABELS: Record<string, string> = {
   neglected_referral: "Neglected referral",
   former_customer_reconnect: "Former customer",
   conversation_action_pack: "Conversation action pack",
-  commitment_due: "Commitment due",
+  commitment_due: "Promise due",
   manual: "Manual",
 };
 
@@ -1035,7 +1035,7 @@ export const ACTION_TYPE_LABELS: Record<string, string> = {
   crm_update: "CRM update",
   follow_up_task: "Follow-up task",
   calendar_hold: "Calendar hold",
-  commitment_rescue: "Commitment rescue",
+  commitment_rescue: "Promise follow-up",
 };
 
 export const RELATIONSHIP_KIND_LABELS: Record<string, string> = {
@@ -1091,6 +1091,9 @@ export const PRIORITY_COMPONENT_LABELS: Record<string, string> = {
   uncertainty_penalty: "Uncertainty",
   contact_risk_penalty: "Contact risk",
   outcome_learning: "Earlier outcomes",
+  commitment_due_state: "Due date",
+  source_completeness: "Source coverage",
+  preferred_channel: "Preferred channel",
 };
 
 /** A ranking part is a stored slug. The review sheet names the factor. */

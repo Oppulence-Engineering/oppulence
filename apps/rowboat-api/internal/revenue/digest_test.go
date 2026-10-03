@@ -47,7 +47,7 @@ func TestDetectorLabelNamesEveryActionDetector(t *testing.T) {
 			t.Fatalf("detector %q labeled %q", key, label)
 		}
 	}
-	if detectorLabel("commitment_due") != "Commitment due" {
+	if detectorLabel("commitment_due") != "Promise due" {
 		t.Fatalf("commitment_due labeled %q", detectorLabel("commitment_due"))
 	}
 	if detectorLabel("conversation_action_pack") != "Conversation action pack" {

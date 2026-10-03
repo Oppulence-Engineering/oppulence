@@ -25,7 +25,11 @@ describe("WorkspaceEmptyState", () => {
     expect(priorityComponentLabel("evidence_quality")).toBe("Evidence quality");
     expect(priorityComponentLabel("contact_risk_penalty")).toBe("Contact risk");
     expect(priorityComponentLabel("urgency")).toBe("Urgency");
+    expect(priorityComponentLabel("commitment_due_state")).toBe("Due date");
+    expect(priorityComponentLabel("source_completeness")).toBe("Source coverage");
     expect(source).toContain("priorityComponentLabel(key)");
+    expect(source).toContain("priorityTone(action.priorityScore).label.toLowerCase()");
+    expect(source).not.toContain("Why this ranks {action.priorityScore}");
     expect(source).toContain("return shownRequestError(e, fallback);");
     expect(source).not.toContain("return e instanceof Error ? e.message : fallback;");
     expect(source).not.toContain("PRIORITY_COMPONENT_LABELS[key] ?? key");

@@ -227,13 +227,13 @@ func rankRecoveryRecommendation(
 	if row.DueAt != nil && row.DueAt.Before(now) {
 		factors = append(factors, RecommendationFactor{
 			Factor: "commitment_due_state", Value: "overdue", Contribution: 12,
-			Reason: "An accepted commitment is overdue.",
+			Reason: "This promise is past due.",
 		})
 	}
 	completenessContribution := int((completeness - 0.5) * 10)
 	factors = append(factors, RecommendationFactor{
 		Factor: "source_completeness", Value: completeness, Contribution: completenessContribution,
-		Reason: "Fresh source coverage changes confidence in the queue position.",
+		Reason: "How complete the sources are changes where this sits.",
 	})
 	if learningLift > 20 {
 		learningLift = 20
@@ -243,7 +243,7 @@ func rankRecoveryRecommendation(
 	}
 	factors = append(factors, RecommendationFactor{
 		Factor: "outcome_learning", Value: learningLift, Contribution: learningLift,
-		Reason: "Bounded prior decisions and outcomes adjust ordering, never authority.",
+		Reason: "Earlier results change the order. They do not approve the action.",
 	})
 	final := 60
 	for _, factor := range factors {
@@ -261,6 +261,32 @@ func rankRecoveryRecommendation(
 		RankerVersion: "contextual-v1", BaselineScore: 60, FinalScore: final,
 		Factors: factors, EvaluatedAt: now.UTC().Format(time.RFC3339), SampleScope: "workspace",
 	}
+}
+
+// priorityComponentsForAPI returns the numeric ranking record the review sheet
+// shows. Older recovery rows stored the factor list itself, which is not a record.
+func priorityComponentsForAPI(raw string) json.RawMessage {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" || trimmed == "null" {
+		return nil
+	}
+	var factors []RecommendationFactor
+	if err := json.Unmarshal([]byte(trimmed), &factors); err != nil {
+		return json.RawMessage(trimmed)
+	}
+	parts := map[string]int{}
+	for _, factor := range factors {
+		key := strings.TrimSpace(factor.Factor)
+		if key == "" {
+			continue
+		}
+		parts[key] += factor.Contribution
+	}
+	encoded, err := json.Marshal(parts)
+	if err != nil {
+		return json.RawMessage(trimmed)
+	}
+	return encoded
 }
 
 func (s *Service) createRecoveryAction(
@@ -289,14 +315,25 @@ func (s *Service) createRecoveryAction(
 	message := evaluation.Explanation + " Review the evidence before taking action on: " + row.Text
 	actionInput := ActionInput{
 		ActionType: "commitment_rescue", Channel: channel, RecipientEmail: recipient,
-		ProposedSubject: "Commitment follow-through", ProposedMessage: message, ExecutionMode: ExecModeDraft,
+		ProposedSubject: "Following up on a promise", ProposedMessage: message, ExecutionMode: ExecModeDraft,
 	}
 	lift, err := s.outcomeLearningLift(ctx, s.client, ws, "commitment_rescue", channel)
 	if err != nil {
 		return err
 	}
 	ranking := rankRecoveryRecommendation(evaluation.EvaluationID, row, completeness, lift, s.now())
-	partsJSON, _ := json.Marshal(ranking.Factors)
+	parts := map[string]int{}
+	for _, factor := range ranking.Factors {
+		key := strings.TrimSpace(factor.Factor)
+		if key == "" {
+			continue
+		}
+		parts[key] += factor.Contribution
+	}
+	partsJSON, err := json.Marshal(parts)
+	if err != nil {
+		return err
+	}
 	evidences, err := row.QueryEvidences().All(ctx)
 	if err != nil || len(evidences) == 0 {
 		if err != nil {
