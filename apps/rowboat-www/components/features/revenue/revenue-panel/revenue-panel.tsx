@@ -3,13 +3,16 @@
 import "client-only";
 
 import * as React from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkle, WarningCircle } from "@/lib/icons";
 import { useCommitmentRegister } from "@/hooks/queries/use-commitments";
 import { useReportScan, useReportScanList } from "@/hooks/queries/use-report";
 import { useRelationshipSourceStatuses } from "@/hooks/queries/use-relationship-sources";
 import { useWorkspace } from "@/hooks/queries/use-workspace";
-import { commitmentKeys } from "@/hooks/queries/utils/commitment-keys";
+import {
+  COMMITMENT_REGISTER_STALE_TIME,
+  commitmentKeys,
+} from "@/hooks/queries/utils/commitment-keys";
 import {
   commitmentPageHasMore,
   commitmentRows,
@@ -127,6 +130,14 @@ export function RevenuePanel({
     : "run";
   const reconnectBeforeAudit = auditLaunch === "reconnect";
   const connectBeforeAudit = auditLaunch === "connect";
+  const waitingOnGoogle = reconnectBeforeAudit || connectBeforeAudit;
+  const auditKnownPromises = useQuery({
+    queryKey: [...commitmentKeys.lists(), "audit-known"],
+    queryFn: ({ signal }) =>
+      fetchCommitments({ state: ["open", "at_risk"], limit: REGISTER_PAGE_SIZE }, signal),
+    enabled: tab === "scans" && waitingOnGoogle,
+    staleTime: COMMITMENT_REGISTER_STALE_TIME,
+  });
 
   const activeScanIsRunning = activeScan?.status === "running" || activeScan?.status === "pending";
   const scanQuery = useReportScan(activeScanIsRunning ? (activeScan?.id ?? null) : null, {
@@ -534,6 +545,9 @@ export function RevenuePanel({
             scanning={scanning}
             needsConnect={connectBeforeAudit}
             needsReconnect={reconnectBeforeAudit}
+            knownPromiseCount={commitmentRows(auditKnownPromises.data).length}
+            knownPromiseHasMore={commitmentPageHasMore(auditKnownPromises.data)}
+            knownPromisesPending={waitingOnGoogle && auditKnownPromises.isPending}
             loadFailed={scanListQuery.isError && scanListQuery.data == null}
             refreshFailed={scanListQuery.isError && scanListQuery.data != null}
             onRetry={() => {

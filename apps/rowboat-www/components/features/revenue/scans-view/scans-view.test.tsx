@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   auditEmptyDescription,
+  auditKnownPromiseCopy,
   auditListFailureCopy,
   auditRefreshCopy,
 } from "@/components/features/revenue/scans-view/scans-view";
@@ -45,6 +46,28 @@ describe("ScansView", () => {
     expect(auditEmptyDescription({ needsConnect: true, needsReconnect: true })).not.toMatch(
       /Run your first audit/,
     );
+    expect(auditKnownPromiseCopy(0)).toBe("");
+    expect(auditKnownPromiseCopy(1)).toBe("1 promise is already in Commitments.");
+    expect(auditKnownPromiseCopy(4, true)).toBe("4+ promises are already in Commitments.");
+    expect(
+      auditEmptyDescription({
+        needsConnect: true,
+        needsReconnect: false,
+        knownPromiseCount: 1,
+      }),
+    ).toBe(
+      "1 promise is already in Commitments. Connect Gmail and Calendar before an audit can read your mail.",
+    );
+    expect(
+      auditEmptyDescription({
+        needsConnect: false,
+        needsReconnect: true,
+        knownPromiseCount: 2,
+        knownPromiseHasMore: true,
+      }),
+    ).toBe("2+ promises are already in Commitments. Reconnect Google before an audit can read your mail.");
+    expect(source).toContain("knownPromiseCount");
+    expect(source).toContain("knownPromisesPending");
     expect(source).toContain("loadFailed && rows.length === 0");
     expect(source).toContain("refreshFailed");
     expect(source).toContain("auditListFailureCopy()");

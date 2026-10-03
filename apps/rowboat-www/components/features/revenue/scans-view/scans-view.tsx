@@ -41,17 +41,31 @@ export function auditRefreshCopy(): string {
   return listRefreshFailureCopy("audits");
 }
 
+/** Promises already recorded are not hidden behind the mail connection. */
+export function auditKnownPromiseCopy(count: number, hasMore = false): string {
+  const total = Number.isFinite(count) ? Math.max(0, Math.round(count)) : 0;
+  if (total <= 0) return "";
+  if (hasMore) return `${total}+ promises are already in Commitments.`;
+  if (total === 1) return "1 promise is already in Commitments.";
+  return `${total} promises are already in Commitments.`;
+}
+
 /**
  * The button already says reconnect or connect. The empty list has to say the
  * same thing. A dead Google grant is not a workspace that has never been audited.
+ * A promise already in Commitments stays in the sentence.
  */
 export function auditEmptyDescription(input: {
   needsConnect: boolean;
   needsReconnect: boolean;
+  knownPromiseCount?: number;
+  knownPromiseHasMore?: boolean;
 }): string {
-  if (input.needsReconnect) return "Reconnect Google before an audit can read your mail.";
+  const known = auditKnownPromiseCopy(input.knownPromiseCount ?? 0, input.knownPromiseHasMore);
+  const prefix = known ? `${known} ` : "";
+  if (input.needsReconnect) return `${prefix}Reconnect Google before an audit can read your mail.`;
   if (input.needsConnect) {
-    return "Connect Gmail and Calendar before an audit can read your mail.";
+    return `${prefix}Connect Gmail and Calendar before an audit can read your mail.`;
   }
   return "No audits yet! Run your first audit to find promises in your mail.";
 }
@@ -62,6 +76,9 @@ export function ScansView({
   scanning,
   needsReconnect = false,
   needsConnect = false,
+  knownPromiseCount = 0,
+  knownPromiseHasMore = false,
+  knownPromisesPending = false,
   hasMoreAudits = false,
   loadingEarlierAudits = false,
   earlierAuditsError = null,
@@ -78,6 +95,11 @@ export function ScansView({
   needsReconnect?: boolean;
   /** No mailbox is connected, so `onScan` opens connections instead of a scan. */
   needsConnect?: boolean;
+  /** Open or at-risk promises already in Commitments. */
+  knownPromiseCount?: number;
+  knownPromiseHasMore?: boolean;
+  /** The promise count is still loading, so the empty sentence would be incomplete. */
+  knownPromisesPending?: boolean;
   /** The server found another audit past the scans already loaded. */
   hasMoreAudits?: boolean;
   loadingEarlierAudits?: boolean;
@@ -134,6 +156,10 @@ export function ScansView({
           learnMore={[]}
           title="Audits"
         />
+      ) : rows.length === 0 && knownPromisesPending ? (
+        <div className="flex flex-1 items-center justify-center p-8">
+          <Spinner />
+        </div>
       ) : rows.length === 0 ? (
         <WorkspaceEmptyState
           action={
@@ -154,7 +180,12 @@ export function ScansView({
               )}
             </Button>
           }
-          description={auditEmptyDescription({ needsConnect, needsReconnect })}
+          description={auditEmptyDescription({
+            needsConnect,
+            needsReconnect,
+            knownPromiseCount,
+            knownPromiseHasMore,
+          })}
           image="audits"
           learnMore={[
             { label: "Reads the mail you connect" },
