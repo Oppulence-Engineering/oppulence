@@ -596,14 +596,29 @@ export function registerConfidenceLabel(score: number): string {
   return `${value}%`;
 }
 
-function registerPreviewStatus(item: CommitmentQueueItem) {
-  if (item.acceptance === "candidate") {
-    return { label: "Review", variant: "amber" as const };
+/**
+ * The row Status is the same word as the open record. "Confirmed" is the
+ * acceptance step, so an open promise must not wear it in this column.
+ */
+export function registerRowStatus(item: {
+  state: string;
+  acceptance: string;
+  urgency?: string;
+}): { label: string; variant: "green" | "amber" | "red" } {
+  const label = commitmentDetailStatus(item);
+  if (item.acceptance === "candidate" || label === "Review") {
+    return { label, variant: "amber" };
   }
-  if (item.state === "at_risk" || item.urgency === "overdue") {
-    return { label: "At risk", variant: "red" as const };
+  if (
+    label === "At risk" ||
+    label === "Missed" ||
+    label === "Disputed" ||
+    item.urgency === "overdue"
+  ) {
+    return { label, variant: "red" };
   }
-  return { label: "Confirmed", variant: "green" as const };
+  if (label === "Met") return { label, variant: "green" };
+  return { label, variant: "amber" };
 }
 
 /** Search matches the words on the row and the words on the open promise. */
@@ -622,7 +637,7 @@ export function commitmentSearchText(item: CommitmentQueueItem): string {
     item.counterparty,
     item.text,
     String(item.confidence),
-    registerPreviewStatus(item).label,
+    registerRowStatus(item).label,
     urgencyLabel(item.urgency),
     statusLabel(item.state),
     acceptanceLabel(item.acceptance),
@@ -1303,7 +1318,7 @@ export function CommitmentQueue({
               </thead>
               <tbody>
                 {filtered.map((item, index) => {
-                  const previewStatus = registerPreviewStatus(item);
+                  const previewStatus = registerRowStatus(item);
                   return (
                     <tr
                       className={cn(

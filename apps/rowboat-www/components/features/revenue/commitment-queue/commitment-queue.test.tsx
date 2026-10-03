@@ -30,6 +30,7 @@ import {
   registerMissTitle,
   registerNextCompaniesLabel,
   registerRemainderLabel,
+  registerRowStatus,
   urgencyLabel,
 } from "./commitment-queue";
 import type {
@@ -380,6 +381,22 @@ describe("CommitmentQueue", () => {
     expect(commitmentDetailStatus({ state: "at_risk", acceptance: "candidate" })).toBe("Review");
     expect(commitmentDetailStatus({ state: "open", acceptance: "accepted" })).toBe("Open");
     expect(commitmentDetailStatus({ state: "at_risk", acceptance: "accepted" })).toBe("At risk");
+    expect(registerRowStatus({ state: "open", acceptance: "internally_confirmed", urgency: "open" })).toEqual({
+      label: "Open",
+      variant: "amber",
+    });
+    expect(registerRowStatus({ state: "at_risk", acceptance: "accepted", urgency: "due_soon" })).toEqual({
+      label: "At risk",
+      variant: "red",
+    });
+    expect(registerRowStatus({ state: "at_risk", acceptance: "candidate", urgency: "due_soon" })).toEqual({
+      label: "Review",
+      variant: "amber",
+    });
+    expect(registerRowStatus({ state: "met", acceptance: "accepted", urgency: "closed" })).toEqual({
+      label: "Met",
+      variant: "green",
+    });
 
     render(
       <CommitmentQueue
@@ -399,6 +416,27 @@ describe("CommitmentQueue", () => {
     expect(screen.getByText("Confirm or correct this promise.")).toBeInTheDocument();
     expect(screen.queryByText("Confirm or correct confirmation.")).not.toBeInTheDocument();
     expect(screen.getAllByText("Review").length).toBeGreaterThan(0);
+  });
+
+  it("calls an open confirmed promise Open on the row and in the record", async () => {
+    const open = {
+      ...entries("internally_confirmed")[0],
+      id: "commitment-open",
+      state: "open" as const,
+      dueAt: "2026-12-01T15:00:00.000Z",
+      text: "Send the quay status",
+      relationshipName: "Quay Status",
+    };
+    render(<CommitmentQueue aria-label="Client commitments" {...props({ entries: [open] })} />);
+
+    expect(screen.getByText("Open")).toBeVisible();
+    expect(screen.queryByText("Confirmed")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByText("Quay Status"));
+    expect(screen.getByText("Promise status").parentElement?.parentElement).toHaveTextContent("Open");
+    expect(screen.getByText("Confirmed in this workspace")).toBeVisible();
+    const source = fs.readFileSync(path.join(import.meta.dirname, "commitment-queue.tsx"), "utf8");
+    expect(source).toContain("registerRowStatus(item)");
+    expect(source).not.toContain('label: "Confirmed"');
   });
 
   it("does not send a stale Google source through OAuth", () => {
@@ -1008,7 +1046,7 @@ it("finds a promise by the status and score printed on the row", async () => {
   expect(screen.queryByText("Lumen")).not.toBeInTheDocument();
 
   await user.clear(box);
-  await user.type(box, "Confirmed");
+  await user.type(box, "Open");
   expect(screen.getByText("Lumen")).toBeInTheDocument();
   expect(screen.queryByText("Acme")).not.toBeInTheDocument();
   expect(
