@@ -355,10 +355,10 @@ export function RevenuePanel({
       try {
         await appendCommitmentTransition(item.relationshipId, item.id, transition);
         await commitmentQuery.refetch();
-        setNoticeMsg("Commitment review recorded.");
+        setNoticeMsg("Promise update saved.");
         return true;
       } catch (error) {
-        const message = shownRequestError(error, "Could not update the commitment.");
+        const message = shownRequestError(error, "Could not update this promise.");
         setBanner(message);
         return message;
       }
@@ -374,7 +374,7 @@ export function RevenuePanel({
         const markdown = await getCommitmentRecordMarkdown(item.id);
         downloadMarkdown(`commitment-${item.id}.md`, markdown);
         capture(RevenueEvents.CommitmentExported, { commitmentId: item.id, state: item.state });
-        setNoticeMsg("Commitment record exported.");
+        setNoticeMsg("Promise record exported.");
       } catch (error) {
         const message = shownRequestError(error, "Could not export the record.");
         setBanner(message);
@@ -395,11 +395,11 @@ export function RevenuePanel({
         setNoticeMsg(
           Array.isArray(evaluations) && evaluations.length > 0
             ? "Recovery draft created. Review and approve it before sending."
-            : "No due commitment needed a recovery draft.",
+            : "No due promise needed a follow-up.",
         );
         return true;
       } catch (error) {
-        const message = shownRequestError(error, "Could not draft commitment recovery.");
+        const message = shownRequestError(error, "Could not draft a follow-up.");
         setBanner(message);
         return message;
       }

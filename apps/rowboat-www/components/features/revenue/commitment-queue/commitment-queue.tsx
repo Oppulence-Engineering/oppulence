@@ -634,7 +634,7 @@ export function CommitmentQueue({
       });
       if (saved === true) return true;
       setRecordError(
-        typeof saved === "string" && saved.trim() ? saved : "Could not update the commitment.",
+        typeof saved === "string" && saved.trim() ? saved : "Could not update this promise.",
       );
       return false;
     } finally {
@@ -1223,13 +1223,13 @@ export function CommitmentQueue({
                 className="size-8 rounded-none text-primary/50 hover:bg-background-100 hover:text-primary"
                 onClick={() => setSelected(null)}
                 type="button"
-                aria-label="Close commitment"
+                aria-label="Close"
                 size="icon-xs"
                 variant="ghost"
               >
                 <X className="size-4" />
               </Button>
-              <Label className="text-[12px] font-normal text-primary/45">Commitment record</Label>
+              <Label className="text-[12px] font-normal text-primary/45">Promise record</Label>
               {/* One-pager §3: a record that cannot leave the tool cannot
                   settle an argument. */}
               {onExport ? (
@@ -1291,7 +1291,7 @@ export function CommitmentQueue({
                         setRecordError(
                           typeof drafted === "string" && drafted.trim()
                             ? drafted
-                            : "Could not draft commitment recovery.",
+                            : "Could not draft a follow-up.",
                         );
                       } finally {
                         setBusy(null);
@@ -1440,7 +1440,7 @@ export function CommitmentQueue({
                         blocking ? (
                           <>
                             <Input
-                              aria-label="What is blocking this commitment"
+                              aria-label="What is blocking this promise"
                               className="h-8 max-w-xs rounded-none"
                               placeholder="Waiting on legal review"
                               value={blockerText}
@@ -1519,7 +1519,7 @@ export function CommitmentQueue({
                         fulfilling ? (
                           <>
                             <p className="w-full text-[13px] text-primary/70">
-                              Mark this commitment fulfilled?
+                              Mark this promise fulfilled?
                             </p>
                             <Button
                               type="button"
@@ -1598,10 +1598,9 @@ export function CommitmentQueue({
       <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
         <DialogContent className="app-shell rounded-[2px] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Correct commitment</DialogTitle>
+            <DialogTitle>Correct this promise</DialogTitle>
             <DialogDescription>
-              The correction is recorded as a new immutable event; the supporting quote is
-              preserved.
+              The correction is saved, and the original quote stays with it.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-1 text-xs text-primary/60">
@@ -1638,7 +1637,7 @@ export function CommitmentQueue({
                 void transition(editing, "corrected", {
                   action: correctedText.trim(),
                   dueAt: correctedDueAt ? new Date(correctedDueAt).toISOString() : undefined,
-                  reason: "User corrected the extracted commitment in the Commitment Queue.",
+                  reason: "You corrected this promise.",
                 }).then((saved) => saved && setEditing(null));
               }}
             >

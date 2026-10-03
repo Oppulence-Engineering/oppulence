@@ -449,12 +449,12 @@ describe("CommitmentQueue", () => {
 
     await user.click(screen.getByText("Acme"));
     expect(
-      screen.queryByRole("textbox", { name: "What is blocking this commitment" }),
+      screen.queryByRole("textbox", { name: "What is blocking this promise" }),
     ).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Confirm blocked" })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Mark blocked" }));
-    const reason = screen.getByRole("textbox", { name: "What is blocking this commitment" });
+    const reason = screen.getByRole("textbox", { name: "What is blocking this promise" });
     expect(screen.getByRole("button", { name: "Confirm blocked" })).toBeDisabled();
     await user.type(reason, "Waiting on legal review");
     await user.click(screen.getByRole("button", { name: "Confirm blocked" }));
@@ -484,9 +484,9 @@ describe("CommitmentQueue", () => {
     render(<CommitmentQueue {...props({ entries: entries("accepted"), onTransition })} />);
 
     await user.click(screen.getByText("Acme"));
-    expect(screen.queryByText("Mark this commitment fulfilled?")).not.toBeInTheDocument();
+    expect(screen.queryByText("Mark this promise fulfilled?")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Mark fulfilled" }));
-    expect(screen.getByText("Mark this commitment fulfilled?")).toBeVisible();
+    expect(screen.getByText("Mark this promise fulfilled?")).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Confirm fulfilled" }));
 
     await waitFor(() =>
