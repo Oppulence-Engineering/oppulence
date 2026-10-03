@@ -315,7 +315,7 @@ export function ReviewSheet({
           proposedMessage: message.trim(),
         }),
       {
-        note: "Saved — this created a new revision, so re-check and approve before sending.",
+        note: "Saved. This is a new version, so check it and approve it before sending.",
       },
     );
 
@@ -532,11 +532,11 @@ export function ReviewSheet({
                 onChange={(e) => setMessage(e.target.value)}
                 rows={10}
                 className="resize-y font-normal"
-                placeholder="Exact approved content"
+                placeholder="What this should say"
               />
               <p className="mt-1 text-xs text-primary/45">
-                Editing the draft creates a new revision and clears any prior approval — you&apos;ll
-                re-approve below.
+                Editing this draft starts a new version and clears the earlier approval. You will
+                approve it again below.
               </p>
             </Field>
           )}

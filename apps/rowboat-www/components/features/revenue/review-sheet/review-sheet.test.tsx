@@ -49,6 +49,18 @@ describe("ReviewSheet", () => {
     expect(source).not.toContain("{action.executionError}");
   });
 
+  it("talks about a new version when a draft is edited", () => {
+    expect(source).toContain(
+      "Saved. This is a new version, so check it and approve it before sending.",
+    );
+    expect(source).toContain("What this should say");
+    expect(source).toContain(
+      "Editing this draft starts a new version and clears the earlier approval.",
+    );
+    expect(source).not.toContain("new revision");
+    expect(source).not.toContain("Exact approved content");
+  });
+
   it("names a dismissal and a snooze on the review sheet", () => {
     expect(source).toContain("dismissReasonLabel(action.dismissReason)");
     expect(source).toContain("snoozeWakeCopy(action.snoozedUntil)");
