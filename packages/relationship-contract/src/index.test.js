@@ -130,6 +130,49 @@ test("natural-language graph queries stay deterministic and evidence-linked", ()
   assert.match(withoutDependency.answer, /0 relationships match/);
 });
 
+test("a kept promise is not still overdue", () => {
+  const asOf = "2026-10-03T12:00:00.000Z";
+  const kept = {
+    asOf,
+    nodes: [
+      { id: "relationship:kept", kind: "relationship", label: "Quay Kept" },
+      {
+        id: "commitment:kept",
+        kind: "commitment",
+        label: "Send the quay kept",
+        relationshipId: "kept",
+        status: "met",
+        dueAt: "2026-10-01T15:00:00.000Z",
+      },
+    ],
+    edges: [],
+  };
+  const keptResult = queryRelationshipGraph(kept, "overdue");
+  assert.deepEqual(keptResult.relationshipIds, []);
+  assert.equal(keptResult.answer, "0 relationships match overdue promises.");
+
+  const late = queryRelationshipGraph(
+    {
+      asOf,
+      nodes: [
+        ...kept.nodes,
+        { id: "relationship:late", kind: "relationship", label: "Quay Late" },
+        {
+          id: "commitment:late",
+          kind: "commitment",
+          label: "Send the quay late",
+          relationshipId: "late",
+          status: "at_risk",
+          dueAt: "2026-10-01T15:00:00.000Z",
+        },
+      ],
+      edges: [],
+    },
+    "overdue",
+  );
+  assert.deepEqual(late.relationshipIds, ["late"]);
+});
+
 test("graph questions use the stage and health words a person would type", () => {
   const active = parseRelationshipGraphQuery("active customer");
   assert.deepEqual(active.filters.lifecycle, ["active_customer"]);

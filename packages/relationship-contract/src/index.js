@@ -146,6 +146,12 @@ const normalizedGraphValue = (value) =>
     .trim()
     .toLowerCase();
 
+/** A kept, missed, waived, or unconfirmed promise is not still overdue. */
+const graphPromiseCanBeOverdue = (status) => {
+  const normalized = normalizedGraphValue(status);
+  return normalized === "open" || normalized === "at_risk";
+};
+
 const graphNodeRelationshipIds = (node) => {
   if (node.kind === "relationship") return [node.id.replace(/^relationship:/, "")];
   const ids = Array.isArray(node.relationshipIds) ? node.relationshipIds : [];
@@ -321,8 +327,7 @@ export function queryRelationshipGraph(graph, query, options = {}) {
   }
   if (filters.overdue) {
     constrainBy((node) => {
-      if (node.kind !== "commitment" || normalizedGraphValue(node.status) === "completed")
-        return false;
+      if (node.kind !== "commitment" || !graphPromiseCanBeOverdue(node.status)) return false;
       const dueAt = node.dueAt ? new Date(node.dueAt) : null;
       return Boolean(dueAt && Number.isFinite(dueAt.getTime()) && dueAt < asOf);
     });
