@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 )
 
 func TestRelationshipGraphReturnsVersionedGovernedProjection(t *testing.T) {
@@ -664,4 +666,135 @@ func TestRelationshipGraphNamesAPersonLikeTheDirectory(t *testing.T) {
 	if got["Bea Cole"] != 1 {
 		t.Fatalf("typed header should stay: %+v", got)
 	}
+}
+
+func TestRelationshipGraphStageRequiresSupport(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bare := f.company(t, "Bare Stage", "bare@stage.example")
+	stored, err := f.client.Relationship.Get(f.ctx, bare.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stored.Lifecycle != "prospect" {
+		t.Fatalf("stored lifecycle = %q, want the prospect default", stored.Lifecycle)
+	}
+	bareNode := graphCompanyNode(t, f, bare)
+	if bareNode.Lifecycle != "unknown" || bareNode.Engagement != "unknown" || bareNode.Sentiment != "unknown" || bareNode.Health != "unknown" {
+		t.Fatalf("unsupported company stages = lifecycle %q engagement %q sentiment %q health %q",
+			bareNode.Lifecycle, bareNode.Engagement, bareNode.Sentiment, bareNode.Health)
+	}
+
+	supported := f.company(t, "Supported Stage", "supported@stage.example")
+	obs, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(supported).
+		SetSource("meeting").SetExternalID("stage-eval").
+		SetEventType("note").SetOccurredAt(supported.CreatedAt).SetReceivedAt(supported.CreatedAt).
+		SetSummary("Moved to evaluation").SetContentHash("stage-eval").
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	factRank, ok := relationshipAssertionAuthorityRank("source_fact")
+	if !ok {
+		t.Fatal("source_fact rank")
+	}
+	if _, err := f.client.RelationshipAssertion.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(supported).SetObservation(obs).
+		SetDimension("lifecycle").SetValue("evaluation").
+		SetSourceType("source_fact").SetAuthorityRank(factRank).
+		SetValidFrom(supported.CreatedAt).
+		SetValueSchemaVersion(relationshipAssertionValueSchemaVersion).
+		SetProjectorCompatVersion(relationshipProjectorVersion).
+		SetSupportingObservationIds([]string{}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if got := graphCompanyNode(t, f, supported).Lifecycle; got != "evaluation" {
+		t.Fatalf("supported lifecycle = %q, want evaluation", got)
+	}
+
+	cited := f.company(t, "Cited Stage", "cited@stage.example")
+	if _, err := f.client.RelationshipAssertion.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(cited).
+		SetDimension("lifecycle").SetValue("prospect").
+		SetSourceType("source_fact").SetAuthorityRank(factRank).
+		SetValidFrom(cited.CreatedAt).
+		SetValueSchemaVersion(relationshipAssertionValueSchemaVersion).
+		SetProjectorCompatVersion(relationshipProjectorVersion).
+		SetSupportingObservationIds([]string{"obs-cited"}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if got := graphCompanyNode(t, f, cited).Lifecycle; got != "prospect" {
+		t.Fatalf("cited lifecycle = %q, want prospect", got)
+	}
+
+	corrected := f.company(t, "Corrected Stage", "corrected@stage.example")
+	correctionRank, ok := relationshipAssertionAuthorityRank("user_correction")
+	if !ok {
+		t.Fatal("user_correction rank")
+	}
+	if _, err := f.client.RelationshipAssertion.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(corrected).
+		SetDimension("lifecycle").SetValue("active_customer").
+		SetSourceType("user_correction").SetAuthorityRank(correctionRank).
+		SetValidFrom(corrected.CreatedAt).
+		SetValueSchemaVersion(relationshipAssertionValueSchemaVersion).
+		SetProjectorCompatVersion(relationshipProjectorVersion).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if got := graphCompanyNode(t, f, corrected).Lifecycle; got != "active_customer" {
+		t.Fatalf("corrected lifecycle = %q, want active_customer", got)
+	}
+
+	orphan := f.company(t, "Orphan Stage", "orphan@stage.example")
+	if _, err := f.client.RelationshipAssertion.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(orphan).
+		SetDimension("lifecycle").SetValue("prospect").
+		SetSourceType("source_fact").SetAuthorityRank(factRank).
+		SetValidFrom(orphan.CreatedAt).
+		SetValueSchemaVersion(relationshipAssertionValueSchemaVersion).
+		SetProjectorCompatVersion(relationshipProjectorVersion).
+		SetSupportingObservationIds([]string{}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if got := graphCompanyNode(t, f, orphan).Lifecycle; got != "unknown" {
+		t.Fatalf("assertion without evidence = %q, want unknown", got)
+	}
+}
+
+func (f *fixture) company(t *testing.T, name, email string) *ent.Relationship {
+	t.Helper()
+	rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: name, PrimaryEmail: email,
+	})
+	if err != nil {
+		t.Fatalf("company %s: %v", name, err)
+	}
+	return rel
+}
+
+func graphCompanyNode(t *testing.T, f *fixture, rel *ent.Relationship) relationshipGraphNodeDTO {
+	t.Helper()
+	asOf := f.svc.now()
+	aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &rel.ID, Depth: 1, AsOf: asOf,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dto := buildRelationshipGraphDTO(aggregate, asOf)
+	for _, node := range dto.Nodes {
+		if node.Kind == "relationship" {
+			return node
+		}
+	}
+	t.Fatal("relationship node missing")
+	return relationshipGraphNodeDTO{}
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipreviewacknowledgement"
@@ -146,6 +147,15 @@ func (s *Service) RelationshipGraph(
 				relationshipreviewacknowledgement.AcknowledgedAtLTE(filter.AsOf),
 				relationshipreviewacknowledgement.HasUserWith(user.IDEQ(u.ID)),
 			).Order(ent.Desc(relationshipreviewacknowledgement.FieldStateVersion))
+		}).
+		// The company row stores "prospect" before any stage is chosen. The
+		// graph only shows a stage when the same assertion the company record
+		// trusts is still winning at this boundary.
+		WithAssertions(func(q *ent.RelationshipAssertionQuery) {
+			q.Where(
+				relationshipassertion.CreatedAtLTE(filter.AsOf),
+				relationshipassertion.ValidFromLTE(filter.AsOf),
+			).WithObservation()
 		})
 
 	observationOffset := filter.ObservationOffset
@@ -405,6 +415,41 @@ func latestGraphState(rel *ent.Relationship, historical bool, asOf time.Time) gr
 	return boundary
 }
 
+// applySupportedGraphStages hides a stored default. "Prospect" on a new
+// company is the schema fallback, and the company record already says Not
+// known until a winning assertion is a user correction or cites evidence.
+func applySupportedGraphStages(state *graphProjectionState, rel *ent.Relationship, asOf time.Time) {
+	assertions, err := rel.Edges.AssertionsOrErr()
+	if err != nil {
+		assertions = nil
+	}
+	winners, _, selectErr := selectRelationshipAssertionsAt(assertions, asOf)
+	if selectErr != nil {
+		winners = nil
+	}
+	state.Lifecycle = supportedGraphStage(winners["lifecycle"])
+	state.Engagement = supportedGraphStage(winners["engagement"])
+	state.Sentiment = supportedGraphStage(winners["sentiment"])
+	state.Health = supportedGraphStage(winners["health"])
+}
+
+func supportedGraphStage(winner *ent.RelationshipAssertion) string {
+	if winner == nil || strings.TrimSpace(winner.Value) == "" {
+		return "unknown"
+	}
+	if winner.SourceType == "user_correction" {
+		return winner.Value
+	}
+	if len(winner.SupportingObservationIds) > 0 {
+		return winner.Value
+	}
+	observation, err := winner.Edges.ObservationOrErr()
+	if err == nil && observation != nil {
+		return winner.Value
+	}
+	return "unknown"
+}
+
 func changedSinceGraphReview(rel *ent.Relationship, stateVersion int) bool {
 	acknowledgements, err := rel.Edges.ReviewAcknowledgementsOrErr()
 	if err != nil || len(acknowledgements) == 0 {
@@ -457,6 +502,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 		relationshipNodeID := "relationship:" + relationshipID
 		boundary := latestGraphState(rel, aggregate.Historical, aggregate.AsOf)
 		state := boundary.State
+		applySupportedGraphStages(&state, rel, aggregate.AsOf)
 		relationshipStatus := rel.Status
 		if aggregate.Historical && rel.UpdatedAt.After(aggregate.AsOf) {
 			relationshipStatus = "historical_unknown"
