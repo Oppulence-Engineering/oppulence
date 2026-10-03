@@ -742,7 +742,17 @@ it("points at the view that holds a promise this view does not", () => {
     title: "No promises they made",
     detail: "1 promise we made is in What we owe. 1 shared promise is in By company.",
   });
-  expect(registerElsewhereCopy("changed", [{ direction: "promised_by_them" }])).toBeNull();
+  expect(registerElsewhereCopy("changed", [{ direction: "promised_by_them" }])).toEqual({
+    title: "No promises changed in the last 7 days",
+    detail: "1 promise they made is in What they owe us.",
+  });
+  expect(registerElsewhereCopy("overdue", [{ direction: "promised_by_them" }])).toEqual({
+    title: "No promises are past due",
+    detail: "1 promise they made is in What they owe us.",
+  });
+  expect(registerCountLabel(0, false, true, true)).toBe("None past due");
+  const source = fs.readFileSync(path.join(import.meta.dirname, "commitment-queue.tsx"), "utf8");
+  expect(source).toContain("in the last 7 days.");
   render(
     <CommitmentQueue
       {...props({
@@ -938,6 +948,7 @@ it("keeps promises past the first register page one click away", () => {
   expect(registerCountLabel(201, false)).toBe("201 commitments");
   expect(registerCountLabel(0, false)).toBe("0 commitments");
   expect(registerCountLabel(0, false, true)).toBe("None in this view");
+  expect(registerCountLabel(0, false, true, true)).toBe("None past due");
   expect(registerCountLabel(1, false, true)).toBe("1 commitment");
   expect(registerRemainderLabel()).toBe("Show the next promises");
   expect(registerMissTitle(true)).toBe("No loaded promises match this view");

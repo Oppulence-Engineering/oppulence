@@ -121,7 +121,7 @@ export const REGISTER_VIEWS: { id: RegisterView; label: string; hint: string }[]
   {
     id: "changed",
     label: "What changed",
-    hint: "Promises that are new, or that slipped, since the last look.",
+    hint: "Promises that are new, or that slipped, in the last 7 days.",
   },
   {
     id: "by_account",
@@ -203,9 +203,14 @@ export interface CommitmentQueueProps extends Omit<
  * The header count says when this page is not the whole register.
  * Zero in this view is not zero in the register when another view holds a promise.
  */
-export function registerCountLabel(shown: number, hasMore: boolean, heldElsewhere = false): string {
+export function registerCountLabel(
+  shown: number,
+  hasMore: boolean,
+  heldElsewhere = false,
+  pastDue = false,
+): string {
   const count = Number.isFinite(shown) ? Math.max(0, Math.round(shown)) : 0;
-  if (count === 0 && heldElsewhere) return "None in this view";
+  if (count === 0 && heldElsewhere) return pastDue ? "None past due" : "None in this view";
   const noun = count === 1 ? "commitment" : "commitments";
   return hasMore ? `${count}+ ${noun}` : `${count} ${noun}`;
 }
@@ -219,38 +224,58 @@ export function registerMissDetail(hasMore: boolean): string {
   return hasMore ? "Show the next promises to keep looking." : "Change the filter or search query.";
 }
 
+/** Where an open promise lives when this slice does not list it. */
+export function registerPromiseLocationCopy(
+  promises: readonly { direction?: string | null }[] | undefined,
+): string {
+  const rows = promises ?? [];
+  const theirs = rows.filter((row) => row.direction === "promised_by_them").length;
+  const ours = rows.filter((row) => row.direction === "promised_by_me").length;
+  const shared = rows.filter((row) => row.direction === "mutual").length;
+  const lines: string[] = [];
+  if (ours === 1) lines.push("1 promise we made is in What we owe.");
+  else if (ours > 1) lines.push(`${ours} promises we made are in What we owe.`);
+  if (theirs === 1) lines.push("1 promise they made is in What they owe us.");
+  else if (theirs > 1) lines.push(`${theirs} promises they made are in What they owe us.`);
+  if (shared === 1) lines.push("1 shared promise is in By company.");
+  else if (shared > 1) lines.push(`${shared} shared promises are in By company.`);
+  return lines.join(" ");
+}
+
 /**
  * "What we owe" is empty when the only promise is one they made. That is not
- * a workspace with no commitments.
+ * a workspace with no commitments. A 7-day change window and the past-due
+ * slice are the same kind of miss.
  */
 export function registerElsewhereCopy(
   view: string,
   promises: readonly { direction?: string | null }[] | undefined,
 ): { title: string; detail: string } | null {
   const rows = promises ?? [];
-  const theirs = rows.filter((row) => row.direction === "promised_by_them").length;
-  const ours = rows.filter((row) => row.direction === "promised_by_me").length;
-  const shared = rows.filter((row) => row.direction === "mutual").length;
-  const lines: string[] = [];
-  const sharedLine =
-    shared === 1
-      ? "1 shared promise is in By company."
-      : shared > 1
-        ? `${shared} shared promises are in By company.`
-        : "";
+  const located = registerPromiseLocationCopy(promises);
+  if (view === "changed" || view === "overdue") {
+    if (!located) return null;
+    return {
+      title:
+        view === "overdue"
+          ? "No promises are past due"
+          : "No promises changed in the last 7 days",
+      detail: located,
+    };
+  }
   if (view === "we_owe") {
-    if (theirs === 1) lines.push("1 promise they made is in What they owe us.");
-    else if (theirs > 1) lines.push(`${theirs} promises they made are in What they owe us.`);
-    if (sharedLine) lines.push(sharedLine);
-    if (!lines.length) return null;
-    return { title: "No promises we made", detail: lines.join(" ") };
+    const detail = registerPromiseLocationCopy(
+      rows.filter((row) => row.direction !== "promised_by_me"),
+    );
+    if (!detail) return null;
+    return { title: "No promises we made", detail };
   }
   if (view === "they_owe") {
-    if (ours === 1) lines.push("1 promise we made is in What we owe.");
-    else if (ours > 1) lines.push(`${ours} promises we made are in What we owe.`);
-    if (sharedLine) lines.push(sharedLine);
-    if (!lines.length) return null;
-    return { title: "No promises they made", detail: lines.join(" ") };
+    const detail = registerPromiseLocationCopy(
+      rows.filter((row) => row.direction !== "promised_by_them"),
+    );
+    if (!detail) return null;
+    return { title: "No promises they made", detail };
   }
   return null;
 }
@@ -671,7 +696,10 @@ export function CommitmentQueue({
     setRecordError(null);
   }, [selected?.id]);
   const items = React.useMemo(() => toQueueItems(entries), [entries]);
-  const elsewhere = items.length === 0 ? registerElsewhereCopy(view, otherPromises) : null;
+  const elsewhere =
+    items.length === 0
+      ? registerElsewhereCopy(overdueOnly ? "overdue" : view, otherPromises)
+      : null;
   // The open record is a snapshot from the click. A saved transition refetches
   // the register, and this replaces that snapshot so the button and the
   // acceptance card leave the step that just finished.
@@ -760,6 +788,7 @@ export function CommitmentQueue({
             filtered.length,
             hasMorePromises,
             Boolean(elsewhere) || otherPromisesPending,
+            overdueOnly,
           )}
           icon={TableIcon}
           title="Commitment register"
