@@ -769,6 +769,84 @@ func TestRelationshipGraphStageRequiresSupport(t *testing.T) {
 	}
 }
 
+func TestRelationshipStageFilterRequiresSupport(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bare := f.company(t, "Bare Filter", "bare@filter.example")
+	if bare.Lifecycle != "prospect" {
+		t.Fatalf("stored lifecycle = %q, want the prospect default", bare.Lifecycle)
+	}
+	prospects, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Lifecycle: "prospect"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hasName(namesOf(prospects.Relationships), "Bare Filter") {
+		t.Fatal("an unsupported default must stay out of the Prospect stage")
+	}
+
+	corrected := f.company(t, "Corrected Filter", "corrected@filter.example")
+	rank, ok := relationshipAssertionAuthorityRank("user_correction")
+	if !ok {
+		t.Fatal("user_correction rank")
+	}
+	if _, err := f.client.RelationshipAssertion.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(corrected).
+		SetDimension("lifecycle").SetValue("prospect").
+		SetSourceType("user_correction").SetAuthorityRank(rank).
+		SetValidFrom(corrected.CreatedAt).
+		SetValueSchemaVersion(relationshipAssertionValueSchemaVersion).
+		SetProjectorCompatVersion(relationshipProjectorVersion).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	prospects, err = f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Lifecycle: "prospect"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(prospects.Relationships); !hasName(got, "Corrected Filter") || hasName(got, "Bare Filter") {
+		t.Fatalf("prospect = %v", got)
+	}
+
+	evaluated := f.company(t, "Evaluated Filter", "evaluated@filter.example")
+	if _, err := f.client.Relationship.UpdateOneID(evaluated.ID).SetLifecycle("evaluation").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	obs, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(evaluated).
+		SetSource("meeting").SetExternalID("stage-filter").
+		SetEventType("note").SetOccurredAt(evaluated.CreatedAt).SetReceivedAt(evaluated.CreatedAt).
+		SetSummary("Moved to evaluation").SetContentHash("stage-filter").
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	factRank, ok := relationshipAssertionAuthorityRank("source_fact")
+	if !ok {
+		t.Fatal("source_fact rank")
+	}
+	if _, err := f.client.RelationshipAssertion.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(evaluated).SetObservation(obs).
+		SetDimension("lifecycle").SetValue("evaluation").
+		SetSourceType("source_fact").SetAuthorityRank(factRank).
+		SetValidFrom(evaluated.CreatedAt).
+		SetValueSchemaVersion(relationshipAssertionValueSchemaVersion).
+		SetProjectorCompatVersion(relationshipProjectorVersion).
+		SetSupportingObservationIds([]string{}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	evaluations, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Lifecycle: "evaluation"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(evaluations.Relationships); len(got) != 1 || got[0] != "Evaluated Filter" {
+		t.Fatalf("evaluation = %v", got)
+	}
+}
+
 func (f *fixture) company(t *testing.T, name, email string) *ent.Relationship {
 	t.Helper()
 	rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

@@ -761,7 +761,13 @@ func (s *Service) ListRelationshipsFiltered(
 	q := s.client.Relationship.Query().
 		Where(relationship.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)))
 	if value := strings.TrimSpace(filter.Lifecycle); value != "" {
-		q.Where(relationship.LifecycleEQ(value))
+		// A new company is stored as prospect before any stage is chosen. The
+		// company record says Not known until a correction or cited evidence
+		// supports the stage, so the stage menu has to use that same rule.
+		q.Where(
+			relationship.LifecycleEQ(value),
+			relationshipHasSupportedDimension("lifecycle", s.now()),
+		)
 	}
 	if value := strings.TrimSpace(filter.Health); value != "" {
 		q.Where(relationship.HealthEQ(value))
@@ -3458,6 +3464,28 @@ func writeCurrentAssertionWindow(b *sql.Builder, now time.Time) {
 	b.WriteString(" > ")
 	b.Arg(now)
 	b.WriteByte(')')
+}
+
+// relationshipHasSupportedDimension matches a stage the company record will
+// show. A user correction counts, and so does an assertion that cites evidence.
+func relationshipHasSupportedDimension(dimension string, now time.Time) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipassertion.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(relationshipassertion.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			b.WriteString(relationshipassertion.FieldDimension)
+			b.WriteString(" = ")
+			b.Arg(dimension)
+			b.WriteString(" AND ")
+			writeSupportedAssertionTail(b, s, now)
+			b.WriteString(")")
+		}))
+	})
 }
 
 func writeSupportedAssertionTail(b *sql.Builder, s *sql.Selector, now time.Time) {
