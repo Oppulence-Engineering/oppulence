@@ -154,6 +154,28 @@ export function reconciliationErrorCopy(error: string | null | undefined): strin
   return raw;
 }
 
+/** Only a Gmail message has an original body. A meeting quote is not that email. */
+export function actionHasOriginalEmail(action: {
+  evidence: readonly { source: string }[];
+}): boolean {
+  return action.evidence.some((item) => item.source.trim().toLowerCase() === "gmail");
+}
+
+/** Quotes already on the action, in the order they were stored. */
+export function reviewSupportingQuotes(action: {
+  evidence: readonly { excerpt?: string | null }[];
+}): string[] {
+  const seen = new Set<string>();
+  const quotes: string[] = [];
+  for (const item of action.evidence) {
+    const quote = item.excerpt?.trim() ?? "";
+    if (!quote || seen.has(quote)) continue;
+    seen.add(quote);
+    quotes.push(quote);
+  }
+  return quotes;
+}
+
 function governedSourceLine(action: RevenueAction) {
   const evidence = action.evidence[0];
   if (!evidence) {
@@ -215,6 +237,8 @@ export function ReviewSheet({
 
   const isSend = action.executionMode === "send";
   const isEmail = action.channel === "email";
+  const originalEmail = isEmail && actionHasOriginalEmail(action);
+  const supportingQuotes = originalEmail ? [] : reviewSupportingQuotes(action);
   const uncertain =
     action.executionStatus === "ambiguous" || action.reconciliationStatus === "manual_review";
   const sendFailure =
@@ -281,7 +305,7 @@ export function ReviewSheet({
       setOriginal(await getSourceBody(action.id));
     } catch (e) {
       if (e instanceof RevenueAPIError && e.status === 404) {
-        setOriginal("(The original email body is not available.)");
+        setOriginal("The original email is not available.");
       } else {
         const message = errMessage(e, "Could not load the original email.");
         setActionError(message);
@@ -546,7 +570,7 @@ export function ReviewSheet({
           <PriorityBreakdown action={action} />
 
           {/* The original email, fetched on demand (RFC 031 Layer 3). */}
-          {isEmail ? (
+          {originalEmail ? (
             <div className="rounded-[2px] border border-border p-3">
               {original === null ? (
                 <Button variant="ghost" size="sm" onClick={viewOriginal} disabled={loadingOriginal}>
@@ -558,6 +582,17 @@ export function ReviewSheet({
                   {original}
                 </pre>
               )}
+            </div>
+          ) : supportingQuotes.length > 0 ? (
+            <div className="rounded-[2px] border border-border p-3">
+              <p className="text-xs font-medium text-primary">Supporting words</p>
+              <ul className="mt-2 space-y-1">
+                {supportingQuotes.map((quote) => (
+                  <li className="text-xs text-primary/70" key={quote}>
+                    “{quote}”
+                  </li>
+                ))}
+              </ul>
             </div>
           ) : null}
 

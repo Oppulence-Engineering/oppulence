@@ -4,9 +4,11 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  actionHasOriginalEmail,
   executionFailureCopy,
   reconciliationErrorCopy,
   reconciliationStatusLabel,
+  reviewSupportingQuotes,
 } from "@/components/features/revenue/review-sheet/review-sheet";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "review-sheet.tsx"), "utf8");
@@ -68,5 +70,19 @@ describe("ReviewSheet", () => {
     expect(source).toContain("<AlertTitle>Dismissed</AlertTitle>");
     expect(source).toContain("setActionError(message)");
     expect(source).toContain('errMessage(e, "Could not load the original email.")');
+    expect(actionHasOriginalEmail({ evidence: [{ source: "gmail" }] })).toBe(true);
+    expect(actionHasOriginalEmail({ evidence: [{ source: " Gmail " }] })).toBe(true);
+    expect(actionHasOriginalEmail({ evidence: [{ source: "meeting" }] })).toBe(false);
+    expect(actionHasOriginalEmail({ evidence: [] })).toBe(false);
+    expect(
+      reviewSupportingQuotes({
+        evidence: [{ excerpt: " I will send the quay rank. " }, { excerpt: "I will send the quay rank." }, { excerpt: "  " }],
+      }),
+    ).toEqual(["I will send the quay rank."]);
+    expect(source).toContain("actionHasOriginalEmail(action)");
+    expect(source).toContain("reviewSupportingQuotes(action)");
+    expect(source).toContain("Supporting words");
+    expect(source).toContain("The original email is not available.");
+    expect(source).not.toContain("(The original email body is not available.)");
   });
 });
