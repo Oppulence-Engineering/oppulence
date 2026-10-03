@@ -2064,6 +2064,16 @@ function IdentityReviewInbox({
   );
 }
 
+/**
+ * "Some details are still missing" means a source exists for the rest.
+ * None supported is a different fact.
+ */
+export function completenessHeading(status: string, supported: number): string {
+  const count = Number.isFinite(supported) ? Math.max(0, Math.round(supported)) : 0;
+  if (status.trim() === "partial" && count === 0) return "No account details have a source yet";
+  return completenessProductLabel(status);
+}
+
 /** Stored completeness statuses are not labels. The company sheet names what is missing. */
 export function completenessProductLabel(status: string): string {
   const labels: Record<string, string> = {
@@ -3053,7 +3063,7 @@ function MissionControlOverview({
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <h3 id="mission-control-heading" className="text-sm font-medium text-primary">
-              {completenessProductLabel(model.completeness.status)}
+              {completenessHeading(model.completeness.status, supported)}
             </h3>
             <p className="mt-1 text-xs text-primary/60">
               {emailThreadCount > 0 && supported === 0

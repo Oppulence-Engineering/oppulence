@@ -98,6 +98,7 @@ import {
   conversationDeletionAvailable,
   conversationNoteCount,
   deleteConversationConfirmCopy,
+  completenessHeading,
   completenessProductLabel,
   identityReviewBlockCopy,
   detailEvidenceCopy,
@@ -834,6 +835,11 @@ describe("RelationshipsView", () => {
     ).toBe(true);
     expect(conversationNoteCount(["user", "meeting", "gmail"])).toBe(1);
     expect(source).toContain("No mail or meeting data to delete.");
+    expect(completenessHeading("partial", 0)).toBe("No account details have a source yet");
+    expect(completenessHeading("partial", Number.NaN)).toBe("No account details have a source yet");
+    expect(completenessHeading("partial", 1)).toBe("Some details are still missing");
+    expect(completenessHeading("complete", 0)).toBe("Details are current");
+    expect(source).toContain("completenessHeading(model.completeness.status, supported)");
     expect(completenessProductLabel("partial")).toBe("Some details are still missing");
     expect(completenessProductLabel("complete")).toBe("Details are current");
     expect(completenessProductLabel("custom_status")).toBe("Custom Status");
