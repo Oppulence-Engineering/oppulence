@@ -11,7 +11,10 @@ import {
   recoveryFollowUpName,
   recoveryCompanyCaption,
   recoveryCompanyName,
+  recoveryActionKind,
+  recoveryCardLead,
   recoveryDraftSubject,
+  recoveryPromisedStep,
   recoveryRecipientLabel,
   recoveryRemainderLabel,
   recoveryShownLabel,
@@ -78,6 +81,30 @@ describe("QueueView", () => {
     expect(source).not.toContain("{action.priorityScore}");
     expect(source).toContain("recoveryRecipientLabel(action)");
     expect(source).toContain("recoveryCompanyCaption(action)");
+    expect(source).toContain("recoveryCardLead(action)");
+    expect(source).not.toContain("{action.proposedMessage}");
+    expect(recoveryActionKind("meeting_follow_up")).toBe("Meeting follow-up");
+    expect(recoveryActionKind("commitment_rescue")).toBe("Promise follow-up");
+    expect(recoveryActionKind("custom_nudge")).toBe("Custom Nudge");
+    expect(recoveryActionKind("  ")).toBe("");
+    expect(
+      recoveryPromisedStep(
+        "Hi,\n\nFollowing up on our meeting, I wanted to confirm the next step: Send the quay recovery.\n\nBest,",
+      ),
+    ).toBe("Send the quay recovery");
+    expect(
+      recoveryPromisedStep("Review the evidence before taking action on: Send the security packet."),
+    ).toBe("Send the security packet");
+    expect(recoveryPromisedStep("Hello there.")).toBe("");
+    expect(
+      recoveryCardLead({
+        actionType: "meeting_follow_up",
+        proposedMessage:
+          "Following up on our meeting, I wanted to confirm the next step: Send the quay recovery.",
+      }),
+    ).toBe("Meeting follow-up. Send the quay recovery");
+    expect(recoveryCardLead({ actionType: "meeting_follow_up" })).toBe("Meeting follow-up");
+    expect(recoveryCardLead({})).toBe("");
     expect(source).not.toContain('action.recipientEmail || "Unknown recipient"');
     expect(source).not.toContain('aria-label="Filter recovery actions"');
   });

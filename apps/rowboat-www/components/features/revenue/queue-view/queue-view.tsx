@@ -137,6 +137,45 @@ export function recoveryDraftSubject(subject?: string | null): string {
   return subject?.trim() ?? "";
 }
 
+/** Follow-up kinds are stored as snake case. The card uses the same names as Review. */
+export function recoveryActionKind(actionType?: string | null): string {
+  const type = actionType?.trim() ?? "";
+  if (!type) return "";
+  const known = ACTION_TYPE_LABELS[type];
+  if (known) return known;
+  return type
+    .replaceAll("_", " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+/**
+ * A confirmed meeting draft names the promise after "next step:". A rescue
+ * draft names it after "taking action on:". The queue should say that promise.
+ */
+export function recoveryPromisedStep(message?: string | null): string {
+  const text = (message ?? "").replaceAll("\r\n", "\n").replaceAll("\r", "\n");
+  const patterns = [/next step:\s*([^\n]+)/i, /taking action on:\s*([^\n]+)/i];
+  for (const pattern of patterns) {
+    const step = (text.match(pattern)?.[1] ?? "").trim().replace(/[.]+$/, "").trim();
+    if (step) return step;
+  }
+  return "";
+}
+
+/** The card leads with the follow-up kind, then the promise the draft is about. */
+export function recoveryCardLead(action: {
+  actionType?: string | null;
+  proposedMessage?: string | null;
+}): string {
+  const kind = recoveryActionKind(action.actionType);
+  const step = recoveryPromisedStep(action.proposedMessage);
+  if (kind && step) return `${kind}. ${step}`;
+  return kind || step;
+}
+
 /**
  * A follow-up with no address still belongs to a company. The card names that
  * company instead of calling the recipient unknown.
@@ -531,6 +570,7 @@ function ActionCard({
   const tone = priorityTone(action.priorityScore);
   const recipient = recoveryRecipientLabel(action);
   const company = recoveryCompanyCaption(action);
+  const lead = recoveryCardLead(action);
   const open = action.queueStatus === "open";
   const sendFailure =
     action.executionStatus === "pending" || action.executionStatus === "failed"
@@ -575,6 +615,9 @@ function ActionCard({
             ) : null}
             <Chip className="ml-auto">{recoveryStatusLabel(action.queueStatus)}</Chip>
           </div>
+          {lead ? (
+            <p className="mt-1.5 text-sm font-medium text-[var(--text-primary)]">{lead}</p>
+          ) : null}
           <p className="mt-1.5 line-clamp-2 text-sm text-[var(--text-secondary)]">
             {actionReasonCopy(action.reason)}
           </p>
