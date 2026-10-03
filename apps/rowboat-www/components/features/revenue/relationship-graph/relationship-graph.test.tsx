@@ -116,6 +116,9 @@ describe("RelationshipGraphWorkspace", () => {
     );
     expect(graphChangedDetail([])).toBe("Changed since your last review.");
     expect(graphChangedDetail(["next_action"])).not.toContain("next_action");
+    expect(graphDetailLabel("unknown")).toBe("Not known");
+    expect(graphNodeFieldLabel("relationship", "health", "unknown")).toBe("Not known");
+    expect(graphNodeFieldLabel("relationship", "lifecycle", "unknown")).toBe("Not known");
     expect(graphDetailLabel("historical_unknown")).toBe("Not recorded for this date");
     expect(graphDetailLabel("review_required")).toBe("Needs review");
     expect(graphDetailLabel("needs_attention")).toBe("Needs attention");
@@ -178,7 +181,14 @@ describe("RelationshipGraphWorkspace", () => {
         health: "unknown",
         status: "active",
       }),
-    ).toBe("Active");
+    ).toBe("Not known");
+    expect(
+      graphNodeSummaryLabel({
+        kind: "relationship",
+        health: "unknown",
+        status: "archived",
+      }),
+    ).toBe("Archived");
     expect(
       graphNodeSummaryLabel({
         kind: "relationship",

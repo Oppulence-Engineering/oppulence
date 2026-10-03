@@ -230,9 +230,11 @@ function GraphNodeCard({ data, selected }: NodeProps<FlowNode>) {
   const node = data.graphNode;
   const badges = [
     node.role ? participantRoleLabel(node.role) : "",
-    node.health && node.health !== "unknown"
+    node.kind === "relationship" && node.health
       ? graphNodeFieldLabel(node.kind, "health", node.health)
-      : "",
+      : node.health && node.health !== "unknown"
+        ? graphNodeFieldLabel(node.kind, "health", node.health)
+        : "",
     node.approvalStatus ? graphNodeFieldLabel(node.kind, "approval", node.approvalStatus) : "",
     node.freshness ? graphNodeFieldLabel(node.kind, "freshness", node.freshness) : "",
     node.confidence === undefined ? "" : `${Math.round(node.confidence * 100)}%`,
@@ -1126,6 +1128,8 @@ export function graphEdgeLabel(label: string): string {
 /** A graph field is a stored token. A date before the record existed is not a status. */
 export function graphDetailLabel(value: string): string {
   switch (value) {
+    case "unknown":
+      return "Not known";
     case "historical_unknown":
       return "Not recorded for this date";
     case "review_required":
@@ -1296,8 +1300,20 @@ export function graphNodeSummaryLabel(node: {
   // The diagram badge shows approval, then freshness. The table's one State
   // cell has to use that same word, and only then the stored status.
   if (node.approvalStatus) return graphNodeFieldLabel(node.kind, "approval", node.approvalStatus);
-  if (node.freshness) return graphNodeFieldLabel(node.kind, "freshness", node.freshness);
+  if (node.freshness && node.freshness !== "unknown") {
+    return graphNodeFieldLabel(node.kind, "freshness", node.freshness);
+  }
+  // A new company is stored as active. That is not a health reading. The
+  // company record says Not known until health is actually supported.
+  if (
+    node.kind === "relationship" &&
+    (!node.status || node.status === "active") &&
+    (!node.health || node.health === "unknown")
+  ) {
+    return "Not known";
+  }
   if (node.status) return graphNodeFieldLabel(node.kind, "status", node.status);
+  if (node.health === "unknown" || node.freshness === "unknown") return "Not known";
   return "—";
 }
 
