@@ -903,6 +903,11 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("humanize(data.intelligence.deletionReceipts[0].status)");
     expect(recoveryClassificationLabel("unknown_stale_sources")).toBe("A source is out of date");
     expect(recoveryClassificationLabel("forgotten")).toBe("This promise looks forgotten");
+    expect(recoveryClassificationLabel("fulfilled")).toBe("The promise was kept");
+    expect(recoveryClassificationLabel("likely_fulfilled")).toBe("The promise may already be kept");
+    expect(
+      recoveryExplanationCopy("fulfilled", "Fresh explicit source evidence proves fulfillment."),
+    ).toBe("A newer source shows this promise was kept.");
     expect(
       recoveryExplanationCopy(
         "forgotten",

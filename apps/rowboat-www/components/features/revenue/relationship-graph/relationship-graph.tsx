@@ -1290,7 +1290,7 @@ export function graphNodeFieldLabel(kind: string, field: GraphField, value: stri
       case "at_risk":
         return "At risk";
       case "met":
-        return "Met";
+        return "Kept";
       case "missed":
         return "Missed";
       case "waived":

@@ -304,6 +304,44 @@ test("asking due soon keeps a promise that is not past due yet", () => {
   assert.equal(result.answer, "1 relationship matches due soon.");
 });
 
+test("asking kept finds a promise the company card calls kept", () => {
+  const parsed = parseRelationshipGraphQuery("kept promises");
+  assert.equal(parsed.filters.kept, true);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.ok(parsed.applied.includes("kept"));
+  assert.equal(parsed.applied.some((item) => item.startsWith("text:")), false);
+
+  const hyphenated = parseRelationshipGraphQuery("kept-promises");
+  assert.equal(hyphenated.filters.kept, true);
+  assert.deepEqual(hyphenated.filters.freeText, []);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:kept", kind: "relationship", label: "Quay Harbor" },
+      {
+        id: "commitment:kept",
+        kind: "commitment",
+        label: "Send the quay note",
+        relationshipId: "kept",
+        status: "met",
+      },
+      { id: "relationship:open", kind: "relationship", label: "Quay Open" },
+      {
+        id: "commitment:open",
+        kind: "commitment",
+        label: "Send the quay open",
+        relationshipId: "open",
+        status: "open",
+      },
+    ],
+    edges: [],
+  };
+  const result = queryRelationshipGraph(graph, "kept");
+  assert.deepEqual(result.relationshipIds, ["kept"]);
+  assert.equal(result.visibleNodeIds.includes("relationship:open"), false);
+  assert.equal(result.answer, "1 relationship matches kept.");
+});
+
 test("asking they owe us keeps that side of the promise", () => {
   const parsed = parseRelationshipGraphQuery("what they owe us");
   assert.equal(parsed.filters.direction, "promised_by_them");

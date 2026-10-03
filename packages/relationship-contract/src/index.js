@@ -188,6 +188,8 @@ export function parseRelationshipGraphQuery(query) {
         : /\bwe owe them\b|\bwhat we owe\b|\bwe owe\b/.test(normalized)
           ? "promised_by_me"
           : "",
+    // The company card says Kept. The stored status is still met.
+    kept: /\bkept\b|\bkept_promises?\b/.test(normalized),
     stale: /\bstale\b|\boutdated\b|\bout of date\b/.test(normalized),
     changed:
       /\bchanged\b|\bsince (?:my )?last review\b|\bchanged since review\b|\bsince you last looked\b|\byou last looked\b/.test(
@@ -261,6 +263,7 @@ export function parseRelationshipGraphQuery(query) {
     "depends",
     "hide",
     "isolated",
+    "kept",
     "last",
     "outdated",
     "overdue",
@@ -311,7 +314,10 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bwe both owe\b/g, " ")
     .replace(/\bwe owe\b/g, " ")
     .replace(/\bshared promises\b/g, " ")
-    .replace(/\bshared promise\b/g, " ");
+    .replace(/\bshared promise\b/g, " ")
+    .replace(/\bkept_promises\b/g, " ")
+    .replace(/\bkept_promise\b/g, " ")
+    .replace(/\bkept\b/g, " ");
   filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
@@ -332,6 +338,7 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.direction === "promised_by_them") applied.push("they owe us");
   else if (filters.direction === "mutual") applied.push("we both owe");
   else if (filters.direction === "promised_by_me") applied.push("we owe them");
+  if (filters.kept) applied.push("kept");
   if (filters.stale) applied.push("out of date");
   if (filters.changed) applied.push("changed since you last looked");
   if (filters.hideIsolated) applied.push("hide unconnected");
@@ -404,6 +411,13 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     constrainBy((node) => {
       if (node.kind !== "commitment") return false;
       return normalizedGraphValue(node.metadata?.direction) === filters.direction;
+    });
+  }
+  if (filters.kept) {
+    constrainBy((node) => {
+      if (node.kind !== "commitment") return false;
+      const status = normalizedGraphValue(node.status);
+      return status === "met" || status === "fulfilled";
     });
   }
   if (filters.approvalStatus.length) {

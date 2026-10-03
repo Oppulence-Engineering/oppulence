@@ -566,7 +566,7 @@ function statusLabel(value: string) {
   const labels: Record<string, string> = {
     open: "Open",
     at_risk: "At risk",
-    met: "Met",
+    met: "Kept",
     missed: "Missed",
     waived: "Waived",
     disputed: "Disputed",
@@ -693,7 +693,7 @@ export function registerRowStatus(item: {
   ) {
     return { label, variant: "red" };
   }
-  if (label === "Met") return { label, variant: "green" };
+  if (label === "Kept") return { label, variant: "green" };
   return { label, variant: "amber" };
 }
 
@@ -718,6 +718,7 @@ export function commitmentSearchText(item: CommitmentQueueItem): string {
     item.urgency === "due_soon" ? "due soon" : "",
     item.urgency === "overdue" ? "past due" : "",
     statusLabel(item.state),
+    item.state === "met" ? "met" : "",
     acceptanceLabel(item.acceptance),
     promiseDueDay(item.dueAt) ?? "Missing",
     promiseDueDay(item.dueAt) ?? "Not confirmed",

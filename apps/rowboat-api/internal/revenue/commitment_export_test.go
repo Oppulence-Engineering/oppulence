@@ -179,12 +179,15 @@ func TestCommitmentRecordMarkdownUsesCompanyWords(t *testing.T) {
 		"(A suggestion)",
 	} {
 		if !strings.Contains(doc, want) {
-			t.Errorf("record missing %q\n---\n%s", want, doc)
+			t.Fatalf("markdown missing %q:\n%s", want, doc)
 		}
 	}
 	for _, leaked := range []string{"| Account |", "at_risk", "internally_confirmed", "ai_candidate", "gmail,"} {
 		if strings.Contains(doc, leaked) {
 			t.Errorf("record leaked %q\n---\n%s", leaked, doc)
 		}
+	}
+	if registerStateLabel("met") != "Kept" || commitmentHistoryLabel("fulfilled") != "Kept" {
+		t.Fatalf("kept promise labels = %q / %q", registerStateLabel("met"), commitmentHistoryLabel("fulfilled"))
 	}
 }

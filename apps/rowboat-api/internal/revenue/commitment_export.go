@@ -145,7 +145,7 @@ func registerStateLabel(state string) string {
 	case RegisterAtRisk:
 		return "At risk"
 	case RegisterMet:
-		return "Met"
+		return "Kept"
 	case RegisterMissed:
 		return "Missed"
 	case RegisterWaived:
@@ -186,7 +186,7 @@ func commitmentHistoryLabel(kind string) string {
 	case "renegotiated":
 		return "Renegotiated"
 	case "fulfilled":
-		return "Met"
+		return "Kept"
 	case "missed":
 		return "Missed"
 	case "waived":

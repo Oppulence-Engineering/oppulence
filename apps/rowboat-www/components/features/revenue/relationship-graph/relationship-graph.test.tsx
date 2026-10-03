@@ -152,7 +152,7 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphNodeSummaryLabel({ kind: "source", status: "stale" })).toBe("Out of date");
     expect(graphNodeFieldLabel("commitment", "status", "open")).toBe("Open");
     expect(graphNodeFieldLabel("commitment", "status", "at_risk")).toBe("At risk");
-    expect(graphNodeFieldLabel("commitment", "status", "met")).toBe("Met");
+    expect(graphNodeFieldLabel("commitment", "status", "met")).toBe("Kept");
     expect(graphNodeFieldLabel("commitment", "status", "waived")).toBe("Waived");
     expect(graphNodeFieldLabel("commitment", "status", "missed")).toBe("Missed");
     expect(graphNodeFieldLabel("commitment", "status", "review")).toBe("Review");
@@ -380,6 +380,8 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryFilterLabel("at risk")).toBe("at risk");
     expect(graphQueryFilterLabel("due soon")).toBe("due soon");
     expect(graphQueryFilterLabel("they owe us")).toBe("they owe us");
+    expect(graphQueryFilterLabel("kept")).toBe("kept");
+    expect(graphQueryAnswer("1 relationship matches kept.", 1)).toBe("1 company matches kept.");
     expect(graphQueryAnswer("1 relationship matches they owe us.", 1)).toBe(
       "1 company matches they owe us.",
     );

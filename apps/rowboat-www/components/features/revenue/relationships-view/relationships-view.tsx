@@ -2649,9 +2649,9 @@ export function recoveryClassificationLabel(classification: string): string {
     case "unknown_stale_sources":
       return "A source is out of date";
     case "fulfilled":
-      return "The promise looks met";
+      return "The promise was kept";
     case "likely_fulfilled":
-      return "The promise may already be met";
+      return "The promise may already be kept";
     case "superseded":
       return "Replaced by a later promise";
     case "renegotiated":
@@ -2667,6 +2667,8 @@ const CURRENT_RECOVERY_EXPLANATIONS = new Set([
   "A connected source is out of date, so this promise cannot be checked yet.",
   "A newer source shows this promise was met.",
   "A newer source suggests this promise was met. Review it before closing it.",
+  "A newer source shows this promise was kept.",
+  "A newer source suggests this promise was kept. Review it before closing it.",
   "This promise is past due and nothing newer has closed it.",
   "A later promise replaced this one.",
   "This promise was renegotiated. Review the new terms.",
@@ -2683,7 +2685,7 @@ export function recoveryExplanationCopy(classification: string, explanation: str
   const suggested = /^Fresh evidence suggests ([a-z0-9_]+); human review is required\.$/.exec(raw);
   if (suggested) return `${recoveryClassificationLabel(suggested[1] ?? classification)}. Review it before acting.`;
   if (raw === "Fresh explicit source evidence proves fulfillment.") {
-    return "A newer source shows this promise was met.";
+    return "A newer source shows this promise was kept.";
   }
   if (!raw || raw.includes(classification)) return recoveryClassificationLabel(classification);
   return raw;

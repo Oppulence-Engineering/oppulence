@@ -422,7 +422,7 @@ describe("CommitmentQueue", () => {
       variant: "amber",
     });
     expect(registerRowStatus({ state: "met", acceptance: "accepted", urgency: "closed" })).toEqual({
-      label: "Met",
+      label: "Kept",
       variant: "green",
     });
 
@@ -1182,6 +1182,24 @@ it("finds a promise by the status and score printed on the row", async () => {
   });
   expect(overdue).toContain("Overdue");
   expect(overdue).toContain("past due");
+  const kept = commitmentSearchText({
+    id: "commitment-5",
+    relationshipId: "rel-5",
+    relationshipName: "Harbor",
+    text: "Send the harbor note",
+    direction: "promised_by_me",
+    owner: "Ada",
+    counterparty: "Riley",
+    state: "met",
+    acceptance: "accepted",
+    missingEvidence: [],
+    nextAction: "Closed from observed or confirmed evidence.",
+    urgency: "closed",
+    confidence: 100,
+    currentEventVersion: 2,
+  });
+  expect(kept).toContain("Kept");
+  expect(kept).toContain("met");
   expect(overdue).not.toContain("Not confirmed");
   expect(overdue).not.toContain("Missing");
 });

@@ -149,9 +149,9 @@ func recoveryClassificationLabel(classification string) string {
 	case "unknown_stale_sources":
 		return "A source is out of date"
 	case "fulfilled":
-		return "The promise looks met"
+		return "The promise was kept"
 	case "likely_fulfilled":
-		return "The promise may already be met"
+		return "The promise may already be kept"
 	case "superseded":
 		return "Replaced by a later promise"
 	case "renegotiated":
@@ -171,9 +171,9 @@ func recoveryExplanation(classification string, stale []string) string {
 	}
 	switch classification {
 	case "fulfilled":
-		return "A newer source shows this promise was met."
+		return "A newer source shows this promise was kept."
 	case "likely_fulfilled":
-		return "A newer source suggests this promise was met. Review it before closing it."
+		return "A newer source suggests this promise was kept. Review it before closing it."
 	case "forgotten":
 		return "This promise is past due and nothing newer has closed it."
 	case "superseded":
