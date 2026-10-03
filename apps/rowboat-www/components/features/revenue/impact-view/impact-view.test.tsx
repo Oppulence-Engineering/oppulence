@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   digestFailureCopy,
   digestRefreshCopy,
+  impactEmptyBody,
   impactRefreshCopy,
   digestSignalLabel,
   impactAccountTotal,
@@ -51,6 +52,15 @@ describe("ImpactView", () => {
     expect(digestFailureCopy()).toBe("The weekly digest could not load. Try again.");
     expect(digestRefreshCopy()).toBe("Could not refresh the weekly digest. Try again.");
     expect(impactRefreshCopy()).toBe("Could not refresh impact. Try again.");
+    expect(impactEmptyBody({ needsConnect: false, needsReconnect: true })).toBe(
+      "Reconnect Google. Replies, meetings, and wins show up here after an audit.",
+    );
+    expect(impactEmptyBody({ needsConnect: true, needsReconnect: false })).toContain(
+      "Connect Gmail and Calendar.",
+    );
+    expect(impactEmptyBody({ needsConnect: false, needsReconnect: false })).toContain(
+      "Run an audit",
+    );
     expect(source).toContain("if (!impactQuery.error || impactQuery.data) return;");
     expect(source).toContain("message={impactRefreshCopy()}");
     expect(source).toContain("digest?.openCount");

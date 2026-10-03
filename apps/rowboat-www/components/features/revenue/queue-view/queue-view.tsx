@@ -191,6 +191,23 @@ export function recoveryEmptyDescription(filter: string): string {
   }
 }
 
+/**
+ * The open queue is empty because mail cannot be read. The button already
+ * names reconnect or connect. Telling the reader to run an audit disagrees.
+ */
+export function recoveryOpenEmptyCopy(input: {
+  needsConnect: boolean;
+  needsReconnect: boolean;
+}): string {
+  if (input.needsReconnect) {
+    return "No recovery drafts yet. Reconnect Google before an audit can find promises to recover.";
+  }
+  if (input.needsConnect) {
+    return "No recovery drafts yet. Connect Gmail and Calendar before an audit can find promises to recover.";
+  }
+  return "No recovery drafts yet! Run an audit or draft recovery from a promise.";
+}
+
 /** A follow-up is stored on a company. The empty workspace has nothing to attach it to. */
 export function newActionIntro(hasCompany: boolean): string {
   return hasCompany
@@ -407,21 +424,7 @@ export function QueueView({
                   )}
                 </Button>
               }
-              description={
-                needsConnect ? (
-                  <>
-                    No recovery drafts yet. Connect Gmail and Calendar
-                    <br />
-                    before an audit can find promises to recover.
-                  </>
-                ) : (
-                  <>
-                    No recovery drafts yet! Run an audit
-                    <br />
-                    or draft recovery from a promise.
-                  </>
-                )
-              }
+              description={recoveryOpenEmptyCopy({ needsConnect, needsReconnect })}
               image="recovery"
               learnMore={[
                 { label: "Approve recovery before sending" },

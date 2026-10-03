@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  auditEmptyDescription,
   auditListFailureCopy,
   auditRefreshCopy,
 } from "@/components/features/revenue/scans-view/scans-view";
@@ -32,6 +33,18 @@ describe("ScansView", () => {
     expect(source).not.toContain("{scan.error}");
     expect(auditListFailureCopy()).toBe("Audits could not load. Try again.");
     expect(auditRefreshCopy()).toBe("Could not refresh audits. Try again.");
+    expect(auditEmptyDescription({ needsConnect: false, needsReconnect: true })).toBe(
+      "Reconnect Google before an audit can read your mail.",
+    );
+    expect(auditEmptyDescription({ needsConnect: true, needsReconnect: false })).toBe(
+      "Connect Gmail and Calendar before an audit can read your mail.",
+    );
+    expect(auditEmptyDescription({ needsConnect: false, needsReconnect: false })).toBe(
+      "No audits yet! Run your first audit to find promises in your mail.",
+    );
+    expect(auditEmptyDescription({ needsConnect: true, needsReconnect: true })).not.toMatch(
+      /Run your first audit/,
+    );
     expect(source).toContain("loadFailed && rows.length === 0");
     expect(source).toContain("refreshFailed");
     expect(source).toContain("auditListFailureCopy()");

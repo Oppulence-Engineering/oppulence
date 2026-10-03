@@ -41,6 +41,21 @@ export function auditRefreshCopy(): string {
   return listRefreshFailureCopy("audits");
 }
 
+/**
+ * The button already says reconnect or connect. The empty list has to say the
+ * same thing. A dead Google grant is not a workspace that has never been audited.
+ */
+export function auditEmptyDescription(input: {
+  needsConnect: boolean;
+  needsReconnect: boolean;
+}): string {
+  if (input.needsReconnect) return "Reconnect Google before an audit can read your mail.";
+  if (input.needsConnect) {
+    return "Connect Gmail and Calendar before an audit can read your mail.";
+  }
+  return "No audits yet! Run your first audit to find promises in your mail.";
+}
+
 export function ScansView({
   scans,
   activeScan,
@@ -139,21 +154,7 @@ export function ScansView({
               )}
             </Button>
           }
-          description={
-            needsConnect ? (
-              <>
-                Connect Gmail and Calendar before an audit
-                <br />
-                can read your mail.
-              </>
-            ) : (
-              <>
-                No audits yet! Run your first audit
-                <br />
-                to find promises in your mail.
-              </>
-            )
-          }
+          description={auditEmptyDescription({ needsConnect, needsReconnect })}
           image="audits"
           learnMore={[
             { label: "Reads the mail you connect" },

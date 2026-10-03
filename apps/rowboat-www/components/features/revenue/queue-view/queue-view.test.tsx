@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { dismissReasonLabel, snoozeWakeCopy } from "@/lib/revenue/revenue";
 import {
   recoveryEmptyDescription,
+  recoveryOpenEmptyCopy,
   recoveryFilterName,
   recoveryFollowUpName,
   recoveryCompanyCaption,
@@ -103,6 +104,15 @@ describe("QueueView", () => {
     expect(recoveryShownLabel(101, false)).toBe("101 shown");
     expect(recoveryRemainderLabel()).toBe("Show the next follow-ups");
     expect(recoveryEmptyDescription("all")).toBe("No recovery drafts right now.");
+    expect(recoveryOpenEmptyCopy({ needsConnect: false, needsReconnect: true })).toBe(
+      "No recovery drafts yet. Reconnect Google before an audit can find promises to recover.",
+    );
+    expect(recoveryOpenEmptyCopy({ needsConnect: true, needsReconnect: false })).toContain(
+      "Connect Gmail and Calendar",
+    );
+    expect(recoveryOpenEmptyCopy({ needsConnect: false, needsReconnect: false })).toContain(
+      "Run an audit",
+    );
     expect(recoveryEmptyDescription("snoozed")).toBe("Nothing is snoozed right now.");
     expect(recoveryEmptyDescription("handled")).toBe("Nothing has been handled yet.");
     expect(recoveryEmptyDescription("dismissed")).toBe("Nothing has been dismissed.");

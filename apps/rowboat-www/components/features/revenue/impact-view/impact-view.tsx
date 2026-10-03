@@ -100,6 +100,23 @@ export function impactRefreshCopy(): string {
   return listRefreshFailureCopy("impact");
 }
 
+/**
+ * An empty impact page with a dead Google grant cannot run an audit. The
+ * button already says reconnect. The sentence has to say that too.
+ */
+export function impactEmptyBody(input: {
+  needsConnect: boolean;
+  needsReconnect: boolean;
+}): string {
+  if (input.needsReconnect) {
+    return "Reconnect Google. Replies, meetings, and wins show up here after an audit.";
+  }
+  if (input.needsConnect) {
+    return "Connect Gmail and Calendar. Replies, meetings, and wins show up here after an audit.";
+  }
+  return "Run an audit and start reviewing actions — replies, meetings, and wins show up here as they come in.";
+}
+
 export function digestSignalLabel(detector: string): string {
   const value = detector.trim();
   if (!value) return "";
@@ -199,11 +216,7 @@ export function ImpactView({
         ) : null}
         {digestFailed && digestTop.length === 0 ? <DigestLoadNotice onRetry={reload} /> : null}
         <EmptyBlock
-        body={
-          needsConnect
-            ? "Connect Gmail and Calendar. Replies, meetings, and wins show up here after an audit."
-            : "Run an audit and start reviewing actions — replies, meetings, and wins show up here as they come in."
-        }
+        body={impactEmptyBody({ needsConnect, needsReconnect })}
         image="impact"
         learnMore={[{ label: "Track recovery outcomes" }, { label: "Measure company risk" }]}
         title="Impact"
