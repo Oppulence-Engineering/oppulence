@@ -1140,8 +1140,13 @@ export function graphDetailLabel(value: string): string {
       return "Former customer";
     case "stale":
       return "Out of date";
-    default:
-      return enumLabel(value);
+    default: {
+      const trimmed = value.trim();
+      // The graph already receives phrases such as "Promise confirmed".
+      // Title-casing those turns the second word into a heading.
+      if (!/^[a-z0-9_./]+$/.test(trimmed)) return trimmed;
+      return enumLabel(trimmed);
+    }
   }
 }
 

@@ -127,6 +127,10 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphDetailLabel("stale")).toBe("Out of date");
     expect(graphDetailLabel("historical_unknown")).not.toContain("historical_unknown");
     expect(graphDetailLabel("open")).toBe("Open");
+    expect(graphDetailLabel("Promise confirmed")).toBe("Promise confirmed");
+    expect(graphNodeSummaryLabel({ kind: "evidence", status: "Promise confirmed" })).toBe(
+      "Promise confirmed",
+    );
     expect(graphNodeFieldLabel("commitment", "status", "open")).toBe("Open");
     expect(graphNodeFieldLabel("commitment", "status", "at_risk")).toBe("At risk");
     expect(graphNodeFieldLabel("commitment", "status", "met")).toBe("Met");
