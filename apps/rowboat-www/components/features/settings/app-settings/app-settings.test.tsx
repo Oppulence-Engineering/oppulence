@@ -29,7 +29,9 @@ describe("SettingsView", () => {
     expect(source).toContain("Standard workspace access");
     expect(source).toContain("shared companies, people, and their details");
     expect(source).not.toContain("shared companies, people, and evidence");
-    expect(source).toContain("Oppulence Cloud serves companies, people, and promises for this organization.");
+    expect(source).toContain(
+      "Oppulence Cloud serves companies, people, and promises for this organization.",
+    );
     expect(source).toContain("Companies, people, and promises for the signed-in organization.");
     expect(source).not.toContain("and evidence for this organization");
     expect(source).not.toContain("and evidence for the signed-in organization");
@@ -41,7 +43,9 @@ describe("SettingsView", () => {
     expect(source).not.toContain('title="Evidence access"');
     expect(source).not.toContain("stops new evidence");
     expect(source).toContain("where the product should go next.");
-    expect(source).toContain("Report a problem, or tell us what is missing and where the product should go next.");
+    expect(source).toContain(
+      "Report a problem, or tell us what is missing and where the product should go next.",
+    );
     expect(helpDestination("mailto:hello@oppulence.io?subject=Oppulence%20feedback").target).toBe(
       "self",
     );
@@ -82,7 +86,9 @@ describe("SettingsView", () => {
     expect(source).toContain("Browser address");
     expect(source).toContain("Where this Oppulence tab is open.");
     expect(source).not.toContain("Signed-in address");
-    expect(source).toContain("This session has no organization. Access stays with the signed-in account.");
+    expect(source).toContain(
+      "This session has no organization. Access stays with the signed-in account.",
+    );
     expect(source).toContain(
       "This session has no organization, so there is no shared connection list. Account connections are in Connections.",
     );
@@ -93,12 +99,17 @@ describe("SettingsView", () => {
     expect(source).not.toContain(">Default</SettingsStatus>");
     expect(source).toContain("readBrowserOrigin");
     expect(source).toContain("return window.location.origin");
-    expect(source).toContain("The default agent for a new chat, and whether anonymous product events may be captured.");
+    expect(source).toContain(
+      "The default agent for a new chat, and whether anonymous product events may be captured.",
+    );
     expect(source).not.toContain("account-wide");
     expect(source).toContain("the next time you start a chat.");
     expect(source).toContain('title="Chat defaults"');
     expect(source).toContain('title="Current plan"');
     expect(source).toContain("billingStatusLabel(billing.status)");
+    expect(source).toContain("planLabel(billing?.plan)");
+    expect(source).not.toContain('{billing?.plan || "Free"}');
+    expect(source).not.toContain('className="text-xs font-normal capitalize text-primary/60"');
     expect(source).not.toContain("{billing.status}");
     expect(source).toContain("Activity counted in the current billing period.");
     expect(source).not.toContain("the next time you open Oppulence.");

@@ -97,7 +97,12 @@ describe("settings billing upgrade", () => {
         }}
       />,
     );
-    expect(screen.getByText("Included credits")).toBeVisible();
+    const included = screen.getByText("Included credits");
+    expect(included).toBeVisible();
+    expect(included).not.toHaveClass("capitalize");
+    expect(screen.getByText("Credits used")).not.toHaveClass("capitalize");
+    expect(screen.getByText("Credits remaining")).not.toHaveClass("capitalize");
+    expect(screen.getByText("Free")).toBeVisible();
     expect(screen.getAllByText("10,000").length).toBeGreaterThan(0);
     expect(screen.queryByText("10000")).not.toBeInTheDocument();
     expect(screen.queryByText("sanctionedCredits")).not.toBeInTheDocument();

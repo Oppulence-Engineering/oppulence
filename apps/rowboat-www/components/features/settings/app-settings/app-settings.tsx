@@ -33,7 +33,7 @@ import { DeleteAccountRow } from "@/components/features/account/delete-account-r
 import { CommunicationPrivacySettings } from "@/components/features/connectors/communication-privacy-settings/communication-privacy-settings";
 import { ConnectorSettings } from "@/components/features/connectors/connector-settings/connector-settings";
 import { capture, RevenueEvents, setAnalyticsConsent } from "@/lib/analytics/analytics";
-import { billingStatusLabel } from "@/lib/product/plan-label";
+import { billingStatusLabel, planLabel } from "@/lib/product/plan-label";
 import {
   patchConsolePreferences,
   type ConsolePreferences,
@@ -175,7 +175,7 @@ function ValueRow({
 
   return (
     <div className="group/row flex min-h-[34px] items-center justify-between gap-4 rounded-none px-4 py-1 transition-colors hover:bg-background-100 dark:hover:bg-background-200">
-      <Label className="text-xs font-normal capitalize text-primary/60">{label}</Label>
+      <Label className="text-xs font-normal text-primary/60">{label}</Label>
       <div className="flex min-w-0 items-center gap-1.5">
         {shown ? (
           <Badge className="truncate font-mono font-normal text-primary" variant="secondary">
@@ -479,34 +479,34 @@ function ProfileCard() {
         />
       ) : (
         <>
-        {query.isError ? (
-          <PreferenceLoadState
-            message={preferenceRefreshCopy("profile preference")}
-            retry={() => void query.refetch()}
-          />
-        ) : null}
-        <div className="space-y-6 py-2">
-          <div>
-            <FieldLabel
-              hint="Shown in the sidebar and the home greeting instead of your email."
-              htmlFor="settings-display-name"
-            >
-              Display name
-            </FieldLabel>
-            <Input
-              disabled={query.isLoading}
-              id="settings-display-name"
-              onChange={(event) => setName(event.target.value)}
-              placeholder={query.isLoading ? "Loading…" : "Ada Lovelace"}
-              value={name}
+          {query.isError ? (
+            <PreferenceLoadState
+              message={preferenceRefreshCopy("profile preference")}
+              retry={() => void query.refetch()}
             />
-            {mutation.isError ? (
-              <p className="mt-2 text-xs text-destructive" role="alert">
-                Could not save your display name. Please retry.
-              </p>
-            ) : null}
+          ) : null}
+          <div className="space-y-6 py-2">
+            <div>
+              <FieldLabel
+                hint="Shown in the sidebar and the home greeting instead of your email."
+                htmlFor="settings-display-name"
+              >
+                Display name
+              </FieldLabel>
+              <Input
+                disabled={query.isLoading}
+                id="settings-display-name"
+                onChange={(event) => setName(event.target.value)}
+                placeholder={query.isLoading ? "Loading…" : "Ada Lovelace"}
+                value={name}
+              />
+              {mutation.isError ? (
+                <p className="mt-2 text-xs text-destructive" role="alert">
+                  Could not save your display name. Please retry.
+                </p>
+              ) : null}
+            </div>
           </div>
-        </div>
         </>
       )}
     </SettingsRow>
@@ -565,73 +565,75 @@ function DefaultsCard() {
         />
       ) : (
         <>
-        {query.isError ? (
-          <PreferenceLoadState
-            message={preferenceRefreshCopy("default agent")}
-            retry={() => void query.refetch()}
-          />
-        ) : null}
-        <div className="space-y-6 px-4 py-6">
-          <div>
-            <FieldLabel
-              hint="The agent preselected for new conversations."
-              htmlFor="settings-default-agent"
-            >
-              Default agent
-            </FieldLabel>
-            {state === "error" ? (
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <p className="text-xs text-destructive">
-                  {agents.length === 0 ? "Could not load agents." : "Could not refresh agents."}
-                </p>
-                <Button
-                  onClick={() => void agentsQuery.refetch()}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  Retry
-                </Button>
-              </div>
-            ) : null}
-            <Select
-              disabled={
-                query.isLoading || state === "loading" || (state === "error" && agents.length === 0)
-              }
-              onValueChange={setAgent}
-              value={agent || undefined}
-            >
-              <SelectTrigger
-                aria-label={comboboxFilterName(
-                  "Default agent",
-                  agent ? visibleAgentLabel(agents, agent) : "Choose an agent",
-                )}
-                className="w-full max-w-xs"
-                id="settings-default-agent"
+          {query.isError ? (
+            <PreferenceLoadState
+              message={preferenceRefreshCopy("default agent")}
+              retry={() => void query.refetch()}
+            />
+          ) : null}
+          <div className="space-y-6 px-4 py-6">
+            <div>
+              <FieldLabel
+                hint="The agent preselected for new conversations."
+                htmlFor="settings-default-agent"
               >
-                {/* Same reason as the composer: the closed trigger does not
-                    keep the item label, so a saved default would look unset. */}
-                <SelectValue
-                  placeholder={state === "loading" ? "Loading agents…" : "Choose an agent"}
+                Default agent
+              </FieldLabel>
+              {state === "error" ? (
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <p className="text-xs text-destructive">
+                    {agents.length === 0 ? "Could not load agents." : "Could not refresh agents."}
+                  </p>
+                  <Button
+                    onClick={() => void agentsQuery.refetch()}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Retry
+                  </Button>
+                </div>
+              ) : null}
+              <Select
+                disabled={
+                  query.isLoading ||
+                  state === "loading" ||
+                  (state === "error" && agents.length === 0)
+                }
+                onValueChange={setAgent}
+                value={agent || undefined}
+              >
+                <SelectTrigger
+                  aria-label={comboboxFilterName(
+                    "Default agent",
+                    agent ? visibleAgentLabel(agents, agent) : "Choose an agent",
+                  )}
+                  className="w-full max-w-xs"
+                  id="settings-default-agent"
                 >
-                  {agent ? visibleAgentLabel(agents, agent) : undefined}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="app-shell rounded-[2px]">
-                {agents.map((item) => (
-                  <SelectItem key={item.slug} value={item.slug}>
-                    {item.name.trim() || item.slug}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {mutation.isError ? (
-              <p className="mt-2 text-xs text-destructive" role="alert">
-                Could not save your default agent. Please retry.
-              </p>
-            ) : null}
+                  {/* Same reason as the composer: the closed trigger does not
+                    keep the item label, so a saved default would look unset. */}
+                  <SelectValue
+                    placeholder={state === "loading" ? "Loading agents…" : "Choose an agent"}
+                  >
+                    {agent ? visibleAgentLabel(agents, agent) : undefined}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="app-shell rounded-[2px]">
+                  {agents.map((item) => (
+                    <SelectItem key={item.slug} value={item.slug}>
+                      {item.name.trim() || item.slug}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {mutation.isError ? (
+                <p className="mt-2 text-xs text-destructive" role="alert">
+                  Could not save your default agent. Please retry.
+                </p>
+              ) : null}
+            </div>
           </div>
-        </div>
         </>
       )}
     </SettingsRow>
@@ -717,8 +719,8 @@ function AppearanceSection() {
 }
 
 /**
- * Billing usage arrives as API field names. The row style capitalizes the
- * first letter only, so sanctionedCredits renders as SanctionedCredits.
+ * Billing usage arrives as API field names. The row prints these words as
+ * written. A capitalize style turned "Credits used" into "Credits Used".
  */
 const USAGE_METER_LABELS: Record<string, string> = {
   sanctionedCredits: "Included credits",
@@ -792,7 +794,7 @@ export function PlanSection({ session }: { session: SessionShape }) {
       <SettingsRow description="The plan this workspace is currently on." title="Current plan">
         <div className="flex items-center justify-between gap-6 p-4">
           <div>
-            <p className="text-lg font-medium capitalize text-primary">{billing?.plan || "Free"}</p>
+            <p className="text-lg font-medium text-primary">{planLabel(billing?.plan) || "Free"}</p>
             {billing?.trialExpiresAt ? (
               <p className="text-xs font-medium text-oppulence-orange">
                 Trial ends {new Date(billing.trialExpiresAt).toLocaleDateString()}
@@ -825,7 +827,11 @@ export function PlanSection({ session }: { session: SessionShape }) {
         ) : (
           <div className="flex flex-col gap-0.5 py-2">
             {usage.map(([key, value]) => (
-              <ValueRow key={key} label={usageMeterLabel(key)} value={usageMeterValue(key, value)} />
+              <ValueRow
+                key={key}
+                label={usageMeterLabel(key)}
+                value={usageMeterValue(key, value)}
+              />
             ))}
           </div>
         )}
@@ -857,32 +863,32 @@ function UsageDataCard() {
         />
       ) : (
         <>
-        {query.isError ? (
-          <PreferenceLoadState
-            message={preferenceRefreshCopy("analytics preference")}
-            retry={() => void query.refetch()}
-          />
-        ) : null}
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <p className="settings-row-label">Share anonymous usage data</p>
-            <p className="settings-row-description">
-              Allow product events without notes, companies, prompts, or identity data.
-            </p>
-            {mutation.isError ? (
-              <p className="mt-1 text-xs text-destructive" role="alert">
-                Could not save this preference. Please retry.
+          {query.isError ? (
+            <PreferenceLoadState
+              message={preferenceRefreshCopy("analytics preference")}
+              retry={() => void query.refetch()}
+            />
+          ) : null}
+          <div className="settings-row">
+            <div className="settings-row-copy">
+              <p className="settings-row-label">Share anonymous usage data</p>
+              <p className="settings-row-description">
+                Allow product events without notes, companies, prompts, or identity data.
               </p>
-            ) : null}
+              {mutation.isError ? (
+                <p className="mt-1 text-xs text-destructive" role="alert">
+                  Could not save this preference. Please retry.
+                </p>
+              ) : null}
+            </div>
+            <Switch
+              aria-label="Share anonymous usage data"
+              checked={query.data?.shareUsageData ?? false}
+              className="settings-switch shrink-0"
+              disabled={query.isLoading || mutation.isPending}
+              onCheckedChange={update}
+            />
           </div>
-          <Switch
-            aria-label="Share anonymous usage data"
-            checked={query.data?.shareUsageData ?? false}
-            className="settings-switch shrink-0"
-            disabled={query.isLoading || mutation.isPending}
-            onCheckedChange={update}
-          />
-        </div>
         </>
       )}
     </SettingsRow>
@@ -956,11 +962,7 @@ function PreferencesSection() {
   );
 }
 
-function NotificationsSection({
-  onNavigate,
-}: {
-  onNavigate: (section: SettingsSection) => void;
-}) {
+function NotificationsSection({ onNavigate }: { onNavigate: (section: SettingsSection) => void }) {
   return (
     <>
       <PageIntro
@@ -999,11 +1001,7 @@ function ConnectSection({
   );
 }
 
-function CustomizationSection({
-  onNavigate,
-}: {
-  onNavigate: (section: SettingsSection) => void;
-}) {
+function CustomizationSection({ onNavigate }: { onNavigate: (section: SettingsSection) => void }) {
   return (
     <>
       <PageIntro
@@ -1077,7 +1075,8 @@ function HelpSection() {
   const items = [
     {
       title: "Send feedback",
-      description: "Report a problem, or tell us what is missing and where the product should go next.",
+      description:
+        "Report a problem, or tell us what is missing and where the product should go next.",
       icon: Bell,
       href: "mailto:hello@oppulence.io?subject=Oppulence%20feedback",
     },
@@ -1257,9 +1256,7 @@ export function SettingsView({
       <div className={cn("settings-page", section === "overview" && "settings-page--wide")}>
         {section === "overview" ? <OverviewSection onNavigate={onNavigate} /> : null}
         {section === "preferences" ? <PreferencesSection /> : null}
-        {section === "notifications" ? (
-          <NotificationsSection onNavigate={onNavigate} />
-        ) : null}
+        {section === "notifications" ? <NotificationsSection onNavigate={onNavigate} /> : null}
         {section === "permissions" ? (
           <PermissionsSection onNavigate={onNavigate} session={session} />
         ) : null}
@@ -1283,16 +1280,11 @@ export function SettingsView({
             <WorkspaceConnection organizationId={session.user.organizationId} />
           </>
         ) : null}
-        {section === "customization" ? (
-          <CustomizationSection onNavigate={onNavigate} />
-        ) : null}
+        {section === "customization" ? <CustomizationSection onNavigate={onNavigate} /> : null}
         {section === "appearance" ? <AppearanceSection /> : null}
         {section === "account" ? <AccountSection session={session} /> : null}
         {section === "connect" ? (
-          <ConnectSection
-            onNavigate={onNavigate}
-            organizationId={session.user.organizationId}
-          />
+          <ConnectSection onNavigate={onNavigate} organizationId={session.user.organizationId} />
         ) : null}
         {section === "help" ? <HelpSection /> : null}
       </div>
