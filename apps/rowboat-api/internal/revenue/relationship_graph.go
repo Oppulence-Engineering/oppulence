@@ -588,9 +588,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 			}
 			evidenceRefs := []string{}
 			if evidences, err := item.Edges.EvidencesOrErr(); err == nil {
-				for _, evidence := range evidences {
-					evidenceRefs = append(evidenceRefs, evidence.ID.String())
-				}
+				evidenceRefs = graphCommitmentEvidenceRefs(evidences)
 			}
 			commitmentLabel := strings.TrimSpace(item.Text)
 			if commitmentLabel == "" {
@@ -771,6 +769,41 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 		dto.RelationshipID = aggregate.Relationships[0].ID.String()
 	}
 	return dto
+}
+
+// graphCommitmentEvidenceRefs points a promise at the activity that confirmed
+// it. The stored evidence id is not a graph node, so the inspector used to
+// say the detail stayed on the record while Promise confirmed sat beside it.
+func graphCommitmentEvidenceRefs(evidences []*ent.RevenueEvidence) []string {
+	refs := make([]string, 0, len(evidences))
+	seen := map[string]struct{}{}
+	add := func(id string) {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			return
+		}
+		if _, ok := seen[id]; ok {
+			return
+		}
+		seen[id] = struct{}{}
+		refs = append(refs, id)
+	}
+	for _, evidence := range evidences {
+		if evidence == nil {
+			continue
+		}
+		linked := false
+		for _, ref := range evidence.ExternalEvidenceRefs {
+			if id, ok := strings.CutPrefix(strings.TrimSpace(ref), "relationship-observation:"); ok {
+				add(id)
+				linked = true
+			}
+		}
+		if !linked {
+			add(evidence.ID.String())
+		}
+	}
+	return refs
 }
 
 // graphEvidenceLabel matches the company sheet. A blank excerpt is not a

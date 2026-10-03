@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 )
 
@@ -119,6 +121,22 @@ func TestRelationshipGraphRejectsFutureHistoricalBoundary(t *testing.T) {
 	})
 	if !errors.Is(err, ErrInvalidInput) {
 		t.Fatalf("future asOf: want ErrInvalidInput, got %v", err)
+	}
+}
+
+func TestGraphCommitmentEvidenceRefsOpenTheConfirmation(t *testing.T) {
+	evidenceID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	observationID := uuid.MustParse("22222222-2222-2222-2222-222222222222")
+	linked := graphCommitmentEvidenceRefs([]*ent.RevenueEvidence{{
+		ID:                   evidenceID,
+		ExternalEvidenceRefs: []string{"relationship-observation:" + observationID.String()},
+	}})
+	if len(linked) != 1 || linked[0] != observationID.String() {
+		t.Fatalf("linked refs = %#v", linked)
+	}
+	plain := graphCommitmentEvidenceRefs([]*ent.RevenueEvidence{{ID: evidenceID}})
+	if len(plain) != 1 || plain[0] != evidenceID.String() {
+		t.Fatalf("plain refs = %#v", plain)
 	}
 }
 
