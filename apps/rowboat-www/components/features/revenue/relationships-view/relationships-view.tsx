@@ -2682,6 +2682,17 @@ export function relationshipChangeTitle(shown: number, hasMore: boolean, failed 
   return hasMore ? `What changed (${shown}+)` : `What changed (${shown})`;
 }
 
+/**
+ * Snapshots cover account details such as health and lifecycle. A confirmed
+ * meeting is activity, so an empty snapshot list must not say nothing happened.
+ */
+export function relationshipChangeEmptyCopy(hasRecordedActivity: boolean): string {
+  if (hasRecordedActivity) {
+    return "No account details have changed yet. Promises and meetings are in the sections below.";
+  }
+  return "No account details have changed yet.";
+}
+
 /** A failed company-sheet pane is not an empty history. */
 export function sheetPaneFailureCopy(noun: string): string {
   return `${noun} could not load. Try again.`;
@@ -4736,7 +4747,9 @@ export function RelationshipSheet({
                   ) : null}
                   <SheetPaneStatus
                     count={changes.length}
-                    empty="Nothing has changed yet."
+                    empty={relationshipChangeEmptyCopy(
+                      timeline.length > 0 || data.commitments.length > 0,
+                    )}
                     failed={changesFailed}
                     noun="Changes"
                     onRetry={() => void load()}

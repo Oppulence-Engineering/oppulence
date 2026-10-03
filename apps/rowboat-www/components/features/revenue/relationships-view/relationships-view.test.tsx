@@ -58,6 +58,7 @@ import {
   sheetPaneFailureCopy,
   sheetPaneRefreshCopy,
   earlierActivityLabel,
+  relationshipChangeEmptyCopy,
   relationshipChangeTitle,
   earlierChangesLabel,
   focusedReviewTitle,
@@ -895,6 +896,13 @@ describe("RelationshipsView", () => {
     expect(relationshipChangeTitle(2, true)).toBe("What changed (2+)");
     expect(relationshipChangeTitle(3, false)).toBe("What changed (3)");
     expect(relationshipChangeTitle(0, false, true)).toBe("What changed");
+    expect(source).toContain("relationshipChangeEmptyCopy(");
+    expect(source).toContain("timeline.length > 0 || data.commitments.length > 0");
+    expect(source).not.toContain("Nothing has changed yet.");
+    expect(relationshipChangeEmptyCopy(false)).toBe("No account details have changed yet.");
+    expect(relationshipChangeEmptyCopy(true)).toBe(
+      "No account details have changed yet. Promises and meetings are in the sections below.",
+    );
     expect(earlierChangesLabel()).toBe("Show earlier changes");
     expect(focusedReviewTitle(0, true)).toBe("Focused evidence review (0+)");
     expect(focusedReviewTitle(1, false)).toBe("Focused evidence review (1)");
