@@ -23,6 +23,7 @@ import {
   graphEarlierEvidenceLabel,
   graphEvidencePage,
   graphListRemainderLabel,
+  graphDetailNodes,
   graphEvidenceChipLabel,
   graphLayoutLabel,
   graphAccountChoice,
@@ -379,6 +380,20 @@ describe("RelationshipGraphWorkspace", () => {
     );
     expect(graphEvidenceChipLabel({ label: "   ", source: "gmail" })).toBe("Gmail");
     expect(graphEvidenceChipLabel({ label: "", source: "" })).toBe("Detail");
+    const confirmation = {
+      id: "evidence:obs",
+      kind: "evidence",
+      evidenceRefs: ["obs"],
+      label: "Promise confirmed",
+    };
+    expect(graphDetailNodes(confirmation, [confirmation])).toEqual([]);
+    expect(
+      graphDetailNodes(
+        { id: "commitment:promise", evidenceRefs: ["quote"] },
+        [{ id: "evidence:quote", kind: "evidence", evidenceRefs: ["quote"], label: "The quote" }],
+      ).map((item) => item.id),
+    ).toEqual(["evidence:quote"]);
+    expect(source).toContain("graphDetailNodes(node, graph.nodes)");
     expect(source).toContain("graphEvidenceChipLabel(evidence)");
     expect(source).not.toContain('{evidence.source || "detail"}');
     expect(source).toContain('graphCountLabel(graphNodes.length, "item", "items")');

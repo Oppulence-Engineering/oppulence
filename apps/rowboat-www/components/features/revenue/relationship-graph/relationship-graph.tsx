@@ -685,11 +685,7 @@ function Inspector({
     : connected.slice(0, GRAPH_CONNECTION_PAGE);
   const hiddenConnections = connected.length - shownConnections.length;
   const actionId = node.kind === "action" ? node.resourceRef : undefined;
-  const evidenceNodes = graph.nodes.filter(
-    (candidate) =>
-      candidate.kind === "evidence" &&
-      candidate.evidenceRefs.some((ref) => node.evidenceRefs.includes(ref)),
-  );
+  const evidenceNodes = graphDetailNodes(node, graph.nodes);
   const shownEvidence = expandedDetails ? evidenceNodes : evidenceNodes.slice(0, GRAPH_DETAIL_PAGE);
   const hiddenEvidence = evidenceNodes.length - shownEvidence.length;
 
@@ -1070,6 +1066,24 @@ export const GRAPH_DETAIL_PAGE = 6;
 /** The rows past the first screen, in the same words as the graph counts. */
 export function graphListRemainderLabel(hidden: number, singular: string, plural: string): string {
   return `Show the other ${graphCountLabel(hidden, singular, plural)}`;
+}
+
+/**
+ * A detail chip opens another node that shares this record's evidence. The
+ * open detail used to list itself, so "Promise confirmed" appeared again
+ * under its own heading.
+ */
+export function graphDetailNodes<
+  T extends { id: string; kind: string; evidenceRefs?: readonly string[] | null },
+>(node: { id: string; evidenceRefs?: readonly string[] | null }, nodes: readonly T[]): T[] {
+  const refs = node.evidenceRefs ?? [];
+  if (refs.length === 0) return [];
+  return nodes.filter(
+    (candidate) =>
+      candidate.id !== node.id &&
+      candidate.kind === "evidence" &&
+      (candidate.evidenceRefs ?? []).some((ref) => refs.includes(ref)),
+  );
 }
 
 /**
