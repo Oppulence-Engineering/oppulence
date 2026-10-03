@@ -74,6 +74,49 @@ func TestRelationshipGraphRejectsFutureHistoricalBoundary(t *testing.T) {
 	}
 }
 
+func TestRelationshipGraphProjectsAPromiseLikeTheRegister(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	soon, err := f.client.Commitment.Create().SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+		SetDirection("promised_by_me").SetText("  Send the harbor note.  ").SetConfidence(1).
+		SetAcceptance("accepted").SetDueAt(time.Now().UTC().Add(24 * time.Hour)).SetCurrentEventVersion(1).Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	kept, err := f.client.Commitment.Create().SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+		SetDirection("promised_by_them").SetText("Send the kept note").SetStatus("fulfilled").
+		SetConfidence(1).SetAcceptance("accepted").SetCurrentEventVersion(1).Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	asOf := f.svc.now()
+	aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &rel.ID, Depth: 1, AsOf: asOf,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dto := buildRelationshipGraphDTO(aggregate, asOf)
+	seen := map[string]relationshipGraphNodeDTO{}
+	for _, node := range dto.Nodes {
+		if node.Kind == "commitment" {
+			seen[node.ID] = node
+		}
+	}
+	risk := seen["commitment:"+soon.ID.String()]
+	if risk.Status != RegisterAtRisk || risk.Label != "Send the harbor note." {
+		t.Fatalf("due-soon promise = status %q label %q", risk.Status, risk.Label)
+	}
+	met := seen["commitment:"+kept.ID.String()]
+	if met.Status != RegisterMet || met.Label != "Send the kept note" {
+		t.Fatalf("kept promise = status %q label %q", met.Status, met.Label)
+	}
+}
+
 func TestRelationshipGraphCommitmentCarriesQueueMetadata(t *testing.T) {
 	f := newFixture(t)
 	rel := f.relationship(t)

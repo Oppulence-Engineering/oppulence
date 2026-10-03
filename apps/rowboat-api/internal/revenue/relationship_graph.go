@@ -510,7 +510,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 			commitmentNodeID := "commitment:" + item.ID.String()
 			confidence := item.Confidence
 			confidenceRef := &confidence
-			commitmentStatus := item.Status
+			commitmentStatus := commitmentRegisterState(item, aggregate.AsOf)
 			commitmentDueAt := item.DueAt
 			commitmentUpdatedAt := item.UpdatedAt
 			if aggregate.Historical && item.UpdatedAt.After(aggregate.AsOf) {
@@ -525,8 +525,12 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 					evidenceRefs = append(evidenceRefs, evidence.ID.String())
 				}
 			}
+			commitmentLabel := strings.TrimSpace(item.Text)
+			if commitmentLabel == "" {
+				commitmentLabel = "Commitment"
+			}
 			nodes[commitmentNodeID] = relationshipGraphNodeDTO{
-				ID: commitmentNodeID, Kind: "commitment", Label: item.Text,
+				ID: commitmentNodeID, Kind: "commitment", Label: commitmentLabel,
 				RelationshipID: relationshipID, RelationshipIDs: []string{relationshipID},
 				Summary: item.SourcePhrase, Status: commitmentStatus, Confidence: confidenceRef,
 				DueAt: commitmentDueAt, UpdatedAt: &commitmentUpdatedAt, EvidenceRefs: evidenceRefs,

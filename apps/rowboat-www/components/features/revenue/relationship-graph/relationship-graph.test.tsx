@@ -113,6 +113,10 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphDetailLabel("historical_unknown")).not.toContain("historical_unknown");
     expect(graphDetailLabel("open")).toBe("Open");
     expect(graphNodeFieldLabel("commitment", "status", "open")).toBe("Open");
+    expect(graphNodeFieldLabel("commitment", "status", "at_risk")).toBe("At risk");
+    expect(graphNodeFieldLabel("commitment", "status", "met")).toBe("Met");
+    expect(graphNodeFieldLabel("commitment", "status", "waived")).toBe("Waived");
+    expect(graphNodeFieldLabel("commitment", "status", "missed")).toBe("Missed");
     expect(graphNodeFieldLabel("action", "status", "open")).toBe("Held");
     expect(graphNodeFieldLabel("action", "status", "snoozed")).toBe("Snoozed");
     expect(graphNodeFieldLabel("action", "policy", "passed")).toBe("Cleared");

@@ -1156,6 +1156,28 @@ export function graphNodeFieldLabel(kind: string, field: GraphField, value: stri
         break;
     }
   }
+  if (kind === "commitment" && field === "status") {
+    switch (value) {
+      case "at_risk":
+        return "At risk";
+      case "met":
+        return "Met";
+      case "missed":
+        return "Missed";
+      case "waived":
+        return "Waived";
+      case "disputed":
+        return "Disputed";
+      case "open":
+        return "Open";
+      case "cancelled":
+        return "Cancelled";
+      case "superseded":
+        return "Superseded";
+      default:
+        break;
+    }
+  }
   if (field === "freshness") {
     switch (value) {
       case "current":
