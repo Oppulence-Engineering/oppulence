@@ -7,6 +7,7 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "relationships-vie
 
 import {
   companyDomainHref,
+  companyDomainLabel,
   companyName,
   companyDirectoryCount,
   companyCategoriesLabel,
@@ -242,6 +243,17 @@ describe("RelationshipsView", () => {
     expect(companyName({ displayName: "Northwind", accountDomain: "northwind.example" })).toBe(
       "Northwind",
     );
+    expect(companyName({ displayName: "   ", accountDomain: "harbor-blank.example" })).toBe(
+      "Harbor Blank",
+    );
+    expect(companyName({ displayName: "  Northwind  ", accountDomain: "other.example" })).toBe(
+      "Northwind",
+    );
+    expect(companyName({ displayName: "   ", accountDomain: "   " })).toBe("Unknown company");
+    expect(companyDomainLabel("  harbor-blank.example  ")).toBe("harbor-blank.example");
+    expect(companyDomainLabel("   ")).toBe("Not filled in");
+    expect(source).toContain("companyDomainLabel(relationship.accountDomain)");
+    expect(source).not.toContain("{relationship.accountDomain}");
     expect(source).toContain("companyLinkedInAction(");
     expect(source).toContain("{companyLinkedIn?.label}");
     expect(source).not.toContain("View company");
@@ -634,7 +646,8 @@ describe("RelationshipsView", () => {
     expect(source).toContain("details have a source");
     expect(source).toContain("details come from a source you can open");
     expect(source).toContain("See where each detail came from");
-    expect(source).toContain('data.relationship.accountDomain?.trim() || "Not filled in"');
+    expect(source).toContain("companyDomainLabel(data.relationship.accountDomain)");
+    expect(source).not.toContain('data.relationship.accountDomain?.trim() || "Not filled in"');
     expect(companyEmailHref("ada@acme.com")).toBe("mailto:ada@acme.com");
     expect(companyEmailHref("  ada@acme.com  ")).toBe("mailto:ada@acme.com");
     expect(companyEmailHref("ada@acme.com?bcc=evil@example.com")).toBeNull();

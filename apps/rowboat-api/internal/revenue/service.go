@@ -816,6 +816,15 @@ func (s *Service) ListRelationshipsFiltered(
 				relationshipCategoriesBlank(),
 			))
 		}
+		// A blank name with no domain is "Unknown company" on the row. A blank
+		// name that still has a domain uses that host's title instead.
+		if sheetPhraseMatches("unknown company", needle) {
+			parts = append(parts, relationship.And(
+				relationship.KindEQ("company"),
+				relationshipTextBlank(relationship.FieldDisplayName),
+				relationshipTextBlank(relationship.FieldAccountDomain),
+			))
+		}
 		if mail := relationshipSheetMailMatch(needle); mail != nil {
 			parts = append(parts, mail)
 		}

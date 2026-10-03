@@ -156,10 +156,13 @@ func (s *Service) OpenPromisesReport(
 func reportAccountTitle(rel *ent.Relationship) string {
 	name := strings.TrimSpace(rel.DisplayName)
 	domain := strings.TrimSpace(rel.AccountDomain)
-	if domain != "" && (strings.EqualFold(name, domain) || emailShapedAccount.MatchString(name)) {
+	if domain != "" && (name == "" || strings.EqualFold(name, domain) || emailShapedAccount.MatchString(name)) {
 		if title := domainCompanyLabel(domain); title != "" {
 			return title
 		}
+	}
+	if name == "" {
+		return "Unknown company"
 	}
 	return name
 }

@@ -30,7 +30,7 @@ func registerEntryToDTO(row *ent.Commitment, now time.Time) registerEntryDTO {
 	}
 	if rel, err := row.Edges.RelationshipOrErr(); err == nil && rel != nil {
 		entry.RelationshipID = rel.ID.String()
-		entry.RelationshipName = rel.DisplayName
+		entry.RelationshipName = reportAccountTitle(rel)
 	}
 	return entry
 }

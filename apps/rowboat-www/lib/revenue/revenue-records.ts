@@ -15,8 +15,8 @@ function domainCompanyLabel(domain: string): string {
 
 /**
  * A company stored under its domain, or under the address that created it,
- * reads as that host. Any other typed name, including one with an @ sign,
- * stays as the teammate wrote it.
+ * reads as that host. A blank name uses that host too. Any other typed name,
+ * including one with an @ sign, stays as the teammate wrote it.
  */
 export function companyName(relationship: {
   displayName: string;
@@ -24,10 +24,14 @@ export function companyName(relationship: {
 }): string {
   const domain = relationship.accountDomain?.trim() ?? "";
   const name = relationship.displayName.trim();
-  if (domain && (name.toLowerCase() === domain.toLowerCase() || emailShapedCompanyName(name))) {
-    return domainCompanyLabel(domain);
+  if (
+    domain &&
+    (!name || name.toLowerCase() === domain.toLowerCase() || emailShapedCompanyName(name))
+  ) {
+    const title = domainCompanyLabel(domain);
+    if (title) return title;
   }
-  return relationship.displayName;
+  return name || "Unknown company";
 }
 
 /** The directory names the company the same way the companies page does. */

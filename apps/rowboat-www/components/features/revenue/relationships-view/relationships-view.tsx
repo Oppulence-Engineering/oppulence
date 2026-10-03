@@ -293,6 +293,11 @@ export function companyDomainHref(domain: string | null | undefined): string | n
   return webAddressHref(domain);
 }
 
+/** The domain column and the sheet share one label. Spaces are not a domain. */
+export function companyDomainLabel(domain: string | null | undefined): string {
+  return domain?.trim() || "Not filled in";
+}
+
 /** A governed recommendation stores policy and approval as tokens. The card names the state. */
 export function recommendationStatusLabel(status: string): string {
   const labels: Record<string, string> = {
@@ -1401,14 +1406,16 @@ export function RelationshipsView({
                             rel="noreferrer"
                             target="_blank"
                           >
-                            {relationship.accountDomain}
+                            {companyDomainLabel(relationship.accountDomain)}
                           </a>
-                        ) : relationship.accountDomain ? (
-                          <span className="text-primary/65">{relationship.accountDomain}</span>
-                        ) : (
+                        ) : companyDomainLabel(relationship.accountDomain) === "Not filled in" ? (
                           <Badge className="font-normal text-primary/35" variant="ghost">
                             Not filled in
                           </Badge>
+                        ) : (
+                          <span className="text-primary/65">
+                            {companyDomainLabel(relationship.accountDomain)}
+                          </span>
                         )}
                       </TableCell>
                       <TableCell className="border-r px-3 text-[13px]">
@@ -3457,7 +3464,9 @@ export function RelationshipSheet({
           </SheetTitle>
           <SheetDescription className="sr-only">
             {data?.relationship.primaryEmail}
-            {data?.relationship.accountDomain ? ` · ${data.relationship.accountDomain}` : ""}
+            {data?.relationship.accountDomain?.trim()
+              ? ` · ${data.relationship.accountDomain.trim()}`
+              : ""}
           </SheetDescription>
           <Button
             className="ml-auto h-7 px-2 text-xs font-normal"
@@ -3483,7 +3492,7 @@ export function RelationshipSheet({
               <div>
                 <h2 className="truncate text-lg font-semibold text-primary">{companyName(seed)}</h2>
                 <p className="truncate text-xs text-primary/45">
-                  {seed.accountDomain || seed.primaryEmail || "Company"}
+                  {seed.accountDomain?.trim() || seed.primaryEmail?.trim() || "Company"}
                 </p>
               </div>
             ) : null}
@@ -3525,11 +3534,11 @@ export function RelationshipSheet({
                           rel="noreferrer"
                           target="_blank"
                         >
-                          {data.relationship.accountDomain}
+                          {companyDomainLabel(data.relationship.accountDomain)}
                         </a>
                       ) : (
-                        data.relationship.accountDomain ||
-                        data.relationship.primaryEmail ||
+                        data.relationship.accountDomain?.trim() ||
+                        data.relationship.primaryEmail?.trim() ||
                         "Company"
                       )}
                     </p>
@@ -3577,10 +3586,10 @@ export function RelationshipSheet({
                         rel="noreferrer"
                         target="_blank"
                       >
-                        {data.relationship.accountDomain}
+                        {companyDomainLabel(data.relationship.accountDomain)}
                       </a>
                     ) : (
-                      data.relationship.accountDomain?.trim() || "Not filled in"
+                      companyDomainLabel(data.relationship.accountDomain)
                     )}
                   </dd>
                   <dt className="text-primary/40">Email</dt>

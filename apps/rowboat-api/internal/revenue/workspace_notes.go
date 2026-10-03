@@ -339,7 +339,7 @@ func workspaceNoteFromObservation(row *ent.RelationshipObservation, company *ent
 		MeetingLinked:    factBool(facts, "meetingLinked"),
 		LiveLinked:       factBool(facts, "liveLinked"),
 		RelationshipID:   company.ID.String(),
-		RelationshipName: company.DisplayName,
+		RelationshipName: reportAccountTitle(company),
 		OccurredAt:       row.OccurredAt.UTC(),
 		EventType:        row.EventType,
 	}

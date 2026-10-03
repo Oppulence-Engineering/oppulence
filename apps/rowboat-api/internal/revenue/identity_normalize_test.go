@@ -129,6 +129,52 @@ func TestRelationshipSearchFindsTheCompanyTitle(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsABlankCompanyName(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(name, domain string) *ent.Relationship {
+		t.Helper()
+		create := f.client.Relationship.Create().
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetKind("company").
+			SetDisplayName(name).
+			SetResourceRefs([]string{}).
+			SetRisks([]string{}).
+			SetMilestones([]string{})
+		if domain != "" {
+			create.SetAccountDomain(domain)
+		}
+		row, err := create.Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	harbor := save("   ", "harbor-blank.example")
+	nameless := save("   ", "")
+	save("Northwind", "northwind.example")
+	if reportAccountTitle(harbor) != "Harbor Blank" || reportAccountTitle(nameless) != "Unknown company" {
+		t.Fatalf("titles harbor=%q nameless=%q", reportAccountTitle(harbor), reportAccountTitle(nameless))
+	}
+
+	byTitle, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Harbor Blank"})
+	if err != nil || len(byTitle.Relationships) != 1 || byTitle.Relationships[0].ID != harbor.ID {
+		t.Fatalf("domain title search = %v err=%v", namesOf(byTitle.Relationships), err)
+	}
+	byFallback, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Unknown company"})
+	if err != nil || len(byFallback.Relationships) != 1 || byFallback.Relationships[0].ID != nameless.ID {
+		t.Fatalf("unknown company search = %v err=%v", namesOf(byFallback.Relationships), err)
+	}
+	miss, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "zzzz-not-a-company"})
+	if err != nil || len(miss.Relationships) != 0 {
+		t.Fatalf("unrelated search = %v err=%v", namesOf(miss.Relationships), err)
+	}
+}
+
 func TestListRelationshipsOffsetSkipsTheNewestRows(t *testing.T) {
 	f := newFixture(t)
 	names := []string{"Oldest Co", "Middle Co", "Newest Co"}
