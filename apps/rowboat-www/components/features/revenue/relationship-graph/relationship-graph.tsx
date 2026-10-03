@@ -1394,8 +1394,8 @@ export function graphChangedDetail(dimensions: readonly string[]): string {
       }
     })
     .filter((label) => label !== "Unknown");
-  if (!labels.length) return "Changed since your last review.";
-  return `Changed since your last review: ${labels.join(", ")}.`;
+  if (!labels.length) return "Changed since you last looked.";
+  return `Changed since you last looked: ${labels.join(", ")}.`;
 }
 
 /**

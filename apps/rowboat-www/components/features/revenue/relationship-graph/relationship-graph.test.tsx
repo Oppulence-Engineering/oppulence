@@ -118,12 +118,12 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).not.toContain("`Action ${kind}d.`");
     expect(graphAsOfLabel("2026-09-30T13:00:00.000Z")).toMatch(/^As of /);
     expect(graphChangedDetail(["next_action", "health"])).toBe(
-      "Changed since your last review: Next action, Health.",
+      "Changed since you last looked: Next action, Health.",
     );
     expect(graphChangedDetail(["evidence"])).toBe(
-      "Changed since your last review: Supporting evidence.",
+      "Changed since you last looked: Supporting evidence.",
     );
-    expect(graphChangedDetail([])).toBe("Changed since your last review.");
+    expect(graphChangedDetail([])).toBe("Changed since you last looked.");
     expect(graphChangedDetail(["next_action"])).not.toContain("next_action");
     expect(graphDetailLabel("unknown")).toBe("Not known");
     expect(graphNodeFieldLabel("relationship", "health", "unknown")).toBe("Not known");
@@ -237,6 +237,7 @@ describe("RelationshipGraphWorkspace", () => {
     ).toBe(true);
     expect(graphAskChanges("", { query: "", focusDepth: 1 })).toBe(true);
     expect(source).not.toContain("Changed since review");
+    expect(source).not.toContain("Changed since your last review");
     expect(source).not.toContain("overdue commitments");
     expect(source).not.toContain("stale evidence");
     expect(graphLayoutLabel("force")).toBe("Grouped");
@@ -318,6 +319,9 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryAnswer("1 relationship matches out of date.", 1)).toBe(
       "1 company matches out of date.",
     );
+    expect(graphQueryAnswer("1 relationship matches changed since you last looked.", 1)).toBe(
+      "1 company matches changed since you last looked.",
+    );
     expect(graphQueryAnswer("0 relationships match text: quillhaven.", 200, true)).toBe(
       graphQueryMissLabel(),
     );
@@ -348,6 +352,9 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphEdgeLabel("owns")).toBe("owns");
     expect(graphQueryFilterLabel("overdue promises")).toBe("overdue promises");
     expect(graphQueryFilterLabel("out of date")).toBe("out of date");
+    expect(graphQueryFilterLabel("changed since you last looked")).toBe(
+      "changed since you last looked",
+    );
     expect(graphQueryFilterLabel("sources: desktop_note")).not.toContain("desktop_note");
     expect(graphQueryFilterLabel("approval: pending")).not.toContain("pending");
     expect(source).toContain("Building the company graph");

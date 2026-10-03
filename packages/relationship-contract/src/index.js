@@ -176,8 +176,11 @@ export function parseRelationshipGraphQuery(query) {
     sources: [],
     edgeKinds: [],
     overdue: /\boverdue\b/.test(normalized),
-    stale: /\bstale\b|\boutdated\b/.test(normalized),
-    changed: /\bchanged\b|\bsince (?:my )?last review\b/.test(normalized),
+    stale: /\bstale\b|\boutdated\b|\bout of date\b/.test(normalized),
+    changed:
+      /\bchanged\b|\bsince (?:my )?last review\b|\bchanged since review\b|\bsince you last looked\b|\byou last looked\b/.test(
+        normalized,
+      ),
     hideIsolated: /\bconnected\b|\bhide isolated\b/.test(normalized),
     freeText: [],
   };
@@ -262,7 +265,16 @@ export function parseRelationshipGraphQuery(query) {
     // "customers" is the same word as the stage token "customer".
     return token.endsWith("s") && recognized.has(token.slice(0, -1));
   };
-  filters.freeText = normalized
+  // These phrases are the filter. Leaving "since" or "date" behind turns the
+  // question into a text search and hides the company that actually changed.
+  const withoutFilterPhrases = normalized
+    .replace(/\bout of date\b/g, " ")
+    .replace(/\bsince you last looked\b/g, " ")
+    .replace(/\byou last looked\b/g, " ")
+    .replace(/\bsince my last review\b/g, " ")
+    .replace(/\bsince last review\b/g, " ")
+    .replace(/\bchanged since review\b/g, " ");
+  filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
     .filter((token) => token && !recognizedToken(token));
@@ -278,7 +290,7 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.edgeKinds.length) applied.push(`edges: ${filters.edgeKinds.join(", ")}`);
   if (filters.overdue) applied.push("overdue promises");
   if (filters.stale) applied.push("out of date");
-  if (filters.changed) applied.push("changed since review");
+  if (filters.changed) applied.push("changed since you last looked");
   if (filters.freeText.length) applied.push(`text: ${filters.freeText.join(" ")}`);
 
   return { raw, normalized, filters, applied };

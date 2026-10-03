@@ -219,6 +219,77 @@ test("an up to date detail is not out of date", () => {
   assert.equal(stale.answer, "1 relationship matches out of date.");
 });
 
+test("the graph's own change and freshness words are the filter, not a text search", () => {
+  const looked = parseRelationshipGraphQuery("changed since you last looked");
+  assert.equal(looked.filters.changed, true);
+  assert.deepEqual(looked.filters.freeText, []);
+  assert.deepEqual(looked.applied, ["changed since you last looked"]);
+
+  const review = parseRelationshipGraphQuery("since last review");
+  assert.equal(review.filters.changed, true);
+  assert.deepEqual(review.filters.freeText, []);
+
+  const chip = parseRelationshipGraphQuery("changed since review");
+  assert.equal(chip.filters.changed, true);
+  assert.deepEqual(chip.filters.freeText, []);
+  assert.equal(chip.applied.includes("changed since review"), false);
+
+  const dated = parseRelationshipGraphQuery("out of date");
+  assert.equal(dated.filters.stale, true);
+  assert.deepEqual(dated.filters.freeText, []);
+  assert.deepEqual(dated.applied, ["out of date"]);
+
+  const matched = queryRelationshipGraph(
+    {
+      nodes: [
+        {
+          id: "relationship:shift",
+          kind: "relationship",
+          label: "Quay Shift",
+          changedSinceReview: true,
+        },
+        {
+          id: "relationship:still",
+          kind: "relationship",
+          label: "Quay Still",
+          changedSinceReview: false,
+        },
+      ],
+      edges: [],
+    },
+    "changed since you last looked",
+  );
+  assert.deepEqual(matched.relationshipIds, ["shift"]);
+  assert.equal(matched.answer, "1 relationship matches changed since you last looked.");
+
+  const datedGraph = queryRelationshipGraph(
+    {
+      nodes: [
+        { id: "relationship:old", kind: "relationship", label: "Quay Dated" },
+        {
+          id: "evidence:old",
+          kind: "evidence",
+          label: "Promise confirmed",
+          relationshipId: "old",
+          freshness: "stale",
+        },
+        { id: "relationship:fresh", kind: "relationship", label: "Quay Fresh" },
+        {
+          id: "evidence:fresh",
+          kind: "evidence",
+          label: "Promise confirmed",
+          relationshipId: "fresh",
+          freshness: "current",
+        },
+      ],
+      edges: [],
+    },
+    "out of date",
+  );
+  assert.deepEqual(datedGraph.relationshipIds, ["old"]);
+  assert.equal(datedGraph.answer, "1 relationship matches out of date.");
+});
+
 test("graph questions use the stage and health words a person would type", () => {
   const active = parseRelationshipGraphQuery("active customer");
   assert.deepEqual(active.filters.lifecycle, ["active_customer"]);
