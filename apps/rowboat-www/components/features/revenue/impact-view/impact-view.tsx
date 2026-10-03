@@ -68,6 +68,17 @@ export function overdueDirectionLines(
 }
 
 /**
+ * A zero count is an empty bar. The two-percent floor is only so a small
+ * non-zero count stays visible next to a much larger one.
+ */
+export function funnelBarPercent(value: number, max: number): number {
+  const shown = Number.isFinite(value) ? Math.max(0, value) : 0;
+  if (shown === 0) return 0;
+  const scale = Number.isFinite(max) && max > 0 ? max : 1;
+  return Math.max(2, (shown / scale) * 100);
+}
+
+/**
  * A real overdue promise is counted as at least one day. Zero means none are
  * past due, so the line must not say "0 days".
  */
@@ -426,7 +437,7 @@ export function ImpactView({
                 </Label>
                 <Progress
                   className="h-5 flex-1 rounded-none bg-background-100 dark:bg-background-100/50 [&>[data-slot=progress-indicator]]:bg-oppulence-orange/70"
-                  value={Math.max(2, (f.value / maxFunnel) * 100)}
+                  value={funnelBarPercent(f.value, maxFunnel)}
                 />
                 <Badge
                   className="w-8 shrink-0 justify-center tabular-nums font-medium text-primary"

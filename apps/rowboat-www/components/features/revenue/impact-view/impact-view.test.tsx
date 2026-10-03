@@ -10,6 +10,7 @@ import {
   impactRefreshCopy,
   digestSignalLabel,
   impactAccountTotal,
+  funnelBarPercent,
   longestOverdueCopy,
   overdueDirectionLines,
 } from "./impact-view";
@@ -79,6 +80,16 @@ describe("ImpactView", () => {
     expect(source).not.toContain("No active relationship risks.");
     expect(source).not.toContain("underlying relationship records");
     expect(source).not.toContain("Promises missed");
+  });
+
+  it("leaves a zero funnel count empty and keeps a small count visible", () => {
+    expect(funnelBarPercent(0, 1)).toBe(0);
+    expect(funnelBarPercent(0, 8)).toBe(0);
+    expect(funnelBarPercent(1, 1)).toBe(100);
+    expect(funnelBarPercent(1, 100)).toBe(2);
+    expect(funnelBarPercent(50, 100)).toBe(50);
+    expect(source).toContain("funnelBarPercent(f.value, maxFunnel)");
+    expect(source).not.toContain("Math.max(2, (f.value / maxFunnel) * 100)");
   });
 
   it("says there is no longest overdue when nothing is past due", () => {
