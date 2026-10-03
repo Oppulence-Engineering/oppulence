@@ -217,6 +217,7 @@ import {
 } from "@/components/features/revenue/workspace-records/workspace-records-view";
 import {
   activityEvidenceLines,
+  activityLinesBesideSummary,
   activityHeading,
   activityOutcomeSummary,
   activitySourceLabel,
@@ -5086,9 +5087,12 @@ export function RelationshipSheet({
                           </Button>
                           {observation.id in evidence ? (
                             <div className="mt-2 max-h-52 space-y-1 overflow-auto rounded-none bg-background-100 p-2 text-[11px] text-primary/60 dark:bg-background-200">
-                              {activityEvidenceLines(
-                                evidence[observation.id],
-                                observation.normalizedFacts,
+                              {activityLinesBesideSummary(
+                                activityEvidenceLines(
+                                  evidence[observation.id],
+                                  observation.normalizedFacts,
+                                ),
+                                observation.summary,
                               ).map((line, index) => (
                                 <p key={`${observation.id}:${index}`}>{line}</p>
                               ))}

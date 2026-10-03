@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   activityEvidenceLines,
+  activityLinesBesideSummary,
   activityHeading,
   activityOutcomeSummary,
   enumLabel,
@@ -131,6 +132,18 @@ describe("source product copy", () => {
         commitment_direction: "promised_by_them",
       }),
     ).toEqual(["Promise: Send the quay quote", "Direction: They owe us"]);
+    expect(
+      activityLinesBesideSummary(
+        ["Promise: Send the quay quote", "Direction: They owe us", "Due: Oct 20, 2026"],
+        "Send the quay quote",
+      ),
+    ).toEqual(["Direction: They owe us", "Due: Oct 20, 2026"]);
+    expect(
+      activityLinesBesideSummary(
+        ["Promise: Send the proposal", "Quote: I will send the proposal."],
+        "User decided a proposed conversation change.",
+      ),
+    ).toEqual(["Promise: Send the proposal", "Quote: I will send the proposal."]);
     expect(
       activityEvidenceLines(null, { commitment_direction: "promised_by_them" }),
     ).toEqual(["Direction: They owe us"]);

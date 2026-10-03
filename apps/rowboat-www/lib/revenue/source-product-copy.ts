@@ -416,6 +416,24 @@ export function activityEvidenceLines(
   return lines;
 }
 
+/**
+ * The activity row already prints the summary. A fact that repeats that
+ * sentence, such as "Promise: Send the quay quote" under "Send the quay quote",
+ * is the same words again.
+ */
+export function activityLinesBesideSummary(
+  lines: readonly string[],
+  summary?: string | null,
+): string[] {
+  const sentence = summary?.trim() ?? "";
+  if (!sentence) return [...lines];
+  return lines.filter((line) => {
+    const split = line.indexOf(": ");
+    const value = (split >= 0 ? line.slice(split + 2) : line).trim();
+    return value !== sentence;
+  });
+}
+
 /** A scope id or URL becomes a short permission name. Known grants win. */
 export function scopeLabel(scope: string): string {
   const trimmed = scope.trim();

@@ -1087,6 +1087,7 @@ describe("RelationshipsView", () => {
     expect(source).toContain("hasMore={hasMoreSheetDuplicates}");
     expect(source).not.toContain("governanceReceipts.slice(0, 5)");
     expect(source).toContain("Activity history");
+    expect(source).toContain("activityLinesBesideSummary(");
     expect(source).toContain("activityEvidenceLines(");
     expect(source).toContain("evidence[observation.id]");
     expect(source).toContain("observation.normalizedFacts");
