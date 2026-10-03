@@ -528,6 +528,11 @@ export function reportSourceQuote(quote?: string | null): string {
   return quote?.trim() ?? "";
 }
 
+/** The commitments queue and the export both say "At risk". The report badge matches. */
+export function reportRiskLabel(): string {
+  return "At risk";
+}
+
 function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string }) {
   const [downloading, setDownloading] = React.useState(false);
   const [downloadError, setDownloadError] = React.useState<string | null>(null);
@@ -610,7 +615,7 @@ function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string
                   className="rounded-none border-amber-500/40 px-1.5 py-0.5 text-[11px] font-normal text-amber-500"
                   variant="outline"
                 >
-                  at risk
+                  {reportRiskLabel()}
                 </Badge>
               ) : null}
               <Label className="ml-auto text-[12px] font-normal text-primary/45">

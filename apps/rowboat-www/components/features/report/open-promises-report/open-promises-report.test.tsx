@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { reportSourceQuote } from "./open-promises-report";
+import { reportRiskLabel, reportSourceQuote } from "./open-promises-report";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "open-promises-report.tsx"), "utf8");
 
@@ -15,6 +15,9 @@ describe("OpenPromisesReportClient", () => {
     );
     expect(source).toContain("reportSourceQuote(item.sourceQuote)");
     expect(source).not.toContain("{item.sourceQuote}");
+    expect(reportRiskLabel()).toBe("At risk");
+    expect(source).toContain("{reportRiskLabel()}");
+    expect(source).not.toContain(">at risk<");
   });
 
   it("keeps the named product export at the generator path", () => {

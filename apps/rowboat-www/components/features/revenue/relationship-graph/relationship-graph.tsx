@@ -16,7 +16,11 @@ import {
 } from "@/hooks/queries/utils/fetch-console";
 import { companyName } from "@/lib/revenue/revenue-records";
 import { getRelationshipGraph } from "@/lib/revenue/revenue";
-import { enumLabel, participantRoleLabel } from "@/lib/revenue/source-product-copy";
+import {
+  activitySourceLabel,
+  enumLabel,
+  participantRoleLabel,
+} from "@/lib/revenue/source-product-copy";
 import { useRelationshipGraph } from "@/hooks/queries/use-relationships";
 import { consoleKeys } from "@/hooks/queries/utils/console-keys";
 import { relationshipKeys } from "@/hooks/queries/utils/relationship-keys";
@@ -834,9 +838,10 @@ function Inspector({
                 variant="outline"
                 size="xs"
                 onClick={() => onSelectNode(evidence.id)}
-                className="text-primary/55"
+                className="max-w-full truncate text-primary/55"
+                title={graphEvidenceChipLabel(evidence)}
               >
-                {evidence.source || "detail"}
+                {graphEvidenceChipLabel(evidence)}
               </Button>
             ))}
             {!evidenceNodes.length ? (
@@ -1057,6 +1062,22 @@ export const GRAPH_DETAIL_PAGE = 6;
 /** The rows past the first screen, in the same words as the graph counts. */
 export function graphListRemainderLabel(hidden: number, singular: string, plural: string): string {
   return `Show the other ${graphCountLabel(hidden, singular, plural)}`;
+}
+
+/**
+ * A detail chip opens that node. The sentence on the node is the name. A
+ * blank sentence falls back to the source the activity list already uses,
+ * so a Gmail detail does not read as the stored slug.
+ */
+export function graphEvidenceChipLabel(evidence: {
+  label?: string | null;
+  source?: string | null;
+}): string {
+  const label = evidence.label?.trim() ?? "";
+  if (label) return label;
+  const source = evidence.source?.trim() ?? "";
+  if (source) return activitySourceLabel(source);
+  return "Detail";
 }
 
 /**

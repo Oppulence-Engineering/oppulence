@@ -21,6 +21,7 @@ import {
   graphEarlierEvidenceLabel,
   graphEvidencePage,
   graphListRemainderLabel,
+  graphEvidenceChipLabel,
   graphLayoutLabel,
   graphAccountChoice,
   graphSavedViewChoice,
@@ -279,6 +280,13 @@ describe("RelationshipGraphWorkspace", () => {
       "Show the other 1 connection",
     );
     expect(graphListRemainderLabel(3, "detail", "details")).toBe("Show the other 3 details");
+    expect(graphEvidenceChipLabel({ label: "  The harbor sentence.  ", source: "gmail" })).toBe(
+      "The harbor sentence.",
+    );
+    expect(graphEvidenceChipLabel({ label: "   ", source: "gmail" })).toBe("Gmail");
+    expect(graphEvidenceChipLabel({ label: "", source: "" })).toBe("Detail");
+    expect(source).toContain("graphEvidenceChipLabel(evidence)");
+    expect(source).not.toContain('{evidence.source || "detail"}');
     expect(source).toContain('graphCountLabel(graphNodes.length, "item", "items")');
     expect(source).toContain(
       'graphListRemainderLabel(hiddenConnections, "connection", "connections")',
