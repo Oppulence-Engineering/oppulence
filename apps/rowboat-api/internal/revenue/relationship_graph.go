@@ -627,7 +627,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 					sourceNodeID := "source:" + relationshipID + ":" + evidence.Source
 					occurredAt := evidence.OccurredAt.UTC()
 					nodes[evidenceNodeID] = relationshipGraphNodeDTO{
-						ID: evidenceNodeID, Kind: "evidence", Label: evidence.Excerpt,
+						ID: evidenceNodeID, Kind: "evidence", Label: graphEvidenceLabel(evidence.Excerpt),
 						RelationshipID: relationshipID, RelationshipIDs: []string{relationshipID},
 						Source: evidence.Source, Freshness: graphFreshness(occurredAt, aggregate.AsOf),
 						OccurredAt: &occurredAt, EvidenceRefs: []string{evidence.ID.String()},
@@ -703,6 +703,16 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 		dto.RelationshipID = aggregate.Relationships[0].ID.String()
 	}
 	return dto
+}
+
+// graphEvidenceLabel matches the company sheet. A blank excerpt is not a
+// sentence, so the node says the evidence is unavailable instead of showing
+// an empty card.
+func graphEvidenceLabel(excerpt string) string {
+	if trimmed := strings.TrimSpace(excerpt); trimmed != "" {
+		return trimmed
+	}
+	return "Evidence excerpt unavailable"
 }
 
 // graphPersonLabel matches the people directory. A corrected name lives on the

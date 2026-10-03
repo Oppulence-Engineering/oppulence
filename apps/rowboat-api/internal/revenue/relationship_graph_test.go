@@ -412,6 +412,59 @@ func TestRelationshipGraphNamesACompanyLikeTheDirectory(t *testing.T) {
 	}
 }
 
+func TestRelationshipGraphNamesBlankEvidenceLikeTheSheet(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	action, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "warm_follow_up", Channel: "email",
+		Reason: "Send the harbor note", ExecutionMode: ExecModeDraft, PriorityScore: 40,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	blank, err := f.client.RevenueEvidence.Create().
+		SetWorkspace(ws).AddRelationships(rel).SetUser(f.user).
+		SetSource("gmail").SetSourceRecordID("graph-blank-excerpt").
+		SetContentHash("sha256:graph-blank-excerpt").SetExcerpt("   ").
+		SetOccurredAt(f.svc.now()).SetObservedAt(f.svc.now()).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	quoted, err := f.client.RevenueEvidence.Create().
+		SetWorkspace(ws).AddRelationships(rel).SetUser(f.user).
+		SetSource("gmail").SetSourceRecordID("graph-real-excerpt").
+		SetContentHash("sha256:graph-real-excerpt").SetExcerpt("  The harbor sentence.  ").
+		SetOccurredAt(f.svc.now()).SetObservedAt(f.svc.now()).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := action.Update().AddEvidences(blank, quoted).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &rel.ID, Depth: 1, AsOf: f.svc.now(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dto := buildRelationshipGraphDTO(aggregate, f.svc.now())
+	got := map[string]bool{}
+	for _, node := range dto.Nodes {
+		if node.Kind == "evidence" {
+			got[node.Label] = true
+		}
+	}
+	if !got["Evidence excerpt unavailable"] || !got["The harbor sentence."] || got["   "] {
+		t.Fatalf("evidence labels = %#v", got)
+	}
+}
+
 func TestRelationshipGraphNamesAPersonLikeTheDirectory(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

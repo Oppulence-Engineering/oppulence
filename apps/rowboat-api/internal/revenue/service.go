@@ -4124,7 +4124,10 @@ func (in ActionInput) content(assigned uuid.UUID) RevisionContent {
 // revision snapshot. The dedupe key keeps detector reruns from duplicating
 // queue items; a duplicate returns the existing action.
 func (s *Service) CreateAction(ctx context.Context, u *ent.User, in ActionInput) (*ent.RevenueAction, error) {
-	if strings.TrimSpace(in.Reason) == "" {
+	in.Reason = strings.TrimSpace(in.Reason)
+	in.ProposedSubject = strings.TrimSpace(in.ProposedSubject)
+	in.ProposedMessage = strings.TrimSpace(in.ProposedMessage)
+	if in.Reason == "" {
 		return nil, fmt.Errorf("%w: reason is required", ErrInvalidInput)
 	}
 	if in.Detector == "" {
@@ -4478,6 +4481,21 @@ func (s *Service) EditAction(ctx context.Context, u *ent.User, id uuid.UUID, in 
 			return cur
 		}
 		return *next
+	}
+	trimField := func(value *string) *string {
+		if value == nil {
+			return nil
+		}
+		trimmed := strings.TrimSpace(*value)
+		return &trimmed
+	}
+	in.ProposedSubject = trimField(in.ProposedSubject)
+	in.ProposedMessage = trimField(in.ProposedMessage)
+	if in.Reason != nil {
+		in.Reason = trimField(in.Reason)
+		if *in.Reason == "" {
+			return nil, fmt.Errorf("%w: reason is required", ErrInvalidInput)
+		}
 	}
 	next := RevisionContent{
 		ActionType:       apply(action.ActionType, in.ActionType),

@@ -131,6 +131,11 @@ export function recoveryFollowUpName(actionType: string): string {
   return comboboxFilterName("Follow-up", label ?? actionType.replaceAll("_", " "));
 }
 
+/** Spaces are not a subject. The card and the send path use the same words. */
+export function recoveryDraftSubject(subject?: string | null): string {
+  return subject?.trim() ?? "";
+}
+
 /**
  * A follow-up with no address still belongs to a company. The card names that
  * company instead of calling the recipient unknown.
@@ -579,9 +584,9 @@ function ActionCard({
             <p className="mt-1.5 text-sm text-[var(--text-secondary)]">Dismissed: {dismissal}</p>
           ) : null}
           {snooze ? <p className="mt-1.5 text-sm text-[var(--text-secondary)]">{snooze}</p> : null}
-          {action.proposedSubject ? (
+          {recoveryDraftSubject(action.proposedSubject) ? (
             <p className="mt-1 truncate text-xs text-[var(--text-muted)]">
-              Draft subject: {action.proposedSubject}
+              Draft subject: {recoveryDraftSubject(action.proposedSubject)}
             </p>
           ) : null}
         </div>
@@ -722,8 +727,8 @@ function CreateActionDialog({
         channel: "email",
         reason: reason.trim(),
         recipientEmail: rel?.primaryEmail,
-        proposedSubject: subject || undefined,
-        proposedMessage: message || undefined,
+        proposedSubject: subject.trim() || undefined,
+        proposedMessage: message.trim() || undefined,
         executionMode: "draft",
       });
       onCreated(created);

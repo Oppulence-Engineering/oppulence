@@ -174,6 +174,38 @@ func (f *fixture) action(t *testing.T, mode string) *ent.RevenueAction {
 	return action
 }
 
+func TestCreateActionDropsABlankDraftSubject(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	action, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "warm_follow_up", Channel: "email",
+		Reason: "  Send the harbor note  ", ProposedSubject: "   ", ProposedMessage: " \n ",
+		ExecutionMode: ExecModeDraft, PriorityScore: 40,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if action.Reason != "Send the harbor note" || action.ProposedSubject != "" || action.ProposedMessage != "" {
+		t.Fatalf("blank draft was stored: reason=%q subject=%q message=%q", action.Reason, action.ProposedSubject, action.ProposedMessage)
+	}
+	spaced := "  Harbor follow-up  "
+	edited, err := f.svc.EditAction(f.ctx, f.user, action.ID, EditInput{ProposedSubject: &spaced})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if edited.ProposedSubject != "Harbor follow-up" {
+		t.Fatalf("subject = %q", edited.ProposedSubject)
+	}
+	blank := "   "
+	cleared, err := f.svc.EditAction(f.ctx, f.user, action.ID, EditInput{ProposedSubject: &blank})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cleared.ProposedSubject != "" {
+		t.Fatalf("cleared subject = %q", cleared.ProposedSubject)
+	}
+}
+
 // link puts the workspace into linked mode (facade configured in fixtures).
 func (f *fixture) link(t *testing.T) {
 	t.Helper()

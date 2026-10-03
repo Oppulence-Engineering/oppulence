@@ -198,8 +198,8 @@ export function ReviewSheet({
 
   React.useEffect(() => {
     if (action) {
-      setSubject(action.proposedSubject ?? "");
-      setMessage(action.proposedMessage ?? "");
+      setSubject((action.proposedSubject ?? "").trim());
+      setMessage((action.proposedMessage ?? "").trim());
       setAcceptRisk(false);
       setRejecting(false);
       setRejectReason("");
@@ -223,8 +223,9 @@ export function ReviewSheet({
     action.queueStatus === "dismissed" ? dismissReasonLabel(action.dismissReason) : "";
   const snooze = action.queueStatus === "snoozed" ? snoozeWakeCopy(action.snoozedUntil) : "";
   const linked = workspace?.mode === "linked" && workspace.status === "active";
-  const dirty =
-    subject !== (action.proposedSubject ?? "") || message !== (action.proposedMessage ?? "");
+  const storedSubject = (action.proposedSubject ?? "").trim();
+  const storedMessage = (action.proposedMessage ?? "").trim();
+  const dirty = subject !== storedSubject || message !== storedMessage;
   const approved =
     action.approvalStatus === "approved" && action.approvedRevision === action.revision;
   const needsRisk = isSend && action.policyStatus === "review_required";
@@ -308,7 +309,11 @@ export function ReviewSheet({
   const saveEdit = () =>
     wrap(
       "save",
-      () => editAction(action.id, { proposedSubject: subject, proposedMessage: message }),
+      () =>
+        editAction(action.id, {
+          proposedSubject: subject.trim(),
+          proposedMessage: message.trim(),
+        }),
       {
         note: "Saved — this created a new revision, so re-check and approve before sending.",
       },
@@ -460,7 +465,7 @@ export function ReviewSheet({
               <Input value={action.recipientEmail} readOnly className="bg-background-100/50" />
             </Field>
           ) : null}
-          {isEmail || action.proposedSubject ? (
+          {isEmail || storedSubject ? (
             <Field label={action.channel === "calendar" ? "Event title" : "Subject"}>
               <Input
                 value={subject}

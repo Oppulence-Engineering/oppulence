@@ -10,6 +10,7 @@ import {
   recoveryFollowUpName,
   recoveryCompanyCaption,
   recoveryCompanyName,
+  recoveryDraftSubject,
   recoveryRecipientLabel,
   recoveryRemainderLabel,
   recoveryShownLabel,
@@ -45,6 +46,12 @@ describe("QueueView", () => {
     expect(recoveryCompanyName("Dogfood Harbor")).toBe("Company, Dogfood Harbor");
     expect(recoveryCompanyName("Choose a company")).toBe("Company, Choose a company");
     expect(recoveryFollowUpName("warm_follow_up")).toBe("Follow-up, Warm follow-up");
+    expect(recoveryDraftSubject("   ")).toBe("");
+    expect(recoveryDraftSubject("  Harbor follow-up  ")).toBe("Harbor follow-up");
+    expect(source).toContain("recoveryDraftSubject(action.proposedSubject)");
+    expect(source).toContain("proposedSubject: subject.trim() || undefined");
+    expect(source).toContain("proposedMessage: message.trim() || undefined");
+    expect(source).not.toContain("proposedSubject: subject || undefined");
     expect(recoveryRecipientLabel({})).toBe("Unknown recipient");
     expect(recoveryRecipientLabel({ recipientEmail: "  ", relationshipName: "  " })).toBe(
       "Unknown recipient",
