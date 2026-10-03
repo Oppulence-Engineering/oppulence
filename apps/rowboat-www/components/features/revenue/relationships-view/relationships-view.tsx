@@ -2401,10 +2401,23 @@ export function mutualPlanShareLabel(): string {
   return "Draft an email to share this plan";
 }
 
-/** A confirmed promise can be marked accepted. The button names that promise. */
+/**
+ * Recording acceptance means the other party accepted. The button names that
+ * promise so several confirmed promises stay distinct.
+ */
 export function acceptedPromiseLabel(text: string): string {
   const name = text.trim() || "this promise";
-  return `Accept “${name}”`;
+  return `They accepted “${name}”`;
+}
+
+/** A shared plan is built from promises the other party already accepted. */
+export function mutualPlanCreateLabel(): string {
+  return "Create from promises they accepted";
+}
+
+/** No plan exists until the other party accepts a promise. */
+export function mutualPlanEmptyCopy(): string {
+  return "A shared plan starts once they accept a promise.";
 }
 
 /** Dependencies are a small graph. The sheet names the links. */
@@ -4668,7 +4681,7 @@ export function RelationshipSheet({
                         )
                       }
                     >
-                      Create from accepted promises
+                      {mutualPlanCreateLabel()}
                     </Button>
                   </div>
                   {data.commitments.some((item) => item.acceptance === "internally_confirmed") ? (
@@ -4744,9 +4757,7 @@ export function RelationshipSheet({
                       ))}
                     </ul>
                   ) : (
-                    <EmptyText>
-                      Accept a promise to build a shared plan.
-                    </EmptyText>
+                    <EmptyText>{mutualPlanEmptyCopy()}</EmptyText>
                   )}
                 </section>
 

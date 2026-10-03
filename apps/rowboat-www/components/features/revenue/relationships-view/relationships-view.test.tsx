@@ -72,6 +72,8 @@ import {
   mailReplyLabel,
   reviewEvidenceKindLabel,
   acceptedPromiseLabel,
+  mutualPlanCreateLabel,
+  mutualPlanEmptyCopy,
   mutualPlanApproveLabel,
   mutualPlanHeading,
   mutualPlanItemLine,
@@ -647,8 +649,12 @@ describe("RelationshipsView", () => {
     );
     expect(mutualPlanApproveLabel()).toBe("Approve this plan");
     expect(mutualPlanShareLabel()).toBe("Draft an email to share this plan");
-    expect(acceptedPromiseLabel("Send the cedar notes")).toBe("Accept “Send the cedar notes”");
-    expect(acceptedPromiseLabel("  ")).toBe("Accept “this promise”");
+    expect(acceptedPromiseLabel("Send the cedar notes")).toBe(
+      "They accepted “Send the cedar notes”",
+    );
+    expect(acceptedPromiseLabel("  ")).toBe("They accepted “this promise”");
+    expect(mutualPlanCreateLabel()).toBe("Create from promises they accepted");
+    expect(mutualPlanEmptyCopy()).toBe("A shared plan starts once they accept a promise.");
     expect(promiseLinkTitle(2)).toBe("Promise links (2)");
     expect(promiseLinkKindLabel("blocks")).toBe("Blocks");
     expect(promiseLinkKindLabel("requires")).toBe("Requires");
@@ -656,6 +662,10 @@ describe("RelationshipsView", () => {
     expect(promiseLinkEndLabel("")).toBe("Unknown promise");
     expect(promiseLinkEndLabel("Send the cedar notes")).toBe("Send the cedar notes");
     expect(source).toContain("acceptedPromiseLabel(item.text)");
+    expect(source).toContain("mutualPlanCreateLabel()");
+    expect(source).toContain("mutualPlanEmptyCopy()");
+    expect(source).not.toContain("Create from accepted promises");
+    expect(source).not.toContain("Accept a promise to build a shared plan.");
     expect(source).toContain("promiseLinkTitle(data.commitmentDependencies.length)");
     expect(source).toContain("promiseLinkKindLabel(dependency.kind)");
     expect(source).toContain("promiseLinkEndLabel(from?.text)");
