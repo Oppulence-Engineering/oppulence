@@ -157,7 +157,18 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphExecutionLabel("failed")).toBe("Failed");
     expect(
       graphNodeSummaryLabel({ kind: "action", status: "open", approvalStatus: "pending" }),
-    ).toBe("Held");
+    ).toBe("Awaiting approval");
+    expect(graphNodeSummaryLabel({ kind: "action", status: "open" })).toBe("Held");
+    expect(
+      graphNodeSummaryLabel({ kind: "source", status: "live", freshness: "current" }),
+    ).toBe("Up to date");
+    expect(
+      graphNodeSummaryLabel({
+        kind: "evidence",
+        status: "Promise confirmed",
+        freshness: "current",
+      }),
+    ).toBe("Up to date");
     expect(
       graphNodeSummaryLabel({ kind: "commitment", status: "open" }),
     ).toBe("Open");

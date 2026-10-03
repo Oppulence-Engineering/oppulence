@@ -1293,9 +1293,11 @@ export function graphNodeSummaryLabel(node: {
   if (node.health && node.health !== "unknown") {
     return graphNodeFieldLabel(node.kind, "health", node.health);
   }
-  if (node.status) return graphNodeFieldLabel(node.kind, "status", node.status);
+  // The diagram badge shows approval, then freshness. The table's one State
+  // cell has to use that same word, and only then the stored status.
   if (node.approvalStatus) return graphNodeFieldLabel(node.kind, "approval", node.approvalStatus);
   if (node.freshness) return graphNodeFieldLabel(node.kind, "freshness", node.freshness);
+  if (node.status) return graphNodeFieldLabel(node.kind, "status", node.status);
   return "—";
 }
 
