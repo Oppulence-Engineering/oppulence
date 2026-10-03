@@ -19,6 +19,7 @@ import {
   graphCountLabel,
   graphNodeCap,
   graphCanvasCapLabel,
+  graphCanvasCapState,
   graphNextCompaniesLabel,
   graphEarlierEvidenceLabel,
   graphEvidencePage,
@@ -65,8 +66,13 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphCanvasCapLabel(170, 400)).toBe(
       "Showing 170 of 400 · raise how many to show for more",
     );
+    expect(graphCanvasCapState(0, 170)).toEqual({ capped: false, shown: 0 });
+    expect(graphCanvasCapState(4, 170)).toEqual({ capped: false, shown: 4 });
+    expect(graphCanvasCapState(400, null)).toEqual({ capped: false, shown: 400 });
+    expect(graphCanvasCapState(400, 170)).toEqual({ capped: true, shown: 170 });
     expect(source).toContain("graphNodeCap(viewState.density)");
-    expect(source).toContain("graphCanvasCapLabel(visible.nodes.length, graph.nodes.length)");
+    expect(source).toContain("graphCanvasCapLabel(visible.nodes.length, visible.matchedCount)");
+    expect(source).toContain("visible.capped");
     expect(graphNextCompaniesLabel()).toBe("Show the next companies");
     expect(source).toContain("graphNextCompaniesLabel()");
     expect(source).toContain("onLoadMoreCompanies?.()");

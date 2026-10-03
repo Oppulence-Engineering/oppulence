@@ -1038,6 +1038,20 @@ export function graphCanvasCapLabel(shown: number, total: number): string {
   return `Showing ${shown} of ${total} · raise how many to show for more`;
 }
 
+/**
+ * A question or an isolation filter can hide nodes without the slider being
+ * the reason. The slider note appears only after that filter, when the
+ * remaining nodes still do not fit.
+ */
+export function graphCanvasCapState(
+  matchedCount: number,
+  cap: number | null,
+): { capped: boolean; shown: number } {
+  const matched = Number.isFinite(matchedCount) ? Math.max(0, matchedCount) : 0;
+  if (cap == null || matched <= cap) return { capped: false, shown: matched };
+  return { capped: true, shown: cap };
+}
+
 /** One graph response is the same page as the company directory. */
 export const GRAPH_COMPANY_PAGE = 200;
 
@@ -1907,7 +1921,7 @@ export function RelationshipGraphWorkspace({
   );
 
   const visible = React.useMemo(() => {
-    if (!graph) return { nodes: [], edges: [] };
+    if (!graph) return { nodes: [], edges: [], capped: false, matchedCount: 0 };
     let nodes = graph.nodes;
     let edges = graph.edges;
     if (viewState.changedSinceReview) {
@@ -1946,8 +1960,9 @@ export function RelationshipGraphWorkspace({
     const available = new Set(nodes.map((node) => node.id));
     edges = edges.filter((edge) => available.has(edge.source) && available.has(edge.target));
 
-    const maxNodes = graphNodeCap(viewState.density);
-    if (maxNodes != null && nodes.length > maxNodes) {
+    const matchedCount = nodes.length;
+    const capState = graphCanvasCapState(matchedCount, graphNodeCap(viewState.density));
+    if (capState.capped) {
       nodes = [...nodes]
         .sort((left, right) => {
           const score = (node: RelationshipGraphNode) =>
@@ -1958,11 +1973,11 @@ export function RelationshipGraphWorkspace({
             (node.evidenceRefs.length ? 10 : 0);
           return score(right) - score(left);
         })
-        .slice(0, maxNodes);
-      const capped = new Set(nodes.map((node) => node.id));
-      edges = edges.filter((edge) => capped.has(edge.source) && capped.has(edge.target));
+        .slice(0, capState.shown);
+      const cappedIds = new Set(nodes.map((node) => node.id));
+      edges = edges.filter((edge) => cappedIds.has(edge.source) && cappedIds.has(edge.target));
     }
-    return { nodes, edges };
+    return { nodes, edges, capped: capState.capped, matchedCount };
   }, [
     graph,
     queryResult,
@@ -2537,9 +2552,9 @@ export function RelationshipGraphWorkspace({
                 Show all
               </Button>
             </div>
-          ) : graph && graph.nodes.length > visible.nodes.length ? (
+          ) : graph && visible.capped ? (
             <div className="absolute bottom-3 right-3 border border-border bg-background/90 px-2 py-1 text-[10px] text-primary/45">
-              {graphCanvasCapLabel(visible.nodes.length, graph.nodes.length)}
+              {graphCanvasCapLabel(visible.nodes.length, visible.matchedCount)}
             </div>
           ) : null}
         </div>
