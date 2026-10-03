@@ -344,12 +344,12 @@ export function graphLayoutLabel(layout: RelationshipGraphSavedViewState["layout
 }
 
 /**
- * The account menu's visible placeholder is "Choose an account". Chrome does
+ * The company menu's visible placeholder is "Choose a company". Chrome does
  * not use that text as the combobox name, so the name has to carry it.
  */
 export function graphAccountChoice(name: string | null | undefined): string {
   const trimmed = name?.trim() ?? "";
-  return trimmed || "Choose an account";
+  return trimmed || "Choose a company";
 }
 
 /** Same gap for the saved-view menu, which only renders once a view exists. */
@@ -670,7 +670,7 @@ function Inspector({
     label:
       graph.nodes.find(
         (candidate) => candidate.kind === "relationship" && candidate.relationshipIds.includes(id),
-      )?.label || "account",
+      )?.label || "company",
   }));
   const connected = graph.edges.flatMap((edge) => {
     if (edge.source !== node.id && edge.target !== node.id) return [];
@@ -924,7 +924,7 @@ function Inspector({
       ) : null}
       {node.kind !== "action" && relationshipRecords.length > 1 ? (
         <p className="mt-2 text-[10px] leading-4 text-primary/40">
-          This node is shared across accounts. Open one account before proposing an action so the
+          This node is shared across companies. Open one company before proposing an action so the
           approval is scoped correctly.
         </p>
       ) : null}
@@ -1371,7 +1371,7 @@ export function graphQueryFilterLabel(filter: string): string {
 }
 export function accountGraphPrompt(companyCount: number): string {
   if (companyCount === 0) return "Add a company before this graph can be built.";
-  return "Choose an account to build its graph.";
+  return "Choose a company to build its graph.";
 }
 
 function graphNodeRelationshipIDs(node: RelationshipGraphNode): string[] {
@@ -2003,7 +2003,7 @@ export function RelationshipGraphWorkspace({
                 value={scope}
                 className="data-[state=on]:bg-primary data-[state=on]:text-background"
               >
-                {scope === "relationship" ? "Account graph" : "All companies"}
+                {scope === "relationship" ? "One company" : "All companies"}
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -2016,7 +2016,7 @@ export function RelationshipGraphWorkspace({
             >
               <SelectTrigger
                 aria-label={comboboxFilterName(
-                  "Account",
+                  "Company",
                   graphAccountChoice(
                     (() => {
                       const selected = relationships.find(
@@ -2029,7 +2029,7 @@ export function RelationshipGraphWorkspace({
                 size="sm"
                 className="w-52"
               >
-                <SelectValue placeholder="Choose an account" />
+                <SelectValue placeholder="Choose a company" />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-[2px]">
                 {relationships.map((relationship) => (

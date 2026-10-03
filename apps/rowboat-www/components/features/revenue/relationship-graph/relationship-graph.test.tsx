@@ -195,13 +195,15 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).toContain('{mode === "canvas" ? (');
     expect(source).toContain("{graphEnabled ? (");
     expect(graphAccountChoice("  Harbor  ")).toBe("Harbor");
-    expect(graphAccountChoice("")).toBe("Choose an account");
+    expect(graphAccountChoice("")).toBe("Choose a company");
     expect(graphSavedViewChoice(undefined)).toBe("Saved views");
     expect(nextSavedViewsLabel()).toBe("Show the next saved views");
     expect(source).toContain("remoteSavedViews.length + extraSavedViews.length");
-    expect(source).toContain('comboboxFilterName(\n                  "Account",');
+    expect(source).toContain('comboboxFilterName(\n                  "Company",');
     expect(source).toContain('comboboxFilterName(\n                  "Saved view",');
-    expect(source).toContain('placeholder="Choose an account"');
+    expect(source).toContain('placeholder="Choose a company"');
+    expect(source).toContain("One company");
+    expect(source).not.toContain("Account graph");
     expect(source).not.toContain("Cluster layout");
     expect(source).not.toContain("Radial layout");
     expect(source).not.toContain("<Graph /> Canvas");
@@ -240,7 +242,7 @@ describe("RelationshipGraphWorkspace", () => {
     expect(source).not.toContain("evidence refs");
     expect(source).not.toContain(">Relationship graph</h2>");
     expect(accountGraphPrompt(0)).toBe("Add a company before this graph can be built.");
-    expect(accountGraphPrompt(2)).toBe("Choose an account to build its graph.");
+    expect(accountGraphPrompt(2)).toBe("Choose a company to build its graph.");
     expect(graphQueryAnswer("0 relationships match lifecycle: renewal.", 0)).toBe(
       "No companies are in this graph yet.",
     );
