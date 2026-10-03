@@ -270,7 +270,7 @@ export function parseRelationshipGraphQuery(query) {
   }
   if (filters.sources.length) applied.push(`sources: ${filters.sources.join(", ")}`);
   if (filters.edgeKinds.length) applied.push(`edges: ${filters.edgeKinds.join(", ")}`);
-  if (filters.overdue) applied.push("overdue commitments");
+  if (filters.overdue) applied.push("overdue promises");
   if (filters.stale) applied.push("stale evidence");
   if (filters.changed) applied.push("changed since review");
   if (filters.freeText.length) applied.push(`text: ${filters.freeText.join(" ")}`);

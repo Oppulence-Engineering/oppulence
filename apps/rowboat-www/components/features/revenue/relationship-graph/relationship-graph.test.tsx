@@ -305,8 +305,8 @@ describe("RelationshipGraphWorkspace", () => {
     ).toBe(
       "0 companies match Included: Note · Approval: Awaiting approval · Sources: Gmail, A note.",
     );
-    expect(graphQueryAnswer("2 relationships match overdue commitments.", 2)).toBe(
-      "2 companies match overdue commitments.",
+    expect(graphQueryAnswer("2 relationships match overdue promises.", 2)).toBe(
+      "2 companies match overdue promises.",
     );
     expect(graphQueryAnswer("0 relationships match text: quillhaven.", 200, true)).toBe(
       graphQueryMissLabel(),
@@ -336,7 +336,7 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphEdgeLabel("has_commitment")).toBe("has promise");
     expect(graphEdgeLabel("supersedes")).toBe("replaces");
     expect(graphEdgeLabel("owns")).toBe("owns");
-    expect(graphQueryFilterLabel("overdue commitments")).toBe("overdue commitments");
+    expect(graphQueryFilterLabel("overdue promises")).toBe("overdue promises");
     expect(graphQueryFilterLabel("sources: desktop_note")).not.toContain("desktop_note");
     expect(graphQueryFilterLabel("approval: pending")).not.toContain("pending");
     expect(source).toContain("Building the company graph");

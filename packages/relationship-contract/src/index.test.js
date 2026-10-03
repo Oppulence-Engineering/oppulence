@@ -109,6 +109,8 @@ test("natural-language graph queries stay deterministic and evidence-linked", ()
   const parsed = parseRelationshipGraphQuery("Which renewals depend on overdue commitments?");
   assert.deepEqual(parsed.filters.lifecycle, ["renewal"]);
   assert.equal(parsed.filters.overdue, true);
+  assert.ok(parsed.applied.includes("overdue promises"));
+  assert.equal(parsed.applied.includes("overdue commitments"), false);
   assert.deepEqual(parsed.filters.edgeKinds, ["requires"]);
   const result = queryRelationshipGraph(graph, parsed.raw);
   assert.deepEqual(result.relationshipIds, ["r-1"]);
