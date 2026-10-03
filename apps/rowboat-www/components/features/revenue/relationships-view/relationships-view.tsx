@@ -2235,6 +2235,16 @@ export function accountDetailSourceCopy(supported: number, total: number, trust 
 }
 
 /**
+ * A person can confirm a detail without attaching the note it came from.
+ * The trust question only counts details that still have something to open.
+ */
+export function openableAccountDetailCount(
+  evidence: Record<string, { evidence?: readonly unknown[] } | undefined>,
+): number {
+  return Object.values(evidence).filter((item) => (item?.evidence?.length ?? 0) > 0).length;
+}
+
+/**
  * The create form stores a company email. A domain then replaces it under the
  * title, so the address has to stay in the record. Only a plain address is a link.
  */
@@ -3022,6 +3032,7 @@ function MissionControlOverview({
 }) {
   const tone = completenessTone(model.completeness.status);
   const supported = Object.values(model.evidence).filter((item) => item.supported).length;
+  const openable = openableAccountDetailCount(model.evidence);
   const total = Object.keys(model.evidence).length;
   const reviewCopy = companyReviewCopy(model);
   return (
@@ -3071,7 +3082,7 @@ function MissionControlOverview({
               ? missionControlChangeAnswer(model.changes, "State changed")
               : reviewCopy.change;
           } else if (question.key === "evidence") {
-            answer = accountDetailSourceCopy(supported, total, true);
+            answer = accountDetailSourceCopy(openable, total, true);
           } else if (question.key === "action") {
             answer = missionControlActionAnswer(model.activeRecommendation);
           }

@@ -3121,25 +3121,22 @@ func relationshipHasSupportedStateAnswer(now time.Time) predicate.Relationship {
 }
 
 // relationshipSheetDetailCountMatch matches the source badge on the company
-// sheet. The badge says "0 of 8 details have a source," and the question under
-// it says how many come from a source you can open. The 8 is every projected
-// detail, so a company with one correction reads "1 of 8".
+// sheet and the trust question under it. The badge counts a correction as a
+// source. The trust question counts only a detail whose observation still
+// exists, so a correction with nothing to open reads "0 of 8".
 func relationshipSheetDetailCountMatch(needle string) predicate.Relationship {
 	total := len(relationshipProjectionDimensions)
 	now := time.Now()
 	var preds []predicate.Relationship
-	seen := map[int]bool{}
 	for n := 0; n <= total; n++ {
 		have := fmt.Sprintf("%d of %d details have a source", n, total)
+		if sheetPhraseMatches(have, needle) {
+			preds = append(preds, relationshipSupportedDetailCount(n, now))
+		}
 		come := fmt.Sprintf("%d of %d details come from a source you can open.", n, total)
-		if !sheetPhraseMatches(have, needle) && !sheetPhraseMatches(come, needle) {
-			continue
+		if sheetPhraseMatches(come, needle) {
+			preds = append(preds, relationshipOpenableDetailCount(n, now))
 		}
-		if seen[n] {
-			continue
-		}
-		seen[n] = true
-		preds = append(preds, relationshipSupportedDetailCount(n, now))
 	}
 	switch len(preds) {
 	case 0:
@@ -3149,6 +3146,76 @@ func relationshipSheetDetailCountMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// relationshipOpenableDetailCount matches details the sheet can open. The
+// observation has to belong to the company. A cited id with no row, and a
+// correction with no observation, stay at zero.
+func relationshipOpenableDetailCount(n int, now time.Time) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT count(DISTINCT open_assertion.")
+			b.WriteString(relationshipassertion.FieldDimension)
+			b.WriteString(") FROM ")
+			b.WriteString(relationshipassertion.Table)
+			b.WriteString(" AS open_assertion WHERE open_assertion.")
+			b.WriteString(relationshipassertion.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND open_assertion.")
+			b.WriteString(relationshipassertion.FieldDimension)
+			b.WriteString(" IN (")
+			for i, dimension := range relationshipProjectionDimensions {
+				if i > 0 {
+					b.WriteString(", ")
+				}
+				b.Arg(dimension)
+			}
+			b.WriteString(") AND open_assertion.")
+			b.WriteString(relationshipassertion.FieldStatus)
+			b.WriteString(" IN ('accepted', 'active') AND open_assertion.")
+			b.WriteString(relationshipassertion.FieldValidFrom)
+			b.WriteString(" <= ")
+			b.Arg(now)
+			b.WriteString(" AND (open_assertion.")
+			b.WriteString(relationshipassertion.FieldValidTo)
+			b.WriteString(" IS NULL OR open_assertion.")
+			b.WriteString(relationshipassertion.FieldValidTo)
+			b.WriteString(" > ")
+			b.Arg(now)
+			b.WriteString(") AND EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipobservation.Table)
+			b.WriteString(" AS open_obs WHERE open_obs.")
+			b.WriteString(relationshipobservation.RelationshipColumn)
+			b.WriteString(" = open_assertion.")
+			b.WriteString(relationshipassertion.RelationshipColumn)
+			b.WriteString(" AND (open_obs.")
+			b.WriteString(relationshipobservation.FieldID)
+			b.WriteString(" = open_assertion.")
+			b.WriteString(relationshipassertion.ObservationColumn)
+			b.WriteString(" OR ")
+			writeOpenAssertionListsObservation(b, s)
+			b.WriteString("))) = ")
+			b.Arg(n)
+		}))
+	})
+}
+
+func writeOpenAssertionListsObservation(b *sql.Builder, s *sql.Selector) {
+	column := "open_assertion." + relationshipassertion.FieldSupportingObservationIds
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("EXISTS (SELECT 1 FROM jsonb_array_elements_text(coalesce(")
+		b.WriteString(column)
+		b.WriteString(", '[]'::jsonb)) AS ref(value) WHERE ref.value = open_obs.")
+		b.WriteString(relationshipobservation.FieldID)
+		b.WriteString("::text)")
+		return
+	}
+	b.WriteString("EXISTS (SELECT 1 FROM json_each(coalesce(")
+	b.WriteString(column)
+	b.WriteString(", '[]')) WHERE json_each.value = open_obs.")
+	b.WriteString(relationshipobservation.FieldID)
+	b.WriteString(")")
 }
 
 func relationshipSupportedDetailCount(n int, now time.Time) predicate.Relationship {

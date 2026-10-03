@@ -37,6 +37,7 @@ import {
   companyStateAnswer,
   missionControlChangeAnswer,
   accountDetailSourceCopy,
+  openableAccountDetailCount,
   missionControlPromiseAnswer,
   missionControlStateAnswer,
   missionControlActionAnswer,
@@ -542,9 +543,18 @@ describe("RelationshipsView", () => {
     expect(accountDetailSourceCopy(0, 8, true)).toBe(
       "0 of 8 account details come from a source you can open.",
     );
+    expect(accountDetailSourceCopy(1, 8)).toBe("1 of 8 account details have a source");
+    expect(
+      openableAccountDetailCount({
+        lifecycle: { evidence: [] },
+        health: { evidence: [{ observationId: "obs-1" }] },
+      }),
+    ).toBe(1);
+    expect(openableAccountDetailCount({ lifecycle: { evidence: [] } })).toBe(0);
     expect(source).toContain("missionControlStateAnswer(model.evidence, commitments)");
     expect(source).toContain("accountDetailSourceCopy(supported, total)");
-    expect(source).toContain("accountDetailSourceCopy(supported, total, true)");
+    expect(source).toContain("openableAccountDetailCount(model.evidence)");
+    expect(source).toContain("accountDetailSourceCopy(openable, total, true)");
     expect(missionControlChangeAnswer([], "State changed")).toBe("State changed");
     expect(missionControlChangeAnswer([{ dimension: "evidence" }], "State changed")).toBe(
       "Supporting evidence changed.",
