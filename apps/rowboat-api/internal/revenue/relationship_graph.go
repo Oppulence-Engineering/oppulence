@@ -447,7 +447,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 			relationshipStatus = "historical_unknown"
 		}
 		nodes[relationshipNodeID] = relationshipGraphNodeDTO{
-			ID: relationshipNodeID, Kind: "relationship", Label: rel.DisplayName,
+			ID: relationshipNodeID, Kind: "relationship", Label: reportAccountTitle(rel),
 			RelationshipID: relationshipID, RelationshipIDs: []string{relationshipID},
 			Summary: state.Summary, Status: relationshipStatus, Lifecycle: state.Lifecycle,
 			Engagement: state.Engagement, Sentiment: state.Sentiment, Health: state.Health,

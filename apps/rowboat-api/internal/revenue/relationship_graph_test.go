@@ -341,3 +341,73 @@ func TestRelationshipGraphPagesPastTheNewestEvidence(t *testing.T) {
 		t.Fatalf("negative evidence offset should match the newest page: err=%v", err)
 	}
 }
+
+func TestRelationshipGraphNamesACompanyLikeTheDirectory(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	harbor, err := f.client.Relationship.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetKind("company").
+		SetDisplayName("   ").
+		SetAccountDomain("harbor-blank.example").
+		SetResourceRefs([]string{}).
+		SetRisks([]string{}).
+		SetMilestones([]string{}).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nameless, err := f.client.Relationship.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetKind("company").
+		SetDisplayName("   ").
+		SetResourceRefs([]string{}).
+		SetRisks([]string{}).
+		SetMilestones([]string{}).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	domain, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "dogfood-label.example", AccountDomain: "dogfood-label.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	typed, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Billing @ Northwind", AccountDomain: "northwind.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{
+		harbor.ID.String():   "Harbor Blank",
+		nameless.ID.String(): "Unknown company",
+		domain.ID.String():   "Dogfood Label",
+		typed.ID.String():    "Billing @ Northwind",
+	}
+	for id, title := range want {
+		relID := mustParseUUID(t, id)
+		aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+			Scope: "relationship", RelationshipID: &relID, Depth: 1, AsOf: f.svc.now(),
+		})
+		if err != nil {
+			t.Fatalf("graph %s: %v", title, err)
+		}
+		dto := buildRelationshipGraphDTO(aggregate, f.svc.now())
+		var got string
+		for _, node := range dto.Nodes {
+			if node.Kind == "relationship" && node.RelationshipID == id {
+				got = node.Label
+			}
+		}
+		if got != title {
+			t.Fatalf("graph label for %s = %q, want %q", title, got, title)
+		}
+	}
+}
