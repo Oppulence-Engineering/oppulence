@@ -333,6 +333,7 @@ describe("RelationshipsView", () => {
     expect(companyRecordLabel("active_customer")).toBe("Active customer");
     expect(companyRecordLabel("former_customer")).toBe("Former customer");
     expect(source).toContain("companyRecordLabel(relationship.health)");
+    expect(source).toContain('data-record-overlay="screen"');
     expect(source).toContain("md:left-[var(--shell-sidebar-screen-offset)]");
     expect(source).toContain("md:w-[calc(100%-var(--shell-sidebar-screen-offset))]");
     expect(source).not.toContain("md:left-[285px]");

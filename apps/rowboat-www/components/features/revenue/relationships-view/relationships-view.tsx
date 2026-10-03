@@ -3696,6 +3696,7 @@ export function RelationshipSheet({
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
       <SheetContent
+        data-record-overlay="screen"
         overlayClassName="bg-transparent"
         closeButtonClassName="left-4 right-auto"
         className="left-0 flex w-full flex-col gap-0 overflow-hidden border-l-0 p-0 shadow-none sm:max-w-none md:left-[var(--shell-sidebar-screen-offset)] md:w-[calc(100%-var(--shell-sidebar-screen-offset))]"

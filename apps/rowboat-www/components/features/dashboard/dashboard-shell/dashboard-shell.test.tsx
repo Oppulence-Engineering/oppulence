@@ -149,7 +149,11 @@ describe("DashboardShell", () => {
     );
     expect(source).toContain('root.toggleAttribute("data-sidebar-collapsed", !sidebarOpen)');
     expect(theme).toContain("--shell-sidebar-screen-offset:");
+    expect(theme).toContain("--shell-top-bar-screen-offset:");
     expect(theme).toContain("--shell-sidebar-offset:");
+    expect(theme).toContain("--shell-top-bar-offset:");
+    expect(theme).toContain('[data-record-overlay="screen"]');
+    expect(theme).toContain('[data-record-overlay="shell"]');
     expect(theme).toContain("html[data-sidebar-collapsed]");
 
     render(<DashboardShell aria-label="Dashboard">Content</DashboardShell>);
