@@ -1369,7 +1369,7 @@ export function RelationshipsView({
                       </TableCell>
                       <TableCell className="border-r px-3">
                         <Badge
-                          className="bg-background-100 text-[11px] capitalize text-primary/60"
+                          className="bg-background-100 text-[11px] text-primary/60"
                           variant="outline"
                         >
                           {companyCategoriesLabel(relationship.categories)}

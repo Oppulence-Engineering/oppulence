@@ -112,6 +112,9 @@ describe("RelationshipsView", () => {
     expect(companyCategoriesLabel(["  ", ""])).toBe("Not filled in");
     expect(source).toContain("companyCategoriesLabel(relationship.categories)");
     expect(source).not.toContain("relationship.categories?.[0]");
+    expect(source).not.toContain(
+      'className="bg-background-100 text-[11px] capitalize text-primary/60"',
+    );
   });
 
   it("names a filtered company list and offers to clear it", () => {
