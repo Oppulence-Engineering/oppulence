@@ -117,6 +117,7 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphNodeFieldLabel("commitment", "status", "met")).toBe("Met");
     expect(graphNodeFieldLabel("commitment", "status", "waived")).toBe("Waived");
     expect(graphNodeFieldLabel("commitment", "status", "missed")).toBe("Missed");
+    expect(graphNodeFieldLabel("commitment", "status", "review")).toBe("Review");
     expect(graphNodeFieldLabel("action", "status", "open")).toBe("Held");
     expect(graphNodeFieldLabel("action", "status", "snoozed")).toBe("Snoozed");
     expect(graphNodeFieldLabel("action", "policy", "passed")).toBe("Cleared");

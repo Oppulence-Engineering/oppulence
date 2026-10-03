@@ -1170,6 +1170,8 @@ export function graphNodeFieldLabel(kind: string, field: GraphField, value: stri
         return "Disputed";
       case "open":
         return "Open";
+      case "review":
+        return "Review";
       case "cancelled":
         return "Cancelled";
       case "superseded":

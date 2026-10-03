@@ -93,6 +93,12 @@ func TestRelationshipGraphProjectsAPromiseLikeTheRegister(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	guessed, err := f.client.Commitment.Create().SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+		SetDirection("promised_by_them").SetText("Send the guessed note").SetConfidence(0.4).
+		SetAcceptance("candidate").SetDueAt(time.Now().UTC().Add(24 * time.Hour)).SetCurrentEventVersion(1).Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 	asOf := f.svc.now()
 	aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
 		Scope: "relationship", RelationshipID: &rel.ID, Depth: 1, AsOf: asOf,
@@ -114,6 +120,10 @@ func TestRelationshipGraphProjectsAPromiseLikeTheRegister(t *testing.T) {
 	met := seen["commitment:"+kept.ID.String()]
 	if met.Status != RegisterMet || met.Label != "Send the kept note" {
 		t.Fatalf("kept promise = status %q label %q", met.Status, met.Label)
+	}
+	review := seen["commitment:"+guessed.ID.String()]
+	if review.Status != "review" || review.Label != "Send the guessed note" {
+		t.Fatalf("unconfirmed promise = status %q label %q", review.Status, review.Label)
 	}
 }
 

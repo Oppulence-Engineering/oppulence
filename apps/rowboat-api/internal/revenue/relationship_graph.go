@@ -511,6 +511,12 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 			confidence := item.Confidence
 			confidenceRef := &confidence
 			commitmentStatus := commitmentRegisterState(item, aggregate.AsOf)
+			// An extraction waiting for review stays Review on the company
+			// record even when the due date is soon. The register clock would
+			// call that same row at risk.
+			if item.Acceptance == "candidate" {
+				commitmentStatus = "review"
+			}
 			commitmentDueAt := item.DueAt
 			commitmentUpdatedAt := item.UpdatedAt
 			if aggregate.Historical && item.UpdatedAt.After(aggregate.AsOf) {
