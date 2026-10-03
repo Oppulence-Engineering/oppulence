@@ -26,6 +26,8 @@ describe("WorkspaceEmptyState", () => {
     expect(priorityComponentLabel("contact_risk_penalty")).toBe("Contact risk");
     expect(priorityComponentLabel("urgency")).toBe("Urgency");
     expect(priorityComponentLabel("commitment_due_state")).toBe("Due date");
+    expect(priorityComponentLabel("commitment_urgency")).toBe("Promise urgency");
+    expect(priorityComponentLabel("relationship_value")).toBe("Company value");
     expect(priorityComponentLabel("source_completeness")).toBe("Source coverage");
     expect(source).toContain("priorityComponentLabel(key)");
     expect(source).toContain("priorityTone(action.priorityScore).label.toLowerCase()");

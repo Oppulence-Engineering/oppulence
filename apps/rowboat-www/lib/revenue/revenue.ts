@@ -1035,7 +1035,7 @@ export const DETECTOR_LABELS: Record<string, string> = {
   former_customer_reconnect: "Former customer",
   conversation_action_pack: "Conversation action pack",
   commitment_due: "Promise due",
-  manual: "Manual",
+  manual: "Added by you",
 };
 
 export const ACTION_TYPE_LABELS: Record<string, string> = {
@@ -1096,8 +1096,8 @@ export const QUEUE_FILTERS: { value: string; label: string }[] = [
 ];
 
 export const PRIORITY_COMPONENT_LABELS: Record<string, string> = {
-  relationship_value: "Relationship value",
-  commitment_urgency: "Commitment urgency",
+  relationship_value: "Company value",
+  commitment_urgency: "Promise urgency",
   recency_signal: "Recency",
   opportunity_signal: "Opportunity",
   evidence_quality: "Evidence quality",

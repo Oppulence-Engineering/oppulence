@@ -10,6 +10,7 @@ import {
 import { dashboardRequest } from "@/lib/auth/dashboard-fetch";
 import {
   attentionReasonLabel,
+  DETECTOR_LABELS,
   auditFailureCopy,
   examinedConversationCount,
   companyLinkedInAction,
@@ -562,6 +563,11 @@ it("accepts the company name on an action the API just changed", () => {
   expect(
     ApproveRevenueAction200Response.safeParse({ ...action, approvalStatus: "approved" }).success,
   ).toBe(true);
+});
+
+it("names a follow-up you added without calling it manual", () => {
+  expect(DETECTOR_LABELS.manual).toBe("Added by you");
+  expect(attentionReasonLabel("manual")).toBe("Added by you");
 });
 
 it("names an overdue promise in an older attention sentence", () => {
