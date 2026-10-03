@@ -190,7 +190,7 @@ func (s *Service) communicationTimelineItem(
 	if err != nil {
 		return CommunicationTimelineItem{}, err
 	}
-	subject := interaction.Subject
+	subject := strings.TrimSpace(interaction.Subject)
 	if !access.Subject {
 		subject = ""
 	}

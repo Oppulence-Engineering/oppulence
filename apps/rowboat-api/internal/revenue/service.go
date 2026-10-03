@@ -17,6 +17,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
@@ -824,6 +825,16 @@ func (s *Service) ListRelationshipsFiltered(
 				relationshipTextBlank(relationship.FieldDisplayName),
 				relationshipTextBlank(relationship.FieldAccountDomain),
 			))
+		}
+		// Activity history prints "Open the source" when the summary is blank.
+		// The email and meeting timeline prints "No message preview" when the
+		// subject is blank. A hidden subject stays hidden: this matches only
+		// a subject that is already empty.
+		if sheetPhraseMatches("open the source", needle) {
+			parts = append(parts, relationship.HasObservationsWith(observationSummaryBlank()))
+		}
+		if sheetPhraseMatches("no message preview", needle) {
+			parts = append(parts, relationship.HasCommunicationInteractionsWith(communicationSubjectBlank()))
 		}
 		if mail := relationshipSheetMailMatch(needle); mail != nil {
 			parts = append(parts, mail)
@@ -2870,6 +2881,25 @@ func writeAliasMissingScopesEmpty(b *sql.Builder, s *sql.Selector, alias string)
 		return
 	}
 	b.WriteString(fmt.Sprintf("json_array_length(coalesce(%s, '[]')) = 0", column))
+}
+
+func observationSummaryBlank() predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(fmt.Sprintf("trim(coalesce(%s, '')) = ''", s.C(relationshipobservation.FieldSummary)))
+		}))
+	})
+}
+
+func communicationSubjectBlank() predicate.CommunicationInteraction {
+	return communicationinteraction.And(
+		communicationinteraction.DeletedEQ(false),
+		predicate.CommunicationInteraction(func(s *sql.Selector) {
+			s.Where(sql.P(func(b *sql.Builder) {
+				b.WriteString(fmt.Sprintf("trim(coalesce(%s, '')) = ''", s.C(communicationinteraction.FieldSubject)))
+			}))
+		}),
+	)
 }
 
 func relationshipTextBlank(field string) predicate.Relationship {

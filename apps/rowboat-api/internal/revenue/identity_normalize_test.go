@@ -1,6 +1,7 @@
 package revenue
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -168,6 +169,79 @@ func TestRelationshipSearchFindsABlankCompanyName(t *testing.T) {
 	byFallback, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Unknown company"})
 	if err != nil || len(byFallback.Relationships) != 1 || byFallback.Relationships[0].ID != nameless.ID {
 		t.Fatalf("unknown company search = %v err=%v", namesOf(byFallback.Relationships), err)
+	}
+	miss, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "zzzz-not-a-company"})
+	if err != nil || len(miss.Relationships) != 0 {
+		t.Fatalf("unrelated search = %v err=%v", namesOf(miss.Relationships), err)
+	}
+}
+
+func TestRelationshipSearchFindsBlankActivityWords(t *testing.T) {
+	f := newFixture(t)
+	blank, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Blank Summary Harbor", AccountDomain: "blank-summary.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	written, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Written Summary Harbor", AccountDomain: "written-summary.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	quiet, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quiet Mail Harbor", AccountDomain: "quiet-mail.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	at := time.Date(2026, 10, 2, 12, 0, 0, 0, time.UTC)
+	if _, err := f.svc.IngestRelationshipObservationCandidates(f.ctx, f.user, []RelationshipObservationInput{
+		{
+			RelationshipID: blank.ID, Source: "desktop_note", ExternalID: "blank-summary",
+			EventType: "note", OccurredAt: at, Summary: "   ",
+			Facts: map[string]any{"noteId": "blank-summary"},
+		},
+		{
+			RelationshipID: written.ID, Source: "desktop_note", ExternalID: "written-summary",
+			EventType: "note", OccurredAt: at, Summary: "The harbor packet arrived",
+			Facts: map[string]any{"noteId": "written-summary"},
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	internal := auth.WithInternal(context.Background())
+	if _, err := f.client.CommunicationInteraction.Create().
+		SetWorkspace(ws).SetOwner(f.user).SetRelationshipID(quiet.ID).
+		SetSource("gmail").SetSourceAccountID("owner@x.co").SetProviderObjectID("blank-subject").
+		SetInteractionType("email").SetDirection("inbound").SetSubject("   ").
+		SetOccurredAt(at).SetReceivedAt(at).SetVisibility("metadata").
+		SetContentHash("sha256:blank-subject").SetMetadataJSON(`{}`).
+		Save(internal); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.CommunicationInteraction.Create().
+		SetWorkspace(ws).SetOwner(f.user).SetRelationshipID(written.ID).
+		SetSource("gmail").SetSourceAccountID("owner@x.co").SetProviderObjectID("written-subject").
+		SetInteractionType("email").SetDirection("inbound").SetSubject("Invoice packet").
+		SetOccurredAt(at).SetReceivedAt(at).SetVisibility("metadata").
+		SetContentHash("sha256:written-subject").SetMetadataJSON(`{}`).
+		Save(internal); err != nil {
+		t.Fatal(err)
+	}
+
+	openSource, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Open the source"})
+	if err != nil || len(openSource.Relationships) != 1 || openSource.Relationships[0].ID != blank.ID {
+		t.Fatalf("open the source = %v err=%v", namesOf(openSource.Relationships), err)
+	}
+	preview, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "No message preview"})
+	if err != nil || len(preview.Relationships) != 1 || preview.Relationships[0].ID != quiet.ID {
+		t.Fatalf("no message preview = %v err=%v", namesOf(preview.Relationships), err)
 	}
 	miss, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "zzzz-not-a-company"})
 	if err != nil || len(miss.Relationships) != 0 {

@@ -6,9 +6,12 @@ import { describe, expect, it } from "vitest";
 const source = fs.readFileSync(path.join(import.meta.dirname, "relationships-view.tsx"), "utf8");
 
 import {
+  activitySummaryLabel,
+  communicationPreviewLabel,
   companyDomainHref,
   companyDomainLabel,
   companyName,
+  evidenceExcerptLabel,
   companyDirectoryCount,
   companyCategoriesLabel,
   personSheetProfile,
@@ -252,6 +255,15 @@ describe("RelationshipsView", () => {
     expect(companyName({ displayName: "   ", accountDomain: "   " })).toBe("Unknown company");
     expect(companyDomainLabel("  harbor-blank.example  ")).toBe("harbor-blank.example");
     expect(companyDomainLabel("   ")).toBe("Not filled in");
+    expect(activitySummaryLabel("   ")).toBe("Open the source");
+    expect(activitySummaryLabel("The harbor packet arrived")).toBe("The harbor packet arrived");
+    expect(communicationPreviewLabel("   ")).toBe("No message preview");
+    expect(communicationPreviewLabel("Invoice packet")).toBe("Invoice packet");
+    expect(evidenceExcerptLabel("   ")).toBe("Evidence excerpt unavailable");
+    expect(source).toContain("activitySummaryLabel(observation.summary)");
+    expect(source).toContain("communicationPreviewLabel(item.subject)");
+    expect(source).not.toContain('observation.summary || "Open the source"');
+    expect(source).not.toContain('item.subject || "No message preview"');
     expect(source).toContain("companyDomainLabel(relationship.accountDomain)");
     expect(source).not.toContain("{relationship.accountDomain}");
     expect(source).toContain("companyLinkedInAction(");

@@ -2163,6 +2163,24 @@ export function mailThreadSubjectLabel(subject?: string | null): string {
   return trimmed || "Email conversation";
 }
 
+/** The email and meeting timeline uses this when the subject is blank. */
+export function communicationPreviewLabel(subject?: string | null): string {
+  const trimmed = subject?.trim() ?? "";
+  return trimmed || "No message preview";
+}
+
+/** Activity history uses this when an observation has no summary. */
+export function activitySummaryLabel(summary?: string | null): string {
+  const trimmed = summary?.trim() ?? "";
+  return trimmed || "Open the source";
+}
+
+/** A blank quote is the same sentence as a missing one. */
+export function evidenceExcerptLabel(excerpt?: string | null): string {
+  const trimmed = excerpt?.trim() ?? "";
+  return trimmed || "Evidence excerpt unavailable";
+}
+
 /** A blank address is the same party line the directory search uses. */
 export function mailThreadPartyLabel(email?: string | null): string {
   const trimmed = email?.trim() ?? "";
@@ -4106,7 +4124,7 @@ export function RelationshipSheet({
                               <ul className="mt-2 space-y-1 border-l border-border pl-3">
                                 {action.evidence.map((item) => (
                                   <li key={item.id}>
-                                    “{item.excerpt || "Evidence excerpt unavailable"}”
+                                    “{evidenceExcerptLabel(item.excerpt)}”
                                   </li>
                                 ))}
                               </ul>
@@ -4658,7 +4676,7 @@ export function RelationshipSheet({
                             </Badge>
                           </div>
                           <p className="mt-1 text-xs text-primary/55">
-                            {item.subject || "No message preview"}
+                            {communicationPreviewLabel(item.subject)}
                           </p>
                           <p className="mt-1 text-[11px] text-primary/40">
                             {relativeTime(item.occurredAt)} · {mailAccessReason(item.access.reason)}
@@ -4713,7 +4731,7 @@ export function RelationshipSheet({
                               </Badge>
                             </div>
                             <p className="mt-1 text-xs text-primary/55">
-                              {observation.summary || "Open the source"}
+                              {activitySummaryLabel(observation.summary)}
                             </p>
                           </Button>
                           {observation.id in evidence ? (
