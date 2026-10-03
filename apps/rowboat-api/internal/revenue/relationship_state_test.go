@@ -272,6 +272,12 @@ func TestConfirmedMeetingCommitmentBecomesSharedCommitmentExactlyOnce(t *testing
 	if len(action.Edges.Evidences) != 1 || action.Edges.Evidences[0].Source != "meeting" {
 		t.Fatalf("follow-up must link the confirmed meeting evidence: %#v", action.Edges.Evidences)
 	}
+	listed, listErr := f.svc.ListActions(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen})
+	if listErr != nil || len(listed) != 1 || len(listed[0].Edges.Evidences) != 1 ||
+		listed[0].Edges.Evidences[0].Source != "meeting" ||
+		listed[0].Edges.Evidences[0].Excerpt != "I will send the proposal." {
+		t.Fatalf("recovery list must include the meeting quote: %#v err=%v", listed, listErr)
+	}
 	_, err = f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
 		RelationshipID: rel.ID,
 		Source:         "meeting",

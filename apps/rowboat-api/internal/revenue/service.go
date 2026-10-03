@@ -4366,6 +4366,7 @@ func (s *Service) ListActionPage(ctx context.Context, u *ent.User, f ListFilter)
 		))
 	}
 	rows, err := q.WithRelationship().
+		WithEvidences().
 		Order(actionPageOrder(f)...).
 		Limit(limit + 1).
 		Offset(f.Offset).
@@ -4430,6 +4431,7 @@ func (s *Service) GetAction(ctx context.Context, id uuid.UUID) (*ent.RevenueActi
 	action, err := s.client.RevenueAction.Query().
 		Where(revenueaction.IDEQ(id)).
 		WithRelationship().
+		WithEvidences().
 		Only(ctx)
 	if ent.IsNotFound(err) {
 		return nil, ErrNotFound
