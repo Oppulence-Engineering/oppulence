@@ -969,7 +969,7 @@ export const recordOutcome = (actionId: string, input: RecordOutcomeInput) =>
 // --- display helpers ---------------------------------------------------------
 
 const ATTENTION_REASON_LABELS: Record<string, string> = {
-  quiet_account: "Quiet account",
+  quiet_account: "Quiet company",
   contact_departed: "Contact left",
   external_trigger: "Outside event",
   overdue_commitment: "Overdue promise",

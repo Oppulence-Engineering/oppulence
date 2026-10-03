@@ -35,7 +35,7 @@ beforeEach(() => mockFetch.mockReset());
 
 describe("attention reason labels", () => {
   it("names an exposure reason instead of the stored code", () => {
-    expect(attentionReasonLabel("quiet_account")).toBe("Quiet account");
+    expect(attentionReasonLabel("quiet_account")).toBe("Quiet company");
     expect(attentionReasonLabel("source_degradation")).toBe("Source needs reconnecting");
     expect(attentionReasonLabel("missing_next_step")).toBe("No next step");
     expect(attentionReasonLabel("unresolved_risk")).toBe("Unresolved risk");

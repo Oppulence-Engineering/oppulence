@@ -11,9 +11,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const decideRelationshipAttention = vi.hoisted(() => vi.fn());
 
-vi.mock("@/lib/revenue/revenue", () => ({
-  decideRelationshipAttention,
-}));
+vi.mock("@/lib/revenue/revenue", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/revenue/revenue")>();
+  return { ...actual, decideRelationshipAttention };
+});
 
 import {
   AttentionQueueSurface,
@@ -64,6 +65,20 @@ describe("AttentionQueueSurface", () => {
     ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Filter" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Open items" })).not.toBeInTheDocument();
+  });
+
+  it("names a quiet company when the reason has no sentence", () => {
+    render(
+      <AttentionQueueSurface
+        items={[item("attn-quiet", "Harbor Quiet", "high", "")]}
+        onActionError={vi.fn()}
+        onChanged={vi.fn()}
+        onOpenRelationship={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByText("Quiet company").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Quiet account")).toBeNull();
+    expect(screen.queryByText("Quiet Account")).toBeNull();
   });
 
   it("keeps only the selected urgency band", async () => {

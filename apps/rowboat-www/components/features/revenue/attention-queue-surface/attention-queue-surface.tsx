@@ -2,7 +2,6 @@
 
 import "client-only";
 
-import { relationshipLabel } from "@oppulence/relationship-contract";
 import { Badge } from "@sim/emcn";
 import { Layout, TagIcon, TypeNumber, TypeText } from "@sim/emcn/icons";
 import * as React from "react";
@@ -17,7 +16,11 @@ import {
   SimProductPanel,
   SimProductToolbar,
 } from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
-import { decideRelationshipAttention, shownRequestError } from "@/lib/revenue/revenue";
+import {
+  attentionReasonLabel,
+  decideRelationshipAttention,
+  shownRequestError,
+} from "@/lib/revenue/revenue";
 import type { RelationshipAttentionItem } from "@/lib/revenue/types";
 
 const COLUMNS = [
@@ -291,7 +294,7 @@ export function AttentionQueueSurface({
                         {item.rankScore}
                       </td>
                       <td className="truncate px-2.5 text-[var(--text-secondary)]">
-                        {item.explanation || relationshipLabel(item.reasonCode)}
+                        {item.explanation || attentionReasonLabel(item.reasonCode)}
                       </td>
                     </tr>
                   );
@@ -325,7 +328,7 @@ export function AttentionQueueSurface({
         {selected && !loading ? (
           <div className="border-[var(--border)] border-t px-3 py-2">
             <p className="text-sm text-[var(--text-primary)]" data-slot="attention-reason">
-              {selected.explanation || relationshipLabel(selected.reasonCode)}
+              {selected.explanation || attentionReasonLabel(selected.reasonCode)}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <span className="mr-1 text-sm text-[var(--text-secondary)]">
