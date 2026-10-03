@@ -397,6 +397,13 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryAnswer("1 relationship matches getting old.", 2)).toBe(
       "1 company matches getting old.",
     );
+    expect(graphQueryFilterLabel("meeting follow-up")).toBe("meeting follow-up");
+    expect(graphQueryAnswer("1 relationship matches meeting follow-up.", 2)).toBe(
+      "1 company matches meeting follow-up.",
+    );
+    expect(graphQueryAnswer("2 relationships match follow-up.", 2)).toBe(
+      "2 companies match follow-up.",
+    );
     expect(graphQueryAnswer("1 relationship matches they owe us.", 1)).toBe(
       "1 company matches they owe us.",
     );

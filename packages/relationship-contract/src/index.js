@@ -196,6 +196,10 @@ export function parseRelationshipGraphQuery(query) {
       /\bup to date\b|\bup_to_date\b/.test(normalized) &&
       !/\bnot up to date\b|\bnot_up_to_date\b/.test(normalized),
     aging: /\bgetting old\b|\bgetting_old\b/.test(normalized),
+    // The row is titled "Meeting follow-up". A hyphen must not become a
+    // different word, and the word meeting in that title is not a source.
+    meetingFollowUp: /\bmeeting follow_ups?\b|\bmeeting follow ups?\b/.test(normalized),
+    followUp: /\bfollow_ups?\b|\bfollow ups?\b/.test(normalized),
     changed:
       /\bchanged\b|\bsince (?:my )?last review\b|\bchanged since review\b|\bsince you last looked\b|\byou last looked\b/.test(
         normalized,
@@ -254,8 +258,13 @@ export function parseRelationshipGraphQuery(query) {
       filters.approvalStatus.push(status);
     }
   }
+  const withoutFollowUpTitle = normalized
+    .replace(/\bmeeting follow_ups?\b/g, " ")
+    .replace(/\bmeeting follow ups?\b/g, " ")
+    .replace(/\bfollow_ups?\b/g, " ")
+    .replace(/\bfollow ups?\b/g, " ");
   for (const source of GRAPH_QUERY_SOURCES) {
-    if (new RegExp(`\\b${source.replaceAll("_", "[ _]")}s?\\b`).test(normalized)) {
+    if (new RegExp(`\\b${source.replaceAll("_", "[ _]")}s?\\b`).test(withoutFollowUpTitle)) {
       filters.sources.push(source);
     }
   }
@@ -349,7 +358,11 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bawaiting approvals\b/g, " ")
     .replace(/\bawaiting approval\b/g, " ")
     .replace(/\bawaiting_approvals\b/g, " ")
-    .replace(/\bawaiting_approval\b/g, " ");
+    .replace(/\bawaiting_approval\b/g, " ")
+    .replace(/\bmeeting follow_ups?\b/g, " ")
+    .replace(/\bmeeting follow ups?\b/g, " ")
+    .replace(/\bfollow_ups?\b/g, " ")
+    .replace(/\bfollow ups?\b/g, " ");
   filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
@@ -374,6 +387,8 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.stale) applied.push("out of date");
   if (filters.current) applied.push("up to date");
   if (filters.aging) applied.push("getting old");
+  if (filters.meetingFollowUp) applied.push("meeting follow-up");
+  else if (filters.followUp) applied.push("follow-up");
   if (filters.changed) applied.push("changed since you last looked");
   if (filters.hideIsolated) applied.push("hide unconnected");
   if (filters.freeText.length) applied.push(`text: ${filters.freeText.join(" ")}`);
@@ -472,6 +487,19 @@ export function queryRelationshipGraph(graph, query, options = {}) {
   }
   if (filters.aging) {
     constrainBy((node) => normalizedGraphValue(node.freshness) === "aging");
+  }
+  if (filters.meetingFollowUp) {
+    constrainBy((node) => {
+      if (node.kind !== "action") return false;
+      const label = normalizedGraphValue(node.label).replaceAll("-", "_");
+      return /\bmeeting\b/.test(label) && /\bfollow_ups?\b/.test(label);
+    });
+  } else if (filters.followUp) {
+    constrainBy((node) => {
+      if (node.kind !== "action") return false;
+      const label = normalizedGraphValue(node.label).replaceAll("-", "_");
+      return /\bfollow_ups?\b/.test(label);
+    });
   }
   if (filters.changed) {
     constrainBy((node) => node.kind === "relationship" && Boolean(node.changedSinceReview));
