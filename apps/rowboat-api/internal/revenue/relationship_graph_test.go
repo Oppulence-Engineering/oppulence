@@ -125,6 +125,18 @@ func TestRelationshipGraphProjectsAPromiseLikeTheRegister(t *testing.T) {
 	if review.Status != "review" || review.Label != "Send the guessed note" {
 		t.Fatalf("unconfirmed promise = status %q label %q", review.Status, review.Label)
 	}
+	var promiseEdge string
+	for _, edge := range dto.Edges {
+		if edge.Kind == "has_commitment" && edge.Target == "commitment:"+soon.ID.String() {
+			promiseEdge = edge.Label
+		}
+	}
+	if promiseEdge != "has promise" {
+		t.Fatalf("promise edge = %q", promiseEdge)
+	}
+	if graphDependencyLabel("supersedes") != "replaces" || graphDependencyLabel("blocks") != "blocks" {
+		t.Fatal("a promise link should say what it does")
+	}
 }
 
 func TestRelationshipGraphCommitmentCarriesQueueMetadata(t *testing.T) {

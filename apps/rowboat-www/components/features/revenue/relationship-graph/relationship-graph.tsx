@@ -160,7 +160,7 @@ const KIND_ORDER: RelationshipGraphNode["kind"][] = [
 const KIND_LABEL: Record<RelationshipGraphNode["kind"], string> = {
   relationship: "Company",
   person: "Person",
-  commitment: "Commitment",
+  commitment: "Promise",
   risk: "Risk",
   milestone: "Milestone",
   action: "Action",
@@ -307,7 +307,7 @@ function TypedGraphEdge(props: EdgeProps<FlowEdge>) {
         className="cursor-pointer"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        aria-label={`${props.data?.graphEdge.label || "connection"} edge`}
+        aria-label={`${graphEdgeLabel(props.data?.graphEdge.label || "") || "connection"} edge`}
       />
       {showLabel ? (
         <EdgeLabelRenderer>
@@ -315,7 +315,7 @@ function TypedGraphEdge(props: EdgeProps<FlowEdge>) {
             className="pointer-events-none absolute rounded-[2px] border border-border bg-background px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-primary/65 shadow-sm"
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
           >
-            {props.data?.graphEdge.label}
+            {graphEdgeLabel(props.data?.graphEdge.label || "")}
           </div>
         </EdgeLabelRenderer>
       ) : null}
@@ -803,9 +803,9 @@ function Inspector({
                 <Label className="min-w-0 flex-1 truncate font-normal">{other.label}</Label>
                 <Label
                   className="font-mono text-[9px] font-normal text-primary/35"
-                  aria-label={`${edge.source === node.id ? "Outgoing" : "Incoming"}: ${edge.label}`}
+                  aria-label={`${edge.source === node.id ? "Outgoing" : "Incoming"}: ${graphEdgeLabel(edge.label)}`}
                 >
-                  {edge.source === node.id ? "→" : "←"} {edge.label}
+                  {edge.source === node.id ? "→" : "←"} {graphEdgeLabel(edge.label)}
                 </Label>
               </Button>
             </li>
@@ -1106,6 +1106,23 @@ export function graphAsOfLabel(asOf: string): string {
   return `As of ${when}`;
 }
 
+/**
+ * The graph line between a company and a promise used to say "has commitment".
+ * A link that replaces another promise used to say "supersedes".
+ */
+export function graphEdgeLabel(label: string): string {
+  switch (label.trim().toLowerCase().replaceAll("_", " ")) {
+    case "has commitment":
+    case "has promise":
+      return "has promise";
+    case "supersedes":
+    case "replaces":
+      return "replaces";
+    default:
+      return label.trim();
+  }
+}
+
 /** A graph field is a stored token. A date before the record existed is not a status. */
 export function graphDetailLabel(value: string): string {
   switch (value) {
@@ -1352,8 +1369,12 @@ function graphQueryTokenLabel(kind: string, token: string): string {
       return activitySourceLabel(raw);
     case "nodes":
       return KIND_LABEL[raw as RelationshipGraphNode["kind"]] ?? enumLabel(raw);
-    case "edges":
+    case "edges": {
+      const named = graphEdgeLabel(raw);
+      if (named === "has promise") return "Has promise";
+      if (named === "replaces") return "Replaces";
       return enumLabel(raw);
+    }
     case "text": {
       const words = raw.replaceAll("_", " ");
       return words.charAt(0).toUpperCase() + words.slice(1);

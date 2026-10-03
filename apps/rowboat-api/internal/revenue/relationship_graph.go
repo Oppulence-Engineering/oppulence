@@ -414,6 +414,16 @@ func changedSinceGraphReview(rel *ent.Relationship, stateVersion int) bool {
 	return stateVersion > latestVersion
 }
 
+// A promise link stores the dependency kind. The graph says what that link does.
+func graphDependencyLabel(kind string) string {
+	switch strings.TrimSpace(kind) {
+	case "supersedes":
+		return "replaces"
+	default:
+		return strings.ReplaceAll(kind, "_", " ")
+	}
+}
+
 func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedAt time.Time) relationshipGraphDTO {
 	nodes := make(map[string]relationshipGraphNodeDTO)
 	edges := make(map[string]relationshipGraphEdgeDTO)
@@ -533,7 +543,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 			}
 			commitmentLabel := strings.TrimSpace(item.Text)
 			if commitmentLabel == "" {
-				commitmentLabel = "Commitment"
+				commitmentLabel = "Promise"
 			}
 			nodes[commitmentNodeID] = relationshipGraphNodeDTO{
 				ID: commitmentNodeID, Kind: "commitment", Label: commitmentLabel,
@@ -551,7 +561,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 					"currentEventVersion": item.CurrentEventVersion,
 				},
 			}
-			addEdge("has_commitment", "has commitment", relationshipNodeID, commitmentNodeID, true, confidenceRef, evidenceRefs)
+			addEdge("has_commitment", "has promise", relationshipNodeID, commitmentNodeID, true, confidenceRef, evidenceRefs)
 			if ownerNodeID := participantRefs[strings.ToLower(strings.TrimSpace(item.OwnerParticipantRef))]; ownerNodeID != "" {
 				addEdge("owns", "owns", ownerNodeID, commitmentNodeID, true, &confidence, evidenceRefs)
 			}
@@ -565,7 +575,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 				continue
 			}
 			addEdge(
-				dependency.Kind, strings.ReplaceAll(dependency.Kind, "_", " "),
+				dependency.Kind, graphDependencyLabel(dependency.Kind),
 				"commitment:"+from.ID.String(), "commitment:"+to.ID.String(), true, nil,
 				dependency.EvidenceRefs,
 			)

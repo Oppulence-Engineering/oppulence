@@ -31,6 +31,7 @@ import {
   graphCanReset,
   graphQueryAnswer,
   graphQueryMissLabel,
+  graphEdgeLabel,
   graphQueryFilterLabel,
   searchWithoutCompanyGraph,
   withoutPersonDirectoryRecords,
@@ -287,7 +288,14 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryFilterLabel("sources: voice_note")).toBe("Sources: A voice note");
     expect(graphQueryFilterLabel("approval: pending")).toBe("Approval: Awaiting approval");
     expect(graphQueryFilterLabel("nodes: relationship, evidence")).toBe("Included: Company, Detail");
+    expect(graphQueryFilterLabel("nodes: commitment")).toBe("Included: Promise");
     expect(graphQueryFilterLabel("edges: blocks")).toBe("Connections: Blocks");
+    expect(graphQueryFilterLabel("edges: has_commitment")).toBe("Connections: Has promise");
+    expect(graphQueryFilterLabel("edges: supersedes")).toBe("Connections: Replaces");
+    expect(graphEdgeLabel("has commitment")).toBe("has promise");
+    expect(graphEdgeLabel("has_commitment")).toBe("has promise");
+    expect(graphEdgeLabel("supersedes")).toBe("replaces");
+    expect(graphEdgeLabel("owns")).toBe("owns");
     expect(graphQueryFilterLabel("overdue commitments")).toBe("overdue commitments");
     expect(graphQueryFilterLabel("sources: desktop_note")).not.toContain("desktop_note");
     expect(graphQueryFilterLabel("approval: pending")).not.toContain("pending");
@@ -309,6 +317,11 @@ describe("RelationshipGraphWorkspace", () => {
     );
     expect(source).not.toContain("governed next actions");
     expect(source).toContain('relationship: "Company"');
+    expect(source).toContain('commitment: "Promise"');
+    expect(source).not.toContain('commitment: "Commitment"');
+    expect(source).toContain("graphEdgeLabel(");
+    expect(source).not.toContain("{edge.label}");
+    expect(source).not.toContain("{props.data?.graphEdge.label}");
     expect(source).not.toContain('relationship: "Account"');
     expect(source).toContain('evidence: "Detail"');
     expect(source).toContain(">Name</TableHead>");
