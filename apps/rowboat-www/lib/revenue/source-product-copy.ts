@@ -266,6 +266,13 @@ const HIDDEN_ACTIVITY_KEYS = new Set([
   "action_id",
   "recommendation_revision",
   "channel",
+  // Confirmation machinery. The promise, who owes it, and the quote are the
+  // activity. The flag, the session id, and the clip offsets are not.
+  "user_confirmed",
+  "commitment_id",
+  "evidence_start_ms",
+  "evidence_end_ms",
+  "commitment_due_timezone",
 ]);
 
 const ACTIVITY_FACT_LABELS: Record<string, string> = {
@@ -278,7 +285,49 @@ const ACTIVITY_FACT_LABELS: Record<string, string> = {
   snippet: "Preview",
   text: "Text",
   preview: "Preview",
+  commitment_text: "Promise",
+  evidence_quote: "Quote",
 };
+
+/** A confirmed meeting stores who owes the promise. The activity says which side. */
+function activityDirectionLine(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  switch (value.trim()) {
+    case "promised_by_me":
+      return "Direction: We owe them";
+    case "promised_by_them":
+      return "Direction: They owe us";
+    case "mutual":
+      return "Direction: We both owe";
+    default:
+      return null;
+  }
+}
+
+/** A due instant is stored in UTC. The activity names the day. */
+function activityDueLine(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const day = date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  return `Due: ${day}`;
+}
+
+/** Participant refs on a confirmed meeting are tokens until a person is named. */
+function activityParticipantLine(key: string, value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const who = value.trim();
+  if (!who || who === "local-user" || who === "meeting-counterparty") return null;
+  if (/^[0-9a-f-]{36}$/i.test(who) || /^[a-z0-9_:-]+$/.test(who)) return null;
+  const label =
+    key === "owner_participant_ref" ? "From" : key === "beneficiary_participant_ref" ? "For" : "To";
+  return `${label}: ${who}`;
+}
 
 function activityRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -314,9 +363,29 @@ function linesFromActivity(value: unknown): string[] {
   const lines: string[] = [];
   for (const [key, item] of Object.entries(record)) {
     if (HIDDEN_ACTIVITY_KEYS.has(key)) continue;
+    if (key === "commitment_direction") {
+      const direction = activityDirectionLine(item);
+      if (direction) lines.push(direction);
+      continue;
+    }
+    if (key === "commitment_due_at") {
+      const due = activityDueLine(item);
+      if (due) lines.push(due);
+      continue;
+    }
+    if (
+      key === "owner_participant_ref" ||
+      key === "counterparty_participant_ref" ||
+      key === "beneficiary_participant_ref"
+    ) {
+      const participant = activityParticipantLine(key, item);
+      if (participant) lines.push(participant);
+      continue;
+    }
     const text = activityScalar(item);
-    if (!text) continue;
-    lines.push(`${ACTIVITY_FACT_LABELS[key] ?? enumLabel(key)}: ${text}`);
+    if (!text || text === "local-user" || text === "meeting-counterparty") continue;
+    const shown = /^[a-z0-9_]+$/.test(text) && text.includes("_") ? enumLabel(text) : text;
+    lines.push(`${ACTIVITY_FACT_LABELS[key] ?? enumLabel(key)}: ${shown}`);
   }
   if (!lines.some((line) => line.startsWith("Note:")) && "content" in record) {
     const text = activityScalar(record.content);

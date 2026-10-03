@@ -103,6 +103,41 @@ describe("source product copy", () => {
     ).toEqual(["Note: Body lives in the editor."]);
   });
 
+  it("reads a confirmed meeting as a promise, not the stored tokens", () => {
+    const lines = activityEvidenceLines(null, {
+      user_confirmed: true,
+      commitment_text: "Send the proposal",
+      commitment_direction: "promised_by_me",
+      commitment_id: "session-1:0-2000",
+      commitment_due_at: "2026-08-01T12:35:00Z",
+      evidence_quote: "I will send the proposal.",
+      evidence_start_ms: 0,
+      evidence_end_ms: 2000,
+      owner_participant_ref: "local-user",
+      counterparty_participant_ref: "meeting-counterparty",
+    });
+    expect(lines).toEqual([
+      "Promise: Send the proposal",
+      "Direction: We owe them",
+      "Due: Aug 1, 2026",
+      "Quote: I will send the proposal.",
+    ]);
+    const joined = lines.join("\n");
+    expect(joined).not.toMatch(/promised_by_me|user_confirmed|session-1|local-user|meeting-counterparty|true/);
+    expect(
+      activityEvidenceLines(null, { commitment_direction: "promised_by_them" }),
+    ).toEqual(["Direction: They owe us"]);
+    expect(activityEvidenceLines(null, { commitment_direction: "mutual" })).toEqual([
+      "Direction: We both owe",
+    ]);
+    expect(
+      activityEvidenceLines(null, {
+        owner_participant_ref: "Avery Chen",
+        counterparty_participant_ref: "buyer@acme.example",
+      }),
+    ).toEqual(["From: Avery Chen", "To: buyer@acme.example"]);
+  });
+
   it("names an activity with the product title", () => {
     expect(activityHeading("gmail", "thread.updated")).toBe("Gmail · Mail updated");
     expect(activityHeading("desktop_note", "note")).toBe("A note · Note saved");
