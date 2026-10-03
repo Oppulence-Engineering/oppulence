@@ -52,6 +52,7 @@ import {
   commitmentPreviewRemainder,
   mapCommitmentsToAccountTimeline,
   openCommitmentCount,
+  overduePromiseCount,
   promiseFollowUpEmptyCopy,
   promiseFollowUpTitle,
 } from "@/components/features/revenue/account-mission-control-surface/account-mission-control-surface";
@@ -4460,7 +4461,10 @@ export function RelationshipSheet({
                     </ul>
                   ) : (
                     <EmptyText>
-                      {promiseFollowUpEmptyCopy(atRiskPromiseCount(data.commitments))}
+                      {promiseFollowUpEmptyCopy(
+                        atRiskPromiseCount(data.commitments),
+                        overduePromiseCount(data.commitments),
+                      )}
                     </EmptyText>
                   )}
                   {data.intelligence?.recommendationEvaluations.length ? (

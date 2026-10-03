@@ -102,6 +102,18 @@ export function atRiskPromiseCount(
   return commitments.filter((item) => commitmentTimelineStatus(item, now).label === "At risk").length;
 }
 
+/** Past due is already late. Due soon is still inside the 72-hour window. */
+export function overduePromiseCount(
+  commitments: readonly RelationshipCommitment[],
+  now = Date.now(),
+): number {
+  return commitments.filter((item) => {
+    if (commitmentTimelineStatus(item, now).label !== "At risk") return false;
+    const due = item.dueAt ? Date.parse(item.dueAt) : Number.NaN;
+    return Number.isFinite(due) && due < now;
+  }).length;
+}
+
 /**
  * Checked follow-ups win. Before that check, a promise already marked at risk
  * is still a follow-up, so the heading must not say zero.
@@ -114,11 +126,22 @@ export function promiseFollowUpTitle(evaluationCount: number, atRiskCount: numbe
 }
 
 /** An empty check is not the same as a promise that is already due. */
-export function promiseFollowUpEmptyCopy(atRiskCount: number): string {
-  const count = Number.isFinite(atRiskCount) ? Math.max(0, Math.round(atRiskCount)) : 0;
-  if (count === 1) return "A promise is due soon. Reconcile to check the follow-up.";
-  if (count > 1) return `${count} promises are due soon. Reconcile to check the follow-up.`;
-  return "No promises are due for a follow-up.";
+export function promiseFollowUpEmptyCopy(atRiskCount: number, overdueCount = 0): string {
+  const waiting = Number.isFinite(atRiskCount) ? Math.max(0, Math.round(atRiskCount)) : 0;
+  const overdue = Math.min(
+    waiting,
+    Number.isFinite(overdueCount) ? Math.max(0, Math.round(overdueCount)) : 0,
+  );
+  const dueSoon = waiting - overdue;
+  if (waiting === 0) return "No promises are due for a follow-up.";
+  const parts: string[] = [];
+  if (overdue === 1) parts.push("A promise is past due");
+  else if (overdue > 1) parts.push(`${overdue} promises are past due`);
+  if (dueSoon === 1) parts.push(overdue > 0 ? "1 is due soon" : "A promise is due soon");
+  else if (dueSoon > 1) {
+    parts.push(overdue > 0 ? `${dueSoon} are due soon` : `${dueSoon} promises are due soon`);
+  }
+  return `${parts.join(" and ")}. Reconcile to check the follow-up.`;
 }
 
 /** Promises past the overview preview, in the same words as the company record. */

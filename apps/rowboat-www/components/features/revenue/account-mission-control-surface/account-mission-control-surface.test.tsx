@@ -13,6 +13,7 @@ const source = fs.readFileSync(path.join(import.meta.dirname, "account-mission-c
 import {
   AccountMissionControlSurface,
   atRiskPromiseCount,
+  overduePromiseCount,
   commitmentPreviewRemainder,
   commitmentTimelineDue,
   commitmentTimelineLabel,
@@ -133,6 +134,18 @@ describe("AccountMissionControlSurface", () => {
       "2 promises are due soon. Reconcile to check the follow-up.",
     );
     expect(promiseFollowUpEmptyCopy(0)).toBe("No promises are due for a follow-up.");
+    const past = promise({ id: "past", dueAt: "2026-09-29T12:00:00Z" });
+    const soon = promise({ id: "soon", dueAt: "2026-10-02T12:00:00Z" });
+    expect(overduePromiseCount([past, soon, later], now)).toBe(1);
+    expect(promiseFollowUpEmptyCopy(1, 1)).toBe(
+      "A promise is past due. Reconcile to check the follow-up.",
+    );
+    expect(promiseFollowUpEmptyCopy(2, 2)).toBe(
+      "2 promises are past due. Reconcile to check the follow-up.",
+    );
+    expect(promiseFollowUpEmptyCopy(2, 1)).toBe(
+      "A promise is past due and 1 is due soon. Reconcile to check the follow-up.",
+    );
   });
 
   it("shows the due day on the company promise", () => {
