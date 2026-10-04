@@ -3316,6 +3316,114 @@ func TestRelationshipSearchFindsTheDisagreement(t *testing.T) {
 	assertCompanyQuery("Choose the current value from 2 sources.", "Quill Atelier")
 	assertCompanyQuery("Which Health should be the current one?")
 	assertCompanyQuery("A stronger source already chose the current value.", "Cedar Mill")
+	assertCompanyQuery("Two sources disagree. Choose which value is current.")
+}
+
+func TestRelationshipSearchFindsContradictionReasons(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveCase := func(rel *ent.Relationship, status, reason, stableID string, version int) {
+		t.Helper()
+		payload, err := json.Marshal(ConversationContradictionCase{
+			CaseID: stableID, RelationshipID: rel.ID.String(), SubjectRef: rel.ID.String(),
+			Dimension: "health", Status: status, Reason: reason,
+			Sides: []ConversationContradictionEvidenceSide{
+				{AssertionID: "left", Source: "user"},
+				{AssertionID: "right", Source: "hubspot"},
+			},
+			OpenedAt: time.Now().UTC().Format(time.RFC3339),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(payload)
+		if _, err := f.client.ConversationIntelligenceArtifact.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetKind("contradiction_case").SetStableID(stableID).SetVersion(version).
+			SetStatus(status).SetSubjectRef(rel.ID.String()).
+			SetEffectiveAt(time.Now().UTC()).SetEvidenceRefs([]string{}).
+			SetPayloadJSON(string(payload)).SetPayloadHash(hex.EncodeToString(sum[:])).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	makeCompany("Reason Quiet")
+	openCase := makeCompany("Reason Open")
+	split := makeCompany("Reason Split")
+	splitPrinted := makeCompany("Reason Split Printed")
+	chose := makeCompany("Reason Chose")
+	chosePrinted := makeCompany("Reason Chose Printed")
+	gmail := makeCompany("Reason Gmail")
+	note := makeCompany("Reason Note")
+	rule := makeCompany("Reason Rule")
+	openChose := makeCompany("Reason Open Chose")
+	revised := makeCompany("Reason Revised")
+	calendarNoise := makeCompany("Reason Calendar Noise")
+	calendar := makeCompany("Reason Calendar")
+	saveCase(openCase, "open", "equally authoritative typed evidence overlaps with different values", "contradiction:reason-open", 1)
+	saveCase(split, "user_resolved", "equally authoritative typed evidence overlaps with different values", "contradiction:reason-split", 1)
+	saveCase(splitPrinted, "user_resolved", "Two sources disagree. Choose which value is current.", "contradiction:reason-split-printed", 1)
+	saveCase(chose, "user_resolved", "User selected the current value from a focused contradiction case.", "contradiction:reason-chose", 1)
+	saveCase(chosePrinted, "user_resolved", "You chose the current value.", "contradiction:reason-chose-printed", 1)
+	saveCase(gmail, "user_resolved", "Selected gmail as current evidence.", "contradiction:reason-gmail", 1)
+	saveCase(note, "user_resolved", "You chose the value from A note.", "contradiction:reason-note", 1)
+	saveCase(rule, "user_resolved", "Selected deterministic as current evidence.", "contradiction:reason-rule", 1)
+	saveCase(openChose, "open", "You chose the current value.", "contradiction:reason-open-chose", 1)
+	saveCase(revised, "user_resolved", "You chose the current value.", "contradiction:reason-revised", 1)
+	saveCase(revised, "open", "Two sources disagree. Choose which value is current.", "contradiction:reason-revised", 2)
+	saveCase(calendar, "user_resolved", "Selected calendar as current evidence.", "contradiction:reason-calendar", 1)
+	now := time.Now().UTC()
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(calendarNoise).
+		SetSource("calendar").SetExternalID("reason-calendar-noise").
+		SetEventType("event.updated").SetOccurredAt(now).SetReceivedAt(now).
+		SetSummary("A calendar event").SetContentHash("reason-calendar-noise").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery(
+		"Two sources disagree. Choose which value is current.",
+		"Reason Split", "Reason Split Printed",
+	)
+	assertCompanyQuery(
+		"You chose the current value.",
+		"Reason Chose", "Reason Chose Printed",
+	)
+	assertCompanyQuery("You chose the value from Gmail.", "Reason Gmail")
+	assertCompanyQuery("You chose the value from A note.", "Reason Note")
+	assertCompanyQuery("You chose the value from A rule.", "Reason Rule")
+	assertCompanyQuery("You chose the value from Calendar.", "Reason Calendar")
+	assertCompanyQuery("Choose the current value from 2 sources.", "Reason Open", "Reason Open Chose", "Reason Revised")
 }
 
 func TestRelationshipSearchFindsSuggestionTitles(t *testing.T) {

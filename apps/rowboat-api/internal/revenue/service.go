@@ -877,7 +877,10 @@ func (s *Service) ListRelationshipsFiltered(
 		// "Nothing recorded yet" contains "recorded", and the calendar
 		// sentence contains "calendar". Those words are also activity
 		// headings. The empty sentence is the company with no history.
-		if activity := relationshipSheetActivityMatch(needle); activity != nil && !sheetEmptySentenceOwnsActivity(needle) {
+		// "You chose the value from Calendar." contains the activity heading
+		// "calendar". The sentence is the closed contradiction, not every
+		// company that has a calendar event.
+		if activity := relationshipSheetActivityMatch(needle); activity != nil && !sheetEmptySentenceOwnsActivity(needle) && !contradictionSentenceOwnsActivity(needle) {
 			parts = append(parts, activity)
 		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
@@ -2417,12 +2420,92 @@ func contradictionSearchPhrases() []contradictionSearchPhrase {
 			reason:    "deterministic assertion authority selected the current value",
 		},
 	)
+	// An open case prints the counted source sentence. These lines are the
+	// closed case, including the older stored reasons the sheet rewrites.
+	disagree := "Two sources disagree. Choose which value is current."
+	phrases = append(phrases,
+		contradictionSearchPhrase{
+			phrase: normalizePersonSearch(disagree), statusNot: "open", reason: disagree,
+		},
+		contradictionSearchPhrase{
+			phrase:    normalizePersonSearch(disagree),
+			statusNot: "open",
+			reason:    "equally authoritative typed evidence overlaps with different values",
+		},
+	)
+	chose := "You chose the current value."
+	phrases = append(phrases,
+		contradictionSearchPhrase{
+			phrase: normalizePersonSearch(chose), statusNot: "open", reason: chose,
+		},
+		contradictionSearchPhrase{
+			phrase:    normalizePersonSearch(chose),
+			statusNot: "open",
+			reason:    "User selected the current value from a focused contradiction case.",
+		},
+	)
+	for _, source := range contradictionChosenSources() {
+		printed := fmt.Sprintf("You chose the value from %s.", source.label)
+		phrase := normalizePersonSearch(printed)
+		phrases = append(phrases,
+			contradictionSearchPhrase{
+				phrase: phrase, statusNot: "open", reason: printed,
+			},
+			contradictionSearchPhrase{
+				phrase:    phrase,
+				statusNot: "open",
+				reason:    fmt.Sprintf("Selected %s as current evidence.", source.slug),
+			},
+		)
+	}
 	return phrases
+}
+
+// contradictionChosenSource is a slug the sheet turns into "You chose the value from …".
+type contradictionChosenSource struct {
+	slug  string
+	label string
+}
+
+// contradictionChosenSources matches contradictionSourceLabel and activitySourceLabel.
+func contradictionChosenSources() []contradictionChosenSource {
+	return []contradictionChosenSource{
+		{"user_correction", "Your correction"},
+		{"source_fact", "A connected source"},
+		{"deterministic", "A rule"},
+		{"ai_inference", "A suggestion"},
+		{"gmail", "Gmail"},
+		{"google", "Google"},
+		{"calendar", "Calendar"},
+		{"slack", "Slack"},
+		{"hubspot", "HubSpot"},
+		{"meeting", "A meeting"},
+		{"desktop_note", "A note"},
+		{"voice_note", "A voice note"},
+		{"browser", "The browser"},
+		{"crm", "The CRM"},
+		{"user", "Added by you"},
+		{"web", "The web"},
+		{"composio", "A connected app"},
+	}
+}
+
+// contradictionSentenceOwnsActivity is true when the query is a closed-case
+// sentence that also contains an activity heading, such as Calendar or A meeting.
+func contradictionSentenceOwnsActivity(needle string) bool {
+	for _, source := range contradictionChosenSources() {
+		printed := fmt.Sprintf("You chose the value from %s.", source.label)
+		if labelPhraseMatches(printed, needle) {
+			return true
+		}
+	}
+	return false
 }
 
 // relationshipSheetContradictionMatch matches the suggestion "Two details disagree"
 // and the sentence under it. A resolved disagreement prints a different sentence,
-// so the open suggestion stays off that company.
+// so the open suggestion stays off that company. A closed case prints who chose
+// the current value. An open case that still stores that reason does not.
 func relationshipSheetContradictionMatch(needle string) predicate.Relationship {
 	phrases := contradictionSearchPhrases()
 	chosen := make([]contradictionSearchPhrase, 0)
