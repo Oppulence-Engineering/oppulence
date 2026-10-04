@@ -2591,6 +2591,98 @@ func TestRelationshipSearchFindsTheSheetReviewAndRecommendation(t *testing.T) {
 	assertCompanyQuery("reviewed", "Quill Atelier", "Lumen Packet")
 }
 
+func TestRelationshipSearchFindsSupportingEvidenceChanged(t *testing.T) {
+	f := newFixture(t)
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	quill := makeCompany("Quill North")
+	cedar := makeCompany("Cedar Mark")
+	birch := makeCompany("Birch Slide")
+	aspen := makeCompany("Aspen Quay")
+	mixed := makeCompany("Lumen Packet")
+	quiet := makeCompany("Nook Quiet")
+	plural := makeCompany("Plover Dock")
+
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	at := time.Date(2026, 10, 4, 12, 0, 0, 0, time.UTC)
+	setVersion := func(rel *ent.Relationship, version int, hash string) {
+		t.Helper()
+		if _, err := f.client.Relationship.UpdateOneID(rel.ID).
+			SetStateVersion(version).
+			SetStateHash(hash).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	snap := func(rel *ent.Relationship, version int, hash string, dims []string) {
+		t.Helper()
+		if _, err := f.client.RelationshipStateSnapshot.Create().
+			SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+			SetVersion(version).SetStateJSON(`{}`).SetStateHash(hash).
+			SetEvaluatedAt(at).SetChangedDimensions(dims).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	setVersion(quill, 1, "quill-evidence")
+	snap(quill, 1, "quill-evidence", []string{"evidence"})
+	setVersion(cedar, 1, "cedar-health")
+	snap(cedar, 1, "cedar-health", []string{"health"})
+	setVersion(birch, 1, "birch-evidence")
+	snap(birch, 1, "birch-evidence", []string{"evidence"})
+	if _, err := f.svc.AcknowledgeMissionControl(f.ctx, f.user, birch.ID, 1, "birch-evidence"); err != nil {
+		t.Fatal(err)
+	}
+	setVersion(aspen, 1, "aspen-health")
+	snap(aspen, 1, "aspen-health", []string{"health"})
+	if _, err := f.svc.AcknowledgeMissionControl(f.ctx, f.user, aspen.ID, 1, "aspen-health"); err != nil {
+		t.Fatal(err)
+	}
+	setVersion(aspen, 2, "aspen-evidence")
+	snap(aspen, 2, "aspen-evidence", []string{"evidence"})
+	setVersion(mixed, 1, "lumen-mixed")
+	snap(mixed, 1, "lumen-mixed", []string{"health", "evidence"})
+	snap(quiet, 1, "nook-evidence", []string{"evidence"})
+	setVersion(plural, 1, "plover-evidence")
+	snap(plural, 1, "plover-evidence", []string{"evidences"})
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+
+	assertCompanyQuery("Supporting evidence changed.", "Quill North", "Aspen Quay", "Plover Dock")
+	assertCompanyQuery("which companies have supporting evidence changed", "Quill North", "Aspen Quay", "Plover Dock")
+	assertCompanyQuery("supporting")
+	assertCompanyQuery("evidence")
+	assertCompanyQuery("changed")
+	assertCompanyQuery("Nothing changed since your last review.", "Birch Slide")
+}
+
 func TestRelationshipSearchFindsTheLastInteraction(t *testing.T) {
 	f := newFixture(t)
 	recent, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
