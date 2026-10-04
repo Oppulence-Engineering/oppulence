@@ -1361,6 +1361,11 @@ export function graphNodeSummaryLabel(node: {
   // The diagram badge shows approval, then freshness. The table's one State
   // cell has to use that same word, and only then the stored status.
   if (node.approvalStatus) return graphNodeFieldLabel(node.kind, "approval", node.approvalStatus);
+  // The sources page says Not connected before it mentions freshness. A fresh
+  // observation must not hide that the source is not connected.
+  if (node.kind === "source" && node.status === "not_connected") {
+    return graphNodeFieldLabel(node.kind, "status", node.status);
+  }
   if (node.freshness && node.freshness !== "unknown") {
     return graphNodeFieldLabel(node.kind, "freshness", node.freshness);
   }

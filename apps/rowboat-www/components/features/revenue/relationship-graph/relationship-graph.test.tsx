@@ -184,6 +184,9 @@ describe("RelationshipGraphWorkspace", () => {
       graphNodeSummaryLabel({ kind: "source", status: "live", freshness: "current" }),
     ).toBe("Up to date");
     expect(
+      graphNodeSummaryLabel({ kind: "source", status: "not_connected", freshness: "current" }),
+    ).toBe("Not connected");
+    expect(
       graphNodeSummaryLabel({
         kind: "evidence",
         status: "Promise confirmed",
@@ -439,6 +442,10 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryFilterLabel("out of date")).toBe("out of date");
     expect(graphQueryFilterLabel("changed since you last looked")).toBe(
       "changed since you last looked",
+    );
+    expect(graphQueryFilterLabel("not connected")).toBe("not connected");
+    expect(graphQueryAnswer("1 relationship matches not connected.", 2)).toBe(
+      "1 company matches not connected.",
     );
     expect(graphQueryFilterLabel("hide unconnected")).toBe("hide unconnected");
     expect(graphQueryAnswer("1 relationship matches hide unconnected.", 2)).toBe(

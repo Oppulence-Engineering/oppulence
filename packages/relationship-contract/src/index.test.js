@@ -879,6 +879,60 @@ test("the graph's own change and freshness words are the filter, not a text sear
   assert.equal(datedGraph.answer, "1 relationship matches out of date.");
 });
 
+test("asking not connected finds that source and leaves a live one", () => {
+  const parsed = parseRelationshipGraphQuery("not connected");
+  assert.equal(parsed.filters.notConnected, true);
+  assert.equal(parsed.filters.hideIsolated, false);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["not connected"]);
+
+  const hyphen = parseRelationshipGraphQuery("not-connected");
+  assert.equal(hyphen.filters.notConnected, true);
+  assert.equal(hyphen.filters.hideIsolated, false);
+  assert.deepEqual(hyphen.filters.freeText, []);
+
+  const hidden = parseRelationshipGraphQuery("hide unconnected");
+  assert.equal(hidden.filters.hideIsolated, true);
+  assert.equal(hidden.filters.notConnected, false);
+
+  const result = queryRelationshipGraph(
+    {
+      nodes: [
+        { id: "relationship:off", kind: "relationship", label: "Quay Off" },
+        {
+          id: "source:off",
+          kind: "source",
+          label: "Slack",
+          relationshipId: "off",
+          status: "not_connected",
+          source: "slack",
+          freshness: "current",
+        },
+        { id: "relationship:live", kind: "relationship", label: "Quay Live" },
+        {
+          id: "source:live",
+          kind: "source",
+          label: "A meeting",
+          relationshipId: "live",
+          status: "live",
+          source: "meeting",
+          freshness: "current",
+        },
+        { id: "relationship:alone", kind: "relationship", label: "Quay Alone" },
+      ],
+      edges: [
+        { id: "edge:off", source: "relationship:off", target: "source:off", kind: "observed_by" },
+        { id: "edge:live", source: "relationship:live", target: "source:live", kind: "observed_by" },
+      ],
+    },
+    "not connected",
+  );
+  assert.deepEqual(result.relationshipIds, ["off"]);
+  assert.equal(result.visibleNodeIds.includes("relationship:live"), false);
+  assert.equal(result.visibleNodeIds.includes("relationship:alone"), false);
+  assert.equal(result.answer, "1 relationship matches not connected.");
+});
+
 test("hide unconnected drops a company with nothing linked", () => {
   const parsed = parseRelationshipGraphQuery("hide unconnected");
   assert.equal(parsed.filters.hideIsolated, true);

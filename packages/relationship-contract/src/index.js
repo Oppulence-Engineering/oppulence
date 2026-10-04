@@ -217,9 +217,12 @@ export function parseRelationshipGraphQuery(query) {
       /\bchanged\b|\bsince (?:my )?last review\b|\bchanged since review\b|\bsince you last looked\b|\byou last looked\b/.test(
         normalized,
       ),
-    hideIsolated: /\bconnected\b|\bhide isolated\b|\bunconnected\b|\bhide unconnected\b/.test(
-      normalized,
-    ),
+    // The source row says Not connected. The word connected in that phrase
+    // is not a request to hide unconnected rows.
+    notConnected: /\bnot connected\b|\bnot_connected\b/.test(normalized),
+    hideIsolated:
+      !/\bnot connected\b|\bnot_connected\b/.test(normalized) &&
+      /\bconnected\b|\bhide isolated\b|\bunconnected\b|\bhide unconnected\b/.test(normalized),
     freeText: [],
   };
 
@@ -359,6 +362,8 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bsince last review\b/g, " ")
     .replace(/\bchanged since review\b/g, " ")
     .replace(/\bhide unconnected\b/g, " ")
+    .replace(/\bnot connected\b/g, " ")
+    .replace(/\bnot_connected\b/g, " ")
     .replace(/\bunconnected\b/g, " ")
     .replace(/\bhide isolated\b/g, " ")
     .replace(/\bpast due\b/g, " ")
@@ -438,6 +443,7 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.crmUpdate) applied.push("crm update");
   if (filters.meetingRecap) applied.push("meeting recap");
   if (filters.changed) applied.push("changed since you last looked");
+  if (filters.notConnected) applied.push("not connected");
   if (filters.hideIsolated) applied.push("hide unconnected");
   if (filters.freeText.length) applied.push(`text: ${filters.freeText.join(" ")}`);
 
@@ -540,6 +546,11 @@ export function queryRelationshipGraph(graph, query, options = {}) {
   }
   if (filters.aging) {
     constrainBy((node) => normalizedGraphValue(node.freshness) === "aging");
+  }
+  if (filters.notConnected) {
+    constrainBy(
+      (node) => node.kind === "source" && normalizedGraphValue(node.status) === "not_connected",
+    );
   }
   if (filters.meetingFollowUp) {
     constrainBy((node) => {
