@@ -164,6 +164,11 @@ func personVisibleLabelMatch(term string) predicate.Person {
 	if strings.Contains("left the company", needle) {
 		preds = append(preds, person.EmploymentStatusEQ("departed"))
 	}
+	// The employment line says Current. The stored status is active. The word
+	// is short, so only the whole label matches.
+	if sheetPhraseMatches("current", needle) {
+		preds = append(preds, person.EmploymentStatusEQ("active"))
+	}
 	// "Not known" is the empty company, role, department, location, profile, and
 	// last interaction. One blank fact is enough for the row or the sheet to say it.
 	if strings.Contains("not known", needle) {

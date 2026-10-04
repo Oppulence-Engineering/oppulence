@@ -999,6 +999,38 @@ func TestPersonSearchFindsWhoLeft(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsWhoIsCurrent(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Casey Quinn").
+		SetEmploymentStatus("active").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Person.Create().
+		SetDisplayName("Indira Cole").
+		SetEmploymentStatus("departed").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "Current"})
+	if err != nil || found == nil || len(found.Persons) != 1 || found.Persons[0].DisplayName != "Casey Quinn" {
+		t.Fatalf("current = %+v err=%v", found, err)
+	}
+	left, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "Left the company"})
+	if err != nil || left == nil || len(left.Persons) != 1 || left.Persons[0].DisplayName != "Indira Cole" {
+		t.Fatalf("left = %+v err=%v", left, err)
+	}
+}
+
 func TestPersonSearchFindsTheCompanyCount(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
