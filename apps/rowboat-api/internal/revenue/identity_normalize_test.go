@@ -2591,6 +2591,60 @@ func TestRelationshipSearchFindsTheSheetReviewAndRecommendation(t *testing.T) {
 	assertCompanyQuery("reviewed", "Quill Atelier", "Lumen Packet")
 }
 
+func TestRelationshipSearchFindsEarlierChanges(t *testing.T) {
+	f := newFixture(t)
+	create := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	correct := func(row *ent.Relationship, value string) {
+		t.Helper()
+		if _, err := f.svc.CorrectRelationship(f.ctx, f.user, row.ID, RelationshipCorrectionInput{
+			Dimension: "health", Value: value, Reason: "The account health moved.",
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	create("Quill North")
+	cedar := create("Cedar Slide")
+	correct(cedar, "healthy")
+	birch := create("Birch Quay")
+	correct(birch, "healthy")
+	correct(birch, "needs_attention")
+	aspen := create("Aspen Ledger")
+	correct(aspen, "healthy")
+	correct(aspen, "needs_attention")
+	correct(aspen, "critical")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Show earlier changes", "Aspen Ledger")
+	assertCompanyQuery("which companies should I show earlier changes", "Aspen Ledger")
+	assertCompanyQuery("No account details have changed yet", "Quill North")
+	assertCompanyQuery("earlier")
+	assertCompanyQuery("show")
+}
+
 func TestRelationshipSearchFindsTheLastInteraction(t *testing.T) {
 	f := newFixture(t)
 	recent, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
