@@ -190,6 +190,8 @@ export function parseRelationshipGraphQuery(query) {
         : /\bwe owe them\b|\bwhat we owe\b|\bwe owe\b/.test(normalized)
           ? "promised_by_me"
           : "",
+    // The promise row says Open. An open follow-up is still awaiting approval.
+    open: /\bopen\b/.test(normalized) && !/\bnot open\b/.test(normalized),
     // The company card says Kept. The stored status is still met.
     kept: /\bkept\b|\bkept_promises?\b/.test(normalized),
     stale: /\bstale\b|\boutdated\b|\bout of date\b/.test(normalized),
@@ -235,7 +237,8 @@ export function parseRelationshipGraphQuery(query) {
         alias === "promises" ||
         alias === "commitment" ||
         alias === "commitments") &&
-      /\bpromise follow_ups?\b|\bpromise follow ups?\b/.test(normalized)
+      (/\bpromise follow_ups?\b|\bpromise follow ups?\b/.test(normalized) ||
+        /\bopen promises?\b/.test(normalized))
     ) {
       continue;
     }
@@ -397,7 +400,11 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bcustomer risks?\b/g, " ")
     .replace(/\bcalendar holds?\b/g, " ")
     .replace(/\bmeeting recaps?\b/g, " ")
-    .replace(/\bcrm updates?\b/g, " ");
+    .replace(/\bcrm updates?\b/g, " ")
+    .replace(/\bopen promises\b/g, " ")
+    .replace(/\bopen promise\b/g, " ")
+    .replace(/\bnot open\b/g, " ")
+    .replace(/\bopen\b/g, " ");
   filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
@@ -419,6 +426,7 @@ export function parseRelationshipGraphQuery(query) {
   else if (filters.direction === "mutual") applied.push("we both owe");
   else if (filters.direction === "promised_by_me") applied.push("we owe them");
   if (filters.kept) applied.push("kept");
+  if (filters.open) applied.push("open");
   if (filters.stale) applied.push("out of date");
   if (filters.current) applied.push("up to date");
   if (filters.aging) applied.push("getting old");
@@ -508,6 +516,11 @@ export function queryRelationshipGraph(graph, query, options = {}) {
       const status = normalizedGraphValue(node.status);
       return status === "met" || status === "fulfilled";
     });
+  }
+  if (filters.open) {
+    constrainBy(
+      (node) => node.kind === "commitment" && normalizedGraphValue(node.status) === "open",
+    );
   }
   if (filters.approvalStatus.length) {
     constrainBy(

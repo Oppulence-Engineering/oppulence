@@ -425,6 +425,8 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryAnswer("1 relationship matches nodes: evidence.", 2)).toBe(
       "1 company matches Included: Detail.",
     );
+    expect(graphQueryFilterLabel("open")).toBe("open");
+    expect(graphQueryAnswer("1 relationship matches open.", 2)).toBe("1 company matches open.");
     expect(graphQueryAnswer("1 relationship matches they owe us.", 1)).toBe(
       "1 company matches they owe us.",
     );

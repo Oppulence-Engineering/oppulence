@@ -576,6 +576,52 @@ test("asking promises keeps the company that has one", () => {
   assert.equal(details.answer, "1 relationship matches nodes: evidence.");
 });
 
+test("asking open promises leaves a kept promise with an open follow-up", () => {
+  const parsed = parseRelationshipGraphQuery("open promises");
+  assert.equal(parsed.filters.open, true);
+  assert.deepEqual(parsed.filters.nodeKinds, []);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["open"]);
+
+  const bare = parseRelationshipGraphQuery("open");
+  assert.equal(bare.filters.open, true);
+  assert.deepEqual(bare.filters.freeText, []);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:open", kind: "relationship", label: "Quay North" },
+      {
+        id: "commitment:open",
+        kind: "commitment",
+        label: "Send the quay note",
+        relationshipId: "open",
+        status: "open",
+      },
+      { id: "relationship:kept", kind: "relationship", label: "Quay South" },
+      {
+        id: "commitment:kept",
+        kind: "commitment",
+        label: "Send the south note",
+        relationshipId: "kept",
+        status: "met",
+      },
+      {
+        id: "action:kept",
+        kind: "action",
+        label: "Meeting follow-up",
+        relationshipId: "kept",
+        status: "open",
+        approvalStatus: "pending",
+      },
+    ],
+    edges: [],
+  };
+  const result = queryRelationshipGraph(graph, "open promises");
+  assert.deepEqual(result.relationshipIds, ["open"]);
+  assert.equal(result.visibleNodeIds.includes("relationship:kept"), false);
+  assert.equal(result.answer, "1 relationship matches open.");
+});
+
 test("asking a follow-up title does not require that source", () => {
   const titles = [
     ["calendar hold", "Calendar hold", "calendar"],
