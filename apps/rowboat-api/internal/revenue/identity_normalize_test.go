@@ -1029,6 +1029,68 @@ func TestRelationshipSearchFindsWhoOwesThePromise(t *testing.T) {
 	assertCompanyQuery("At risk promise", "Harbor Soon")
 }
 
+func TestRelationshipSearchFindsTheActivityPromise(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string, payload []byte) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		create := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("desktop_note").SetExternalID(name).SetEventType("note").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts)
+		if len(payload) > 0 {
+			create.SetPayloadCiphertext(payload)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Word Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Word Packet", "Quiet note", `{"commitment_text":"Send the proposal"}`, nil)
+	saveNote("Word Echo", "Send the proposal", `{"commitment_text":"Send the proposal"}`, nil)
+	saveNote("Word Mine", "Quiet note", `{"commitment_text":"local-user"}`, nil)
+	saveNote("Word Slug", "Quiet note", `{"commitment_text":"send_the_proposal"}`, nil)
+	saveNote("Word Sealed", "Quiet note", `{"commitment_text":"Send the proposal"}`, []byte{1, 2, 3})
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Promise: Send the proposal", "Word Packet", "Word Slug")
+	assertCompanyQuery("which activity says promise: Send the proposal", "Word Packet", "Word Slug")
+	assertCompanyQuery("Promise: local-user")
+	assertCompanyQuery("Send the proposal")
+	assertCompanyQuery("promise")
+}
+
 func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
