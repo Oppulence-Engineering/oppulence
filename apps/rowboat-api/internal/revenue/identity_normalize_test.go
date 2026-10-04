@@ -1091,6 +1091,74 @@ func TestRelationshipSearchFindsTheActivitySubject(t *testing.T) {
 	assertCompanyQuery("subject")
 }
 
+func TestRelationshipSearchFindsTheActivityReplyState(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string, payload []byte) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		create := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("gmail").SetExternalID(name).SetEventType("thread.snapshot").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts)
+		if len(payload) > 0 {
+			create.SetPayloadCiphertext(payload)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Quill Packet", "Gmail thread observed: Sandbox login", `{"reply_state":"awaiting_reply"}`, nil)
+	saveNote("Cedar Mark", "awaiting_reply", `{"reply_state":"awaiting_reply"}`, nil)
+	saveNote("Cedar Echo", "Awaiting Reply", `{"reply_state":"awaiting_reply"}`, nil)
+	saveNote("Birch Slide", "A saved note", `{"reply_state":"needs_reply"}`, nil)
+	saveNote("Cedar Locked", "A saved note", `{"reply_state":"needs_reply"}`, []byte{1, 2, 3})
+	saveNote("Cedar Mine", "A saved note", `{"reply_state":"quiet"}`, nil)
+	saveNote("Cedar Lane", "A saved note", `{"reply_state":"local-user"}`, nil)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Reply State: Awaiting Reply", "Quill Packet", "Cedar Mark")
+	assertCompanyQuery("which activity says reply state: Awaiting Reply", "Quill Packet", "Cedar Mark")
+	assertCompanyQuery("Reply State: Needs Reply", "Birch Slide", "Cedar Locked")
+	assertCompanyQuery("Reply State: quiet", "Cedar Mine")
+	assertCompanyQuery("Reply State: local-user")
+	assertCompanyQuery("awaiting reply")
+	assertCompanyQuery("reply state")
+	assertCompanyQuery("needs a reply")
+	assertCompanyQuery("waiting on them")
+}
+
 func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
