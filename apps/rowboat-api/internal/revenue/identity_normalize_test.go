@@ -3751,6 +3751,97 @@ func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
 	assertCompanyQuery("Deletion is still running", "Lumen Packet")
 }
 
+func TestRelationshipSearchFindsTheDuplicateInbox(t *testing.T) {
+	f := newFixture(t)
+	create := func(name, domain string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name, AccountDomain: domain,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	lumen := create("Lumen Packet", "")
+	harbor := create("Harbor Ledger", "")
+	cedar := create("Cedar Mill", "")
+	acme := create("acme.example", "acme.example")
+	north := create("Northwind Mail", "")
+	resolvedA := create("Resolved Quay", "")
+	resolvedB := create("Resolved Dock", "")
+	undoneA := create("Undone Pier", "")
+	undoneB := create("Undone Slip", "")
+	resolvingA := create("Resolving Mill", "")
+	resolvingB := create("Resolving Forge", "")
+	quiet := create("Quiet Forge", "")
+	_ = quiet
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	internal := auth.WithInternal(f.ctx)
+	link := func(proposed, existing *ent.Relationship, key, status string) {
+		t.Helper()
+		if _, err := f.client.RelationshipIdentityCandidate.Create().
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetProposedRelationship(proposed).
+			SetExistingRelationship(existing).
+			SetDedupeKey(key).
+			SetAnchorKind("domain").
+			SetAnchorKeyHash(key + "-hash").
+			SetStatus(status).
+			Save(internal); err != nil {
+			t.Fatal(err)
+		}
+	}
+	link(lumen, harbor, "inbox-lumen-harbor", "pending")
+	link(lumen, cedar, "inbox-lumen-cedar", "pending")
+	link(acme, north, "inbox-acme-north", "deferred")
+	link(resolvedA, resolvedB, "inbox-resolved", "resolved")
+	link(undoneA, undoneB, "inbox-undone", "undone")
+	link(resolvingA, resolvingB, "inbox-resolving", "resolving")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+
+	visible := []string{
+		"Lumen Packet", "Harbor Ledger", "Cedar Mill", "acme.example", "Northwind Mail",
+		"Resolved Quay", "Resolved Dock",
+	}
+	one := []string{
+		"Harbor Ledger", "Cedar Mill", "acme.example", "Northwind Mail",
+		"Resolved Quay", "Resolved Dock",
+	}
+	assertCompanyQuery("Review possible duplicates", visible...)
+	assertCompanyQuery("Needs your review", visible...)
+	assertCompanyQuery("2 possible duplicates cannot receive actions until reviewed.", "Lumen Packet")
+	assertCompanyQuery("1 possible duplicate cannot receive actions until reviewed.", one...)
+	assertCompanyQuery("Lumen Packet may match Harbor Ledger", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("Lumen Packet may match Cedar Mill", "Lumen Packet", "Cedar Mill")
+	assertCompanyQuery("Acme may match Northwind Mail", "acme.example", "Northwind Mail")
+	assertCompanyQuery("Harbor Ledger may match Lumen Packet")
+	assertCompanyQuery("1 possible duplicates cannot receive actions until reviewed.")
+	assertCompanyQuery("2 possible duplicate cannot receive actions until reviewed.")
+	assertCompanyQuery("Undone Pier may match Undone Slip")
+	assertCompanyQuery("Resolving Mill may match Resolving Forge")
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {
