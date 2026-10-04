@@ -1029,6 +1029,70 @@ func TestRelationshipSearchFindsWhoOwesThePromise(t *testing.T) {
 	assertCompanyQuery("At risk promise", "Harbor Soon")
 }
 
+func TestRelationshipSearchFindsTheActivityDueDay(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, facts string, payload []byte) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		create := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("desktop_note").SetExternalID(name).SetEventType("note").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary("Quiet note").
+			SetNormalizedFactsJSON(facts)
+		if len(payload) > 0 {
+			create.SetPayloadCiphertext(payload)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Day Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Day Third", `{"commitment_due_at":"2026-10-03T15:00:00Z"}`, nil)
+	saveNote("Day Early", `{"commitment_due_at":"2026-10-03T00:30:00Z"}`, nil)
+	saveNote("Day Late", `{"commitment_due_at":"2026-10-03T23:30:00Z"}`, nil)
+	saveNote("Day Fourth", `{"commitment_due_at":"2026-10-04T00:30:00Z"}`, nil)
+	saveNote("Day Junk", `{"commitment_due_at":"next week"}`, nil)
+	saveNote("Day Sealed", `{"commitment_due_at":"2026-10-03T15:00:00Z"}`, []byte{1, 2, 3})
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Due: Oct 3, 2026", "Day Third", "Day Early", "Day Late")
+	assertCompanyQuery("which activity says due: Oct 3, 2026", "Day Third", "Day Early", "Day Late")
+	assertCompanyQuery("Due: Oct 4, 2026", "Day Fourth")
+	assertCompanyQuery("Due: Oct 32, 2026")
+	assertCompanyQuery("Oct 3, 2026")
+	assertCompanyQuery("due")
+}
+
 func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
