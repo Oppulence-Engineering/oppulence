@@ -3007,6 +3007,9 @@ func relationshipSheetGovernanceMatch(needle string) predicate.Relationship {
 	} else if sheetPhraseMatches("consent and governance", needle) {
 		preds = append(preds, relationshipGovernanceReceiptCount(">=", 1))
 	}
+	if n, ok := governanceReceiptRemainder(needle); ok {
+		preds = append(preds, relationshipGovernanceReceiptPageCount(n))
+	}
 	for _, item := range governanceDeletionPhrases() {
 		if sheetPhraseMatches(item.phrase, needle) {
 			preds = append(preds, relationshipHasLatestDeletionStatus(item.status))
@@ -3090,6 +3093,38 @@ func importedGovernanceRoute(needle string) (string, bool) {
 	return strings.ReplaceAll(name, " ", "_") + "_to_oppulence", true
 }
 
+// governanceReceiptPage is the first screen of consent receipts. It matches
+// GOVERNANCE_RECEIPT_PAGE on the company sheet.
+const governanceReceiptPage = 5
+
+func governanceReceiptRemainder(needle string) (int, bool) {
+	const prefix = "show the other "
+	if !strings.HasPrefix(needle, prefix) {
+		return 0, false
+	}
+	rest := strings.TrimPrefix(needle, prefix)
+	singular := strings.HasSuffix(rest, " receipt")
+	plural := strings.HasSuffix(rest, " receipts")
+	if singular == plural {
+		return 0, false
+	}
+	body := strings.TrimSuffix(rest, " receipts")
+	if singular {
+		body = strings.TrimSuffix(rest, " receipt")
+	}
+	parsed, err := strconv.Atoi(body)
+	if err != nil || parsed < 1 || strconv.Itoa(parsed) != body {
+		return 0, false
+	}
+	if singular && parsed != 1 {
+		return 0, false
+	}
+	if plural && parsed < 2 {
+		return 0, false
+	}
+	return governanceReceiptPage + parsed, true
+}
+
 func governanceReceiptCount(needle string) (int, bool) {
 	const prefix = "consent and governance ("
 	if !strings.HasPrefix(needle, prefix) || !strings.HasSuffix(needle, ")") {
@@ -3162,6 +3197,33 @@ func relationshipGovernanceReceiptCount(compare string, n int) predicate.Relatio
 			b.WriteString(" <> '') ")
 			b.WriteString(compare)
 			b.WriteString(" ")
+			b.Arg(n)
+		}))
+	})
+}
+
+// relationshipGovernanceReceiptPageCount counts receipts on the newest
+// observation page. That is the list the sheet uses before earlier evidence
+// is loaded, which is when the overflow button is printed.
+func relationshipGovernanceReceiptPageCount(n int) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			obs := relationshipobservation.Table
+			b.WriteString("(SELECT COUNT(*) FROM (SELECT CASE WHEN ")
+			writeGovernanceText(b, s, "receiptId")
+			b.WriteString(" <> '' THEN 1 ELSE 0 END AS has_receipt FROM ")
+			b.WriteString(obs)
+			b.WriteString(" AS obs WHERE obs.")
+			b.WriteString(relationshipobservation.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" ORDER BY obs.")
+			b.WriteString(relationshipobservation.FieldOccurredAt)
+			b.WriteString(" DESC, obs.")
+			b.WriteString(relationshipobservation.FieldID)
+			b.WriteString(" DESC LIMIT ")
+			b.WriteString(strconv.Itoa(intelligenceObservationPage))
+			b.WriteString(") AS page WHERE has_receipt = 1) = ")
 			b.Arg(n)
 		}))
 	})

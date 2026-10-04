@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -3749,6 +3750,91 @@ func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
 	assertCompanyQuery("Deletion is finished", "Harbor Ledger")
 	assertCompanyQuery("Last deletion: Deletion is finished", "Harbor Ledger")
 	assertCompanyQuery("Deletion is still running", "Lumen Packet")
+}
+
+func TestRelationshipSearchFindsReceiptOverflow(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveObservation := func(rel *ent.Relationship, externalID string, at time.Time, receiptID string) {
+		t.Helper()
+		facts := "{}"
+		if receiptID != "" {
+			body, err := json.Marshal(map[string]any{
+				"governance_receipt": ConversationGovernanceReceipt{
+					ReceiptID: receiptID, CapturePolicy: "manual_capture",
+					Routing: "local_only", Region: "local_device", Retention: "always",
+					ParticipantDisclosure: "not_recorded", DeletionOutcome: "not_applicable",
+					EvidenceClip: "not_retained",
+				},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			facts = string(body)
+		}
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(externalID).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(at).SetReceivedAt(at).SetContentHash(externalID).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveReceipts := func(rel *ent.Relationship, n int, at time.Time) {
+		t.Helper()
+		for i := 0; i < n; i++ {
+			saveObservation(rel, rel.DisplayName+":"+strconv.Itoa(i), at.Add(time.Duration(i)*time.Second), "receipt-"+strconv.Itoa(i))
+		}
+	}
+	five := makeCompany("Receipt Five")
+	six := makeCompany("Receipt Six")
+	seven := makeCompany("Receipt Seven")
+	buried := makeCompany("Receipt Buried")
+	now := time.Now().UTC()
+	saveReceipts(five, 5, now)
+	saveReceipts(six, 6, now)
+	saveReceipts(seven, 7, now)
+	saveReceipts(buried, 6, now.Add(-2*time.Hour))
+	for i := 0; i < intelligenceObservationPage; i++ {
+		saveObservation(buried, "buried-note:"+strconv.Itoa(i), now, "")
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Show the other 1 receipt", "Receipt Six")
+	assertCompanyQuery("Show the other 2 receipts", "Receipt Seven")
+	assertCompanyQuery("Show the other 1 receipts")
+	assertCompanyQuery("Show the other 2 receipt")
+	assertCompanyQuery("Consent and governance (5)", "Receipt Five")
+	assertCompanyQuery("Consent and governance (6)", "Receipt Six", "Receipt Buried")
 }
 
 func hasName(names []string, want string) bool {
