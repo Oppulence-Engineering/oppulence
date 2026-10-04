@@ -33,6 +33,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipprojectionjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipreviewacknowledgement"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -942,6 +943,12 @@ func (s *Service) ListRelationshipsFiltered(
 		}
 		if deletion := relationshipSheetDeletionEmptyMatch(needle); deletion != nil {
 			parts = append(parts, deletion)
+		}
+		if deletionButton := relationshipSheetDeletionButtonMatch(needle); deletionButton != nil {
+			parts = append(parts, deletionButton)
+		}
+		if changes := relationshipSheetChangeHeadingMatch(needle); changes != nil {
+			parts = append(parts, changes)
 		}
 		if accepted := relationshipSheetAcceptedPromiseMatch(needle); accepted != nil {
 			parts = append(parts, accepted)
@@ -2220,6 +2227,79 @@ func relationshipSheetDeletionEmptyMatch(needle string) predicate.Relationship {
 			"meeting", "desktop_note", "voice_note", "browser",
 		))),
 	)
+}
+
+// relationshipSheetDeletionButtonMatch matches the privacy button. It is the
+// company that has mail, a visible meeting, a note, or any promise. A calendar
+// event alone does not offer the delete.
+func relationshipSheetDeletionButtonMatch(needle string) predicate.Relationship {
+	if !labelPhraseMatches("delete conversation data", needle) {
+		return nil
+	}
+	return relationship.Or(
+		relationshipMailThreadCount("<>", 0),
+		relationshipHasVisibleCommunication(),
+		relationship.HasCommitments(),
+		relationship.HasObservationsWith(relationshipobservation.SourceIn(
+			"meeting", "desktop_note", "voice_note", "browser",
+		)),
+	)
+}
+
+// relationshipSheetChangeHeadingMatch matches the What changed heading and
+// Show earlier changes. The first page is two snapshots, so three or more
+// read "What changed (2+)" until the rest are loaded. The loaded list then
+// prints the exact total, and only (2+) means there are more than two.
+func relationshipSheetChangeHeadingMatch(needle string) predicate.Relationship {
+	if labelPhraseMatches("show earlier changes", needle) {
+		return relationshipSnapshotCount(">", 2)
+	}
+	compare, n, ok := relationshipChangeHeadingCount(needle)
+	if !ok {
+		return nil
+	}
+	return relationshipSnapshotCount(compare, n)
+}
+
+func relationshipChangeHeadingCount(needle string) (compare string, n int, ok bool) {
+	const prefix = "what changed ("
+	if !strings.HasPrefix(needle, prefix) || !strings.HasSuffix(needle, ")") {
+		return "", 0, false
+	}
+	body := strings.TrimSuffix(strings.TrimPrefix(needle, prefix), ")")
+	overflow := strings.HasSuffix(body, "+")
+	body = strings.TrimSuffix(body, "+")
+	parsed, err := strconv.Atoi(body)
+	if err != nil || parsed < 0 || strconv.Itoa(parsed) != body {
+		return "", 0, false
+	}
+	if overflow {
+		if parsed != 2 {
+			return "", 0, false
+		}
+		return ">", 2, true
+	}
+	return "=", parsed, true
+}
+
+func relationshipSnapshotCount(compare string, n int) predicate.Relationship {
+	if compare != "=" && compare != ">" {
+		compare = "="
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(relationshipstatesnapshot.Table)
+			b.WriteString(" AS snap WHERE snap.")
+			b.WriteString(relationshipstatesnapshot.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(") ")
+			b.WriteString(compare)
+			b.WriteString(" ")
+			b.Arg(n)
+		}))
+	})
 }
 
 // relationshipSheetAcceptedPromiseMatch matches the button on a promise the
