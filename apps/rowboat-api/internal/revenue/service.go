@@ -3154,6 +3154,10 @@ func relationshipSheetGovernanceMatch(needle string) predicate.Relationship {
 	if route, ok := importedGovernanceRoute(needle); ok {
 		preds = append(preds, relationshipHasGovernanceReceiptValue("routing", route))
 	}
+	// The sheet shows five receipts, then "Show the other N receipts".
+	if hidden, ok := governanceHiddenReceiptCount(needle); ok {
+		preds = append(preds, relationshipGovernanceReceiptCount("=", governanceReceiptPage+hidden))
+	}
 	if n, ok := governanceReceiptCount(needle); ok {
 		preds = append(preds, relationshipGovernanceReceiptCount("=", n))
 	} else if sheetPhraseMatches("consent and governance", needle) {
@@ -3255,6 +3259,65 @@ func governanceReceiptCount(needle string) (int, bool) {
 	return parsed, true
 }
 
+// governanceReceiptPage is how many consent receipts the company sheet shows
+// before the rest are behind "Show the other N receipts". It matches
+// GOVERNANCE_RECEIPT_PAGE in the company sheet.
+const governanceReceiptPage = 5
+
+// governanceHiddenReceiptCount reads that button. One hidden receipt is
+// singular. "Show the other 1 receipts" is not the button.
+func governanceHiddenReceiptCount(needle string) (int, bool) {
+	needle = normalizePersonSearch(needle)
+	if needle == "" {
+		return 0, false
+	}
+	if governancePhraseAtBoundary(needle, "show the other 1 receipt") {
+		return 1, true
+	}
+	const prefix = "show the other "
+	const suffix = " receipts"
+	index := strings.Index(needle, prefix)
+	if index < 0 {
+		return 0, false
+	}
+	if index > 0 && governancePhraseRune(needle[index-1]) {
+		return 0, false
+	}
+	rest := needle[index+len(prefix):]
+	end := strings.Index(rest, suffix)
+	if end < 0 {
+		return 0, false
+	}
+	if end+len(suffix) < len(rest) && governancePhraseRune(rest[end+len(suffix)]) {
+		return 0, false
+	}
+	number := strings.TrimSpace(rest[:end])
+	if strings.Contains(number, " ") {
+		return 0, false
+	}
+	parsed, err := strconv.Atoi(number)
+	if err != nil || parsed < 2 || strconv.Itoa(parsed) != number {
+		return 0, false
+	}
+	return parsed, true
+}
+
+func governancePhraseAtBoundary(needle, phrase string) bool {
+	index := strings.Index(needle, phrase)
+	if index < 0 {
+		return false
+	}
+	if index > 0 && governancePhraseRune(needle[index-1]) {
+		return false
+	}
+	end := index + len(phrase)
+	return end == len(needle) || !governancePhraseRune(needle[end])
+}
+
+func governancePhraseRune(value byte) bool {
+	return (value >= 'a' && value <= 'z') || (value >= '0' && value <= '9')
+}
+
 func relationshipHasGovernanceReceiptValue(field, value string) predicate.Relationship {
 	return relationshipHasGovernanceReceipt(func(b *sql.Builder, s *sql.Selector) {
 		writeGovernanceText(b, s, field)
@@ -3296,20 +3359,30 @@ func relationshipHasGovernanceReceipt(match func(*sql.Builder, *sql.Selector)) p
 	})
 }
 
+// relationshipGovernanceReceiptCount counts receipts on the newest
+// intelligence page. Receipts on an older page stay behind "Show earlier
+// evidence" and are not in the heading or the remainder button yet.
 func relationshipGovernanceReceiptCount(compare string, n int) predicate.Relationship {
 	if compare != "=" && compare != ">=" {
 		compare = "="
 	}
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
-			obs := relationshipobservation.Table
-			b.WriteString("(SELECT COUNT(*) FROM ")
-			b.WriteString(obs)
-			b.WriteString(" AS obs WHERE obs.")
+			b.WriteString("(SELECT COUNT(*) FROM (SELECT page.")
+			b.WriteString(relationshipobservation.FieldNormalizedFactsJSON)
+			b.WriteString(" FROM ")
+			b.WriteString(relationshipobservation.Table)
+			b.WriteString(" AS page WHERE page.")
 			b.WriteString(relationshipobservation.RelationshipColumn)
 			b.WriteString(" = ")
 			b.WriteString(s.C(relationship.FieldID))
-			b.WriteString(" AND ")
+			b.WriteString(" ORDER BY page.")
+			b.WriteString(relationshipobservation.FieldOccurredAt)
+			b.WriteString(" DESC, page.")
+			b.WriteString(relationshipobservation.FieldID)
+			b.WriteString(" DESC LIMIT ")
+			b.WriteString(strconv.Itoa(intelligenceObservationPage))
+			b.WriteString(") AS obs WHERE ")
 			writeGovernanceText(b, s, "receiptId")
 			b.WriteString(" <> '') ")
 			b.WriteString(compare)
