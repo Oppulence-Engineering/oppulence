@@ -943,6 +943,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if deletion := relationshipSheetDeletionEmptyMatch(needle); deletion != nil {
 			parts = append(parts, deletion)
 		}
+		if changed := relationshipSheetRecommendationReasonMatch(needle); changed != nil {
+			parts = append(parts, changed)
+		}
 		if accepted := relationshipSheetAcceptedPromiseMatch(needle); accepted != nil {
 			parts = append(parts, accepted)
 		}
@@ -2204,6 +2207,47 @@ func relationshipSheetPlanEmptyMatch(needle string) predicate.Relationship {
 		return nil
 	}
 	return relationship.Not(relationshipHasArtifactKind("mutual_action_plan"))
+}
+
+// relationshipSheetRecommendationReasonMatch matches the line under What
+// changed. The sheet prints it only when the company has a saved reason.
+func relationshipSheetRecommendationReasonMatch(needle string) predicate.Relationship {
+	mode, reason, ok := recommendationReasonQuery(needle)
+	if !ok {
+		return nil
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(relationship.FieldStateReason)
+			if mode == "any" {
+				b.WriteString("trim(COALESCE(")
+				b.WriteString(column)
+				b.WriteString(", '')) <> ''")
+				return
+			}
+			b.WriteString("lower(trim(replace(replace(replace(COALESCE(")
+			b.WriteString(column)
+			b.WriteString(", ''), '-', ' '), '_', ' '), '.', ' '))) = ")
+			b.Arg(reason)
+		}))
+	})
+}
+
+func recommendationReasonQuery(needle string) (mode, reason string, ok bool) {
+	text := normalizePersonSearch(needle)
+	const prefix = "why the recommendation changed"
+	if text == prefix || text == prefix+":" {
+		return "any", "", true
+	}
+	const labeled = prefix + ": "
+	if !strings.HasPrefix(text, labeled) {
+		return "", "", false
+	}
+	reason = strings.TrimSpace(text[len(labeled):])
+	if reason == "" {
+		return "any", "", true
+	}
+	return "exact", reason, true
 }
 
 // relationshipSheetDeletionEmptyMatch matches the privacy line. The delete
