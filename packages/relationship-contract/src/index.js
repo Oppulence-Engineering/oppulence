@@ -234,6 +234,14 @@ export function parseRelationshipGraphQuery(query) {
     // The source row says Not connected. The word connected in that phrase
     // is not a request to hide unconnected rows.
     notConnected: /\bnot connected\b|\bnot_connected\b/.test(normalized),
+    // The source inspector says Syncing while a history sync is running, and
+    // Active once that source is live. The stored statuses are backfilling,
+    // rebuilding, live, and connected.
+    syncing: /\bsyncing\b/.test(normalized),
+    sourceActive:
+      /\bactive\b/.test(normalized) &&
+      !/\bactive[ _]customers?\b/.test(normalized) &&
+      !/\bnot active\b/.test(normalized),
     // The follow-up badge says Not checked, Cleared, Review required, or
     // Re-check needed. The stored policy is pending, passed, review_required, or stale.
     notChecked: /\bnot checked\b|\bnot_checked\b/.test(normalized),
@@ -393,6 +401,9 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bhide unconnected\b/g, " ")
     .replace(/\bnot connected\b/g, " ")
     .replace(/\bnot_connected\b/g, " ")
+    .replace(/\bnot active\b/g, " ")
+    .replace(/\bsyncing\b/g, " ")
+    .replace(/\bactive\b/g, " ")
     .replace(/\bunconnected\b/g, " ")
     .replace(/\bnot checked\b/g, " ")
     .replace(/\bnot_checked\b/g, " ")
@@ -502,6 +513,8 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.meetingRecap) applied.push("meeting recap");
   if (filters.changed) applied.push("changed since you last looked");
   if (filters.notConnected) applied.push("not connected");
+  if (filters.syncing) applied.push("syncing");
+  if (filters.sourceActive) applied.push("active");
   if (filters.notChecked) applied.push("not checked");
   if (filters.cleared) applied.push("cleared");
   if (filters.reviewRequired) applied.push("review required");
@@ -667,6 +680,20 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     constrainBy(
       (node) => node.kind === "source" && normalizedGraphValue(node.status) === "not_connected",
     );
+  }
+  if (filters.syncing) {
+    constrainBy((node) => {
+      if (node.kind !== "source") return false;
+      const status = normalizedGraphValue(node.status);
+      return status === "backfilling" || status === "rebuilding";
+    });
+  }
+  if (filters.sourceActive) {
+    constrainBy((node) => {
+      if (node.kind !== "source") return false;
+      const status = normalizedGraphValue(node.status);
+      return status === "live" || status === "connected";
+    });
   }
   if (filters.notChecked) {
     constrainBy(

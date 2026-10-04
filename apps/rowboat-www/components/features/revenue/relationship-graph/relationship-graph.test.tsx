@@ -449,6 +449,12 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryAnswer("1 relationship matches sent.", 2)).toBe("1 company matches sent.");
     expect(graphQueryFilterLabel("held")).toBe("held");
     expect(graphQueryAnswer("1 relationship matches held.", 2)).toBe("1 company matches held.");
+    expect(graphQueryFilterLabel("syncing")).toBe("syncing");
+    expect(graphQueryAnswer("1 relationship matches syncing.", 2)).toBe(
+      "1 company matches syncing.",
+    );
+    expect(graphQueryFilterLabel("active")).toBe("active");
+    expect(graphQueryAnswer("1 relationship matches active.", 2)).toBe("1 company matches active.");
     expect(graphQueryFilterLabel("review")).toBe("review");
     expect(graphQueryAnswer("1 relationship matches review.", 2)).toBe("1 company matches review.");
     expect(graphQueryFilterLabel("open")).toBe("open");

@@ -1124,6 +1124,63 @@ test("asking not connected finds that source and leaves a live one", () => {
   assert.equal(result.answer, "1 relationship matches not connected.");
 });
 
+test("asking syncing finds a source that is still loading", () => {
+  const syncing = parseRelationshipGraphQuery("syncing");
+  assert.equal(syncing.filters.syncing, true);
+  assert.equal(syncing.filters.sourceActive, false);
+  assert.deepEqual(syncing.filters.freeText, []);
+  assert.deepEqual(syncing.applied, ["syncing"]);
+
+  const active = parseRelationshipGraphQuery("active");
+  assert.equal(active.filters.sourceActive, true);
+  assert.equal(active.filters.syncing, false);
+  assert.deepEqual(active.filters.lifecycle, []);
+  assert.deepEqual(active.filters.freeText, []);
+  assert.deepEqual(active.applied, ["active"]);
+
+  const stage = parseRelationshipGraphQuery("active customer");
+  assert.equal(stage.filters.sourceActive, false);
+  assert.deepEqual(stage.filters.lifecycle, ["active_customer"]);
+  assert.deepEqual(stage.applied, ["lifecycle: active_customer"]);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:sync", kind: "relationship", label: "Quay Sync", status: "active" },
+      {
+        id: "source:sync",
+        kind: "source",
+        label: "Slack",
+        relationshipId: "sync",
+        source: "slack",
+        status: "backfilling",
+        freshness: "current",
+      },
+      { id: "relationship:live", kind: "relationship", label: "Quay Live", status: "active" },
+      {
+        id: "source:live",
+        kind: "source",
+        label: "A meeting",
+        relationshipId: "live",
+        source: "meeting",
+        status: "live",
+        freshness: "current",
+      },
+      { id: "relationship:rebuild", kind: "relationship", label: "Quay Rebuild" },
+      {
+        id: "source:rebuild",
+        kind: "source",
+        label: "Gmail",
+        relationshipId: "rebuild",
+        source: "gmail",
+        status: "rebuilding",
+      },
+    ],
+    edges: [],
+  };
+  assert.deepEqual(queryRelationshipGraph(graph, "syncing").relationshipIds.sort(), ["rebuild", "sync"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "active").relationshipIds, ["live"]);
+});
+
 test("asking review keeps the promise that still needs confirmation", () => {
   const parsed = parseRelationshipGraphQuery("review");
   assert.equal(parsed.filters.promiseReview, true);
