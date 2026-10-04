@@ -2135,6 +2135,32 @@ func TestRelationshipSearchFindsEngagementAndSentiment(t *testing.T) {
 		Save(f.ctx); err != nil {
 		t.Fatal(err)
 	}
+	// The column can say declining before any source supports it. The sheet
+	// still says Not known, so the typed word must not find that company.
+	stored, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Declining"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(stored.Relationships); hasName(got, "Quill Atelier") {
+		t.Fatalf("unsupported declining = %v", got)
+	}
+	storedSentiment, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Negative"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(storedSentiment.Relationships); hasName(got, "Lumen Packet") {
+		t.Fatalf("unsupported negative = %v", got)
+	}
+	if _, err := f.svc.CorrectRelationship(f.ctx, f.user, declining.ID, RelationshipCorrectionInput{
+		Dimension: "engagement", Value: "declining", Reason: "Replies have slowed.",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CorrectRelationship(f.ctx, f.user, negative.ID, RelationshipCorrectionInput{
+		Dimension: "sentiment", Value: "negative", Reason: "The last call was tense.",
+	}); err != nil {
+		t.Fatal(err)
+	}
 	byEngagement, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Declining"})
 	if err != nil {
 		t.Fatal(err)

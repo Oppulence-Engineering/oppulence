@@ -784,8 +784,6 @@ func (s *Service) ListRelationshipsFiltered(
 			relationship.SummaryContainsFold(value),
 			relationship.CompanyDescriptionContainsFold(value),
 			relationship.LinkedinURLContainsFold(value),
-			relationship.EngagementContainsFold(value),
-			relationship.SentimentContainsFold(value),
 			relationshipNormalizedContains(value),
 			relationshipCategoryContains(value),
 			relationshipEnrichmentContains(value),
@@ -1116,9 +1114,15 @@ func relationshipDirectoryColumnMatch(term string, now time.Time) predicate.Rela
 	if health := relationshipHealthLabelMatch(needle); health != nil {
 		preds = append(preds, health)
 	}
-	if lifecycle := relationshipLifecycleLabelMatch(needle, now); lifecycle != nil {
-		preds = append(preds, lifecycle)
-	}
+		if lifecycle := relationshipLifecycleLabelMatch(needle, now); lifecycle != nil {
+			preds = append(preds, lifecycle)
+		}
+		if engagement := relationshipClosedLabelMatch(needle, now, "engagement", engagementSearchLabels, relationship.EngagementIn); engagement != nil {
+			preds = append(preds, engagement)
+		}
+		if sentiment := relationshipClosedLabelMatch(needle, now, "sentiment", sentimentSearchLabels, relationship.SentimentIn); sentiment != nil {
+			preds = append(preds, sentiment)
+		}
 	if n, ok := exactPersonCompanyCount(needle); ok {
 		preds = append(preds, relationshipParticipantCount("=", n))
 		// "2 open actions" also prints that number. A bare "2" has to find it,
@@ -1202,6 +1206,55 @@ func relationshipLifecycleLabelMatch(needle string, now time.Time) predicate.Rel
 		stored = relationship.LifecycleIn(values...)
 	}
 	return relationship.And(stored, relationshipHasSupportedDimension("lifecycle", now))
+}
+
+// engagementSearchLabels are the words on the company sheet. The stored token
+// stays declining. A default of unknown is printed as Not known.
+var engagementSearchLabels = []searchLabel{
+	{"increasing", "increasing"},
+	{"steady", "steady"},
+	{"declining", "declining"},
+	{"dormant", "dormant"},
+}
+
+// sentimentSearchLabels are the words on the company sheet. Unknown is Not known.
+var sentimentSearchLabels = []searchLabel{
+	{"positive", "positive"},
+	{"mixed", "mixed"},
+	{"negative", "negative"},
+}
+
+type searchLabel struct {
+	label string
+	value string
+}
+
+// relationshipClosedLabelMatch matches a sheet word only after that detail is
+// supported. The stored column can already say declining or negative while the
+// sheet still says Not known.
+func relationshipClosedLabelMatch(
+	needle string,
+	now time.Time,
+	dimension string,
+	labels []searchLabel,
+	in func(...string) predicate.Relationship,
+) predicate.Relationship {
+	values := make([]string, 0, len(labels))
+	for _, item := range labels {
+		if strings.Contains(item.label, needle) {
+			values = append(values, item.value)
+		}
+	}
+	if len(values) == 0 {
+		return nil
+	}
+	var stored predicate.Relationship
+	if len(values) == len(labels) {
+		stored = relationshipMatchAll()
+	} else {
+		stored = in(values...)
+	}
+	return relationship.And(stored, relationshipHasSupportedDimension(dimension, now))
 }
 
 func relationshipOpenActionLabelMatch(needle string) predicate.Relationship {
