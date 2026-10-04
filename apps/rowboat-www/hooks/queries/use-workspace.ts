@@ -4,7 +4,10 @@ import "client-only";
 
 import { useQuery } from "@tanstack/react-query";
 
-import { fetchWorkspaceNotes } from "@/hooks/queries/utils/fetch-workspace-notes";
+import {
+  fetchWorkspaceNotes,
+  type WorkspaceNoteOrder,
+} from "@/hooks/queries/utils/fetch-workspace-notes";
 import { fetchWorkspace } from "@/hooks/queries/utils/fetch-workspace";
 import { WORKSPACE_CURRENT_STALE_TIME, workspaceKeys } from "@/hooks/queries/utils/workspace-keys";
 
@@ -16,10 +19,10 @@ export function useWorkspace() {
   });
 }
 
-export function useWorkspaceNotes() {
+export function useWorkspaceNotes(order: WorkspaceNoteOrder = "newest") {
   return useQuery({
-    queryKey: workspaceKeys.notes(),
-    queryFn: ({ signal }) => fetchWorkspaceNotes(signal),
+    queryKey: workspaceKeys.noteOrder(order),
+    queryFn: ({ signal }) => fetchWorkspaceNotes(signal, order),
     staleTime: WORKSPACE_CURRENT_STALE_TIME,
   });
 }

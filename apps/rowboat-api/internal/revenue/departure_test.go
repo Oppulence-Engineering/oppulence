@@ -200,10 +200,11 @@ func TestQuietAccountBecomesContactDepartedWhenTheContactHasLeft(t *testing.T) {
 	if err := f.svc.RefreshRelationshipAttention(f.ctx, f.user); err != nil {
 		t.Fatalf("refresh: %v", err)
 	}
-	items, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "all", 100)
-	if err != nil {
+	page, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "all", 100, 0)
+	if err != nil || page == nil {
 		t.Fatalf("list: %v", err)
 	}
+	items := page.Items
 
 	var departedItem *ent.RelationshipAttentionItem
 	for _, item := range items {
@@ -247,10 +248,11 @@ func TestQuietAccountSurvivesWhenNobodyHasDeparted(t *testing.T) {
 	if err := f.svc.RefreshRelationshipAttention(f.ctx, f.user); err != nil {
 		t.Fatalf("refresh: %v", err)
 	}
-	items, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "all", 100)
-	if err != nil {
+	page, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "all", 100, 0)
+	if err != nil || page == nil {
 		t.Fatalf("list: %v", err)
 	}
+	items := page.Items
 	found := false
 	for _, item := range items {
 		if item.ReasonCode == "quiet_account" {

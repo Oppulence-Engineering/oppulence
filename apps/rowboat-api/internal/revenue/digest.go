@@ -39,7 +39,11 @@ func (d *Digest) Empty() bool { return d.OpenCount == 0 }
 // Digest composes the summary for one user: the top open loops by priority
 // plus the running impact counts.
 func (s *Service) Digest(ctx context.Context, u *ent.User) (*Digest, error) {
-	actions, err := s.ListActions(ctx, u, ListFilter{QueueStatus: QueueOpen, Limit: digestTopN})
+	// A saved task is not an inbox loop. The highlight list is only five rows,
+	// so five tasks used to hide every follow-up behind them.
+	actions, err := s.ListActions(ctx, u, ListFilter{
+		QueueStatus: QueueOpen, Limit: digestTopN, Surface: "recovery",
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -47,6 +51,10 @@ func (s *Service) Digest(ctx context.Context, u *ent.User) (*Digest, error) {
 		Where(
 			revenueaction.HasUserWith(user.IDEQ(u.ID)),
 			revenueaction.QueueStatusEQ(QueueOpen),
+			revenueaction.Or(
+				revenueaction.ActionTypeNEQ("follow_up_task"),
+				revenueaction.ChannelNEQ("task"),
+			),
 		).
 		Count(ctx)
 	if err != nil {
@@ -68,7 +76,7 @@ func (s *Service) Digest(ctx context.Context, u *ent.User) (*Digest, error) {
 	}
 	for _, a := range actions {
 		d.Top = append(d.Top, DigestAction{
-			Detector:  detectorDisplay[a.Detector],
+			Detector:  detectorLabel(a.Detector),
 			Recipient: a.RecipientEmail,
 			Reason:    a.Reason,
 			Priority:  a.PriorityScore,
@@ -86,7 +94,34 @@ var detectorDisplay = map[string]string{
 	"dormant_warm_opportunity":  "Dormant opportunity",
 	"neglected_referral":        "Neglected referral",
 	"former_customer_reconnect": "Former customer",
-	"manual":                    "Manual",
+	"conversation_action_pack":  "Conversation action pack",
+	"commitment_due":            "Promise due",
+	"manual":                    "Added by you",
+}
+
+// digestPriorityLabel uses the same bands as the recovery card. A raw score
+// in the email read as a different fact from the High shown in the app.
+func digestPriorityLabel(score int) string {
+	if score >= 70 {
+		return "High"
+	}
+	if score >= 40 {
+		return "Medium"
+	}
+	return "Low"
+}
+
+// detectorLabel is the name a digest shows. A missing map entry used to
+// send an empty badge, so a due promise and a conversation pack had no signal.
+func detectorLabel(key string) string {
+	if label, ok := detectorDisplay[key]; ok && strings.TrimSpace(label) != "" {
+		return label
+	}
+	parts := strings.Fields(strings.ReplaceAll(strings.TrimSpace(key), "_", " "))
+	for i, part := range parts {
+		parts[i] = strings.ToUpper(part[:1]) + part[1:]
+	}
+	return strings.Join(parts, " ")
 }
 
 // RenderDigest builds the subject and HTML/plain bodies for a digest email.
@@ -114,13 +149,13 @@ func RenderDigest(d *Digest, appURL string) (subject, htmlBody, textBody string)
 		}
 		h.WriteString(`<div style="border:1px solid #eee;border-radius:4px;padding:12px;margin-bottom:8px">`)
 		fmt.Fprintf(&h,
-			`<div style="display:flex;justify-content:space-between"><strong style="font-size:14px">%s</strong><span style="color:#999;font-size:12px">priority %d</span></div>`,
-			html.EscapeString(recipient), a.Priority)
+			`<div style="display:flex;justify-content:space-between"><strong style="font-size:14px">%s</strong><span style="color:#999;font-size:12px">%s</span></div>`,
+			html.EscapeString(recipient), html.EscapeString(digestPriorityLabel(a.Priority)))
 		fmt.Fprintf(&h, `<div style="color:#888;font-size:12px;margin:2px 0 4px">%s</div>`, html.EscapeString(a.Detector))
 		fmt.Fprintf(&h, `<div style="color:#444;font-size:13px">%s</div>`, html.EscapeString(a.Reason))
 		h.WriteString(`</div>`)
 
-		fmt.Fprintf(&t, "• [%d] %s — %s\n  %s\n", a.Priority, recipient, a.Detector, a.Reason)
+		fmt.Fprintf(&t, "• %s — %s (%s)\n  %s\n", recipient, a.Detector, digestPriorityLabel(a.Priority), a.Reason)
 	}
 
 	fmt.Fprintf(&h,

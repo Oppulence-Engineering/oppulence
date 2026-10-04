@@ -790,19 +790,22 @@ func (h *Handler) ListRuns(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	runs, err := q.All(r.Context())
+	runs, err := q.Limit(limit + 1).All(r.Context())
 	if err != nil {
 		h.log.Error("list background task runs", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not list runs", "internal_error")
 		return
 	}
+	runs, hasMore := takeRunPage(runs, limit)
 	views := make([]runView, 0, len(runs))
 	for _, run := range runs {
 		views = append(views, viewRun(task, run))
 	}
 	resp := map[string]any{"runs": views}
-	if next := nextCursor(runs, limit); next != "" {
-		resp["nextCursor"] = next
+	if hasMore {
+		if next := nextCursor(runs, limit); next != "" {
+			resp["nextCursor"] = next
+		}
 	}
 	httpx.WriteJSON(w, http.StatusOK, resp)
 }
@@ -820,12 +823,13 @@ func (h *Handler) ListAllRuns(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	runs, err := q.All(r.Context())
+	runs, err := q.Limit(limit + 1).All(r.Context())
 	if err != nil {
 		h.log.Error("list all background task runs", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not list runs", "internal_error")
 		return
 	}
+	runs, hasMore := takeRunPage(runs, limit)
 	views := make([]runView, 0, len(runs))
 	for _, run := range runs {
 		task := run.Edges.Task
@@ -835,8 +839,10 @@ func (h *Handler) ListAllRuns(w http.ResponseWriter, r *http.Request) {
 		views = append(views, viewRun(task, run))
 	}
 	resp := map[string]any{"runs": views}
-	if next := nextCursor(runs, limit); next != "" {
-		resp["nextCursor"] = next
+	if hasMore {
+		if next := nextCursor(runs, limit); next != "" {
+			resp["nextCursor"] = next
+		}
 	}
 	httpx.WriteJSON(w, http.StatusOK, resp)
 }
@@ -1303,18 +1309,22 @@ func (h *Handler) ListRunEvents(w http.ResponseWriter, r *http.Request) {
 	if limit > maxEventLimit {
 		limit = maxEventLimit
 	}
-	events, err := q.Limit(limit).All(r.Context())
+	events, err := q.Limit(limit + 1).All(r.Context())
 	if err != nil {
 		h.log.Error("list background task run events", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not list events", "internal_error")
 		return
+	}
+	hasMore := limit > 0 && len(events) > limit
+	if hasMore {
+		events = events[:limit]
 	}
 	views := make([]eventView, 0, len(events))
 	for _, ev := range events {
 		views = append(views, viewEvent(ev))
 	}
 	resp := map[string]any{"events": views}
-	if len(events) == limit {
+	if hasMore && len(events) > 0 {
 		resp["nextSeq"] = events[len(events)-1].Seq
 	}
 	httpx.WriteJSON(w, http.StatusOK, resp)
@@ -2030,6 +2040,15 @@ func (h *Handler) applyRunFilters(w http.ResponseWriter, r *http.Request, q *ent
 // runCursorSep separates the timestamp and id components of a run cursor.
 // Neither RFC3339Nano timestamps nor UUIDs contain it.
 const runCursorSep = "|"
+
+// takeRunPage keeps one page and reports whether the extra lookahead row existed.
+// A page that comes back full is the end when that extra row is absent.
+func takeRunPage(runs []*ent.BackgroundTaskRun, limit int) ([]*ent.BackgroundTaskRun, bool) {
+	if limit > 0 && len(runs) > limit {
+		return runs[:limit], true
+	}
+	return runs, false
+}
 
 func nextCursor(runs []*ent.BackgroundTaskRun, limit int) string {
 	if limit <= 0 || len(runs) < limit {

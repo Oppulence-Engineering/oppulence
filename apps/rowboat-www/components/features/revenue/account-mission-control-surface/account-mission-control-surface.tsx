@@ -8,12 +8,14 @@ import type { ComponentPropsWithoutRef } from "react";
 
 import { cn } from "@oppulence/ui/lib/utils";
 import { SimProductPanel } from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
+import { promiseDirectionLabel, promiseDueDay } from "@/lib/revenue/revenue-records";
 import type { RelationshipCommitment } from "@/lib/revenue/types";
 
 export type AccountTimelineItem = {
   id: string;
   label: string;
   detail: string;
+  due?: string;
   statusLabel: string;
   statusVariant: "green" | "amber" | "red";
 };
@@ -30,39 +32,145 @@ export type AccountMissionControlSurfaceProps = Omit<
   showHeader?: boolean;
 };
 
-function commitmentLabel(direction: string) {
-  if (direction === "promised_by_me") return "Outbound promise";
-  if (direction === "promised_by_them") return "Inbound promise";
-  return "Commitment";
+/** The overview card uses the same direction words as the promise record. */
+export function commitmentTimelineLabel(direction: string) {
+  const label = promiseDirectionLabel(direction);
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-function commitmentStatus(commitment: RelationshipCommitment): {
+/** Same window the register uses. At risk is a fact about the clock, not a stored status. */
+const AT_RISK_WINDOW_MS = 72 * 60 * 60 * 1000;
+
+export function commitmentTimelineStatus(
+  commitment: RelationshipCommitment,
+  now = Date.now(),
+): {
   label: string;
   variant: AccountTimelineItem["statusVariant"];
 } {
-  if (["met", "fulfilled", "waived"].includes(commitment.status)) {
-    return { label: "Kept", variant: "green" };
+  // The register already separates these. A waived promise was released, and a
+  // missed one was missed. Neither is a promise that was kept or is merely at risk.
+  switch (commitment.status) {
+    case "met":
+    case "fulfilled":
+      return { label: "Kept", variant: "green" };
+    case "waived":
+      return { label: "Waived", variant: "amber" };
+    case "missed":
+      return { label: "Missed", variant: "red" };
+    case "cancelled":
+      return { label: "Cancelled", variant: "amber" };
+    case "superseded":
+      return { label: "Superseded", variant: "amber" };
+    default:
+      break;
   }
-  if (["at_risk", "missed", "disputed"].includes(commitment.status)) {
-    return { label: "At risk", variant: "red" };
+  // "at_risk" is never stored. A disputed promise keeps status "open" and
+  // records the dispute on acceptance, so both have to be read here.
+  if (commitment.status === "disputed" || commitment.acceptance === "disputed") {
+    return { label: "Disputed", variant: "red" };
   }
   if (commitment.acceptance === "candidate") {
     return { label: "Review", variant: "amber" };
   }
+  const due = commitment.dueAt ? Date.parse(commitment.dueAt) : Number.NaN;
+  if (commitment.status === "at_risk" || (Number.isFinite(due) && due < now + AT_RISK_WINDOW_MS)) {
+    return { label: "At risk", variant: "red" };
+  }
   return { label: "Open", variant: "amber" };
+}
+
+/**
+ * The company highlight is the same set the commitments list calls open:
+ * still outstanding, and already confirmed. An extraction waiting for review
+ * and a dispute are not that number.
+ */
+export function openCommitmentCount(
+  commitments: readonly { status: string; acceptance?: string | null }[],
+): number {
+  return commitments.filter(
+    (item) =>
+      item.status === "open" && item.acceptance !== "candidate" && item.acceptance !== "disputed",
+  ).length;
+}
+
+/** The follow-up list uses the same clock as the promise badge. */
+export function atRiskPromiseCount(
+  commitments: readonly RelationshipCommitment[],
+  now = Date.now(),
+): number {
+  return commitments.filter((item) => commitmentTimelineStatus(item, now).label === "At risk").length;
+}
+
+/** Past due is already late. Due soon is still inside the 72-hour window. */
+export function overduePromiseCount(
+  commitments: readonly RelationshipCommitment[],
+  now = Date.now(),
+): number {
+  return commitments.filter((item) => {
+    if (commitmentTimelineStatus(item, now).label !== "At risk") return false;
+    const due = item.dueAt ? Date.parse(item.dueAt) : Number.NaN;
+    return Number.isFinite(due) && due < now;
+  }).length;
+}
+
+/**
+ * Checked follow-ups win. Before that check, a promise already marked at risk
+ * is still a follow-up, so the heading must not say zero.
+ */
+export function promiseFollowUpTitle(evaluationCount: number, atRiskCount: number): string {
+  const checked = Number.isFinite(evaluationCount) ? Math.max(0, Math.round(evaluationCount)) : 0;
+  const waiting = Number.isFinite(atRiskCount) ? Math.max(0, Math.round(atRiskCount)) : 0;
+  const count = checked > 0 ? checked : waiting;
+  return `Promises to follow up (${count})`;
+}
+
+/** An empty check is not the same as a promise that is already due. */
+export function promiseFollowUpEmptyCopy(atRiskCount: number, overdueCount = 0): string {
+  const waiting = Number.isFinite(atRiskCount) ? Math.max(0, Math.round(atRiskCount)) : 0;
+  const overdue = Math.min(
+    waiting,
+    Number.isFinite(overdueCount) ? Math.max(0, Math.round(overdueCount)) : 0,
+  );
+  const dueSoon = waiting - overdue;
+  if (waiting === 0) return "No promises are due for a follow-up.";
+  const parts: string[] = [];
+  if (overdue === 1) parts.push("A promise is past due");
+  else if (overdue > 1) parts.push(`${overdue} promises are past due`);
+  if (dueSoon === 1) parts.push(overdue > 0 ? "1 is due soon" : "A promise is due soon");
+  else if (dueSoon > 1) {
+    parts.push(overdue > 0 ? `${dueSoon} are due soon` : `${dueSoon} promises are due soon`);
+  }
+  return `${parts.join(" and ")}. Reconcile to check the follow-up.`;
+}
+
+/** Promises past the overview preview, in the same words as the company record. */
+export function commitmentPreviewRemainder(hidden: number): string {
+  return hidden === 1 ? "Show the other 1 promise" : `Show the other ${hidden} promises`;
+}
+
+/**
+ * The activity names the day in UTC. The company card uses that same day so a
+ * promise due late on the 20th does not read as the 19th.
+ */
+export function commitmentTimelineDue(dueAt?: string | null): string | undefined {
+  const day = promiseDueDay(dueAt);
+  return day ? `Due: ${day}` : undefined;
 }
 
 /** Maps live register rows into the Sim account timeline rows. */
 export function mapCommitmentsToAccountTimeline(
   commitments: RelationshipCommitment[],
   limit = 5,
+  now = Date.now(),
 ): AccountTimelineItem[] {
   return commitments.slice(0, limit).map((commitment) => {
-    const status = commitmentStatus(commitment);
+    const status = commitmentTimelineStatus(commitment, now);
     return {
       id: commitment.id,
-      label: commitmentLabel(commitment.direction),
-      detail: commitment.text,
+      label: commitmentTimelineLabel(commitment.direction),
+      detail: commitment.text.trim(),
+      due: commitmentTimelineDue(commitment.dueAt),
       statusLabel: status.label,
       statusVariant: status.variant,
     };
@@ -85,7 +193,7 @@ export function AccountMissionControlSurface({
   attentionLabel,
   attentionVariant = "amber",
   className,
-  emptyMessage = "No commitments recorded for this account yet.",
+  emptyMessage = "No commitments recorded for this company yet.",
   items,
   showHeader = true,
   ...props
@@ -131,6 +239,9 @@ export function AccountMissionControlSurface({
                   <Badge variant={item.statusVariant}>{item.statusLabel}</Badge>
                 </div>
                 <span className="text-[var(--text-primary)]">{item.detail}</span>
+                {item.due ? (
+                  <span className="text-[var(--text-muted)] text-xs">{item.due}</span>
+                ) : null}
               </li>
             ))}
           </ul>

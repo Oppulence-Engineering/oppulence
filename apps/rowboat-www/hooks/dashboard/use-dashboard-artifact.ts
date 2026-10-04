@@ -5,6 +5,7 @@ import "client-only";
 import { useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { shownAgentError } from "@/lib/agents/agent-history";
 import { ARTIFACT_DETAIL_STALE_TIME, artifactKeys } from "@/hooks/queries/utils/artifact-keys";
 import {
   loadDashboardArtifact,
@@ -77,6 +78,12 @@ export function useDashboardArtifact(resource: SelectedResource | null) {
   }, [artifact, key, original, queryClient, queryKey, resource, text]);
 
   if (!resource) return null;
+  const saveError = saveErrors[key];
+  const error = saveError
+    ? shownAgentError(new Error(saveError), "Could not save this file.")
+    : query.error
+      ? shownAgentError(query.error, "Could not load this file.")
+      : null;
   return {
     resource,
     title: artifact?.title ?? resource.name,
@@ -86,7 +93,7 @@ export function useDashboardArtifact(resource: SelectedResource | null) {
     fileType: artifact?.fileType ?? "json",
     readOnly: artifact?.readOnly ?? false,
     loading: query.isLoading || savingKey === key,
-    error: saveErrors[key] ?? (query.error instanceof Error ? query.error.message : null),
+    error,
     onChange,
     onSave,
   };

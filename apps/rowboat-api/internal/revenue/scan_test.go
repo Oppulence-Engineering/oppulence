@@ -3,6 +3,7 @@ package revenue
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -401,19 +402,124 @@ func TestListScansIsTenantScopedAndNewestFirst(t *testing.T) {
 	f.client.RevenueLeakScan.Create().SetWorkspace(otherWorkspace).SetUser(other).
 		SetStatus("completed").SetLookbackDays(90).SaveX(internal)
 
-	got, err := f.svc.ListScans(f.ctx, f.user, 10)
+	got, err := f.svc.ListScans(f.ctx, f.user, 10, 0)
 	if err != nil {
 		t.Fatalf("list scans: %v", err)
 	}
-	if len(got) != 2 || got[0].ID != newer.ID || got[1].ID != older.ID {
-		t.Fatalf("scans = %v, want newest owner scans only", got)
+	if got.HasMore || len(got.Scans) != 2 || got.Scans[0].ID != newer.ID || got.Scans[1].ID != older.ID {
+		t.Fatalf("scans = %+v, want newest owner scans only", got)
 	}
-	limited, err := f.svc.ListScans(f.ctx, f.user, 1)
+	limited, err := f.svc.ListScans(f.ctx, f.user, 1, 0)
 	if err != nil {
 		t.Fatalf("list limited scans: %v", err)
 	}
-	if len(limited) != 1 || limited[0].ID != newer.ID {
-		t.Fatalf("limited scans = %v, want newest scan", limited)
+	if !limited.HasMore || len(limited.Scans) != 1 || limited.Scans[0].ID != newer.ID {
+		t.Fatalf("limited scans = %+v, want newest scan and another page", limited)
+	}
+}
+
+func TestListScansOffsetSkipsTheNewest(t *testing.T) {
+	f := newFixture(t)
+	internal := auth.WithInternal(context.Background())
+	workspace, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatalf("owner workspace: %v", err)
+	}
+	base := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
+	oldest := f.client.RevenueLeakScan.Create().SetWorkspace(workspace).SetUser(f.user).
+		SetStatus("completed").SetLookbackDays(17).SetCreatedAt(base).SaveX(internal)
+	middle := f.client.RevenueLeakScan.Create().SetWorkspace(workspace).SetUser(f.user).
+		SetStatus("completed").SetLookbackDays(90).SetCreatedAt(base.Add(time.Hour)).SaveX(internal)
+	f.client.RevenueLeakScan.Create().SetWorkspace(workspace).SetUser(f.user).
+		SetStatus("completed").SetLookbackDays(90).SetCreatedAt(base.Add(2 * time.Hour)).SaveX(internal)
+
+	page, err := f.svc.ListScans(f.ctx, f.user, 1, 1)
+	if err != nil {
+		t.Fatalf("offset page: %v", err)
+	}
+	if !page.HasMore || len(page.Scans) != 1 || page.Scans[0].ID != middle.ID {
+		t.Fatalf("offset page = %+v, want the middle scan and another page", page)
+	}
+	rest, err := f.svc.ListScans(f.ctx, f.user, 10, 2)
+	if err != nil {
+		t.Fatalf("last page: %v", err)
+	}
+	if rest.HasMore || len(rest.Scans) != 1 || rest.Scans[0].ID != oldest.ID || rest.Scans[0].LookbackDays != 17 {
+		t.Fatalf("last page = %+v, want the oldest scan", rest)
+	}
+	neg, err := f.svc.ListScans(f.ctx, f.user, 10, -3)
+	if err != nil {
+		t.Fatalf("negative offset: %v", err)
+	}
+	if neg.HasMore || len(neg.Scans) != 3 || neg.Scans[2].ID != oldest.ID {
+		t.Fatalf("negative offset = %+v, want every scan newest first", neg)
+	}
+}
+
+func TestListScansExactPageIsNotAnotherPage(t *testing.T) {
+	f := newFixture(t)
+	internal := auth.WithInternal(context.Background())
+	workspace, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatalf("owner workspace: %v", err)
+	}
+	when := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	oldest := uuid.MustParse("a1164000-0000-4000-8000-000000000001")
+	for i := 1; i <= 10; i++ {
+		f.client.RevenueLeakScan.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("a1164000-0000-4000-8000-%012d", i))).
+			SetWorkspace(workspace).
+			SetUser(f.user).
+			SetStatus("completed").
+			SetLookbackDays(i).
+			SetCreatedAt(when).
+			SaveX(internal)
+	}
+
+	exact, err := f.svc.ListScans(f.ctx, f.user, 10, 0)
+	if err != nil {
+		t.Fatalf("exact page: %v", err)
+	}
+	if exact.HasMore || len(exact.Scans) != 10 {
+		t.Fatalf("exact page hasMore=%v len=%d, want the ten scans and no further page", exact.HasMore, len(exact.Scans))
+	}
+	foundOldest := false
+	for _, scan := range exact.Scans {
+		if scan.ID == oldest {
+			foundOldest = true
+		}
+	}
+	if !foundOldest {
+		t.Fatal("exact page dropped the oldest scan")
+	}
+
+	f.client.RevenueLeakScan.Create().
+		SetID(uuid.MustParse("a1164000-0000-4000-8000-000000000011")).
+		SetWorkspace(workspace).
+		SetUser(f.user).
+		SetStatus("completed").
+		SetLookbackDays(11).
+		SetCreatedAt(when).
+		SaveX(internal)
+
+	first, err := f.svc.ListScans(f.ctx, f.user, 10, 0)
+	if err != nil {
+		t.Fatalf("first page: %v", err)
+	}
+	if !first.HasMore || len(first.Scans) != 10 {
+		t.Fatalf("first page hasMore=%v len=%d, want ten scans and another page", first.HasMore, len(first.Scans))
+	}
+	for _, scan := range first.Scans {
+		if scan.ID == oldest {
+			t.Fatal("first page included the oldest scan")
+		}
+	}
+	second, err := f.svc.ListScans(f.ctx, f.user, 10, 10)
+	if err != nil {
+		t.Fatalf("second page: %v", err)
+	}
+	if second.HasMore || len(second.Scans) != 1 || second.Scans[0].ID != oldest || second.Scans[0].LookbackDays != 1 {
+		t.Fatalf("second page = %+v, want the oldest scan and no further page", second)
 	}
 }
 

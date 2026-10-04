@@ -2,8 +2,13 @@ package revenue
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 )
 
 func TestRelationshipGraphReturnsVersionedGovernedProjection(t *testing.T) {
@@ -53,9 +58,58 @@ func TestRelationshipGraphReturnsVersionedGovernedProjection(t *testing.T) {
 	if graphAction.ApprovalStatus != ApprovalPending || graphAction.ResourceRef != action.ID.String() {
 		t.Fatalf("action governance was not projected: %#v", graphAction)
 	}
+	if graphAction.Label != "Warm follow-up" {
+		t.Fatalf("action label = %q, want Warm follow-up", graphAction.Label)
+	}
 	if len(dto.Edges) == 0 || dto.Edges[0].Label == "" || !dto.Edges[0].Directed {
 		t.Fatalf("typed directional edge missing: %#v", dto.Edges)
 	}
+}
+
+func TestRelationshipGraphSourceUsesSourceFreshness(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	past := f.svc.now().UTC().Add(-2 * time.Hour)
+	if _, err := f.client.RelationshipSourceStatus.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetSource("meeting").SetSourceAccountID("default").
+		SetStatus("live").SetCompleteness("complete").
+		SetExpectedCadenceSeconds(60).
+		SetLastSuccessAt(past).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+		SetSource("meeting").SetExternalID("graph-stale-source").
+		SetEventType("note").SetOccurredAt(past).
+		SetReceivedAt(past).
+		SetSummary("A meeting note").SetContentHash("graph-stale-source").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	asOf := f.svc.now().UTC()
+	aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &rel.ID, Depth: 2, AsOf: asOf,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dto := buildRelationshipGraphDTO(aggregate, asOf)
+	for _, node := range dto.Nodes {
+		if node.Kind != "source" {
+			continue
+		}
+		if node.Status != "stale" {
+			t.Fatalf("source status = %q, want stale", node.Status)
+		}
+		return
+	}
+	t.Fatal("meeting source missing from the graph")
 }
 
 func TestRelationshipGraphRejectsFutureHistoricalBoundary(t *testing.T) {
@@ -67,6 +121,137 @@ func TestRelationshipGraphRejectsFutureHistoricalBoundary(t *testing.T) {
 	})
 	if !errors.Is(err, ErrInvalidInput) {
 		t.Fatalf("future asOf: want ErrInvalidInput, got %v", err)
+	}
+}
+
+func TestGraphCommitmentEvidenceRefsOpenTheConfirmation(t *testing.T) {
+	evidenceID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	observationID := uuid.MustParse("22222222-2222-2222-2222-222222222222")
+	linked := graphCommitmentEvidenceRefs([]*ent.RevenueEvidence{{
+		ID:                   evidenceID,
+		ExternalEvidenceRefs: []string{"relationship-observation:" + observationID.String()},
+	}})
+	if len(linked) != 1 || linked[0] != observationID.String() {
+		t.Fatalf("linked refs = %#v", linked)
+	}
+	plain := graphCommitmentEvidenceRefs([]*ent.RevenueEvidence{{ID: evidenceID}})
+	if len(plain) != 1 || plain[0] != evidenceID.String() {
+		t.Fatalf("plain refs = %#v", plain)
+	}
+}
+
+func TestRelationshipGraphNamesAConfirmedPromiseOnce(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const sentence = "Send the quay detail"
+	if _, err := f.client.Commitment.Create().SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+		SetDirection("promised_by_them").SetText(sentence).SetConfidence(1).
+		SetAcceptance("internally_confirmed").SetCurrentEventVersion(2).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	occurred := f.svc.now().Add(-time.Minute)
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+		SetSource("meeting").SetExternalID("commitment:promised_by_them:quay-detail").
+		SetEventType("commitment_confirmed").SetOccurredAt(occurred).SetReceivedAt(occurred).
+		SetSummary(sentence).SetContentHash("quay-detail-confirmed").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	asOf := f.svc.now()
+	aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &rel.ID, Depth: 2, AsOf: asOf,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dto := buildRelationshipGraphDTO(aggregate, asOf)
+	var promise, activity relationshipGraphNodeDTO
+	for _, node := range dto.Nodes {
+		if node.Kind == "commitment" && node.Label == sentence {
+			promise = node
+		}
+		if node.Kind == "evidence" && node.Status == "Promise confirmed" {
+			activity = node
+		}
+	}
+	if promise.ID == "" {
+		t.Fatal("promise node missing")
+	}
+	if activity.Label != "Promise confirmed" || activity.Summary != sentence {
+		t.Fatalf("confirmed activity = label %q summary %q", activity.Label, activity.Summary)
+	}
+	noteLabel, noteDetail := graphObservationPresentation("note", "Graph evidence 101")
+	if noteLabel != "Graph evidence 101" || noteDetail != "" {
+		t.Fatalf("note activity = label %q detail %q", noteLabel, noteDetail)
+	}
+}
+
+func TestRelationshipGraphProjectsAPromiseLikeTheRegister(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	soon, err := f.client.Commitment.Create().SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+		SetDirection("promised_by_me").SetText("  Send the harbor note.  ").SetConfidence(1).
+		SetAcceptance("accepted").SetDueAt(time.Now().UTC().Add(24 * time.Hour)).SetCurrentEventVersion(1).Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	kept, err := f.client.Commitment.Create().SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+		SetDirection("promised_by_them").SetText("Send the kept note").SetStatus("fulfilled").
+		SetConfidence(1).SetAcceptance("accepted").SetCurrentEventVersion(1).Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	guessed, err := f.client.Commitment.Create().SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+		SetDirection("promised_by_them").SetText("Send the guessed note").SetConfidence(0.4).
+		SetAcceptance("candidate").SetDueAt(time.Now().UTC().Add(24 * time.Hour)).SetCurrentEventVersion(1).Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	asOf := f.svc.now()
+	aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &rel.ID, Depth: 1, AsOf: asOf,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dto := buildRelationshipGraphDTO(aggregate, asOf)
+	seen := map[string]relationshipGraphNodeDTO{}
+	for _, node := range dto.Nodes {
+		if node.Kind == "commitment" {
+			seen[node.ID] = node
+		}
+	}
+	risk := seen["commitment:"+soon.ID.String()]
+	if risk.Status != RegisterAtRisk || risk.Label != "Send the harbor note." {
+		t.Fatalf("due-soon promise = status %q label %q", risk.Status, risk.Label)
+	}
+	met := seen["commitment:"+kept.ID.String()]
+	if met.Status != RegisterMet || met.Label != "Send the kept note" {
+		t.Fatalf("kept promise = status %q label %q", met.Status, met.Label)
+	}
+	review := seen["commitment:"+guessed.ID.String()]
+	if review.Status != "review" || review.Label != "Send the guessed note" {
+		t.Fatalf("unconfirmed promise = status %q label %q", review.Status, review.Label)
+	}
+	var promiseEdge string
+	for _, edge := range dto.Edges {
+		if edge.Kind == "has_commitment" && edge.Target == "commitment:"+soon.ID.String() {
+			promiseEdge = edge.Label
+		}
+	}
+	if promiseEdge != "has promise" {
+		t.Fatalf("promise edge = %q", promiseEdge)
+	}
+	if graphDependencyLabel("supersedes") != "replaces" || graphDependencyLabel("blocks") != "blocks" {
+		t.Fatal("a promise link should say what it does")
 	}
 }
 
@@ -149,10 +334,702 @@ func TestRelationshipGraphHistoricalBoundaryUsesEligibleActionRevision(t *testin
 	if graphAction.ID == "" {
 		t.Fatal("historical action node missing")
 	}
-	if graphAction.Label != "warm follow up" || graphAction.Summary != "Original evidence-backed reason" {
+	if graphAction.Label != "Warm follow-up" || graphAction.Summary != "Original evidence-backed reason" {
 		t.Fatalf("later action revision leaked across asOf: %#v", graphAction)
 	}
 	if graphAction.Metadata["revision"] != 1 {
 		t.Fatalf("historical action revision = %#v, want 1", graphAction.Metadata["revision"])
 	}
+}
+
+func TestGraphActionLabelUsesTheProductTitle(t *testing.T) {
+	if got := graphActionLabel("follow_up_task"); got != "Follow-up task" {
+		t.Fatalf("follow_up_task label = %q", got)
+	}
+	if got := graphActionLabel("commitment_rescue"); got != "Promise follow-up" {
+		t.Fatalf("commitment_rescue label = %q", got)
+	}
+	if got := graphActionLabel("custom_signal"); got != "custom signal" {
+		t.Fatalf("unknown action label = %q", got)
+	}
+}
+
+func TestGraphSourceLabelUsesTheProductTitle(t *testing.T) {
+	if got := graphSourceLabel("desktop_note"); got != "A note" {
+		t.Fatalf("desktop_note label = %q", got)
+	}
+	if got := graphSourceLabel("gmail"); got != "Gmail" {
+		t.Fatalf("gmail label = %q", got)
+	}
+	if got := graphSourceLabel("custom_feed"); got != "Custom Feed" {
+		t.Fatalf("unknown source label = %q", got)
+	}
+	if got := graphEventLabel("thread.updated"); got != "Mail updated" {
+		t.Fatalf("thread.updated label = %q", got)
+	}
+	if got := graphEventLabel("custom.event_name"); got != "Custom Event Name" {
+		t.Fatalf("unknown event label = %q", got)
+	}
+}
+
+func TestRelationshipGraphPagesPastTheNewestCompanies(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	asOf := f.svc.now().UTC()
+	const total = relationshipListLimit + 1
+	for i := 1; i <= total; i++ {
+		if _, err := f.client.Relationship.Create().
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetKind("company").
+			SetDisplayName(fmt.Sprintf("Graph Page %03d", i)).
+			SetResourceRefs([]string{}).
+			SetRisks([]string{}).
+			SetMilestones([]string{}).
+			SetCreatedAt(asOf.Add(-48 * time.Hour)).
+			SetUpdatedAt(asOf.Add(-time.Duration(i) * time.Second)).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	first, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "portfolio", Depth: 1, AsOf: asOf,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !first.HasMore || len(first.Relationships) != relationshipListLimit {
+		t.Fatalf("newest page = %d hasMore=%v", len(first.Relationships), first.HasMore)
+	}
+	for _, rel := range first.Relationships {
+		if rel.DisplayName == "Graph Page 201" {
+			t.Fatal("the oldest company was included in the newest page")
+		}
+	}
+	second, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "portfolio", Depth: 1, AsOf: asOf, Offset: relationshipListLimit,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.HasMore {
+		t.Fatal("the page after the newest 200 still claimed another page")
+	}
+	found := false
+	for _, rel := range second.Relationships {
+		if rel.DisplayName == "Graph Page 201" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("older page missing Graph Page 201: %d companies", len(second.Relationships))
+	}
+	clamped, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "portfolio", Depth: 1, AsOf: asOf, Offset: -3,
+	})
+	if err != nil || !clamped.HasMore || len(clamped.Relationships) != relationshipListLimit {
+		t.Fatalf("negative offset should match the newest page: %d hasMore=%v err=%v", len(clamped.Relationships), clamped.HasMore, err)
+	}
+}
+
+func TestRelationshipGraphPagesPastTheNewestEvidence(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	asOf := f.svc.now().UTC()
+	rel, err := f.client.Relationship.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetKind("company").
+		SetDisplayName("Evidence Graph Co").
+		SetResourceRefs([]string{}).
+		SetRisks([]string{}).
+		SetMilestones([]string{}).
+		SetCreatedAt(asOf.Add(-48 * time.Hour)).
+		SetUpdatedAt(asOf.Add(-time.Minute)).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const total = 101
+	for i := 1; i <= total; i++ {
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetRelationship(rel).
+			SetSource("meeting").
+			SetExternalID(fmt.Sprintf("graph-evidence-%03d", i)).
+			SetEventType("note").
+			SetOccurredAt(asOf.Add(-time.Duration(i) * time.Second)).
+			SetReceivedAt(asOf.Add(-time.Duration(i) * time.Second)).
+			SetSummary(fmt.Sprintf("Graph evidence %03d", i)).
+			SetContentHash(fmt.Sprintf("graph-evidence-hash-%03d", i)).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	first, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &rel.ID, Depth: 2, AsOf: asOf,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !first.ObservationHasMore || len(first.Relationships[0].Edges.Observations) != 100 {
+		t.Fatalf("newest evidence = %d hasMore=%v", len(first.Relationships[0].Edges.Observations), first.ObservationHasMore)
+	}
+	for _, observation := range first.Relationships[0].Edges.Observations {
+		if observation.Summary == "Graph evidence 101" {
+			t.Fatal("the oldest conversation was included in the newest page")
+		}
+	}
+	second, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &rel.ID, Depth: 2, AsOf: asOf, ObservationOffset: 100,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.ObservationHasMore {
+		t.Fatal("the page after the newest 100 still claimed another page")
+	}
+	found := false
+	for _, observation := range second.Relationships[0].Edges.Observations {
+		if observation.Summary == "Graph evidence 101" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("older page missing Graph evidence 101: %d conversations", len(second.Relationships[0].Edges.Observations))
+	}
+	dto := buildRelationshipGraphDTO(second, asOf)
+	if dto.ObservationHasMore {
+		t.Fatal("dto kept observationHasMore after the last page")
+	}
+	labeled := false
+	for _, node := range dto.Nodes {
+		if node.Kind == "evidence" && node.Label == "Graph evidence 101" {
+			labeled = true
+		}
+	}
+	if !labeled {
+		t.Fatal("older evidence did not become a graph node")
+	}
+	clamped, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &rel.ID, Depth: 2, AsOf: asOf, ObservationOffset: -3,
+	})
+	if err != nil || !clamped.ObservationHasMore || len(clamped.Relationships[0].Edges.Observations) != 100 {
+		t.Fatalf("negative evidence offset should match the newest page: err=%v", err)
+	}
+}
+
+func TestRelationshipGraphNamesACompanyLikeTheDirectory(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	harbor, err := f.client.Relationship.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetKind("company").
+		SetDisplayName("   ").
+		SetAccountDomain("harbor-blank.example").
+		SetResourceRefs([]string{}).
+		SetRisks([]string{}).
+		SetMilestones([]string{}).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nameless, err := f.client.Relationship.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetKind("company").
+		SetDisplayName("   ").
+		SetResourceRefs([]string{}).
+		SetRisks([]string{}).
+		SetMilestones([]string{}).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	domain, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "dogfood-label.example", AccountDomain: "dogfood-label.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	typed, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Billing @ Northwind", AccountDomain: "northwind.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{
+		harbor.ID.String():   "Harbor Blank",
+		nameless.ID.String(): "Unknown company",
+		domain.ID.String():   "Dogfood Label",
+		typed.ID.String():    "Billing @ Northwind",
+	}
+	for id, title := range want {
+		relID := mustParseUUID(t, id)
+		aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+			Scope: "relationship", RelationshipID: &relID, Depth: 1, AsOf: f.svc.now(),
+		})
+		if err != nil {
+			t.Fatalf("graph %s: %v", title, err)
+		}
+		dto := buildRelationshipGraphDTO(aggregate, f.svc.now())
+		var got string
+		for _, node := range dto.Nodes {
+			if node.Kind == "relationship" && node.RelationshipID == id {
+				got = node.Label
+			}
+		}
+		if got != title {
+			t.Fatalf("graph label for %s = %q, want %q", title, got, title)
+		}
+	}
+}
+
+func TestRelationshipGraphNamesBlankEvidenceLikeTheSheet(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	action, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "warm_follow_up", Channel: "email",
+		Reason: "Send the harbor note", ExecutionMode: ExecModeDraft, PriorityScore: 40,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	blank, err := f.client.RevenueEvidence.Create().
+		SetWorkspace(ws).AddRelationships(rel).SetUser(f.user).
+		SetSource("gmail").SetSourceRecordID("graph-blank-excerpt").
+		SetContentHash("sha256:graph-blank-excerpt").SetExcerpt("   ").
+		SetOccurredAt(f.svc.now()).SetObservedAt(f.svc.now()).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	quoted, err := f.client.RevenueEvidence.Create().
+		SetWorkspace(ws).AddRelationships(rel).SetUser(f.user).
+		SetSource("gmail").SetSourceRecordID("graph-real-excerpt").
+		SetContentHash("sha256:graph-real-excerpt").SetExcerpt("  The harbor sentence.  ").
+		SetOccurredAt(f.svc.now()).SetObservedAt(f.svc.now()).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := action.Update().AddEvidences(blank, quoted).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &rel.ID, Depth: 1, AsOf: f.svc.now(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dto := buildRelationshipGraphDTO(aggregate, f.svc.now())
+	got := map[string]bool{}
+	for _, node := range dto.Nodes {
+		if node.Kind == "evidence" {
+			got[node.Label] = true
+		}
+	}
+	if !got["Evidence excerpt unavailable"] || !got["The harbor sentence."] || got["   "] {
+		t.Fatalf("evidence labels = %#v", got)
+	}
+}
+
+func TestRelationshipGraphNamesAPersonLikeTheDirectory(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	company, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Person",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ada, err := f.client.Person.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetDisplayName("Ada Harbor").
+		SetPrimaryEmail("ada@harbor-person.example").
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetRelationship(company).
+		SetPerson(ada).
+		SetDisplayName("A. Harbor").
+		SetEmail("ada@harbor-person.example").
+		SetRole("contact").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetRelationship(company).
+		SetPerson(ada).
+		SetDisplayName("Ada H").
+		SetEmail("ada.h@harbor-person.example").
+		SetRole("champion").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetRelationship(company).
+		SetDisplayName("   ").
+		SetEmail("bea@harbor-person.example").
+		SetRole("contact").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetRelationship(company).
+		SetDisplayName("Bea Cole").
+		SetEmail("cole@harbor-person.example").
+		SetRole("contact").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &company.ID, Depth: 1, AsOf: f.svc.now(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dto := buildRelationshipGraphDTO(aggregate, f.svc.now())
+	got := map[string]int{}
+	for _, node := range dto.Nodes {
+		if node.Kind == "person" {
+			got[node.Label]++
+		}
+	}
+	if got["Ada Harbor"] != 1 || got["A. Harbor"] != 0 || got["Ada H"] != 0 {
+		t.Fatalf("directory name should be the only Ada node: %+v", got)
+	}
+	if got["bea@harbor-person.example"] != 1 {
+		t.Fatalf("blank header should use the address: %+v", got)
+	}
+	if got["Bea Cole"] != 1 {
+		t.Fatalf("typed header should stay: %+v", got)
+	}
+}
+
+func TestRelationshipGraphStageRequiresSupport(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bare := f.company(t, "Bare Stage", "bare@stage.example")
+	stored, err := f.client.Relationship.Get(f.ctx, bare.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stored.Lifecycle != "prospect" {
+		t.Fatalf("stored lifecycle = %q, want the prospect default", stored.Lifecycle)
+	}
+	bareNode := graphCompanyNode(t, f, bare)
+	if bareNode.Lifecycle != "unknown" || bareNode.Engagement != "unknown" || bareNode.Sentiment != "unknown" || bareNode.Health != "unknown" {
+		t.Fatalf("unsupported company stages = lifecycle %q engagement %q sentiment %q health %q",
+			bareNode.Lifecycle, bareNode.Engagement, bareNode.Sentiment, bareNode.Health)
+	}
+
+	supported := f.company(t, "Supported Stage", "supported@stage.example")
+	obs, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(supported).
+		SetSource("meeting").SetExternalID("stage-eval").
+		SetEventType("note").SetOccurredAt(supported.CreatedAt).SetReceivedAt(supported.CreatedAt).
+		SetSummary("Moved to evaluation").SetContentHash("stage-eval").
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	factRank, ok := relationshipAssertionAuthorityRank("source_fact")
+	if !ok {
+		t.Fatal("source_fact rank")
+	}
+	if _, err := f.client.RelationshipAssertion.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(supported).SetObservation(obs).
+		SetDimension("lifecycle").SetValue("evaluation").
+		SetSourceType("source_fact").SetAuthorityRank(factRank).
+		SetValidFrom(supported.CreatedAt).
+		SetValueSchemaVersion(relationshipAssertionValueSchemaVersion).
+		SetProjectorCompatVersion(relationshipProjectorVersion).
+		SetSupportingObservationIds([]string{}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if got := graphCompanyNode(t, f, supported).Lifecycle; got != "evaluation" {
+		t.Fatalf("supported lifecycle = %q, want evaluation", got)
+	}
+
+	cited := f.company(t, "Cited Stage", "cited@stage.example")
+	if _, err := f.client.RelationshipAssertion.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(cited).
+		SetDimension("lifecycle").SetValue("prospect").
+		SetSourceType("source_fact").SetAuthorityRank(factRank).
+		SetValidFrom(cited.CreatedAt).
+		SetValueSchemaVersion(relationshipAssertionValueSchemaVersion).
+		SetProjectorCompatVersion(relationshipProjectorVersion).
+		SetSupportingObservationIds([]string{"obs-cited"}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if got := graphCompanyNode(t, f, cited).Lifecycle; got != "prospect" {
+		t.Fatalf("cited lifecycle = %q, want prospect", got)
+	}
+
+	corrected := f.company(t, "Corrected Stage", "corrected@stage.example")
+	correctionRank, ok := relationshipAssertionAuthorityRank("user_correction")
+	if !ok {
+		t.Fatal("user_correction rank")
+	}
+	if _, err := f.client.RelationshipAssertion.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(corrected).
+		SetDimension("lifecycle").SetValue("active_customer").
+		SetSourceType("user_correction").SetAuthorityRank(correctionRank).
+		SetValidFrom(corrected.CreatedAt).
+		SetValueSchemaVersion(relationshipAssertionValueSchemaVersion).
+		SetProjectorCompatVersion(relationshipProjectorVersion).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if got := graphCompanyNode(t, f, corrected).Lifecycle; got != "active_customer" {
+		t.Fatalf("corrected lifecycle = %q, want active_customer", got)
+	}
+
+	orphan := f.company(t, "Orphan Stage", "orphan@stage.example")
+	if _, err := f.client.RelationshipAssertion.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(orphan).
+		SetDimension("lifecycle").SetValue("prospect").
+		SetSourceType("source_fact").SetAuthorityRank(factRank).
+		SetValidFrom(orphan.CreatedAt).
+		SetValueSchemaVersion(relationshipAssertionValueSchemaVersion).
+		SetProjectorCompatVersion(relationshipProjectorVersion).
+		SetSupportingObservationIds([]string{}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if got := graphCompanyNode(t, f, orphan).Lifecycle; got != "unknown" {
+		t.Fatalf("assertion without evidence = %q, want unknown", got)
+	}
+}
+
+func TestRelationshipStageFilterRequiresSupport(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bare := f.company(t, "Bare Filter", "bare@filter.example")
+	if bare.Lifecycle != "prospect" {
+		t.Fatalf("stored lifecycle = %q, want the prospect default", bare.Lifecycle)
+	}
+	prospects, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Lifecycle: "prospect"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hasName(namesOf(prospects.Relationships), "Bare Filter") {
+		t.Fatal("an unsupported default must stay out of the Prospect stage")
+	}
+
+	corrected := f.company(t, "Corrected Filter", "corrected@filter.example")
+	rank, ok := relationshipAssertionAuthorityRank("user_correction")
+	if !ok {
+		t.Fatal("user_correction rank")
+	}
+	if _, err := f.client.RelationshipAssertion.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(corrected).
+		SetDimension("lifecycle").SetValue("prospect").
+		SetSourceType("user_correction").SetAuthorityRank(rank).
+		SetValidFrom(corrected.CreatedAt).
+		SetValueSchemaVersion(relationshipAssertionValueSchemaVersion).
+		SetProjectorCompatVersion(relationshipProjectorVersion).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	prospects, err = f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Lifecycle: "prospect"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(prospects.Relationships); !hasName(got, "Corrected Filter") || hasName(got, "Bare Filter") {
+		t.Fatalf("prospect = %v", got)
+	}
+	typed, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Prospect"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(typed.Relationships); !hasName(got, "Corrected Filter") || hasName(got, "Bare Filter") {
+		t.Fatalf("typed prospect = %v", got)
+	}
+
+	evaluated := f.company(t, "Evaluated Filter", "evaluated@filter.example")
+	if _, err := f.client.Relationship.UpdateOneID(evaluated.ID).SetLifecycle("evaluation").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	obs, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(evaluated).
+		SetSource("meeting").SetExternalID("stage-filter").
+		SetEventType("note").SetOccurredAt(evaluated.CreatedAt).SetReceivedAt(evaluated.CreatedAt).
+		SetSummary("Moved to evaluation").SetContentHash("stage-filter").
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	factRank, ok := relationshipAssertionAuthorityRank("source_fact")
+	if !ok {
+		t.Fatal("source_fact rank")
+	}
+	if _, err := f.client.RelationshipAssertion.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(evaluated).SetObservation(obs).
+		SetDimension("lifecycle").SetValue("evaluation").
+		SetSourceType("source_fact").SetAuthorityRank(factRank).
+		SetValidFrom(evaluated.CreatedAt).
+		SetValueSchemaVersion(relationshipAssertionValueSchemaVersion).
+		SetProjectorCompatVersion(relationshipProjectorVersion).
+		SetSupportingObservationIds([]string{}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	evaluations, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Lifecycle: "evaluation"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(evaluations.Relationships); len(got) != 1 || got[0] != "Evaluated Filter" {
+		t.Fatalf("evaluation = %v", got)
+	}
+}
+
+func (f *fixture) company(t *testing.T, name, email string) *ent.Relationship {
+	t.Helper()
+	rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: name, PrimaryEmail: email,
+	})
+	if err != nil {
+		t.Fatalf("company %s: %v", name, err)
+	}
+	return rel
+}
+
+func graphCompanyNode(t *testing.T, f *fixture, rel *ent.Relationship) relationshipGraphNodeDTO {
+	t.Helper()
+	asOf := f.svc.now()
+	aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &rel.ID, Depth: 1, AsOf: asOf,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dto := buildRelationshipGraphDTO(aggregate, asOf)
+	for _, node := range dto.Nodes {
+		if node.Kind == "relationship" {
+			return node
+		}
+	}
+	t.Fatal("relationship node missing")
+	return relationshipGraphNodeDTO{}
+}
+
+func TestGraphSourceFreshnessFollowsThatCompanysMeeting(t *testing.T) {
+	f := newFixture(t)
+	asOf := time.Now().UTC().Add(time.Minute)
+	f.svc.now = func() time.Time { return asOf }
+	fresh, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quay Fresh", PrimaryEmail: "buyer@quay-fresh.example", AccountDomain: "quay-fresh.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	aged, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quay Aged", PrimaryEmail: "buyer@quay-aged.example", AccountDomain: "quay-aged.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ingest := func(rel *ent.Relationship, text string, when time.Time) {
+		t.Helper()
+		if _, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+			RelationshipID: rel.ID, DisplayName: rel.DisplayName, PrimaryEmail: rel.PrimaryEmail,
+			AccountDomain: rel.AccountDomain, Source: "meeting", ExternalID: "meeting:" + rel.ID.String(),
+			SourceVersion: "1", EventType: "commitment_confirmed", OccurredAt: when, ReceivedAt: when,
+			Summary: text, Facts: map[string]any{
+				"user_confirmed": true, "commitment_text": text, "commitment_direction": "promised_by_them",
+				"evidence_quote": text,
+			},
+		}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ingest(aged, "Send the other note", asOf.Add(-5*24*time.Hour))
+	ingest(fresh, "Send the quay note", asOf.Add(-time.Hour))
+
+	aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{Scope: "portfolio", Depth: 2, AsOf: asOf})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dto := buildRelationshipGraphDTO(aggregate, asOf)
+	freshness := map[string]string{}
+	for _, node := range dto.Nodes {
+		if node.Kind == "source" && node.Source == "meeting" {
+			freshness[node.RelationshipID] = node.Freshness
+		}
+	}
+	if freshness[fresh.ID.String()] != "current" || freshness[aged.ID.String()] != "aging" {
+		t.Fatalf("meeting freshness = %#v", freshness)
+	}
+}
+
+func TestOlderObservationDoesNotRewindSourceClock(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 10, 3, 12, 0, 0, 0, time.UTC)
+	recent := RelationshipObservationInput{Source: "meeting", OccurredAt: now, ReceivedAt: now}
+	if err := updateRelationshipSourceStatus(f.ctx, f.client, ws, f.user, recent); err != nil {
+		t.Fatal(err)
+	}
+	older := recent
+	older.OccurredAt = now.Add(-5 * 24 * time.Hour)
+	older.ReceivedAt = older.OccurredAt
+	if err := updateRelationshipSourceStatus(f.ctx, f.client, ws, f.user, older); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := f.client.RelationshipSourceStatus.Query().All(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, row := range rows {
+		if row.Source != "meeting" || row.LastObservationAt == nil {
+			continue
+		}
+		if row.LastObservationAt.Before(now) {
+			t.Fatalf("source clock rewound to %s", row.LastObservationAt)
+		}
+		return
+	}
+	t.Fatal("meeting source missing")
 }

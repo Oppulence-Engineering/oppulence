@@ -36,6 +36,8 @@ export interface RelationshipGraphQueryFilters {
   nodeKinds: RelationshipGraphNodeKind[];
   lifecycle: string[];
   health: string[];
+  engagement: string[];
+  sentiment: string[];
   approvalStatus: string[];
   sources: string[];
   edgeKinds: RelationshipGraphEdgeKind[];
@@ -62,6 +64,8 @@ export interface RelationshipGraphLikeNode {
   role?: string;
   source?: string;
   lifecycle?: string;
+  engagement?: string;
+  sentiment?: string;
   health?: string;
   approvalStatus?: string;
   freshness?: string;

@@ -39,6 +39,8 @@ export interface RelationshipIntelligence {
   liveCues: RelationshipIntelligenceLiveCuesItem[];
   /** Revision-bound bilateral plans. */
   mutualActionPlans: RelationshipIntelligenceMutualActionPlansItem[];
+  /** An older conversation exists beyond this page of focused review. */
+  observationPageHasMore?: boolean;
   /** Immutable contextual ranking factors. */
   recommendationEvaluations: RelationshipIntelligenceRecommendationEvaluationsItem[];
   /** Bounded commitment recovery evaluations. */

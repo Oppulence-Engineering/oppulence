@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ListRevenueActionsQueueStatus } from "./listRevenueActionsQueueStatus";
+import type { ListRevenueActionsSurface } from "./listRevenueActionsSurface";
 
 export type ListRevenueActionsParams = {
   /**
@@ -16,4 +17,13 @@ export type ListRevenueActionsParams = {
    * Page size (max 100, default 10).
    */
   limit?: number;
+  /**
+   * How many actions to skip. Pages stay in priority order.
+   * @minimum 0
+   */
+  offset?: number;
+  /**
+   * task keeps follow-up tasks. recovery keeps every other action.
+   */
+  surface?: ListRevenueActionsSurface;
 };

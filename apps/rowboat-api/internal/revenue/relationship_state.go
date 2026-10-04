@@ -14,6 +14,7 @@ import (
 
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
@@ -502,6 +503,9 @@ func (s *Service) ingestRelationshipObservation(
 			return RelationshipObservationResult{}, err
 		}
 	}
+	if err := attachAddedPersonToCompany(ctx, client, ws, u, rel, observation, input); err != nil {
+		return RelationshipObservationResult{}, err
+	}
 	for _, assertionInput := range input.Assertions {
 		if assertionInput.ValidFrom.IsZero() {
 			assertionInput.ValidFrom = input.OccurredAt
@@ -733,10 +737,7 @@ func (s *Service) createConfirmedCommitmentAction(
 		"Hi,\n\nFollowing up on our meeting, I wanted to confirm the next step: %s\n\nBest,",
 		strings.TrimSuffix(text, ".")+".",
 	)
-	reason := fmt.Sprintf(
-		"You confirmed this follow-up from source evidence meeting/%s.",
-		input.ExternalID,
-	)
+	reason := "You confirmed this follow-up from the meeting."
 	learningLift, err := s.outcomeLearningLift(ctx, client, ws, "meeting_follow_up", "email")
 	if err != nil {
 		return err
@@ -1017,6 +1018,9 @@ func resolveObservationRelationship(
 	if err := bindRelationshipIdentities(ctx, client, ws, u, rel, signals, input.Source, input.ReceivedAt); err != nil {
 		return nil, false, err
 	}
+	if err := attachExistingPeopleToCompany(ctx, client, ws, u, rel); err != nil {
+		return nil, false, err
+	}
 	return rel, true, nil
 }
 
@@ -1035,6 +1039,12 @@ func classifyRelationshipIdentitySignals(
 	safe := make([]relationshipIdentitySignal, 0, len(signals))
 	conflicts := make([]relationshipIdentityConflict, 0)
 	for _, signal := range dedupeRelationshipIdentitySignals(signals) {
+		// A corporate domain belongs to the company. Re-reading it off a person
+		// who works there is not a second claim on the account, and treating it
+		// as one parked the company in identity review.
+		if proposed.Kind != "company" && signal.Kind == "domain" {
+			continue
+		}
 		identity, err := client.RelationshipIdentity.Query().Where(
 			relationshipidentity.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
 			relationshipidentity.KeyHashEQ(signal.KeyHash),
@@ -1109,7 +1119,7 @@ type relationshipIdentitySignal struct {
 }
 
 func observationIdentitySignals(input RelationshipObservationInput, refs []string) []relationshipIdentitySignal {
-	email := strings.ToLower(strings.TrimSpace(input.PrimaryEmail))
+	email := normalizeEmail(input.PrimaryEmail)
 	domain := strings.ToLower(strings.TrimSpace(input.AccountDomain))
 	out := make([]relationshipIdentitySignal, 0, len(refs)+2)
 	if email != "" {
@@ -1126,8 +1136,14 @@ func observationIdentitySignals(input RelationshipObservationInput, refs []strin
 }
 
 func relationshipIdentitySignals(rel *ent.Relationship) []relationshipIdentitySignal {
+	domain := rel.AccountDomain
+	if rel.Kind != "company" {
+		// The stored host is how we remember where a person works. It is not an
+		// anchor this person owns, so it must not be offered back as one.
+		domain = ""
+	}
 	return observationIdentitySignals(RelationshipObservationInput{
-		PrimaryEmail: rel.PrimaryEmail, AccountDomain: rel.AccountDomain,
+		PrimaryEmail: rel.PrimaryEmail, AccountDomain: domain,
 	}, rel.ResourceRefs)
 }
 
@@ -1273,12 +1289,15 @@ func mergeRelationshipIdentityFields(
 	if changed {
 		update.SetResourceRefs(mergedRefs)
 	}
-	email := strings.ToLower(strings.TrimSpace(input.PrimaryEmail))
+	email := normalizeEmail(input.PrimaryEmail)
 	if rel.PrimaryEmail == "" && email != "" {
 		update.SetPrimaryEmail(email)
 		changed = true
 	}
-	domain := strings.ToLower(strings.TrimSpace(input.AccountDomain))
+	domain := companyAccountDomain(input.AccountDomain)
+	if !cleanAccountDomain(domain) {
+		domain = accountDomain(email)
+	}
 	if rel.AccountDomain == "" && domain != "" && !isPublicMailboxDomain(domain) {
 		update.SetAccountDomain(domain)
 		changed = true
@@ -1595,11 +1614,19 @@ func updateRelationshipSourceStatus(
 			status.DisconnectedAt != nil || status.RevokedAt != nil || len(status.MissingScopes) > 0 {
 			return nil
 		}
+		occurred := input.OccurredAt.UTC()
+		if status.LastObservationAt != nil && status.LastObservationAt.UTC().After(occurred) {
+			occurred = status.LastObservationAt.UTC()
+		}
+		received := input.ReceivedAt.UTC()
+		if status.LastSuccessAt != nil && status.LastSuccessAt.UTC().After(received) {
+			received = status.LastSuccessAt.UTC()
+		}
 		update := status.Update().
-			SetLastSuccessAt(input.ReceivedAt.UTC()).
-			SetLastObservationAt(input.OccurredAt.UTC()).
-			SetLastProviderEventAt(input.OccurredAt.UTC()).
-			SetLastSyncAt(input.ReceivedAt.UTC()).
+			SetLastSuccessAt(received).
+			SetLastObservationAt(occurred).
+			SetLastProviderEventAt(occurred).
+			SetLastSyncAt(received).
 			SetLagSeconds(0).
 			ClearLastError().
 			ClearErrorCode()
@@ -1762,12 +1789,22 @@ func projectRelationshipStateAt(
 	if err != nil {
 		return nil, err
 	}
-	if len(changed) == 0 && rel.StateHash == "" {
+	if len(changed) == 0 && rel.StateHash == "" && len(selected) == 0 {
 		return rel.Update().
 			SetStateHash(stateHash).
 			SetProjectorVersion(relationshipProjectorVersion).
 			SetProjectedAt(evaluatedAt).
 			Save(ctx)
+	}
+	// The stored stage can already be "prospect". The first correction still
+	// makes that stage true, so the record has to say it changed.
+	if len(changed) == 0 && rel.StateHash == "" {
+		for _, dimension := range relationshipProjectionDimensions {
+			if selected[dimension] == nil {
+				continue
+			}
+			changed = append(changed, projectionChangeKey(dimension))
+		}
 	}
 	if len(changed) == 0 && rel.StateHash == stateHash && rel.ProjectorVersion == relationshipProjectorVersion {
 		return rel.Update().SetProjectedAt(evaluatedAt).Save(ctx)
@@ -1947,6 +1984,17 @@ func resetRelationshipProjectionDimension(state *RelationshipState, dimension st
 		state.Risks = []string{}
 	case "milestone":
 		state.Milestones = []string{}
+	}
+}
+
+func projectionChangeKey(dimension string) string {
+	switch dimension {
+	case "risk":
+		return "risks"
+	case "milestone":
+		return "milestones"
+	default:
+		return dimension
 	}
 }
 
@@ -2254,12 +2302,40 @@ func (s *Service) RetractRelationshipAssertion(
 	return updated, nil
 }
 
-// RelationshipTimeline returns relationship observations in chronological order.
+// relationshipObservationPage is one cursor page of activity history.
+// NextBefore is the oldest occurred-at on this page when another page exists.
+// NextBeforeID is that row's id, so a later page can keep every other row that
+// happened at the same time.
+type relationshipObservationPage struct {
+	observations []*ent.RelationshipObservation
+	hasMore      bool
+	nextBefore   *time.Time
+	nextBeforeID *uuid.UUID
+}
+
+// RelationshipTimeline returns the newest relationship observations.
 func (s *Service) RelationshipTimeline(
 	ctx context.Context,
 	relationshipID uuid.UUID,
 	limit int,
 ) ([]*ent.RelationshipObservation, error) {
+	page, err := s.relationshipObservationPage(ctx, relationshipID, limit, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return page.observations, nil
+}
+
+// relationshipObservationPage returns one page of activity and whether older
+// observations exist. Callers that only need the first page keep using
+// RelationshipTimeline.
+func (s *Service) relationshipObservationPage(
+	ctx context.Context,
+	relationshipID uuid.UUID,
+	limit int,
+	before *time.Time,
+	beforeID *uuid.UUID,
+) (*relationshipObservationPage, error) {
 	if limit <= 0 || limit > 200 {
 		limit = 50
 	}
@@ -2269,11 +2345,48 @@ func (s *Service) RelationshipTimeline(
 		}
 		return nil, err
 	}
-	return s.client.RelationshipObservation.Query().
+	q := s.client.RelationshipObservation.Query().
 		Where(relationshipobservation.HasRelationshipWith(relationship.IDEQ(relationshipID))).
-		Order(ent.Desc(relationshipobservation.FieldOccurredAt)).
-		Limit(limit).
-		All(ctx)
+		Order(
+			ent.Desc(relationshipobservation.FieldOccurredAt),
+			ent.Desc(relationshipobservation.FieldID),
+		).
+		Limit(limit + 1)
+	if before != nil {
+		q = q.Where(observationBefore(before.UTC(), beforeID))
+	}
+	rows, err := q.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	hasMore := len(rows) > limit
+	if hasMore {
+		rows = rows[:limit]
+	}
+	page := &relationshipObservationPage{observations: rows, hasMore: hasMore}
+	if hasMore && len(rows) > 0 {
+		last := rows[len(rows)-1]
+		at := last.OccurredAt.UTC()
+		id := last.ID
+		page.nextBefore = &at
+		page.nextBeforeID = &id
+	}
+	return page, nil
+}
+
+// observationBefore keeps every row that shares the boundary time. A time-only
+// cursor still returns rows strictly earlier than that time.
+func observationBefore(before time.Time, beforeID *uuid.UUID) predicate.RelationshipObservation {
+	if beforeID == nil || *beforeID == uuid.Nil {
+		return relationshipobservation.OccurredAtLT(before)
+	}
+	return relationshipobservation.Or(
+		relationshipobservation.OccurredAtLT(before),
+		relationshipobservation.And(
+			relationshipobservation.OccurredAtEQ(before),
+			relationshipobservation.IDLT(*beforeID),
+		),
+	)
 }
 
 // RelationshipObservation returns one observation that belongs to a relationship.
@@ -2324,22 +2437,55 @@ func (s *Service) RelationshipObservationPayload(
 	return observation, payload, nil
 }
 
+// RelationshipChangePage is one page of immutable state snapshots, newest first.
+// HasMore is true when an older snapshot exists beyond this page.
+type RelationshipChangePage struct {
+	Snapshots []*ent.RelationshipStateSnapshot
+	HasMore   bool
+}
+
 // RelationshipChanges returns projected state snapshots for a relationship.
+// The first page stays the two newest snapshots. Older versions stay one
+// request away through offset. Version is unique per relationship; the id
+// keeps a tied page from skipping or repeating a row.
 func (s *Service) RelationshipChanges(
 	ctx context.Context,
 	relationshipID uuid.UUID,
-) ([]*ent.RelationshipStateSnapshot, error) {
+	limit int,
+	offset int,
+) (*RelationshipChangePage, error) {
+	if limit <= 0 {
+		limit = 2
+	}
+	if limit > 50 {
+		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	if _, err := s.client.Relationship.Get(ctx, relationshipID); err != nil {
 		if ent.IsNotFound(err) {
 			return nil, ErrNotFound
 		}
 		return nil, err
 	}
-	return s.client.RelationshipStateSnapshot.Query().
+	rows, err := s.client.RelationshipStateSnapshot.Query().
 		Where(relationshipstatesnapshot.HasRelationshipWith(relationship.IDEQ(relationshipID))).
-		Order(ent.Desc(relationshipstatesnapshot.FieldVersion)).
-		Limit(2).
+		Order(
+			ent.Desc(relationshipstatesnapshot.FieldVersion),
+			ent.Desc(relationshipstatesnapshot.FieldID),
+		).
+		Limit(limit + 1).
+		Offset(offset).
 		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	hasMore := len(rows) > limit
+	if hasMore {
+		rows = rows[:limit]
+	}
+	return &RelationshipChangePage{Snapshots: rows, HasMore: hasMore}, nil
 }
 
 // RelationshipSourceStatuses returns the current ingestion state of relationship sources.

@@ -6,7 +6,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { HomeAgentSurface } from "./home-agent-surface";
+import { HomeAgentSurface, resolveGreetingName } from "./home-agent-surface";
 
 const onSelectPrompt = vi.fn();
 
@@ -44,8 +44,42 @@ describe("HomeAgentSurface", () => {
     const component = screen.getByRole("region", { name: "Home agent" });
     expect(component).toHaveAttribute("data-slot", "home-agent-surface");
     expect(screen.getByText("What should we get done, Morgan?")).toBeVisible();
+    expect(resolveGreetingName("Ada Lovelace")).toBe("Ada Lovelace");
+    expect(resolveGreetingName("Ada @ Northwind")).toBe("Ada @ Northwind");
+    expect(resolveGreetingName("dev")).toBe("Dev");
+    expect(resolveGreetingName("")).toBe("there");
     expect(component).toHaveTextContent("Acme · Revenue operator");
     expect(screen.getByText("3 promises at risk")).toBeVisible();
+  });
+
+  it("offers every suggested action on a phone", () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
+    );
+    render(
+      <HomeAgentSurface
+        activeAgent="Revenue operator"
+        onSelectPrompt={onSelectPrompt}
+        promptInput={<label>Operator brief</label>}
+        signalPanel={null}
+        workspace="Acme"
+      />,
+    );
+
+    const mobile = document.querySelector("[data-slot=home-suggested-actions-mobile]");
+    expect(mobile).not.toBeNull();
+    for (const title of [
+      "Find a slipping promise",
+      "Review an at-risk company",
+      "Prioritize what we owe",
+    ]) {
+      expect(mobile?.textContent).toContain(title);
+    }
   });
 
   it("offers suggested actions to reduced-motion users on mobile", async () => {
@@ -60,8 +94,36 @@ describe("HomeAgentSurface", () => {
       />,
     );
 
-    await user.click(screen.getAllByRole("button", { name: "Find a slipping promise" })[0]!);
+    await user.click(screen.getAllByRole("button", { name: "Review an at-risk company" })[0]!);
 
-    expect(onSelectPrompt).toHaveBeenCalledWith(expect.stringContaining("most likely to slip"));
+    expect(onSelectPrompt).toHaveBeenCalledWith(
+      "Which company needs attention right now? Show what makes it risky, and name the next conversation to have.",
+    );
+    expect(onSelectPrompt).not.toHaveBeenCalledWith(expect.stringContaining("Trace the signals"));
+    expect(screen.queryByRole("button", { name: "Review an at-risk relationship" })).toBeNull();
+    expect(
+      screen.getAllByRole("button", { name: "Prioritize what we owe" }).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: "Sequence open obligations" })).toBeNull();
+  });
+
+  it("fills a suggested action without internal wording", async () => {
+    const user = userEvent.setup();
+    render(
+      <HomeAgentSurface
+        activeAgent="Revenue operator"
+        onSelectPrompt={onSelectPrompt}
+        promptInput={<label>Operator brief</label>}
+        signalPanel={null}
+        workspace="Acme"
+      />,
+    );
+
+    await user.click(screen.getAllByRole("button", { name: "Find a slipping promise" })[0]!);
+    await user.click(screen.getAllByRole("button", { name: "Prioritize what we owe" })[0]!);
+
+    expect(onSelectPrompt).toHaveBeenNthCalledWith(1, expect.not.stringContaining("intervention"));
+    expect(onSelectPrompt).toHaveBeenNthCalledWith(1, expect.not.stringContaining("evidence"));
+    expect(onSelectPrompt).toHaveBeenNthCalledWith(2, expect.not.stringContaining("obligations"));
   });
 });

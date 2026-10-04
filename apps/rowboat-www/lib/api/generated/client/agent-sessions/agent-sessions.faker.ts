@@ -12,6 +12,7 @@ import type { AgentSessionEventsResponse, AgentSessionListResponse } from "../mo
 export const getListAgentSessionsResponseMock = (
   overrideResponse: Partial<Extract<AgentSessionListResponse, object>> = {},
 ): AgentSessionListResponse => ({
+  hasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
   sessions: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => ({
       agent: faker.string.alpha({ length: { min: 10, max: 20 } }),

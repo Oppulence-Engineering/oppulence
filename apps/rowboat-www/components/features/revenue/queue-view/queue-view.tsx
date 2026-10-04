@@ -4,8 +4,22 @@ import "client-only";
 
 import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { openCompanyCreate } from "@/lib/dashboard/company-create-request";
 import { useRelationships } from "@/hooks/queries/use-relationships";
+import {
+  fetchRelationships,
+  relationshipPageHasMore,
+  relationshipRows,
+} from "@/hooks/queries/utils/fetch-relationships";
 import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
+import {
+  ACTION_QUEUE_PAGE,
+  actionPageHasMore,
+  actionRows,
+  fetchRevenueActions,
+  prependCreatedAction,
+  replaceActionPage,
+} from "@/hooks/queries/utils/fetch-revenue-actions";
 import { revenueActionKeys } from "@/hooks/queries/utils/revenue-action-keys";
 import {
   Alarm,
@@ -42,7 +56,6 @@ import {
 } from "@oppulence/ui/components/select";
 import { Textarea } from "@oppulence/ui/components/textarea";
 import { Badge as SimBadge, Chip } from "@sim/emcn";
-import { ListFilter } from "@sim/emcn/icons";
 import { cn } from "@/lib/utils";
 import {
   SimProductHeader,
@@ -50,24 +63,221 @@ import {
   SimProductToolbar,
 } from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
 import {
+  ACTION_TYPE_LABELS,
+  actionReasonCopy,
+  auditLaunchLabel,
   createAction,
   DETECTOR_LABELS,
   dismissAction,
+  dismissReasonLabel,
+  explainedRevenueError,
   QUEUE_FILTERS,
+  snoozeWakeCopy,
   snoozeAction,
   type CreateActionInput,
 } from "@/lib/revenue/revenue";
 import {
   errMessage,
   ExecutionBadge,
+  ListRefreshFailure,
   ListSkeleton,
+  listNeverLoaded,
+  listRefreshFailureCopy,
   PolicyBadge,
   priorityTone,
+  refetchClearingBanner,
 } from "@/components/features/revenue/shared/shared";
+import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
-import { ReviewSheet } from "@/components/features/revenue/review-sheet/review-sheet";
+import {
+  executionFailureCopy,
+  ReviewSheet,
+} from "@/components/features/revenue/review-sheet/review-sheet";
 import { AuditSheet } from "@/components/features/revenue/audit-sheet/audit-sheet";
+import { companyName, recoveryQueueActions } from "@/lib/revenue/revenue-records";
 import type { RevenueAction, RevenueRelationship, RevenueWorkspace } from "@/lib/revenue/types";
+
+/**
+ * A non-empty filter says how many rows match. Zero is the empty state below
+ * the header, so "0 shown" would read as if rows were hidden.
+ */
+export function recoveryShownLabel(count: number, hasMore = false): string | null {
+  if (count <= 0) return null;
+  const shown = hasMore ? `${count}+` : String(count);
+  return `${shown} shown`;
+}
+
+export function recoveryRemainderLabel(): string {
+  return "Show the next follow-ups";
+}
+
+/**
+ * A filtered recovery list is empty. The sentence uses the filter's name.
+ * The stored value "all" is not a name, so it must not be interpolated.
+ */
+/** The visible word is the current recovery filter, not the menu's name. */
+export function recoveryFilterName(value: string): string {
+  const label = QUEUE_FILTERS.find((filter) => filter.value === value)?.label ?? "Open";
+  return comboboxFilterName("Recovery", label);
+}
+
+/** The company menu shows a name. The accessible name has to include it. */
+export function recoveryCompanyName(label: string): string {
+  return comboboxFilterName("Company", label);
+}
+
+/** Follow-up kinds are stored as snake case. The menu names the readable kind. */
+export function recoveryFollowUpName(actionType: string): string {
+  const label = ACTION_TYPE_LABELS[actionType as keyof typeof ACTION_TYPE_LABELS];
+  return comboboxFilterName("Follow-up", label ?? actionType.replaceAll("_", " "));
+}
+
+/** Spaces are not a subject. The card and the send path use the same words. */
+export function recoveryDraftSubject(subject?: string | null): string {
+  return subject?.trim() ?? "";
+}
+
+/** Follow-up kinds are stored as snake case. The card uses the same names as Review. */
+export function recoveryActionKind(actionType?: string | null): string {
+  const type = actionType?.trim() ?? "";
+  if (!type) return "";
+  const known = ACTION_TYPE_LABELS[type];
+  if (known) return known;
+  return type
+    .replaceAll("_", " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+/**
+ * A confirmed meeting draft names the promise after "next step:". A rescue
+ * draft names it after "taking action on:". The queue should say that promise.
+ */
+export function recoveryPromisedStep(message?: string | null): string {
+  const text = (message ?? "").replaceAll("\r\n", "\n").replaceAll("\r", "\n");
+  const patterns = [/next step:\s*([^\n]+)/i, /taking action on:\s*([^\n]+)/i];
+  for (const pattern of patterns) {
+    const step = (text.match(pattern)?.[1] ?? "").trim().replace(/[.]+$/, "").trim();
+    if (step) return step;
+  }
+  return "";
+}
+
+/** The card leads with the follow-up kind, then the promise the draft is about. */
+export function recoveryCardLead(action: {
+  actionType?: string | null;
+  proposedMessage?: string | null;
+}): string {
+  const kind = recoveryActionKind(action.actionType);
+  const step = recoveryPromisedStep(action.proposedMessage);
+  if (kind && step) return `${kind}. ${step}`;
+  return kind || step;
+}
+
+/**
+ * A follow-up with no address still belongs to a company. The card names that
+ * company instead of calling the recipient unknown.
+ */
+export function recoveryRecipientLabel(action: {
+  recipientEmail?: string | null;
+  relationshipName?: string | null;
+}): string {
+  return action.recipientEmail?.trim() || action.relationshipName?.trim() || "Unknown recipient";
+}
+
+/** The address is the heading. The company stays visible beside it. */
+export function recoveryCompanyCaption(action: {
+  recipientEmail?: string | null;
+  relationshipName?: string | null;
+}): string {
+  const email = action.recipientEmail?.trim() || "";
+  const company = action.relationshipName?.trim() || "";
+  if (!email || !company) return "";
+  return company;
+}
+
+/** Open recovery is "Held". The other stored statuses already have filter names. */
+export function recoveryStatusLabel(status: string): string {
+  switch (status) {
+    case "open":
+      return "Held";
+    case "snoozed":
+      return "Snoozed";
+    case "handled":
+      return "Handled";
+    case "dismissed":
+      return "Dismissed";
+    default: {
+      const words = status.replaceAll("_", " ").trim();
+      if (!words) return status;
+      return words.charAt(0).toUpperCase() + words.slice(1);
+    }
+  }
+}
+
+export function recoveryEmptyDescription(filter: string): string {
+  switch (filter) {
+    case "snoozed":
+      return "Nothing is snoozed right now.";
+    case "handled":
+      return "Nothing has been handled yet.";
+    case "dismissed":
+      return "Nothing has been dismissed.";
+    default:
+      return "No recovery drafts right now.";
+  }
+}
+
+/**
+ * The open queue is empty because mail cannot be read. The button already
+ * names reconnect or connect. Telling the reader to run an audit disagrees.
+ */
+/** A promise already in Commitments stays visible when Recovery has no draft. */
+export function recordedRecoveryPrefix(count: number | undefined, hasMore = false): string {
+  const total = Number.isFinite(count) ? Math.max(0, Math.round(count ?? 0)) : 0;
+  if (total <= 0) return "";
+  const sentence = hasMore
+    ? `${total}+ promises are already in Commitments.`
+    : total === 1
+      ? "1 promise is already in Commitments."
+      : `${total} promises are already in Commitments.`;
+  return `${sentence} `;
+}
+
+export function recoveryOpenEmptyCopy(input: {
+  needsConnect: boolean;
+  needsReconnect: boolean;
+  knownPromiseCount?: number;
+  knownPromiseHasMore?: boolean;
+}): string {
+  const prefix = recordedRecoveryPrefix(input.knownPromiseCount, input.knownPromiseHasMore);
+  if (input.needsReconnect) {
+    return `${prefix}No recovery drafts yet. Reconnect Google before an audit can find promises to recover.`;
+  }
+  if (input.needsConnect) {
+    return `${prefix}No recovery drafts yet. Connect Gmail and Calendar before an audit can find promises to recover.`;
+  }
+  return `${prefix}No recovery drafts yet! Run an audit or draft recovery from a promise.`;
+}
+
+/** A follow-up is stored on a company. The empty workspace has nothing to attach it to. */
+export function newActionIntro(hasCompany: boolean): string {
+  return hasCompany
+    ? "Add a follow-up for a company already in this workspace."
+    : "Add a company before a follow-up can be created.";
+}
+
+export function recoveryNextCompaniesLabel(): string {
+  return "Show the next companies";
+}
+
+export function recoveryNoCompaniesCopy(hasMoreCompanies: boolean): string {
+  return hasMoreCompanies
+    ? "More companies are still in this list."
+    : "No companies yet. Add one in Companies, or run an audit to find them.";
+}
 
 export function QueueView({
   workspace,
@@ -76,6 +286,11 @@ export function QueueView({
   onScan,
   scanning,
   needsReconnect = false,
+  needsConnect = false,
+  knownPromiseCount = 0,
+  knownPromiseHasMore = false,
+  knownPromisesPending = false,
+  onOpenCompanies,
 }: {
   workspace: RevenueWorkspace | null;
   onError: (m: string) => void;
@@ -84,27 +299,88 @@ export function QueueView({
   scanning: boolean;
   /** The audit can only fail until Google is reconnected; `onScan` opens the fix. */
   needsReconnect?: boolean;
+  /** No mailbox is connected, so `onScan` opens connections instead of a scan. */
+  needsConnect?: boolean;
+  /** Open or at-risk promises already in Commitments. */
+  knownPromiseCount?: number;
+  knownPromiseHasMore?: boolean;
+  /** The empty sentence waits so it does not hide a promise that is still loading. */
+  knownPromisesPending?: boolean;
+  /** Opens the company directory when a new action has nothing to attach to. */
+  onOpenCompanies?: () => void;
 }) {
   const [filter, setFilter] = React.useState("open");
   const [selected, setSelected] = React.useState<RevenueAction | null>(null);
   const [auditFor, setAuditFor] = React.useState<RevenueAction | null>(null);
   const [creating, setCreating] = React.useState(false);
   const queryClient = useQueryClient();
-  const actionsQueryKey = revenueActionKeys.list(filter, 50);
-  const actionsQuery = useRevenueActions(filter);
-  const actions = actionsQuery.data ?? [];
+  const actionsQueryKey = revenueActionKeys.list(filter, ACTION_QUEUE_PAGE, "recovery");
+  const actionsQuery = useRevenueActions(filter, ACTION_QUEUE_PAGE, "recovery");
+  const [extraActions, setExtraActions] = React.useState<RevenueAction[]>([]);
+  const [laterRecoveryHasMore, setLaterRecoveryHasMore] = React.useState<boolean | null>(null);
+  const [loadingMoreRecovery, setLoadingMoreRecovery] = React.useState(false);
+  const recoveryPage = actionRows(actionsQuery.data);
+  const recoveryRows = React.useMemo(() => {
+    if (extraActions.length === 0) return recoveryPage;
+    const seen = new Set(recoveryPage.map((action) => action.id));
+    return [
+      ...recoveryPage,
+      ...extraActions.filter((action) => {
+        if (seen.has(action.id)) return false;
+        seen.add(action.id);
+        return true;
+      }),
+    ];
+  }, [extraActions, recoveryPage]);
+  const actions = recoveryQueueActions(recoveryRows);
+  const hasMoreRecovery =
+    laterRecoveryHasMore ?? (recoveryPage.length > 0 && actionPageHasMore(actionsQuery.data));
+  React.useEffect(() => {
+    setExtraActions([]);
+    setLaterRecoveryHasMore(null);
+  }, [filter]);
 
   React.useEffect(() => {
-    if (actionsQuery.error) {
-      onError(errMessage(actionsQuery.error, "Could not load the queue."));
+    if (!actionsQuery.error || actionsQuery.data != null) return;
+    onError(errMessage(actionsQuery.error, "Could not load recovery."));
+  }, [actionsQuery.data, actionsQuery.error, onError]);
+
+  const loadMoreRecovery = React.useCallback(async () => {
+    if (loadingMoreRecovery || !hasMoreRecovery) return;
+    setLoadingMoreRecovery(true);
+    try {
+      const next = await fetchRevenueActions(
+        filter,
+        ACTION_QUEUE_PAGE,
+        undefined,
+        "recovery",
+        recoveryPage.length + extraActions.length,
+      );
+      setLaterRecoveryHasMore(actionPageHasMore(next));
+      setExtraActions((current) => [...current, ...actionRows(next)]);
+    } catch (reason) {
+      onError(explainedRevenueError(reason, "Could not load the next follow-ups."));
+    } finally {
+      setLoadingMoreRecovery(false);
     }
-  }, [actionsQuery.error, onError]);
+  }, [
+    extraActions.length,
+    filter,
+    hasMoreRecovery,
+    loadingMoreRecovery,
+    onError,
+    recoveryPage.length,
+  ]);
 
   const removeFromQueue = React.useCallback(
     (id: string) => {
-      queryClient.setQueryData<RevenueAction[]>(actionsQueryKey, (current = []) =>
-        current.filter((action) => action.id !== id),
+      queryClient.setQueryData(actionsQueryKey, (current) =>
+        replaceActionPage(
+          current,
+          actionRows(current).filter((action) => action.id !== id),
+        ),
       );
+      setExtraActions((current) => current.filter((action) => action.id !== id));
       setSelected((cur) => (cur?.id === id ? null : cur));
     },
     [actionsQueryKey, queryClient],
@@ -112,7 +388,13 @@ export function QueueView({
 
   const patchAction = React.useCallback(
     (updated: RevenueAction) => {
-      queryClient.setQueryData<RevenueAction[]>(actionsQueryKey, (current = []) =>
+      queryClient.setQueryData(actionsQueryKey, (current) =>
+        replaceActionPage(
+          current,
+          actionRows(current).map((action) => (action.id === updated.id ? updated : action)),
+        ),
+      );
+      setExtraActions((current) =>
         current.map((action) => (action.id === updated.id ? updated : action)),
       );
       setSelected((cur) => (cur?.id === updated.id ? updated : cur));
@@ -120,15 +402,29 @@ export function QueueView({
     [actionsQueryKey, queryClient],
   );
 
-  const empty = actionsQuery.isSuccess && actions.length === 0;
+  const empty = actionsQuery.data != null && actions.length === 0;
+  const auditLabel = auditLaunchLabel({
+    needsReconnect,
+    needsConnect,
+    scanning,
+    scanningLabel: "Auditing…",
+    runLabel: "Run Promise Leak Audit",
+  });
 
   return (
     <div className="flex min-h-full w-full min-w-0 flex-col p-3" data-slot="queue-view">
       <SimProductPanel className="flex min-h-0 flex-1 flex-col">
-        <SimProductHeader actions={`${actions.length} shown`} title="Recovery queue" />
+        <SimProductHeader
+          actions={recoveryShownLabel(actions.length, hasMoreRecovery)}
+          title="Recovery queue"
+        />
         <SimProductToolbar>
           <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="h-7 w-36 border-0 bg-transparent px-0 shadow-none" size="sm">
+            <SelectTrigger
+              aria-label={recoveryFilterName(filter)}
+              className="h-7 w-36 border-0 bg-transparent px-0 shadow-none"
+              size="sm"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="app-shell rounded-[2px]">
@@ -139,24 +435,33 @@ export function QueueView({
               ))}
             </SelectContent>
           </Select>
-          <Chip leftIcon={ListFilter}>Filter</Chip>
           <Button className="ml-auto" onClick={() => setCreating(true)} size="sm" variant="outline">
             <Plus /> New action
           </Button>
         </SimProductToolbar>
 
+        {actionsQuery.isError && actionsQuery.data != null ? (
+          <ListRefreshFailure
+            message={listRefreshFailureCopy("recovery")}
+            onRetry={() => void refetchClearingBanner(() => actionsQuery.refetch(), onError)}
+          />
+        ) : null}
         {actionsQuery.isPending ? (
           <div className="p-3">
             <ListSkeleton />
           </div>
-        ) : actionsQuery.isError ? (
+        ) : listNeverLoaded(actionsQuery.isError, actionsQuery.data) ? (
           <EmptyBlock
             body="The recovery queue is temporarily unavailable. Existing drafts and approvals were not changed."
             image="recovery"
             learnMore={[]}
             title="Recovery could not load"
           >
-            <Button onClick={() => void actionsQuery.refetch()} type="button" variant="outline">
+            <Button
+              onClick={() => void refetchClearingBanner(() => actionsQuery.refetch(), onError)}
+              type="button"
+              variant="outline"
+            >
               Try again
             </Button>
           </EmptyBlock>
@@ -170,38 +475,44 @@ export function QueueView({
                   onClick={onScan}
                   size="sm"
                 >
-                  {needsReconnect ? (
+                  {needsReconnect || needsConnect ? (
                     <>
-                      <Plugs /> Reconnect Google
+                      <Plugs /> {auditLabel}
                     </>
                   ) : (
-                    <>{scanning ? <Spinner /> : <MagnifyingGlass />} Run audit</>
+                    <>
+                      {scanning ? <Spinner /> : <MagnifyingGlass />} {auditLabel}
+                    </>
                   )}
                 </Button>
               }
               description={
-                <>
-                  No recovery drafts yet! Run an audit
-                  <br />
-                  or draft recovery from a commitment.
-                </>
+                knownPromisesPending
+                  ? "Checking Commitments for promises already on the record."
+                  : recoveryOpenEmptyCopy({
+                      needsConnect,
+                      needsReconnect,
+                      knownPromiseCount,
+                      knownPromiseHasMore,
+                    })
               }
               image="recovery"
               learnMore={[
                 { label: "Approve recovery before sending" },
-                { label: "Draft from confirmed commitments" },
+                { label: "Draft from a confirmed promise" },
               ]}
               title="Recovery"
             />
           ) : (
             <WorkspaceEmptyState
-              description={`Nothing in the ${filter} queue right now.`}
+              description={recoveryEmptyDescription(filter)}
               image="recovery"
               learnMore={[]}
               title="Recovery"
             />
           )
         ) : (
+          <>
           <ul className="flex flex-col gap-3 p-3">
             {actions.map((action) => (
               <li key={action.id}>
@@ -218,6 +529,19 @@ export function QueueView({
               </li>
             ))}
           </ul>
+          {hasMoreRecovery ? (
+            <Button
+              className="m-3"
+              disabled={loadingMoreRecovery}
+              onClick={() => void loadMoreRecovery()}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {recoveryRemainderLabel()}
+            </Button>
+          ) : null}
+          </>
         )}
       </SimProductPanel>
 
@@ -248,13 +572,13 @@ export function QueueView({
             setCreating(false);
             onNotice("Action created.");
             if (filter === "open") {
-              queryClient.setQueryData<RevenueAction[]>(actionsQueryKey, (current = []) => [
-                a,
-                ...current,
-              ]);
+              queryClient.setQueryData(actionsQueryKey, (current) =>
+                prependCreatedAction(current, a),
+              );
             }
           }}
           onError={onError}
+          onOpenCompanies={onOpenCompanies}
         />
       ) : null}
     </div>
@@ -276,8 +600,17 @@ function ActionCard({
 }) {
   const [busy, setBusy] = React.useState<string | null>(null);
   const tone = priorityTone(action.priorityScore);
-  const recipient = action.recipientEmail || "Unknown recipient";
+  const recipient = recoveryRecipientLabel(action);
+  const company = recoveryCompanyCaption(action);
+  const lead = recoveryCardLead(action);
   const open = action.queueStatus === "open";
+  const sendFailure =
+    action.executionStatus === "pending" || action.executionStatus === "failed"
+      ? executionFailureCopy(action.executionError)
+      : "";
+  const dismissal =
+    action.queueStatus === "dismissed" ? dismissReasonLabel(action.dismissReason) : "";
+  const snooze = action.queueStatus === "snoozed" ? snoozeWakeCopy(action.snoozedUntil) : "";
 
   const triage = async (kind: "snooze" | "dismiss") => {
     setBusy(kind);
@@ -294,11 +627,8 @@ function ActionCard({
   return (
     <SimProductPanel className="overflow-hidden">
       <div className="flex items-start gap-4 px-4 py-3">
-        <div className="flex w-12 shrink-0 flex-col items-center">
-          <span className={cn("text-2xl font-semibold tabular-nums", tone.className)}>
-            {action.priorityScore}
-          </span>
-          <SimBadge className="mt-0.5" variant="amber">
+        <div className="flex shrink-0 flex-col items-center">
+          <SimBadge className={cn("mt-0.5", tone.className)} variant="amber">
             {tone.label}
           </SimBadge>
         </div>
@@ -310,14 +640,29 @@ function ActionCard({
             <Label className="truncate text-sm font-medium text-[var(--text-primary)]">
               {recipient}
             </Label>
-            <Chip className="ml-auto">{open ? "Held" : action.queueStatus}</Chip>
+            {company ? (
+              <Label className="truncate text-[12px] font-normal text-[var(--text-muted)]">
+                {company}
+              </Label>
+            ) : null}
+            <Chip className="ml-auto">{recoveryStatusLabel(action.queueStatus)}</Chip>
           </div>
+          {lead ? (
+            <p className="mt-1.5 text-sm font-medium text-[var(--text-primary)]">{lead}</p>
+          ) : null}
           <p className="mt-1.5 line-clamp-2 text-sm text-[var(--text-secondary)]">
-            {action.reason}
+            {actionReasonCopy(action.reason)}
           </p>
-          {action.proposedSubject ? (
+          {sendFailure ? (
+            <p className="mt-1.5 text-sm text-amber-700 dark:text-amber-300">{sendFailure}</p>
+          ) : null}
+          {dismissal ? (
+            <p className="mt-1.5 text-sm text-[var(--text-secondary)]">Dismissed: {dismissal}</p>
+          ) : null}
+          {snooze ? <p className="mt-1.5 text-sm text-[var(--text-secondary)]">{snooze}</p> : null}
+          {recoveryDraftSubject(action.proposedSubject) ? (
             <p className="mt-1 truncate text-xs text-[var(--text-muted)]">
-              Draft subject: {action.proposedSubject}
+              Draft subject: {recoveryDraftSubject(action.proposedSubject)}
             </p>
           ) : null}
         </div>
@@ -376,13 +721,53 @@ function CreateActionDialog({
   onClose,
   onCreated,
   onError,
+  onOpenCompanies,
 }: {
   onClose: () => void;
   onCreated: (a: RevenueAction) => void;
   onError: (m: string) => void;
+  onOpenCompanies?: () => void;
 }) {
   const relationshipsQuery = useRelationships();
-  const relationships = relationshipsQuery.data ?? [];
+  const directoryRows = React.useMemo(
+    () => relationshipRows(relationshipsQuery.data),
+    [relationshipsQuery.data],
+  );
+  const [extraCompanies, setExtraCompanies] = React.useState<RevenueRelationship[]>([]);
+  const [companyOffset, setCompanyOffset] = React.useState<number | undefined>();
+  const [laterCompaniesHasMore, setLaterCompaniesHasMore] = React.useState<boolean | null>(null);
+  const [loadingMoreCompanies, setLoadingMoreCompanies] = React.useState(false);
+  React.useEffect(() => {
+    setExtraCompanies([]);
+    setCompanyOffset(undefined);
+    setLaterCompaniesHasMore(null);
+  }, [relationshipsQuery.dataUpdatedAt]);
+  const relationships = React.useMemo(() => {
+    const seen = new Set<string>();
+    return [...directoryRows, ...extraCompanies].filter((record) => {
+      if (record.kind === "person" || seen.has(record.id)) return false;
+      seen.add(record.id);
+      return true;
+    });
+  }, [directoryRows, extraCompanies]);
+  const hasMoreCompanies =
+    laterCompaniesHasMore ?? relationshipPageHasMore(relationshipsQuery.data);
+  const loadMoreCompanies = async () => {
+    if (loadingMoreCompanies || !hasMoreCompanies) return;
+    setLoadingMoreCompanies(true);
+    try {
+      const offset = companyOffset ?? directoryRows.length;
+      const next = await fetchRelationships({ offset });
+      const rows = relationshipRows(next);
+      setCompanyOffset(offset + rows.length);
+      setLaterCompaniesHasMore(next.hasMore);
+      setExtraCompanies((current) => [...current, ...rows]);
+    } catch (reason) {
+      onError(explainedRevenueError(reason, "Could not load the next companies."));
+    } finally {
+      setLoadingMoreCompanies(false);
+    }
+  };
   const [relationshipId, setRelationshipId] = React.useState("");
   const createActionTypes = [
     "warm_follow_up",
@@ -397,20 +782,18 @@ function CreateActionDialog({
   const [message, setMessage] = React.useState("");
   const [reason, setReason] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+  const [formError, setFormError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (relationshipsQuery.error) {
-      onError(errMessage(relationshipsQuery.error, "Could not load relationships."));
+      onError(errMessage(relationshipsQuery.error, "Could not load companies."));
     }
   }, [onError, relationshipsQuery.error]);
-
-  React.useEffect(() => {
-    if (!relationshipId && relationships[0]) setRelationshipId(relationships[0].id);
-  }, [relationshipId, relationships]);
 
   const submit = async () => {
     if (!relationshipId || !reason.trim()) return;
     setBusy(true);
+    setFormError(null);
     onError("");
     try {
       const rel = relationships.find((r) => r.id === relationshipId);
@@ -420,13 +803,15 @@ function CreateActionDialog({
         channel: "email",
         reason: reason.trim(),
         recipientEmail: rel?.primaryEmail,
-        proposedSubject: subject || undefined,
-        proposedMessage: message || undefined,
+        proposedSubject: subject.trim() || undefined,
+        proposedMessage: message.trim() || undefined,
         executionMode: "draft",
       });
       onCreated(created);
     } catch (e) {
-      onError(errMessage(e, "Could not create the action."));
+      const message = errMessage(e, "Could not create the action.");
+      setFormError(message);
+      onError(message);
     } finally {
       setBusy(false);
     }
@@ -438,30 +823,71 @@ function CreateActionDialog({
         <DialogHeader>
           <DialogTitle>New action</DialogTitle>
           <DialogDescription>
-            Add a manual follow-up to the queue against an existing relationship.
+            {newActionIntro(relationships.length > 0 || hasMoreCompanies)}
           </DialogDescription>
         </DialogHeader>
-        {relationships.length === 0 ? (
+        {relationships.length === 0 && !hasMoreCompanies ? (
           <Empty className="gap-3 py-4">
             <EmptyHeader>
               <EmptyDescription className="text-sm text-primary/55">
-                No relationships yet — run a scan or add one in the Relationships tab first.
+                {recoveryNoCompaniesCopy(false)}
               </EmptyDescription>
             </EmptyHeader>
+            {onOpenCompanies ? (
+              <Button
+                onClick={() => {
+                  onClose();
+                  openCompanyCreate(onOpenCompanies);
+                }}
+                size="sm"
+                type="button"
+              >
+                <Plus /> Add a company
+              </Button>
+            ) : null}
           </Empty>
         ) : (
           <div className="flex flex-col gap-3">
-            <Select value={relationshipId} onValueChange={setRelationshipId}>
-              <SelectTrigger size="sm">
-                <SelectValue placeholder="Relationship" />
+            <Select onValueChange={setRelationshipId} value={relationshipId || undefined}>
+              <SelectTrigger
+                aria-label={recoveryCompanyName(
+                  (() => {
+                    const selected = relationships.find((item) => item.id === relationshipId);
+                    if (selected) return companyName(selected);
+                    if (relationships.length === 0 && hasMoreCompanies) {
+                      return "More companies are still in this list.";
+                    }
+                    return "Choose a company";
+                  })(),
+                )}
+                size="sm"
+              >
+                <SelectValue placeholder="Company" />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-[2px]">
                 {relationships.map((r) => (
                   <SelectItem key={r.id} value={r.id}>
-                    {r.displayName}
+                    {companyName(r)}
                     {r.primaryEmail ? ` · ${r.primaryEmail}` : ""}
                   </SelectItem>
                 ))}
+                {hasMoreCompanies ? (
+                  <Button
+                    className={cn(
+                      "sticky bottom-0 z-10 h-8 w-full justify-start rounded-none",
+                      "border-t border-border bg-background px-2 text-[12px]",
+                    )}
+                    disabled={loadingMoreCompanies}
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      void loadMoreCompanies();
+                    }}
+                    type="button"
+                    variant="ghost"
+                  >
+                    {loadingMoreCompanies ? "Loading…" : recoveryNextCompaniesLabel()}
+                  </Button>
+                ) : null}
               </SelectContent>
             </Select>
             <Select
@@ -471,13 +897,13 @@ function CreateActionDialog({
                 if (next) setActionType(next);
               }}
             >
-              <SelectTrigger size="sm">
+              <SelectTrigger aria-label={recoveryFollowUpName(actionType)} size="sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-[2px]">
                 {createActionTypes.map((t) => (
                   <SelectItem key={t} value={t}>
-                    {t.replace(/_/g, " ")}
+                    {ACTION_TYPE_LABELS[t] ?? t.replaceAll("_", " ")}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -485,7 +911,7 @@ function CreateActionDialog({
             <Input
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Why now? (reason)"
+              placeholder="Why this follow-up is needed"
             />
             <Input
               value={subject}
@@ -500,13 +926,16 @@ function CreateActionDialog({
             />
           </div>
         )}
+        {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel
           </Button>
-          <Button size="sm" onClick={submit} disabled={busy || !relationshipId || !reason.trim()}>
-            {busy ? <Spinner /> : <Plus />} Create
-          </Button>
+          {relationships.length > 0 ? (
+            <Button size="sm" onClick={submit} disabled={busy || !relationshipId || !reason.trim()}>
+              {busy ? <Spinner /> : <Plus />} Create
+            </Button>
+          ) : null}
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -6,18 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * Reason code for the ledger entry.
- */
-export type RevenueActionRevisionReason =
-  (typeof RevenueActionRevisionReason)[keyof typeof RevenueActionRevisionReason];
-
-export const RevenueActionRevisionReason = {
-  llm_call: "llm_call",
-  llm_call_reserve: "llm_call_reserve",
-  llm_settle: "llm_settle",
-  voice_tts: "voice_tts",
-  exa_search: "exa_search",
-  grant: "grant",
-  refund: "refund",
-} as const;
+export type GetRelationshipChangesParams = {
+  /**
+   * Maximum snapshots (default 2, max 50).
+   * @minimum 1
+   * @maximum 50
+   */
+  limit?: number;
+  /**
+   * Page offset.
+   * @minimum 0
+   */
+  offset?: number;
+};

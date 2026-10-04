@@ -5,6 +5,7 @@ import {
   friendlyAgentError,
   parseAgentSessionEventsResponse,
   parseAgentSessionsResponse,
+  shownAgentError,
 } from "@/lib/agents/agent-history";
 
 it("hides provider and workflow details from agent failures", () => {
@@ -29,7 +30,53 @@ it("hides provider and workflow details from agent failures", () => {
   expect(friendlyAgentError("activity error: scheduledEventID=1 startedEventID=2")).toBe(
     "The agent could not complete this request. Please try again.",
   );
+  expect(
+    friendlyAgentError(
+      "llm_call_failed: activity error (type: rowboat.background_tasks.execute_api_task.v1, scheduledEventID: 11): llm upstream returned status 401: Missing Authentication header",
+      "run",
+    ),
+  ).toBe("The AI provider rejected the API key for this workspace. Nothing was charged.");
+  expect(friendlyAgentError("activity error: scheduledEventID=1", "run")).toBe(
+    "This run could not finish. Please try again.",
+  );
   expect(friendlyAgentError("The agent was canceled.")).toBe("The agent was canceled.");
+  expect(friendlyAgentError("rate limit exceeded")).toBe(
+    "Too many requests were sent from this workspace. Wait a moment, then try again.",
+  );
+  expect(friendlyAgentError("Could not delete agent (429)")).toBe(
+    "Too many requests were sent from this workspace. Wait a moment, then try again.",
+  );
+  expect(friendlyAgentError("Agent stream failed (429)")).toBe(
+    "Too many requests were sent from this workspace. Wait a moment, then try again.",
+  );
+});
+
+describe("shownAgentError", () => {
+  it("replaces a bare status and keeps a specific sentence", () => {
+    const send = "Failed to send message";
+    expect(shownAgentError(new Error("Request failed: 500 Internal Server Error"), send)).toBe(
+      send,
+    );
+    expect(shownAgentError(new Error("Request failed (500)"), send)).toBe(send);
+    expect(
+      shownAgentError(new Error("Failed to load file (500)"), "Could not load this file."),
+    ).toBe("Could not load this file.");
+    expect(
+      shownAgentError(new Error("Failed to save file (500)"), "Could not save this file."),
+    ).toBe("Could not save this file.");
+    expect(
+      shownAgentError(new Error("Could not delete agent (500)"), "Could not delete this agent."),
+    ).toBe("Could not delete this agent.");
+    expect(shownAgentError(new Error("The agent was canceled."), send)).toBe(
+      "The agent was canceled.",
+    );
+    expect(shownAgentError(new Error("Request failed: 429 Too Many Requests"), send)).toBe(
+      "Too many requests were sent from this workspace. Wait a moment, then try again.",
+    );
+    expect(shownAgentError("nope", "Could not load conversation")).toBe(
+      "Could not load conversation",
+    );
+  });
 });
 
 describe("conversationFromAgentEvents", () => {

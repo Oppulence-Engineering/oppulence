@@ -18,14 +18,17 @@ import type {
 
 const IdentityListSchema = z.object({
   candidates: z.array(z.unknown()).optional(),
+  hasMore: z.boolean().optional(),
 });
 
 const AttentionListSchema = z.object({
   items: z.array(z.unknown()).optional(),
+  hasMore: z.boolean().optional(),
 });
 
 const PersonListSchema = z.object({
   persons: z.array(z.unknown()).optional(),
+  hasMore: z.boolean().optional(),
 });
 
 const SemanticSearchSchema = z.object({
@@ -49,7 +52,8 @@ export type SemanticMatch = z.infer<typeof SemanticSearchSchema>["matches"][numb
 function relationshipsPath(filters: RelationshipListScope = {}): string {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(filters)) {
-    if (value) params.set(key, value);
+    if (value === undefined || value === "" || value === 0) continue;
+    params.set(key, String(value));
   }
   const query = params.size ? `?${params.toString()}` : "";
   return `/relationships${query}`;
@@ -60,20 +64,47 @@ function graphPath(input: RelationshipGraphScope): string {
   if (input.relationshipId) params.set("relationshipId", input.relationshipId);
   if (input.depth) params.set("depth", String(input.depth));
   if (input.asOf) params.set("asOf", input.asOf);
+  if (input.offset && input.offset > 0) params.set("offset", String(input.offset));
+  if (input.observationOffset && input.observationOffset > 0) {
+    params.set("observationOffset", String(input.observationOffset));
+  }
   return `/relationships/graph?${params.toString()}`;
+}
+
+export type RelationshipDirectoryPage = {
+  relationships: RevenueRelationship[];
+  hasMore: boolean;
+};
+
+/** Older callers and tests still hand back a bare list. A page object is the live API. */
+export function relationshipRows(
+  page: RelationshipDirectoryPage | readonly RevenueRelationship[] | undefined,
+): RevenueRelationship[] {
+  if (!page) return [];
+  return Array.isArray(page) ? [...page] : page.relationships;
+}
+
+export function relationshipPageHasMore(
+  page: RelationshipDirectoryPage | readonly RevenueRelationship[] | undefined,
+): boolean {
+  if (!page || Array.isArray(page)) return false;
+  return page.hasMore;
 }
 
 export async function loadRelationships(
   request: RequestJsonFn,
   filters: RelationshipListScope = {},
   signal?: AbortSignal,
-): Promise<RevenueRelationship[]> {
+): Promise<RelationshipDirectoryPage> {
   const body = await request({
     path: relationshipsPath(filters),
     schema: ListRelationships200Response,
     signal,
   });
-  return (body.relationships ?? []) as RevenueRelationship[];
+  return {
+    relationships: (body.relationships ?? []) as RevenueRelationship[],
+    hasMore: Boolean(body.hasMore),
+  };
 }
 
 async function requestGraph(
@@ -107,7 +138,7 @@ export async function loadRelationshipGraph(
       /relationshipId/i.test(error.message);
     if (!legacyPortfolioEndpoint) throw error;
 
-    const relationships = await loadRelationships(request, {}, signal);
+    const relationships = relationshipRows(await loadRelationships(request, {}, signal));
     const graphResults = await mapSettledWithConcurrency(relationships, 4, (relationship) =>
       requestGraph(
         request,
@@ -120,7 +151,7 @@ export async function loadRelationshipGraph(
     );
     if (failures.length > 0) {
       throw new DashboardRequestError(
-        `Could not build a complete portfolio graph: ${failures.length} of ${relationships.length} relationship requests failed.`,
+        `Could not build the full company graph: ${failures.length} of ${relationships.length} company graphs failed.`,
         502,
         "partial_relationship_graph",
       );
@@ -164,33 +195,101 @@ export async function loadRelationshipGraph(
   }
 }
 
+/** One page of the duplicate inbox. The next page uses the same size as an offset. */
+export const IDENTITY_CANDIDATE_PAGE = 50;
+
+/** One duplicate-inbox page. hasMore is the server's look past this page. */
+export type IdentityCandidatePage = {
+  candidates: RelationshipIdentityCandidate[];
+  hasMore: boolean;
+};
+
+/** Rows from an inbox page. A bare array is a test fixture that has no flag. */
+export function identityCandidateRows(
+  page: IdentityCandidatePage | readonly RelationshipIdentityCandidate[] | null | undefined,
+): RelationshipIdentityCandidate[] {
+  if (!page) return [];
+  if (Array.isArray(page)) return [...page];
+  return page.candidates ?? [];
+}
+
+/** True only when the server says another duplicate exists past this page. */
+export function identityCandidatePageHasMore(
+  page: IdentityCandidatePage | readonly RelationshipIdentityCandidate[] | null | undefined,
+): boolean {
+  if (!page || Array.isArray(page)) return false;
+  return Boolean(page.hasMore);
+}
+
 export async function loadIdentityCandidates(
   request: RequestJsonFn,
   status = "pending",
   relationshipId?: string,
   signal?: AbortSignal,
-): Promise<RelationshipIdentityCandidate[]> {
-  const params = new URLSearchParams({ status });
+  offset = 0,
+): Promise<IdentityCandidatePage> {
+  const params = new URLSearchParams({
+    status,
+    limit: String(IDENTITY_CANDIDATE_PAGE),
+  });
   if (relationshipId) params.set("relationshipId", relationshipId);
+  if (offset > 0) params.set("offset", String(offset));
   const body = await request({
     path: `/relationship-identity-candidates?${params.toString()}`,
     schema: IdentityListSchema,
     signal,
   });
-  return (body.candidates ?? []) as RelationshipIdentityCandidate[];
+  return {
+    candidates: (body.candidates ?? []) as RelationshipIdentityCandidate[],
+    hasMore: Boolean(body.hasMore),
+  };
+}
+
+/** The attention API caps a page at 100 and defaults to 50. The queue asks for that default, then the next offset. */
+export const ATTENTION_PAGE_SIZE = 50;
+
+export type AttentionPage = {
+  items: RelationshipAttentionItem[];
+  hasMore: boolean;
+};
+
+/** Rows from a queue page. A bare array is a test fixture that has no flag. */
+export function attentionRows(
+  page: AttentionPage | readonly RelationshipAttentionItem[] | null | undefined,
+): RelationshipAttentionItem[] {
+  if (!page) return [];
+  if (Array.isArray(page)) return [...page];
+  return page.items ?? [];
+}
+
+/** True only when the server says another company exists past this page. */
+export function attentionPageHasMore(
+  page: AttentionPage | readonly RelationshipAttentionItem[] | null | undefined,
+): boolean {
+  if (!page || Array.isArray(page)) return false;
+  return Boolean(page.hasMore);
 }
 
 export async function loadRelationshipAttention(
   request: RequestJsonFn,
   status = "open",
   signal?: AbortSignal,
-): Promise<RelationshipAttentionItem[]> {
+  offset = 0,
+): Promise<AttentionPage> {
+  const params = new URLSearchParams({
+    status,
+    limit: String(ATTENTION_PAGE_SIZE),
+  });
+  if (offset > 0) params.set("offset", String(offset));
   const body = await request({
-    path: `/relationship-attention?status=${encodeURIComponent(status)}`,
+    path: `/relationship-attention?${params.toString()}`,
     schema: AttentionListSchema,
     signal,
   });
-  return (body.items ?? []) as RelationshipAttentionItem[];
+  return {
+    items: (body.items ?? []) as RelationshipAttentionItem[],
+    hasMore: Boolean(body.hasMore),
+  };
 }
 
 export async function loadSemanticSearch(
@@ -209,7 +308,7 @@ export async function loadSemanticSearch(
 export function fetchRelationships(
   filters: RelationshipListScope = {},
   signal?: AbortSignal,
-): Promise<RevenueRelationship[]> {
+): Promise<RelationshipDirectoryPage> {
   return loadRelationships(requestJson, filters, signal);
 }
 
@@ -224,15 +323,17 @@ export function fetchIdentityCandidates(
   status = "pending",
   relationshipId?: string,
   signal?: AbortSignal,
-): Promise<RelationshipIdentityCandidate[]> {
-  return loadIdentityCandidates(requestJson, status, relationshipId, signal);
+  offset = 0,
+): Promise<IdentityCandidatePage> {
+  return loadIdentityCandidates(requestJson, status, relationshipId, signal, offset);
 }
 
 export function fetchRelationshipAttention(
   status = "open",
   signal?: AbortSignal,
-): Promise<RelationshipAttentionItem[]> {
-  return loadRelationshipAttention(requestJson, status, signal);
+  offset = 0,
+): Promise<AttentionPage> {
+  return loadRelationshipAttention(requestJson, status, signal, offset);
 }
 
 export function fetchSemanticSearch(
@@ -242,21 +343,55 @@ export function fetchSemanticSearch(
   return loadSemanticSearch(requestJson, query, signal);
 }
 
+/** The people API refuses a larger page. The next rows use this same size as an offset. */
+export const PERSON_PAGE_SIZE = 500;
+
+export type PersonPage = {
+  persons: RelationshipPerson[];
+  hasMore: boolean;
+};
+
+/** Rows from a people page. A bare array is a test fixture that has no flag. */
+export function personRows(
+  page: PersonPage | readonly RelationshipPerson[] | null | undefined,
+): RelationshipPerson[] {
+  if (!page) return [];
+  if (Array.isArray(page)) return [...page];
+  return page.persons ?? [];
+}
+
+/** True only when the server says another person exists past this page. */
+export function personPageHasMore(
+  page: PersonPage | readonly RelationshipPerson[] | null | undefined,
+): boolean {
+  if (!page || Array.isArray(page)) return false;
+  return Boolean(page.hasMore);
+}
+
 export async function loadPersons(
   request: RequestJsonFn,
   query = "",
   signal?: AbortSignal,
-): Promise<RelationshipPerson[]> {
-  const params = new URLSearchParams({ limit: "500" });
+  offset = 0,
+): Promise<PersonPage> {
+  const params = new URLSearchParams({ limit: String(PERSON_PAGE_SIZE) });
   if (query.trim()) params.set("q", query.trim());
+  if (offset > 0) params.set("offset", String(offset));
   const body = await request({
     path: `/relationship-persons?${params.toString()}`,
     schema: PersonListSchema,
     signal,
   });
-  return (body.persons ?? []) as RelationshipPerson[];
+  return {
+    persons: (body.persons ?? []) as RelationshipPerson[],
+    hasMore: Boolean(body.hasMore),
+  };
 }
 
-export function fetchPersons(query = "", signal?: AbortSignal): Promise<RelationshipPerson[]> {
-  return loadPersons(requestJson, query, signal);
+export function fetchPersons(
+  query = "",
+  signal?: AbortSignal,
+  offset = 0,
+): Promise<PersonPage> {
+  return loadPersons(requestJson, query, signal, offset);
 }

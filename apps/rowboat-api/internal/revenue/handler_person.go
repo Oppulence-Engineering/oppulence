@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
@@ -27,16 +28,24 @@ func (h *Handler) ListPersons(w http.ResponseWriter, r *http.Request) {
 		}
 		filter.Limit = limit
 	}
-	people, err := h.svc.ListPersons(r.Context(), u, filter)
+	if raw := strings.TrimSpace(r.URL.Query().Get("offset")); raw != "" {
+		n, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		filter.Offset = n
+	}
+	page, err := h.svc.ListPersons(r.Context(), u, filter)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	out := make([]*personDTO, 0, len(people))
-	for _, p := range people {
+	out := make([]*personDTO, 0, len(page.Persons))
+	for _, p := range page.Persons {
 		out = append(out, personToDTO(p))
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"persons": out})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"persons": out, "hasMore": page.HasMore})
 }
 
 // GetPerson returns one canonical person.

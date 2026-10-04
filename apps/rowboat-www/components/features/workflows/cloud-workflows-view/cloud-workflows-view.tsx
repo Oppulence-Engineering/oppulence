@@ -15,11 +15,11 @@ import {
   Play,
   Plus,
   Robot,
-  SlidersHorizontal,
   Warning,
   XCircle,
 } from "@/lib/icons";
 
+import { friendlyAgentError } from "@/lib/agents/agent-history";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
 import {
@@ -57,6 +57,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@oppulence/ui/componen
 import { Textarea } from "@oppulence/ui/components/textarea";
 import { WorkspaceEmptyState } from "@/components/features/revenue/shared/shared";
 import { VisualWorkflowBuilder } from "@/components/features/workflows/visual-workflow-builder/visual-workflow-builder";
+import { subscribeWorkflowLibrary } from "@/lib/dashboard/workflow-library-request";
 import {
   useWorkflowRuns,
   useWorkflowTasks,
@@ -67,15 +68,26 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   cancelCloudRun,
   compileVisualWorkflow,
+  cronClockLabel,
   createCloudTask,
+  deleteCloudTask,
   ensureFirstPartyWorkflows,
   getCloudRun,
   getCloudSchedule,
   instantiateCloudTemplate,
   listCloudRunEvents,
   retryCloudRun,
+  transcriptNextEventsLabel,
   taskCron,
   taskVisualWorkflow,
+  readableEnum,
+  triggerLabel,
+  runEventBody,
+  runEventLabel,
+  runReference,
+  scheduleHealthLabel,
+  scheduleMomentLabel,
+  workflowListSummary,
   triggerCloudRun,
   updateCloudTask,
   type CloudRun,
@@ -88,10 +100,66 @@ import {
   type VisualWorkflowDefinition,
   type WorkflowActionKind,
 } from "@/lib/workflows/cloud-workflows";
+import {
+  workflowProductDescription,
+  workflowProductName,
+} from "@/lib/workflows/workflow-product-copy";
+import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { cn } from "@/lib/utils";
 
 type FilterValue<T extends string> = T | "all";
 type EditorTab = "editor" | "runs" | "settings";
+
+/**
+ * A loaded page is not the whole history. The tab says 50+ while another
+ * page exists, and it omits a count until the workflow's own page arrives.
+ */
+export function workflowRunCountLabel(count: number, hasMore: boolean, settled = true): string {
+  if (!settled) return "";
+  if (hasMore) return `${count}+`;
+  return String(count);
+}
+
+/** The count used to be glued onto the raw tab id, so the name was "runs16". */
+export function workflowEditorTabName(
+  value: EditorTab,
+  runCount: number,
+  hasMore = false,
+  settled = true,
+): string {
+  if (value === "runs") {
+    const count = workflowRunCountLabel(runCount, hasMore, settled);
+    return count ? `Runs, ${count}` : "Runs";
+  }
+  if (value === "settings") return "Settings";
+  return "Editor";
+}
+
+/**
+ * Where a workflows link opens.
+ * A sidebar run carries both a workflow slug and a run id. The slug used to
+ * win, so the click opened the canvas and the failure stayed hidden.
+ */
+export function workflowOpeningScreen(
+  focus: "scheduled" | "runs",
+  initialSlug?: string,
+  initialRunId?: string,
+): "library" | "editor" | "runs" {
+  if (initialRunId) return "runs";
+  if (initialSlug) return "editor";
+  if (focus === "runs") return "runs";
+  return "library";
+}
+
+const EDITOR_TAB_LABEL: Record<EditorTab, string> = {
+  editor: "Editor",
+  runs: "Runs",
+  settings: "Settings",
+};
+
+/** Active panes fill the editor and clip, so a long run list can scroll to Load more. */
+const EDITOR_PANE_CLASS =
+  "min-h-0 flex-1 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col";
 
 const terminalStatuses = new Set<CloudRunStatus>(["succeeded", "failed", "stopped"]);
 const defaultVisualWorkflow = (): VisualWorkflowDefinition => ({
@@ -105,16 +173,261 @@ const defaultVisualWorkflow = (): VisualWorkflowDefinition => ({
   },
 });
 
+/**
+ * Run rows sit beside a schedule that fires in UTC. The library and the next-run
+ * line already show the UTC instant when the viewer's clock differs; these rows
+ * used a local-only clock, so a New York teammate saw "4:00 AM" for an 8:00 AM UTC run.
+ */
 function formatDate(value?: string | null): string {
-  if (!value) return "—";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(parsed);
+  return scheduleMomentLabel(value);
+}
+
+/**
+ * Last run on the library row. The runs query is one page of the newest runs,
+ * so a workflow that runs once a day falls off that page. Looking the slug up
+ * there then says Never, even though the task record still has lastRunAt.
+ * A run that is already on the page can be newer than that stored moment, so
+ * the later of the two is the one shown.
+ */
+export function workflowLastRunAt(
+  task: { lastRunAt?: string | null },
+  pageRunAt?: string | null,
+): string | null {
+  const stored = task.lastRunAt?.trim() ?? "";
+  const paged = pageRunAt?.trim() ?? "";
+  if (!stored) return paged || null;
+  if (!paged) return stored;
+  const storedTime = Date.parse(stored);
+  const pagedTime = Date.parse(paged);
+  if (Number.isNaN(storedTime)) return paged;
+  if (Number.isNaN(pagedTime)) return stored;
+  return pagedTime > storedTime ? paged : stored;
+}
+
+/**
+ * The library row used to show only the clock next to Live. A run can fail,
+ * or still be going, and leave that clock looking successful. The mark
+ * belongs to the moment on the row: the newest page hit when it is at least
+ * as new as the stored time, otherwise the error kept on the task. That
+ * error is empty when the latest recorded run did not fail. The row shows
+ * Failed, Stopped, Running, or Queued beside the clock. The friendly reason
+ * stays under a failure. The scheduler payload stays off the row.
+ */
+export function workflowLastRunMark(
+  task: { lastRunAt?: string | null; lastRunError?: string | null },
+  pageRun?: { createdAt?: string | null; status?: string | null } | null,
+): string | null {
+  const shown = workflowLastRunAt(task, pageRun?.createdAt);
+  if (!shown) return null;
+  const pageTime = Date.parse(pageRun?.createdAt?.trim() ?? "");
+  const storedTime = Date.parse(task.lastRunAt?.trim() ?? "");
+  const pageIsShown =
+    Boolean(pageRun) &&
+    !Number.isNaN(pageTime) &&
+    (Number.isNaN(storedTime) || pageTime >= storedTime);
+  if (pageIsShown) return pageRunStatusMark(pageRun?.status);
+  return task.lastRunError?.trim() ? "Failed" : null;
+}
+
+function pageRunStatusMark(status: string | null | undefined): string | null {
+  if (status === "failed") return "Failed";
+  if (status === "stopped") return "Stopped";
+  if (status === "running") return "Running";
+  if (status === "queued") return "Queued";
+  return null;
+}
+
+/** A run that has not finished has no completed time. That is not a blank clock. */
+export function runCompletedLabel(status: string, completedAt?: string | null): string {
+  const shown = scheduleMomentLabel(completedAt);
+  if (shown !== "—") return shown;
+  if (status === "queued" || status === "running") return "Not finished";
+  return "—";
+}
+
+type WorkflowLastRunSource = {
+  createdAt?: string | null;
+  status?: string | null;
+  error?: string | null;
+  errorCode?: string | null;
+};
+
+/**
+ * Failed is the mark. The sentence under it is why, in the same words as the
+ * runs list. A later successful run clears a stale stored error. The raw
+ * scheduler text is rewritten before it is shown or searched.
+ */
+export function workflowLastRunReason(
+  task: { lastRunAt?: string | null; lastRunError?: string | null },
+  pageRun?: WorkflowLastRunSource | null,
+): string {
+  if (workflowLastRunMark(task, pageRun) !== "Failed") return "";
+  const pageTime = Date.parse(pageRun?.createdAt?.trim() ?? "");
+  const storedTime = Date.parse(task.lastRunAt?.trim() ?? "");
+  const pageIsShown =
+    Boolean(pageRun) &&
+    !Number.isNaN(pageTime) &&
+    (Number.isNaN(storedTime) || pageTime >= storedTime);
+  const pageError = pageRun?.error?.trim() ?? "";
+  const storedError = task.lastRunError?.trim() ?? "";
+  const raw = pageIsShown && pageError ? pageError : storedError;
+  if (!raw) return "";
+  const friendly = friendlyAgentError(raw, "run");
+  if (friendly !== raw) return friendly;
+  const code = pageIsShown && pageError ? pageRun?.errorCode?.trim() : "";
+  return code ? `${code}: ${raw}` : raw;
+}
+
+/** Settings already says the schedule is in sync. That is not the last run. */
+export function workflowSettingsLastRun(
+  task: { lastRunAt?: string | null; lastRunError?: string | null },
+  pageRun?: { createdAt?: string | null; status?: string | null } | null,
+): string {
+  const at = workflowLastRunAt(task, pageRun?.createdAt);
+  if (!at) return "Never";
+  const when = scheduleMomentLabel(at);
+  const mark = workflowLastRunMark(task, pageRun);
+  return mark ? `${when} · ${mark}` : when;
+}
+
+/**
+ * The account run list is the newest page across every workflow. A workflow
+ * that runs once a day falls off that page, so its Runs tab said there were
+ * no runs while the library still showed the failed last run. The workflow's
+ * own page is the list. Until that page arrives, the account page is only a
+ * preview and must not be described as empty.
+ */
+export function workflowRunsForEditor<T extends { slug: string }>(
+  slug: string,
+  accountRuns: readonly T[],
+  workflowRuns: readonly T[] | null,
+  hasMore = false,
+): { runs: T[]; settled: boolean; hasMore: boolean } {
+  if (workflowRuns) {
+    return {
+      runs: workflowRuns.filter((run) => run.slug === slug),
+      settled: true,
+      hasMore,
+    };
+  }
+  return { runs: accountRuns.filter((run) => run.slug === slug), settled: false, hasMore: false };
+}
+
+/** Status and trigger as words. The runs list used to show only an icon, so
+ * every row looked the same until you opened it. */
+export function runRowDetail(status: string, trigger: string): string {
+  return `${readableEnum(status)} · ${triggerLabel(trigger)}`;
+}
+
+/** The visible label is the current choice. The accessible name also says
+ * which filter it is, because a combobox does not name itself from that text. */
+export function runStatusFilterName(value: string): string {
+  return comboboxFilterName("Status", value === "all" ? "All statuses" : readableEnum(value));
+}
+
+export function runTriggerFilterName(value: string): string {
+  return comboboxFilterName("Trigger", value === "all" ? "All triggers" : triggerLabel(value));
+}
+
+/** A failed workflow list is not a library the workspace has not created yet. */
+export function workflowListFailureCopy(): string {
+  return "Workflows could not load. Try again.";
+}
+
+/** A failed run list is not a filter that matched nothing. */
+export function workflowRunsFailureCopy(): string {
+  return "Runs could not load. Try again.";
+}
+
+export function workflowRunsRefreshCopy(): string {
+  return "Could not refresh runs. Try again.";
+}
+
+/** A failed template list is not a catalog the workspace has not created yet. */
+export function workflowTemplatesFailureCopy(): string {
+  return "Templates could not load. Try again.";
+}
+
+export function workflowTemplatesRefreshCopy(): string {
+  return "Could not refresh templates. Try again.";
+}
+
+export function workflowRefreshCopy(): string {
+  return "Could not refresh workflows. Try again.";
+}
+
+/** The library banner names the request that failed. A generic body is not a
+ * reason to say the workflow list never arrived. */
+export function workflowLibraryNotice(input: {
+  tasksError: unknown;
+  taskCount: number;
+  tasksLoaded?: boolean;
+  templatesError: unknown;
+  templateCount: number;
+  templatesLoaded?: boolean;
+  runsError: unknown;
+  runCount: number;
+  runsLoaded?: boolean;
+}): string | null {
+  if (input.tasksError) {
+    return workflowQueryNotice(
+      input.tasksError,
+      input.tasksLoaded ?? input.taskCount > 0,
+      workflowRefreshCopy(),
+      input.taskCount === 0 ? null : "Could not load workflows",
+    );
+  }
+  if (input.templatesError) {
+    return workflowQueryNotice(
+      input.templatesError,
+      input.templatesLoaded ?? input.templateCount > 0,
+      workflowTemplatesRefreshCopy(),
+      workflowTemplatesFailureCopy(),
+    );
+  }
+  if (input.runsError) {
+    return workflowQueryNotice(
+      input.runsError,
+      input.runsLoaded ?? input.runCount > 0,
+      workflowRunsRefreshCopy(),
+      workflowRunsFailureCopy(),
+    );
+  }
+  return null;
+}
+
+function workflowQueryNotice(
+  error: unknown,
+  loaded: boolean,
+  refreshCopy: string,
+  failureCopy: string | null,
+): string | null {
+  if (error instanceof Error) {
+    const friendly = friendlyAgentError(error.message);
+    if (friendly !== error.message) return friendly;
+  }
+  if (loaded) return refreshCopy;
+  return failureCopy;
+}
+
+export function runWhereFilterName(value: string): string {
+  const current = value === "api" ? "Cloud" : value === "desktop" ? "Desktop" : "Cloud or desktop";
+  return comboboxFilterName("Where it runs", current);
+}
+
+/**
+ * A failed run should say why in the list. Opening it is not required to learn
+ * that. A run that is still going, or one that succeeded, does not keep an
+ * earlier failure sentence beside its status.
+ */
+export function runFailureLine(
+  run: Pick<CloudRun, "error" | "errorCode"> & { status?: string },
+): string | null {
+  if (run.status === "running" || run.status === "queued" || run.status === "succeeded") {
+    return null;
+  }
+  if (!run.error) return null;
+  return runFailureCopy(run as CloudRun);
 }
 
 function statusTone(status: string): string {
@@ -134,6 +447,19 @@ function statusTone(status: string): string {
   }
 }
 
+function RunRowFailure({ run }: { run: CloudRun }) {
+  const failure = runFailureLine(run);
+  if (!failure) return null;
+  return (
+    <CardDescription
+      className="mt-0.5 line-clamp-3 text-[11px] leading-4 text-destructive"
+      title={failure}
+    >
+      {failure}
+    </CardDescription>
+  );
+}
+
 function StatusIcon({ status }: { status: string }) {
   if (status === "succeeded" || status === "current")
     return <CheckCircle className="size-4" weight="fill" />;
@@ -143,73 +469,195 @@ function StatusIcon({ status }: { status: string }) {
   return <Pause className="size-4" />;
 }
 
-function eventText(event: CloudRunEvent): string {
-  if (typeof event.event === "string") return event.event;
-  if (event.event && typeof event.event === "object") {
-    const record = event.event as Record<string, unknown>;
-    for (const key of ["message", "summary", "error", "content"]) {
-      const value = record[key];
-      if (typeof value === "string") return value;
-    }
+/**
+ * A status code is not an explanation. The fallback names the action. A 401,
+ * a 429, or a credit failure still uses that sentence.
+ */
+export function shownWorkflowError(cause: unknown, fallback: string): string {
+  const message = cause instanceof Error ? cause.message.trim() : "";
+  if (!message) return fallback;
+  const friendly = friendlyAgentError(message);
+  if (friendly !== message) return friendly;
+  if (
+    /^(?:Workflow request failed \(\d+\)|Could not remove the workflow \(\d+\)\.)$/.test(message)
+  ) {
+    return fallback;
   }
-  return JSON.stringify(event.event, null, 2) ?? String(event.event);
+  return message;
 }
 
-function scheduleLabel(task: CloudTask): string {
-  const cron = taskCron(task);
-  const labels: Record<string, string> = {
-    "*/15 * * * *": "Every 15 minutes",
-    "*/30 * * * *": "Every 30 minutes",
-    "0 9 * * *": "Every day at 9:00 AM",
-    "0 9 * * 1-5": "Weekdays at 9:00 AM",
-    "0 8 * * *": "Every day at 8:00 AM",
-    "0 8 * * 1": "Every Monday at 8:00 AM",
-  };
-  if (cron) return labels[cron] ?? "Recurring schedule";
+/** A missing schedule is not "no next run". The em dash stays for a real empty clock. */
+export function scheduleNextRunLabel(
+  nextDueAt: string | null | undefined,
+  missing: boolean,
+): string {
+  if (missing) return "Could not load the next run.";
+  return scheduleMomentLabel(nextDueAt);
+}
+
+/** A 401 or 429 still uses the provider sentence. Any other miss names load versus refresh. */
+export function scheduleLoadNotice(cause: unknown, hadSchedule: boolean): string {
+  const raw = cause instanceof Error ? cause.message : "";
+  if (raw) {
+    const friendly = friendlyAgentError(raw);
+    if (friendly !== raw) return friendly;
+  }
+  return hadSchedule ? "Could not refresh the schedule. Try again." : "Could not load schedule";
+}
+
+/** A transcript that already arrived stays on screen. The sentence says which request missed. */
+export function transcriptLoadNotice(cause: unknown, hadTranscript: boolean): string {
+  const raw = cause instanceof Error ? cause.message : "";
+  if (raw) {
+    const friendly = friendlyAgentError(raw);
+    if (friendly !== raw) return friendly;
+  }
+  return hadTranscript
+    ? "Could not refresh the transcript. Try again."
+    : "The transcript could not be loaded.";
+}
+
+function runFailureCopy(run: CloudRun): string {
+  const message = run.error ?? "";
+  const friendly = friendlyAgentError(message, "run");
+  // The stored code is an API token such as llm_call_failed. Once the message
+  // is rewritten, prefixing that token puts the internal name back on screen.
+  if (friendly !== message) return friendly;
+  return run.errorCode ? `${run.errorCode}: ${message}` : message;
+}
+
+export function scheduleLabel(task: CloudTask): string {
   const visual = taskVisualWorkflow(task);
+  // Risk and profile triggers are checked on a 15-minute poll. That cron is
+  // how the cloud wakes up; the library and settings still name the condition
+  // the teammate chose. A real schedule is the only trigger whose clock is
+  // the answer.
   switch (visual?.trigger.kind) {
     case "communication":
-      return "When communication arrives";
+      return "When mail or a message arrives";
     case "profile-change":
-      return "When a profile is enriched";
+      return "When a company or person is updated";
     case "relationship-risk":
-      return "When relationship risk changes";
+      return "When company risk changes";
     case "commitment-risk":
-      return "When a commitment needs recovery";
-    default:
+      return "When a promise needs a follow-up";
+    case "manual":
       return "Manual start";
+    default:
+      break;
   }
+  const cron =
+    visual?.trigger.kind === "schedule"
+      ? visual.trigger.cronExpr?.trim() || taskCron(task)
+      : taskCron(task);
+  const intervals: Record<string, string> = {
+    "*/15 * * * *": "Every 15 minutes",
+    "*/30 * * * *": "Every 30 minutes",
+  };
+  if (cron) return intervals[cron] ?? cronClockLabel(cron);
+  return "Manual start";
 }
 
-function inferredManagedActions(task: CloudTask): WorkflowActionKind[] {
-  if (task.slug.includes("post-meeting"))
-    return ["review-account", "update-crm-note", "create-crm-task"];
-  if (task.slug.includes("pre-brief")) return ["review-account", "write-brief"];
-  if (task.slug.includes("recommendation")) return ["review-account", "create-crm-task"];
-  if (task.slug.includes("connector")) return ["review-account", "write-brief"];
-  return ["review-account", "write-brief"];
-}
-
-function workflowForTask(task: CloudTask): VisualWorkflowDefinition {
+export function workflowForTask(
+  task: CloudTask,
+  templates: readonly Pick<CloudTaskTemplate, "slug" | "taskSlug" | "description">[] = [],
+): VisualWorkflowDefinition {
   const visual = taskVisualWorkflow(task);
   if (visual) return visual;
+  // These rows store instructions, not a canvas. Drawing the same two steps
+  // on every one made Source health look like it reviews a company.
   return {
     version: 1,
     trigger: taskCron(task) ? { kind: "schedule", cronExpr: taskCron(task) } : { kind: "manual" },
-    actions: inferredManagedActions(task),
-    objective: `${task.name} keeps relationship intelligence current and surfaces the next evidence-backed action.`,
+    actions: [],
+    objective: workflowListSummary(task, templates),
   };
 }
 
-function workflowStepCount(task: CloudTask): number {
-  return workflowForTask(task).actions.length + 1;
+/**
+ * The library column counts canvas actions. The trigger already has its own
+ * Starts column, so adding it here made a two-step workflow read as three.
+ * A maintained workflow has no canvas, so a step count would be invented.
+ */
+/**
+ * System workflows have no canvas. Pause and run-on-demand are the actions a
+ * teammate can take; "inspect the steps" would describe a surface that is not there.
+ */
+export function maintainedWorkflowNotice(): string {
+  return "Oppulence maintains the steps for this workflow. You can pause it and run it on demand.";
+}
+
+/**
+ * Settings can rename a workspace workflow. A maintained workflow locks the
+ * name, and the schedule is never edited on this page.
+ */
+export function workflowSettingsIntro(editable: boolean): string {
+  if (editable) {
+    return "Change the name. The schedule is set on the workflow, and Oppulence Cloud keeps it running.";
+  }
+  return "Oppulence keeps the name and the schedule. This page shows when the workflow runs.";
+}
+
+/** This dialog only asks for a name and an objective. The schedule and steps are on the next screen. */
+export function createWorkflowIntro(): string {
+  return "Name the workflow and what it should accomplish. The schedule and the steps come next.";
+}
+
+/** A workspace workflow can be removed. A maintained one can only be paused. */
+export function deleteWorkflowConfirmCopy(name: string): string {
+  const title = name.trim() || "this workflow";
+  return `Remove ${title} and its runs? This cannot be undone.`;
+}
+
+export function workflowStepLabel(task: CloudTask): string {
+  const visual = taskVisualWorkflow(task);
+  if (!visual) return "Maintained";
+  const steps = visual.actions.length;
+  return steps === 1 ? "1 step" : `${steps} steps`;
+}
+
+/**
+ * The library search used to read the name, schedule, and subtitle. The row
+ * also prints Live or Draft, the step count, the last-run clock (and Failed
+ * beside it), the friendly failure sentence, and Oppulence on a maintained
+ * workflow. Those words have to find the workflow.
+ */
+export function workflowLibrarySearchText(
+  task: CloudTask,
+  templates: readonly Pick<CloudTaskTemplate, "slug" | "taskSlug" | "description">[] = [],
+  pageRun?: WorkflowLastRunSource | null,
+): string {
+  const lastRunAt = workflowLastRunAt(task, pageRun?.createdAt);
+  const mark = workflowLastRunMark(task, pageRun);
+  const reason = workflowLastRunReason(task, pageRun);
+  const lastRun = lastRunAt
+    ? `${scheduleMomentLabel(lastRunAt)}${mark ? ` · ${mark}` : ""}`
+    : "Never";
+  return [
+    taskTitle(task),
+    scheduleLabel(task),
+    workflowListSummary(task, templates),
+    workflowStepLabel(task),
+    task.active ? "Live" : "Draft",
+    task.systemManaged ? "Oppulence" : "",
+    lastRun,
+    reason,
+  ].join(" ");
 }
 
 function CreateWorkflowDialog({
   templates,
+  templatesFailed = false,
+  templatesStale = false,
+  templatesLoading = false,
+  onRetryTemplates,
   onCreated,
 }: {
   templates: CloudTaskTemplate[];
+  templatesFailed?: boolean;
+  templatesStale?: boolean;
+  templatesLoading?: boolean;
+  onRetryTemplates?: () => void;
   onCreated: (task: CloudTask) => void;
 }) {
   const [open, setOpen] = React.useState(false);
@@ -235,7 +683,7 @@ function CreateWorkflowDialog({
       setName("");
       setObjective("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not create workflow");
+      setError(shownWorkflowError(cause, "Could not create workflow"));
     } finally {
       setBusy(false);
     }
@@ -249,7 +697,7 @@ function CreateWorkflowDialog({
       onCreated(task);
       setOpen(false);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not add template");
+      setError(shownWorkflowError(cause, "Could not add template"));
     } finally {
       setBusy(false);
     }
@@ -265,12 +713,10 @@ function CreateWorkflowDialog({
       <DialogContent className="rounded-none sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Create workflow</DialogTitle>
-          <DialogDescription>
-            Start with a focused objective, then configure the trigger and actions on the canvas.
-          </DialogDescription>
+          <DialogDescription>{createWorkflowIntro()}</DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="custom">
-          <TabsList className="w-full rounded-none" variant="line">
+          <TabsList aria-label="How to start" className="w-full rounded-none" variant="line">
             <TabsTrigger value="custom">Start from scratch</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
           </TabsList>
@@ -281,7 +727,7 @@ function CreateWorkflowDialog({
                 className="rounded-none"
                 id="workflow-name"
                 onChange={(event) => setName(event.target.value)}
-                placeholder="Recover at-risk commitments"
+                placeholder="Follow up when a promise slips"
                 value={name}
               />
             </div>
@@ -291,7 +737,7 @@ function CreateWorkflowDialog({
                 className="min-h-28 rounded-none"
                 id="workflow-objective"
                 onChange={(event) => setObjective(event.target.value)}
-                placeholder="When a customer promise is at risk, review the account and draft a concise recovery email for approval."
+                placeholder="When a promise is about to slip, review the company and draft a follow-up that waits for your approval."
                 value={objective}
               />
             </div>
@@ -302,38 +748,80 @@ function CreateWorkflowDialog({
                 disabled={busy || !name.trim() || !objective.trim()}
                 onClick={create}
               >
-                {busy ? <Spinner className="size-4" /> : <Cloud />} Create draft
+                {busy ? <Spinner className="size-4" /> : <Cloud />} Create workflow
               </Button>
             </DialogFooter>
           </TabsContent>
           <TabsContent className="pt-4" value="templates">
             <ScrollArea className="h-80 pr-3">
               <div className="divide-y divide-border border border-border">
+                {templatesStale ? (
+                  <div className="flex items-center justify-between gap-3 p-3">
+                    <p className="text-xs text-muted-foreground">
+                      {workflowTemplatesRefreshCopy()}
+                    </p>
+                    <Button
+                      onClick={onRetryTemplates}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      Try again
+                    </Button>
+                  </div>
+                ) : null}
                 {templates
                   .filter((template) => !template.firstParty)
-                  .map((template) => (
-                    <div className="flex items-start justify-between gap-4 p-3" key={template.slug}>
-                      <div>
-                        <p className="text-[13px] font-medium">{template.name}</p>
-                        <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
-                          {template.description}
-                        </p>
+                  .map((template) => {
+                    const name = workflowProductName(template.slug, template.name);
+                    return (
+                      <div
+                        className="flex items-start justify-between gap-4 p-3"
+                        key={template.slug}
+                      >
+                        <div>
+                          <p className="text-[13px] font-medium">{name}</p>
+                          <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
+                            {workflowProductDescription(template.slug, template.description)}
+                          </p>
+                        </div>
+                        <Button
+                          aria-label={`Use ${name}`}
+                          className="rounded-none"
+                          disabled={busy}
+                          onClick={() => void instantiate(template)}
+                          size="sm"
+                          variant="outline"
+                        >
+                          Use
+                        </Button>
                       </div>
+                    );
+                  })}
+                {templates.filter((template) => !template.firstParty).length === 0 ? (
+                  templatesFailed ? (
+                    <div className="flex flex-col items-center gap-3 p-6 text-center">
+                      <p className="text-xs text-muted-foreground">
+                        {workflowTemplatesFailureCopy()}
+                      </p>
                       <Button
-                        className="rounded-none"
-                        disabled={busy}
-                        onClick={() => void instantiate(template)}
+                        onClick={onRetryTemplates}
                         size="sm"
+                        type="button"
                         variant="outline"
                       >
-                        Use
+                        Try again
                       </Button>
                     </div>
-                  ))}
-                {templates.filter((template) => !template.firstParty).length === 0 ? (
-                  <p className="p-6 text-center text-xs text-muted-foreground">
-                    No custom templates are available yet.
-                  </p>
+                  ) : templatesLoading && !templatesStale ? (
+                    <p className="p-6 text-center text-xs text-muted-foreground">
+                      Loading templates…
+                    </p>
+                  ) : (
+                    <p className="p-6 text-center text-xs text-muted-foreground">
+                      No custom templates are available yet.
+                    </p>
+                  )
                 ) : null}
               </div>
             </ScrollArea>
@@ -345,33 +833,78 @@ function CreateWorkflowDialog({
   );
 }
 
+export type WorkflowLibrarySort = "published" | "name";
+
+/** The library calls this sort Last updated. The order is the task's update time. */
+function taskTitle(task: Pick<CloudTask, "slug" | "name">): string {
+  return workflowProductName(task.slug, task.name);
+}
+
+function runTitle(run: Pick<CloudRun, "slug">, tasks: readonly CloudTask[]): string {
+  const task = tasks.find((item) => item.slug === run.slug);
+  return taskTitle(task ?? { slug: run.slug, name: run.slug });
+}
+
+export function sortWorkflowTasks(tasks: CloudTask[], sort: WorkflowLibrarySort): CloudTask[] {
+  return [...tasks].sort((left, right) =>
+    sort === "name"
+      ? taskTitle(left).localeCompare(taskTitle(right))
+      : right.updatedAt.localeCompare(left.updatedAt),
+  );
+}
+
 function WorkflowLibrary({
   tasks,
   runs,
   templates,
+  templatesFailed = false,
+  templatesStale = false,
+  templatesLoading = false,
   busy,
+  loadFailed = false,
   onCreated,
   onRefresh,
+  onRetryLoad,
+  onRetryTemplates,
   onSelect,
 }: {
   tasks: CloudTask[];
   runs: CloudRun[];
   templates: CloudTaskTemplate[];
+  templatesFailed?: boolean;
+  templatesStale?: boolean;
+  templatesLoading?: boolean;
   busy: boolean;
+  loadFailed?: boolean;
   onCreated: (task: CloudTask) => void;
   onRefresh: () => void;
+  onRetryLoad?: () => void;
+  onRetryTemplates?: () => void;
   onSelect: (task: CloudTask) => void;
 }) {
   const [query, setQuery] = React.useState("");
-  const filtered = tasks.filter((task) =>
-    `${task.name} ${scheduleLabel(task)}`.toLowerCase().includes(query.trim().toLowerCase()),
+  const [sort, setSort] = React.useState<WorkflowLibrarySort>("published");
+  const filtered = sortWorkflowTasks(
+    tasks.filter((task) => {
+      const pageRun = runs.find((run) => run.slug === task.slug);
+      return workflowLibrarySearchText(task, templates, pageRun)
+        .toLowerCase()
+        .includes(query.trim().toLowerCase());
+    }),
+    sort,
   );
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3">
-        <Button className="rounded-none" size="sm" variant="outline">
-          Sorted by Last published
+        <Button
+          className="rounded-none"
+          onClick={() => setSort((current) => (current === "published" ? "name" : "published"))}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          Sorted by {sort === "published" ? "Last updated" : "Name"}
         </Button>
         <div className="flex items-center gap-2">
           <Button
@@ -384,10 +917,14 @@ function WorkflowLibrary({
           >
             <ArrowClockwise className={cn(busy && "animate-spin")} />
           </Button>
-          <Button className="rounded-none" disabled size="sm" variant="outline">
-            <SlidersHorizontal /> View settings
-          </Button>
-          <CreateWorkflowDialog onCreated={onCreated} templates={templates} />
+          <CreateWorkflowDialog
+            onCreated={onCreated}
+            onRetryTemplates={onRetryTemplates}
+            templates={templates}
+            templatesFailed={templatesFailed}
+            templatesStale={templatesStale}
+            templatesLoading={templatesLoading}
+          />
         </div>
       </div>
       <div className="flex h-11 shrink-0 items-center border-b border-border px-3">
@@ -417,7 +954,12 @@ function WorkflowLibrary({
                 <TableHead className="h-9 w-[110px] px-4 text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
                   Status
                 </TableHead>
-                <TableHead className="h-9 w-[150px] px-4 text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                <TableHead
+                  className={
+                    "h-9 w-[280px] px-4 text-[10px] font-medium " +
+                    "uppercase tracking-[0.1em] text-muted-foreground"
+                  }
+                >
                   Last run
                 </TableHead>
                 <TableHead className="h-9 w-8 px-4" />
@@ -425,7 +967,15 @@ function WorkflowLibrary({
             </TableHeader>
             <TableBody>
               {filtered.map((task) => {
-                const lastRun = runs.find((run) => run.slug === task.slug);
+                const pageRun = runs.find((run) => run.slug === task.slug);
+                const lastRunAt = workflowLastRunAt(task, pageRun?.createdAt);
+                const lastRunMark = workflowLastRunMark(task, pageRun);
+                const lastRunReason = workflowLastRunReason(task, pageRun);
+                const lastRunLabel = lastRunAt
+                  ? `${scheduleMomentLabel(lastRunAt)}${
+                      lastRunMark ? ` · ${lastRunMark}` : ""
+                    }`
+                  : "Never";
                 return (
                   <TableRow
                     className="cursor-pointer border-b hover:bg-muted/35"
@@ -450,7 +1000,9 @@ function WorkflowLibrary({
                             )}
                             variant="default"
                           />
-                          <Label className="truncate text-[13px] font-medium">{task.name}</Label>
+                          <Label className="truncate text-[13px] font-medium">
+                            {taskTitle(task)}
+                          </Label>
                           {task.systemManaged ? (
                             <Badge className="rounded-none text-[9px]" variant="secondary">
                               Oppulence
@@ -458,8 +1010,7 @@ function WorkflowLibrary({
                           ) : null}
                         </div>
                         <CardDescription className="ml-4.5 mt-0.5 truncate text-[11px]">
-                          {taskVisualWorkflow(task)?.objective ||
-                            "Always-on relationship intelligence"}
+                          {workflowListSummary(task, templates)}
                         </CardDescription>
                       </div>
                     </TableCell>
@@ -467,7 +1018,7 @@ function WorkflowLibrary({
                       {scheduleLabel(task)}
                     </TableCell>
                     <TableCell className="px-4 text-[12px] text-muted-foreground">
-                      {workflowStepCount(task)} steps
+                      {workflowStepLabel(task)}
                     </TableCell>
                     <TableCell className="px-4 text-[12px]">
                       <Badge
@@ -477,8 +1028,16 @@ function WorkflowLibrary({
                         {task.active ? "Live" : "Draft"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="px-4 text-[12px] text-muted-foreground">
-                      {lastRun ? formatDate(lastRun.createdAt) : "Never"}
+                    <TableCell className="max-w-[280px] px-4 text-[12px] text-muted-foreground">
+                      <p>{lastRunLabel}</p>
+                      {lastRunReason ? (
+                        <p
+                          className="mt-0.5 line-clamp-3 text-[11px] leading-4 text-destructive"
+                          title={lastRunReason}
+                        >
+                          {lastRunReason}
+                        </p>
+                      ) : null}
                     </TableCell>
                     <TableCell className="px-4">
                       <CaretRight className="size-4 text-muted-foreground" />
@@ -490,16 +1049,33 @@ function WorkflowLibrary({
           </table>
           {filtered.length === 0 ? (
             <WorkspaceEmptyState
+              action={
+                loadFailed ? (
+                  <Button onClick={onRetryLoad} size="sm" type="button" variant="outline">
+                    Try again
+                  </Button>
+                ) : query.trim() ? (
+                  <Button onClick={() => setQuery("")} size="sm" type="button" variant="outline">
+                    Clear search
+                  </Button>
+                ) : undefined
+              }
               description={
-                query
-                  ? "No workflows match this search. Try another phrase."
-                  : "Create a workflow to automate recurring relationship work."
+                loadFailed
+                  ? workflowListFailureCopy()
+                  : query.trim()
+                    ? "No workflows match this search. Try another phrase."
+                    : "Create a workflow to automate recurring company follow-up."
               }
               image="workflows"
-              learnMore={[
-                { label: "Start from a trigger or schedule" },
-                { label: "Review every workflow run" },
-              ]}
+              learnMore={
+                loadFailed || query.trim()
+                  ? []
+                  : [
+                      { label: "Start from a trigger or schedule" },
+                      { label: "Review every workflow run" },
+                    ]
+              }
               title="Workflows"
             />
           ) : null}
@@ -512,17 +1088,27 @@ function WorkflowLibrary({
 function RunInspector({
   run,
   events,
+  transcriptStatus,
+  transcriptHasMore = false,
+  loadingMoreEvents = false,
   busy,
+  workflowName,
   taskExecutionTarget,
   onCancel,
   onRetry,
+  onLoadMoreEvents,
 }: {
   run: CloudRun | null;
   events: CloudRunEvent[];
+  transcriptStatus: "loading" | "ready" | "error";
+  transcriptHasMore?: boolean;
+  loadingMoreEvents?: boolean;
   busy: boolean;
+  workflowName?: string;
   taskExecutionTarget?: "api" | "desktop";
   onCancel: () => void;
   onRetry: () => void;
+  onLoadMoreEvents?: () => void;
 }) {
   if (!run)
     return (
@@ -536,10 +1122,16 @@ function RunInspector({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <Badge className={cn("rounded-none", statusTone(run.status))} variant="outline">
-              <StatusIcon status={run.status} /> {run.status}
+              <StatusIcon status={run.status} /> {readableEnum(run.status)}
             </Badge>
-            <p className="mt-2 truncate font-mono text-xs text-muted-foreground" title={run.runId}>
-              {run.runId}
+            {workflowName ? (
+              <p className="mt-2 truncate text-sm font-medium">{workflowName}</p>
+            ) : null}
+            <p
+              className="mt-1 truncate font-mono text-[10px] text-muted-foreground"
+              title={run.runId}
+            >
+              {runReference(run.runId)}
             </p>
           </div>
           <div className="flex gap-2">
@@ -575,7 +1167,7 @@ function RunInspector({
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div>
             <Label className="font-normal text-muted-foreground">Trigger</Label>
-            <p className="mt-0.5">{run.trigger}</p>
+            <p className="mt-0.5">{triggerLabel(run.trigger)}</p>
           </div>
           <div>
             <Label className="font-normal text-muted-foreground">Attempt</Label>
@@ -587,16 +1179,15 @@ function RunInspector({
           </div>
           <div>
             <Label className="font-normal text-muted-foreground">Completed</Label>
-            <p className="mt-0.5">{formatDate(run.completedAt)}</p>
+            <p className="mt-0.5">{runCompletedLabel(run.status, run.completedAt)}</p>
           </div>
         </div>
         {run.summary ? (
           <p className="border border-border p-2.5 text-xs leading-5">{run.summary}</p>
         ) : null}
-        {run.error ? (
+        {runFailureLine(run) ? (
           <p className="border border-destructive/30 bg-destructive/5 p-2.5 text-xs leading-5 text-destructive">
-            {run.errorCode ? `${run.errorCode}: ` : ""}
-            {run.error}
+            {runFailureLine(run)}
           </p>
         ) : null}
       </div>
@@ -617,17 +1208,37 @@ function RunInspector({
                 </Badge>
                 <div className="min-w-0 border border-border p-2.5">
                   <div className="flex justify-between gap-2">
-                    <Label className="font-medium">{event.type}</Label>
+                    <Label className="font-medium">{runEventLabel(event.type)}</Label>
                     <time className="text-muted-foreground">{formatDate(event.receivedAt)}</time>
                   </div>
                   <pre className="mt-1.5 overflow-x-auto whitespace-pre-wrap font-sans leading-5 text-muted-foreground">
-                    {eventText(event)}
+                    {runEventBody(event)}
                   </pre>
                 </div>
               </li>
             ))}
-            {events.length === 0 ? (
+            {events.length === 0 && transcriptStatus === "loading" ? (
+              <li className="text-muted-foreground">Loading the transcript…</li>
+            ) : null}
+            {events.length === 0 && transcriptStatus === "error" ? (
+              <li className="text-muted-foreground">The transcript could not be loaded.</li>
+            ) : null}
+            {events.length === 0 && transcriptStatus === "ready" ? (
               <li className="text-muted-foreground">No transcript events yet.</li>
+            ) : null}
+            {transcriptHasMore ? (
+              <li>
+                <Button
+                  className="w-full rounded-none"
+                  disabled={loadingMoreEvents}
+                  onClick={onLoadMoreEvents}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  {loadingMoreEvents ? "Loading…" : transcriptNextEventsLabel()}
+                </Button>
+              </li>
             ) : null}
           </ol>
         </ScrollArea>
@@ -640,6 +1251,10 @@ function WorkflowRuns({
   runs,
   selectedRun,
   events,
+  transcriptStatus,
+  transcriptHasMore = false,
+  loadingMoreEvents = false,
+  onLoadMoreEvents,
   busy,
   tasks,
   nextCursor,
@@ -653,10 +1268,16 @@ function WorkflowRuns({
   onLoadMore,
   onCancel,
   onRetry,
+  loadFailed = false,
+  onReload,
 }: {
   runs: CloudRun[];
   selectedRun: CloudRun | null;
   events: CloudRunEvent[];
+  transcriptStatus: "loading" | "ready" | "error";
+  transcriptHasMore?: boolean;
+  loadingMoreEvents?: boolean;
+  onLoadMoreEvents?: () => void;
   busy: boolean;
   tasks: CloudTask[];
   nextCursor?: string;
@@ -670,6 +1291,9 @@ function WorkflowRuns({
   onLoadMore: () => void;
   onCancel: () => void;
   onRetry: () => void;
+  /** The run list request failed and no runs are on screen. */
+  loadFailed?: boolean;
+  onReload?: () => void;
 }) {
   const selectedTask = tasks.find((task) => task.slug === selectedRun?.slug);
   return (
@@ -680,14 +1304,18 @@ function WorkflowRuns({
             onValueChange={(value) => onStatusFilter(value as FilterValue<CloudRunStatus>)}
             value={statusFilter}
           >
-            <SelectTrigger className="rounded-none" size="sm">
+            <SelectTrigger
+              aria-label={runStatusFilterName(statusFilter)}
+              className="rounded-none"
+              size="sm"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-none">
-              <SelectItem value="all">All status</SelectItem>
+              <SelectItem value="all">All statuses</SelectItem>
               {(["queued", "running", "succeeded", "failed", "stopped"] as const).map((value) => (
                 <SelectItem className="rounded-none" key={value} value={value}>
-                  {value}
+                  {readableEnum(value)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -696,14 +1324,18 @@ function WorkflowRuns({
             onValueChange={(value) => onTriggerFilter(value as FilterValue<CloudRunTrigger>)}
             value={triggerFilter}
           >
-            <SelectTrigger className="rounded-none" size="sm">
+            <SelectTrigger
+              aria-label={runTriggerFilterName(triggerFilter)}
+              className="rounded-none"
+              size="sm"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-none">
               <SelectItem value="all">All triggers</SelectItem>
               {(["manual", "cron", "window", "event", "retry"] as const).map((value) => (
                 <SelectItem className="rounded-none" key={value} value={value}>
-                  {value}
+                  {triggerLabel(value)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -712,11 +1344,15 @@ function WorkflowRuns({
             onValueChange={(value) => onExecutorFilter(value as "api" | "desktop" | "all")}
             value={executorFilter}
           >
-            <SelectTrigger className="rounded-none" size="sm">
+            <SelectTrigger
+              aria-label={runWhereFilterName(executorFilter)}
+              className="rounded-none"
+              size="sm"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-none">
-              <SelectItem value="all">All runtimes</SelectItem>
+              <SelectItem value="all">Cloud or desktop</SelectItem>
               <SelectItem value="api">Cloud</SelectItem>
               <SelectItem value="desktop">Desktop</SelectItem>
             </SelectContent>
@@ -738,16 +1374,24 @@ function WorkflowRuns({
                 <StatusIcon status={run.status} />
                 <div className="min-w-0 flex-1">
                   <Label className="block truncate text-[12px] font-medium">
-                    {tasks.find((task) => task.slug === run.slug)?.name || run.slug}
+                    {runTitle(run, tasks)}
                   </Label>
                   <CardDescription className="mt-0.5 block text-[11px]">
-                    {run.trigger} · {formatDate(run.createdAt)}
+                    {runRowDetail(run.status, run.trigger)} · {formatDate(run.createdAt)}
                   </CardDescription>
+                  <RunRowFailure run={run} />
                 </div>
                 <CaretRight className="size-4 text-muted-foreground" />
               </Button>
             ))}
-            {runs.length === 0 ? (
+            {loadFailed ? (
+              <div className="flex flex-col items-center gap-3 p-10 text-center">
+                <p className="text-xs text-muted-foreground">{workflowRunsFailureCopy()}</p>
+                <Button onClick={onReload} size="sm" type="button" variant="outline">
+                  Try again
+                </Button>
+              </div>
+            ) : runs.length === 0 ? (
               <p className="p-10 text-center text-xs text-muted-foreground">
                 No runs match these filters.
               </p>
@@ -769,10 +1413,15 @@ function WorkflowRuns({
         <RunInspector
           busy={busy}
           events={events}
+          loadingMoreEvents={loadingMoreEvents}
           onCancel={onCancel}
+          onLoadMoreEvents={onLoadMoreEvents}
           onRetry={onRetry}
           run={selectedRun}
           taskExecutionTarget={selectedTask?.executionTarget}
+          transcriptHasMore={transcriptHasMore}
+          transcriptStatus={transcriptStatus}
+          workflowName={selectedRun ? runTitle(selectedRun, tasks) : undefined}
         />
       </ScrollArea>
     </div>
@@ -781,10 +1430,16 @@ function WorkflowRuns({
 
 function WorkflowEditor({
   task,
+  templates,
   schedule,
+  scheduleMissing,
   runs,
   selectedRun,
   events,
+  transcriptStatus,
+  transcriptHasMore = false,
+  loadingMoreEvents = false,
+  onLoadMoreEvents,
   busy,
   onBack,
   onRun,
@@ -792,12 +1447,19 @@ function WorkflowEditor({
   onCancel,
   onRetry,
   onUpdate,
+  onDelete,
 }: {
   task: CloudTask;
+  templates: CloudTaskTemplate[];
   schedule: CloudSchedule | null;
+  scheduleMissing: boolean;
   runs: CloudRun[];
   selectedRun: CloudRun | null;
   events: CloudRunEvent[];
+  transcriptStatus: "loading" | "ready" | "error";
+  transcriptHasMore?: boolean;
+  loadingMoreEvents?: boolean;
+  onLoadMoreEvents?: () => void;
   busy: boolean;
   onBack: () => void;
   onRun: () => void;
@@ -810,16 +1472,36 @@ function WorkflowEditor({
     name?: string;
     triggers?: Record<string, unknown>;
   }) => Promise<void>;
+  onDelete: () => Promise<void>;
 }) {
   const editable = !task.systemManaged;
-  const original = workflowForTask(task);
-  const [tab, setTab] = React.useState<EditorTab>("editor");
-  const [name, setName] = React.useState(task.name);
+  const [confirmingDelete, setConfirmingDelete] = React.useState(false);
+  const original = workflowForTask(task, templates);
+  // The editor remounts when the task revision changes. Run now updates that
+  // revision after it selects the new run, which was throwing the user back
+  // onto the canvas. A selected run means this mount should open on Runs.
+  const [tab, setTab] = React.useState<EditorTab>(selectedRun ? "runs" : "editor");
+  const [name, setName] = React.useState(taskTitle(task));
   const [workflow, setWorkflow] = React.useState(original);
   const dirty =
     editable &&
-    (name.trim() !== task.name || JSON.stringify(workflow) !== JSON.stringify(original));
-  const taskRuns = runs.filter((run) => run.slug === task.slug);
+    (name.trim() !== taskTitle(task) || JSON.stringify(workflow) !== JSON.stringify(original));
+  const scopedRunsQuery = useWorkflowRuns({ slug: task.slug });
+  const scopedRuns = scopedRunsQuery.data
+    ? (scopedRunsQuery.data.pages.flatMap((page) => page.runs) as CloudRun[])
+    : null;
+  const {
+    runs: taskRuns,
+    settled: taskRunsSettled,
+    hasMore: taskRunsHasMore,
+  } = workflowRunsForEditor(
+    task.slug,
+    runs,
+    scopedRuns,
+    Boolean(scopedRunsQuery.data) && scopedRunsQuery.hasNextPage,
+  );
+  const settingsPageRun = runs.find((run) => run.slug === task.slug);
+  const settingsLastRunReason = workflowLastRunReason(task, settingsPageRun);
 
   const save = async () => {
     const compiled = compileVisualWorkflow(workflow);
@@ -838,7 +1520,7 @@ function WorkflowEditor({
             Workflows
           </Button>
           <CaretRight className="size-3 text-muted-foreground" />
-          <Label className="truncate font-medium">{task.name}</Label>
+          <Label className="truncate font-medium">{taskTitle(task)}</Label>
           {task.systemManaged ? <Robot className="size-3.5 text-muted-foreground" /> : null}
         </div>
         <div className="flex items-center gap-2">
@@ -866,8 +1548,14 @@ function WorkflowEditor({
           <Button
             className="rounded-none"
             disabled={busy || !task.active}
-            onClick={onRun}
+            onClick={() => {
+              // Selecting the run in the parent does not change this tab, so
+              // Run now looked like a no-op while the request succeeded.
+              setTab("runs");
+              onRun();
+            }}
             size="sm"
+            type="button"
           >
             <Play weight="fill" /> Run now
           </Button>
@@ -878,11 +1566,20 @@ function WorkflowEditor({
         onValueChange={(value) => setTab(value as EditorTab)}
         value={tab}
       >
-        <TabsList className="h-10 shrink-0 justify-start gap-5 rounded-none border-b border-border bg-transparent px-3">
+        <TabsList
+          aria-label="Workflow"
+          className="h-10 shrink-0 justify-start gap-5 rounded-none border-b border-border bg-transparent px-3"
+        >
           {(["editor", "runs", "settings"] as const).map((value) => (
             <TabsTrigger
+              aria-label={workflowEditorTabName(
+                value,
+                taskRuns.length,
+                taskRunsHasMore,
+                value === "runs" ? taskRunsSettled : true,
+              )}
               className={cn(
-                "h-full rounded-none border-b bg-transparent px-0 text-[12px] capitalize shadow-none data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none",
+                "h-full rounded-none border-b bg-transparent px-0 text-[12px] shadow-none data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none",
                 tab === value
                   ? "border-foreground text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground",
@@ -891,30 +1588,32 @@ function WorkflowEditor({
               value={value}
             >
               {value === "settings" ? <Gear className="size-3.5" /> : null}
-              {value}
-              {value === "runs" ? (
+              {EDITOR_TAB_LABEL[value]}
+              {value === "runs" && taskRunsSettled ? (
                 <Badge className="rounded-none text-[9px]" variant="secondary">
-                  {taskRuns.length}
+                  {workflowRunCountLabel(taskRuns.length, taskRunsHasMore)}
                 </Badge>
               ) : null}
             </TabsTrigger>
           ))}
         </TabsList>
 
-        <TabsContent
-          className="min-h-0 flex-1 overflow-hidden data-[state=active]:flex"
-          value="editor"
-        >
+        <TabsContent className={EDITOR_PANE_CLASS} value="editor">
+          {task.systemManaged ? (
+            <p className="shrink-0 border-b border-border px-4 py-2 text-[12px] text-muted-foreground">
+              {maintainedWorkflowNotice()}
+            </p>
+          ) : null}
           <VisualWorkflowBuilder
-            aria-label={`${task.name} workflow editor`}
+            aria-label={`${taskTitle(task)} workflow editor`}
             disabled={!editable}
             onChange={setWorkflow}
             value={workflow}
           />
         </TabsContent>
-        <TabsContent className="min-h-0 flex-1" value="runs">
-          <div className="grid min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)]">
-            <ScrollArea className="min-h-0 border-r border-border">
+        <TabsContent className={EDITOR_PANE_CLASS} value="runs">
+          <div className="grid h-full min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)]">
+            <ScrollArea className="h-full min-h-0 border-r border-border">
               {taskRuns.map((run) => (
                 <Button
                   className={cn(
@@ -928,38 +1627,89 @@ function WorkflowEditor({
                 >
                   <StatusIcon status={run.status} />
                   <div className="min-w-0 flex-1">
-                    <Label className="block truncate text-[12px] font-medium">{run.status}</Label>
+                    <Label className="block truncate text-[12px] font-medium">
+                      {readableEnum(run.status)}
+                    </Label>
                     <CardDescription className="text-[11px]">
-                      {run.trigger} · {formatDate(run.createdAt)}
+                      {triggerLabel(run.trigger)} · {formatDate(run.createdAt)}
                     </CardDescription>
+                    <RunRowFailure run={run} />
                   </div>
                   <CaretRight className="size-4 text-muted-foreground" />
                 </Button>
               ))}
-              {taskRuns.length === 0 ? (
-                <p className="p-8 text-center text-xs text-muted-foreground">No runs yet.</p>
+              {scopedRunsQuery.isError && (taskRuns.length > 0 || scopedRunsQuery.data) ? (
+                <div
+                  className={
+                    "flex items-center justify-between gap-3 border-b border-border px-3 py-2"
+                  }
+                >
+                  <p className="text-xs text-muted-foreground">{workflowRunsRefreshCopy()}</p>
+                  <Button
+                    onClick={() => void scopedRunsQuery.refetch()}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Try again
+                  </Button>
+                </div>
+              ) : null}
+              {taskRuns.length === 0 && (scopedRunsQuery.data || !scopedRunsQuery.isError) ? (
+                <p className="p-8 text-center text-xs text-muted-foreground">
+                  {taskRunsSettled ? "No runs yet." : "Loading runs…"}
+                </p>
+              ) : null}
+              {scopedRunsQuery.isError && taskRuns.length === 0 && !scopedRunsQuery.data ? (
+                <div className="flex flex-col items-center gap-3 p-8 text-center">
+                  <p className="text-xs text-muted-foreground">{workflowRunsFailureCopy()}</p>
+                  <Button
+                    onClick={() => void scopedRunsQuery.refetch()}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Try again
+                  </Button>
+                </div>
+              ) : null}
+              {taskRunsHasMore ? (
+                <Button
+                  className="w-full rounded-none"
+                  disabled={scopedRunsQuery.isFetchingNextPage}
+                  onClick={() => void scopedRunsQuery.fetchNextPage()}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  {scopedRunsQuery.isFetchingNextPage ? "Loading…" : "Load more"}
+                </Button>
               ) : null}
             </ScrollArea>
-            <ScrollArea className="min-h-0">
+            <ScrollArea className="h-full min-h-0">
               <RunInspector
                 busy={busy}
                 events={events}
+                loadingMoreEvents={loadingMoreEvents}
                 onCancel={onCancel}
+                onLoadMoreEvents={onLoadMoreEvents}
                 onRetry={onRetry}
                 run={selectedRun}
                 taskExecutionTarget={task.executionTarget}
+                transcriptHasMore={transcriptHasMore}
+                transcriptStatus={transcriptStatus}
+                workflowName={taskTitle(task)}
               />
             </ScrollArea>
           </div>
         </TabsContent>
-        <TabsContent className="min-h-0 flex-1" value="settings">
-          <ScrollArea className="min-h-0 flex-1">
+        <TabsContent className={EDITOR_PANE_CLASS} value="settings">
+          <ScrollArea className="h-full min-h-0 flex-1">
             <div className="mx-auto max-w-2xl space-y-7 px-6 py-7">
               <div>
                 <h2 className="text-[15px] font-medium">Workflow settings</h2>
                 <p className="mt-1 text-[12px] text-muted-foreground">
-                  Keep the operational details simple. The cloud runtime handles scheduling and
-                  execution.
+                  {workflowSettingsIntro(editable)}
                 </p>
               </div>
               <div className="space-y-1.5">
@@ -972,18 +1722,33 @@ function WorkflowEditor({
                   value={name}
                 />
               </div>
-              <div className="grid grid-cols-2 border border-border">
-                <div className="border-r border-border p-4">
-                  <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-                    Starts
-                  </p>
-                  <p className="mt-2 text-[13px]">{scheduleLabel(task)}</p>
+              <div className="border border-border">
+                <div className="grid grid-cols-2">
+                  <div className="border-r border-border p-4">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                      Starts
+                    </p>
+                    <p className="mt-2 text-[13px]">{scheduleLabel(task)}</p>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                      Next run
+                    </p>
+                    <p className="mt-2 text-[13px]">
+                      {scheduleNextRunLabel(schedule?.nextDueAt, scheduleMissing)}
+                    </p>
+                  </div>
                 </div>
-                <div className="p-4">
+                <div className="border-t border-border p-4">
                   <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-                    Next run
+                    Last run
                   </p>
-                  <p className="mt-2 text-[13px]">{formatDate(schedule?.nextDueAt)}</p>
+                  <p className="mt-2 text-[13px]">
+                    {workflowSettingsLastRun(task, settingsPageRun)}
+                  </p>
+                  {settingsLastRunReason ? (
+                    <p className="mt-1 text-[12px] text-destructive">{settingsLastRunReason}</p>
+                  ) : null}
                 </div>
               </div>
               <div className="flex items-center justify-between border-y border-border py-4">
@@ -1001,14 +1766,11 @@ function WorkflowEditor({
                   variant="outline"
                 >
                   <StatusIcon status={schedule?.health || task.scheduleSyncState} />{" "}
-                  {schedule?.health || task.scheduleSyncState}
+                  {scheduleHealthLabel(schedule?.health || task.scheduleSyncState)}
                 </Badge>
               </div>
               {task.systemManaged ? (
-                <p className="text-[11px] text-muted-foreground">
-                  This workflow is maintained by Oppulence. You can pause it, inspect it, and run it
-                  on demand.
-                </p>
+                <p className="text-[11px] text-muted-foreground">{maintainedWorkflowNotice()}</p>
               ) : null}
               {editable ? (
                 <div className="flex justify-end">
@@ -1019,6 +1781,50 @@ function WorkflowEditor({
                   >
                     Save settings
                   </Button>
+                </div>
+              ) : null}
+              {editable ? (
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+                  <p className="max-w-md text-[12px] text-muted-foreground">
+                    {confirmingDelete
+                      ? deleteWorkflowConfirmCopy(taskTitle(task))
+                      : "Remove this workflow and its runs."}
+                  </p>
+                  {confirmingDelete ? (
+                    <div className="flex gap-2">
+                      <Button
+                        className="rounded-none"
+                        disabled={busy}
+                        onClick={() => setConfirmingDelete(false)}
+                        size="sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        className="rounded-none"
+                        disabled={busy}
+                        onClick={() => void onDelete()}
+                        size="sm"
+                        type="button"
+                        variant="destructive"
+                      >
+                        Confirm remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      className="rounded-none"
+                      disabled={busy}
+                      onClick={() => setConfirmingDelete(true)}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      Remove workflow
+                    </Button>
+                  )}
                 </div>
               ) : null}
             </div>
@@ -1042,9 +1848,20 @@ export function CloudWorkflowsView({
   const [selectedSlug, setSelectedSlug] = React.useState(initialSlug || "");
   const [selectedRun, setSelectedRun] = React.useState<CloudRun | null>(null);
   const [events, setEvents] = React.useState<CloudRunEvent[]>([]);
+  const [transcriptNextSeq, setTranscriptNextSeq] = React.useState<number | null>(null);
+  const [loadingMoreEvents, setLoadingMoreEvents] = React.useState(false);
+  const transcriptExtended = React.useRef(false);
+  const [transcriptRunId, setTranscriptRunId] = React.useState<string | null>(null);
+  const [transcriptPhase, setTranscriptPhase] = React.useState<"loading" | "ready" | "error">(
+    "ready",
+  );
   const [schedule, setSchedule] = React.useState<CloudSchedule | null>(null);
+  const [scheduleMissing, setScheduleMissing] = React.useState(false);
+  const scheduleRef = React.useRef<CloudSchedule | null>(null);
+  scheduleRef.current = schedule;
+  const scheduleNoticeRef = React.useRef<string | null>(null);
   const [screen, setScreen] = React.useState<"library" | "editor" | "runs">(
-    initialSlug ? "editor" : focus === "runs" ? "runs" : "library",
+    workflowOpeningScreen(focus, initialSlug, initialRunId),
   );
   const [statusFilter, setStatusFilter] = React.useState<FilterValue<CloudRunStatus>>("all");
   const [triggerFilter, setTriggerFilter] = React.useState<FilterValue<CloudRunTrigger>>("all");
@@ -1062,14 +1879,22 @@ export function CloudWorkflowsView({
   const templates = (templatesQuery.data ?? []) as CloudTaskTemplate[];
   const runs = (runsQuery.data?.pages.flatMap((page) => page.runs) ?? []) as CloudRun[];
   const nextCursor = runsQuery.hasNextPage ? runsQuery.data?.pages.at(-1)?.nextCursor : undefined;
-  const loading = tasksQuery.isPending || templatesQuery.isPending || runsQuery.isPending;
-  const queryCause = tasksQuery.error ?? templatesQuery.error ?? runsQuery.error;
-  const queryError =
-    queryCause instanceof Error
-      ? queryCause.message
-      : queryCause
-        ? "Could not load workflows"
-        : null;
+  // A template or run refetch with no cached page sets status back to pending.
+  // Treating that as the first load replaced the library and closed this dialog.
+  const loading = tasksQuery.isPending && !tasksQuery.isError;
+  const queryError = workflowLibraryNotice({
+    tasksError: tasksQuery.error,
+    taskCount: tasks.length,
+    tasksLoaded: tasksQuery.data != null,
+    templatesError: templatesQuery.error,
+    templateCount: templates.length,
+    templatesLoaded: templatesQuery.data != null,
+    runsError: runsQuery.error,
+    runCount: runs.length,
+    runsLoaded: runsQuery.data != null,
+  });
+
+  React.useEffect(() => subscribeWorkflowLibrary(() => setScreen("library")), []);
 
   const selectedTask = tasks.find((task) => task.slug === selectedSlug);
   const selectedTaskSlug = selectedTask?.slug;
@@ -1077,11 +1902,44 @@ export function CloudWorkflowsView({
   const selectedRunID = selectedRun?.runId;
   const selectedRunSlug = selectedRun?.slug;
   const selectedRunStatus = selectedRun?.status;
+  const transcriptStatus: "loading" | "ready" | "error" = !selectedRunID
+    ? "ready"
+    : transcriptRunId === selectedRunID
+      ? transcriptPhase
+      : "loading";
+
+  const transcriptCache = React.useRef(
+    new Map<string, { events: CloudRunEvent[]; nextSeq: number | null }>(),
+  );
+  const transcriptNoticeRef = React.useRef<string | null>(null);
+
+  const clearTranscriptNotice = React.useCallback(() => {
+    const notice = transcriptNoticeRef.current;
+    transcriptNoticeRef.current = null;
+    if (notice) setError((current) => (current === notice ? null : current));
+  }, []);
 
   const selectRun = React.useCallback((run: CloudRun | null) => {
     setSelectedRun(run);
-    setEvents([]);
-    if (run) setSelectedSlug(run.slug);
+    if (!run) {
+      setEvents([]);
+      setTranscriptNextSeq(null);
+      setTranscriptRunId(null);
+      setTranscriptPhase("ready");
+      return;
+    }
+    setSelectedSlug(run.slug);
+    const cached = transcriptCache.current.get(run.runId);
+    setTranscriptRunId(run.runId);
+    if (!cached) {
+      setEvents([]);
+      setTranscriptNextSeq(null);
+      setTranscriptPhase("loading");
+      return;
+    }
+    setEvents(cached.events);
+    setTranscriptNextSeq(cached.nextSeq);
+    setTranscriptPhase("ready");
   }, []);
 
   const refresh = React.useCallback(async () => {
@@ -1090,16 +1948,14 @@ export function CloudWorkflowsView({
       await ensureFirstPartyWorkflows();
       await queryClient.invalidateQueries({ queryKey: workflowKeys.all });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not load workflows");
+      setError(shownWorkflowError(cause, "Could not load workflows"));
     }
   }, [queryClient]);
 
   React.useEffect(() => {
     void ensureFirstPartyWorkflows()
       .then(() => queryClient.invalidateQueries({ queryKey: workflowKeys.tasks() }))
-      .catch((cause) =>
-        setError(cause instanceof Error ? cause.message : "Could not load workflows"),
-      );
+      .catch((cause) => setError(shownWorkflowError(cause, "Could not load workflows")));
   }, [queryClient]);
 
   React.useEffect(() => {
@@ -1123,33 +1979,46 @@ export function CloudWorkflowsView({
         if (!cancelled) selectRun(run);
       })
       .catch((cause) => {
-        if (!cancelled)
-          setError(cause instanceof Error ? cause.message : "Could not load workflow run");
+        if (!cancelled) setError(shownWorkflowError(cause, "Could not load workflow run"));
       });
     return () => {
       cancelled = true;
     };
   }, [initialRunId, initialSlug, selectRun]);
 
+  const clearScheduleNotice = React.useCallback(() => {
+    const notice = scheduleNoticeRef.current;
+    scheduleNoticeRef.current = null;
+    if (notice) setError((current) => (current === notice ? null : current));
+  }, []);
+
   React.useEffect(() => {
     if (!selectedTaskSlug || screen !== "editor") return;
     let cancelled = false;
     void getCloudSchedule(selectedTaskSlug)
       .then((value) => {
-        if (!cancelled) setSchedule(value);
+        if (cancelled) return;
+        setSchedule(value);
+        setScheduleMissing(false);
+        clearScheduleNotice();
       })
       .catch((cause) => {
-        if (!cancelled)
-          setError(cause instanceof Error ? cause.message : "Could not load schedule");
+        if (cancelled) return;
+        const hadSchedule = scheduleRef.current != null;
+        const notice = scheduleLoadNotice(cause, hadSchedule);
+        scheduleNoticeRef.current = notice;
+        setScheduleMissing(!hadSchedule);
+        setError(notice);
       });
     return () => {
       cancelled = true;
     };
-  }, [screen, selectedTaskRevision, selectedTaskSlug]);
+  }, [clearScheduleNotice, screen, selectedTaskRevision, selectedTaskSlug]);
 
   React.useEffect(() => {
     if (!selectedRunID || !selectedRunSlug || !selectedRunStatus) return;
     let cancelled = false;
+    transcriptExtended.current = false;
     const load = async () => {
       try {
         const [nextEvents, nextRun] = await Promise.all([
@@ -1157,12 +2026,32 @@ export function CloudWorkflowsView({
           getCloudRun(selectedRunSlug, selectedRunID),
         ]);
         if (!cancelled) {
-          setEvents(nextEvents);
+          setEvents((current) => {
+            const pageIds = new Set(nextEvents.events.map((event) => event.id));
+            const later = current.filter((event) => !pageIds.has(event.id));
+            const merged =
+              later.length > 0 ? [...nextEvents.events, ...later] : nextEvents.events;
+            transcriptCache.current.set(selectedRunID, {
+              events: merged,
+              nextSeq: nextEvents.nextSeq,
+            });
+            return merged;
+          });
+          if (!transcriptExtended.current) setTranscriptNextSeq(nextEvents.nextSeq);
           setSelectedRun(nextRun);
+          setTranscriptRunId(selectedRunID);
+          setTranscriptPhase("ready");
+          clearTranscriptNotice();
         }
       } catch (cause) {
-        if (!cancelled)
-          setError(cause instanceof Error ? cause.message : "Could not refresh workflow run");
+        if (!cancelled) {
+          const hadTranscript = transcriptCache.current.has(selectedRunID);
+          const notice = transcriptLoadNotice(cause, hadTranscript);
+          transcriptNoticeRef.current = notice;
+          setTranscriptRunId(selectedRunID);
+          setTranscriptPhase(hadTranscript ? "ready" : "error");
+          setError(notice);
+        }
       }
     };
     void load();
@@ -1178,7 +2067,34 @@ export function CloudWorkflowsView({
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [queryClient, selectedRunID, selectedRunSlug, selectedRunStatus]);
+  }, [clearTranscriptNotice, queryClient, selectedRunID, selectedRunSlug, selectedRunStatus]);
+
+  const loadMoreEvents = async () => {
+    if (
+      !selectedRunSlug ||
+      !selectedRunID ||
+      transcriptNextSeq == null ||
+      loadingMoreEvents
+    ) {
+      return;
+    }
+    setLoadingMoreEvents(true);
+    try {
+      const page = await listCloudRunEvents(selectedRunSlug, selectedRunID, transcriptNextSeq);
+      transcriptExtended.current = true;
+      setEvents((current) => {
+        const seen = new Set(current.map((event) => event.id));
+        const merged = [...current, ...page.events.filter((event) => !seen.has(event.id))];
+        transcriptCache.current.set(selectedRunID, { events: merged, nextSeq: page.nextSeq });
+        return merged;
+      });
+      setTranscriptNextSeq(page.nextSeq);
+    } catch (cause) {
+      setError(shownWorkflowError(cause, "Could not load more events"));
+    } finally {
+      setLoadingMoreEvents(false);
+    }
+  };
 
   const perform = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -1186,7 +2102,7 @@ export function CloudWorkflowsView({
     try {
       await action();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Workflow operation failed");
+      setError(shownWorkflowError(cause, "Workflow operation failed"));
     } finally {
       setBusy(false);
     }
@@ -1227,15 +2143,31 @@ export function CloudWorkflowsView({
           onCreated={(task) => {
             replaceTask(task);
             setSchedule(null);
+            setScheduleMissing(false);
+            clearScheduleNotice();
             setScreen("editor");
           }}
           onRefresh={() => void refresh()}
           onSelect={(task) => {
+            if (task.slug !== selectedSlug) {
+              setSchedule(null);
+              setScheduleMissing(false);
+              clearScheduleNotice();
+            }
             setSelectedSlug(task.slug);
             selectRun(null);
-            setSchedule(null);
             setScreen("editor");
           }}
+          loadFailed={tasksQuery.isError && tasksQuery.data == null}
+          onRetryLoad={() => {
+            void tasksQuery.refetch();
+          }}
+          onRetryTemplates={() => {
+            void templatesQuery.refetch();
+          }}
+          templatesFailed={templatesQuery.isError && templatesQuery.data == null}
+          templatesStale={templatesQuery.isError && templatesQuery.data != null}
+          templatesLoading={templatesQuery.isPending}
           runs={runs}
           tasks={tasks}
           templates={templates}
@@ -1244,6 +2176,10 @@ export function CloudWorkflowsView({
         <WorkflowRuns
           busy={busy}
           events={events}
+          loadingMoreEvents={loadingMoreEvents}
+          onLoadMoreEvents={() => void loadMoreEvents()}
+          transcriptHasMore={transcriptNextSeq != null}
+          transcriptStatus={transcriptStatus}
           executorFilter={executorFilter}
           nextCursor={nextCursor}
           onCancel={() =>
@@ -1262,6 +2198,10 @@ export function CloudWorkflowsView({
               await invalidateRuns();
             })
           }
+          loadFailed={runsQuery.isError && runsQuery.data == null}
+          onReload={() => {
+            void runsQuery.refetch();
+          }}
           onSelectRun={selectRun}
           onStatusFilter={setStatusFilter}
           onTriggerFilter={setTriggerFilter}
@@ -1275,6 +2215,11 @@ export function CloudWorkflowsView({
         <WorkflowEditor
           busy={busy}
           events={events}
+          loadingMoreEvents={loadingMoreEvents}
+          onLoadMoreEvents={() => void loadMoreEvents()}
+          transcriptHasMore={transcriptNextSeq != null}
+          transcriptStatus={transcriptStatus}
+          templates={templates}
           key={`${selectedTask.id}:${selectedTask.revision}`}
           onBack={() => {
             selectRun(null);
@@ -1310,8 +2255,23 @@ export function CloudWorkflowsView({
               replaceTask(await updateCloudTask(selectedTask, patch));
             })
           }
+          onDelete={() =>
+            perform(async () => {
+              await deleteCloudTask(selectedTask);
+              queryClient.setQueryData(workflowKeys.tasks(), (current: CloudTask[] | undefined) =>
+                (current ?? []).filter((item) => item.id !== selectedTask.id),
+              );
+              selectRun(null);
+              setSchedule(null);
+              setScheduleMissing(false);
+              clearScheduleNotice();
+              setSelectedSlug("");
+              setScreen("library");
+            })
+          }
           runs={runs}
           schedule={schedule}
+          scheduleMissing={scheduleMissing}
           selectedRun={selectedRun}
           task={selectedTask}
         />

@@ -12,7 +12,11 @@ import type { Connector } from "@/lib/api/generated/client/model";
 import { fetchRelationshipSourceStatuses } from "@/hooks/queries/utils/fetch-relationship-sources";
 import type { RelationshipSourceStatus } from "@/lib/revenue/types";
 
-import { ConnectorSettings } from "./connector-settings";
+import {
+  ConnectorSettings,
+  googleAccessConfirmCopy,
+  googleConnectionPresentation,
+} from "./connector-settings";
 
 const { fetchRelationshipSourceStatusesMock } = vi.hoisted(() => ({
   fetchRelationshipSourceStatusesMock: vi.fn(async () => [] as RelationshipSourceStatus[]),
@@ -36,6 +40,7 @@ const optionalScope = {
   displayName: "Create drafts",
   grantTier: "optional" as const,
   name: "google:drafts.write",
+  requiredPlan: "intelligence",
   risk: "medium" as const,
 };
 
@@ -112,6 +117,25 @@ afterEach(() => {
   window.history.replaceState(null, "", "/app/settings?settings=connections");
 });
 
+describe("googleConnectionPresentation", () => {
+  it("keeps a failed status check from reading as not connected", () => {
+    expect(googleConnectionPresentation(null, undefined, "error")).toEqual({
+      label: "Couldn't load",
+      tone: "warn",
+      action: "retry",
+    });
+    expect(googleConnectionPresentation(null, undefined, "loading").action).toBe("wait");
+    expect(googleConnectionPresentation(false, undefined, "ready")).toMatchObject({
+      label: "Not connected",
+      action: "connect",
+    });
+    expect(googleConnectionPresentation(true, "stale", "error")).toMatchObject({
+      label: "Out of date",
+      action: "change",
+    });
+  });
+});
+
 describe("hosted connector settings", () => {
   it("explains stale sync without presenting reauthorization as the normal action", async () => {
     vi.mocked(fetchRelationshipSourceStatuses).mockResolvedValue([
@@ -144,19 +168,43 @@ describe("hosted connector settings", () => {
     renderWithQuery(<ConnectorSettings />);
 
     const changeAccess = await screen.findByRole("button", { name: "Change Google access" });
-    expect(screen.getByText(/Source data is delayed; reauthorizing is not required/)).toBeVisible();
+    expect(screen.getByText("Out of date")).toBeVisible();
+    expect(screen.queryByText("Stale")).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Mail and calendar are behind. Connecting again will not catch them up/),
+    ).toBeVisible();
     expect(screen.queryByRole("button", { name: "Reconnect Google" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Reauthorize Google" })).not.toBeInTheDocument();
     await userEvent.click(changeAccess);
-    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("does not refresh delayed data"));
+    expect(screen.getByText(googleAccessConfirmCopy("warn"))).toBeVisible();
+    expect(confirm).not.toHaveBeenCalled();
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByRole("button", { name: "Change Google access" })).toBeVisible();
   });
 
   it("starts from the actual Connect control with explicit required scopes", async () => {
     const fetchMock = mockConnectors(connector());
     renderWithQuery(<ConnectorSettings />);
 
+    expect(
+      screen.getByText(/passwords for those services are not stored in this browser/i),
+    ).toBeVisible();
+    expect(screen.queryByText(/provider passwords/i)).not.toBeInTheDocument();
+
+    const gmail = (await screen.findByText("Gmail & Google Calendar")).closest(".settings-panel");
+    expect(gmail).not.toBeNull();
+    expect(await within(gmail as HTMLElement).findByText("Not connected")).toBeVisible();
+    expect(within(gmail as HTMLElement).queryByText("Required")).not.toBeInTheDocument();
+
     const row = await screen.findByTestId("connector-google");
+    expect(within(row).getByText("Permissions")).toHaveAttribute(
+      "aria-label",
+      "Permissions for Google",
+    );
+    expect(within(row).getByText("Not connected")).toBeVisible();
+    expect(within(row).queryByText(/Lifecycle/)).not.toBeInTheDocument();
+    expect(within(row).queryByText("Disconnected")).not.toBeInTheDocument();
     const connect = within(row).getByRole("button", { name: "Connect Google" });
     const form = connect.closest("form");
     expect(form).toHaveAttribute("action", "/api/connectors/google/start");
@@ -180,9 +228,10 @@ describe("hosted connector settings", () => {
 
     const row = await screen.findByTestId("connector-google");
     await userEvent.click(within(row).getByText("Permissions"));
+    expect(within(row).getByText("Create drafts · Optional · Intelligence plan")).toBeVisible();
     await userEvent.click(within(row).getByRole("checkbox"));
     const authorize = within(row).getByRole("button", {
-      name: "Authorize Google with selected permissions",
+      name: "Connect Google with these permissions",
     });
     await userEvent.click(authorize);
 
@@ -193,6 +242,54 @@ describe("hosted connector settings", () => {
       "google:email.read",
       "google:drafts.write",
     ]);
+  });
+
+  it("says when this address cannot finish the connection", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
+      void _init;
+      const url = String(input);
+      if (url.includes("/api/connectors/")) {
+        return new Response(JSON.stringify({ outcome: "redirect" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (url.includes("/api/rowboat/v1/google-oauth")) {
+        return new Response(JSON.stringify({ connected: false, accounts: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (url.includes("/relationship-sources/status") || url.includes("/composio/")) {
+        return new Response(
+          JSON.stringify(
+            url.includes("/composio/") ? { toolkits: [], connections: [] } : { sources: [] },
+          ),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+      return new Response(JSON.stringify({ connectors: [connector()] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderWithQuery(<ConnectorSettings />);
+
+    const row = await screen.findByTestId("connector-google");
+    await userEvent.click(within(row).getByRole("button", { name: "Connect Google" }));
+
+    const failure = await within(row).findByText(
+      "This address isn't allowed to finish the connection. Nothing was saved.",
+    );
+    expect(failure).toBeVisible();
+    expect(failure).not.toHaveClass("font-mono");
+    expect(
+      within(row).queryByText("The connection could not be completed. Nothing was saved."),
+    ).not.toBeInTheDocument();
   });
 
   it("safely disables hosted OAuth when the connector cannot support it", async () => {
@@ -207,7 +304,10 @@ describe("hosted connector settings", () => {
 
     const row = await screen.findByTestId("connector-google");
     expect(within(row).getByRole("button", { name: "Connect Google" })).toBeDisabled();
-    expect(within(row).getByText("provider_configuration_missing")).toBeVisible();
+    const reason = within(row).getByText("This connection is not set up for this workspace yet.");
+    expect(reason).toBeVisible();
+    expect(reason).not.toHaveClass("font-mono");
+    expect(within(row).queryByText("provider_configuration_missing")).toBeNull();
   });
 
   it("shows the claimed active lifecycle and health without retaining callback state", async () => {
@@ -227,18 +327,27 @@ describe("hosted connector settings", () => {
     renderWithQuery(<ConnectorSettings />);
 
     expect(
-      await screen.findByText(/Authorization was claimed and the connection is active/),
+      await screen.findByText("Connected."),
     ).toBeVisible();
     const row = await screen.findByTestId("connector-google");
+    expect(within(row).getByRole("button", { name: "Disconnect Google" })).toBeVisible();
     expect(within(row).getByText("Active")).toBeVisible();
     expect(within(row).getByText("Healthy")).toBeVisible();
-    expect(within(row).getByText(/Granted scopes: google:email.read/)).toBeVisible();
+    expect(within(row).getByText("Permissions: Read email evidence")).toBeVisible();
     expect(window.location.search).toBe("?settings=connections");
   });
 });
 
 describe("Google grant claimed in the web app", () => {
-  function mockDashboard(options: { connectors?: Connector[]; toolkits?: unknown[] } = {}) {
+  function mockDashboard(
+    options: {
+      connectors?: Connector[];
+      toolkits?: unknown[];
+      composioStatus?: number;
+      googleConnected?: boolean;
+      googleStart?: Response;
+    } = {},
+  ) {
     const calls: string[] = [];
     const json = (body: unknown) =>
       new Response(JSON.stringify(body), {
@@ -254,9 +363,13 @@ describe("Google grant claimed in the web app", () => {
         );
         if (url.includes("/google-oauth/claim")) return json({});
         if (url.includes("/google-oauth/start")) {
-          return json({ authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth?state=s1" });
+          return (
+            options.googleStart ??
+            json({ authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth?state=s1" })
+          );
         }
         if (url.includes("/google-oauth")) {
+          if (options.googleConnected === false) return json({ connected: false, accounts: [] });
           return json({
             connected: true,
             accounts: [
@@ -272,8 +385,24 @@ describe("Google grant claimed in the web app", () => {
           return json({ source: "google", status: "connected" });
         }
         if (url.includes("/relationship-sources/status")) return json({ sources: [] });
-        if (url.includes("/composio/toolkits")) return json({ toolkits: options.toolkits ?? [] });
-        if (url.includes("/composio/connections")) return json({ connections: [] });
+        if (url.includes("/composio/toolkits") || url.includes("/composio/connections")) {
+          if (options.composioStatus && options.composioStatus !== 200) {
+            return new Response(
+              JSON.stringify({
+                code: "rate_limited",
+                detail: "Too many requests",
+                status: options.composioStatus,
+                title: "Too Many Requests",
+              }),
+              {
+                status: options.composioStatus,
+                headers: { "Content-Type": "application/json" },
+              },
+            );
+          }
+          if (url.includes("/composio/toolkits")) return json({ toolkits: options.toolkits ?? [] });
+          return json({ connections: [] });
+        }
         return json({ connectors: options.connectors ?? [] });
       }),
     );
@@ -283,6 +412,24 @@ describe("Google grant claimed in the web app", () => {
   // The reported bug: a reconnect started on this page came back to the desktop
   // app's deep link, so nothing here claimed the grant and the dead grant stayed
   // dead. The start call names the web flow so the callback returns here.
+  it("says when Google sign-in is not configured", async () => {
+    mockDashboard({
+      googleConnected: false,
+      googleStart: new Response(
+        '<!doctype html><meta charset=utf-8><title>Oppulence</title><p style="font:14px system-ui;margin:3rem">Google sign-in isn\'t configured on the server yet.</p>',
+        { status: 502, headers: { "Content-Type": "text/html" } },
+      ),
+    });
+    renderWithQuery(<ConnectorSettings />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Connect Google" }));
+
+    expect(
+      await screen.findByText("Google sign-in isn't configured on the server yet."),
+    ).toBeVisible();
+    expect(screen.queryByText(/please try again/i)).toBeNull();
+  });
+
   it("starts Google authorization as a web flow", async () => {
     const calls = mockDashboard();
     vi.stubGlobal(
@@ -292,6 +439,7 @@ describe("Google grant claimed in the web app", () => {
     renderWithQuery(<ConnectorSettings />);
 
     await userEvent.click(await screen.findByRole("button", { name: "Change Google access" }));
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
 
     await vi.waitFor(() => {
       expect(calls.some((call) => call.includes("/google-oauth/start"))).toBe(true);
@@ -337,5 +485,56 @@ describe("Google grant claimed in the web app", () => {
     expect(await screen.findByText("GitHub via Composio")).toBeInTheDocument();
     expect(await screen.findByText("Stripe")).toBeInTheDocument();
     expect(screen.queryByText("GitHub")).not.toBeInTheDocument();
+  });
+
+  it("keeps a loaded connection above a rate-limited extra catalog", async () => {
+    mockDashboard({
+      connectors: [connector({ name: "stripe", displayName: "Stripe", status: "enabled" })],
+      composioStatus: 429,
+    });
+    renderWithQuery(<ConnectorSettings />);
+
+    const stripe = await screen.findByText("Stripe");
+    const extra = await screen.findByText(
+      "Too many requests were sent from this workspace. Wait a moment, then try again.",
+    );
+    expect(stripe.compareDocumentPosition(extra) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("keeps loaded connections when the refresh fails", async () => {
+    const fetchMock = mockConnectors(connector());
+    const { client } = renderWithQuery(<ConnectorSettings />);
+    expect(await screen.findByText("Google")).toBeVisible();
+
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/api/rowboat/v1/connectors")) {
+        return new Response(JSON.stringify({ message: "connectors unavailable" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (url.includes("/composio/")) {
+        return new Response(JSON.stringify({ toolkits: [], connections: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      if (url.includes("/google-oauth")) {
+        return new Response(JSON.stringify({ connected: false, accounts: [] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ sources: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    await client.invalidateQueries({ queryKey: ["connector", "list"] });
+
+    expect(await screen.findByText("Could not refresh connections. Try again.")).toBeVisible();
+    expect(screen.getAllByText("Google").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Could not load connections.")).not.toBeInTheDocument();
   });
 });

@@ -6,7 +6,9 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 )
 
 // linkParticipantPerson connects one participant row to its canonical person and
@@ -92,6 +94,19 @@ func linkParticipantPerson(
 			ObservedAt: input.OccurredAt, ExternalID: input.ExternalID,
 		})
 	}
+	// The company row is the name we already have for this account. A signature
+	// or a correction still outranks it; this only fills a blank company.
+	if rel.Kind == "company" {
+		if name := strings.TrimSpace(rel.DisplayName); name != "" {
+			attributes = append(attributes, PersonAttributeInput{
+				Dimension: "org_name", Value: name,
+				SourceType: "deterministic", Source: input.Source,
+				Extractor: "display_name_header", Confidence: 0.65,
+				Reason:     "Name of the company that owns this domain.",
+				ObservedAt: input.OccurredAt, ExternalID: input.ExternalID,
+			})
+		}
+	}
 
 	// A departure observation is the mail system telling us this person no longer
 	// works where we last saw them — a hard bounce naming their address, or an
@@ -127,6 +142,180 @@ func linkParticipantPerson(
 		return nil, err
 	}
 	return p, nil
+}
+
+// attachAddedPersonToCompany files a hand-added person onto the one company that
+// already owns their email domain. The person record stays its own relationship.
+// Sharing a domain means they work there, so the company lists them and their
+// directory row can name that company.
+func attachAddedPersonToCompany(
+	ctx context.Context,
+	client *ent.Client,
+	ws *ent.RevenueWorkspace,
+	u *ent.User,
+	rel *ent.Relationship,
+	observation *ent.RelationshipObservation,
+	input RelationshipObservationInput,
+) error {
+	if input.EventType != "person_added" || rel.Kind != "person" {
+		return nil
+	}
+	domain := strings.ToLower(strings.TrimSpace(rel.AccountDomain))
+	if domain == "" || isPublicMailboxDomain(domain) {
+		return nil
+	}
+	companies, err := client.Relationship.Query().
+		Where(
+			relationship.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+			relationship.KindEQ("company"),
+			relationship.AccountDomainEQ(domain),
+		).
+		All(ctx)
+	if err != nil {
+		return err
+	}
+	if len(companies) != 1 || companies[0].ID == rel.ID {
+		return nil
+	}
+	company := companies[0]
+	for _, participant := range input.Participants {
+		if err := upsertRelationshipParticipant(ctx, client, ws, u, company, participant); err != nil {
+			return err
+		}
+		person, err := linkParticipantPerson(ctx, client, ws, u, company, observation, input, participant)
+		if err != nil {
+			return err
+		}
+		if person == nil {
+			continue
+		}
+		if err := refreshPersonInteractionRollup(ctx, client, person); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// attachExistingPeopleToCompany files people who were added before this company
+// existed. They already share its domain, so creating the company is what makes
+// that membership visible on the company and in the directory.
+func attachExistingPeopleToCompany(
+	ctx context.Context,
+	client *ent.Client,
+	ws *ent.RevenueWorkspace,
+	u *ent.User,
+	rel *ent.Relationship,
+) error {
+	if rel == nil || rel.Kind != "company" {
+		return nil
+	}
+	domain := strings.ToLower(strings.TrimSpace(rel.AccountDomain))
+	if domain == "" || isPublicMailboxDomain(domain) {
+		return nil
+	}
+	companies, err := client.Relationship.Query().
+		Where(
+			relationship.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+			relationship.KindEQ("company"),
+			relationship.AccountDomainEQ(domain),
+		).
+		All(ctx)
+	if err != nil {
+		return err
+	}
+	// Two companies on one domain is the same ambiguity the person-added path
+	// refuses. Membership stays unassigned until a person is reviewed onto one.
+	if len(companies) != 1 || companies[0].ID != rel.ID {
+		return nil
+	}
+	people, err := client.Relationship.Query().
+		Where(
+			relationship.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+			relationship.KindEQ("person"),
+			relationship.AccountDomainEQ(domain),
+		).
+		WithParticipants().
+		All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, personRel := range people {
+		observation, obsErr := client.RelationshipObservation.Query().
+			Where(relationshipobservation.HasRelationshipWith(relationship.IDEQ(personRel.ID))).
+			Order(ent.Asc(relationshipobservation.FieldCreatedAt)).
+			First(ctx)
+		if ent.IsNotFound(obsErr) {
+			observation = nil
+		} else if obsErr != nil {
+			return obsErr
+		}
+		externalID := "company-member:" + personRel.ID.String()
+		source := "user"
+		occurred := rel.CreatedAt
+		if observation != nil {
+			if observation.ExternalID != "" {
+				externalID = observation.ExternalID
+			}
+			if observation.Source != "" {
+				source = observation.Source
+			}
+			if !observation.OccurredAt.IsZero() {
+				occurred = observation.OccurredAt
+			}
+		}
+		input := RelationshipObservationInput{
+			Source:     source,
+			ExternalID: externalID,
+			EventType:  "person_added",
+			OccurredAt: occurred,
+		}
+		participants := participantInputsForPerson(personRel)
+		for _, participant := range participants {
+			if err := upsertRelationshipParticipant(ctx, client, ws, u, rel, participant); err != nil {
+				return err
+			}
+			person, err := linkParticipantPerson(ctx, client, ws, u, rel, observation, input, participant)
+			if err != nil {
+				return err
+			}
+			if person == nil {
+				continue
+			}
+			if err := refreshPersonInteractionRollup(ctx, client, person); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func participantInputsForPerson(personRel *ent.Relationship) []RelationshipParticipantInput {
+	if personRel == nil {
+		return nil
+	}
+	if len(personRel.Edges.Participants) == 0 {
+		name := strings.TrimSpace(personRel.DisplayName)
+		email := strings.TrimSpace(personRel.PrimaryEmail)
+		if name == "" && email == "" {
+			return nil
+		}
+		return []RelationshipParticipantInput{{
+			DisplayName: name,
+			Email:       email,
+			Role:        "contact",
+		}}
+	}
+	inputs := make([]RelationshipParticipantInput, 0, len(personRel.Edges.Participants))
+	for _, participant := range personRel.Edges.Participants {
+		inputs = append(inputs, RelationshipParticipantInput{
+			DisplayName:  participant.DisplayName,
+			Email:        participant.Email,
+			Role:         participant.Role,
+			Title:        participant.Title,
+			ExternalRefs: participant.ExternalRefs,
+		})
+	}
+	return inputs
 }
 
 // countParticipantInteraction records one interaction for an already-linked person.

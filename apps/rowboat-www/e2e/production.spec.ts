@@ -21,10 +21,13 @@ test("production responses include the security header contract", async ({ reque
   expect(headers["permissions-policy"]).toBeTruthy();
 });
 
-test("API reference redirects instead of executing upstream HTML", async ({ request }) => {
+test("API reference is rendered by the app instead of upstream HTML", async ({ request }) => {
   const response = await request.get("/api/reference", { maxRedirects: 0 });
-  expect(response.status()).toBe(307);
-  expect(response.headers().location).toMatch(/^https:\/\//);
+  expect(response.status()).toBe(200);
+  expect(response.headers()["content-type"]).toContain("text/html");
+  const body = await response.text();
+  expect(body).toContain("<title>Oppulence API Reference</title>");
+  expect(body).not.toContain("<title>Solomon AI API Reference</title>");
 });
 
 test("@a11y marketing home has no automatically detectable violations", async ({ page }) => {

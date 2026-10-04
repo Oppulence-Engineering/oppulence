@@ -9,7 +9,7 @@ import ReportLoading from "./loading";
 
 export const metadata = {
   title: "Open promises - Oppulence",
-  description: "The commitments your team made that have no evidence of fulfilment.",
+  description: "Promises from the last six months that still look open.",
 };
 
 type ReportPageProps = {

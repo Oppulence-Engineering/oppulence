@@ -15,7 +15,7 @@ export type AgentSessionSummary = Pick<
   "sessionId" | "agent" | "title" | "createdAt" | "lastActivityAt"
 >;
 
-export function friendlyAgentError(message: string): string {
+export function friendlyAgentError(message: string, subject: "agent" | "run" = "agent"): string {
   if (/openrouter_credits|upstream_credits_exhausted|upstream provider account/i.test(message)) {
     return "Oppulence's AI provider is temporarily unavailable. Your workspace credits were not charged. Try again later.";
   }
@@ -28,13 +28,43 @@ export function friendlyAgentError(message: string): string {
   }
   // A bad or missing provider key comes back wrapped in a Temporal activity
   // error. Match it before the generic activity rewrite, or dogfooding looks
-  // like a random agent failure instead of a credential problem.
+  // like a random failure instead of a credential problem.
   if (/status 401|missing authentication header|invalid api key|invalid_api_key/i.test(message)) {
     return "The AI provider rejected the API key for this workspace. Nothing was charged.";
   }
-  if (/activity error|scheduledEventID|startedEventID/i.test(message)) {
-    return "The agent could not complete this request. Please try again.";
+  if (/\brate limit\b|too many requests|\(429\)/i.test(message)) {
+    return "Too many requests were sent from this workspace. Wait a moment, then try again.";
   }
+  if (/activity error|scheduledEventID|startedEventID/i.test(message)) {
+    return subject === "run"
+      ? "This run could not finish. Please try again."
+      : "The agent could not complete this request. Please try again.";
+  }
+  return message;
+}
+
+const BARE_AGENT_STATUS = new RegExp(
+  "^(?:" +
+    [
+      "Request failed(?:: \\d+\\b.*| \\(\\d+\\))",
+      "Failed to (?:load|save) file \\(\\d+\\)",
+      "Could not delete agent \\(\\d+\\)",
+      "Agent stream failed \\(\\d+\\)",
+    ].join("|") +
+    ")$",
+);
+
+/**
+ * A chat action should keep a specific failure. A status code with no sentence
+ * is replaced by the action's own fallback. A rejected key, a rate limit, and
+ * an out-of-credits provider still use the sentences we already explain.
+ */
+export function shownAgentError(error: unknown, fallback: string): string {
+  const message = error instanceof Error ? error.message.trim() : "";
+  if (!message) return fallback;
+  const friendly = friendlyAgentError(message);
+  if (friendly !== message) return friendly;
+  if (BARE_AGENT_STATUS.test(message)) return fallback;
   return message;
 }
 

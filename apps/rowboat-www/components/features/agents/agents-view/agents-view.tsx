@@ -38,8 +38,28 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAgentSummaries } from "@/hooks/queries/use-agents";
 import { agentKeys } from "@/hooks/queries/utils/agent-keys";
 import { dashboardFetch } from "@/lib/auth/client";
-import { type AgentSummary } from "@/lib/agents/agent-schemas";
+import {
+  type AgentSummary,
+  agentDisplayName,
+  agentInstructionsCopy,
+  agentSourceLabel,
+  duplicateAgentInstructions,
+} from "@/lib/agents/agent-schemas";
+import { shownAgentError } from "@/lib/agents/agent-history";
+import { agentToolLabel } from "@/lib/agents/agent-tools";
 import { cn } from "@/lib/utils";
+
+/** A failed load is not an empty workspace. */
+export function agentLoadTitle(loadFailed: boolean, count: number): string {
+  if (!loadFailed) return "Could not delete this agent";
+  return count === 0 ? "Could not load agents" : "Could not refresh agents";
+}
+
+export function agentWorkspaceCount(count: number, loadFailed: boolean): string {
+  if (loadFailed && count === 0) return "Couldn't load";
+  const noun = count === 1 ? "agent" : "agents";
+  return `${count} ${noun} in this workspace`;
+}
 
 function slugify(value: string): string {
   return value
@@ -69,7 +89,7 @@ function CreateAgentDialog({
     const initialName = source ? `${source.name} copy` : "";
     setName(initialName);
     setSlug(source ? `${source.slug}-copy` : "");
-    setInstructions(source?.instructions || "");
+    setInstructions(source ? agentInstructionsCopy(source) : "");
     setSlugEdited(false);
     setError(null);
   }, [source]);
@@ -89,7 +109,7 @@ function CreateAgentDialog({
         body: JSON.stringify({
           slug: slug.trim(),
           name: name.trim(),
-          instructions: instructions.trim(),
+          instructions: duplicateAgentInstructions(source, instructions),
           model: source?.model || "",
           provider: source?.provider || "",
           enabledTools: source?.enabledTools || [],
@@ -104,13 +124,13 @@ function CreateAgentDialog({
         const message =
           body && typeof body === "object" && "message" in body && typeof body.message === "string"
             ? body.message
-            : `Could not create agent (${response.status})`;
+            : "Could not create agent";
         throw new Error(message);
       }
       setOpen(false);
       onCreated(slug.trim());
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not create agent");
+      setError(shownAgentError(cause, "Could not create agent"));
     } finally {
       setBusy(false);
     }
@@ -134,7 +154,7 @@ function CreateAgentDialog({
           <DialogTitle>{source ? `Customize ${source.name}` : "Create an agent"}</DialogTitle>
           <DialogDescription>
             {source
-              ? "Create an editable workspace copy, then adjust its model, tools, and safeguards."
+              ? "Create an editable workspace copy, then adjust its model, tools, and limits."
               : "Start with a name and purpose. You can choose tools and limits next."}
           </DialogDescription>
         </DialogHeader>
@@ -154,7 +174,8 @@ function CreateAgentDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="new-agent-slug">Agent ID</Label>
+            {/* The value is a slug. The label names the stable short name, not an internal id. */}
+            <Label htmlFor="new-agent-slug">Short name</Label>
             <Input
               className="font-mono"
               id="new-agent-slug"
@@ -216,10 +237,15 @@ export function AgentsView({
   React.useEffect(() => {
     if (agentsQuery.error) {
       setError(
-        agentsQuery.error instanceof Error ? agentsQuery.error.message : "Could not load agents",
+        shownAgentError(
+          agentsQuery.error,
+          agents.length > 0 ? "Could not refresh agents. Try again." : "Could not load agents.",
+        ),
       );
+      return;
     }
-  }, [agentsQuery.error]);
+    setError(null);
+  }, [agents.length, agentsQuery.error]);
 
   React.useEffect(() => {
     if (agents.length === 0) return;
@@ -251,7 +277,7 @@ export function AgentsView({
       setConfirmingDelete(false);
       await Promise.all([load(), onAgentsChanged()]);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not delete agent");
+      setError(shownAgentError(cause, "Could not delete this agent."));
     } finally {
       setMutating(false);
     }
@@ -269,7 +295,7 @@ export function AgentsView({
     <div className="flex h-full min-h-0 flex-col bg-background" data-slot="agents-view">
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b px-5 py-3">
         <p className="text-sm text-muted-foreground">
-          {agents.length} {agents.length === 1 ? "agent" : "agents"} in this workspace
+          {agentWorkspaceCount(agents.length, agentsQuery.isError)}
         </p>
         <div className="flex gap-2">
           <Button
@@ -289,7 +315,9 @@ export function AgentsView({
       {error ? (
         <Alert className="shrink-0 rounded-none border-x-0 border-t-0" variant="destructive">
           <Warning className="size-4" />
-          <AlertTitle className="text-xs">Could not load agents</AlertTitle>
+          <AlertTitle className="text-xs">
+            {agentLoadTitle(agentsQuery.isError, agents.length)}
+          </AlertTitle>
           <AlertDescription className="flex items-center justify-between gap-3 text-xs">
             {error}
             <Button onClick={() => void load()} size="sm" variant="outline">
@@ -299,7 +327,7 @@ export function AgentsView({
         </Alert>
       ) : null}
 
-      {agents.length === 0 && !error ? (
+      {agents.length === 0 && !agentsQuery.isError && !error ? (
         <WorkspaceEmptyState
           description="Create an agent to give recurring work a clear role, instructions, and tools."
           image="agents"
@@ -309,7 +337,7 @@ export function AgentsView({
           ]}
           title="Agents"
         />
-      ) : (
+      ) : agents.length > 0 ? (
         <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] md:grid-cols-[220px_minmax(0,1fr)] md:grid-rows-1">
           <aside className="max-h-52 min-h-0 border-b bg-muted/5 md:max-h-none md:border-r md:border-b-0">
             <ScrollArea className="h-full p-2">
@@ -348,7 +376,7 @@ export function AgentsView({
                   <div>
                     <div className="flex items-center gap-2">
                       <h2 className="text-2xl font-medium tracking-tight">{selected.name}</h2>
-                      <Badge variant="outline">{selected.source}</Badge>
+                      <Badge variant="outline">{agentSourceLabel(selected.source)}</Badge>
                     </div>
                     <p className="mt-1 font-mono text-xs text-muted-foreground">{selected.slug}</p>
                   </div>
@@ -416,10 +444,10 @@ export function AgentsView({
 
                 <section>
                   <h3 className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                    Instructions
+                    Purpose
                   </h3>
                   <p className="mt-2 whitespace-pre-wrap rounded-none border bg-muted/15 p-4 text-sm leading-6">
-                    {selected.instructions || "No additional instructions."}
+                    {agentInstructionsCopy(selected)}
                   </p>
                 </section>
 
@@ -430,8 +458,10 @@ export function AgentsView({
                   <div className="mt-2 flex flex-wrap gap-2">
                     {selected.enabledTools?.length ? (
                       selected.enabledTools.map((tool) => (
-                        <Badge className="font-mono" key={tool} variant="secondary">
-                          {tool}
+                        // The badge already shows the product name. A title of
+                        // the tool id put relationship.read on hover.
+                        <Badge key={tool} variant="secondary">
+                          {agentToolLabel(tool)}
                         </Badge>
                       ))
                     ) : (
@@ -444,7 +474,13 @@ export function AgentsView({
                   <section className="grid gap-4 border-t pt-4 sm:grid-cols-2">
                     <div>
                       <p className="text-xs text-muted-foreground">Subagents</p>
-                      <p className="mt-1 text-sm">{selected.subagentRefs?.join(", ") || "None"}</p>
+                      <p className="mt-1 text-sm">
+                        {selected.subagentRefs?.length
+                          ? selected.subagentRefs
+                              .map((ref) => agentDisplayName(agents, ref))
+                              .join(", ")
+                          : "None"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Required connections</p>
@@ -456,7 +492,7 @@ export function AgentsView({
             ) : null}
           </ScrollArea>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

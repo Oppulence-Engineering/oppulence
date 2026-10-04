@@ -5,6 +5,7 @@ import "client-only";
 import {
   RelationshipGraphSavedViewSchema,
   RelationshipGraphSavedViewsSchema,
+  RelationshipGraphSavedViewStateSchema,
   type RelationshipGraphSavedView,
   type RelationshipGraphSavedViewState,
 } from "@/lib/revenue/types";
@@ -62,7 +63,7 @@ export function readLegacyGraphViews(
 }
 
 const savedViewFingerprint = (name: string, state: RelationshipGraphSavedViewState) =>
-  JSON.stringify([name, state]);
+  JSON.stringify([name, RelationshipGraphSavedViewStateSchema.parse(state)]);
 
 /**
  * Imports legacy views only after the API is known to be available. Existing
@@ -71,10 +72,13 @@ const savedViewFingerprint = (name: string, state: RelationshipGraphSavedViewSta
 export async function migrateLegacyGraphViews({
   storage,
   remote,
+  legacy,
   create,
 }: {
   storage: Pick<Storage, "getItem" | "setItem">;
   remote: GraphSavedViewResource[];
+  /** Views read before the graph overwrites browser storage with the server list. */
+  legacy?: RelationshipGraphSavedView[];
   create: (view: RelationshipGraphSavedView) => Promise<unknown>;
 }): Promise<boolean> {
   if (storage.getItem(GRAPH_VIEWS_MIGRATED_KEY) === "true") return false;
@@ -82,7 +86,7 @@ export async function migrateLegacyGraphViews({
   const existing = new Set(
     remote.map((view) => savedViewFingerprint(view.name, view.payload.state)),
   );
-  for (const candidate of readLegacyGraphViews(storage)) {
+  for (const candidate of legacy ?? readLegacyGraphViews(storage)) {
     const view = RelationshipGraphSavedViewSchema.parse(candidate);
     const fingerprint = savedViewFingerprint(view.label, view.state);
     if (!existing.has(fingerprint)) {

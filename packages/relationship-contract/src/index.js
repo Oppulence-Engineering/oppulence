@@ -88,6 +88,8 @@ const GRAPH_QUERY_STOP_WORDS = new Set([
 const GRAPH_QUERY_NODE_ALIASES = {
   account: "relationship",
   accounts: "relationship",
+  company: "relationship",
+  companies: "relationship",
   relationship: "relationship",
   relationships: "relationship",
   people: "person",
@@ -108,6 +110,8 @@ const GRAPH_QUERY_NODE_ALIASES = {
   evidence: "evidence",
   observation: "evidence",
   observations: "evidence",
+  detail: "evidence",
+  details: "evidence",
   source: "source",
   sources: "source",
   note: "note",
@@ -126,6 +130,9 @@ const GRAPH_QUERY_LIFECYCLES = [
 ];
 
 const GRAPH_QUERY_HEALTH = ["healthy", "needs_attention", "critical", "unknown"];
+// The inspector names these readings. They are not words in the company name.
+const GRAPH_QUERY_ENGAGEMENT = ["increasing", "steady", "declining", "dormant"];
+const GRAPH_QUERY_SENTIMENT = ["positive", "mixed", "negative"];
 const GRAPH_QUERY_SOURCES = [
   "gmail",
   "calendar",
@@ -143,6 +150,12 @@ const normalizedGraphValue = (value) =>
   String(value || "")
     .trim()
     .toLowerCase();
+
+/** A kept, missed, waived, or unconfirmed promise is not still overdue. */
+const graphPromiseCanBeOverdue = (status) => {
+  const normalized = normalizedGraphValue(status);
+  return normalized === "open" || normalized === "at_risk";
+};
 
 const graphNodeRelationshipIds = (node) => {
   if (node.kind === "relationship") return [node.id.replace(/^relationship:/, "")];
@@ -164,54 +177,234 @@ export function parseRelationshipGraphQuery(query) {
     nodeKinds: [],
     lifecycle: [],
     health: [],
+    engagement: [],
+    sentiment: [],
     approvalStatus: [],
     sources: [],
     edgeKinds: [],
-    overdue: /\boverdue\b/.test(normalized),
-    stale: /\bstale\b|\boutdated\b/.test(normalized),
-    changed: /\bchanged\b|\bsince (?:my )?last review\b/.test(normalized),
-    hideIsolated: /\bconnected\b|\bhide isolated\b/.test(normalized),
+    overdue: /\boverdue\b|\bpast due\b|\bpast_due\b/.test(normalized),
+    atRisk: /\bat risk\b|\bat_risk\b/.test(normalized),
+    dueSoon:
+      /\bdue soon\b|\bdue_soon\b|\bdue within 72h\b|\bwithin 72h\b|\bdue within 72 hours\b|\bwithin 72 hours\b/.test(
+        normalized,
+      ),
+    direction: /\bthey owe us\b|\bwhat they owe\b|\bthey owe\b/.test(normalized)
+      ? "promised_by_them"
+      : /\bwe both owe\b|\bshared promises?\b/.test(normalized)
+        ? "mutual"
+        : /\bwe owe them\b|\bwhat we owe\b|\bwe owe\b/.test(normalized)
+          ? "promised_by_me"
+          : "",
+    // The promise row says Open. An open follow-up is still awaiting approval.
+    open: /\bopen\b/.test(normalized) && !/\bnot open\b/.test(normalized),
+    // The follow-up inspector says Held. The stored queue status is still open.
+    held: /\bheld\b/.test(normalized),
+    // A finished draft says Drafted. Sent is a message that went out.
+    drafted: /\bdrafted\b/.test(normalized),
+    sent: /\bsent\b/.test(normalized) && !/\bnot sent\b/.test(normalized),
+    // The follow-up says Sending…, Failed, or Needs reconcile. Those stored
+    // execution states are requested, failed, and ambiguous.
+    sending: /\bsending\b/.test(normalized),
+    executionFailed: /\bfailed\b/.test(normalized),
+    needsReconcile: /\bneeds reconcile\b|\bneeds_reconcile\b/.test(normalized),
+    // The inspector says Cancelled for a send that was cancelled, and the
+    // promise row uses the same word. The stored execution state is cancelled.
+    executionCancelled:
+      /\bcancelled\b/.test(normalized) && !/\bnot cancelled\b/.test(normalized),
+    // The company card says Kept. The stored status is still met.
+    kept: /\bkept\b|\bkept_promises?\b/.test(normalized),
+    stale: /\bstale\b|\boutdated\b|\bout of date\b/.test(normalized),
+    // The row says Up to date or Getting old. The stored freshness is current or aging.
+    current:
+      /\bup to date\b|\bup_to_date\b/.test(normalized) &&
+      !/\bnot up to date\b|\bnot_up_to_date\b/.test(normalized),
+    aging: /\bgetting old\b|\bgetting_old\b/.test(normalized),
+    // The row is titled "Meeting follow-up". A hyphen must not become a
+    // different word, and the word meeting in that title is not a source.
+    meetingFollowUp: /\bmeeting follow_ups?\b|\bmeeting follow ups?\b/.test(normalized),
+    // "Promise follow-up" is that row. The word promise is not a request for
+    // every promise, and a meeting follow-up is a different row.
+    promiseFollowUp: /\bpromise follow_ups?\b|\bpromise follow ups?\b/.test(normalized),
+    followUp: /\bfollow_ups?\b|\bfollow ups?\b/.test(normalized),
+    // "Customer risk" is that follow-up. The word risk is not a request for risk nodes.
+    customerRisk: /\bcustomer risks?\b/.test(normalized),
+    // These titles contain a source word. The row is the follow-up, not that source.
+    calendarHold: /\bcalendar holds?\b/.test(normalized),
+    crmUpdate: /\bcrm updates?\b/.test(normalized),
+    meetingRecap: /\bmeeting recaps?\b/.test(normalized),
+    changed:
+      /\bchanged\b|\bsince (?:my )?last review\b|\bchanged since review\b|\bsince you last looked\b|\byou last looked\b/.test(
+        normalized,
+      ),
+    // The source row says Not connected. The word connected in that phrase
+    // is not a request to hide unconnected rows.
+    notConnected: /\bnot connected\b|\bnot_connected\b/.test(normalized),
+    // The source inspector says Syncing while a history sync is running, and
+    // Active once that source is live. The stored statuses are backfilling,
+    // rebuilding, live, and connected.
+    syncing: /\bsyncing\b/.test(normalized),
+    sourceActive:
+      /\bactive\b/.test(normalized) &&
+      !/\bactive[ _]customers?\b/.test(normalized) &&
+      !/\bnot active\b/.test(normalized),
+    // The follow-up badge says Not checked, Cleared, Review required, or
+    // Re-check needed. The stored policy is pending, passed, review_required, or stale.
+    notChecked: /\bnot checked\b|\bnot_checked\b/.test(normalized),
+    cleared: /\bcleared\b/.test(normalized),
+    reviewRequired: /\breview required\b|\breview_required\b/.test(normalized),
+    // The promise row says Review while it still needs a person to confirm it.
+    // "Review required" stays the policy badge.
+    promiseReview:
+      (/\breview\b/.test(normalized) || /\bneeds_review\b/.test(normalized)) &&
+      !/\breview required\b|\breview_required\b/.test(normalized) &&
+      !/\bnot review\b/.test(normalized) &&
+      !/\bsince (?:my )?last review\b|\bchanged since review\b/.test(normalized),
+    recheck: /\bre_check needed\b|\brecheck needed\b/.test(normalized),
+    // "Blocked" is the policy badge and a blocked promise. "Blocks" is a connection.
+    blocked: /\bblocked\b/.test(normalized),
+    hideIsolated:
+      !/\bnot connected\b|\bnot_connected\b/.test(normalized) &&
+      /\bconnected\b|\bhide isolated\b|\bunconnected\b|\bhide unconnected\b/.test(normalized),
     freeText: [],
   };
 
   for (const [alias, kind] of Object.entries(GRAPH_QUERY_NODE_ALIASES)) {
+    // "at risk" is the promise badge. "Customer risk" is the follow-up title.
+    // Neither phrase is a request for risk nodes.
+    if (
+      alias === "risk" &&
+      (/\bat risk\b|\bat_risk\b/.test(normalized) ||
+        /\bcustomer risks?\b/.test(normalized) ||
+        /\bhas risks?\b/.test(normalized))
+    ) {
+      continue;
+    }
+    if (
+      (alias === "milestone" || alias === "milestones") &&
+      /\bhas milestones?\b/.test(normalized)
+    ) {
+      continue;
+    }
+    if (
+      (alias === "promise" ||
+        alias === "promises" ||
+        alias === "commitment" ||
+        alias === "commitments") &&
+      (/\bpromise follow_ups?\b|\bpromise follow ups?\b/.test(normalized) ||
+        /\bopen promises?\b/.test(normalized) ||
+        /\bhas promises?\b/.test(normalized))
+    ) {
+      continue;
+    }
     if (new RegExp(`\\b${alias}\\b`).test(normalized) && !filters.nodeKinds.includes(kind)) {
       filters.nodeKinds.push(kind);
     }
   }
   for (const lifecycle of GRAPH_QUERY_LIFECYCLES) {
     const aliases = lifecycle === "renewal" ? ["renewal", "renewals", "renewing"] : [lifecycle];
-    if (aliases.some((alias) => new RegExp(`\\b${alias}\\b`).test(normalized))) {
+    if (
+      aliases.some((alias) =>
+        new RegExp(`\\b${alias.replaceAll("_", "[ _]")}s?\\b`).test(normalized),
+      ) &&
+      !filters.lifecycle.includes(lifecycle)
+    ) {
       filters.lifecycle.push(lifecycle);
     }
   }
-  if (/\bneeds attention\b|\bat risk\b/.test(normalized)) filters.health.push("needs_attention");
+  if (
+    /\bneeds attention\b/.test(normalized) &&
+    !filters.health.includes("needs_attention")
+  ) {
+    filters.health.push("needs_attention");
+  }
+  // The company row says Not known. The stored health is unknown.
+  if (/\bnot known\b|\bnot_known\b/.test(normalized) && !filters.health.includes("unknown")) {
+    filters.health.push("unknown");
+  }
   for (const health of GRAPH_QUERY_HEALTH) {
-    if (new RegExp(`\\b${health.replaceAll("_", "[ _]")}\\b`).test(normalized)) {
+    if (
+      new RegExp(`\\b${health.replaceAll("_", "[ _]")}\\b`).test(normalized) &&
+      !filters.health.includes(health)
+    ) {
       filters.health.push(health);
     }
   }
-  for (const status of ["pending", "approved", "rejected"]) {
-    if (new RegExp(`\\b${status}\\b`).test(normalized)) filters.approvalStatus.push(status);
+  // The inspector says Declining or Negative. Those stored fields are
+  // engagement and sentiment. Unknown stays off the inspector, so it is not
+  // a second way to ask "not known".
+  for (const engagement of GRAPH_QUERY_ENGAGEMENT) {
+    if (
+      new RegExp(`\\b${engagement}\\b`).test(normalized) &&
+      !filters.engagement.includes(engagement)
+    ) {
+      filters.engagement.push(engagement);
+    }
   }
+  for (const sentiment of GRAPH_QUERY_SENTIMENT) {
+    if (
+      new RegExp(`\\b${sentiment}\\b`).test(normalized) &&
+      !filters.sentiment.includes(sentiment)
+    ) {
+      filters.sentiment.push(sentiment);
+    }
+  }
+  // The follow-up row says Awaiting approval. The stored approval is pending.
+  if (
+    /\bawaiting approvals?\b|\bawaiting_approvals?\b/.test(normalized) &&
+    !filters.approvalStatus.includes("pending")
+  ) {
+    filters.approvalStatus.push("pending");
+  }
+  for (const status of ["pending", "approved", "rejected"]) {
+    if (new RegExp(`\\b${status}\\b`).test(normalized) && !filters.approvalStatus.includes(status)) {
+      filters.approvalStatus.push(status);
+    }
+  }
+  const withoutFollowUpTitle = normalized
+    .replace(/\bmeeting follow_ups?\b/g, " ")
+    .replace(/\bmeeting follow ups?\b/g, " ")
+    .replace(/\bfollow_ups?\b/g, " ")
+    .replace(/\bfollow ups?\b/g, " ")
+    .replace(/\bcalendar holds?\b/g, " ")
+    .replace(/\bmeeting recaps?\b/g, " ")
+    .replace(/\bcrm updates?\b/g, " ");
   for (const source of GRAPH_QUERY_SOURCES) {
-    if (new RegExp(`\\b${source.replaceAll("_", "[ _]")}\\b`).test(normalized)) {
+    if (new RegExp(`\\b${source.replaceAll("_", "[ _]")}s?\\b`).test(withoutFollowUpTitle)) {
       filters.sources.push(source);
     }
   }
   if (/\bdepend(?:s|ent)?\b|\brequires?\b/.test(normalized)) {
     filters.edgeKinds.push("requires");
   }
-  if (/\bblocks?|\bblocked\b/.test(normalized)) filters.edgeKinds.push("blocks");
+  if (/\bblocks?\b/.test(normalized)) filters.edgeKinds.push("blocks");
   if (/\bcontradict(?:s|ed|ion)?\b/.test(normalized)) filters.edgeKinds.push("contradicts");
+  // The connection row says replaces, has promise, has risk, or has milestone.
+  // Those stored kinds are supersedes, has_commitment, has_risk, and has_milestone.
+  const addEdgeKind = (kind) => {
+    if (!filters.edgeKinds.includes(kind)) filters.edgeKinds.push(kind);
+  };
+  if (/\breplaces\b|\bsupersedes\b/.test(normalized)) addEdgeKind("supersedes");
+  if (/\bhas promises?\b/.test(normalized)) addEdgeKind("has_commitment");
+  if (/\bhas risks?\b/.test(normalized)) addEdgeKind("has_risk");
+  if (/\bhas milestones?\b/.test(normalized)) addEdgeKind("has_milestone");
+  if (/\bparticipates in\b/.test(normalized)) addEdgeKind("participant_of");
+  if (/\bobserved from\b/.test(normalized)) addEdgeKind("observed_from");
+  if (/\brecommended for\b/.test(normalized)) addEdgeKind("recommended_for");
+  if (/\bowns\b/.test(normalized) && !/\bwe both owe\b|\bthey owe\b|\bwe owe\b/.test(normalized)) {
+    addEdgeKind("owns");
+  }
+  if (/\bsupports\b/.test(normalized)) addEdgeKind("supports");
 
   const recognized = new Set([
     ...Object.keys(GRAPH_QUERY_NODE_ALIASES),
     ...GRAPH_QUERY_LIFECYCLES.flatMap((value) => value.split("_")),
     ...GRAPH_QUERY_HEALTH.flatMap((value) => value.split("_")),
+    ...GRAPH_QUERY_ENGAGEMENT,
+    ...GRAPH_QUERY_SENTIMENT,
     ...GRAPH_QUERY_SOURCES.flatMap((value) => value.split("_")),
     "attention",
     "at",
+    "awaiting",
     "approved",
     "blocked",
     "changed",
@@ -221,10 +414,14 @@ export function parseRelationshipGraphQuery(query) {
     "depends",
     "hide",
     "isolated",
+    "kept",
+    "known",
     "last",
     "outdated",
     "overdue",
     "pending",
+    "approval",
+    "approvals",
     "rejected",
     "renewal",
     "renewals",
@@ -232,23 +429,162 @@ export function parseRelationshipGraphQuery(query) {
     "review",
     "stale",
   ]);
-  filters.freeText = normalized
+  const recognizedToken = (token) => {
+    if (GRAPH_QUERY_STOP_WORDS.has(token) || recognized.has(token)) return true;
+    // "customers" is the same word as the stage token "customer".
+    return token.endsWith("s") && recognized.has(token.slice(0, -1));
+  };
+  // These phrases are the filter. Leaving "since" or "date" behind turns the
+  // question into a text search and hides the company that actually changed.
+  const withoutFilterPhrases = normalized
+    .replace(/\bnot up to date\b/g, " ")
+    .replace(/\bnot_up_to_date\b/g, " ")
+    .replace(/\bup to date\b/g, " ")
+    .replace(/\bup_to_date\b/g, " ")
+    .replace(/\bgetting old\b/g, " ")
+    .replace(/\bgetting_old\b/g, " ")
+    .replace(/\bout of date\b/g, " ")
+    .replace(/\bsince you last looked\b/g, " ")
+    .replace(/\byou last looked\b/g, " ")
+    .replace(/\bsince my last review\b/g, " ")
+    .replace(/\bsince last review\b/g, " ")
+    .replace(/\bchanged since review\b/g, " ")
+    .replace(/\bhide unconnected\b/g, " ")
+    .replace(/\bnot connected\b/g, " ")
+    .replace(/\bnot_connected\b/g, " ")
+    .replace(/\bnot active\b/g, " ")
+    .replace(/\bsyncing\b/g, " ")
+    .replace(/\bactive\b/g, " ")
+    .replace(/\bunconnected\b/g, " ")
+    .replace(/\bnot checked\b/g, " ")
+    .replace(/\bnot_checked\b/g, " ")
+    .replace(/\bcleared\b/g, " ")
+    .replace(/\breview required\b/g, " ")
+    .replace(/\breview_required\b/g, " ")
+    .replace(/\bneeds review\b/g, " ")
+    .replace(/\bneeds_review\b/g, " ")
+    .replace(/\bnot review\b/g, " ")
+    .replace(/\breview\b/g, " ")
+    .replace(/\bre_check needed\b/g, " ")
+    .replace(/\brecheck needed\b/g, " ")
+    .replace(/\bblocked\b/g, " ")
+    .replace(/\bhide isolated\b/g, " ")
+    .replace(/\bpast due\b/g, " ")
+    .replace(/\bpast_due\b/g, " ")
+    .replace(/\bat risk\b/g, " ")
+    .replace(/\bat_risk\b/g, " ")
+    .replace(/\bdue within 72 hours\b/g, " ")
+    .replace(/\bwithin 72 hours\b/g, " ")
+    .replace(/\bdue within 72h\b/g, " ")
+    .replace(/\bwithin 72h\b/g, " ")
+    .replace(/\bdue soon\b/g, " ")
+    .replace(/\bdue_soon\b/g, " ")
+    .replace(/\bwhat they owe us\b/g, " ")
+    .replace(/\bthey owe us\b/g, " ")
+    .replace(/\bwhat they owe\b/g, " ")
+    .replace(/\bthey owe\b/g, " ")
+    .replace(/\bwhat we owe them\b/g, " ")
+    .replace(/\bwe owe them\b/g, " ")
+    .replace(/\bwhat we owe\b/g, " ")
+    .replace(/\bwe both owe\b/g, " ")
+    .replace(/\bwe owe\b/g, " ")
+    .replace(/\bshared promises\b/g, " ")
+    .replace(/\bshared promise\b/g, " ")
+    .replace(/\bkept_promises\b/g, " ")
+    .replace(/\bkept_promise\b/g, " ")
+    .replace(/\bkept\b/g, " ")
+    .replace(/\bnot known\b/g, " ")
+    .replace(/\bnot_known\b/g, " ")
+    .replace(/\bawaiting approvals\b/g, " ")
+    .replace(/\bawaiting approval\b/g, " ")
+    .replace(/\bawaiting_approvals\b/g, " ")
+    .replace(/\bawaiting_approval\b/g, " ")
+    .replace(/\bmeeting follow_ups?\b/g, " ")
+    .replace(/\bmeeting follow ups?\b/g, " ")
+    .replace(/\bpromise follow_ups?\b/g, " ")
+    .replace(/\bpromise follow ups?\b/g, " ")
+    .replace(/\bfollow_ups?\b/g, " ")
+    .replace(/\bfollow ups?\b/g, " ")
+    .replace(/\bcustomer risks?\b/g, " ")
+    .replace(/\bcalendar holds?\b/g, " ")
+    .replace(/\bmeeting recaps?\b/g, " ")
+    .replace(/\bcrm updates?\b/g, " ")
+    .replace(/\bopen promises\b/g, " ")
+    .replace(/\bopen promise\b/g, " ")
+    .replace(/\bnot open\b/g, " ")
+    .replace(/\bopen\b/g, " ")
+    .replace(/\bheld\b/g, " ")
+    .replace(/\bnot sent\b/g, " ")
+    .replace(/\bdrafted\b/g, " ")
+    .replace(/\bsent\b/g, " ")
+    .replace(/\bneeds reconcile\b/g, " ")
+    .replace(/\bneeds_reconcile\b/g, " ")
+    .replace(/\bsending\b/g, " ")
+    .replace(/\bfailed\b/g, " ")
+    .replace(/\bnot cancelled\b/g, " ")
+    .replace(/\bcancelled\b/g, " ")
+    .replace(/\bhas promises?\b/g, " ")
+    .replace(/\bhas risks?\b/g, " ")
+    .replace(/\bhas milestones?\b/g, " ")
+    .replace(/\bparticipates in\b/g, " ")
+    .replace(/\bobserved from\b/g, " ")
+    .replace(/\brecommended for\b/g, " ")
+    .replace(/\bsupersedes\b/g, " ")
+    .replace(/\breplaces\b/g, " ")
+    .replace(/\bowns\b/g, " ")
+    .replace(/\bsupports\b/g, " ");
+  filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
-    .filter((token) => token && !GRAPH_QUERY_STOP_WORDS.has(token) && !recognized.has(token));
+    .filter((token) => token && !recognizedToken(token));
 
   const applied = [];
   if (filters.lifecycle.length) applied.push(`lifecycle: ${filters.lifecycle.join(", ")}`);
   if (filters.health.length) applied.push(`health: ${filters.health.join(", ")}`);
+  if (filters.engagement.length) applied.push(`engagement: ${filters.engagement.join(", ")}`);
+  if (filters.sentiment.length) applied.push(`sentiment: ${filters.sentiment.join(", ")}`);
   if (filters.nodeKinds.length) applied.push(`nodes: ${filters.nodeKinds.join(", ")}`);
   if (filters.approvalStatus.length) {
     applied.push(`approval: ${filters.approvalStatus.join(", ")}`);
   }
   if (filters.sources.length) applied.push(`sources: ${filters.sources.join(", ")}`);
   if (filters.edgeKinds.length) applied.push(`edges: ${filters.edgeKinds.join(", ")}`);
-  if (filters.overdue) applied.push("overdue commitments");
-  if (filters.stale) applied.push("stale evidence");
-  if (filters.changed) applied.push("changed since review");
+  if (filters.overdue) applied.push("overdue promises");
+  if (filters.atRisk) applied.push("at risk");
+  if (filters.dueSoon) applied.push("due soon");
+  if (filters.direction === "promised_by_them") applied.push("they owe us");
+  else if (filters.direction === "mutual") applied.push("we both owe");
+  else if (filters.direction === "promised_by_me") applied.push("we owe them");
+  if (filters.kept) applied.push("kept");
+  if (filters.open) applied.push("open");
+  if (filters.held) applied.push("held");
+  if (filters.drafted) applied.push("drafted");
+  if (filters.sent) applied.push("sent");
+  if (filters.sending) applied.push("sending");
+  if (filters.executionFailed) applied.push("failed");
+  if (filters.needsReconcile) applied.push("needs reconcile");
+  if (filters.executionCancelled) applied.push("cancelled");
+  if (filters.stale) applied.push("out of date");
+  if (filters.current) applied.push("up to date");
+  if (filters.aging) applied.push("getting old");
+  if (filters.meetingFollowUp) applied.push("meeting follow-up");
+  else if (filters.promiseFollowUp) applied.push("promise follow-up");
+  else if (filters.followUp) applied.push("follow-up");
+  if (filters.customerRisk) applied.push("customer risk");
+  if (filters.calendarHold) applied.push("calendar hold");
+  if (filters.crmUpdate) applied.push("crm update");
+  if (filters.meetingRecap) applied.push("meeting recap");
+  if (filters.changed) applied.push("changed since you last looked");
+  if (filters.notConnected) applied.push("not connected");
+  if (filters.syncing) applied.push("syncing");
+  if (filters.sourceActive) applied.push("active");
+  if (filters.notChecked) applied.push("not checked");
+  if (filters.cleared) applied.push("cleared");
+  if (filters.reviewRequired) applied.push("review required");
+  if (filters.promiseReview) applied.push("review");
+  if (filters.recheck) applied.push("re-check needed");
+  if (filters.blocked) applied.push("blocked");
+  if (filters.hideIsolated) applied.push("hide unconnected");
   if (filters.freeText.length) applied.push(`text: ${filters.freeText.join(" ")}`);
 
   return { raw, normalized, filters, applied };
@@ -295,12 +631,107 @@ export function queryRelationshipGraph(graph, query, options = {}) {
         node.kind === "relationship" && filters.health.includes(normalizedGraphValue(node.health)),
     );
   }
+  if (filters.engagement.length) {
+    constrainBy(
+      (node) =>
+        node.kind === "relationship" &&
+        filters.engagement.includes(normalizedGraphValue(node.engagement)),
+    );
+  }
+  if (filters.sentiment.length) {
+    constrainBy(
+      (node) =>
+        node.kind === "relationship" &&
+        filters.sentiment.includes(normalizedGraphValue(node.sentiment)),
+    );
+  }
   if (filters.overdue) {
     constrainBy((node) => {
-      if (node.kind !== "commitment" || normalizedGraphValue(node.status) === "completed")
-        return false;
+      if (node.kind !== "commitment" || !graphPromiseCanBeOverdue(node.status)) return false;
       const dueAt = node.dueAt ? new Date(node.dueAt) : null;
       return Boolean(dueAt && Number.isFinite(dueAt.getTime()) && dueAt < asOf);
+    });
+  }
+  if (filters.atRisk) {
+    constrainBy(
+      (node) => node.kind === "commitment" && normalizedGraphValue(node.status) === "at_risk",
+    );
+  }
+  if (filters.dueSoon) {
+    constrainBy((node) => {
+      if (node.kind !== "commitment" || normalizedGraphValue(node.status) !== "at_risk") return false;
+      const dueAt = node.dueAt ? new Date(node.dueAt) : null;
+      return Boolean(dueAt && Number.isFinite(dueAt.getTime()) && dueAt >= asOf);
+    });
+  }
+  if (filters.direction) {
+    constrainBy((node) => {
+      if (node.kind !== "commitment") return false;
+      return normalizedGraphValue(node.metadata?.direction) === filters.direction;
+    });
+  }
+  if (filters.kept) {
+    constrainBy((node) => {
+      if (node.kind !== "commitment") return false;
+      const status = normalizedGraphValue(node.status);
+      return status === "met" || status === "fulfilled";
+    });
+  }
+  if (filters.open) {
+    constrainBy(
+      (node) => node.kind === "commitment" && normalizedGraphValue(node.status) === "open",
+    );
+  }
+  if (filters.promiseReview) {
+    constrainBy(
+      (node) => node.kind === "commitment" && normalizedGraphValue(node.status) === "review",
+    );
+  }
+  if (filters.held) {
+    constrainBy(
+      (node) => node.kind === "action" && normalizedGraphValue(node.status) === "open",
+    );
+  }
+  if (filters.drafted) {
+    constrainBy(
+      (node) =>
+        node.kind === "action" &&
+        normalizedGraphValue(node.executionStatus) === "sent" &&
+        normalizedGraphValue(node.metadata?.executionMode) === "draft",
+    );
+  }
+  if (filters.sent) {
+    constrainBy(
+      (node) =>
+        node.kind === "action" &&
+        normalizedGraphValue(node.executionStatus) === "sent" &&
+        normalizedGraphValue(node.metadata?.executionMode) !== "draft",
+    );
+  }
+  if (filters.sending) {
+    constrainBy(
+      (node) => node.kind === "action" && normalizedGraphValue(node.executionStatus) === "requested",
+    );
+  }
+  if (filters.executionFailed) {
+    constrainBy((node) => {
+      if (node.kind === "action" && normalizedGraphValue(node.executionStatus) === "failed") {
+        return true;
+      }
+      return node.kind === "source" && normalizedGraphValue(node.status) === "failed";
+    });
+  }
+  if (filters.needsReconcile) {
+    constrainBy(
+      (node) => node.kind === "action" && normalizedGraphValue(node.executionStatus) === "ambiguous",
+    );
+  }
+  if (filters.executionCancelled) {
+    constrainBy((node) => {
+      if (node.kind === "action" && normalizedGraphValue(node.executionStatus) === "cancelled") {
+        return true;
+      }
+      return node.kind === "commitment" && normalizedGraphValue(node.status) === "cancelled";
     });
   }
   if (filters.approvalStatus.length) {
@@ -315,6 +746,103 @@ export function queryRelationshipGraph(graph, query, options = {}) {
   }
   if (filters.stale) {
     constrainBy((node) => normalizedGraphValue(node.freshness) === "stale");
+  }
+  if (filters.current) {
+    constrainBy((node) => normalizedGraphValue(node.freshness) === "current");
+  }
+  if (filters.aging) {
+    constrainBy((node) => normalizedGraphValue(node.freshness) === "aging");
+  }
+  if (filters.notConnected) {
+    constrainBy(
+      (node) => node.kind === "source" && normalizedGraphValue(node.status) === "not_connected",
+    );
+  }
+  if (filters.syncing) {
+    constrainBy((node) => {
+      if (node.kind !== "source") return false;
+      const status = normalizedGraphValue(node.status);
+      return status === "backfilling" || status === "rebuilding";
+    });
+  }
+  if (filters.sourceActive) {
+    constrainBy((node) => {
+      if (node.kind !== "source") return false;
+      const status = normalizedGraphValue(node.status);
+      return status === "live" || status === "connected";
+    });
+  }
+  if (filters.notChecked) {
+    constrainBy(
+      (node) => node.kind === "action" && normalizedGraphValue(node.policyStatus) === "pending",
+    );
+  }
+  if (filters.cleared) {
+    constrainBy(
+      (node) => node.kind === "action" && normalizedGraphValue(node.policyStatus) === "passed",
+    );
+  }
+  if (filters.reviewRequired) {
+    constrainBy(
+      (node) =>
+        node.kind === "action" && normalizedGraphValue(node.policyStatus) === "review_required",
+    );
+  }
+  if (filters.recheck) {
+    constrainBy(
+      (node) => node.kind === "action" && normalizedGraphValue(node.policyStatus) === "stale",
+    );
+  }
+  if (filters.blocked) {
+    constrainBy((node) => {
+      if (node.kind === "action" && normalizedGraphValue(node.policyStatus) === "blocked") {
+        return true;
+      }
+      return node.kind === "commitment" && normalizedGraphValue(node.status) === "blocked";
+    });
+  }
+  if (filters.meetingFollowUp) {
+    constrainBy((node) => {
+      if (node.kind !== "action") return false;
+      const label = normalizedGraphValue(node.label).replaceAll("-", "_");
+      return /\bmeeting\b/.test(label) && /\bfollow_ups?\b/.test(label);
+    });
+  } else if (filters.promiseFollowUp) {
+    constrainBy((node) => {
+      if (node.kind !== "action") return false;
+      const label = normalizedGraphValue(node.label).replaceAll("-", "_");
+      return /\bpromise\b/.test(label) && /\bfollow_ups?\b/.test(label);
+    });
+  } else if (filters.followUp) {
+    constrainBy((node) => {
+      if (node.kind !== "action") return false;
+      const label = normalizedGraphValue(node.label).replaceAll("-", "_");
+      return /\bfollow_ups?\b/.test(label);
+    });
+  }
+  if (filters.customerRisk) {
+    constrainBy((node) => {
+      if (node.kind !== "action") return false;
+      return /\bcustomer risks?\b/.test(normalizedGraphValue(node.label));
+    });
+  }
+  if (filters.calendarHold) {
+    constrainBy((node) => {
+      if (node.kind !== "action") return false;
+      return /\bcalendar holds?\b/.test(normalizedGraphValue(node.label));
+    });
+  }
+  if (filters.crmUpdate) {
+    constrainBy((node) => {
+      if (node.kind !== "action") return false;
+      return /\bcrm updates?\b/.test(normalizedGraphValue(node.label));
+    });
+  }
+  if (filters.meetingRecap) {
+    constrainBy((node) => {
+      if (node.kind !== "action") return false;
+      return /\bmeeting recaps?\b/.test(normalizedGraphValue(node.label));
+    });
   }
   if (filters.changed) {
     constrainBy((node) => node.kind === "relationship" && Boolean(node.changedSinceReview));
@@ -344,10 +872,8 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     constrained = true;
   }
 
-  if (!constrained && filters.nodeKinds.length) {
-    for (const node of nodes) {
-      if (filters.nodeKinds.includes(node.kind)) matched.add(node.id);
-    }
+  if (filters.nodeKinds.length) {
+    constrainBy((node) => filters.nodeKinds.includes(node.kind));
   }
 
   // Each individual constraint can find useful nodes while their relationship sets have no
@@ -399,6 +925,29 @@ export function queryRelationshipGraph(graph, query, options = {}) {
       visible.add(edge.source);
       visible.add(edge.target);
     }
+  }
+  if (filters.hideIsolated) {
+    const connected = new Set();
+    for (const edge of edges) {
+      if (!edgeKindCandidates.has(edge.id)) continue;
+      if (visible.has(edge.source) && visible.has(edge.target)) {
+        connected.add(edge.source);
+        connected.add(edge.target);
+      }
+    }
+    for (const nodeId of [...visible]) {
+      if (!connected.has(nodeId)) visible.delete(nodeId);
+    }
+    for (const nodeId of [...matched]) {
+      if (!visible.has(nodeId)) matched.delete(nodeId);
+    }
+    const remaining = new Set();
+    for (const node of nodes) {
+      if (node.kind !== "relationship" || !visible.has(node.id)) continue;
+      for (const relationshipId of graphNodeRelationshipIds(node)) remaining.add(relationshipId);
+    }
+    relationshipIds = constrained ? graphSetIntersection(relationshipIds, remaining) : remaining;
+    constrained = true;
   }
   const matchedEdgeIds = new Set(
     edges

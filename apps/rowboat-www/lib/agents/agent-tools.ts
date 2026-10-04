@@ -1,0 +1,224 @@
+/**
+ * Tool ids are what the agent runtime grants. The agents page and the
+ * configuration picker show the label. Tools missing from the picker still
+ * need a label when a built-in agent already has them.
+ */
+export const AGENT_TOOL_CATALOG = [
+  {
+    name: "current_time",
+    label: "Current time",
+    description: "Read the current date and time.",
+  },
+  {
+    name: "web.search",
+    label: "Web search",
+    description: "Search the web for current information.",
+  },
+  { name: "echo", label: "Echo", description: "Repeat a short message." },
+  {
+    name: "tool_result.read",
+    label: "Earlier results",
+    description: "Read what an earlier step already returned.",
+  },
+  {
+    name: "relationship.read",
+    label: "Look up companies and promises",
+    description:
+      "Read companies, people, conversations, notes, tasks, promises, and source health.",
+  },
+  {
+    name: "source.retry_sync",
+    label: "Sync a source again",
+    description: "Try reading a connected source again. This does not reconnect the account.",
+  },
+  {
+    name: "task.create",
+    label: "Create task",
+    description: "Add a task in this workspace.",
+  },
+  {
+    name: "task.update",
+    label: "Edit task",
+    description: "Change a task's title, due time, or priority.",
+  },
+  {
+    name: "task.complete",
+    label: "Complete task",
+    description: "Mark a task done.",
+  },
+  {
+    name: "task.snooze",
+    label: "Snooze task",
+    description: "Put a task off until a later time.",
+  },
+  {
+    name: "note.create",
+    label: "Create note",
+    description: "Add a note in this workspace.",
+  },
+  {
+    name: "note.update",
+    label: "Edit note",
+    description: "Edit a note. Earlier versions stay in its history.",
+  },
+  {
+    name: "note.delete",
+    label: "Delete note",
+    description: "Delete a note. The history keeps a record that it was removed.",
+  },
+  {
+    name: "action.propose",
+    label: "Propose finance action",
+    description: "Ask for approval before a finance action runs.",
+  },
+  {
+    name: "slack.read_thread",
+    label: "Read Slack",
+    description: "Read messages from a Slack thread.",
+  },
+  {
+    name: "slack.post_message",
+    label: "Post to Slack",
+    description: "Send a Slack message after you approve it.",
+  },
+  {
+    name: "connector.read.gmail",
+    label: "Read Gmail",
+    description: "Read connected Gmail messages.",
+  },
+  {
+    name: "connector.write.gmail_draft",
+    label: "Draft email",
+    description: "Create a Gmail draft for review.",
+  },
+  {
+    name: "connector.write.gmail_send",
+    label: "Send a Gmail message after you approve it",
+    description: "Send a Gmail message after you approve it.",
+  },
+  {
+    name: "connector.read.calendar",
+    label: "Read calendar",
+    description: "Read connected calendar events.",
+  },
+  {
+    name: "connector.write.calendar_create",
+    label: "Create event",
+    description: "Create a calendar event.",
+  },
+  {
+    name: "connector.write.calendar_update",
+    label: "Update event",
+    description: "Update an existing calendar event.",
+  },
+  { name: "connector.read.drive", label: "Read Drive", description: "Read connected Drive files." },
+  {
+    name: "connector.write.drive_update",
+    label: "Update Drive",
+    description: "Update connected Drive files.",
+  },
+  {
+    name: "connector.read.hubspot_search",
+    label: "Search HubSpot",
+    description: "Find records in the connected HubSpot account.",
+  },
+  {
+    name: "connector.write.hubspot_note",
+    label: "Add HubSpot note",
+    description: "Attach a note to a HubSpot record.",
+  },
+  {
+    name: "connector.write.hubspot_task",
+    label: "Create HubSpot task",
+    description: "Create a follow-up task in HubSpot.",
+  },
+  {
+    name: "conduit.read",
+    label: "Read Conduit",
+    description: "Read revenue context from Conduit.",
+  },
+  {
+    name: "eigen.simulate",
+    label: "Run simulation",
+    description: "Run an Eigen scenario simulation.",
+  },
+  {
+    name: "demo.payment",
+    label: "Payment demo",
+    description: "Practice an approval. No money moves.",
+  },
+] as const;
+
+/**
+ * Echo, the payment demo, Conduit, and Eigen are developer surfaces. They stay
+ * in the catalog so a saved grant can still be shown, and stay out of the
+ * picker until this agent already has them.
+ */
+export const DEVELOPER_TOOL_NAMES = new Set<string>([
+  "echo",
+  "demo.payment",
+  "conduit.read",
+  "eigen.simulate",
+]);
+
+/** Granted on built-in agents, and not offered in the picker until a teammate adds them. */
+const GRANTED_TOOL_LABELS: Record<string, string> = {
+  "run_history.read": "Past runs",
+  "workflow.read": "Workflows",
+  "workspace.read": "This workspace",
+  "relationship.create": "Add a company",
+  "relationship.correct": "Correct a company",
+  "relationship.assertion.retract": "Remove a saved detail",
+  "relationship.review.acknowledge": "Acknowledge a review",
+  "relationship.identity.decide": "Review a possible duplicate",
+  "relationship.attention.decide": "Update what needs attention",
+  "conversation.delete": "Delete a conversation",
+  "recommendation.create": "Create a recommendation",
+  "recommendation.dismiss": "Dismiss a recommendation",
+  "recommendation.snooze": "Snooze a recommendation",
+  "recommendation.update": "Edit a recommendation",
+  "action.audit": "Review an action",
+  "action.outcome.record": "Record an outcome",
+  "commitment.export": "Export promises",
+  "commitment.accept": "Accept a promise",
+  "commitment.block": "Block a promise",
+  "commitment.confirm": "Confirm a promise",
+  "commitment.correct": "Correct a promise",
+  "commitment.complete": "Complete a promise",
+  "commitment.dispute": "Dispute a promise",
+  "commitment.unblock": "Unblock a promise",
+  "person.create": "Add a person",
+  "person.correct": "Correct a person",
+  "person.attribute.retract": "Remove a profile field",
+  "person.identity.decide": "Review a possible duplicate person",
+  "person.delete": "Remove a person",
+  "action_proposal.read": "Read proposed actions",
+  "subagent.delegate": "Delegate to an agent",
+  "connector.read.composio_tool_search": "Find another tool",
+  "connector.read.composio_tool_describe": "See what another tool does",
+  "connector.write.composio_tool_execute": "Run another tool after you approve it",
+};
+
+const APPROVAL_TRUST_COPY: Record<string, string> = {
+  read: "This only looks things up.",
+  write: "This can change a record.",
+  act: "This can take an action.",
+  "money-moving": "This can spend money or send something you cannot undo.",
+};
+
+/** The approval card says what the action can do. The stored tier is not the sentence. */
+export function approvalTrustCopy(tier: string): string {
+  return (
+    APPROVAL_TRUST_COPY[tier.trim().toLowerCase()] ?? "This needs your approval before it runs."
+  );
+}
+
+export function agentToolLabel(name: string): string {
+  const catalog = AGENT_TOOL_CATALOG.find((tool) => tool.name === name);
+  if (catalog) return catalog.label;
+  const granted = GRANTED_TOOL_LABELS[name];
+  if (granted) return granted;
+  const words = name.replace(/[._]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!words) return name;
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}

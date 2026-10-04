@@ -29,8 +29,11 @@ const listRow = {
 
 describe("GET /relationships contract", () => {
   it("accepts the counts the API list DTO always emits", () => {
-    expect(ListRelationships200Response.parse({ relationships: [listRow] })).toEqual({
+    expect(
+      ListRelationships200Response.parse({ relationships: [listRow], hasMore: false }),
+    ).toEqual({
       relationships: [listRow],
+      hasMore: false,
     });
   });
 });

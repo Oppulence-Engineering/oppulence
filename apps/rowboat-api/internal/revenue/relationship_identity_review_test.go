@@ -1,7 +1,9 @@
 package revenue
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -11,6 +13,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/google/uuid"
 )
 
 func identityCollisionFixture(t *testing.T) (*fixture, *ent.Relationship, *ent.Relationship, *ent.RelationshipIdentityCandidate, *ent.RevenueAction) {
@@ -283,5 +287,133 @@ func TestSameDomainPeopleRemainDistinctUnderIdentityReview(t *testing.T) {
 	count, err := f.client.Relationship.Query().Where(relationship.KindEQ("person")).Count(f.ctx)
 	if err != nil || count != 2 {
 		t.Fatalf("person count=%d err=%v", count, err)
+	}
+}
+
+func TestListIdentityCandidatesOffsetSkipsTheNewest(t *testing.T) {
+	f := newFixture(t)
+	internal := auth.WithInternal(context.Background())
+	workspace, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatalf("workspace: %v", err)
+	}
+	existing := f.relationship(t)
+	oldestRel := f.relationship(t)
+	middleRel := f.relationship(t)
+	newestRel := f.relationship(t)
+	base := time.Date(2026, 4, 1, 12, 0, 0, 0, time.UTC)
+	oldest := f.client.RelationshipIdentityCandidate.Create().
+		SetWorkspace(workspace).SetUser(f.user).
+		SetProposedRelationship(oldestRel).SetExistingRelationship(existing).
+		SetDedupeKey("oldest").SetAnchorKind("domain").SetAnchorKeyHash("hash-oldest").
+		SetStatus("pending").SetCreatedAt(base).SaveX(internal)
+	middle := f.client.RelationshipIdentityCandidate.Create().
+		SetWorkspace(workspace).SetUser(f.user).
+		SetProposedRelationship(middleRel).SetExistingRelationship(existing).
+		SetDedupeKey("middle").SetAnchorKind("domain").SetAnchorKeyHash("hash-middle").
+		SetStatus("pending").SetCreatedAt(base.Add(time.Hour)).SaveX(internal)
+	f.client.RelationshipIdentityCandidate.Create().
+		SetWorkspace(workspace).SetUser(f.user).
+		SetProposedRelationship(newestRel).SetExistingRelationship(existing).
+		SetDedupeKey("newest").SetAnchorKind("domain").SetAnchorKeyHash("hash-newest").
+		SetStatus("pending").SetCreatedAt(base.Add(2 * time.Hour)).SaveX(internal)
+
+	page, err := f.svc.ListIdentityCandidates(f.ctx, f.user, IdentityCandidateFilter{
+		Status: "pending", Limit: 1, Offset: 1,
+	})
+	if err != nil {
+		t.Fatalf("offset page: %v", err)
+	}
+	if !page.HasMore || len(page.Candidates) != 1 || page.Candidates[0].ID != middle.ID {
+		t.Fatalf("offset page = %+v, want the middle duplicate and another page", page)
+	}
+	rest, err := f.svc.ListIdentityCandidates(f.ctx, f.user, IdentityCandidateFilter{
+		Status: "pending", Limit: 10, Offset: 2,
+	})
+	if err != nil {
+		t.Fatalf("last page: %v", err)
+	}
+	if rest.HasMore || len(rest.Candidates) != 1 || rest.Candidates[0].ID != oldest.ID {
+		t.Fatalf("last page = %+v, want the oldest duplicate", rest)
+	}
+	neg, err := f.svc.ListIdentityCandidates(f.ctx, f.user, IdentityCandidateFilter{
+		Status: "pending", Limit: 10, Offset: -2,
+	})
+	if err != nil {
+		t.Fatalf("negative offset: %v", err)
+	}
+	if neg.HasMore || len(neg.Candidates) != 3 || neg.Candidates[2].ID != oldest.ID {
+		t.Fatalf("negative offset = %+v, want every duplicate newest first", neg)
+	}
+}
+
+func TestListIdentityCandidatesExactPageIsNotAnotherPage(t *testing.T) {
+	f := newFixture(t)
+	internal := auth.WithInternal(context.Background())
+	workspace, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatalf("workspace: %v", err)
+	}
+	existing := f.relationship(t)
+	when := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	oldest := uuid.MustParse("a1166000-0000-4000-8000-000000000001")
+	for i := 1; i <= 50; i++ {
+		f.client.RelationshipIdentityCandidate.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("a1166000-0000-4000-8000-%012d", i))).
+			SetWorkspace(workspace).SetUser(f.user).
+			SetProposedRelationship(f.relationship(t)).SetExistingRelationship(existing).
+			SetDedupeKey(fmt.Sprintf("exact-%d", i)).SetAnchorKind("domain").
+			SetAnchorKeyHash(fmt.Sprintf("hash-%d", i)).
+			SetStatus("pending").SetCreatedAt(when).SaveX(internal)
+	}
+
+	exact, err := f.svc.ListIdentityCandidates(f.ctx, f.user, IdentityCandidateFilter{
+		Status: "pending", Limit: 50,
+	})
+	if err != nil {
+		t.Fatalf("exact page: %v", err)
+	}
+	if exact.HasMore || len(exact.Candidates) != 50 {
+		t.Fatalf("exact page hasMore=%v len=%d, want the fifty duplicates and no further page", exact.HasMore, len(exact.Candidates))
+	}
+	foundOldest := false
+	for _, candidate := range exact.Candidates {
+		if candidate.ID == oldest {
+			foundOldest = true
+		}
+	}
+	if !foundOldest {
+		t.Fatal("exact page dropped the oldest duplicate")
+	}
+
+	f.client.RelationshipIdentityCandidate.Create().
+		SetID(uuid.MustParse("a1166000-0000-4000-8000-000000000051")).
+		SetWorkspace(workspace).SetUser(f.user).
+		SetProposedRelationship(f.relationship(t)).SetExistingRelationship(existing).
+		SetDedupeKey("exact-51").SetAnchorKind("domain").SetAnchorKeyHash("hash-51").
+		SetStatus("pending").SetCreatedAt(when).SaveX(internal)
+
+	first, err := f.svc.ListIdentityCandidates(f.ctx, f.user, IdentityCandidateFilter{
+		Status: "pending", Limit: 50,
+	})
+	if err != nil {
+		t.Fatalf("first page: %v", err)
+	}
+	if !first.HasMore || len(first.Candidates) != 50 {
+		t.Fatalf("first page hasMore=%v len=%d, want fifty duplicates and another page", first.HasMore, len(first.Candidates))
+	}
+	for _, candidate := range first.Candidates {
+		if candidate.ID == oldest {
+			t.Fatal("first page included the oldest duplicate")
+		}
+	}
+	second, err := f.svc.ListIdentityCandidates(f.ctx, f.user, IdentityCandidateFilter{
+		Status: "pending", Limit: 50, Offset: 50,
+	})
+	if err != nil {
+		t.Fatalf("second page: %v", err)
+	}
+	if second.HasMore || len(second.Candidates) != 1 || second.Candidates[0].ID != oldest {
+		t.Fatalf("second page = %+v, want the oldest duplicate and no further page", second)
 	}
 }

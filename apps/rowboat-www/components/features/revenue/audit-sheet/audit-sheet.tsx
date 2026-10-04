@@ -36,7 +36,68 @@ import {
 } from "@/lib/revenue/revenue";
 import { errMessage, PolicyBadge } from "@/components/features/revenue/shared/shared";
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
+import { activitySourceLabel } from "@/lib/revenue/source-product-copy";
 import type { ActionAudit, RevenueAction } from "@/lib/revenue/types";
+
+/** An outcome kind is a stored slug. The history badge names the result. */
+export function outcomeKindLabel(kind: string): string {
+  const known = OUTCOME_LABELS[kind];
+  if (known) return known;
+  const words = kind.replaceAll("_", " ").trim();
+  if (!words) return "Outcome";
+  return words.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+const CHANNEL_LABELS: Record<string, string> = {
+  email: "Email",
+  slack: "Slack",
+  call: "Call",
+  crm_task: "CRM task",
+  crm: "CRM",
+  task: "Task",
+  calendar: "Calendar",
+};
+
+function titledSlug(value: string): string {
+  return value
+    .replaceAll(/[._]+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => (word.toLowerCase() === "crm" ? "CRM" : word.charAt(0).toUpperCase() + word.slice(1)))
+    .join(" ");
+}
+
+/** A revision names the action the way the queue does. */
+export function revisionActionLabel(actionType: string): string {
+  return ACTION_TYPE_LABELS[actionType] ?? (titledSlug(actionType) || "Action");
+}
+
+/** A revision names the channel a person would recognize. */
+export function revisionChannelLabel(channel: string): string {
+  return CHANNEL_LABELS[channel] ?? (titledSlug(channel) || "Channel");
+}
+
+/** A policy reason code is a facade slug. History names what it blocked. */
+export function policyReasonLabel(code: string): string {
+  if (code === "suppression.opted_out") return "This person opted out";
+  return titledSlug(code) || "Policy reason";
+}
+
+/** An outcome source is where the result was seen. The row names that place. */
+export function outcomeSourceLabel(source: string): string {
+  switch (source) {
+    case "user":
+      return "Logged by you";
+    case "outbound":
+      return "Sent from here";
+    case "task":
+      return "A task";
+    case "crm":
+      return "The CRM";
+    default:
+      return activitySourceLabel(source);
+  }
+}
 
 export function AuditSheet({
   action,
@@ -51,14 +112,18 @@ export function AuditSheet({
   const [loading, setLoading] = React.useState(false);
   const [outcome, setOutcome] = React.useState<RecordOutcomeInput["kind"]>("replied");
   const [logging, setLogging] = React.useState(false);
+  const [sheetError, setSheetError] = React.useState<string | null>(null);
 
   const load = React.useCallback(
     async (id: string) => {
       setLoading(true);
+      setSheetError(null);
       try {
         setAudit(await getAudit(id));
       } catch (e) {
-        onError(errMessage(e, "Could not load the history."));
+        const message = errMessage(e, "Could not load the history.");
+        setSheetError(message);
+        onError(message);
       } finally {
         setLoading(false);
       }
@@ -69,6 +134,7 @@ export function AuditSheet({
   React.useEffect(() => {
     if (action) {
       setAudit(null);
+      setSheetError(null);
       void load(action.id);
     }
   }, [action, load]);
@@ -78,6 +144,7 @@ export function AuditSheet({
   const logOutcome = async () => {
     setLogging(true);
     onError("");
+    setSheetError(null);
     try {
       await recordOutcome(action.id, {
         kind: outcome,
@@ -87,7 +154,9 @@ export function AuditSheet({
       capture(RevenueEvents.OutcomeLogged, { kind: outcome });
       await load(action.id);
     } catch (e) {
-      onError(errMessage(e, "Could not record the outcome."));
+      const message = errMessage(e, "Could not record the outcome.");
+      setSheetError(message);
+      onError(message);
     } finally {
       setLogging(false);
     }
@@ -102,6 +171,24 @@ export function AuditSheet({
             {ACTION_TYPE_LABELS[action.actionType] ?? action.actionType} — {action.recipientEmail}
           </SheetDescription>
         </SheetHeader>
+        {sheetError ? (
+          <div className="border-b border-destructive/30 px-4 py-2">
+            <p className="text-sm text-destructive" role="alert">
+              {sheetError}
+            </p>
+            {!audit ? (
+              <Button
+                className="mt-2"
+                onClick={() => void load(action.id)}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                Try again
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
 
         <div
           className="flex flex-1 flex-col gap-6 px-4 py-5"
@@ -121,7 +208,7 @@ export function AuditSheet({
                     <Card className="gap-0 py-2" key={r.revision}>
                       <CardContent className="flex items-center justify-between px-3 text-xs">
                         <Label className="font-normal text-primary/70">
-                          Rev {r.revision} · {r.actionType} · {r.channel}
+                          Rev {r.revision} · {revisionActionLabel(r.actionType)} · {revisionChannelLabel(r.channel)}
                         </Label>
                         <Badge
                           className="font-mono font-normal text-primary/40"
@@ -156,9 +243,13 @@ export function AuditSheet({
                           </div>
                           {d.reasonCodes && d.reasonCodes.length > 0 ? (
                             <div className="mt-2 flex flex-wrap gap-1">
-                              {d.reasonCodes.map((c) => (
-                                <Badge key={c} variant="outline" className="font-mono text-[10px]">
-                                  {c}
+                              {d.reasonCodes.map((code) => (
+                                <Badge
+                                  key={code}
+                                  variant="outline"
+                                  className="font-normal text-[10px]"
+                                >
+                                  {policyReasonLabel(code)}
                                 </Badge>
                               ))}
                             </div>
@@ -178,10 +269,10 @@ export function AuditSheet({
                       <Card className="gap-0 py-2" key={o.id}>
                         <CardContent className="flex items-center justify-between px-3 text-xs">
                           <Badge className="font-medium text-primary/80" variant="outline">
-                            {OUTCOME_LABELS[o.kind] ?? o.kind}
+                            {outcomeKindLabel(o.kind)}
                           </Badge>
                           <Label className="font-normal text-primary/45">
-                            {o.source} · {relativeTime(o.occurredAt)}
+                            {outcomeSourceLabel(o.source)} · {relativeTime(o.occurredAt)}
                           </Label>
                         </CardContent>
                       </Card>

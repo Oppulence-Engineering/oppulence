@@ -40,6 +40,8 @@ export interface RevenueImpact {
   meetingsBooked?: number;
   /** Actions currently open. */
   open: number;
+  /** Open follow-up tasks. These are saved work, not recovery follow-ups. */
+  openTasks: number;
   /** Raw outcome-kind counts. */
   outcomes?: RevenueImpactOutcomes;
   /** Overdue commitments promised by the counterparty. */

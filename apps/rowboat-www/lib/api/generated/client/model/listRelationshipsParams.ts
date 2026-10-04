@@ -23,4 +23,9 @@ export type ListRelationshipsParams = {
    * Engagement filter.
    */
   engagement?: string;
+  /**
+   * How many relationships to skip. Each page is 200 rows, newest touch first.
+   * @minimum 0
+   */
+  offset?: number;
 };

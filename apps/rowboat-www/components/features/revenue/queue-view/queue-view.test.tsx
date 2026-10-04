@@ -3,10 +3,185 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { dismissReasonLabel, snoozeWakeCopy } from "@/lib/revenue/revenue";
+import {
+  recoveryEmptyDescription,
+  recordedRecoveryPrefix,
+  recoveryOpenEmptyCopy,
+  recoveryFilterName,
+  recoveryFollowUpName,
+  recoveryCompanyCaption,
+  recoveryCompanyName,
+  recoveryActionKind,
+  recoveryCardLead,
+  recoveryDraftSubject,
+  recoveryPromisedStep,
+  recoveryRecipientLabel,
+  recoveryRemainderLabel,
+  recoveryShownLabel,
+  recoveryStatusLabel,
+  newActionIntro,
+} from "@/components/features/revenue/queue-view/queue-view";
+
 const source = fs.readFileSync(path.join(import.meta.dirname, "queue-view.tsx"), "utf8");
 
 describe("QueueView", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function QueueView");
+    expect(source).toContain("recoveryQueueActions(recoveryRows)");
+    expect(source).toContain("actionReasonCopy(action.reason)");
+    expect(source).not.toContain("{action.reason}");
+    expect(source).toContain("listNeverLoaded(actionsQuery.isError, actionsQuery.data)");
+    expect(source).toContain("actionsQuery.data != null && actions.length === 0");
+    expect(source).toContain('listRefreshFailureCopy("recovery")');
+    expect(source).toContain('useRevenueActions(filter, ACTION_QUEUE_PAGE, "recovery")');
+    expect(source).toContain("actionPageHasMore");
+    expect(source).toContain("recoveryPage.length + extraActions.length");
+    expect(source).not.toContain("loadedRecoveryCount.current");
+    expect(source).not.toContain("=== ACTION_QUEUE_PAGE");
+    expect(source).not.toContain("ListFilter");
+    expect(recoveryFilterName("open")).toBe("Recovery, Open");
+    expect(recoveryFilterName("snoozed")).toBe("Recovery, Snoozed");
+    expect(source).toContain("aria-label={recoveryFilterName(filter)}");
+    expect(source).toContain("aria-label={recoveryCompanyName(");
+    expect(source).toContain("value={relationshipId || undefined}");
+    expect(source).toContain('errMessage(e, "Could not create the action.")');
+    expect(source).toContain("prependCreatedAction(current, a)");
+    expect(source).toContain("setFormError(message)");
+    expect(source).not.toContain("relationships[0]");
+    expect(source).toContain("aria-label={recoveryFollowUpName(actionType)}");
+    expect(recoveryCompanyName("Dogfood Harbor")).toBe("Company, Dogfood Harbor");
+    expect(recoveryCompanyName("Choose a company")).toBe("Company, Choose a company");
+    expect(recoveryFollowUpName("warm_follow_up")).toBe("Follow-up, Warm follow-up");
+    expect(recoveryDraftSubject("   ")).toBe("");
+    expect(recoveryDraftSubject("  Harbor follow-up  ")).toBe("Harbor follow-up");
+    expect(source).toContain("recoveryDraftSubject(action.proposedSubject)");
+    expect(source).toContain("proposedSubject: subject.trim() || undefined");
+    expect(source).toContain("proposedMessage: message.trim() || undefined");
+    expect(source).not.toContain("proposedSubject: subject || undefined");
+    expect(recoveryRecipientLabel({})).toBe("Unknown recipient");
+    expect(recoveryRecipientLabel({ recipientEmail: "  ", relationshipName: "  " })).toBe(
+      "Unknown recipient",
+    );
+    expect(recoveryRecipientLabel({ relationshipName: "Quill Atelier" })).toBe("Quill Atelier");
+    expect(
+      recoveryRecipientLabel({
+        recipientEmail: "ada@quill.example",
+        relationshipName: "Quill Atelier",
+      }),
+    ).toBe("ada@quill.example");
+    expect(recoveryCompanyCaption({ relationshipName: "Quill Atelier" })).toBe("");
+    expect(
+      recoveryCompanyCaption({
+        recipientEmail: "ada@lumen.example",
+        relationshipName: "Lumen Packet",
+      }),
+    ).toBe("Lumen Packet");
+    expect(source).toContain("priorityTone(action.priorityScore)");
+    expect(source).toContain("{tone.label}");
+    expect(source).not.toContain("{action.priorityScore}");
+    expect(source).toContain("recoveryRecipientLabel(action)");
+    expect(source).toContain("recoveryCompanyCaption(action)");
+    expect(source).toContain("recoveryCardLead(action)");
+    expect(source).not.toContain("{action.proposedMessage}");
+    expect(recoveryActionKind("meeting_follow_up")).toBe("Meeting follow-up");
+    expect(recoveryActionKind("commitment_rescue")).toBe("Promise follow-up");
+    expect(recoveryActionKind("custom_nudge")).toBe("Custom Nudge");
+    expect(recoveryActionKind("  ")).toBe("");
+    expect(
+      recoveryPromisedStep(
+        "Hi,\n\nFollowing up on our meeting, I wanted to confirm the next step: Send the quay recovery.\n\nBest,",
+      ),
+    ).toBe("Send the quay recovery");
+    expect(
+      recoveryPromisedStep("Review the evidence before taking action on: Send the security packet."),
+    ).toBe("Send the security packet");
+    expect(recoveryPromisedStep("Hello there.")).toBe("");
+    expect(
+      recoveryCardLead({
+        actionType: "meeting_follow_up",
+        proposedMessage:
+          "Following up on our meeting, I wanted to confirm the next step: Send the quay recovery.",
+      }),
+    ).toBe("Meeting follow-up. Send the quay recovery");
+    expect(recoveryCardLead({ actionType: "meeting_follow_up" })).toBe("Meeting follow-up");
+    expect(recoveryCardLead({})).toBe("");
+    expect(source).not.toContain('action.recipientEmail || "Unknown recipient"');
+    expect(source).not.toContain('aria-label="Filter recovery actions"');
+  });
+
+  it("points an empty workspace at Companies and names the action", () => {
+    expect(source).toContain("{newActionIntro(relationships.length > 0 || hasMoreCompanies)}");
+    expect(newActionIntro(true)).toBe(
+      "Add a follow-up for a company already in this workspace.",
+    );
+    expect(newActionIntro(false)).toBe("Add a company before a follow-up can be created.");
+    expect(source).not.toContain("manual follow-up");
+    expect(source).toContain("No companies yet. Add one in Companies, or run an audit to find them.");
+    expect(source).toContain("Add a company");
+    expect(source).toContain("onOpenCompanies");
+    expect(source).toContain("openCompanyCreate(onOpenCompanies)");
+    expect(source).not.toContain("Relationships tab");
+    expect(source).toContain("ACTION_TYPE_LABELS[t]");
+    expect(source).toContain('record.kind === "person"');
+    expect(source).toContain('errMessage(relationshipsQuery.error, "Could not load companies.")');
+    expect(source).not.toContain("Could not load relationships.");
+    expect(source).toContain('errMessage(actionsQuery.error, "Could not load recovery.")');
+    expect(source).not.toContain("Could not load the queue.");
+    expect(recoveryShownLabel(0)).toBeNull();
+    expect(recoveryShownLabel(1)).toBe("1 shown");
+    expect(recoveryShownLabel(4)).toBe("4 shown");
+    expect(recoveryShownLabel(100, true)).toBe("100+ shown");
+    expect(recoveryShownLabel(101, false)).toBe("101 shown");
+    expect(recoveryRemainderLabel()).toBe("Show the next follow-ups");
+    expect(recoveryEmptyDescription("all")).toBe("No recovery drafts right now.");
+    expect(recoveryOpenEmptyCopy({ needsConnect: false, needsReconnect: true })).toBe(
+      "No recovery drafts yet. Reconnect Google before an audit can find promises to recover.",
+    );
+    expect(recoveryOpenEmptyCopy({ needsConnect: true, needsReconnect: false })).toContain(
+      "Connect Gmail and Calendar",
+    );
+    expect(recoveryOpenEmptyCopy({ needsConnect: false, needsReconnect: false })).toContain(
+      "Run an audit",
+    );
+    expect(recordedRecoveryPrefix(1)).toBe("1 promise is already in Commitments. ");
+    expect(
+      recoveryOpenEmptyCopy({ needsConnect: true, needsReconnect: false, knownPromiseCount: 1 }),
+    ).toBe(
+      "1 promise is already in Commitments. No recovery drafts yet. Connect Gmail and Calendar before an audit can find promises to recover.",
+    );
+    expect(source).toContain("knownPromiseCount");
+    expect(recoveryEmptyDescription("snoozed")).toBe("Nothing is snoozed right now.");
+    expect(recoveryEmptyDescription("handled")).toBe("Nothing has been handled yet.");
+    expect(recoveryEmptyDescription("dismissed")).toBe("Nothing has been dismissed.");
+    expect(recoveryStatusLabel("open")).toBe("Held");
+    expect(recoveryStatusLabel("snoozed")).toBe("Snoozed");
+    expect(recoveryStatusLabel("handled")).toBe("Handled");
+    expect(recoveryStatusLabel("dismissed")).toBe("Dismissed");
+    expect(source).toContain("recoveryStatusLabel(action.queueStatus)");
+    expect(source).not.toContain('open ? "Held" : action.queueStatus');
+    expect(source).toContain("recoveryEmptyDescription(filter)");
+    expect(source).not.toContain("Nothing in the ${filter}");
+    expect(source).toContain("Run Promise Leak Audit");
+    expect(source).not.toContain("Run audit</>");
+    expect(source).toContain("or draft recovery from a promise.");
+    expect(source).toContain('{ label: "Draft from a confirmed promise" }');
+    expect(source).not.toContain("from a commitment");
+    expect(source).not.toContain("confirmed commitments");
+    expect(source).toContain('placeholder="Why this follow-up is needed"');
+    expect(source).not.toContain("Why now? (reason)");
+    expect(dismissReasonLabel("resolved_by_new_evidence")).toBe("Newer evidence arrived");
+    expect(dismissReasonLabel("not_relevant")).toBe("Not relevant");
+    expect(dismissReasonLabel("already handled by hand")).toBe("already handled by hand");
+    expect(snoozeWakeCopy("")).toBe("");
+    expect(snoozeWakeCopy(new Date(Date.now() - 2 * 86_400_000).toISOString())).toMatch(
+      /^Snooze ended \d+ days ago\.$/,
+    );
+    expect(snoozeWakeCopy(new Date(Date.now() + 7 * 86_400_000).toISOString())).toMatch(
+      /^Comes back \d+ days from now\.$/,
+    );
+    expect(source).toContain("dismissReasonLabel(action.dismissReason)");
+    expect(source).toContain("snoozeWakeCopy(action.snoozedUntil)");
+    expect(source).not.toContain("{action.dismissReason}");
   });
 });

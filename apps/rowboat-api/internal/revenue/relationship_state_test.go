@@ -10,9 +10,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
@@ -133,19 +136,33 @@ func TestRelationshipObservationProjectionAndCorrection(t *testing.T) {
 		t.Fatalf("user correction did not become canonical: %#v", corrected)
 	}
 
-	changes, err := f.svc.RelationshipChanges(f.ctx, relID)
+	page, err := f.svc.RelationshipChanges(f.ctx, relID, 2, 0)
 	if err != nil {
 		t.Fatalf("changes: %v", err)
 	}
-	if len(changes) != 2 || changes[0].Version != 3 || changes[1].Version != 2 {
-		t.Fatalf("want latest two snapshots, got %#v", changes)
+	if !page.HasMore || len(page.Snapshots) != 2 || page.Snapshots[0].Version != 3 || page.Snapshots[1].Version != 2 {
+		t.Fatalf("want latest two snapshots and an older one, got %#v hasMore=%v", page.Snapshots, page.HasMore)
 	}
 	var state RelationshipState
-	if err := json.Unmarshal([]byte(changes[0].StateJSON), &state); err != nil {
+	if err := json.Unmarshal([]byte(page.Snapshots[0].StateJSON), &state); err != nil {
 		t.Fatalf("snapshot json: %v", err)
 	}
 	if state.Health != "healthy" || state.StateReason != "Customer confirmed the plan in a call." {
 		t.Fatalf("snapshot explanation mismatch: %#v", state)
+	}
+	earlier, err := f.svc.RelationshipChanges(f.ctx, relID, 2, 2)
+	if err != nil {
+		t.Fatalf("earlier changes: %v", err)
+	}
+	if earlier.HasMore || len(earlier.Snapshots) != 1 || earlier.Snapshots[0].Version != 1 {
+		t.Fatalf("want the first snapshot, got %#v hasMore=%v", earlier.Snapshots, earlier.HasMore)
+	}
+	clamped, err := f.svc.RelationshipChanges(f.ctx, relID, 0, -2)
+	if err != nil {
+		t.Fatalf("clamped offset: %v", err)
+	}
+	if !clamped.HasMore || len(clamped.Snapshots) != 2 || clamped.Snapshots[0].Version != 3 {
+		t.Fatalf("negative offset should match the first page, got %#v", clamped.Snapshots)
 	}
 }
 
@@ -248,11 +265,18 @@ func TestConfirmedMeetingCommitmentBecomesSharedCommitmentExactlyOnce(t *testing
 		action.ExecutionStatus != "pending" {
 		t.Fatalf("unexpected follow-up action: %#v", action)
 	}
-	if !strings.Contains(action.Reason, input.ExternalID) {
-		t.Fatalf("follow-up reason must cite the immutable observation: %q", action.Reason)
+	if action.Reason != "You confirmed this follow-up from the meeting." ||
+		strings.Contains(action.Reason, input.ExternalID) {
+		t.Fatalf("follow-up reason = %q", action.Reason)
 	}
 	if len(action.Edges.Evidences) != 1 || action.Edges.Evidences[0].Source != "meeting" {
 		t.Fatalf("follow-up must link the confirmed meeting evidence: %#v", action.Edges.Evidences)
+	}
+	listed, listErr := f.svc.ListActions(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen})
+	if listErr != nil || len(listed) != 1 || len(listed[0].Edges.Evidences) != 1 ||
+		listed[0].Edges.Evidences[0].Source != "meeting" ||
+		listed[0].Edges.Evidences[0].Excerpt != "I will send the proposal." {
+		t.Fatalf("recovery list must include the meeting quote: %#v err=%v", listed, listErr)
 	}
 	_, err = f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
 		RelationshipID: rel.ID,
@@ -638,6 +662,106 @@ func TestCorporateDomainDoesNotCollapsePersonRelationships(t *testing.T) {
 	}
 }
 
+func TestPersonAtCompanyDomainIsNotAnIdentityCollision(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Acme", AccountDomain: "acme.example",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	person, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "person", DisplayName: "Avery", PrimaryEmail: "avery@acme.example", AccountDomain: "acme.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	if _, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		RelationshipID: person.ID,
+		DisplayName:    "Avery",
+		PrimaryEmail:   "avery@acme.example",
+		AccountDomain:  "acme.example",
+		Source:         "user",
+		ExternalID:     "person-added-avery",
+		EventType:      "person_added",
+		Summary:        "Avery added by the user",
+		OccurredAt:     now,
+		ReceivedAt:     now,
+		Participants: []RelationshipParticipantInput{{
+			DisplayName: "Avery", Email: "avery@acme.example", Role: "contact",
+		}},
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	count, err := f.client.RelationshipIdentityCandidate.Query().Count(f.ctx)
+	if err != nil || count != 0 {
+		t.Fatalf("a person at a company domain is not a duplicate company: count=%d err=%v", count, err)
+	}
+	company, err := f.client.Relationship.Query().
+		Where(relationship.KindEQ("company"), relationship.AccountDomainEQ("acme.example")).
+		WithParticipants().
+		Only(f.ctx)
+	if err != nil || len(company.Edges.Participants) != 1 || company.Edges.Participants[0].Email != "avery@acme.example" {
+		t.Fatalf("person should be listed on the company: %+v err=%v", company.Edges.Participants, err)
+	}
+	directory, err := f.client.Person.Query().Only(f.ctx)
+	if err != nil || directory.OrgName != "Acme" || directory.RelationshipCount != 1 {
+		t.Fatalf("directory company = %q companies = %d err=%v", directory.OrgName, directory.RelationshipCount, err)
+	}
+}
+
+func TestPersonAddedBeforeTheCompanyIsListedOnIt(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	person, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "person", DisplayName: "Avery", PrimaryEmail: "avery@acme.example", AccountDomain: "acme.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		RelationshipID: person.ID,
+		DisplayName:    "Avery",
+		PrimaryEmail:   "avery@acme.example",
+		AccountDomain:  "acme.example",
+		Source:         "user",
+		ExternalID:     "person-added-avery-first",
+		EventType:      "person_added",
+		Summary:        "Avery added by the user",
+		OccurredAt:     now,
+		ReceivedAt:     now,
+		Participants: []RelationshipParticipantInput{{
+			DisplayName: "Avery", Email: "avery@acme.example", Role: "contact",
+		}},
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	before, err := f.client.Person.Query().Only(f.ctx)
+	if err != nil || before.OrgName != "" || before.RelationshipCount != 0 {
+		t.Fatalf("person has no company yet: org=%q companies=%d err=%v", before.OrgName, before.RelationshipCount, err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Acme", AccountDomain: "acme.example",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	company, err := f.client.Relationship.Query().
+		Where(relationship.KindEQ("company"), relationship.AccountDomainEQ("acme.example")).
+		WithParticipants().
+		Only(f.ctx)
+	if err != nil || len(company.Edges.Participants) != 1 || company.Edges.Participants[0].Email != "avery@acme.example" {
+		t.Fatalf("person added first should be listed on the company: %+v err=%v", company.Edges.Participants, err)
+	}
+	directory, err := f.client.Person.Query().Only(f.ctx)
+	if err != nil || directory.OrgName != "Acme" || directory.RelationshipCount != 1 {
+		t.Fatalf("directory company = %q companies = %d err=%v", directory.OrgName, directory.RelationshipCount, err)
+	}
+	candidates, err := f.client.RelationshipIdentityCandidate.Query().Count(f.ctx)
+	if err != nil || candidates != 0 {
+		t.Fatalf("linking the earlier person is not an identity review: count=%d err=%v", candidates, err)
+	}
+}
+
 func TestResourceRefLimitCountsUniqueAliases(t *testing.T) {
 	duplicates := make([]string, 51)
 	for i := range duplicates {
@@ -673,6 +797,74 @@ func TestIdentityFirstSeenTracksEarliestObservation(t *testing.T) {
 		Where(relationshipidentity.ProviderEQ("hubspot")).Only(f.ctx)
 	if err != nil || !identity.FirstSeenAt.Equal(later.Add(-24*time.Hour)) || !identity.LastSeenAt.Equal(later) {
 		t.Fatalf("identity observation times not preserved: identity=%+v err=%v", identity, err)
+	}
+}
+
+func TestActivityHistoryKeepsTiedOccurredAt(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel, err := f.client.Relationship.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetKind("company").
+		SetDisplayName("Activity Tie Co").
+		SetResourceRefs([]string{}).
+		SetRisks([]string{}).
+		SetMilestones([]string{}).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	occurred := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	for i := 1; i <= 3; i++ {
+		summary := fmt.Sprintf("Tied Activity %03d", i)
+		if i == 1 {
+			summary = "Tied Activity Last"
+		}
+		if _, err := f.client.RelationshipObservation.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("a1160000-0000-4000-8000-%012x", i))).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetRelationship(rel).
+			SetSource("user").
+			SetExternalID(fmt.Sprintf("tied-activity-%03d", i)).
+			SetEventType("note").
+			SetOccurredAt(occurred).
+			SetReceivedAt(occurred).
+			SetSummary(summary).
+			SetContentHash(fmt.Sprintf("tied-activity-hash-%03d", i)).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	first, err := f.svc.relationshipObservationPage(f.ctx, rel.ID, 2, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !first.hasMore || len(first.observations) != 2 || first.observations[0].Summary != "Tied Activity 003" {
+		t.Fatalf("newest page = %d %q hasMore=%v", len(first.observations), first.observations[0].Summary, first.hasMore)
+	}
+	for _, row := range first.observations {
+		if row.Summary == "Tied Activity Last" {
+			t.Fatal("the lowest id was included in the newest page")
+		}
+	}
+	if first.nextBefore == nil || !first.nextBefore.Equal(occurred) || first.nextBeforeID == nil {
+		t.Fatalf("cursor = %v %v", first.nextBefore, first.nextBeforeID)
+	}
+	second, err := f.svc.relationshipObservationPage(f.ctx, rel.ID, 2, first.nextBefore, first.nextBeforeID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.hasMore || len(second.observations) != 1 || second.observations[0].Summary != "Tied Activity Last" {
+		summaries := make([]string, 0, len(second.observations))
+		for _, row := range second.observations {
+			summaries = append(summaries, row.Summary)
+		}
+		t.Fatalf("older page = %v hasMore=%v", summaries, second.hasMore)
 	}
 }
 

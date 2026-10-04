@@ -3,25 +3,50 @@
 import "client-only";
 
 import * as React from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkle, WarningCircle } from "@/lib/icons";
 import { useCommitmentRegister } from "@/hooks/queries/use-commitments";
 import { useReportScan, useReportScanList } from "@/hooks/queries/use-report";
 import { useRelationshipSourceStatuses } from "@/hooks/queries/use-relationship-sources";
 import { useWorkspace } from "@/hooks/queries/use-workspace";
-import { commitmentKeys } from "@/hooks/queries/utils/commitment-keys";
+import {
+  COMMITMENT_REGISTER_STALE_TIME,
+  commitmentKeys,
+} from "@/hooks/queries/utils/commitment-keys";
+import {
+  commitmentPageHasMore,
+  commitmentRows,
+  fetchCommitments,
+} from "@/hooks/queries/utils/fetch-commitments";
 import { relationshipSourceKeys } from "@/hooks/queries/utils/relationship-source-keys";
 import { revenueActionKeys } from "@/hooks/queries/utils/revenue-action-keys";
 import { downloadMarkdown } from "@/lib/content/download-markdown";
+import {
+  dismissDueCommitments,
+  subscribeDueCommitments,
+} from "@/lib/dashboard/commitment-due-request";
 import { DashboardRequestError } from "@/lib/api/request-json";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
 import type { RevenueTab } from "@/components/features/dashboard/app-shell/app-shell";
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
 import {
+  overdueRegisterFilter,
+  REGISTER_PAGE_SIZE,
+  registerAccountChoices,
+  registerFilterFor,
+} from "@/lib/revenue/commitment-register-filter";
+import {
+  fetchRelationships,
+  relationshipPageHasMore,
+  relationshipRows,
+} from "@/hooks/queries/utils/fetch-relationships";
+import {
   appendCommitmentTransition,
+  explainedRevenueError,
   friendlyRevenueError,
-  googleNeedsReconnect,
+  shownRequestError,
+  googleAuditLaunch,
   getCommitmentRecordMarkdown,
   REVENUE_EVIDENCE_LOOKBACK_DAYS,
   RevenueAPIError,
@@ -45,7 +70,7 @@ import {
 import { ScansView } from "@/components/features/revenue/scans-view/scans-view";
 import { WorkspaceView } from "@/components/features/revenue/workspace-view/workspace-view";
 import { ActionsView } from "@/components/features/actions/actions-view/actions-view";
-import type { RevenueLeakScan, RevenueWorkspace } from "@/lib/revenue/types";
+import type { RegisterEntry, RevenueLeakScan, RevenueWorkspace } from "@/lib/revenue/types";
 
 // The register's own failures, in words a customer can act on. A raw "not
 // found" from the proxy tells them nothing; worse, the old code showed no
@@ -75,10 +100,12 @@ export function RevenuePanel({
   tab,
   onTabChange,
   onOpenConnectors,
+  onOpenCompany,
 }: {
   tab: RevenueTab;
   onTabChange: (tab: RevenueTab) => void;
   onOpenConnectors?: () => void;
+  onOpenCompany?: (companyId: string) => void;
 }) {
   const [workspaceOverride, setWorkspace] = React.useState<RevenueWorkspace | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -99,7 +126,25 @@ export function RevenuePanel({
 
   const queryClient = useQueryClient();
   const sourceStatusQuery = useRelationshipSourceStatuses();
-  const reconnectBeforeAudit = googleNeedsReconnect(sourceStatusQuery.data ?? []);
+  // Statuses still loading are not "nothing connected". Treating the empty
+  // cache as a missing mailbox would flash a connect button on every visit.
+  const auditLaunch = sourceStatusQuery.isSuccess
+    ? googleAuditLaunch(sourceStatusQuery.data ?? [])
+    : "run";
+  const reconnectBeforeAudit = auditLaunch === "reconnect";
+  const connectBeforeAudit = auditLaunch === "connect";
+  const waitingOnGoogle = reconnectBeforeAudit || connectBeforeAudit;
+  const auditKnownPromises = useQuery({
+    queryKey: [...commitmentKeys.lists(), "audit-known"],
+    queryFn: ({ signal }) =>
+      fetchCommitments({ state: ["open", "at_risk"], limit: REGISTER_PAGE_SIZE }, signal),
+    enabled:
+      tab === "impact" ||
+      tab === "queue" ||
+      tab === "commitments" ||
+      (tab === "scans" && waitingOnGoogle),
+    staleTime: COMMITMENT_REGISTER_STALE_TIME,
+  });
 
   const activeScanIsRunning = activeScan?.status === "running" || activeScan?.status === "pending";
   const scanQuery = useReportScan(activeScanIsRunning ? (activeScan?.id ?? null) : null, {
@@ -115,15 +160,141 @@ export function RevenuePanel({
   const [registerAccountId, setRegisterAccountId] = React.useState("");
   const [registerOwner, setRegisterOwner] = React.useState("");
   const [includeCandidates, setIncludeCandidates] = React.useState(false);
+  // Home counts past-due promises in every direction. The stamp is the moment
+  // that count was opened, and it stays stable so the register does not refetch
+  // on every render. Go's dueBefore parser rejects fractional seconds.
+  const [overdueBefore, setOverdueBefore] = React.useState<string | null>(null);
+  const [extraEntries, setExtraEntries] = React.useState<RegisterEntry[]>([]);
+  const [laterRegisterHasMore, setLaterRegisterHasMore] = React.useState<boolean | null>(null);
+  const [loadingMorePromises, setLoadingMorePromises] = React.useState(false);
+  const [extraAccounts, setExtraAccounts] = React.useState<{ id: string; label: string }[]>([]);
+  const [accountOffset, setAccountOffset] = React.useState<number | null>(null);
+  const [laterAccountsHasMore, setLaterAccountsHasMore] = React.useState<boolean | null>(null);
+  const [loadingMoreAccounts, setLoadingMoreAccounts] = React.useState(false);
+  React.useEffect(
+    () =>
+      subscribeDueCommitments(() => {
+        setOverdueBefore(new Date().toISOString().replace(/\.\d{3}Z$/, "Z"));
+      }),
+    [],
+  );
   const commitmentQuery = useCommitmentRegister(
     {
       view: registerView,
       accountId: registerAccountId,
       owner: registerOwner,
       includeCandidates,
+      dueBefore: overdueBefore ?? "",
     },
     { enabled: tab === "commitments" },
   );
+  const registerScope = `${registerView}|${registerAccountId}|${registerOwner}|${includeCandidates}|${overdueBefore ?? ""}`;
+  React.useEffect(() => {
+    setExtraEntries([]);
+    setLaterRegisterHasMore(null);
+  }, [registerScope]);
+  const registerDataAt = commitmentQuery.dataUpdatedAt;
+  React.useEffect(() => {
+    setLaterAccountsHasMore(null);
+    setAccountOffset(null);
+  }, [registerDataAt]);
+  const registerAccounts = React.useMemo(() => {
+    const first = commitmentQuery.data?.accounts ?? [];
+    if (extraAccounts.length === 0) return first;
+    const seen = new Set(first.map((account) => account.id));
+    return [
+      ...first,
+      ...extraAccounts.filter((account) => {
+        if (seen.has(account.id)) return false;
+        seen.add(account.id);
+        return true;
+      }),
+    ];
+  }, [commitmentQuery.data?.accounts, extraAccounts]);
+  const hasMoreAccounts =
+    laterAccountsHasMore ?? Boolean(commitmentQuery.data?.hasMoreAccounts);
+  const loadMoreAccounts = React.useCallback(async () => {
+    if (loadingMoreAccounts || !hasMoreAccounts) return;
+    const base = commitmentQuery.data?.relationshipPageCount ?? 0;
+    const offset = accountOffset ?? base;
+    setLoadingMoreAccounts(true);
+    try {
+      const next = await fetchRelationships({ offset });
+      const choices = registerAccountChoices(relationshipRows(next));
+      setExtraAccounts((current) => {
+        const seen = new Set(current.map((account) => account.id));
+        return [...current, ...choices.filter((account) => !seen.has(account.id))];
+      });
+      setAccountOffset(offset + relationshipRows(next).length);
+      setLaterAccountsHasMore(relationshipPageHasMore(next));
+    } catch (reason) {
+      setError(explainedRevenueError(reason, "Could not load the next companies."));
+    } finally {
+      setLoadingMoreAccounts(false);
+    }
+  }, [
+    accountOffset,
+    commitmentQuery.data?.relationshipPageCount,
+    hasMoreAccounts,
+    loadingMoreAccounts,
+  ]);
+  const registerPage = commitmentQuery.data?.entries ?? [];
+  const registerEntries = React.useMemo(() => {
+    if (extraEntries.length === 0) return registerPage;
+    const seen = new Set(registerPage.map((entry) => entry.id));
+    return [
+      ...registerPage,
+      ...extraEntries.filter((entry) => {
+        if (seen.has(entry.id)) return false;
+        seen.add(entry.id);
+        return true;
+      }),
+    ];
+  }, [extraEntries, registerPage]);
+  const hasMorePromises =
+    laterRegisterHasMore ??
+    (registerPage.length > 0 && Boolean(commitmentQuery.data?.hasMore));
+  const loadMorePromises = React.useCallback(async () => {
+    const filter = overdueBefore
+      ? overdueRegisterFilter(overdueBefore)
+      : registerFilterFor(registerView, {
+          relationshipId: registerAccountId,
+          owner: registerOwner,
+          includeCandidates,
+        });
+    if (!filter || loadingMorePromises) return;
+    setLoadingMorePromises(true);
+    try {
+      const next = await fetchCommitments({
+        ...filter,
+        offset: registerPage.length + extraEntries.length,
+        limit: REGISTER_PAGE_SIZE,
+      });
+      const titles = new Map(
+        (commitmentQuery.data?.accounts ?? []).map((account) => [account.id, account.label]),
+      );
+      const named = commitmentRows(next).map((entry) => {
+        const title = entry.relationshipId ? titles.get(entry.relationshipId) : undefined;
+        return title ? { ...entry, relationshipName: title } : entry;
+      });
+      setLaterRegisterHasMore(commitmentPageHasMore(next));
+      setExtraEntries((current) => [...current, ...named]);
+    } catch (reason) {
+      setError(explainedRevenueError(reason, "Could not load the next promises."));
+    } finally {
+      setLoadingMorePromises(false);
+    }
+  }, [
+    commitmentQuery.data?.accounts,
+    extraEntries.length,
+    includeCandidates,
+    loadingMorePromises,
+    overdueBefore,
+    registerAccountId,
+    registerOwner,
+    registerPage.length,
+    registerView,
+  ]);
 
   React.useEffect(() => {
     const reason = workspaceQuery.error;
@@ -142,8 +313,12 @@ export function RevenuePanel({
 
   React.useEffect(() => {
     if (!scanListQuery.data) return;
-    setScans(scanListQuery.data);
-  }, [scanListQuery.data]);
+    setScans(() => {
+      const scansById = new Map(scanListQuery.data.map((scan) => [scan.id, scan]));
+      if (activeScan) scansById.set(activeScan.id, activeScan);
+      return [...scansById.values()];
+    });
+  }, [activeScan, scanListQuery.data]);
 
   // Reconcile query data into the existing panel state while this feature is
   // incrementally migrated from local state to query-owned server state.
@@ -169,9 +344,9 @@ export function RevenuePanel({
   }, [scanQuery.data, queryClient]);
 
   const runScan = React.useCallback(async () => {
-    // Every audit button routes here. With every Google account needing a
-    // reconnect the audit can only fail, so send the user to the fix instead.
-    if (reconnectBeforeAudit && onOpenConnectors) {
+    // Every audit button routes here. A dead grant and a missing mailbox both
+    // make the scan fail before it reads anything, so send the user to the fix.
+    if ((reconnectBeforeAudit || connectBeforeAudit) && onOpenConnectors) {
       onOpenConnectors();
       return;
     }
@@ -188,21 +363,22 @@ export function RevenuePanel({
       if (e instanceof RevenueAPIError && e.code === "scan_unavailable") {
         setError("Connect Gmail and Calendar before running a Promise Leak Audit.");
       } else {
-        setError(e instanceof Error ? e.message : "Could not start the scan.");
+        setError(shownRequestError(e, "Could not start the scan."));
       }
     }
-  }, [reconnectBeforeAudit, onOpenConnectors]);
+  }, [connectBeforeAudit, reconnectBeforeAudit, onOpenConnectors]);
 
   const transitionCommitment = React.useCallback(
     async (item: CommitmentQueueItem, transition: CommitmentQueueTransition) => {
       try {
         await appendCommitmentTransition(item.relationshipId, item.id, transition);
         await commitmentQuery.refetch();
-        setNoticeMsg("Commitment review recorded.");
+        setNoticeMsg("Promise update saved.");
         return true;
       } catch (error) {
-        setBanner(error instanceof Error ? error.message : "Could not update the commitment.");
-        return false;
+        const message = shownRequestError(error, "Could not update this promise.");
+        setBanner(message);
+        return message;
       }
     },
     [commitmentQuery, setBanner, setNoticeMsg],
@@ -216,9 +392,11 @@ export function RevenuePanel({
         const markdown = await getCommitmentRecordMarkdown(item.id);
         downloadMarkdown(`commitment-${item.id}.md`, markdown);
         capture(RevenueEvents.CommitmentExported, { commitmentId: item.id, state: item.state });
-        setNoticeMsg("Commitment record exported.");
+        setNoticeMsg("Promise record exported.");
       } catch (error) {
-        setBanner(error instanceof Error ? error.message : "Could not export the record.");
+        const message = shownRequestError(error, "Could not export the record.");
+        setBanner(message);
+        return message;
       }
     },
     [setBanner, setNoticeMsg],
@@ -235,12 +413,13 @@ export function RevenuePanel({
         setNoticeMsg(
           Array.isArray(evaluations) && evaluations.length > 0
             ? "Recovery draft created. Review and approve it before sending."
-            : "No due commitment needed a recovery draft.",
+            : "No due promise needed a follow-up.",
         );
         return true;
       } catch (error) {
-        setBanner(error instanceof Error ? error.message : "Could not draft commitment recovery.");
-        return false;
+        const message = shownRequestError(error, "Could not draft a follow-up.");
+        setBanner(message);
+        return message;
       }
     },
     [commitmentQuery, setBanner, setNoticeMsg],
@@ -280,12 +459,29 @@ export function RevenuePanel({
 
         {tab === "commitments" ? (
           <CommitmentQueue
-            entries={commitmentQuery.data?.entries ?? []}
+            entries={registerEntries}
+            otherPromises={commitmentRows(auditKnownPromises.data)}
+            otherPromisesPending={auditKnownPromises.isPending}
+            hasMorePromises={hasMorePromises}
+            loadingMorePromises={loadingMorePromises}
+            onLoadMorePromises={() => void loadMorePromises()}
             view={registerView}
-            onViewChange={setRegisterView}
+            overdueOnly={Boolean(overdueBefore)}
+            onLeaveOverdue={() => {
+              dismissDueCommitments();
+              setOverdueBefore(null);
+            }}
+            onViewChange={(next) => {
+              dismissDueCommitments();
+              setOverdueBefore(null);
+              setRegisterView(next);
+            }}
             onExport={exportRecord}
-            relationshipCount={commitmentQuery.data?.relationshipCount ?? 0}
-            accounts={commitmentQuery.data?.accounts ?? []}
+            relationshipCount={registerAccounts.length}
+            accounts={registerAccounts}
+            hasMoreAccounts={hasMoreAccounts}
+            loadingMoreAccounts={loadingMoreAccounts}
+            onLoadMoreAccounts={() => void loadMoreAccounts()}
             accountId={registerAccountId}
             onAccountChange={setRegisterAccountId}
             owner={registerOwner}
@@ -299,9 +495,11 @@ export function RevenuePanel({
               commitmentQuery.error instanceof Error
                 ? commitmentQuery.error.message
                 : commitmentQuery.error
-                  ? "Could not load the Commitment Queue."
+                  ? "Could not load commitments."
                   : commitmentQuery.data?.registerError
             }
+            registerKnown={commitmentQuery.data?.entriesKnown === true}
+            onRetry={() => void commitmentQuery.refetch()}
             scanning={scanning}
             onScan={runScan}
             onOpenConnectors={onOpenConnectors}
@@ -315,20 +513,44 @@ export function RevenuePanel({
             workspace={workspace}
             onError={setBanner}
             onNotice={setNoticeMsg}
+            onOpenCompanies={() => onTabChange("relationships")}
             onScan={runScan}
             scanning={scanning}
+            needsConnect={connectBeforeAudit}
             needsReconnect={reconnectBeforeAudit}
+            knownPromiseCount={commitmentRows(auditKnownPromises.data).length}
+            knownPromiseHasMore={commitmentPageHasMore(auditKnownPromises.data)}
+            knownPromisesPending={auditKnownPromises.isPending}
           />
         ) : tab === "actions" ? (
           <ActionsView />
         ) : tab === "tasks" ? (
-          <TasksView onError={setBanner} onNotice={setNoticeMsg} />
+          <TasksView
+            onError={setBanner}
+            onNotice={setNoticeMsg}
+            onOpenCompanies={() => onTabChange("relationships")}
+            onOpenCompany={onOpenCompany}
+          />
         ) : tab === "notes" ? (
-          <NotesView onError={setBanner} onNotice={setNoticeMsg} />
+          <NotesView
+            onError={setBanner}
+            onNotice={setNoticeMsg}
+            onOpenCompanies={() => onTabChange("relationships")}
+            onOpenCompany={onOpenCompany}
+          />
         ) : tab === "people" ? (
           <PeopleView onError={setBanner} onNotice={setNoticeMsg} />
         ) : tab === "impact" ? (
-          <ImpactView onError={setBanner} />
+          <ImpactView
+            needsConnect={connectBeforeAudit}
+            needsReconnect={reconnectBeforeAudit}
+            onError={setBanner}
+            onScan={runScan}
+            scanning={scanning}
+            knownPromiseCount={commitmentRows(auditKnownPromises.data).length}
+            knownPromiseHasMore={commitmentPageHasMore(auditKnownPromises.data)}
+            knownPromisesPending={auditKnownPromises.isPending}
+          />
         ) : tab === "relationships" ? (
           <RelationshipsView
             onError={setBanner}
@@ -340,7 +562,22 @@ export function RevenuePanel({
             scans={scans}
             activeScan={activeScan}
             scanning={scanning}
+            needsConnect={connectBeforeAudit}
             needsReconnect={reconnectBeforeAudit}
+            knownPromiseCount={commitmentRows(auditKnownPromises.data).length}
+            knownPromiseHasMore={commitmentPageHasMore(auditKnownPromises.data)}
+            knownPromisesPending={waitingOnGoogle && auditKnownPromises.isPending}
+            loadFailed={scanListQuery.isError && scanListQuery.data == null}
+            refreshFailed={scanListQuery.isError && scanListQuery.data != null}
+            onRetry={() => {
+              void scanListQuery.refetch();
+            }}
+            hasMoreAudits={scanListQuery.hasMoreAudits}
+            loadingEarlierAudits={scanListQuery.loadingEarlierAudits}
+            earlierAuditsError={scanListQuery.earlierAuditsError}
+            onLoadEarlierAudits={() => {
+              void scanListQuery.loadEarlierAudits();
+            }}
             onScan={runScan}
           />
         ) : (

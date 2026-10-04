@@ -112,4 +112,72 @@ describe("console resource projections", () => {
 
     expect(create).not.toHaveBeenCalled();
   });
+
+  it("treats a reordered saved view as the same view", async () => {
+    const reordered = {
+      changedSinceReview: false,
+      focusDepth: 0 as const,
+      hideIsolated: false,
+      density: 0.72,
+      layout: "force" as const,
+      query: "",
+      scope: "portfolio" as const,
+    };
+    storage.setItem(
+      LEGACY_GRAPH_VIEWS_KEY,
+      JSON.stringify([
+        {
+          id: "33333333-3333-4333-8333-333333333333",
+          label: "Portfolio",
+          createdAt: timestamps.createdAt,
+          updatedAt: timestamps.updatedAt,
+          state,
+        },
+      ]),
+    );
+    const remote = graphSavedViews([
+      {
+        ...timestamps,
+        id: "44444444-4444-4444-8444-444444444444",
+        kind: "graph_saved_view",
+        name: "Portfolio",
+        payload: { state: reordered },
+      },
+    ]);
+    const create = vi.fn();
+
+    await migrateLegacyGraphViews({ storage, remote, create });
+
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("imports the views captured before storage is overwritten", async () => {
+    const captured = [
+      {
+        id: "33333333-3333-4333-8333-333333333333",
+        label: "Portfolio",
+        createdAt: timestamps.createdAt,
+        updatedAt: timestamps.updatedAt,
+        state,
+      },
+    ];
+    storage.setItem(
+      LEGACY_GRAPH_VIEWS_KEY,
+      JSON.stringify([
+        {
+          id: "55555555-5555-4555-8555-555555555555",
+          label: "Cedar graph",
+          createdAt: timestamps.createdAt,
+          updatedAt: timestamps.updatedAt,
+          state,
+        },
+      ]),
+    );
+    const create = vi.fn().mockResolvedValue(undefined);
+
+    await migrateLegacyGraphViews({ storage, remote: [], legacy: captured, create });
+
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(create.mock.calls[0]?.[0].label).toBe("Portfolio");
+  });
 });

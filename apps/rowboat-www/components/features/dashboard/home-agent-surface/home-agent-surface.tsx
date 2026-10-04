@@ -3,7 +3,7 @@
 import "client-only";
 
 import { ArrowRight, Buildings, FileText, ListBullets } from "@/lib/icons";
-import { useEffect, useState, type ComponentPropsWithoutRef, type ReactNode } from "react";
+import { type ComponentPropsWithoutRef, type ReactNode } from "react";
 
 import { cn } from "@oppulence/ui/lib/utils";
 
@@ -11,17 +11,17 @@ const STARTING_POINTS = [
   {
     title: "Find a slipping promise",
     prompt:
-      "Find the promise most likely to slip this week. Show me the source evidence, who owns it, and the smallest intervention that would get it back on track.",
+      "Find the promise most likely to slip this week. Show me where it came from, who owns it, and the smallest step that would get it back on track.",
   },
   {
-    title: "Review an at-risk relationship",
+    title: "Review an at-risk company",
     prompt:
-      "Which relationship needs intervention right now? Trace the signals that indicate risk and recommend the next conversation to have.",
+      "Which company needs attention right now? Show what makes it risky, and name the next conversation to have.",
   },
   {
-    title: "Sequence open obligations",
+    title: "Prioritize what we owe",
     prompt:
-      "Turn our open obligations into a recovery sequence. Prioritize by business impact, identify dependencies, and draft the next action for each owner.",
+      "List what we still owe. Put the most important first, name what each one depends on, and draft the next step for the person who owns it.",
   },
 ] as const;
 
@@ -36,13 +36,28 @@ export type HomeAgentSurfaceProps = ComponentPropsWithoutRef<"section"> & {
   onSelectPrompt: (prompt: string) => void;
 };
 
-function resolveGreetingName(userName?: string) {
-  if (!userName?.trim()) return "there";
-  if (!userName.includes("@")) return userName.trim();
-  const local = userName.split("@")[0] ?? userName;
-  const token = local.split(/[.+_-]/)[0] ?? local;
-  if (!token) return "there";
-  return token.charAt(0).toUpperCase() + token.slice(1);
+/**
+ * The greeting receives the same account label as the sidebar. A saved display
+ * name is used whole, including a name that contains an @ sign. An email, or
+ * the bare local part left when no name is saved, becomes a short given name.
+ */
+function looksLikeEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+export function resolveGreetingName(userName?: string) {
+  const trimmed = userName?.trim() ?? "";
+  if (!trimmed) return "there";
+  if (looksLikeEmail(trimmed)) {
+    const local = trimmed.split("@")[0] ?? trimmed;
+    const token = local.split(/[.+_-]/)[0] ?? local;
+    if (!token) return "there";
+    return token.charAt(0).toUpperCase() + token.slice(1);
+  }
+  if (trimmed === trimmed.toLowerCase()) {
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  }
+  return trimmed;
 }
 
 /**
@@ -59,16 +74,7 @@ export function HomeAgentSurface({
   onSelectPrompt,
   ...props
 }: HomeAgentSurfaceProps) {
-  const [motionReduced, setMotionReduced] = useState(false);
   const greetingName = resolveGreetingName(userName);
-
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const syncMotion = () => setMotionReduced(media.matches);
-    syncMotion();
-    media.addEventListener("change", syncMotion);
-    return () => media.removeEventListener("change", syncMotion);
-  }, []);
 
   return (
     <section
@@ -128,29 +134,20 @@ export function HomeAgentSurface({
             </div>
           </div>
 
-          <div className="mt-5 sm:hidden">
-            {motionReduced ? (
-              <div className="flex flex-col gap-2">
-                {STARTING_POINTS.map((startingPoint) => (
-                  <button
-                    className="rounded-[10px] border border-[var(--border)] px-3 py-2 text-left text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)]"
-                    key={startingPoint.title}
-                    onClick={() => onSelectPrompt(startingPoint.prompt)}
-                    type="button"
-                  >
-                    {startingPoint.title}
-                  </button>
-                ))}
-              </div>
-            ) : (
+          <div
+            className="mt-5 flex flex-col gap-2 sm:hidden"
+            data-slot="home-suggested-actions-mobile"
+          >
+            {STARTING_POINTS.map((startingPoint) => (
               <button
-                className="w-full rounded-[10px] border border-[var(--border)] px-3 py-2 text-left text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)]"
-                onClick={() => onSelectPrompt(STARTING_POINTS[0].prompt)}
+                className="rounded-[10px] border border-[var(--border)] px-3 py-2 text-left text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)]"
+                key={startingPoint.title}
+                onClick={() => onSelectPrompt(startingPoint.prompt)}
                 type="button"
               >
-                {STARTING_POINTS[0].title}
+                {startingPoint.title}
               </button>
-            )}
+            ))}
           </div>
 
           <p className="mt-8 text-center font-mono text-[10px] tracking-[0.08em] text-[var(--text-muted)]">

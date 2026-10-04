@@ -229,7 +229,7 @@ func addRevenueSchemas(schemas obj) {
 	schemas["RelationshipAttentionItem"] = objectSchema("Versioned relationship-native reason for portfolio attention.", obj{
 		"id": uuidSchema("Attention id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "version": intSchema("Optimistic version.", 1),
 		"relationshipId": uuidSchema("Relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"), "relationshipName": stringSchema("Relationship name.", "Acme"),
-		"reasonCode": stringSchema("Detector reason.", "overdue_commitment"), "explanation": stringSchema("Readable explanation.", "A confirmed commitment is overdue by two days."),
+		"reasonCode": stringSchema("Detector reason.", "overdue_commitment"), "explanation": stringSchema("Readable explanation.", "A confirmed promise is overdue by two days."),
 		"triggeringObjectRef": stringSchema("Triggering object.", "commitment:123"), "evidenceRefs": arraySchema("Evidence refs.", stringSchema("Evidence ref.", "relationship-observation:1")),
 		"urgencyBand": stringEnum("Urgency.", "high", "low", "normal", "high", "critical"), "rankScore": intSchema("Internal deterministic rank.", 82), "rankFactors": freeFormSchema("Readable factor contributions."),
 		"sourceRequirements": arraySchema("Fresh sources required.", stringSchema("Source.", "google")), "recommendationId": uuidSchema("Recommendation id.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "recommendationRevision": intSchema("Recommendation revision.", 2),
@@ -394,6 +394,7 @@ func addRevenueSchemas(schemas obj) {
 		"effectivePolicy":           ref("ResolvedConversationPolicy"),
 		"governanceDecisions":       arraySchema("Immutable checkpoint decisions.", freeFormSchema("Governance decision.")),
 		"deletionReceipts":          arraySchema("Deletion status and verification.", ref("ConversationDeletionReceipt")),
+		"observationPageHasMore":    boolSchema("An older conversation exists beyond this page of focused review.", true),
 	}, "claims", "reviewItems", "governanceReceipts", "delta", "liveCues", "contradictionCases", "recoveryEvaluations", "recommendationEvaluations", "mutualActionPlans", "effectivePolicy", "governanceDecisions", "deletionReceipts")
 
 	schemas["RelationshipGraphNode"] = objectSchema("A versioned, typed relationship graph node. Meaning is explicit so clients can render status without relying on color alone.", obj{
@@ -438,15 +439,17 @@ func addRevenueSchemas(schemas obj) {
 	}, "id", "source", "target", "kind", "label", "directed", "evidenceRefs")
 
 	schemas["RelationshipGraph"] = objectSchema("Shared read model for Account Graph and Portfolio Graph in web and desktop. Historical reads are bounded by asOf and every governed action remains permission-gated.", obj{
-		"contractVersion": stringSchema("Wire contract version.", "2026-08-01"),
-		"generatedAt":     stringSchema("Projection generation time.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
-		"asOf":            stringSchema("Historical evidence boundary.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
-		"historical":      boolSchema("Whether the response is an historical projection.", false),
-		"scope":           stringEnum("Graph scope.", "portfolio", "portfolio", "relationship"),
-		"relationshipId":  uuidSchema("Relationship id for account scope.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-		"depth":           obj{"type": "integer", "minimum": 1, "maximum": 3, "example": 2},
-		"nodes":           arraySchema("Typed nodes.", ref("RelationshipGraphNode")),
-		"edges":           arraySchema("Typed directed edges.", ref("RelationshipGraphEdge")),
+		"contractVersion":    stringSchema("Wire contract version.", "2026-08-01"),
+		"generatedAt":        stringSchema("Projection generation time.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
+		"asOf":               stringSchema("Historical evidence boundary.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
+		"historical":         boolSchema("Whether the response is an historical projection.", false),
+		"scope":              stringEnum("Graph scope.", "portfolio", "portfolio", "relationship"),
+		"relationshipId":     uuidSchema("Relationship id for account scope.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"depth":              obj{"type": "integer", "minimum": 1, "maximum": 3, "example": 2},
+		"nodes":              arraySchema("Typed nodes.", ref("RelationshipGraphNode")),
+		"edges":              arraySchema("Typed directed edges.", ref("RelationshipGraphEdge")),
+		"hasMore":            boolSchema("Another company exists beyond this page.", true),
+		"observationHasMore": boolSchema("An older conversation exists beyond this page.", true),
 		"permissions": objectSchema("Viewer capabilities for this projection.", obj{
 			"canView":       boolSchema("May view.", true),
 			"canContribute": boolSchema("May propose state or actions.", true),
@@ -459,6 +462,7 @@ func addRevenueSchemas(schemas obj) {
 	schemas["RevenueAction"] = objectSchema("One Revenue Action Queue item. State is split into independent dimensions: queue triage, policy preflight, approval, and execution. Every edit creates a new revision and invalidates the previous policy decision and approval.", obj{
 		"id":                      uuidSchema("Action id.", "1a8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"relationshipId":          uuidSchema("Owning relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"relationshipName":        stringSchema("Owning company name. The directory is paged, so a task still names a company that is not on the first page.", "Acme"),
 		"actionType":              stringEnum("Action type.", "warm_follow_up", "warm_follow_up", "proposal_nudge", "referral_reconnect", "customer_risk", "meeting_follow_up", "meeting_recap", "crm_update", "follow_up_task", "calendar_hold", "commitment_rescue"),
 		"channel":                 stringEnum("Delivery channel.", "email", "email", "slack", "call", "crm_task", "crm", "task", "calendar"),
 		"detector":                stringEnum("Detector that produced the action.", "manual", "requested_follow_up_due", "unanswered_proposal", "waiting_on_me", "dormant_warm_opportunity", "neglected_referral", "former_customer_reconnect", "conversation_action_pack", "commitment_due", "manual"),
@@ -520,6 +524,7 @@ func addRevenueSchemas(schemas obj) {
 	schemas["RevenueImpact"] = objectSchema("Aggregate ROI picture for the caller's revenue queue: how many open loops were surfaced, how they were triaged, how many were acted on, and what came back.", obj{
 		"surfaced":              intSchema("Total actions ever surfaced.", 42),
 		"open":                  intSchema("Actions currently open.", 8),
+		"openTasks":             intSchema("Open follow-up tasks. These are saved work, not recovery follow-ups.", 3),
 		"handled":               intSchema("Actions marked handled.", 20),
 		"snoozed":               intSchema("Actions snoozed.", 3),
 		"dismissed":             intSchema("Actions dismissed.", 11),
@@ -549,7 +554,7 @@ func addRevenueSchemas(schemas obj) {
 			"surfaced": intSchema("Surfaced by this detector.", 12),
 			"handled":  intSchema("Handled from this detector.", 7),
 		})),
-	}, "surfaced", "open", "handled", "approved", "executed", "relationships", "atRiskRelationships", "criticalRelationships", "portfolioRiskScore", "overdueCommitments", "overdueByUs", "overdueByThem", "longestOverdueDays", "riskReasons")
+	}, "surfaced", "open", "openTasks", "handled", "approved", "executed", "relationships", "atRiskRelationships", "criticalRelationships", "portfolioRiskScore", "overdueCommitments", "overdueByUs", "overdueByThem", "longestOverdueDays", "riskReasons")
 
 	schemas["RevenueDigest"] = objectSchema("The proactive digest content: the top open loops plus running impact counts. This is what the scheduled digest email is built from.", obj{
 		"generatedAt":    stringSchema("When composed.", "2026-07-23T09:00:00Z", obj{"format": "date-time"}),
@@ -616,9 +621,10 @@ func addRevenueSchemas(schemas obj) {
 		"access":          ref("CommunicationAccess"),
 	}, "id", "source", "interactionType", "occurredAt", "visibility", "ownerId", "bodyLocked", "access")
 	schemas["CommunicationTimelinePage"] = objectSchema("Paginated communication timeline.", obj{
-		"items":      arraySchema("Timeline items.", ref("CommunicationTimelineItem")),
-		"hasMore":    boolSchema("More pages exist.", false),
-		"nextBefore": stringSchema("Cursor for the next page.", "2026-09-06T12:00:00Z", obj{"format": "date-time"}, nullable()),
+		"items":        arraySchema("Timeline items.", ref("CommunicationTimelineItem")),
+		"hasMore":      boolSchema("More pages exist.", false),
+		"nextBefore":   stringSchema("Cursor for the next page.", "2026-09-06T12:00:00Z", obj{"format": "date-time"}, nullable()),
+		"nextBeforeId": stringSchema("Id of the last item on this page. Send it with nextBefore so rows that share that time stay on the next page.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5", obj{"format": "uuid"}, nullable()),
 	}, "items", "hasMore")
 }
 
@@ -702,7 +708,7 @@ func addRevenuePaths(paths obj) {
 	// The commitment register: obligations across every account. Every other
 	// commitment path is nested under a relationship id and cannot answer
 	// "what do we owe anyone", which is the product.
-	paths["/v1/commitments"] = obj{"get": operation("Relationship Intelligence", "List the commitment register", "Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register.", "listCommitments", bearer(), []any{
+	paths["/v1/commitments"] = obj{"get": operation("Relationship Intelligence", "List the commitment register", "Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register. A full page is the end of the register when hasMore is false.", "listCommitments", bearer(), []any{
 		obj{"name": "direction", "in": "query", "required": false, "description": "promised_by_me, promised_by_them, or mutual.", "schema": obj{"type": "string"}},
 		obj{"name": "state", "in": "query", "required": false, "description": "Comma-separated register states: open, at_risk, met, missed, waived, disputed. at_risk is derived from the due date.", "schema": obj{"type": "string"}},
 		obj{"name": "owner", "in": "query", "required": false, "description": "Owner participant reference.", "schema": obj{"type": "string"}},
@@ -713,7 +719,10 @@ func addRevenuePaths(paths obj) {
 		obj{"name": "offset", "in": "query", "required": false, "description": "Page offset.", "schema": obj{"type": "integer"}},
 		obj{"name": "includeCandidates", "in": "query", "required": false, "description": "Include unconfirmed extractions for a review surface.", "schema": obj{"type": "boolean"}},
 	}, nil, obj{
-		"200": jsonResponse("The register page.", objectSchema("Commitment register.", obj{"commitments": arraySchema("Register rows, each with its derived state and account.", ref("CommitmentRegisterEntry"))}, "commitments"), nil),
+		"200": jsonResponse("The register page.", objectSchema("Commitment register. A full page is the end of the register when hasMore is false.", obj{
+			"commitments": arraySchema("Register rows, each with its derived state and account.", ref("CommitmentRegisterEntry")),
+			"hasMore":     boolSchema("Another promise exists beyond this page.", false),
+		}, "commitments"), nil),
 		"400": responseRef("400"), "401": responseRef("401"),
 	})}
 	paths["/v1/commitments/{commitmentId}/export"] = obj{"get": operation("Relationship Intelligence", "Export a commitment record", "Returns one commitment as a standalone record: the obligation, its full state history, and the verbatim cited evidence with timestamps. Pass format=md for the Markdown document a user forwards. A record that cannot leave the tool cannot settle an argument.", "exportCommitment", bearer(), []any{
@@ -762,13 +771,17 @@ func addRevenuePaths(paths obj) {
 	})}
 
 	paths["/v1/relationships"] = obj{
-		"get": operation("Relationship Intelligence", "List relationships", "Lists canonical relationship state with optional text, lifecycle, health, and engagement filters.", "listRelationships", bearer(), []any{
+		"get": operation("Relationship Intelligence", "List relationships", "Lists canonical relationship state with optional text, lifecycle, health, and engagement filters. A full page of 200 is the end of the list when hasMore is false.", "listRelationships", bearer(), []any{
 			obj{"name": "q", "in": "query", "required": false, "description": "Account, domain, or contact search.", "schema": obj{"type": "string"}},
 			obj{"name": "lifecycle", "in": "query", "required": false, "description": "Lifecycle filter.", "schema": obj{"type": "string"}},
 			obj{"name": "health", "in": "query", "required": false, "description": "Health filter.", "schema": obj{"type": "string"}},
 			obj{"name": "engagement", "in": "query", "required": false, "description": "Engagement filter.", "schema": obj{"type": "string"}},
+			obj{"name": "offset", "in": "query", "required": false, "description": "How many relationships to skip. Each page is 200 rows, newest touch first.", "schema": obj{"type": "integer", "minimum": 0}},
 		}, nil, obj{
-			"200": jsonResponse("Relationships.", objectSchema("Relationship list.", obj{"relationships": arraySchema("Relationships.", ref("RevenueRelationship"))}), nil),
+			"200": jsonResponse("Relationships.", objectSchema("Relationship list.", obj{
+				"relationships": arraySchema("Relationships.", ref("RevenueRelationship")),
+				"hasMore":       boolSchema("Another company exists beyond this page.", false),
+			}, "relationships"), nil),
 			"401": responseRef("401"),
 		}),
 		"post": operation("Relationship Intelligence", "Create a relationship", "Records a canonical relationship in the caller's workspace.", "createRelationship", bearer(), nil, jsonRequest("Relationship.", objectSchema("Create request.", obj{
@@ -794,6 +807,8 @@ func addRevenuePaths(paths obj) {
 			obj{"name": "relationshipId", "in": "query", "required": false, "description": "Required when scope=relationship.", "schema": obj{"type": "string", "format": "uuid"}},
 			obj{"name": "depth", "in": "query", "required": false, "description": "Bounded graph expansion depth.", "schema": obj{"type": "integer", "minimum": 1, "maximum": 3, "default": 2}},
 			obj{"name": "asOf", "in": "query", "required": false, "description": "Historical evidence boundary; must not be in the future.", "schema": obj{"type": "string", "format": "date-time"}},
+			obj{"name": "offset", "in": "query", "required": false, "description": "Company offset. The first page is the 200 most recently updated companies.", "schema": obj{"type": "integer", "minimum": 0}},
+			obj{"name": "observationOffset", "in": "query", "required": false, "description": "Evidence offset. The first page is the newest conversations on each company.", "schema": obj{"type": "integer", "minimum": 0}},
 		},
 		nil,
 		obj{
@@ -818,18 +833,39 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/relationships/{relationshipId}/timeline"] = obj{"get": operation("Relationship Intelligence", "Get evidence timeline", "Returns the latest immutable observations for a relationship.", "getRelationshipTimeline", bearer(), append(relationshipParam, obj{"name": "limit", "in": "query", "required": false, "description": "Maximum observations (1-100).", "schema": obj{"type": "integer"}}), nil, obj{
-		"200": jsonResponse("Evidence timeline.", objectSchema("Observation list.", obj{"observations": arraySchema("Observations.", ref("RelationshipObservation"))}), nil),
+	paths["/v1/relationships/{relationshipId}/timeline"] = obj{"get": operation("Relationship Intelligence", "Get evidence timeline", "Returns the latest immutable observations for a relationship. Rows that share a time stay in id order, so the next page does not skip them.", "getRelationshipTimeline", bearer(), append(relationshipParam, obj{"name": "limit", "in": "query", "required": false, "description": "Maximum observations (1-100).", "schema": obj{"type": "integer"}}, obj{"name": "before", "in": "query", "required": false, "description": "Return observations before this RFC3339 timestamp.", "schema": obj{"type": "string", "format": "date-time"}}, obj{"name": "beforeId", "in": "query", "required": false, "description": "With before, also return observations at that time whose id sorts earlier.", "schema": obj{"type": "string", "format": "uuid"}}), nil, obj{
+		"200": jsonResponse("Evidence timeline.", objectSchema("Observation page.", obj{
+			"observations": arraySchema("Observations.", ref("RelationshipObservation")),
+			"hasMore":      boolSchema("An older observation exists beyond this page.", true),
+			"nextBefore":   stringSchema("Occurred-at cursor for the next page.", "2026-06-01T00:00:00Z", obj{"format": "date-time"}, nullable()),
+			"nextBeforeId": stringSchema("Id cursor for the next page. Send it with nextBefore.", "a1160000-0000-4000-8000-000000000002", obj{"format": "uuid"}, nullable()),
+		}, "observations", "hasMore"), nil),
+		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/relationships/{relationshipId}/communication-timeline"] = obj{"get": operation("Relationship Intelligence", "Get communication timeline", "Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship.", "getRelationshipCommunicationTimeline", bearer(), append(relationshipParam, obj{"name": "limit", "in": "query", "required": false, "description": "Maximum items (1-100).", "schema": obj{"type": "integer"}}, obj{"name": "before", "in": "query", "required": false, "description": "Return items before this RFC3339 timestamp.", "schema": obj{"type": "string", "format": "date-time"}}), nil, obj{
+	paths["/v1/relationships/{relationshipId}/communication-timeline"] = obj{"get": operation("Relationship Intelligence", "Get communication timeline", "Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship. Rows that share a time stay in id order, so the next page does not skip them.", "getRelationshipCommunicationTimeline", bearer(), append(relationshipParam, obj{"name": "limit", "in": "query", "required": false, "description": "Maximum items (1-100).", "schema": obj{"type": "integer"}}, obj{"name": "before", "in": "query", "required": false, "description": "Return items before this RFC3339 timestamp.", "schema": obj{"type": "string", "format": "date-time"}}, obj{"name": "beforeId", "in": "query", "required": false, "description": "With before, also return items at that time whose id sorts earlier.", "schema": obj{"type": "string", "format": "uuid"}}), nil, obj{
 		"200": jsonResponse("Communication timeline.", ref("CommunicationTimelinePage"), nil),
+		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/relationships/{relationshipId}/changes"] = obj{"get": operation("Relationship Intelligence", "Get relationship changes", "Returns immutable projection snapshots so operators can see what changed and why.", "getRelationshipChanges", bearer(), relationshipParam, nil, obj{
-		"200": jsonResponse("State changes.", objectSchema("Snapshot list.", obj{"snapshots": arraySchema("Snapshots.", ref("RelationshipStateSnapshot"))}), nil),
+	paths["/v1/relationships/{relationshipId}/changes"] = obj{"get": operation("Relationship Intelligence", "Get relationship changes", "Returns immutable projection snapshots so operators can see what changed and why. The first page is the two newest snapshots.", "getRelationshipChanges", bearer(), append(append(append([]any{}, relationshipParam...), obj{"name": "limit", "in": "query", "required": false, "description": "Maximum snapshots (default 2, max 50).", "schema": obj{"type": "integer", "minimum": 1, "maximum": 50}}), obj{"name": "offset", "in": "query", "required": false, "description": "Page offset.", "schema": obj{"type": "integer", "minimum": 0}}), nil, obj{
+		"200": jsonResponse("State changes.", objectSchema("Snapshot list.", obj{
+			"snapshots": arraySchema("Snapshots.", ref("RelationshipStateSnapshot")),
+			"hasMore":   boolSchema("An older snapshot exists beyond this page.", true),
+		}, "snapshots", "hasMore"), nil),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+	})}
+	paths["/v1/relationships/{relationshipId}/conversation-review"] = obj{"get": operation("Relationship Intelligence", "Get earlier conversation review", "Returns focused review items and governance receipts from conversations older than the newest page.", "getRelationshipConversationReview", bearer(), append(append([]any{}, relationshipParam...), obj{"name": "offset", "in": "query", "required": false, "description": "Observation offset. The first page is the newest 200 conversations.", "schema": obj{"type": "integer", "minimum": 0}}), nil, obj{
+		"200": jsonResponse("Conversation review page.", objectSchema("Focused review page.", obj{
+			"reviewItems":        arraySchema("Review items from this page of conversations.", ref("ConversationReviewItem")),
+			"governanceReceipts": arraySchema("Governance receipts from this page of conversations.", ref("ConversationGovernanceReceipt")),
+			"hasMore":            boolSchema("An older conversation exists beyond this page.", false),
+		}, "reviewItems", "governanceReceipts", "hasMore"), nil),
+		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
@@ -1063,19 +1099,29 @@ func addRevenuePaths(paths obj) {
 		"200": jsonResponse("Disconnected lifecycle.", ref("RelationshipSourceStatus"), nil), "400": responseRef("400"), "401": responseRef("401"), "403": responseRef("403"),
 	})}
 
-	paths["/v1/relationship-identity-candidates"] = obj{"get": operation("Relationship Intelligence", "List identity review candidates", "Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage.", "listRelationshipIdentityCandidates", bearer(), []any{
+	paths["/v1/relationship-identity-candidates"] = obj{"get": operation("Relationship Intelligence", "List identity review candidates", "Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage. A full page is the end of the inbox when hasMore is false.", "listRelationshipIdentityCandidates", bearer(), []any{
 		obj{"name": "status", "in": "query", "required": false, "schema": obj{"type": "string", "enum": []any{"pending", "deferred", "resolving", "resolved", "undone"}}},
 		obj{"name": "source", "in": "query", "required": false, "schema": obj{"type": "string"}}, obj{"name": "relationshipId", "in": "query", "required": false, "schema": obj{"type": "string", "format": "uuid"}}, obj{"name": "limit", "in": "query", "required": false, "schema": obj{"type": "integer"}},
-	}, nil, obj{"200": jsonResponse("Identity inbox.", objectSchema("Identity candidate list.", obj{"candidates": arraySchema("Candidates.", ref("RelationshipIdentityCandidate"))}, "candidates"), nil), "400": responseRef("400"), "401": responseRef("401")})}
+	}, nil, obj{"200": jsonResponse("Identity inbox.", objectSchema("Identity candidate list. A full page is the end of the inbox when hasMore is false.", obj{
+		"candidates": arraySchema("Candidates.", ref("RelationshipIdentityCandidate")),
+		"hasMore":    boolSchema("Another duplicate exists beyond this page.", false),
+	}, "candidates"), nil), "400": responseRef("400"), "401": responseRef("401")})}
 	candidateParam := []any{obj{"name": "candidateId", "in": "path", "required": true, "description": "Identity candidate id.", "schema": obj{"type": "string", "format": "uuid"}}}
 	paths["/v1/relationship-identity-candidates/{candidateId}"] = obj{"get": operation("Relationship Intelligence", "Inspect identity candidate", "Returns exact anchors, provider records, evidence range, impact, advisory confidence, immutable decisions, and lineage.", "getRelationshipIdentityCandidate", bearer(), candidateParam, nil, obj{"200": jsonResponse("Identity candidate.", ref("RelationshipIdentityCandidate"), nil), "401": responseRef("401"), "404": responseRef("404")})}
 	paths["/v1/relationship-identity-candidates/{candidateId}/decisions"] = obj{"post": operation("Relationship Intelligence", "Decide identity candidate", "Applies merge, keep-separate, move-evidence, split, defer, or compensating undo once at the expected optimistic version.", "decideRelationshipIdentityCandidate", bearer(), candidateParam, jsonRequest("Identity decision.", objectSchema("Identity decision request.", obj{
 		"decision": stringEnum("Decision.", "merge", "merge", "keep_separate", "move_evidence", "split", "defer", "undo"), "reason": stringSchema("Actor reason.", "Confirmed provider records are the same account."), "expectedVersion": intSchema("Expected candidate version.", 1), "idempotencyKey": stringSchema("Stable client idempotency key.", "identity-review:123"),
 	}, "decision", "expectedVersion", "idempotencyKey"), obj{"decision": "merge", "expectedVersion": 1, "idempotencyKey": "identity-review:123"}), obj{"200": jsonResponse("Resolved candidate.", ref("RelationshipIdentityCandidate"), nil), "400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409")})}
 
-	paths["/v1/relationship-attention"] = obj{"get": operation("Relationship Intelligence", "List portfolio attention", "Returns deterministic relationship-native attention ordered by explicit factor contributions.", "listRelationshipAttention", bearer(), []any{
-		obj{"name": "status", "in": "query", "required": false, "schema": obj{"type": "string", "enum": []any{"open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved", "all"}}}, obj{"name": "limit", "in": "query", "required": false, "schema": obj{"type": "integer"}},
-	}, nil, obj{"200": jsonResponse("Attention projection.", objectSchema("Attention list.", obj{"contractVersion": stringSchema("Contract version.", "relationship-attention.v1"), "asOf": stringSchema("Read boundary.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}), "items": arraySchema("Attention items.", ref("RelationshipAttentionItem"))}, "contractVersion", "asOf", "items"), nil), "401": responseRef("401")})}
+	paths["/v1/relationship-attention"] = obj{"get": operation("Relationship Intelligence", "List portfolio attention", "Returns deterministic relationship-native attention ordered by explicit factor contributions. A full page is the end of the queue when hasMore is false.", "listRelationshipAttention", bearer(), []any{
+		obj{"name": "status", "in": "query", "required": false, "schema": obj{"type": "string", "enum": []any{"open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved", "all"}}},
+		obj{"name": "limit", "in": "query", "required": false, "schema": obj{"type": "integer"}},
+		obj{"name": "offset", "in": "query", "required": false, "description": "Page offset.", "schema": obj{"type": "integer", "minimum": 0}},
+	}, nil, obj{"200": jsonResponse("Attention projection.", objectSchema("Attention list. A full page is the end of the queue when hasMore is false.", obj{
+		"contractVersion": stringSchema("Contract version.", "relationship-attention.v1"),
+		"asOf":            stringSchema("Read boundary.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
+		"items":           arraySchema("Attention items.", ref("RelationshipAttentionItem")),
+		"hasMore":         boolSchema("Another company exists beyond this page of the queue.", false),
+	}, "contractVersion", "asOf", "items"), nil), "401": responseRef("401")})}
 	attentionParam := []any{obj{"name": "attentionId", "in": "path", "required": true, "description": "Attention item id.", "schema": obj{"type": "string", "format": "uuid"}}}
 	paths["/v1/relationship-attention/{attentionId}/decisions"] = obj{"post": operation("Relationship Intelligence", "Decide attention item", "Acknowledges, snoozes, or dismisses at the expected optimistic version. Materially new evidence reopens the item.", "decideRelationshipAttention", bearer(), attentionParam, jsonRequest("Attention decision.", objectSchema("Attention decision request.", obj{
 		"decision": stringEnum("Decision.", "acknowledge", "acknowledge", "snooze", "dismiss"), "reason": stringSchema("Decision reason.", "Reviewed with the account owner."), "expectedVersion": intSchema("Expected version.", 1), "snoozedUntil": stringSchema("Bounded future wake time.", "2026-08-07T14:00:00Z", obj{"format": "date-time"}, nullable()),
@@ -1094,11 +1140,16 @@ func addRevenuePaths(paths obj) {
 	})}
 
 	paths["/v1/revenue-actions"] = obj{
-		"get": operation("Revenue", "List the action queue", "Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions.", "listRevenueActions", bearer(), []any{
+		"get": operation("Revenue", "List the action queue", "Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.", "listRevenueActions", bearer(), []any{
 			obj{"name": "queueStatus", "in": "query", "required": false, "description": "Queue status filter, or all.", "schema": obj{"type": "string", "enum": []any{"open", "snoozed", "dismissed", "handled", "all"}}},
 			obj{"name": "limit", "in": "query", "required": false, "description": "Page size (max 100, default 10).", "schema": obj{"type": "integer"}},
+			obj{"name": "offset", "in": "query", "required": false, "description": "How many actions to skip. Pages stay in priority order.", "schema": obj{"type": "integer", "minimum": 0}},
+			obj{"name": "surface", "in": "query", "required": false, "description": "task keeps follow-up tasks. recovery keeps every other action.", "schema": obj{"type": "string", "enum": []any{"task", "recovery"}}},
 		}, nil, obj{
-			"200": jsonResponse("Queue page.", objectSchema("Action list.", obj{"actions": arraySchema("Actions.", ref("RevenueAction"))}), nil),
+			"200": jsonResponse("Queue page.", objectSchema("Action list. A full page is the end of the queue when hasMore is false.", obj{
+				"actions": arraySchema("Actions.", ref("RevenueAction")),
+				"hasMore": boolSchema("Another task or follow-up exists beyond this page.", false),
+			}, "actions"), nil),
 			"401": responseRef("401"),
 		}),
 		"post": operation("Revenue", "Create a manual action", "Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.", "createRevenueAction", bearer(), nil, jsonRequest("Action.", objectSchema("Create request.", obj{
@@ -1234,5 +1285,27 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
+	})}
+	paths["/v1/workspace-notes"] = obj{"get": operation("Relationship Intelligence", "List workspace notes", "Returns the latest copy of each company note in this workspace. One request reads every company, so the notes page does not ask for each company timeline. A newer edit replaces the previous copy, and a later deletion removes the note.", "listWorkspaceNotes", bearer(), []any{
+		obj{"name": "limit", "in": "query", "required": false, "description": "Maximum notes to return (default 50, max 100).", "schema": obj{"type": "integer", "minimum": 1, "maximum": 100}},
+		obj{"name": "offset", "in": "query", "required": false, "description": "Number of collapsed notes to skip.", "schema": obj{"type": "integer", "minimum": 0}},
+	}, nil, obj{
+		"200": jsonResponse("Collapsed workspace notes, newest first.", objectSchema("Workspace notes page.", obj{
+			"notes": arraySchema("Latest note for each note id.", objectSchema("Workspace note.", obj{
+				"externalId":       stringSchema("Stable note id.", "note-1"),
+				"title":            stringSchema("Note title.", "Renewal context"),
+				"body":             stringSchema("Plain note body.", "Use the updated terms."),
+				"content":          freeFormSchema("Editor document, when one was saved."),
+				"meetingLinked":    boolSchema("Whether the note is linked to a meeting.", false),
+				"liveLinked":       boolSchema("Whether the note is linked to a live note.", false),
+				"relationshipId":   uuidSchema("Company id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+				"relationshipName": stringSchema("Company name.", "Cedar Notes"),
+				"occurredAt":       stringSchema("When this copy was written.", "2026-09-01T12:00:00Z", obj{"format": "date-time"}),
+				"eventType":        stringSchema("Stored event. Live notes are note.", "note"),
+			}, "externalId", "title", "body", "meetingLinked", "liveLinked", "relationshipId", "relationshipName", "occurredAt", "eventType")),
+			"hasMore": boolSchema("Whether another page of notes exists.", false),
+		}, "notes", "hasMore"), nil),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
 	})}
 }

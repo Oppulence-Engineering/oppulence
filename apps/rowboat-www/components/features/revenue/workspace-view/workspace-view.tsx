@@ -28,12 +28,57 @@ import {
   SimProductHeader,
   SimProductPanel,
 } from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
-import { Field, errMessage } from "@/components/features/revenue/shared/shared";
+import {
+  Field,
+  errMessage,
+  ListRefreshFailure,
+  listNeverLoaded,
+  listRefreshFailureCopy,
+} from "@/components/features/revenue/shared/shared";
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
+import {
+  activitySourceLabel,
+  sourceConnectionLabel,
+} from "@/lib/revenue/source-product-copy";
 import { cn } from "@/lib/utils";
 import type { RelationshipSourceStatus, RevenueWorkspace } from "@/lib/revenue/types";
 
 const CONNECTORS_SECTION_ID = "sources-connectors";
+
+const GMAIL_DRAFT_STATUSES = new Set(["connected", "live", "backfilling"]);
+
+/**
+ * Local mode never sends. A Gmail draft is only possible once Google is
+ * connected, so the page must not promise a mailbox the workspace does not have.
+ */
+export function gmailDraftsAvailable(
+  statuses: readonly { source: string; status: string }[],
+): boolean {
+  return statuses.some(
+    (source) => source.source === "google" && GMAIL_DRAFT_STATUSES.has(source.status),
+  );
+}
+
+export function localModeNotice(gmail: "connected" | "missing" | "unknown"): string {
+  const base = "Audits and drafts work here. Sending stays off until this workspace is linked.";
+  if (gmail === "connected") {
+    return `${base} Drafts still land in your Gmail so you can send them yourself.`;
+  }
+  if (gmail === "missing") {
+    return `${base} Connect Gmail before a draft can land in your mailbox.`;
+  }
+  return base;
+}
+
+/** Preflight off means Oppulence will not send. "Drafts only" is true once Gmail can receive one. */
+export function sendingCheckLabel(
+  preflightAvailable: boolean,
+  gmail: "connected" | "missing" | "unknown",
+): string {
+  if (preflightAvailable) return "Available";
+  if (gmail === "connected") return "Unavailable (drafts only)";
+  return "Unavailable";
+}
 
 function scrollToConnectors() {
   document
@@ -87,6 +132,14 @@ export function WorkspaceView({
 
   const linked = workspace.mode === "linked" && workspace.status === "active";
   const sources = sourcesQuery.data;
+  const sourceCount = sources?.length ?? 0;
+  const sourcesNeverLoaded = listNeverLoaded(sourcesQuery.isError, sources);
+  const gmail =
+    sourcesQuery.isLoading || sourcesNeverLoaded
+      ? "unknown"
+      : gmailDraftsAvailable(sources ?? [])
+        ? "connected"
+        : "missing";
   const autoRefreshBlocker = autoRefreshQuery.data ?? "";
 
   const submitLink = async () => {
@@ -100,11 +153,11 @@ export function WorkspaceView({
       });
       onLinked(ws);
       capture(RevenueEvents.WorkspaceLinked);
-      onNotice("Workspace linked — governed sending is now enabled.");
+      onNotice("Workspace linked. Checked sending is on.");
     } catch (error) {
       onError(
         error instanceof RevenueAPIError && error.code === "facade_unavailable"
-          ? "Policy preflight isn't configured on the server yet, so linking can't be completed. Drafting still works in local mode."
+          ? "Checked sending isn't configured on the server yet, so linking can't be completed. Drafts still work."
           : errMessage(error, "Could not link the workspace."),
       );
     } finally {
@@ -119,18 +172,33 @@ export function WorkspaceView({
           actions={
             sourcesQuery.isLoading
               ? "Loading…"
-              : `${sources?.length ?? 0} source${sources?.length === 1 ? "" : "s"}`
+              : sourcesNeverLoaded
+                ? "Couldn't load"
+                : `${sourceCount} source${sourceCount === 1 ? "" : "s"}`
           }
           title="Connected sources"
         />
-        {sourcesQuery.isLoading ? (
+        {sourcesQuery.isError && sources != null ? (
+          <ListRefreshFailure
+            message={listRefreshFailureCopy("sources")}
+            onRetry={() => void sourcesQuery.refetch()}
+          />
+        ) : null}
+        {sourcesQuery.isLoading && sourceCount === 0 ? (
           <div className="p-4">
             <Skeleton className="h-16 w-full rounded-[2px]" />
           </div>
-        ) : sourcesQuery.isError || !sources?.length ? (
+        ) : sourcesNeverLoaded ? (
+          <div className="flex flex-col gap-3 px-4 py-6 text-sm text-[var(--text-secondary)]">
+            <p>Sources could not load. Try again.</p>
+            <Button onClick={() => void sourcesQuery.refetch()} size="sm" type="button">
+              Try again
+            </Button>
+          </div>
+        ) : !sources?.length ? (
           <div className="flex flex-col gap-3 px-4 py-6 text-sm text-[var(--text-secondary)]">
             <p>
-              No evidence sources are connected yet. Connect Gmail, Calendar, Slack, or CRM below.
+              Nothing is connected yet. Connect Gmail and Calendar, or another tool below.
             </p>
             <Button onClick={scrollToConnectors} size="sm" type="button">
               <Plugs /> Connect sources
@@ -138,7 +206,7 @@ export function WorkspaceView({
           </div>
         ) : (
           <div className="divide-y divide-[var(--border)]">
-            {sources.map((source) => (
+            {(sources ?? []).map((source) => (
               <SourceRow
                 autoRefreshBlocker={autoRefreshBlocker}
                 key={`${source.source}:${source.sourceAccountId}`}
@@ -166,7 +234,7 @@ export function WorkspaceView({
               </button>
             ) : null
           }
-          title="Connectors"
+          title="Connections"
         />
         <div className="sources-connectors px-1 py-2">
           <ConnectorSettings showHeading={false} />
@@ -183,18 +251,18 @@ export function WorkspaceView({
           title="Workspace"
         />
         <div className="divide-y divide-[var(--border)] text-sm">
-          <MetadataRow label="Mode" value={workspace.mode} />
-          <MetadataRow label="Status" value={workspace.status} />
+          <MetadataRow label="Mode" value={workspaceMetadataValue(workspace.mode)} />
+          <MetadataRow label="Status" value={workspaceMetadataValue(workspace.status)} />
           <MetadataRow
-            label="Preflight"
-            value={workspace.preflightAvailable ? "Available" : "Unavailable (drafts only)"}
+            label="Sending check"
+            value={sendingCheckLabel(workspace.preflightAvailable, gmail)}
           />
           {workspace.outboundOrganizationId ? (
             <MetadataRow label="Organization" mono value={workspace.outboundOrganizationId} />
           ) : null}
           {workspace.outboundWorkspaceId ? (
             <MetadataRow
-              label="OutboundConsole workspace"
+              label="Sending workspace"
               mono
               value={workspace.outboundWorkspaceId}
             />
@@ -208,10 +276,9 @@ export function WorkspaceView({
       {linked ? (
         <Alert>
           <ShieldCheck weight="fill" />
-          <AlertTitle>Governed sending is on</AlertTitle>
+          <AlertTitle>Checked sending is on</AlertTitle>
           <AlertDescription>
-            Sends run through OutboundConsole policy preflight — suppression, verification, and
-            ownership are checked before anything leaves.
+            Each send is checked for blocks, identity, and ownership before it leaves.
           </AlertDescription>
         </Alert>
       ) : (
@@ -219,30 +286,29 @@ export function WorkspaceView({
           <Alert>
             <Plugs weight="fill" />
             <AlertTitle>Local mode</AlertTitle>
-            <AlertDescription>
-              Observation, scans, and draft-first execution all work. Sending is disabled until you
-              link a governed OutboundConsole workspace — drafts land in your own Gmail so you can
-              send them yourself.
-            </AlertDescription>
+            <AlertDescription>{localModeNotice(gmail)}</AlertDescription>
           </Alert>
 
           <SimProductPanel>
-            <SimProductHeader title="Link a governed workspace" />
+            <SimProductHeader title="Turn on checked sending" />
             <div className="flex flex-col gap-3 px-4 py-4">
               <p className="text-sm text-[var(--text-secondary)]">
-                Connect an OutboundConsole workspace to turn on policy-checked sending.
+                Link a sending workspace to check each message before it goes out.
               </p>
-              <Field label="OutboundConsole workspace ID">
+              {/* The stored id belongs to the sending service. The label does not name that service. */}
+              <Field label="Sending workspace ID">
                 <Input
+                  aria-label="Sending workspace ID"
                   onChange={(event) => setWsId(event.target.value)}
-                  placeholder="ws_…"
+                  placeholder="Workspace id"
                   value={wsId}
                 />
               </Field>
               <Field label="Organization ID (optional)">
                 <Input
+                  aria-label="Organization ID"
                   onChange={(event) => setOrgId(event.target.value)}
-                  placeholder="org_…"
+                  placeholder="Organization id"
                   value={orgId}
                 />
               </Field>
@@ -289,15 +355,7 @@ function SourceRow({
   const stale = supportsResync && !stopped && !syncing && source.status === "stale";
   const incomplete =
     supportsResync && !stopped && !syncing && !stale && source.completeness !== "complete";
-  const label = stopped
-    ? source.status.replaceAll("_", " ")
-    : syncing
-      ? "syncing"
-      : stale
-        ? "stale"
-        : incomplete
-          ? "sync incomplete"
-          : source.status.replaceAll("_", " ");
+  const label = sourceConnectionLabel(source);
   const canResync = stale || incomplete;
 
   const retry = async () => {
@@ -306,7 +364,7 @@ function SourceRow({
     try {
       const updated = await resyncRelationshipSource(source.source, source.sourceAccountId);
       await onUpdated(updated);
-      onNotice(`${source.source} sync queued.`);
+      onNotice(sourceRefreshNotice(source.source));
     } catch (error) {
       onError(errMessage(error, "Could not retry the source sync."));
     } finally {
@@ -317,11 +375,13 @@ function SourceRow({
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">
       <div className="min-w-0">
-        <div className="font-normal capitalize text-[var(--text-primary)]">
-          {source.source}
+        <div className="font-normal text-[var(--text-primary)]">
+          {activitySourceLabel(source.source)}
           {source.sourceAccountId && source.sourceAccountId !== "default" ? (
+            // The row title-cases the provider slug. The account id is often an
+            // email, and that same transform would rewrite owner@example.com.
             <Badge
-              className="ml-2 font-mono text-xs font-normal text-[var(--text-muted)]"
+              className="ml-2 font-mono text-xs font-normal normal-case text-[var(--text-muted)]"
               variant="outline"
             >
               {source.sourceAccountId}
@@ -342,7 +402,7 @@ function SourceRow({
                   ? "Automatic refresh is paused because this workspace is out of AI credits. The source is still connected; reconnecting will not fix it."
                   : autoRefreshBlocker === "upstream_credits_exhausted"
                     ? "Automatic refresh is paused because Oppulence's AI provider is temporarily unavailable. The source is still connected; reconnecting will not fix it."
-                    : "No successful update arrived within the expected cadence. Refresh to catch up."
+                    : "No successful update arrived on schedule. Refresh to catch up."
                 : "The connection works, but its history is not fully synced."}
           </p>
         ) : null}
@@ -370,13 +430,38 @@ function SourceRow({
   );
 }
 
+export { sourceConnectionLabel };
+
+/** The stored source is a lowercase provider name. The toast is a sentence. */
+export function sourceRefreshNotice(source: string): string {
+  const name = source.trim() ? activitySourceLabel(source) : "Source";
+  return `${name} refresh queued.`;
+}
+
+/** Stored workspace slugs are not labels. "repair_required" would otherwise show the underscore. */
+export function workspaceMetadataValue(value: string): string {
+  const labels: Record<string, string> = {
+    local: "Local",
+    linked: "Linked",
+    active: "Active",
+    disconnected: "Disconnected",
+    repair_required: "Needs repair",
+  };
+  const known = labels[value];
+  if (known) return known;
+  return value
+    .replaceAll("_", " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 function MetadataRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-4 px-4 py-2.5">
       <Label className="font-normal text-[var(--text-secondary)]">{label}</Label>
-      <span className={cn("text-[var(--text-primary)]", mono ? "font-mono text-xs" : "capitalize")}>
-        {value}
-      </span>
+      <span className={cn("text-[var(--text-primary)]", mono && "font-mono text-xs")}>{value}</span>
     </div>
   );
 }

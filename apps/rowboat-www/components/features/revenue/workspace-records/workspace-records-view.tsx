@@ -24,7 +24,7 @@ import {
   Quotes,
   SlidersHorizontal,
   TextB,
-  TextHOne,
+  TextHTwo,
   TextItalic,
   TextUnderline,
   Trash,
@@ -32,10 +32,37 @@ import {
   X,
 } from "@/lib/icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthSession } from "@/components/auth/auth-gate";
+import { useWorkspaceLabel } from "@/components/features/dashboard/app-shell/app-shell";
 import { useConsoleResources } from "@/hooks/queries/use-console";
+import {
+  consoleResourcePageHasMore,
+  consoleResourceRows,
+  fetchConsoleResources,
+} from "@/hooks/queries/utils/fetch-console";
 import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
+import {
+  ACTION_QUEUE_PAGE,
+  actionPageHasMore,
+  actionRows,
+  fetchRevenueActions,
+} from "@/hooks/queries/utils/fetch-revenue-actions";
 import { usePersons, useRelationships } from "@/hooks/queries/use-relationships";
+import {
+  fetchRelationships,
+  relationshipPageHasMore,
+  relationshipRows,
+} from "@/hooks/queries/utils/fetch-relationships";
+import {
+  fetchPersons,
+  personPageHasMore,
+  personRows,
+} from "@/hooks/queries/utils/fetch-relationships";
 import { useWorkspaceNotes } from "@/hooks/queries/use-workspace";
+import {
+  fetchMoreWorkspaceNotes,
+  type NoteTimelineCursor,
+} from "@/hooks/queries/utils/fetch-workspace-notes";
 import { consoleKeys } from "@/hooks/queries/utils/console-keys";
 import { relationshipKeys } from "@/hooks/queries/utils/relationship-keys";
 import { revenueActionKeys } from "@/hooks/queries/utils/revenue-action-keys";
@@ -44,7 +71,11 @@ import { workspaceKeys } from "@/hooks/queries/utils/workspace-keys";
 import {
   EmptyBlock,
   errMessage,
+  ListRefreshFailure,
   ListSkeleton,
+  listNeverLoaded,
+  listRefreshFailureCopy,
+  refetchClearingBanner,
   WorkspaceEmptyState,
 } from "@/components/features/revenue/shared/shared";
 import { Avatar, AvatarFallback } from "@oppulence/ui/components/avatar";
@@ -94,7 +125,20 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@oppulence/ui/components/sheet";
-import { plateText, type WorkspaceNote } from "@/lib/revenue/revenue-records";
+import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
+import { noteIdFromHash, workspaceNoteHref } from "@/lib/revenue/note-link";
+import { participantRoleLabel, removePersonConfirmCopy } from "@/lib/revenue/source-product-copy";
+import {
+  companyName,
+  personCompanyTitle,
+  groupWorkspaceNotes,
+  isWorkspaceTask,
+  mergeWorkspaceNotes,
+  plateText,
+  taskIsDueToday,
+  taskIsOverdue,
+  type WorkspaceNote,
+} from "@/lib/revenue/revenue-records";
 import {
   createConsoleResource,
   deleteConsoleResource,
@@ -103,15 +147,20 @@ import {
 import {
   noteFavorites,
   noteTemplates,
+  type NoteFavoriteResource,
   type NoteTemplateResource,
 } from "@/lib/console/console-resources";
 import {
   createRelationship,
+  deletePerson,
   dismissAction,
+  explainedRevenueError,
   getPersonAttributes,
   ingestRelationshipObservations,
   relativeTime,
+  workspaceNoteActivityLabel,
   safeResearchCitationURL,
+  webAddressHref,
 } from "@/lib/revenue/revenue";
 import type {
   RelationshipPerson,
@@ -120,6 +169,7 @@ import type {
   RevenueRelationship,
 } from "@/lib/revenue/types";
 import { TaskCreateDialog } from "@/components/features/revenue/task-create-dialog/task-create-dialog";
+import { openCompanyCreate } from "@/lib/dashboard/company-create-request";
 
 type ViewProps = {
   onError: (message: string) => void;
@@ -133,6 +183,55 @@ const initials = (name: string) =>
     .map((part) => part[0])
     .join("")
     .toUpperCase();
+
+/** Notes are written by the signed-in account. The mark matches the sidebar label, not a hardcoded "Y". */
+function useNoteAuthor() {
+  const session = useAuthSession();
+  const label = useWorkspaceLabel({
+    name: session.user.email || session.user.workosUserId || "You",
+    email: session.user.email || "",
+  });
+  return { label, mark: initials(label) };
+}
+
+/** A blank title and the old "Untitled" fallback are the same note. */
+export function noteTitleLabel(title?: string | null): string {
+  const trimmed = title?.trim() ?? "";
+  if (!trimmed || trimmed === "Untitled") return "Untitled note";
+  return trimmed;
+}
+
+/** The editor starts empty when the title is only the fallback. */
+export function noteEditorTitle(title?: string | null): string {
+  const label = noteTitleLabel(title);
+  return label === "Untitled note" ? "" : label;
+}
+
+/** A blank body is the same sentence on the note card. */
+export function noteBodyPreview(body?: string | null): string {
+  const trimmed = body?.trim() ?? "";
+  return trimmed || "This note has no content.";
+}
+
+/** A blank template title is the same card heading. */
+export function noteTemplateTitle(title?: string | null): string {
+  return title?.trim() || "Untitled template";
+}
+
+/** A blank template body is the same card sentence. */
+export function noteTemplateBody(body?: string | null): string {
+  return body?.trim() || "Empty template";
+}
+
+/** The note editor starts empty when a template's text is only whitespace. */
+export function noteTemplateEditorValue(template: {
+  payload: { body?: string | null; content?: unknown };
+}): Value {
+  const stored = template.payload.content;
+  if (Array.isArray(stored) && plateText(stored).trim()) return stored as Value;
+  const body = template.payload.body?.trim() ?? "";
+  return [{ type: "p", children: [{ text: body }] }];
+}
 
 const notePlugins = [
   createPlatePlugin({ key: "bold", node: { isLeaf: true }, render: { as: "strong" } }),
@@ -174,26 +273,317 @@ function RecordHeader({
   label,
   count,
   action,
+  filtered = false,
+  onClear,
 }: {
   icon: React.ReactNode;
   label: string;
-  count: number;
+  count: number | string;
   action: React.ReactNode;
+  filtered?: boolean;
+  onClear?: () => void;
 }) {
+  const summary = (
+    <>
+      {icon} {label}{" "}
+      <Badge className="font-normal text-primary/40" variant="secondary">
+        {count}
+      </Badge>
+    </>
+  );
   return (
     <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-3">
-      <Badge
-        className="h-8 gap-2 border border-border bg-background px-3 text-[13px] font-medium text-primary"
-        variant="outline"
-      >
-        {icon} {label}{" "}
-        <Badge className="font-normal text-primary/40" variant="secondary">
-          {count}
+      {filtered && onClear ? (
+        <Button
+          aria-label="Clear people filters"
+          className="h-8 gap-2 rounded-none border border-border bg-background px-3 text-[13px] font-medium text-primary hover:bg-background-100"
+          onClick={onClear}
+          type="button"
+          variant="ghost"
+        >
+          {summary}
+        </Button>
+      ) : (
+        <Badge
+          className="h-8 gap-2 border border-border bg-background px-3 text-[13px] font-medium text-primary"
+          variant="outline"
+        >
+          {summary}
         </Badge>
-      </Badge>
+      )}
       {action}
     </div>
   );
+}
+
+/**
+ * The people list is every active person, newest interaction first, including
+ * people who have never been contacted. "Recently contacted" described a
+ * filter the API does not apply. A search should say the list is filtered,
+ * and that control clears the query.
+ */
+export function personDirectoryTitle(query: string): { label: string; filtered: boolean } {
+  const filtered = query.trim().length > 0;
+  return { label: filtered ? "Filtered" : "All people", filtered };
+}
+
+export function personDirectoryCount(shown: number, hasMore: boolean): string {
+  return hasMore ? `${shown}+` : String(shown);
+}
+
+export function personRemainderLabel(): string {
+  return "Show the next people";
+}
+
+/** A search with no hits is not an empty workspace. */
+export function peopleListEmptyCopy(filtered: boolean): string {
+  if (filtered) return "No people match this search.";
+  return "Connect Gmail or add a person to keep a contact for each company.";
+}
+
+/** A failed people request is not an empty directory. */
+export function peopleListFailureCopy(): string {
+  return "People could not load. Try again.";
+}
+
+/**
+ * Enrichment is the count of verified profile fields. Location already has
+ * its own column; using it as a fallback made a known city look enriched.
+ */
+const ENRICHMENT_FIELDS = [
+  "title",
+  "seniority",
+  "orgName",
+  "orgDomain",
+  "location",
+  "linkedinUrl",
+  "department",
+  "timezone",
+  "locale",
+] as const;
+
+/**
+ * Count profile facts the directory can already see. attributesVersion is only
+ * the projection counter: adding a name bumps it to 1 and writes a display
+ * name plus an alias, which is not enrichment.
+ */
+export function personEnrichmentLabel(
+  person: Pick<RelationshipPerson, (typeof ENRICHMENT_FIELDS)[number] | "employmentStatus">,
+): string {
+  const verified =
+    ENRICHMENT_FIELDS.filter((field) => person[field]?.trim()).length +
+    (person.employmentStatus && person.employmentStatus !== "unknown" ? 1 : 0);
+  if (verified === 0) return "Not filled in";
+  return `${verified} ${verified === 1 ? "detail" : "details"} filled in`;
+}
+
+/** The directory already says "No email" when the address is missing. */
+export function personSheetSubtitle(person: Pick<RelationshipPerson, "primaryEmail">): string {
+  return person.primaryEmail?.trim() || "No email";
+}
+
+/**
+ * The Role column is the title, or the seniority when no title is saved.
+ * A company role such as Decision maker is printed with it.
+ */
+export function personDirectoryRole(person: {
+  title?: string | null;
+  seniority?: string | null;
+  participantRoles?: readonly string[] | null;
+}): string {
+  const title = person.title?.trim() || personSeniorityLabel(person.seniority);
+  const roles = [
+    ...new Set(
+      (person.participantRoles ?? [])
+        .map((role) => role.trim())
+        .filter(Boolean)
+        .map((role) => participantRoleLabel(role))
+        .filter((role) => role !== title),
+    ),
+  ];
+  if (title && roles.length > 0) return `${title} · ${roles.join(", ")}`;
+  return title || roles.join(", ") || "Not known";
+}
+
+/** The directory and the sheet use the same words for a fact that was never saved. */
+export function personKnownFact(value?: string | null): string {
+  return value?.trim() || "Not known";
+}
+
+export function personLastInteractionLabel(iso?: string | null): string {
+  const label = iso ? relativeTime(iso) : "";
+  return label || "Not known";
+}
+
+/** Other names stored on the person. The display name is not repeated here. */
+export function personAliasNames(aliases: readonly string[] | null | undefined): string {
+  return (aliases ?? [])
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .join(", ");
+}
+
+/**
+ * The address sits under the name. Another stored name is printed on that
+ * same line, because the row is only tall enough for two lines.
+ */
+export function personDirectorySubtitle(person: {
+  primaryEmail?: string | null;
+  aliases?: readonly string[] | null;
+}): string {
+  const email = person.primaryEmail?.trim() || "No email";
+  const names = personAliasNames(person.aliases);
+  if (!names) return email;
+  return `${email} · Also known as ${names}`;
+}
+
+/**
+ * The people list opens a saved LinkedIn page. The sheet has to do the same,
+ * and it must not print an address that is not a web link.
+ */
+export function personSheetDetail(
+  label: string,
+  value: string | undefined,
+): { text: string; href?: string } {
+  if (label === "LinkedIn") {
+    const href = webAddressHref(value);
+    if (href) return { text: "View profile", href };
+    return { text: "Not known" };
+  }
+  if (label === "Domain") {
+    const trimmed = value?.trim() ?? "";
+    const href = webAddressHref(trimmed);
+    if (href) return { text: trimmed, href };
+  }
+  const text = value?.trim() ?? "";
+  return { text: text || "Not known" };
+}
+
+/**
+ * Creating a person writes display_name and alias so the directory can find
+ * them. Those rows are the name the user typed, not enrichment evidence.
+ */
+const IDENTITY_ATTRIBUTE_DIMENSIONS = new Set(["display_name", "alias"]);
+
+export function enrichmentEvidence<T extends { dimension: string; status: string }>(
+  attributes: readonly T[],
+): T[] {
+  return attributes.filter(
+    (attribute) =>
+      attribute.status === "active" && !IDENTITY_ATTRIBUTE_DIMENSIONS.has(attribute.dimension),
+  );
+}
+
+/** A failed profile load is not the same as a person with no sourced details. */
+export function personEvidenceFailureCopy(): string {
+  return "Profile details could not load. Try again.";
+}
+
+const EVIDENCE_EXTRACTOR_LABELS: Record<string, string> = {
+  email_signature: "From their email signature",
+  email_header: "From an email header",
+  calendar_invite: "From a calendar invite",
+  transcript_intro: "From a transcript",
+  crm_field: "From the CRM",
+  user_entry: "Added by you",
+  display_name_header: "From the name on the record",
+  mail_delivery_report: "Their mail server reported this",
+  parallel: "From public web research",
+};
+
+const EVIDENCE_SOURCE_LABELS: Record<string, string> = {
+  gmail: "Gmail",
+  calendar: "Calendar",
+  slack: "Slack",
+  hubspot: "HubSpot",
+  meeting: "A meeting",
+  desktop_note: "A note",
+  voice_note: "A voice note",
+  browser: "The browser",
+  crm: "The CRM",
+  user: "Added by you",
+  web: "The web",
+};
+
+/**
+ * Prefer the extractor phrase. A fact the user typed still says so, even when
+ * the directory stored it with an email-header extractor.
+ */
+export function personEvidenceProvenance(
+  attribute: Pick<RelationshipPersonAttribute, "extractor" | "source">,
+): string {
+  if (attribute.source === "user") return "Added by you";
+  const extractor = EVIDENCE_EXTRACTOR_LABELS[attribute.extractor];
+  if (extractor) return extractor;
+  return EVIDENCE_SOURCE_LABELS[attribute.source] ?? "Recorded in this workspace";
+}
+
+/** Stored person facts use dimension tokens. The sheet names the fact. */
+export function personEvidenceLabel(dimension: string): string {
+  const labels: Record<string, string> = {
+    display_name: "Name",
+    alias: "Also known as",
+    title: "Title",
+    org_name: "Company",
+    org_domain: "Company domain",
+    phone: "Phone",
+    timezone: "Time zone",
+    locale: "Locale",
+    seniority: "Seniority",
+    location: "Location",
+    linkedin_url: "LinkedIn",
+    department: "Department",
+    employment_status: "Employment",
+  };
+  const known = labels[dimension];
+  if (known) return known;
+  const words = dimension.replaceAll("_", " ").trim();
+  if (!words) return "Detail";
+  return words.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+const SENIORITY_LABELS: Record<string, string> = {
+  ic: "Individual contributor",
+  manager: "Manager",
+  director: "Director",
+  vp: "VP",
+  executive: "Executive",
+  founder: "Founder",
+};
+
+const EMPLOYMENT_LABELS: Record<string, string> = {
+  active: "Current",
+  departed: "Left the company",
+  unknown: "Not known",
+};
+
+function titledToken(value: string): string {
+  return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+/** Research stores a seniority band. The directory says the band in words. */
+export function personSeniorityLabel(value?: string): string {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) return "";
+  const known = SENIORITY_LABELS[trimmed];
+  if (known) return known;
+  if (/^[a-z0-9_]+$/.test(trimmed)) return titledToken(trimmed);
+  return trimmed;
+}
+
+/**
+ * Free-text facts stay as written. Seniority and employment are closed sets,
+ * and those tokens are what a reader would otherwise see.
+ */
+export function personFactValue(dimension: string, value: string): string {
+  const trimmed = value.trim();
+  if (dimension === "seniority") return personSeniorityLabel(trimmed) || value;
+  if (dimension === "employment_status") {
+    const known = EMPLOYMENT_LABELS[trimmed];
+    if (known) return known;
+    if (/^[a-z0-9_]+$/.test(trimmed)) return titledToken(trimmed);
+  }
+  return value;
 }
 
 export function PeopleView({ onError, onNotice }: ViewProps) {
@@ -203,9 +593,35 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
   const [creating, setCreating] = React.useState(false);
   const [selected, setSelected] = React.useState<RelationshipPerson | null>(null);
   const [attributes, setAttributes] = React.useState<RelationshipPersonAttribute[]>([]);
+  const [attributesStatus, setAttributesStatus] = React.useState<"loading" | "ready" | "error">(
+    "ready",
+  );
+  const [removing, setRemoving] = React.useState(false);
+  const [removeError, setRemoveError] = React.useState<string | null>(null);
   const peopleQuery = usePersons(debouncedQuery);
-  const people = peopleQuery.data ?? [];
+  const [extraPeople, setExtraPeople] = React.useState<RelationshipPerson[]>([]);
+  const [laterPeopleHasMore, setLaterPeopleHasMore] = React.useState<boolean | null>(null);
+  const [loadingMorePeople, setLoadingMorePeople] = React.useState(false);
+  const peoplePage = personRows(peopleQuery.data);
+  const people = React.useMemo(() => {
+    if (extraPeople.length === 0) return peoplePage;
+    const seen = new Set(peoplePage.map((person) => person.id));
+    return [
+      ...peoplePage,
+      ...extraPeople.filter((person) => {
+        if (seen.has(person.id)) return false;
+        seen.add(person.id);
+        return true;
+      }),
+    ];
+  }, [extraPeople, peoplePage]);
+  const hasMorePeople =
+    laterPeopleHasMore ?? (peoplePage.length > 0 && personPageHasMore(peopleQuery.data));
   const loading = peopleQuery.isPending;
+  React.useEffect(() => {
+    setExtraPeople([]);
+    setLaterPeopleHasMore(null);
+  }, [debouncedQuery]);
 
   React.useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 180);
@@ -213,31 +629,86 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
   }, [query]);
 
   React.useEffect(() => {
-    if (peopleQuery.error) {
-      onError(errMessage(peopleQuery.error, "Could not load people."));
-    }
-  }, [onError, peopleQuery.error]);
+    if (!peopleQuery.error || peopleQuery.data != null) return;
+    onError(errMessage(peopleQuery.error, "Could not load people."));
+  }, [onError, peopleQuery.data, peopleQuery.error]);
 
   const load = React.useCallback(async () => {
+    setExtraPeople([]);
+    setLaterPeopleHasMore(null);
     await queryClient.invalidateQueries({ queryKey: relationshipKeys.all });
   }, [queryClient]);
+  const loadMorePeople = React.useCallback(async () => {
+    if (loadingMorePeople || !hasMorePeople) return;
+    setLoadingMorePeople(true);
+    try {
+      const next = await fetchPersons(
+        debouncedQuery,
+        undefined,
+        peoplePage.length + extraPeople.length,
+      );
+      setLaterPeopleHasMore(personPageHasMore(next));
+      setExtraPeople((current) => [...current, ...personRows(next)]);
+    } catch (reason) {
+      onError(explainedRevenueError(reason, "Could not load the next people."));
+    } finally {
+      setLoadingMorePeople(false);
+    }
+  }, [debouncedQuery, extraPeople.length, hasMorePeople, loadingMorePeople, onError, peoplePage.length]);
 
-  const openPerson = async (person: RelationshipPerson) => {
+  const loadPersonAttributes = async (person: RelationshipPerson, recover = false) => {
+    const samePerson = selected?.id === person.id;
     setSelected(person);
-    setAttributes([]);
+    if (!samePerson) {
+      setAttributes([]);
+      setRemoveError(null);
+    }
+    setAttributesStatus("loading");
     try {
       setAttributes(await getPersonAttributes(person.id));
+      setAttributesStatus("ready");
+      if (recover) onError("");
     } catch (error) {
-      onError(errMessage(error, "Could not load profile evidence."));
+      if (!samePerson) setAttributes([]);
+      setAttributesStatus("error");
+      onError(errMessage(error, "Could not load this profile."));
     }
   };
 
+  const removeSelectedPerson = async () => {
+    if (!selected) return;
+    setRemoving(true);
+    setRemoveError(null);
+    try {
+      await deletePerson(selected.id);
+      setSelected(null);
+      onNotice("Person removed.");
+      await load();
+    } catch (error) {
+      const message = errMessage(error, "Could not remove this person.");
+      setRemoveError(message);
+      onError(message);
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  const directoryTitle = personDirectoryTitle(query);
   return (
     <div className="flex min-h-full flex-col" data-slot="people-view">
       <RecordHeader
         icon={<User />}
-        label="Recently contacted people"
-        count={people.length}
+        label={directoryTitle.label}
+        count={
+          listNeverLoaded(peopleQuery.isError, peopleQuery.data)
+            ? "Couldn't load"
+            : personDirectoryCount(people.length, hasMorePeople)
+        }
+        filtered={directoryTitle.filtered}
+        onClear={() => {
+          setQuery("");
+          setDebouncedQuery("");
+        }}
         action={
           <Button
             className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
@@ -263,27 +734,59 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
           <ArrowClockwise className={loading ? "animate-spin" : ""} /> Refresh
         </Button>
       </div>
+      {peopleQuery.isError && peopleQuery.data != null ? (
+        <ListRefreshFailure
+          message={listRefreshFailureCopy("people")}
+          onRetry={() => void refetchClearingBanner(() => peopleQuery.refetch(), onError)}
+        />
+      ) : null}
       {loading ? (
         <div className="p-4">
           <ListSkeleton />
         </div>
+      ) : listNeverLoaded(peopleQuery.isError, peopleQuery.data) ? (
+        <EmptyBlock body={peopleListFailureCopy()} image="people" learnMore={[]} title="People">
+          <Button
+            onClick={() => void refetchClearingBanner(() => peopleQuery.refetch(), onError)}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            Try again
+          </Button>
+        </EmptyBlock>
       ) : people.length === 0 ? (
         <EmptyBlock
-          body="Connect Gmail or add a person to build a relationship-aware contact record."
+          body={peopleListEmptyCopy(directoryTitle.filtered)}
           image="people"
-          learnMore={[
-            { label: "See who you are talking to" },
-            { label: "Enrich profiles with evidence" },
-          ]}
+          learnMore={
+            directoryTitle.filtered
+              ? []
+              : [{ label: "See who you are talking to" }, { label: "Fill in their role and company" }]
+          }
           title="People"
         >
-          <Button
-            className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-            onClick={() => setCreating(true)}
-            size="sm"
-          >
-            <Plus /> Add person
-          </Button>
+          {directoryTitle.filtered ? (
+            <Button
+              onClick={() => {
+                setQuery("");
+                setDebouncedQuery("");
+              }}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              Clear search
+            </Button>
+          ) : (
+            <Button
+              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+              onClick={() => setCreating(true)}
+              size="sm"
+            >
+              <Plus /> New person
+            </Button>
+          )}
         </EmptyBlock>
       ) : (
         <div className="min-w-0 flex-1 overflow-auto">
@@ -293,33 +796,27 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
           >
             <TableHeader className="sticky top-0 z-10 bg-background [&_tr]:border-border">
               <TableRow className="h-10 border-b text-[12px] font-medium text-primary/55 hover:bg-transparent">
-                <TableHead className="h-10 w-10 border-r px-3">
-                  <Checkbox aria-label="Select all people" className="size-4" />
-                </TableHead>
                 <TableHead className="h-10 w-[250px] border-r px-3">Person</TableHead>
                 <TableHead className="h-10 w-[210px] border-r px-3">Company</TableHead>
                 <TableHead className="h-10 w-36 border-r px-3">Role</TableHead>
                 <TableHead className="h-10 w-36 border-r px-3">Department</TableHead>
                 <TableHead className="h-10 w-40 border-r px-3">Location</TableHead>
                 <TableHead className="h-10 w-36 border-r px-3">Last interaction</TableHead>
-                <TableHead className="h-10 w-28 border-r px-3 text-center">Relationships</TableHead>
+                <TableHead className="h-10 w-28 border-r px-3 text-center">Companies</TableHead>
                 <TableHead className="h-10 w-28 border-r px-3">LinkedIn</TableHead>
-                <TableHead className="h-10 px-3">Enrichment</TableHead>
+                <TableHead className="h-10 px-3">Details</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {people.map((person) => (
                 <TableRow key={person.id} className="h-11 border-border hover:bg-background-100/70">
                   <TableCell className="border-r px-3">
-                    <Checkbox aria-label={`Select ${person.displayName}`} className="size-4" />
-                  </TableCell>
-                  <TableCell className="border-r px-3">
                     <Button
                       aria-label={`Open ${person.displayName}`}
                       className="flex h-auto w-full items-center justify-start gap-2 px-0 py-0 text-left font-normal hover:bg-transparent"
                       type="button"
                       variant="ghost"
-                      onClick={() => void openPerson(person)}
+                      onClick={() => void loadPersonAttributes(person)}
                     >
                       <Avatar className="size-6 rounded-none" size="sm">
                         <AvatarFallback className="rounded-none border border-border bg-background-100 text-[10px] font-semibold text-primary/60">
@@ -327,38 +824,48 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
-                        <Label className="block truncate text-[13px] font-medium text-primary">
-                          {person.displayName}
-                        </Label>
+                        <div className="flex min-w-0 items-center gap-2">
+                          <Label className="truncate text-[13px] font-medium text-primary">
+                            {person.displayName}
+                          </Label>
+                          {person.employmentStatus === "departed" ? (
+                            <Badge
+                              className="shrink-0 rounded-none px-1.5 py-0 text-[10px] font-normal"
+                              variant="secondary"
+                            >
+                              {personFactValue("employment_status", person.employmentStatus)}
+                            </Badge>
+                          ) : null}
+                        </div>
                         <CardDescription className="block truncate text-[11px]">
-                          {person.primaryEmail || "No email"}
+                          {personDirectorySubtitle(person)}
                         </CardDescription>
                       </div>
                     </Button>
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
-                    {person.orgName || person.orgDomain || "—"}
+                    {personKnownFact(personCompanyTitle(person))}
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
-                    {person.title || person.seniority || "—"}
+                    {personDirectoryRole(person)}
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
-                    {person.department || "—"}
+                    {personKnownFact(person.department)}
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
-                    {person.location || "—"}
+                    {personKnownFact(person.location)}
                   </TableCell>
                   <TableCell className="border-r px-3 text-[12px] text-primary/50">
-                    {person.lastInteractionAt ? relativeTime(person.lastInteractionAt) : "—"}
+                    {personLastInteractionLabel(person.lastInteractionAt)}
                   </TableCell>
                   <TableCell className="border-r px-3 text-center text-[12px] text-primary/60">
                     {person.relationshipCount}
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px]">
-                    {person.linkedinUrl ? (
+                    {webAddressHref(person.linkedinUrl) ? (
                       <a
                         className="text-primary/60 underline-offset-2 hover:text-primary hover:underline"
-                        href={person.linkedinUrl}
+                        href={webAddressHref(person.linkedinUrl) ?? undefined}
                         rel="noreferrer"
                         target="_blank"
                       >
@@ -366,20 +873,29 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                       </a>
                     ) : (
                       <Badge className="font-normal text-primary/35" variant="ghost">
-                        —
+                        Not known
                       </Badge>
                     )}
                   </TableCell>
                   <TableCell className="truncate px-3 text-[12px] text-primary/50">
-                    {person.location ||
-                      (person.attributesVersion
-                        ? `${person.attributesVersion} verified fields`
-                        : "Not enriched")}
+                    {personEnrichmentLabel(person)}
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </table>
+          {hasMorePeople ? (
+            <Button
+              className="m-3"
+              disabled={loadingMorePeople}
+              onClick={() => void loadMorePeople()}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {personRemainderLabel()}
+            </Button>
+          ) : null}
         </div>
       )}
       {creating ? (
@@ -394,10 +910,35 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
         />
       ) : null}
       {selected ? (
-        <PersonSheet person={selected} attributes={attributes} onClose={() => setSelected(null)} />
+        <PersonSheet
+          attributes={attributes}
+          attributesStatus={attributesStatus}
+          onClose={() => setSelected(null)}
+          onReload={() => void loadPersonAttributes(selected, true)}
+          onRemove={() => void removeSelectedPerson()}
+          person={selected}
+          removeError={removeError}
+          removing={removing}
+        />
       ) : null}
     </div>
   );
+}
+
+/** The domain half of an address, after a copied mailto link or "Name <addr>" wrapper. */
+export function personAccountDomain(email: string): string | undefined {
+  let value = email.trim().replace(/^mailto:/i, "");
+  const wrapped = value.match(/<([^<>]+)>/);
+  if (wrapped?.[1]) value = wrapped[1].trim().replace(/^mailto:/i, "");
+  const at = value.lastIndexOf("@");
+  if (at < 1 || at === value.length - 1) return undefined;
+  const domain = value
+    .slice(at + 1)
+    .trim()
+    .replace(/\.+$/, "")
+    .toLowerCase();
+  if (!domain || /[\s<>]/.test(domain)) return undefined;
+  return domain;
 }
 
 function CreatePersonDialog({
@@ -412,15 +953,18 @@ function CreatePersonDialog({
   const [name, setName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [busy, setBusy] = React.useState(false);
+  const [formError, setFormError] = React.useState<string | null>(null);
   const submit = async () => {
     if (!name.trim()) return;
     setBusy(true);
+    setFormError(null);
+    onError("");
     try {
       const relationship = await createRelationship({
         kind: "person",
         displayName: name.trim(),
         primaryEmail: email.trim() || undefined,
-        accountDomain: email.includes("@") ? email.split("@")[1] : undefined,
+        accountDomain: personAccountDomain(email),
       });
       const now = new Date().toISOString();
       await ingestRelationshipObservations([
@@ -439,7 +983,9 @@ function CreatePersonDialog({
       ]);
       onCreated();
     } catch (error) {
-      onError(errMessage(error, "Could not create the person."));
+      const message = errMessage(error, "Could not create the person.");
+      setFormError(message);
+      onError(message);
     } finally {
       setBusy(false);
     }
@@ -450,22 +996,25 @@ function CreatePersonDialog({
         <DialogHeader>
           <DialogTitle>New person</DialogTitle>
           <DialogDescription>
-            Add a contact now; synced activity and enrichment will extend the profile.
+            Add someone you work with. Mail and meetings can fill in the rest later.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <Input
+            aria-label="Full name"
             placeholder="Full name"
             value={name}
             onChange={(event) => setName(event.target.value)}
           />
           <Input
+            aria-label="Email address"
             type="email"
             placeholder="Email address (optional)"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
           />
         </div>
+        {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
         <DialogFooter>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel
@@ -482,65 +1031,165 @@ function CreatePersonDialog({
 function PersonSheet({
   person,
   attributes,
+  attributesStatus,
   onClose,
+  onReload,
+  onRemove,
+  removeError,
+  removing,
 }: {
   person: RelationshipPerson;
   attributes: RelationshipPersonAttribute[];
+  attributesStatus: "loading" | "ready" | "error";
   onClose: () => void;
+  onReload: () => void;
+  onRemove: () => void;
+  removeError: string | null;
+  removing: boolean;
 }) {
+  const [confirmingRemove, setConfirmingRemove] = React.useState(false);
+  React.useEffect(() => {
+    setConfirmingRemove(false);
+  }, [person.id]);
+  const evidence = enrichmentEvidence(attributes);
+  const aliasNames = personAliasNames(person.aliases);
+  const sheetFacts: Array<[string, string | undefined]> = [
+    ["Company", personCompanyTitle(person) || undefined],
+    ["Domain", person.orgDomain],
+    ["Role", person.title],
+    ["Seniority", personSeniorityLabel(person.seniority)],
+    ["Department", person.department],
+    ["Location", person.location],
+    ["LinkedIn", person.linkedinUrl],
+    ["Timezone", person.timezone],
+    ["Last interaction", personLastInteractionLabel(person.lastInteractionAt)],
+  ];
+  if (aliasNames) sheetFacts.push(["Also known as", aliasNames]);
+  if (person.employmentStatus && person.employmentStatus !== "unknown") {
+    sheetFacts.push([
+      "Employment",
+      personFactValue("employment_status", person.employmentStatus),
+    ]);
+  }
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-lg">
         <SheetHeader className="border-b border-border p-4">
           <SheetTitle>{person.displayName}</SheetTitle>
-          <SheetDescription>{person.primaryEmail || "Relationship profile"}</SheetDescription>
+          <SheetDescription>{personSheetSubtitle(person)}</SheetDescription>
         </SheetHeader>
         <div className="overflow-y-auto p-4">
           <dl className="grid grid-cols-[120px_minmax(0,1fr)] gap-x-3 gap-y-3 text-sm">
-            {[
-              ["Company", person.orgName || person.orgDomain],
-              ["Role", person.title],
-              ["Seniority", person.seniority],
-              ["Department", person.department],
-              ["Location", person.location],
-              ["LinkedIn", person.linkedinUrl],
-              ["Timezone", person.timezone],
-              [
-                "Last interaction",
-                person.lastInteractionAt ? relativeTime(person.lastInteractionAt) : undefined,
-              ],
-            ].map(([label, value]) => (
-              <React.Fragment key={label}>
-                <dt className="text-primary/40">{label}</dt>
-                <dd className="text-primary/75">{value || "Not known"}</dd>
-              </React.Fragment>
-            ))}
+            {sheetFacts.map(([label, value]) => {
+              const detail = personSheetDetail(label, value);
+              return (
+                <React.Fragment key={label}>
+                  <dt className="text-primary/40">{label}</dt>
+                  <dd className="text-primary/75">
+                    {detail.href ? (
+                      <a
+                        className="underline-offset-2 hover:underline"
+                        href={detail.href}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        {detail.text}
+                      </a>
+                    ) : (
+                      detail.text
+                    )}
+                  </dd>
+                </React.Fragment>
+              );
+            })}
           </dl>
+          <div className="mt-6 border-t border-border pt-4">
+            {confirmingRemove ? (
+              <div className="space-y-3">
+                <p className="text-sm text-primary/70">
+                  {removePersonConfirmCopy(person.displayName)}
+                </p>
+                {removeError ? (
+                  <p className="text-sm text-destructive" role="alert">
+                    {removeError}
+                  </p>
+                ) : null}
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    disabled={removing}
+                    onClick={onRemove}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    {removing ? <Spinner className="size-4" /> : null} Confirm remove
+                  </Button>
+                  <Button
+                    disabled={removing}
+                    onClick={() => setConfirmingRemove(false)}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                disabled={removing}
+                onClick={() => setConfirmingRemove(true)}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                Remove
+              </Button>
+            )}
+          </div>
           <h3 className="mt-8 border-b border-border pb-2 text-xs font-medium uppercase tracking-wide text-primary/45">
-            Enrichment evidence
+            Where details came from
           </h3>
-          {attributes.length === 0 ? (
-            <p className="py-4 text-sm text-primary/45">No enriched fields yet.</p>
+          {attributesStatus === "error" && evidence.length > 0 ? (
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className="text-sm text-primary/70">{personEvidenceFailureCopy()}</p>
+              <Button onClick={onReload} size="sm" type="button" variant="outline">
+                Try again
+              </Button>
+            </div>
+          ) : null}
+          {attributesStatus === "loading" && evidence.length === 0 ? (
+            <p className="py-4 text-sm text-primary/45">Loading profile details…</p>
+          ) : attributesStatus === "error" && evidence.length === 0 ? (
+            <div className="flex items-center justify-between gap-3 py-4">
+              <p className="text-sm text-primary/70">{personEvidenceFailureCopy()}</p>
+              <Button onClick={onReload} size="sm" type="button" variant="outline">
+                Try again
+              </Button>
+            </div>
+          ) : evidence.length === 0 ? (
+            <p className="py-4 text-sm text-primary/45">No extra details yet.</p>
           ) : (
             <ul className="divide-y divide-border">
-              {attributes.map((attribute) => (
+              {evidence.map((attribute) => (
                 <li className="py-3" key={attribute.id}>
                   <div className="flex items-center justify-between gap-3">
-                    <Label className="text-sm font-medium capitalize text-primary">
-                      {attribute.dimension.replaceAll("_", " ")}
+                    <Label className="text-sm font-medium text-primary">
+                      {personEvidenceLabel(attribute.dimension)}
                     </Label>
                     <Badge className="rounded-none font-normal text-primary/40" variant="outline">
                       {Math.round(attribute.confidence * 100)}%
                     </Badge>
                   </div>
-                  <p className="mt-1 text-sm text-primary/65">{attribute.value}</p>
+                  <p className="mt-1 text-sm text-primary/65">
+                    {personFactValue(attribute.dimension, attribute.value)}
+                  </p>
                   <p className="mt-1 text-[11px] text-primary/40">
-                    {attribute.source} · {relativeTime(attribute.observedAt)}
+                    {personEvidenceProvenance(attribute)} · {relativeTime(attribute.observedAt)}
                   </p>
                   {(attribute.citations ?? [])
                     .map((citation) => safeResearchCitationURL(citation.url))
                     .filter((url): url is string => Boolean(url))
-                    .slice(0, 2)
                     .map((url, index) => (
                       <a
                         className="mr-3 mt-1 inline-block text-[11px] text-primary/55 underline-offset-2 hover:underline"
@@ -573,11 +1222,123 @@ const todayValue = () => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
 
-export function NotesView({ onError, onNotice }: ViewProps) {
+export function noteCountLabel(shown: number, hasMore: boolean): string {
+  return hasMore ? `${shown}+` : String(shown);
+}
+
+/** A failed notes request is not an empty notebook. */
+export function noteListFailureCopy(): string {
+  return "Notes could not load. Try again.";
+}
+
+/**
+ * One timeline per company can fail while the notes request itself succeeds.
+ * Zero notes after that miss is not an empty notebook.
+ */
+export function notesTimelineUnread(noteCount: number, failedTimelines: number): boolean {
+  return noteCount === 0 && failedTimelines > 0;
+}
+
+export function notesTimelineFailureCopy(): string {
+  return "Notes could not be read from these companies. Try again.";
+}
+
+export function earlierNotesLabel(): string {
+  return "Show earlier notes";
+}
+
+/** More companies are not the same thing as notes that were already found. */
+export function notesRemainderLabel(hasEarlierNotes: boolean): string {
+  return hasEarlierNotes ? earlierNotesLabel() : nextNoteCompaniesLabel();
+}
+
+export function notesEmptyDescription(hasEarlierNotes: boolean): string {
+  return hasEarlierNotes
+    ? "Earlier notes are still on these companies."
+    : "More companies are still in this list.";
+}
+
+/** Another company page is the note picker, not an unread note. */
+export function notesTabContinues(hasEarlierNotes: boolean): boolean {
+  return hasEarlierNotes;
+}
+
+/** A copied link walks this many earlier pages before asking the reader to continue. */
+export const NOTE_LINK_SEEK_PAGES = 8;
+
+export function templateCountLabel(shown: number, hasMore: boolean): string {
+  return hasMore ? `${shown}+` : String(shown);
+}
+
+export function nextTemplatesLabel(): string {
+  return "Show the next templates";
+}
+
+export function nextFavoritesLabel(): string {
+  return "Show the next favorites";
+}
+
+/** A favorite whose note is not on screen yet is not zero. */
+export function favoriteNotesLabel(shown: number, hidden: number): string {
+  return hidden > 0 ? `${shown}+` : String(shown);
+}
+
+export function favoriteNotesEmptyCopy(hidden: number, hasMoreNotes: boolean): string {
+  if (hidden > 0 && hasMoreNotes) return "Favorited notes are further back.";
+  if (hidden > 0) return "A favorite points at a note that is no longer here.";
+  return "Favorite a note to keep it here.";
+}
+
+export function NotesView({
+  onError,
+  onNotice,
+  onOpenCompanies,
+  onOpenCompany,
+}: ViewProps & { onOpenCompanies?: () => void; onOpenCompany?: (relationshipId: string) => void }) {
   const queryClient = useQueryClient();
-  const notesQuery = useWorkspaceNotes();
-  const notes = notesQuery.data?.notes ?? [];
-  const relationships = notesQuery.data?.relationships ?? [];
+  const author = useNoteAuthor();
+  const [newestFirst, setNewestFirst] = React.useState(true);
+  const noteOrder = newestFirst ? "newest" : "oldest";
+  const notesQuery = useWorkspaceNotes(noteOrder);
+  const notesPage = notesQuery.data;
+  const [extraNotes, setExtraNotes] = React.useState<WorkspaceNote[]>([]);
+  const [extraRelationships, setExtraRelationships] = React.useState<RevenueRelationship[]>([]);
+  const [timelineCursors, setTimelineCursors] = React.useState<NoteTimelineCursor[]>([]);
+  const [nextRelationshipOffset, setNextRelationshipOffset] = React.useState<number | undefined>();
+  const [moreNotes, setMoreNotes] = React.useState(false);
+  const [loadingMoreNotes, setLoadingMoreNotes] = React.useState(false);
+  const primedNotes = React.useRef<number | null>(null);
+  React.useEffect(() => {
+    if (!notesQuery.isSuccess || !notesPage) return;
+    if (primedNotes.current === notesQuery.dataUpdatedAt) return;
+    primedNotes.current = notesQuery.dataUpdatedAt;
+    setExtraNotes([]);
+    setExtraRelationships([]);
+    setTimelineCursors(notesPage.timelineCursors ?? []);
+    setNextRelationshipOffset(notesPage.nextRelationshipOffset);
+    setMoreNotes(Boolean(notesPage.hasMoreNotes));
+  }, [notesPage, notesQuery.dataUpdatedAt, notesQuery.isSuccess]);
+  const notes = mergeWorkspaceNotes(notesPage?.notes ?? [], extraNotes);
+  const relationships = React.useMemo(() => {
+    const seen = new Set((notesPage?.relationships ?? []).map((relationship) => relationship.id));
+    return [
+      ...(notesPage?.relationships ?? []),
+      ...extraRelationships.filter((relationship) => {
+        if (seen.has(relationship.id)) return false;
+        seen.add(relationship.id);
+        return true;
+      }),
+    ];
+  }, [extraRelationships, notesPage?.relationships]);
+  const hasMoreNotes = primedNotes.current === null ? Boolean(notesPage?.hasMoreNotes) : moreNotes;
+  const hasMoreCompanies =
+    primedNotes.current === null
+      ? notesPage?.nextRelationshipOffset !== undefined
+      : nextRelationshipOffset !== undefined;
+  const hasEarlierNotes =
+    primedNotes.current === null
+      ? (notesPage?.timelineCursors?.length ?? 0) > 0
+      : timelineCursors.length > 0;
   const loading = notesQuery.isPending;
   const [editing, setEditing] = React.useState<
     WorkspaceNote | { template?: NoteTemplateResource } | null
@@ -587,13 +1348,38 @@ export function NotesView({ onError, onNotice }: ViewProps) {
   );
   const [tab, setTab] = React.useState<"notes" | "templates">("notes");
   const [layout, setLayout] = React.useState<"grid" | "list">("grid");
-  const [newestFirst, setNewestFirst] = React.useState(true);
   const [showFavorites, setShowFavorites] = React.useState(true);
   const templatesQuery = useConsoleResources("note_template", noteTemplates);
   const favoritesQuery = useConsoleResources("note_favorite", noteFavorites);
+  const [extraTemplates, setExtraTemplates] = React.useState<NoteTemplateResource[]>([]);
+  const [laterTemplateHasMore, setLaterTemplateHasMore] = React.useState<boolean | null>(null);
+  const [loadingMoreTemplates, setLoadingMoreTemplates] = React.useState(false);
+  const [extraFavorites, setExtraFavorites] = React.useState<NoteFavoriteResource[]>([]);
+  const [laterFavoriteHasMore, setLaterFavoriteHasMore] = React.useState<boolean | null>(null);
+  const [loadingMoreFavorites, setLoadingMoreFavorites] = React.useState(false);
+  React.useEffect(() => {
+    setExtraTemplates([]);
+    setLaterTemplateHasMore(null);
+  }, [templatesQuery.dataUpdatedAt]);
+  React.useEffect(() => {
+    setExtraFavorites([]);
+    setLaterFavoriteHasMore(null);
+  }, [favoritesQuery.dataUpdatedAt]);
+  const templatePage = templatesQuery.data?.items ?? [];
+  const templates = React.useMemo(() => {
+    const seen = new Set(templatePage.map((template) => template.id));
+    return [...templatePage, ...extraTemplates.filter((template) => !seen.has(template.id))];
+  }, [extraTemplates, templatePage]);
+  const hasMoreTemplates = laterTemplateHasMore ?? Boolean(templatesQuery.data?.hasMore);
+  const favoritePage = favoritesQuery.data?.items ?? [];
+  const favoriteResources = React.useMemo(() => {
+    const seen = new Set(favoritePage.map((favorite) => favorite.id));
+    return [...favoritePage, ...extraFavorites.filter((favorite) => !seen.has(favorite.id))];
+  }, [extraFavorites, favoritePage]);
+  const hasMoreFavorites = laterFavoriteHasMore ?? Boolean(favoritesQuery.data?.hasMore);
   const favoriteMutation = useMutation({
     mutationFn: async (noteId: string) => {
-      const existing = favoritesQuery.data?.find((favorite) => favorite.payload.noteId === noteId);
+      const existing = favoriteResources.find((favorite) => favorite.payload.noteId === noteId);
       if (existing) return deleteConsoleResource(existing.id);
       return createConsoleResource({ kind: "note_favorite", payload: { noteId } });
     },
@@ -601,30 +1387,167 @@ export function NotesView({ onError, onNotice }: ViewProps) {
       queryClient.invalidateQueries({ queryKey: consoleKeys.resourceKind("note_favorite") }),
     onError: (error) => onError(errMessage(error, "Could not update the favorite.")),
   });
+  const loadMoreTemplates = async () => {
+    if (loadingMoreTemplates || !hasMoreTemplates) return;
+    setLoadingMoreTemplates(true);
+    try {
+      const page = await fetchConsoleResources(
+        "note_template",
+        undefined,
+        templatePage.length + extraTemplates.length,
+      );
+      setLaterTemplateHasMore(consoleResourcePageHasMore(page));
+      setExtraTemplates((current) => [...current, ...noteTemplates(consoleResourceRows(page))]);
+    } catch (error) {
+      onError(explainedRevenueError(error, "Could not load more templates."));
+    } finally {
+      setLoadingMoreTemplates(false);
+    }
+  };
+  const loadMoreFavorites = async () => {
+    if (loadingMoreFavorites || !hasMoreFavorites) return;
+    setLoadingMoreFavorites(true);
+    try {
+      const page = await fetchConsoleResources(
+        "note_favorite",
+        undefined,
+        favoritePage.length + extraFavorites.length,
+      );
+      setLaterFavoriteHasMore(consoleResourcePageHasMore(page));
+      setExtraFavorites((current) => [...current, ...noteFavorites(consoleResourceRows(page))]);
+    } catch (error) {
+      onError(explainedRevenueError(error, "Could not load more favorites."));
+    } finally {
+      setLoadingMoreFavorites(false);
+    }
+  };
   const load = React.useCallback(async () => {
+    primedNotes.current = null;
     await queryClient.invalidateQueries({ queryKey: workspaceKeys.notes() });
   }, [queryClient]);
+  const chooseNoteOrder = (nextNewest: boolean) => {
+    primedNotes.current = null;
+    setExtraNotes([]);
+    setTimelineCursors([]);
+    setMoreNotes(false);
+    setNewestFirst(nextNewest);
+  };
+  const loadEarlierNotes = React.useCallback(async () => {
+    // The note picker still walks company pages after every note is loaded.
+    if (loadingMoreNotes || (!hasMoreNotes && !hasMoreCompanies)) return;
+    setLoadingMoreNotes(true);
+    try {
+      const next = await fetchMoreWorkspaceNotes({
+        relationships,
+        timelineCursors,
+        nextRelationshipOffset,
+        order: noteOrder,
+      });
+      setExtraNotes((current) => mergeWorkspaceNotes(current, next.notes));
+      setExtraRelationships((current) => [...current, ...next.relationships]);
+      setTimelineCursors(next.timelineCursors);
+      setNextRelationshipOffset(next.nextRelationshipOffset);
+      setMoreNotes(next.hasMoreNotes);
+      if (next.failedTimelineCount > 0) {
+        onNotice(
+          `Loaded available notes, but ${String(next.failedTimelineCount)} company timeline${next.failedTimelineCount === 1 ? "" : "s"} could not be read.`,
+        );
+      }
+    } catch (reason) {
+      onError(explainedRevenueError(reason, "Could not load earlier notes."));
+    } finally {
+      setLoadingMoreNotes(false);
+    }
+  }, [
+    hasMoreCompanies,
+    hasMoreNotes,
+    loadingMoreNotes,
+    nextRelationshipOffset,
+    noteOrder,
+    onError,
+    onNotice,
+    relationships,
+    timelineCursors,
+  ]);
 
   React.useEffect(() => {
-    if (notesQuery.error) {
-      onError(errMessage(notesQuery.error, "Could not load notes."));
-    }
-  }, [notesQuery.error, onError]);
+    if (!notesQuery.error || notesQuery.data != null) return;
+    onError(errMessage(notesQuery.error, "Could not load notes."));
+  }, [notesQuery.data, notesQuery.error, onError]);
 
   React.useEffect(() => {
     const failed = notesQuery.data?.failedTimelineCount ?? 0;
-    if (failed > 0) {
+    const loadedNotes = notesQuery.data?.notes.length ?? 0;
+    if (failed > 0 && loadedNotes > 0) {
       onNotice(
-        `Loaded available notes, but ${String(failed)} relationship timeline${failed === 1 ? "" : "s"} could not be read.`,
+        `Loaded available notes, but ${String(failed)} company timeline${failed === 1 ? "" : "s"} could not be read.`,
       );
     }
-  }, [notesQuery.data?.failedTimelineCount, onNotice]);
+  }, [notesQuery.data?.failedTimelineCount, notesQuery.data?.notes.length, onNotice]);
+  const timelinesUnread = notesTimelineUnread(
+    notes.length,
+    notesQuery.data?.failedTimelineCount ?? 0,
+  );
   const visible = [...notes].sort((left, right) =>
     newestFirst
       ? right.occurredAt.localeCompare(left.occurredAt)
       : left.occurredAt.localeCompare(right.occurredAt),
   );
-  const favoriteIds = new Set(favoritesQuery.data?.map((item) => item.payload.noteId) ?? []);
+  const noteGroups = groupWorkspaceNotes(visible, new Date(), newestFirst);
+  const openedNoteHash = React.useRef<string | null>(null);
+  const noteSeekPages = React.useRef(0);
+  const noteSeekPaused = React.useRef<string | null>(null);
+  const noteSeeking = React.useRef(false);
+  // The hash is read after paint so SSR and the first client render agree.
+  // Remembering the id we already opened keeps a refetch from reopening a
+  // note the reader just closed. A note that is only on a later page is not
+  // gone: walk those pages, and say it is gone only when they run out.
+  React.useEffect(() => {
+    if (loading) return;
+    const openLinkedNote = () => {
+      const noteId = noteIdFromHash(window.location.hash);
+      if (!noteId || openedNoteHash.current === noteId) return;
+      const note = notes.find((item) => item.externalId === noteId);
+      if (note) {
+        openedNoteHash.current = noteId;
+        noteSeekPaused.current = null;
+        noteSeekPages.current = 0;
+        setEditing(note);
+        return;
+      }
+      if (noteSeeking.current || loadingMoreNotes) return;
+      if (hasMoreNotes && noteSeekPaused.current !== noteId) {
+        if (noteSeekPages.current >= NOTE_LINK_SEEK_PAGES) {
+          noteSeekPaused.current = noteId;
+          onNotice("That note is further back than the notes already open.");
+          return;
+        }
+        noteSeeking.current = true;
+        noteSeekPages.current += 1;
+        void loadEarlierNotes().finally(() => {
+          noteSeeking.current = false;
+        });
+        return;
+      }
+      if (hasMoreNotes) return;
+      openedNoteHash.current = noteId;
+      onNotice("That note is no longer in this workspace.");
+    };
+    openLinkedNote();
+    const onHashChange = () => {
+      openedNoteHash.current = null;
+      noteSeekPaused.current = null;
+      noteSeekPages.current = 0;
+      openLinkedNote();
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, [hasMoreNotes, loadEarlierNotes, loading, loadingMoreNotes, notes, onNotice]);
+  const favoriteIds = new Set(favoriteResources.map((item) => item.payload.noteId));
+  const loadedNoteIds = new Set(notes.map((note) => note.externalId));
+  const unresolvedFavorites = favoriteResources.filter(
+    (favorite) => !loadedNoteIds.has(favorite.payload.noteId),
+  ).length;
   const favoriteNotes = visible.filter((note) => favoriteIds.has(note.externalId));
   return (
     <div className="flex min-h-full flex-col bg-background" data-slot="notes-view">
@@ -633,14 +1556,19 @@ export function NotesView({ onError, onNotice }: ViewProps) {
         onValueChange={(value) => setTab(value as "notes" | "templates")}
         value={tab}
       >
-        <TabsList className="h-11 w-full justify-start rounded-none border-b border-border bg-transparent px-3">
+        <TabsList
+          aria-label="Notes and templates"
+          className="h-11 w-full justify-start rounded-none border-b border-border bg-transparent px-3"
+        >
           <TabsTrigger
             className="h-9 rounded-none border px-3 text-[13px] data-[state=active]:border-border data-[state=active]:bg-background-100"
             value="notes"
           >
             <Note className="size-4" /> Notes{" "}
             <Badge className="font-normal text-primary/40" variant="secondary">
-              {notes.length}
+              {listNeverLoaded(notesQuery.isError, notesQuery.data) || timelinesUnread
+                ? "Couldn't load"
+                : noteCountLabel(notes.length, notesTabContinues(hasEarlierNotes))}
             </Badge>
           </TabsTrigger>
           <TabsTrigger
@@ -649,20 +1577,25 @@ export function NotesView({ onError, onNotice }: ViewProps) {
           >
             <NotePencil className="size-4" /> Templates{" "}
             <Badge className="font-normal text-primary/40" variant="secondary">
-              {templatesQuery.data?.length ?? 0}
+              {templateCountLabel(templates.length, hasMoreTemplates)}
             </Badge>
           </TabsTrigger>
         </TabsList>
       </Tabs>
+      {/* Sort, layout, and favorites change the note list. On Templates they
+          only restyled themselves. */}
+      {tab === "notes" ? (
       <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-3">
         <Button
           type="button"
           className="h-8 rounded-none border border-border bg-background px-3 text-[13px] text-primary/60 hover:bg-background-100"
           variant="ghost"
-          onClick={() => setNewestFirst((value) => !value)}
+          onClick={() => chooseNoteOrder(!newestFirst)}
         >
           <List className="size-4" /> Sorted by{" "}
-          <Label className="font-normal text-primary">Creation date</Label>
+          <Label className="font-normal text-primary">
+            {newestFirst ? "Newest first" : "Oldest first"}
+          </Label>
           <CaretDown className={cn("size-3 transition-transform", !newestFirst && "rotate-180")} />
         </Button>
         <div className="flex items-center gap-2">
@@ -722,35 +1655,51 @@ export function NotesView({ onError, onNotice }: ViewProps) {
           </Button>
         </div>
       </div>
-      {tab === "templates" && templatesQuery.isError ? (
+      ) : null}
+      {tab === "notes" && notesQuery.isError && notesQuery.data != null ? (
+        <ListRefreshFailure
+          message={listRefreshFailureCopy("notes")}
+          onRetry={() => void refetchClearingBanner(() => notesQuery.refetch(), onError)}
+        />
+      ) : null}
+      {tab === "templates" && listNeverLoaded(templatesQuery.isError, templatesQuery.data) ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-          <p className="text-sm text-destructive">Could not load note templates.</p>
+          <p className="text-sm text-destructive">
+            {explainedRevenueError(templatesQuery.error, "Could not load note templates.")}
+          </p>
           <Button size="sm" variant="outline" onClick={() => void templatesQuery.refetch()}>
             <ArrowClockwise /> Retry
           </Button>
         </div>
-      ) : tab === "templates" && templatesQuery.isLoading ? (
+      ) : tab === "templates" && templatesQuery.isPending && templates.length === 0 ? (
         <div className="p-4">
           <ListSkeleton />
         </div>
       ) : tab === "templates" ? (
         <div className="min-h-0 flex-1 overflow-auto p-4">
+          {templatesQuery.isError ? (
+            <ListRefreshFailure
+              message={listRefreshFailureCopy("note templates")}
+              onRetry={() => void templatesQuery.refetch()}
+            />
+          ) : null}
           <div className="mb-3 flex items-center justify-between">
             <Label className="text-sm font-medium">Reusable note templates</Label>
             <Button size="sm" onClick={() => setEditingTemplate("new")}>
               <Plus /> New template
             </Button>
           </div>
-          {templatesQuery.data?.length ? (
+          {templates.length ? (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
-              {templatesQuery.data.map((template) => (
+              {templates.map((template) => (
                 <Card className="gap-3 p-4" key={template.id}>
-                  <CardTitle>{template.payload.title}</CardTitle>
+                  <CardTitle>{noteTemplateTitle(template.payload.title)}</CardTitle>
                   <CardDescription className="line-clamp-3">
-                    {template.payload.body || "Empty template"}
+                    {noteTemplateBody(template.payload.body)}
                   </CardDescription>
                   <div className="mt-auto flex gap-2">
                     <Button
+                      aria-label={`Apply ${noteTemplateTitle(template.payload.title)}`}
                       size="sm"
                       onClick={() => {
                         setEditing({ template });
@@ -760,6 +1709,7 @@ export function NotesView({ onError, onNotice }: ViewProps) {
                       Apply
                     </Button>
                     <Button
+                      aria-label={`Edit ${noteTemplateTitle(template.payload.title)}`}
                       size="sm"
                       variant="outline"
                       onClick={() => setEditingTemplate(template)}
@@ -771,45 +1721,104 @@ export function NotesView({ onError, onNotice }: ViewProps) {
               ))}
             </div>
           ) : (
+            // The section header already opens a new template. A second button
+            // in the empty state only repeated that click.
             <WorkspaceEmptyState
-              action={
-                <Button size="sm" onClick={() => setEditingTemplate("new")}>
-                  <Plus /> Create template
-                </Button>
-              }
               description="Create a reusable starting point for notes."
               image="notes"
               learnMore={[]}
               title="No templates yet"
             />
           )}
+          {hasMoreTemplates ? (
+            <Button
+              className="mt-3 w-full rounded-none"
+              disabled={loadingMoreTemplates}
+              onClick={() => void loadMoreTemplates()}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              {loadingMoreTemplates ? "Loading…" : nextTemplatesLabel()}
+            </Button>
+          ) : null}
         </div>
       ) : loading ? (
         <div className="p-4">
           <ListSkeleton />
         </div>
-      ) : visible.length === 0 ? (
+      ) : listNeverLoaded(notesQuery.isError, notesQuery.data) ? (
         <WorkspaceEmptyState
           action={
             <Button
-              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-              onClick={() => setEditing({})}
+              onClick={() => void refetchClearingBanner(() => notesQuery.refetch(), onError)}
               size="sm"
+              type="button"
+              variant="outline"
             >
-              <Plus /> New note
+              Try again
             </Button>
           }
+          description={noteListFailureCopy()}
+          image="notes"
+          learnMore={[]}
+          title="Notes"
+        />
+      ) : timelinesUnread ? (
+        <WorkspaceEmptyState
+          action={
+            <Button
+              onClick={() => void refetchClearingBanner(() => notesQuery.refetch(), onError)}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              Try again
+            </Button>
+          }
+          description={notesTimelineFailureCopy()}
+          image="notes"
+          learnMore={[]}
+          title="Notes"
+        />
+      ) : visible.length === 0 ? (
+        <WorkspaceEmptyState
+          action={
+            hasEarlierNotes ? (
+              <Button
+                disabled={loadingMoreNotes}
+                onClick={() => void loadEarlierNotes()}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {notesRemainderLabel(hasEarlierNotes)}
+              </Button>
+            ) : (
+              <Button
+                className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+                onClick={() => setEditing({})}
+                size="sm"
+              >
+                <Plus /> New note
+              </Button>
+            )
+          }
           description={
-            <>
-              No notes yet! Create your first
-              <br />
-              note to get started.
-            </>
+            hasEarlierNotes ? (
+              notesEmptyDescription(hasEarlierNotes)
+            ) : (
+              <>
+                No notes yet! Create your first
+                <br />
+                note to get started.
+              </>
+            )
           }
           image="notes"
           learnMore={[
-            { label: "Link notes to accounts" },
-            { label: "Turn notes into commitments" },
+            { label: "Link notes to companies" },
+            { label: "Turn notes into promises" },
           ]}
           title="Notes"
         />
@@ -820,17 +1829,27 @@ export function NotesView({ onError, onNotice }: ViewProps) {
               <Label className="mb-3 flex items-center gap-1 text-[12px] font-normal text-primary/45">
                 Favorites
                 <Badge className="text-[10px] font-normal" variant="outline">
-                  {favoriteNotes.length}
+                  {favoriteNotesLabel(favoriteNotes.length, unresolvedFavorites)}
                 </Badge>
               </Label>
-              {favoritesQuery.isError ? (
+              {listNeverLoaded(favoritesQuery.isError, favoritesQuery.data) ? (
                 <div className="flex items-center gap-3 border border-destructive/30 p-3">
-                  <p className="text-xs text-destructive">Could not load favorites.</p>
+                  <p className="text-xs text-destructive">
+                    {explainedRevenueError(favoritesQuery.error, "Could not load favorites.")}
+                  </p>
                   <Button size="sm" variant="outline" onClick={() => void favoritesQuery.refetch()}>
                     Retry
                   </Button>
                 </div>
-              ) : favoriteNotes.length ? (
+              ) : (
+                <>
+                  {favoritesQuery.isError ? (
+                    <ListRefreshFailure
+                      message={listRefreshFailureCopy("favorites")}
+                      onRetry={() => void favoritesQuery.refetch()}
+                    />
+                  ) : null}
+                  {favoriteNotes.length ? (
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-2">
                   {favoriteNotes.map((note) => (
                     <Button
@@ -840,110 +1859,203 @@ export function NotesView({ onError, onNotice }: ViewProps) {
                       variant="outline"
                     >
                       <BookmarkSimple weight="fill" />
-                      <span className="truncate">{note.title || "Untitled note"}</span>
+                      <span className="truncate">{noteTitleLabel(note.title)}</span>
                     </Button>
                   ))}
                 </div>
               ) : (
                 <Card className="flex h-28 items-center justify-center border-dashed py-0 text-center">
                   <CardContent>
-                    <CardDescription>Favorite a note to keep it here.</CardDescription>
+                    <CardDescription>
+                      {favoriteNotesEmptyCopy(unresolvedFavorites, hasEarlierNotes)}
+                    </CardDescription>
                   </CardContent>
                 </Card>
+                  )}
+                </>
               )}
+              {favoriteNotes.length > 0 && unresolvedFavorites > 0 ? (
+                <p className="mt-2 text-xs text-primary/55">
+                  {favoriteNotesEmptyCopy(unresolvedFavorites, hasEarlierNotes)}
+                </p>
+              ) : null}
+              {unresolvedFavorites > 0 && hasEarlierNotes ? (
+                <Button
+                  className="mt-3"
+                  disabled={loadingMoreNotes}
+                  onClick={() => void loadEarlierNotes()}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  {loadingMoreNotes ? "Loading…" : notesRemainderLabel(hasEarlierNotes)}
+                </Button>
+              ) : null}
+              {hasMoreFavorites ? (
+                <Button
+                  className="mt-3 w-full rounded-none"
+                  disabled={loadingMoreFavorites}
+                  onClick={() => void loadMoreFavorites()}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  {loadingMoreFavorites ? "Loading…" : nextFavoritesLabel()}
+                </Button>
+              ) : null}
             </section>
           ) : null}
-          <div className="mt-3 border-t border-border px-4 py-3">
-            <Label className="mb-3 flex items-center gap-1 text-[12px] font-normal text-primary/55">
-              Created today{" "}
-              <Badge className="text-[10px] font-normal" variant="outline">
-                {visible.length}
-              </Badge>
-            </Label>
-            <div
-              className={
-                layout === "grid"
-                  ? "grid grid-cols-[repeat(auto-fill,minmax(300px,368px))] gap-3"
-                  : "space-y-2"
-              }
-            >
-              {visible.map((note) => (
-                <Card
-                  className={cn(
-                    "cursor-pointer gap-0 py-0 transition-colors hover:bg-background-100",
-                    layout === "grid" ? "h-52 max-w-[368px]" : "h-24 w-full",
-                  )}
-                  key={note.externalId}
-                  onClick={() => setEditing(note)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      setEditing(note);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <CardHeader className="flex-1 gap-1 px-4 pb-0 pt-4">
-                    <div className="flex items-center gap-2 text-[12px] text-primary/65">
-                      <Note className="size-3.5" />
-                      <Label className="font-normal underline">{note.relationshipName}</Label>
-                    </div>
-                    <CardTitle className="mt-3 text-[15px] text-primary">
-                      {note.title || "Untitled note"}
-                    </CardTitle>
-                    <CardDescription className="line-clamp-2 text-[13px]">
-                      {note.body || "This note has no content."}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardFooter className="flex h-10 items-center justify-between border-t px-4 text-[12px] text-primary/50">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="size-4 rounded-none" size="sm">
-                        <AvatarFallback className="rounded-none bg-cyan-600 text-[9px] text-white">
-                          Y
-                        </AvatarFallback>
-                      </Avatar>
-                      <Label className="font-normal">You</Label>
-                    </div>
-                    <Badge className="font-normal" variant="secondary">
-                      {relativeTime(note.occurredAt)}
-                    </Badge>
-                    <Button
-                      aria-label={
-                        favoriteIds.has(note.externalId)
-                          ? `Remove ${note.title} from favorites`
-                          : `Add ${note.title} to favorites`
+          {noteGroups.map((group) => (
+            <div className="mt-3 border-t border-border px-4 py-3" key={group.day}>
+              <Label className="mb-3 flex items-center gap-1 text-[12px] font-normal text-primary/55">
+                {group.label}{" "}
+                <Badge className="text-[10px] font-normal" variant="outline">
+                  {group.notes.length}
+                </Badge>
+              </Label>
+              <div
+                className={
+                  layout === "grid"
+                    ? "grid grid-cols-[repeat(auto-fill,minmax(300px,368px))] gap-3"
+                    : "space-y-2"
+                }
+              >
+                {group.notes.map((note) => (
+                  <Card
+                    className={cn(
+                      "cursor-pointer gap-0 py-0 transition-colors hover:bg-background-100",
+                      layout === "grid" ? "h-52 max-w-[368px]" : "h-24 w-full",
+                    )}
+                    key={note.externalId}
+                    onClick={() => setEditing(note)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setEditing(note);
                       }
-                      disabled={favoriteMutation.isPending}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        favoriteMutation.mutate(note.externalId);
-                      }}
-                      size="icon-xs"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <BookmarkSimple
-                        weight={favoriteIds.has(note.externalId) ? "fill" : "regular"}
-                      />
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <CardHeader className="flex-1 gap-1 px-4 pb-0 pt-4">
+                      <div className="flex items-center gap-2 text-[12px] text-primary/65">
+                        <Note className="size-3.5" />
+                        {onOpenCompany ? (
+                          <Button
+                            aria-label={noteCompanyLabel(note.relationshipName)}
+                            className="h-auto rounded-none px-0 py-0 text-[12px] font-normal text-primary/65 underline hover:bg-transparent hover:text-primary"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onOpenCompany(note.relationshipId);
+                            }}
+                            type="button"
+                            variant="ghost"
+                          >
+                            {note.relationshipName}
+                          </Button>
+                        ) : (
+                          <Label className="font-normal">{note.relationshipName}</Label>
+                        )}
+                        {note.meetingLinked ? (
+                          <Badge className="font-normal" variant="outline">
+                            Meeting note
+                          </Badge>
+                        ) : null}
+                      </div>
+                      <CardTitle className="mt-3 text-[15px] text-primary">
+                        {noteTitleLabel(note.title)}
+                      </CardTitle>
+                      <CardDescription className="line-clamp-2 text-[13px]">
+                        {noteBodyPreview(note.body)}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardFooter className="flex h-10 items-center justify-between border-t px-4 text-[12px] text-primary/50">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="size-4 rounded-none" size="sm">
+                          <AvatarFallback
+                            className="rounded-none bg-cyan-600 text-[9px] text-white"
+                            data-slot="note-author"
+                          >
+                            {author.mark}
+                          </AvatarFallback>
+                        </Avatar>
+                        <Label className="font-normal">{author.label}</Label>
+                      </div>
+                      <Badge className="font-normal" variant="secondary">
+                        {workspaceNoteActivityLabel(note)}
+                      </Badge>
+                      <Button
+                        aria-label={
+                          favoriteIds.has(note.externalId)
+                            ? `Remove ${noteTitleLabel(note.title)} from favorites`
+                            : `Add ${noteTitleLabel(note.title)} to favorites`
+                        }
+                        disabled={favoriteMutation.isPending}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          favoriteMutation.mutate(note.externalId);
+                        }}
+                        size="icon-xs"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <BookmarkSimple
+                          weight={favoriteIds.has(note.externalId) ? "fill" : "regular"}
+                        />
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
             </div>
-          </div>
+          ))}
+          {hasEarlierNotes ? (
+            <Button
+              className="m-3"
+              disabled={loadingMoreNotes}
+              onClick={() => void loadEarlierNotes()}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {notesRemainderLabel(hasEarlierNotes)}
+            </Button>
+          ) : null}
         </div>
       )}
       {editing ? (
         <NoteDialog
           key={"externalId" in editing ? editing.externalId : editing.template?.id || "new"}
           note={"externalId" in editing ? editing : undefined}
-          template={"template" in editing ? editing.template : undefined}
-          relationships={relationships}
-          onClose={() => setEditing(null)}
+          onClose={() => {
+            if (noteIdFromHash(window.location.hash)) {
+              window.history.replaceState(
+                null,
+                "",
+                `${window.location.pathname}${window.location.search}`,
+              );
+            }
+            setEditing(null);
+          }}
+          onCreateTemplate={() => setEditingTemplate("new")}
           onError={onError}
-          onSaved={() => void load()}
           onNotice={onNotice}
+          onSaved={() => void load()}
+          onAddCompany={
+            onOpenCompanies
+              ? () => {
+                  setEditing(null);
+                  openCompanyCreate(onOpenCompanies);
+                }
+              : undefined
+          }
+          onViewTemplates={() => setTab("templates")}
+          author={author}
+          hasMoreCompanies={hasMoreCompanies}
+          loadingMoreCompanies={loadingMoreNotes}
+          onLoadMoreCompanies={() => void loadEarlierNotes()}
+          relationships={relationships}
+          template={"template" in editing ? editing.template : undefined}
         />
       ) : null}
       {editingTemplate ? (
@@ -971,16 +2083,17 @@ function TemplateDialog({
   onNotice: (message: string) => void;
 }) {
   const queryClient = useQueryClient();
-  const [title, setTitle] = React.useState(template?.payload.title ?? "");
-  const [body, setBody] = React.useState(template?.payload.body ?? "");
+  const [title, setTitle] = React.useState((template?.payload.title ?? "").trim());
+  const [body, setBody] = React.useState((template?.payload.body ?? "").trim());
   const mutation = useMutation({
     mutationFn: async (action: "save" | "delete") => {
       if (action === "delete" && template) return deleteConsoleResource(template.id);
-      const payload = { title: title.trim(), body };
-      if (template) return patchConsoleResource(template.id, { name: title.trim(), payload });
+      const trimmedTitle = title.trim();
+      const payload = { title: trimmedTitle, body: body.trim() };
+      if (template) return patchConsoleResource(template.id, { name: trimmedTitle, payload });
       return createConsoleResource({
         kind: "note_template",
-        name: title.trim(),
+        name: trimmedTitle,
         payload,
       });
     },
@@ -1009,7 +2122,7 @@ function TemplateDialog({
             aria-label="Template title"
             maxLength={200}
             onChange={(event) => setTitle(event.target.value)}
-            placeholder="Quarterly account review"
+            placeholder="Quarterly company review"
             value={title}
           />
           <Textarea
@@ -1017,12 +2130,17 @@ function TemplateDialog({
             className="min-h-48"
             maxLength={65_536}
             onChange={(event) => setBody(event.target.value)}
-            placeholder="Add prompts or a reusable note structure…"
+            placeholder="The text a new note starts with…"
             value={body}
           />
           {mutation.isError ? (
             <p className="text-xs text-destructive" role="alert">
-              The template change failed. You can retry without losing this draft.
+              {errMessage(
+                mutation.error,
+                mutation.variables === "delete"
+                  ? "Could not delete the note template."
+                  : "Could not save the note template.",
+              )}
             </p>
           ) : null}
         </div>
@@ -1058,47 +2176,69 @@ function NoteDialog({
   note,
   template,
   relationships,
+  author,
   onClose,
+  onCreateTemplate,
   onSaved,
   onError,
   onNotice,
+  onViewTemplates,
+  onAddCompany,
+  hasMoreCompanies = false,
+  loadingMoreCompanies = false,
+  onLoadMoreCompanies,
 }: {
   note?: WorkspaceNote;
   template?: NoteTemplateResource;
   relationships: RevenueRelationship[];
+  author: { label: string; mark: string };
   onClose: () => void;
+  onCreateTemplate: () => void;
   onSaved: () => void;
   onError: (message: string) => void;
   onNotice: (message: string) => void;
+  onViewTemplates: () => void;
+  /** Closes this note and opens New company. Absent in tests that only check the empty copy. */
+  onAddCompany?: () => void;
+  /** The company menu only lists companies whose notes are already loaded. */
+  hasMoreCompanies?: boolean;
+  loadingMoreCompanies?: boolean;
+  onLoadMoreCompanies?: () => void;
 }) {
   const noteId = React.useRef(note?.externalId || crypto.randomUUID()).current;
   const [title, setTitle] = React.useState(
-    note?.title === "Untitled note" ? "" : note?.title || template?.payload.title || "",
+    note ? noteEditorTitle(note.title) : (template?.payload.title ?? "").trim(),
   );
-  const [relationshipId, setRelationshipId] = React.useState(
-    note?.relationshipId || relationships[0]?.id || "",
+  // A new note is not already about the first company. Autosave would file
+  // it there before anyone chose.
+  const [relationshipId, setRelationshipId] = React.useState(note?.relationshipId || "");
+  const [content, setContent] = React.useState<Value>(() =>
+    template ? noteTemplateEditorValue(template) : plateValue(note),
   );
-  const [content, setContent] = React.useState<Value>(() => {
-    if (template?.payload.content) return template.payload.content as Value;
-    if (template?.payload.body) {
-      return [{ type: "p", children: [{ text: template.payload.body }] }];
-    }
-    return plateValue(note);
-  });
   const [meetingLinked, setMeetingLinked] = React.useState(Boolean(note?.meetingLinked));
   const [maximized, setMaximized] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const [insertOpen, setInsertOpen] = React.useState(false);
   const [saveState, setSaveState] = React.useState<"saved" | "saving" | "error">("saved");
+  const [saveError, setSaveError] = React.useState<string | null>(null);
   const lastSaved = React.useRef(
     note ? JSON.stringify([title, relationshipId, content, meetingLinked]) : "",
   );
   const editor = usePlateEditor({ plugins: notePlugins, value: content });
+  const insertBlock = (type: "p" | "h2" | "blockquote") => {
+    // The formatting bar toggles the current block. This control adds a new
+    // one, which is what "Insert content" claims to do.
+    const node = type === "p" ? editor.api.create.block() : { type, children: [{ text: "" }] };
+    editor.tf.insertNodes(node, { select: true });
+    setInsertOpen(false);
+  };
   const snapshot = JSON.stringify([title, relationshipId, content, meetingLinked]);
 
   const publish = React.useCallback(
     async (eventType: "note" | "note_deleted") => {
       if (!relationshipId) return false;
       setSaveState("saving");
+      setSaveError(null);
       try {
         const body = plateText(content);
         await ingestRelationshipObservations([
@@ -1127,8 +2267,10 @@ function NoteDialog({
         onSaved();
         return true;
       } catch (error) {
+        const message = errMessage(error, "Could not save the note.");
         setSaveState("error");
-        onError(errMessage(error, "Could not save the note."));
+        setSaveError(message);
+        onError(message);
         return false;
       }
     },
@@ -1142,16 +2284,33 @@ function NoteDialog({
   }, [publish, relationshipId, snapshot]);
 
   const noteHasDraftContent = Boolean(title.trim() || plateText(content).trim());
+  const canLinkCompany = relationships.length > 0 || hasMoreCompanies;
 
   const closeEditor = async () => {
     const dirty = snapshot !== lastSaved.current;
-    // Empty drafts and notes without a linked company should still dismiss on close.
     if (dirty && noteHasDraftContent && relationshipId) {
-      if (!(await publish("note"))) return;
+      if (saveState !== "error") {
+        if (!(await publish("note"))) return false;
+      } else {
+        onNotice(saveError || "Could not save the note.");
+      }
+    }
+    // A note can only be stored against a company. Closing still dismisses the
+    // draft, but the status line and this notice are the only signal that the
+    // text was not written.
+    if (dirty && noteHasDraftContent && !relationshipId) {
+      onNotice(noteNeedsCompanyCopy("notice", canLinkCompany));
     }
     onClose();
+    return true;
+  };
+  const leaveFor = async (next: () => void) => {
+    if (await closeEditor()) next();
   };
   const selectedRelationship = relationships.find((item) => item.id === relationshipId);
+  const companyMenuLabel = selectedRelationship
+    ? companyName(selectedRelationship)
+    : noteCompanyMenuLabel(relationships.length, hasMoreCompanies);
   const bodyEmpty = !plateText(content).trim();
   return (
     <Dialog open onOpenChange={(open) => !open && void closeEditor()}>
@@ -1163,20 +2322,43 @@ function NoteDialog({
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-5">
           <div className="flex min-w-0 items-center gap-2 text-[12px] text-primary/80">
             <Note className="size-3.5 text-primary/45" />
-            <Select value={relationshipId || undefined} onValueChange={setRelationshipId}>
+            <Select
+              disabled={!canLinkCompany}
+              value={relationshipId || undefined}
+              onValueChange={setRelationshipId}
+            >
               <SelectTrigger
                 id="note-relationship"
-                aria-label="Linked company"
+                aria-label={linkedCompanyName(companyMenuLabel)}
                 className="h-auto max-w-56 border-0 bg-transparent p-0 text-[12px] text-primary underline shadow-none focus:ring-0"
               >
-                <SelectValue placeholder="Link a company" />
+                <SelectValue placeholder={companyMenuLabel} />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-none">
                 {relationships.map((relationship) => (
                   <SelectItem key={relationship.id} value={relationship.id}>
-                    {relationship.displayName}
+                    {companyName(relationship)}
                   </SelectItem>
                 ))}
+                {hasMoreCompanies ? (
+                  <Button
+                    className={cn(
+                      "sticky bottom-0 z-10 h-8 w-full justify-start rounded-none",
+                      "border-t border-border bg-background px-2 text-[12px]",
+                    )}
+                    disabled={loadingMoreCompanies}
+                    onPointerDown={(event) => {
+                      // Canceling this event keeps the menu open, and it also
+                      // suppresses the click. Load from the pointer itself.
+                      event.preventDefault();
+                      onLoadMoreCompanies?.();
+                    }}
+                    type="button"
+                    variant="ghost"
+                  >
+                    {loadingMoreCompanies ? "Loading…" : nextNoteCompaniesLabel()}
+                  </Button>
+                ) : null}
               </SelectContent>
             </Select>
           </div>
@@ -1185,9 +2367,11 @@ function NoteDialog({
               aria-label="Minimize note"
               type="button"
               className="size-7 rounded-none text-primary/45 hover:bg-background-100 hover:text-primary"
+              disabled={!maximized}
               size="icon-xs"
+              title={maximized ? "Leave full screen" : "The note is already in a window"}
               variant="ghost"
-              onClick={() => void closeEditor()}
+              onClick={() => setMaximized(false)}
             >
               <Minus className="size-3.5" />
             </Button>
@@ -1216,8 +2400,12 @@ function NoteDialog({
         <div className="relative min-h-0 flex-1 overflow-auto px-[52px] pb-14 pt-[57px] text-primary/80">
           <div className="absolute right-[18px] top-1 flex items-center gap-3 text-[13px] text-primary/55">
             <Avatar className="size-5 rounded-none">
-              <AvatarFallback className="rounded-none border border-border bg-background-100 text-[10px] font-semibold text-primary/70">
-                Y
+              <AvatarFallback
+                aria-label={`Note author ${author.label}`}
+                className="rounded-none border border-border bg-background-100 text-[10px] font-semibold text-primary/70"
+                data-slot="note-author"
+              >
+                {author.mark}
               </AvatarFallback>
             </Avatar>
             <Button
@@ -1225,10 +2413,19 @@ function NoteDialog({
               className="h-auto rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
               variant="ghost"
               onClick={async () => {
-                await navigator.clipboard.writeText(
-                  `${window.location.origin}${window.location.pathname}#note=${noteId}`,
-                );
-                onNotice("Note link copied.");
+                // The id exists before the first save, but the notes list only
+                // knows a note after it is stored. Copying earlier opens a link
+                // that says the note is gone.
+                if (!lastSaved.current) {
+                  onNotice("This note has not been saved, so there is no link to copy.");
+                  return;
+                }
+                try {
+                  await navigator.clipboard.writeText(workspaceNoteHref(window.location, noteId));
+                  onNotice("Note link copied.");
+                } catch {
+                  onNotice("Could not copy the note link.");
+                }
               }}
             >
               <Link className="size-3.5" /> Copy link
@@ -1251,10 +2448,15 @@ function NoteDialog({
                     className="h-auto w-full justify-start rounded-none px-3 py-2 text-[12px] text-destructive hover:bg-background-100"
                     variant="ghost"
                     onClick={async () => {
+                      // A draft was never stored. Delete would claim a note was removed.
+                      if (!lastSaved.current) {
+                        onClose();
+                        return;
+                      }
                       if (await publish("note_deleted")) onClose();
                     }}
                   >
-                    Delete note
+                    {lastSaved.current ? "Delete note" : "Discard draft"}
                   </Button>
                 </div>
               ) : null}
@@ -1268,23 +2470,36 @@ function NoteDialog({
             onChange={(event) => setTitle(event.target.value)}
           />
           <div className="mt-3 flex items-center gap-4 text-[13px] text-primary/55">
-            <Label
-              className={cn(
-                "flex items-center gap-2 font-normal text-primary/55",
-                selectedRelationship && "text-primary underline",
-              )}
-            >
-              <Note className="size-3.5" />
-              {selectedRelationship?.displayName || "Link a company"}
-            </Label>
+            {relationships.length === 0 && !hasMoreCompanies && onAddCompany ? (
+              <Button
+                className="h-auto rounded-none px-0 py-0 text-[13px] font-normal text-primary/55 hover:bg-transparent hover:text-primary"
+                type="button"
+                variant="ghost"
+                onClick={onAddCompany}
+              >
+                <Note className="size-3.5" /> Add a company
+              </Button>
+            ) : (
+              <Label
+                className={cn(
+                  "flex items-center gap-2 font-normal text-primary/55",
+                  selectedRelationship && "text-primary underline",
+                )}
+              >
+                <Note className="size-3.5" />
+                {companyMenuLabel}
+              </Label>
+            )}
             <Button
+              aria-pressed={meetingLinked}
               type="button"
               className="h-auto rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
               variant="ghost"
               onClick={() => setMeetingLinked((value) => !value)}
             >
               <CalendarBlank className="size-4" />
-              {meetingLinked ? "Meeting linked" : "Link a meeting"}
+              {/* Stored as a boolean on the note. There is no meeting to attach. */}
+              {meetingLinked ? "Meeting note" : "Mark as meeting note"}
             </Button>
           </div>
           <div className="mt-6 flex items-center gap-1 border-y border-border py-1">
@@ -1296,7 +2511,7 @@ function NoteDialog({
                 icon: TextUnderline,
                 run: () => editor.tf.toggleMark("underline"),
               },
-              { label: "Heading", icon: TextHOne, run: () => editor.tf.toggleBlock("h2") },
+              { label: "Heading 2", icon: TextHTwo, run: () => editor.tf.toggleBlock("h2") },
               { label: "Quote", icon: Quotes, run: () => editor.tf.toggleBlock("blockquote") },
             ].map(({ label, icon: Icon, run }) => (
               <Button
@@ -1323,89 +2538,325 @@ function NoteDialog({
             />
           </Plate>
           {bodyEmpty ? (
-            <div className="mt-6 space-y-7 text-[13px] text-primary/55">
-              <div>
-                <p className="text-[10px] font-medium uppercase tracking-wide text-primary/45">
-                  Favorite templates
-                </p>
-                <p className="mt-2">Templates that you favorite will appear here</p>
-              </div>
-              <div className="space-y-3">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-primary/45">
-                  Actions
-                </p>
-                <Button
-                  type="button"
-                  className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
-                  variant="ghost"
-                >
-                  <Note className="size-4" /> View all templates
-                </Button>
-                <Button
-                  type="button"
-                  className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
-                  variant="ghost"
-                >
-                  <Note className="size-4" /> Create new template
-                </Button>
-              </div>
+            <div className="mt-6 space-y-3 text-[13px] text-primary/55">
+              {/* Templates cannot be favorited. The heading names the two links below. */}
+              <p className="text-[10px] font-medium uppercase tracking-wide text-primary/45">
+                Templates
+              </p>
+              <Button
+                type="button"
+                className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
+                variant="ghost"
+                onClick={() => void leaveFor(onViewTemplates)}
+              >
+                <Note className="size-4" /> View all templates
+              </Button>
+              <Button
+                type="button"
+                className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
+                variant="ghost"
+                onClick={() => void leaveFor(onCreateTemplate)}
+              >
+                <Note className="size-4" /> Create new template
+              </Button>
             </div>
           ) : null}
-          {saveState !== "saved" ? (
+          {noteHasDraftContent && !relationshipId ? (
+            <p
+              className="absolute right-5 bottom-3 text-[11px] font-normal text-destructive"
+              role="status"
+            >
+              {noteNeedsCompanyCopy("status", canLinkCompany)}
+            </p>
+          ) : saveState !== "saved" ? (
             <Label
               className={`absolute right-5 bottom-3 text-[11px] font-normal ${saveState === "error" ? "text-destructive" : "text-primary/55"}`}
             >
-              {saveState === "saving" ? "Saving…" : "Save failed"}
+              {saveState === "saving" ? "Saving…" : saveError || "Could not save the note."}
             </Label>
           ) : null}
         </div>
-        <Button
-          aria-label="Insert content"
-          type="button"
-          className="absolute bottom-3 left-4 size-5 rounded-none border border-border p-0 text-primary/55 hover:bg-background-100 hover:text-primary"
-          size="icon-xs"
-          variant="ghost"
-        >
-          <Plus className="size-3" />
-        </Button>
+        <div className="absolute bottom-3 left-4">
+          {insertOpen ? (
+            <div className="absolute bottom-7 left-0 z-10 w-36 border border-border bg-background p-1 shadow-xl">
+              {(
+                [
+                  ["p", "Insert paragraph"],
+                  ["h2", "Insert heading 2"],
+                  ["blockquote", "Insert quote"],
+                ] as const
+              ).map(([type, label]) => (
+                <Button
+                  className="h-8 w-full justify-start rounded-none px-2 text-[12px]"
+                  key={type}
+                  onClick={() => insertBlock(type)}
+                  type="button"
+                  variant="ghost"
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          ) : null}
+          <Button
+            aria-expanded={insertOpen}
+            aria-label="Insert content"
+            className="size-5 rounded-none border border-border p-0 text-primary/55 hover:bg-background-100 hover:text-primary"
+            onClick={() => setInsertOpen((open) => !open)}
+            size="icon-xs"
+            type="button"
+            variant="ghost"
+          >
+            <Plus className="size-3" />
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-export function TasksView({ onError, onNotice }: ViewProps) {
+/**
+ * Due dates are ISO strings, so lexicographic order is chronological.
+ * A task with no due date stays at the end in both directions: it is not
+ * the soonest date and it is not the latest one.
+ */
+export function sortTasksByDue<T extends { dueAt?: string | null }>(
+  tasks: readonly T[],
+  soonestFirst: boolean,
+): T[] {
+  return [...tasks].sort((left, right) => {
+    const leftDue = left.dueAt || "";
+    const rightDue = right.dueAt || "";
+    if (!leftDue && !rightDue) return 0;
+    if (!leftDue) return 1;
+    if (!rightDue) return -1;
+    const order = leftDue.localeCompare(rightDue);
+    return soonestFirst ? order : -order;
+  });
+}
+
+/**
+ * Due today and Overdue are filters. An empty result means nothing loaded
+ * falls in that window. Later tasks can still be due today or overdue.
+ */
+export function taskListEmptyCopy(
+  filter: "all" | "today" | "overdue",
+  hasMore = false,
+): string | null {
+  if (filter === "today") {
+    return hasMore ? "Nothing loaded is due today." : "Nothing is due today.";
+  }
+  if (filter === "overdue") {
+    return hasMore ? "Nothing loaded is overdue." : "Nothing is overdue.";
+  }
+  if (hasMore) return "More tasks are still in this list.";
+  return null;
+}
+
+/** A failed task request is not an empty task list. */
+export function taskListFailureCopy(): string {
+  return "Tasks could not load. Try again.";
+}
+
+/** The company menu can fail while the task list itself loaded. */
+export function taskCompaniesFailureCopy(): string {
+  return "Companies could not load. Try again.";
+}
+
+const TASK_FILTER_LABEL = {
+  all: "All tasks",
+  today: "Due today",
+  overdue: "Overdue",
+} as const;
+
+/** The visible word is the current task filter, not the menu's name. */
+export function taskFilterName(filter: "all" | "today" | "overdue"): string {
+  return comboboxFilterName("Tasks", TASK_FILTER_LABEL[filter]);
+}
+
+export function taskRemainderLabel(): string {
+  return "Show the next tasks";
+}
+
+/** The note's company menu shows the choice inside the control. The name has to repeat it. */
+export function linkedCompanyName(label: string): string {
+  return comboboxFilterName("Linked company", label);
+}
+
+/** Companies past the loaded notes page are still in the workspace. */
+export function noteCompanyMenuLabel(loadedCount: number, hasMoreCompanies: boolean): string {
+  if (loadedCount > 0) return "Link a company";
+  if (hasMoreCompanies) return "More companies are still in this list.";
+  return "No companies yet";
+}
+
+export function nextNoteCompaniesLabel(): string {
+  return "Show the next companies";
+}
+
+/**
+ * The directory page is not every company. A task still carries the company
+ * name, and that name is what the row shows when the page has moved on.
+ */
+export function taskCompanyName(
+  directoryName: string | undefined,
+  actionName: string | undefined,
+): string {
+  return directoryName?.trim() || actionName?.trim() || "";
+}
+
+/** The company named on a note or a task opens that company. */
+export function noteCompanyLabel(name: string): string {
+  const company = name.trim() || "company";
+  return `Open company ${company}`;
+}
+
+/**
+ * A note is stored on a company. With no companies, the menu cannot link one.
+ * With companies, the note still starts unlinked so it is not filed on the first.
+ */
+export function noteNeedsCompanyCopy(
+  surface: "status" | "notice",
+  hasCompanies: boolean,
+): string {
+  if (hasCompanies) {
+    return surface === "status"
+      ? "Link a company to save this note."
+      : "Link a company before this note can be saved.";
+  }
+  return surface === "status"
+    ? "Add a company to save this note."
+    : "Add a company before this note can be saved.";
+}
+
+export function TasksView({
+  onError,
+  onNotice,
+  onOpenCompanies,
+  onOpenCompany,
+}: ViewProps & {
+  onOpenCompanies?: () => void;
+  onOpenCompany?: (relationshipId: string) => void;
+}) {
   const queryClient = useQueryClient();
-  const actionsQuery = useRevenueActions("open", 100);
   const relationshipsQuery = useRelationships();
   const [creating, setCreating] = React.useState(false);
   const [filter, setFilter] = React.useState<"all" | "today" | "overdue">("all");
+  const [soonestFirst, setSoonestFirst] = React.useState(true);
+  const dueOrder = soonestFirst ? "asc" : "desc";
+  const actionsQuery = useRevenueActions("open", ACTION_QUEUE_PAGE, "task", dueOrder);
   const [busy, setBusy] = React.useState<string | null>(null);
   const [now] = React.useState(() => Date.now());
-  const tasks = (actionsQuery.data ?? [])
-    .filter((action) => action.actionType === "follow_up_task" && action.channel === "task")
-    .sort((left, right) => (left.dueAt || "9999").localeCompare(right.dueAt || "9999"));
-  const relationships = (relationshipsQuery.data ?? []).filter(
-    (record) => record.kind !== "person",
+  const [extraTasks, setExtraTasks] = React.useState<RevenueAction[]>([]);
+  const [laterTasksHasMore, setLaterTasksHasMore] = React.useState<boolean | null>(null);
+  const [loadingMoreTasks, setLoadingMoreTasks] = React.useState(false);
+  const [extraCompanies, setExtraCompanies] = React.useState<RevenueRelationship[]>([]);
+  const [companyOffset, setCompanyOffset] = React.useState<number | undefined>();
+  const [laterCompaniesHasMore, setLaterCompaniesHasMore] = React.useState<boolean | null>(null);
+  const [loadingMoreCompanies, setLoadingMoreCompanies] = React.useState(false);
+  const taskPage = actionRows(actionsQuery.data);
+  const taskRows = React.useMemo(() => {
+    if (extraTasks.length === 0) return taskPage;
+    const seen = new Set(taskPage.map((task) => task.id));
+    return [
+      ...taskPage,
+      ...extraTasks.filter((task) => {
+        if (seen.has(task.id)) return false;
+        seen.add(task.id);
+        return true;
+      }),
+    ];
+  }, [extraTasks, taskPage]);
+  const hasMoreTasks =
+    laterTasksHasMore ?? (taskPage.length > 0 && actionPageHasMore(actionsQuery.data));
+  const tasks = sortTasksByDue(taskRows.filter(isWorkspaceTask), soonestFirst);
+  const directoryRows = React.useMemo(
+    () => relationshipRows(relationshipsQuery.data),
+    [relationshipsQuery.data],
   );
+  React.useEffect(() => {
+    setExtraCompanies([]);
+    setCompanyOffset(undefined);
+    setLaterCompaniesHasMore(null);
+  }, [relationshipsQuery.dataUpdatedAt]);
+  const relationships = React.useMemo(() => {
+    const seen = new Set<string>();
+    return [...directoryRows, ...extraCompanies].filter((record) => {
+      if (record.kind === "person" || seen.has(record.id)) return false;
+      seen.add(record.id);
+      return true;
+    });
+  }, [directoryRows, extraCompanies]);
+  const hasMoreCompanies =
+    laterCompaniesHasMore ?? relationshipPageHasMore(relationshipsQuery.data);
   const loading = actionsQuery.isPending || relationshipsQuery.isPending;
   const load = React.useCallback(async () => {
+    setExtraTasks([]);
+    setLaterTasksHasMore(null);
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: revenueActionKeys.all }),
       queryClient.invalidateQueries({ queryKey: relationshipKeys.all }),
     ]);
   }, [queryClient]);
+  const chooseDueOrder = (nextSoonest: boolean) => {
+    setExtraTasks([]);
+    setLaterTasksHasMore(null);
+    setSoonestFirst(nextSoonest);
+  };
+  const loadMoreTasks = React.useCallback(async () => {
+    if (loadingMoreTasks || !hasMoreTasks) return;
+    setLoadingMoreTasks(true);
+    try {
+      const next = await fetchRevenueActions(
+        "open",
+        ACTION_QUEUE_PAGE,
+        undefined,
+        "task",
+        taskPage.length + extraTasks.length,
+        dueOrder,
+      );
+      setLaterTasksHasMore(actionPageHasMore(next));
+      setExtraTasks((current) => [...current, ...actionRows(next)]);
+    } catch (reason) {
+      onError(explainedRevenueError(reason, "Could not load the next tasks."));
+    } finally {
+      setLoadingMoreTasks(false);
+    }
+  }, [dueOrder, extraTasks.length, hasMoreTasks, loadingMoreTasks, onError, taskPage.length]);
+  const loadMoreCompanies = React.useCallback(async () => {
+    if (loadingMoreCompanies || !hasMoreCompanies) return;
+    setLoadingMoreCompanies(true);
+    try {
+      const offset = companyOffset ?? directoryRows.length;
+      const next = await fetchRelationships({ offset });
+      const rows = relationshipRows(next);
+      setCompanyOffset(offset + rows.length);
+      setLaterCompaniesHasMore(next.hasMore);
+      setExtraCompanies((current) => [...current, ...rows]);
+    } catch (reason) {
+      onError(explainedRevenueError(reason, "Could not load the next companies."));
+    } finally {
+      setLoadingMoreCompanies(false);
+    }
+  }, [companyOffset, directoryRows.length, hasMoreCompanies, loadingMoreCompanies, onError]);
 
   React.useEffect(() => {
-    const error = actionsQuery.error ?? relationshipsQuery.error;
-    if (error) onError(errMessage(error, "Could not load tasks."));
-  }, [actionsQuery.error, onError, relationshipsQuery.error]);
+    if (actionsQuery.error && actionsQuery.data == null) {
+      onError(errMessage(actionsQuery.error, "Could not load tasks."));
+      return;
+    }
+    if (relationshipsQuery.error) {
+      onError(errMessage(relationshipsQuery.error, "Could not load companies."));
+    }
+  }, [actionsQuery.data, actionsQuery.error, onError, relationshipsQuery.error]);
   const names = new Map(
-    relationships.map((relationship) => [relationship.id, relationship.displayName]),
+    relationships.map((relationship) => [relationship.id, companyName(relationship)]),
   );
   const today = todayValue();
   const visible = tasks.filter((task) => {
-    if (filter === "today") return task.dueAt?.slice(0, 10) === today;
-    if (filter === "overdue") return Boolean(task.dueAt && new Date(task.dueAt).getTime() < now);
+    // Stored as 5pm local, which is already the next UTC date west of UTC.
+    if (filter === "today") return taskIsDueToday(task.dueAt, today);
+    if (filter === "overdue") return taskIsOverdue(task.dueAt, now);
     return true;
   });
   const complete = async (task: RevenueAction) => {
@@ -1424,17 +2875,24 @@ export function TasksView({ onError, onNotice }: ViewProps) {
     <div className="flex min-h-full flex-col bg-background" data-slot="tasks-view">
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3">
         <div className="flex items-center gap-2">
-          <Badge
-            className="h-8 gap-2 border border-border bg-background px-3 text-[13px] font-normal text-primary/60"
-            variant="outline"
+          <Button
+            className="h-8 rounded-none border border-border bg-background px-3 text-[13px] text-primary/60 hover:bg-background-100"
+            onClick={() => chooseDueOrder(!soonestFirst)}
+            type="button"
+            variant="ghost"
           >
             <List className="size-4" /> Sorted by{" "}
-            <Label className="font-normal text-primary">Due date</Label>
-          </Badge>
+            <Label className="font-normal text-primary">
+              {soonestFirst ? "Soonest due" : "Latest due"}
+            </Label>
+            <CaretDown
+              className={cn("size-3 transition-transform", !soonestFirst && "rotate-180")}
+            />
+          </Button>
           <Select value={filter} onValueChange={(value) => setFilter(value as typeof filter)}>
             <SelectTrigger
               id="task-filter"
-              aria-label="Filter tasks"
+              aria-label={taskFilterName(filter)}
               className="h-8 w-auto gap-2 rounded-none border border-border bg-background px-3 text-[13px] text-primary/55 shadow-none hover:bg-background-100"
               size="sm"
             >
@@ -1442,20 +2900,32 @@ export function TasksView({ onError, onNotice }: ViewProps) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="app-shell rounded-none">
-              <SelectItem value="all">Filter</SelectItem>
+              <SelectItem value="all">All tasks</SelectItem>
               <SelectItem value="today">Due today</SelectItem>
               <SelectItem value="overdue">Overdue</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            className="h-8 rounded-none border border-border bg-background px-3 text-[13px] text-primary hover:bg-background-100"
-            variant="ghost"
-          >
-            <SlidersHorizontal className="size-4" /> View settings
-          </Button>
+          <details className="relative">
+            <summary className="flex h-8 cursor-pointer list-none items-center gap-2 border border-border bg-background px-3 text-[13px] text-primary hover:bg-background-100">
+              <SlidersHorizontal className="size-4" /> View settings
+            </summary>
+            <div className="absolute right-0 z-20 mt-1 w-56 border border-border bg-background p-3 shadow-xl">
+              <label
+                className="flex cursor-pointer items-center justify-between gap-4 text-[13px] text-primary/70"
+                htmlFor="tasks-soonest-due"
+              >
+                Soonest due first
+                <Checkbox
+                  aria-label="Soonest due first"
+                  checked={soonestFirst}
+                  id="tasks-soonest-due"
+                  onCheckedChange={(checked) => chooseDueOrder(checked === true)}
+                />
+              </label>
+            </div>
+          </details>
           <Button
             className="h-8 bg-[#3478f6] px-3 text-white hover:bg-[#2f6fe6]"
             size="sm"
@@ -1465,35 +2935,104 @@ export function TasksView({ onError, onNotice }: ViewProps) {
           </Button>
         </div>
       </div>
+      {relationshipsQuery.isError && !listNeverLoaded(actionsQuery.isError, actionsQuery.data) ? (
+        <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+          <p className="text-[13px] text-primary/70">{taskCompaniesFailureCopy()}</p>
+          <Button
+            onClick={() =>
+              void refetchClearingBanner(() => relationshipsQuery.refetch(), onError)
+            }
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            Try again
+          </Button>
+        </div>
+      ) : null}
+      {actionsQuery.isError && actionsQuery.data != null ? (
+        <ListRefreshFailure
+          message={listRefreshFailureCopy("tasks")}
+          onRetry={() => void refetchClearingBanner(() => actionsQuery.refetch(), onError)}
+        />
+      ) : null}
       {loading ? (
         <div className="p-4">
           <ListSkeleton />
         </div>
-      ) : visible.length === 0 ? (
+      ) : listNeverLoaded(actionsQuery.isError, actionsQuery.data) ? (
         <WorkspaceEmptyState
           action={
             <Button
-              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-              onClick={() => setCreating(true)}
+              onClick={() => void refetchClearingBanner(() => actionsQuery.refetch(), onError)}
               size="sm"
+              type="button"
+              variant="outline"
             >
-              <Plus /> New task
+              Try again
             </Button>
           }
+          description={taskListFailureCopy()}
+          image="tasks"
+          learnMore={[]}
+          title="Tasks"
+        />
+      ) : visible.length === 0 ? (
+        <WorkspaceEmptyState
+          action={
+            hasMoreTasks ? (
+              <Button
+                disabled={loadingMoreTasks}
+                onClick={() => void loadMoreTasks()}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {taskRemainderLabel()}
+              </Button>
+            ) : filter === "all" ? (
+              <Button
+                className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+                onClick={() => setCreating(true)}
+                size="sm"
+              >
+                <Plus /> New task
+              </Button>
+            ) : (
+              <Button onClick={() => setFilter("all")} size="sm" type="button" variant="outline">
+                Show all tasks
+              </Button>
+            )
+          }
           description={
-            <>
-              No tasks yet! Create your first
-              <br />
-              task to get started.
-            </>
+            taskListEmptyCopy(filter, hasMoreTasks) ?? (
+              <>
+                No tasks yet! Create your first
+                <br />
+                task to get started.
+              </>
+            )
           }
           image="tasks"
+          learnMore={
+            filter === "all"
+              ? [
+                  { label: "Link a task to a company" },
+                  { label: "Complete a task from the list" },
+                ]
+              : []
+          }
           title="Tasks"
         />
       ) : (
+        <>
         <ul className="divide-y divide-border">
           {visible.map((task) => {
-            const overdue = Boolean(task.dueAt && new Date(task.dueAt).getTime() < now);
+            const overdue = taskIsOverdue(task.dueAt, now);
+            const companyName = taskCompanyName(
+              names.get(task.relationshipId || ""),
+              task.relationshipName,
+            );
             return (
               <li
                 key={task.id}
@@ -1513,9 +3052,21 @@ export function TasksView({ onError, onNotice }: ViewProps) {
                 <Label className="truncate text-[13px] font-medium text-primary">
                   {task.reason}
                 </Label>
-                <CardDescription className="truncate text-[12px]">
-                  {names.get(task.relationshipId || "") || "Unlinked"}
-                </CardDescription>
+                {companyName && onOpenCompany && task.relationshipId ? (
+                  <Button
+                    aria-label={noteCompanyLabel(companyName)}
+                    className="h-auto max-w-full justify-start truncate rounded-none px-0 py-0 text-[12px] font-normal text-primary/55 underline hover:bg-transparent hover:text-primary"
+                    onClick={() => onOpenCompany(task.relationshipId)}
+                    type="button"
+                    variant="ghost"
+                  >
+                    {companyName}
+                  </Button>
+                ) : (
+                  <CardDescription className="truncate text-[12px]">
+                    {companyName || "Unlinked"}
+                  </CardDescription>
+                )}
                 <Badge
                   className={cn(
                     "ml-auto justify-end text-[12px] font-normal",
@@ -1535,11 +3086,35 @@ export function TasksView({ onError, onNotice }: ViewProps) {
             );
           })}
         </ul>
+        {hasMoreTasks ? (
+          <Button
+            className="m-3"
+            disabled={loadingMoreTasks}
+            onClick={() => void loadMoreTasks()}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            {taskRemainderLabel()}
+          </Button>
+        ) : null}
+        </>
       )}
       {creating ? (
         <TaskCreateDialog
           open
+          hasMoreCompanies={hasMoreCompanies}
+          loadingMoreCompanies={loadingMoreCompanies}
+          onLoadMoreCompanies={() => void loadMoreCompanies()}
           relationships={relationships}
+          onAddCompany={
+            onOpenCompanies
+              ? () => {
+                  setCreating(false);
+                  openCompanyCreate(onOpenCompanies);
+                }
+              : undefined
+          }
           onError={onError}
           onOpenChange={setCreating}
           onSaved={() => {

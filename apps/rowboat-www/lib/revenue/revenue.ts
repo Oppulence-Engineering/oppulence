@@ -1,14 +1,15 @@
 // Revenue BFF client (RFC 030). Fetchers stay server-importable so RSC
 // prefetch can share the same keys and Zod contracts as the browser hooks.
 
-import { fetchCommitments } from "@/hooks/queries/utils/fetch-commitments";
+import { commitmentRows, fetchCommitments } from "@/hooks/queries/utils/fetch-commitments";
 import { fetchDigest, fetchImpact } from "@/hooks/queries/utils/fetch-impact";
 import {
+  auditRows,
   fetchOpenPromisesReport,
   fetchReportScan,
   fetchReportScans,
 } from "@/hooks/queries/utils/fetch-report";
-import { fetchRevenueActions } from "@/hooks/queries/utils/fetch-revenue-actions";
+import { actionRows, fetchRevenueActions } from "@/hooks/queries/utils/fetch-revenue-actions";
 import {
   fetchRelationshipSources,
   fetchRelationshipSourceStatuses,
@@ -16,6 +17,7 @@ import {
 import {
   fetchIdentityCandidates,
   fetchPersons,
+  personRows,
   fetchRelationshipAttention,
   fetchRelationshipGraph,
   fetchRelationships,
@@ -104,6 +106,7 @@ import type {
   RelationshipSourceStatus,
   BetaDiagnostics,
   RelationshipGraph,
+  RelationshipIntelligence,
   RelationshipStateSnapshot,
   PersonDeletionReceipt,
   CompanyResearchOutcome,
@@ -174,9 +177,47 @@ function parsed<T>(schema: { parse: (value: unknown) => T }, value: unknown, sub
   }
 }
 
+/**
+ * A failed load should keep its short fallback unless the failure is one we
+ * already explain, such as a rate limit or an API that is down.
+ */
+export function explainedRevenueError(error: unknown, fallback: string): string {
+  const message = error instanceof Error ? error.message.trim() : "";
+  if (!message) return fallback;
+  const friendly = friendlyRevenueError(message);
+  return friendly === message ? fallback : friendly;
+}
+
+const BARE_STATUS_PREFIX = [
+  "Request failed",
+  "Console request failed",
+  "Workflow request failed",
+  "Composio request failed",
+  "Export failed",
+  "Report export failed",
+].join("|");
+const BARE_REQUEST_STATUS = new RegExp(`^(?:${BARE_STATUS_PREFIX}) \\(\\d+\\)\\.?$`);
+
+/**
+ * A save should keep a specific API sentence. A status code with no sentence
+ * is replaced by the action's own fallback. Rate limits and a down API still
+ * use the sentences we already explain.
+ */
+export function shownRequestError(error: unknown, fallback: string): string {
+  const message = error instanceof Error ? error.message.trim() : "";
+  if (!message) return fallback;
+  const friendly = friendlyRevenueError(message);
+  if (friendly !== message) return friendly;
+  if (BARE_REQUEST_STATUS.test(message)) return fallback;
+  return message;
+}
+
 export function friendlyRevenueError(message: string) {
   if (/gmail.*(?:returned 429|user-rate limit exceeded)/i.test(message)) {
     return "Google is temporarily limiting Gmail reads for this account. Please try the audit again in about 15 minutes.";
+  }
+  if (/\brate limit\b|too many requests|\(429\)/i.test(message)) {
+    return "Too many requests were sent from this workspace. Wait a moment, then try again.";
   }
   if (/session refresh is temporarily unavailable|session_unavailable/i.test(message)) {
     return "Your session could not be refreshed. Sign out and sign in again.";
@@ -184,10 +225,29 @@ export function friendlyRevenueError(message: string) {
   if (/rowboat-api is unreachable|upstream_unavailable/i.test(message)) {
     return "The Oppulence API is not reachable. In local dev, start rowboat-api on port 18080, then reload.";
   }
-  if (/^Request failed \(503\)$/.test(message)) {
+  if (/\(503\)/.test(message) && /\bfailed\b|unreachable|unavailable/i.test(message)) {
     return "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.";
   }
   return message;
+}
+
+/**
+ * A failed audit stores the provider error. The audits list, the empty
+ * commitments view, and the report's scanning step all show that string.
+ */
+export function auditFailureCopy(message: string): string {
+  const friendly = friendlyRevenueError(message);
+  if (friendly !== message) return friendly;
+  if (/invalid authentication|invalid_grant|unauthorized|returned 40[13]/i.test(message)) {
+    return "Google stopped accepting the authorization. Reconnect, then run the audit again.";
+  }
+  if (/scan abandoned|scan aborted/i.test(message)) {
+    return "The audit stopped before it finished. Run it again.";
+  }
+  if (/google api|gmail|backend error|returned 5\d\d|deadline exceeded/i.test(message)) {
+    return "Google could not finish reading your mail. Try the audit again in a few minutes.";
+  }
+  return friendly;
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
@@ -276,7 +336,12 @@ export const startScan = (lookbackDays?: number) =>
 
 export const getScan = fetchReportScan;
 
-export const listScans = fetchReportScans;
+export async function listScans(
+  signal?: AbortSignal,
+  offset = 0,
+): Promise<RevenueLeakScan[]> {
+  return auditRows(await fetchReportScans(signal, offset));
+}
 
 export function latestCompletedScan(
   scans: Array<Pick<RevenueLeakScan, "id" | "status" | "threadsSeen">>,
@@ -338,6 +403,76 @@ export function googleSourceHealth(
 export const googleNeedsReconnect = (sources: RelationshipSourceStatus[]) =>
   relationshipSourceHealth(sources) === "needs_reconnect";
 
+export type GoogleAuditLaunch = "run" | "reconnect" | "connect";
+
+/**
+ * An audit reads Gmail. A dead grant has to be repaired, and a workspace with
+ * no Google account cannot start a scan that the API will reject. Only a
+ * usable account is allowed to run.
+ */
+export function googleAuditLaunch(sources: RelationshipSourceStatus[]): GoogleAuditLaunch {
+  const health = relationshipSourceHealth(sources);
+  if (health === "needs_reconnect") return "reconnect";
+  if (health === "not_connected") return "connect";
+  return "run";
+}
+
+/**
+ * The report lists more than one audit in a picker. The stored status is a
+ * slug. The audits page already names the same states in sentences.
+ */
+/**
+ * The register and the audits list share this count. threadsSeen is everything
+ * swept, including newsletters the audit never judged. Once coverage is
+ * recorded, the number is the conversations that were actually read.
+ */
+export function examinedConversationCount(
+  scan?: {
+    threadsSeen?: number;
+    threadsDeepRead?: number;
+    threadsSnippetOnly?: number;
+    threadsSkipped?: number;
+  } | null,
+): number {
+  if (!scan) return 0;
+  const swept = scan.threadsSeen ?? 0;
+  const skipped = scan.threadsSkipped ?? 0;
+  const snippetOnly = scan.threadsSnippetOnly ?? 0;
+  const deepRead = scan.threadsDeepRead ?? 0;
+  return deepRead + snippetOnly > 0 || skipped > 0 ? deepRead + snippetOnly : swept;
+}
+
+export function auditHistoryLabel(status: string): string {
+  switch (status) {
+    case "completed":
+      return "Completed";
+    case "running":
+    case "pending":
+      return "In progress";
+    case "failed":
+      return "Failed";
+    default: {
+      const words = status.replaceAll("_", " ").trim();
+      if (!words) return "Unknown";
+      return words.replace(/\b\w/g, (letter) => letter.toUpperCase());
+    }
+  }
+}
+
+/** The audit button says what the click will do. A missing mailbox is not a scan. */
+export function auditLaunchLabel(input: {
+  needsReconnect: boolean;
+  needsConnect: boolean;
+  scanning: boolean;
+  scanningLabel: string;
+  runLabel: string;
+}): string {
+  if (input.needsReconnect) return "Reconnect Google";
+  if (input.needsConnect) return "Connect Gmail & Calendar";
+  if (input.scanning) return input.scanningLabel;
+  return input.runLabel;
+}
+
 /** Sources still delivering evidence; stopped grants do not count. */
 export const connectedSourceCount = (sources: RelationshipSourceStatus[]) =>
   sources.filter(
@@ -352,7 +487,7 @@ export async function listActions(
   limit = 25,
   signal?: AbortSignal,
 ): Promise<RevenueAction[]> {
-  return viaRequest(() => fetchRevenueActions(queueStatus, limit, signal));
+  return viaRequest(async () => actionRows(await fetchRevenueActions(queueStatus, limit, signal)));
 }
 
 export const getAction = (actionId: string) => call<RevenueAction>(`/revenue-actions/${actionId}`);
@@ -379,12 +514,37 @@ export interface RelationshipFilters {
   engagement?: string;
 }
 
+/** A stored web address. http(s) is kept. A bare host gets https. Other schemes are dropped. */
+export function webAddressHref(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return null;
+  return `https://${trimmed}`;
+}
+
+/** The list and the sheet share one LinkedIn action. A saved page or a company reference is "View profile". Anything else searches. */
+export function companyLinkedInAction(
+  displayName: string,
+  resourceRefs: readonly string[] | null | undefined,
+  linkedinURL?: string | null,
+): { href: string; label: "View profile" | "Find profile" } {
+  const refs = resourceRefs ?? [];
+  const href = companyLinkedInURL(displayName, [...refs], linkedinURL ?? undefined);
+  const saved =
+    Boolean(webAddressHref(linkedinURL)) || refs.some((ref) => ref.startsWith("linkedin:company:"));
+  return { href, label: saved ? "View profile" : "Find profile" };
+}
+
 export const companyLinkedInURL = (
   displayName: string,
   resourceRefs: string[],
   linkedinURL?: string,
 ) => {
-  if (linkedinURL?.startsWith("https://www.linkedin.com/company/")) return linkedinURL;
+  // A saved page is the profile, even when it is not the www company prefix.
+  // Ignoring it sent "View profile" to a name search.
+  const saved = webAddressHref(linkedinURL);
+  if (saved) return saved;
   const prefix = "linkedin:company:";
   const linkedInRef = resourceRefs.find((ref) => ref.startsWith(prefix));
   return linkedInRef
@@ -411,7 +571,8 @@ export async function listRelationships(
   filters: RelationshipFilters = {},
   signal?: AbortSignal,
 ): Promise<RevenueRelationship[]> {
-  return viaRequest(() => fetchRelationships(filters as RelationshipListScope, signal));
+  const page = await viaRequest(() => fetchRelationships(filters as RelationshipListScope, signal));
+  return page.relationships;
 }
 
 export interface RelationshipGraphRequest {
@@ -419,6 +580,8 @@ export interface RelationshipGraphRequest {
   relationshipId?: string;
   depth?: 1 | 2 | 3;
   asOf?: string;
+  offset?: number;
+  observationOffset?: number;
 }
 
 export async function getRelationshipGraph(
@@ -431,7 +594,7 @@ export async function getRelationshipGraph(
 export const getRelationship = (id: string) => call<RelationshipDetail>(`/relationships/${id}`);
 
 export async function listPersons(q = "", signal?: AbortSignal): Promise<RelationshipPerson[]> {
-  return viaRequest(() => fetchPersons(q, signal));
+  return personRows(await viaRequest(() => fetchPersons(q, signal)));
 }
 
 export const getPersonAttributes = (personId: string) =>
@@ -498,30 +661,74 @@ export const deletePerson = (personId: string) =>
 export const acknowledgeMissionControl = (id: string, stateVersion: number, stateHash: string) =>
   viaRequest(() => fetchAcknowledgeMissionControl(id, { stateVersion, stateHash }));
 
+export type TimelinePageCursor = {
+  before?: string;
+  beforeId?: string;
+};
+
+export type RelationshipTimelinePage = {
+  observations: RelationshipObservation[];
+  hasMore: boolean;
+  nextBefore?: string;
+  nextBeforeId?: string;
+};
+
+export type CommunicationTimelinePage = {
+  items: CommunicationTimelineItem[];
+  hasMore: boolean;
+  nextBefore?: string;
+  nextBeforeId?: string;
+};
+
+const emptyCommunicationPage = (): CommunicationTimelinePage => ({ items: [], hasMore: false });
+
+function timelineQuery(limit: number, cursor?: string | TimelinePageCursor): string {
+  const page: TimelinePageCursor = typeof cursor === "string" ? { before: cursor } : { ...cursor };
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (page.before) params.set("before", page.before);
+  if (page.beforeId) params.set("beforeId", page.beforeId);
+  return params.toString();
+}
+
+export const getRelationshipTimelinePage = (
+  id: string,
+  limit = 50,
+  before?: string | TimelinePageCursor,
+  signal?: AbortSignal,
+) =>
+  call<RelationshipTimelinePage>(`/relationships/${id}/timeline?${timelineQuery(limit, before)}`, {
+    signal,
+  }).then((body) => ({
+    observations: body.observations ?? [],
+    hasMore: Boolean(body.hasMore),
+    nextBefore: body.nextBefore,
+    nextBeforeId: body.nextBeforeId,
+  }));
+
 export const getRelationshipTimeline = (id: string, limit = 50, signal?: AbortSignal) =>
-  call<{ observations: RelationshipObservation[] }>(
-    `/relationships/${id}/timeline?limit=${limit}`,
-    { signal },
-  ).then((body) => body.observations ?? []);
+  getRelationshipTimelinePage(id, limit, undefined, signal).then((page) => page.observations);
 
 export const getRelationshipCommunicationTimeline = (
   id: string,
   limit = 50,
-  before?: string,
+  before?: string | TimelinePageCursor,
   signal?: AbortSignal,
 ) =>
-  call<{ items: CommunicationTimelineItem[]; hasMore: boolean; nextBefore?: string }>(
-    `/relationships/${id}/communication-timeline?limit=${limit}${
-      before ? `&before=${encodeURIComponent(before)}` : ""
-    }`,
+  call<CommunicationTimelinePage>(
+    `/relationships/${id}/communication-timeline?${timelineQuery(limit, before)}`,
     { signal },
   )
-    .then((body) => body.items ?? [])
+    .then((body) => ({
+      items: body.items ?? [],
+      hasMore: Boolean(body.hasMore),
+      nextBefore: body.nextBefore,
+      nextBeforeId: body.nextBeforeId,
+    }))
     .catch((error) => {
       // Workspaces without communication intelligence, or an older API,
       // answer 404/409. The company sheet can still render without that pane.
       if (error instanceof RevenueAPIError && (error.status === 404 || error.status === 409)) {
-        return [] as CommunicationTimelineItem[];
+        return emptyCommunicationPage();
       }
       throw error;
     });
@@ -571,10 +778,35 @@ export const getCommunicationInteractionBody = (interactionId: string) =>
     `/revenue-workspaces/current/communications/${encodeURIComponent(interactionId)}/body`,
   );
 
-export const getRelationshipChanges = (id: string) =>
-  call<{ snapshots: RelationshipStateSnapshot[] }>(`/relationships/${id}/changes`).then(
-    (body) => body.snapshots ?? [],
-  );
+export const RELATIONSHIP_CHANGE_PAGE = 2;
+
+export type RelationshipChangePage = {
+  snapshots: RelationshipStateSnapshot[];
+  hasMore: boolean;
+};
+
+export const INTELLIGENCE_OBSERVATION_PAGE = 200;
+
+export const getRelationshipConversationReview = (id: string, offset = 0) =>
+  call<{
+    reviewItems?: RelationshipIntelligence["reviewItems"];
+    governanceReceipts?: RelationshipIntelligence["governanceReceipts"];
+    hasMore?: boolean;
+  }>(`/relationships/${id}/conversation-review?offset=${offset}`).then((body) => ({
+    reviewItems: body.reviewItems ?? [],
+    governanceReceipts: body.governanceReceipts ?? [],
+    hasMore: Boolean(body.hasMore),
+  }));
+
+export const getRelationshipChanges = (id: string, offset = 0) =>
+  call<{ snapshots?: RelationshipStateSnapshot[]; hasMore?: boolean }>(
+    `/relationships/${id}/changes?limit=${RELATIONSHIP_CHANGE_PAGE}${
+      offset > 0 ? `&offset=${offset}` : ""
+    }`,
+  ).then((body) => ({
+    snapshots: body.snapshots ?? [],
+    hasMore: Boolean(body.hasMore),
+  }));
 
 export const getRelationshipEvidence = (relationshipId: string, evidenceId: string) =>
   call<{ observation: RelationshipObservation; payload: unknown }>(
@@ -757,6 +989,43 @@ export const recordOutcome = (actionId: string, input: RecordOutcomeInput) =>
 
 // --- display helpers ---------------------------------------------------------
 
+const ATTENTION_REASON_LABELS: Record<string, string> = {
+  quiet_account: "Quiet company",
+  contact_departed: "Contact left",
+  external_trigger: "Outside event",
+  overdue_commitment: "Overdue promise",
+  unresolved_risk: "Unresolved risk",
+  missing_next_step: "No next step",
+  source_degradation: "Source needs reconnecting",
+  action_outcome_review: "Action needs review",
+  recommendation: "Suggested follow-up",
+};
+
+const STORED_OVERDUE_PROMISE =
+  /^A confirmed commitment is overdue by (\d+) day(s?)\.$/;
+
+/** Older attention rows said commitment. The company sheet says promise. */
+export function attentionExplanationCopy(explanation: string | null | undefined): string {
+  const raw = explanation?.trim() ?? "";
+  const match = STORED_OVERDUE_PROMISE.exec(raw);
+  if (!match?.[1]) return raw;
+  const days = Number(match[1]);
+  const suffix = days === 1 ? "" : "s";
+  return `A confirmed promise is overdue by ${days} day${suffix}.`;
+}
+
+/** Impact lists attention reason codes. The queue already has a sentence. */
+export function attentionReasonLabel(reason: string): string {
+  const known = ATTENTION_REASON_LABELS[reason] ?? DETECTOR_LABELS[reason];
+  if (known) return known;
+  return reason
+    .replaceAll(/[._]+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 export const DETECTOR_LABELS: Record<string, string> = {
   requested_follow_up_due: "Follow-up due",
   unanswered_proposal: "Unanswered proposal",
@@ -765,8 +1034,8 @@ export const DETECTOR_LABELS: Record<string, string> = {
   neglected_referral: "Neglected referral",
   former_customer_reconnect: "Former customer",
   conversation_action_pack: "Conversation action pack",
-  commitment_due: "Commitment due",
-  manual: "Manual",
+  commitment_due: "Promise due",
+  manual: "Added by you",
 };
 
 export const ACTION_TYPE_LABELS: Record<string, string> = {
@@ -779,7 +1048,7 @@ export const ACTION_TYPE_LABELS: Record<string, string> = {
   crm_update: "CRM update",
   follow_up_task: "Follow-up task",
   calendar_hold: "Calendar hold",
-  commitment_rescue: "Commitment rescue",
+  commitment_rescue: "Promise follow-up",
 };
 
 export const RELATIONSHIP_KIND_LABELS: Record<string, string> = {
@@ -801,6 +1070,12 @@ export const OUTCOME_LABELS: Record<string, string> = {
   lost: "Lost",
   dismissed: "Dismissed",
   bad_recommendation: "Bad recommendation",
+  deal_advanced: "Deal moved forward",
+  onboarding_progressed: "Onboarding moved forward",
+  renewed: "Renewed",
+  escalated: "Escalated",
+  churned: "Churned",
+  corrected: "Corrected",
 };
 
 // Outcomes an operator can log by hand from the audit view.
@@ -821,14 +1096,162 @@ export const QUEUE_FILTERS: { value: string; label: string }[] = [
 ];
 
 export const PRIORITY_COMPONENT_LABELS: Record<string, string> = {
-  relationship_value: "Relationship value",
-  commitment_urgency: "Commitment urgency",
+  relationship_value: "Company value",
+  commitment_urgency: "Promise urgency",
   recency_signal: "Recency",
   opportunity_signal: "Opportunity",
   evidence_quality: "Evidence quality",
   uncertainty_penalty: "Uncertainty",
   contact_risk_penalty: "Contact risk",
+  outcome_learning: "Earlier outcomes",
+  commitment_due_state: "Due date",
+  source_completeness: "Source coverage",
+  preferred_channel: "Preferred channel",
 };
+
+const COMPLETENESS_EXPLANATIONS: Record<string, string> = {
+  "No source connection has completed its first useful sync.":
+    "Connect a source before these details can fill in.",
+  "One or more material values have no accessible supporting evidence.":
+    "Account details have no source you can open.",
+  "Required source evidence is current.": "The details you can open are up to date.",
+  "Identity review is required before acting on this relationship.":
+    "Confirm who this company is before you act.",
+  "A required source is rebuilding; partial state is visible.":
+    "A source is still updating, so only some details are shown.",
+  "A required source is stale or disconnected.": "A source needs reconnecting.",
+  "Backfill is incomplete; only partial state is shown.":
+    "Older history is still loading, so only some details are shown.",
+  "A required source scope is missing.": "A source is missing permission for something we need.",
+  "Accepted evidence is waiting for the durable relationship projector.":
+    "Accepted details are still being saved.",
+  "Relationship projection requires operator repair before this state is safe to act on.":
+    "This company needs a repair before you act on it.",
+};
+
+/** Completeness text is stored for the model. The sheet says what the person can do. */
+export function completenessExplanationCopy(explanation: string): string {
+  const raw = explanation.trim();
+  return COMPLETENESS_EXPLANATIONS[raw] ?? raw;
+}
+
+/**
+ * The badge already counts details that have a source. These two stored
+ * sentences claim that none do, so they only fit when the count is still zero.
+ */
+export function missionControlGapCopy(
+  explanation: string,
+  supported: number,
+  total: number,
+): string {
+  const shown = Number.isFinite(supported) ? Math.max(0, Math.round(supported)) : 0;
+  const all = Number.isFinite(total) ? Math.max(0, Math.round(total)) : 0;
+  const raw = explanation.trim();
+  const deniesEverySource =
+    raw === "No source connection has completed its first useful sync." ||
+    raw === "One or more material values have no accessible supporting evidence.";
+  if (deniesEverySource && shown > 0 && all > shown) {
+    const rest = all - shown;
+    return rest === 1
+      ? "1 account detail still needs a source."
+      : `${rest} account details still need a source.`;
+  }
+  return completenessExplanationCopy(explanation);
+}
+
+const CONFIRMED_FOLLOW_UP_REASON =
+  /^You confirmed this follow-up from source evidence meeting\/.+\.$/;
+
+/** A confirmed meeting stored the observation id in the reason. The queue names the meeting. */
+export function actionReasonCopy(reason: string | null | undefined): string {
+  const raw = reason?.trim() ?? "";
+  if (!raw) return "";
+  if (CONFIRMED_FOLLOW_UP_REASON.test(raw)) return "You confirmed this follow-up from the meeting.";
+  return raw;
+}
+
+/**
+ * A shared-plan link redacts the owner to an internal token. A person or an
+ * email still has a name.
+ */
+export function sharedPlanOwnerLabel(owner?: string | null): string {
+  const who = (owner ?? "").trim();
+  if (!who || who === "plan-participant") return "";
+  if (/^[0-9a-f-]{36}$/i.test(who)) return "";
+  if (/^[a-z0-9_:-]+$/.test(who)) return "";
+  return who;
+}
+
+/** The link names the version. The stored hash stays off the page. */
+export function sharedPlanVersionLabel(version: number): string {
+  const number = Number.isFinite(version) && version > 0 ? Math.floor(version) : 1;
+  return `Version ${number}`;
+}
+
+/**
+ * The page removes the token from the address as soon as it is read. A second
+ * pass, including the development double render, still has the token.
+ */
+export function planResponseToken(hash: string, remembered: string): string {
+  const next = hash.replace(/^#/, "").trim();
+  return next || remembered.trim();
+}
+
+/** A ranking part is a stored slug. The review sheet names the factor. */
+export function priorityComponentLabel(key: string): string {
+  const known = PRIORITY_COMPONENT_LABELS[key];
+  if (known) return known;
+  const words = key.replaceAll(/[._]+/g, " ").trim();
+  if (!words) return "Factor";
+  return words.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+/** A dismissal reason is often a stored slug. The dismissed queue names it. */
+export function dismissReasonLabel(reason: string | null | undefined): string {
+  const raw = (reason ?? "").trim();
+  if (!raw) return "";
+  const known: Record<string, string> = {
+    not_relevant: "Not relevant",
+    already_handled: "Already handled",
+    resolved_by_new_evidence: "Newer evidence arrived",
+    changed_my_mind: "Changed my mind",
+  };
+  const named = known[raw];
+  if (named) return named;
+  if (/^[a-z0-9_]+$/.test(raw)) {
+    return raw
+      .split("_")
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  }
+  return raw;
+}
+
+/** A snoozed action stores a wake time. The queue says when it returns. */
+export function snoozeWakeCopy(until: string | null | undefined): string {
+  const when = relativeTime(until);
+  if (!when) return "";
+  if (when.endsWith("ago")) return `Snooze ended ${when}.`;
+  return `Comes back ${when}.`;
+}
+
+/**
+ * A save more than a minute after the first write is an edit. Autosave can
+ * write twice in the same moment, and that is still the note being created.
+ */
+export function workspaceNoteActivityLabel(note: {
+  createdAt?: string;
+  occurredAt: string;
+}): string {
+  const activity = relativeTime(note.occurredAt);
+  const created = Date.parse(note.createdAt?.trim() || note.occurredAt);
+  const edited = Date.parse(note.occurredAt);
+  if (Number.isFinite(created) && Number.isFinite(edited) && edited - created > 60_000) {
+    return `Edited ${activity}`;
+  }
+  return activity;
+}
 
 export function relativeTime(iso?: string | null): string {
   if (!iso) return "";
@@ -860,7 +1283,7 @@ export async function listCommitments(
   filter: CommitmentRegisterFilter = {},
   signal?: AbortSignal,
 ): Promise<RegisterEntry[]> {
-  return viaRequest(() => fetchCommitments(filter, signal));
+  return commitmentRows(await viaRequest(() => fetchCommitments(filter, signal)));
 }
 
 export async function getCommitmentRecord(

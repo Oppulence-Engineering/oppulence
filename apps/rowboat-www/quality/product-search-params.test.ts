@@ -10,7 +10,11 @@ describe("product search-params caches", () => {
     expect(reportSearchParamsCache.parse({}).scan).toBeNull();
     expect(reportSearchParamsCache.parse({ scan: "scan-1" }).scan).toBe("scan-1");
     expect(revenueSearchParamsCache.parse({}).tab).toBe("commitments");
+    expect(revenueSearchParamsCache.parse({}).company).toBeNull();
     expect(revenueSearchParamsCache.parse({ tab: "queue" }).tab).toBe("queue");
+    expect(revenueSearchParamsCache.parse({ tab: "relationships", company: "company-1" }).company).toBe(
+      "company-1",
+    );
     expect(settingsSearchParamsCache.parse({}).settings).toBe("overview");
     expect(settingsSearchParamsCache.parse({ settings: "connections" }).settings).toBe(
       "connections",

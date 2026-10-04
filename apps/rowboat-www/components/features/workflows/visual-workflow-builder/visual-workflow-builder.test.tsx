@@ -56,8 +56,58 @@ describe("VisualWorkflowBuilder", () => {
 
     const component = screen.getByRole("region", { name: "Example visual-workflow-builder" });
     expect(component).toHaveAttribute("data-slot", "visual-workflow-builder");
-    expect(component).toHaveTextContent("Communication received");
-    expect(component).toHaveTextContent("Draft recovery email");
+    expect(component).toHaveTextContent("Mail or message received");
+    expect(component).toHaveTextContent("Gmail, Calendar, or HubSpot");
+    expect(component).not.toHaveTextContent("Slack");
+    expect(
+      compileVisualWorkflow({ ...workflow, actions: [...workflow.actions] }).triggers
+        .eventMatchCriteria,
+    ).toBe(
+      "A Gmail, Calendar, or HubSpot event materially changes a customer relationship, commitment, objection, decision, or next step.",
+    );
+    expect(component).toHaveTextContent("Read the company, the people on it, and its open promises.");
+    expect(component).not.toHaveTextContent("evidence");
+    expect(component).toHaveTextContent("Step 1");
+    expect(component).toHaveTextContent("Step 2");
+    expect(component).not.toHaveTextContent("Then ·");
+    expect(component).toHaveTextContent("Review company");
+    expect(component).not.toHaveTextContent("Review account");
+    expect(component).not.toHaveTextContent("Step configuration");
+    expect(component).toHaveTextContent("Draft a follow-up");
+    expect(component).not.toHaveTextContent("Draft recovery email");
+    expect(component).toHaveTextContent("Add step");
+    expect(component).not.toHaveTextContent("Read relationships");
+  });
+
+  it("hides add step on a workflow the workspace cannot edit", () => {
+    render(
+      <VisualWorkflowBuilder
+        disabled
+        onChange={vi.fn()}
+        value={{ ...workflow, actions: [...workflow.actions] }}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Add step" })).not.toBeInTheDocument();
+  });
+
+  it("names a repeating schedule without calling it a cadence", () => {
+    render(
+      <VisualWorkflowBuilder
+        onChange={vi.fn()}
+        value={{
+          version: 1,
+          trigger: { kind: "schedule", cronExpr: "*/15 * * * *" },
+          actions: ["review-account"],
+        }}
+      />,
+    );
+
+    expect(screen.getByRole("combobox", { name: "Start when, Scheduled time" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "How often, Every 15 minutes" })).toBeInTheDocument();
+    expect(screen.getByText("How often")).toBeInTheDocument();
+    expect(screen.getAllByText("Run on a repeating schedule.")).toHaveLength(2);
+    expect(screen.queryByText(/cadence/i)).not.toBeInTheDocument();
   });
 
   it("removes a selected action from the persisted definition", () => {
@@ -69,14 +119,40 @@ describe("VisualWorkflowBuilder", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Select action:0" }));
+    expect(screen.getByRole("combobox", { name: "Action, Review company" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: "Which companies, Matching company and people" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Which companies")).toBeInTheDocument();
+    expect(screen.queryByText("Company scope")).not.toBeInTheDocument();
+
     fireEvent.click(screen.getByRole("button", { name: "Select action:1" }));
-    fireEvent.click(screen.getByRole("button", { name: "Remove Draft recovery email" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove Draft a follow-up" }));
 
     expect(onChange).toHaveBeenCalledWith({
       ...workflow,
       actions: ["review-account"],
       stepConfig: {},
     });
+  });
+
+  it("names the brief step for what it saves", () => {
+    render(
+      <VisualWorkflowBuilder
+        onChange={vi.fn()}
+        value={{
+          version: 1,
+          trigger: { kind: "schedule", cronExpr: "*/15 * * * *" },
+          actions: ["write-brief"],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Save a brief")).toBeInTheDocument();
+    expect(screen.getByText("Keep a brief this workflow can update.")).toBeInTheDocument();
+    expect(screen.queryByText("Publish live brief")).not.toBeInTheDocument();
+    expect(screen.queryByText(/evidence-backed/i)).not.toBeInTheDocument();
   });
 
   it("compiles communication triggers and approval-gated actions for the real runtime", () => {

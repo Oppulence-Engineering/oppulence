@@ -9,4 +9,13 @@ describe("ActionAuditSheet", () => {
   it("keeps the named product export at the generator path", () => {
     expect(source).toContain("export function ActionAuditSheet");
   });
+
+  it("names a proposal status the same way the approval queue does", () => {
+    expect(source).toContain("actionStatusLabel(p.status)");
+    expect(source).toContain(
+      'setError(friendlyRevenueError(errMessage(e, "Could not load the audit trail.")))',
+    );
+    expect(source).not.toContain('p.status.replace(/_/g, " ")');
+    expect(source).not.toContain("Executed Unconfirmed");
+  });
 });

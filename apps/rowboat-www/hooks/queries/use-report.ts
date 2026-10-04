@@ -2,9 +2,12 @@
 
 import "client-only";
 
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import {
+  auditPageHasMore,
+  auditRows,
   fetchOpenPromisesReport,
   fetchReportScan,
   fetchReportScans,
@@ -15,13 +18,62 @@ import {
   REPORT_SCAN_LIST_STALE_TIME,
   reportKeys,
 } from "@/hooks/queries/utils/report-keys";
+import type { RevenueLeakScan } from "@/lib/revenue/types";
 
 export function useReportScanList() {
-  return useQuery({
+  const query = useQuery({
     queryKey: reportKeys.scanList(),
     queryFn: ({ signal }) => fetchReportScans(signal),
     staleTime: REPORT_SCAN_LIST_STALE_TIME,
   });
+  const [earlier, setEarlier] = useState<RevenueLeakScan[]>([]);
+  const [laterHasMore, setLaterHasMore] = useState<boolean | null>(null);
+  const [loadingEarlierAudits, setLoadingEarlierAudits] = useState(false);
+  const [earlierAuditsError, setEarlierAuditsError] = useState<string | null>(null);
+  useEffect(() => {
+    setEarlier([]);
+    setLaterHasMore(null);
+    setEarlierAuditsError(null);
+  }, [query.dataUpdatedAt]);
+
+  const data = useMemo((): RevenueLeakScan[] | undefined => {
+    if (query.data == null) return undefined;
+    const rows = auditRows(query.data);
+    if (earlier.length === 0) return rows;
+    const seen = new Set(rows.map((scan) => scan.id));
+    return [...rows, ...earlier.filter((scan) => !seen.has(scan.id))];
+  }, [earlier, query.data]);
+
+  const hasMoreAudits =
+    laterHasMore ?? (auditRows(query.data).length > 0 && auditPageHasMore(query.data));
+  const loadEarlierAudits = useCallback(async () => {
+    const loaded = auditRows(query.data).length + earlier.length;
+    if (loadingEarlierAudits || loaded === 0) return;
+    setLoadingEarlierAudits(true);
+    setEarlierAuditsError(null);
+    try {
+      const next = await fetchReportScans(undefined, loaded);
+      const rows = auditRows(next);
+      setEarlier((current) => {
+        const seen = new Set(current.map((scan) => scan.id));
+        return [...current, ...rows.filter((scan) => !seen.has(scan.id))];
+      });
+      setLaterHasMore(auditPageHasMore(next));
+    } catch {
+      setEarlierAuditsError("Could not load earlier audits.");
+    } finally {
+      setLoadingEarlierAudits(false);
+    }
+  }, [earlier.length, loadingEarlierAudits, query.data]);
+
+  return {
+    ...query,
+    data,
+    earlierAuditsError,
+    hasMoreAudits,
+    loadEarlierAudits,
+    loadingEarlierAudits,
+  };
 }
 
 export function useReportScan(

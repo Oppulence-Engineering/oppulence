@@ -60,7 +60,10 @@ describe("validated console adapter", () => {
       new Response(JSON.stringify({ code: "not_found", detail: "not found" }), { status: 404 }),
     );
 
-    await expect(listConsoleResources("note_favorite")).resolves.toEqual([]);
+    await expect(listConsoleResources("note_favorite")).resolves.toEqual({
+      resources: [],
+      hasMore: false,
+    });
   });
 
   it("exposes stable API errors", async () => {

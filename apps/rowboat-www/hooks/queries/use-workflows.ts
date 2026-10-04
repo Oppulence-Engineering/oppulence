@@ -35,6 +35,7 @@ export function useWorkflowRuns(filters: WorkflowRunFilters) {
       status: filters.status ?? "all",
       trigger: filters.trigger ?? "all",
       executor: filters.executor ?? "all",
+      slug: filters.slug ?? "",
     }),
     queryFn: ({ pageParam, signal }) =>
       fetchWorkflowRuns({ ...filters, cursor: pageParam }, signal),

@@ -3,6 +3,8 @@ export type CommitmentRegisterScope = {
   accountId: string;
   owner: string;
   includeCandidates: boolean;
+  /** Set when home asked for the past-due slice. Empty means the view's own query. */
+  dueBefore?: string;
 };
 
 export const commitmentKeys = {

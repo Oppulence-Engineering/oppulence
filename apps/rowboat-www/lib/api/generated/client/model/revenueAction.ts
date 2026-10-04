@@ -16,7 +16,6 @@ import type { RevenueActionExecutionStatus } from "./revenueActionExecutionStatu
 import type { RevenueActionPolicyStatus } from "./revenueActionPolicyStatus";
 import type { RevenueActionPriorityComponents } from "./revenueActionPriorityComponents";
 import type { RevenueActionQueueStatus } from "./revenueActionQueueStatus";
-import type { RevenueActionReason } from "./revenueActionReason";
 import type { RevenueActionReconciliationStatus } from "./revenueActionReconciliationStatus";
 
 /**
@@ -80,8 +79,8 @@ export interface RevenueAction {
   providerThreadId?: string;
   /** Operator triage state. */
   queueStatus: RevenueActionQueueStatus;
-  /** Reason code for the ledger entry. */
-  reason: RevenueActionReason;
+  /** Why this action was proposed. */
+  reason: string;
   /** Recipient email address. */
   recipientEmail?: string;
   /** Number of bounded provider lookups performed. */
@@ -102,6 +101,8 @@ export interface RevenueAction {
   reconciliationStatus?: RevenueActionReconciliationStatus;
   /** Owning relationship id. */
   relationshipId?: string;
+  /** Owning company name. The directory is paged, so a task still names a company that is not on the first page. */
+  relationshipName?: string;
   /** Current revision number. */
   revision: number;
   /** Canonical hash of the revision content. */

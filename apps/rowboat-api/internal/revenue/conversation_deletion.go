@@ -115,6 +115,81 @@ func defaultStateValue(dimension string) string {
 	}
 }
 
+func deletionChangedDimensions(deleted map[string]bool) []string {
+	changed := make([]string, 0, len(deleted))
+	for dimension := range deleted {
+		switch dimension {
+		case "risk":
+			changed = append(changed, "risks")
+		case "milestone":
+			changed = append(changed, "milestones")
+		default:
+			changed = append(changed, dimension)
+		}
+	}
+	if len(changed) == 0 {
+		changed = append(changed, "evidence")
+	}
+	sort.Strings(changed)
+	return changed
+}
+
+// recordConversationDeletionSnapshot writes the checkpoint Mission Control
+// requires for any state version above zero. Deletion removes the previous
+// snapshots because they cite conversation assertions that no longer exist.
+func recordConversationDeletionSnapshot(
+	ctx context.Context,
+	client *ent.Client,
+	ws *ent.RevenueWorkspace,
+	u *ent.User,
+	rel *ent.Relationship,
+	selected map[string]*ent.RelationshipAssertion,
+	deleted map[string]bool,
+	evaluatedAt time.Time,
+) error {
+	next := RelationshipState{
+		Lifecycle:    rel.Lifecycle,
+		Engagement:   rel.Engagement,
+		Sentiment:    rel.Sentiment,
+		Health:       rel.Health,
+		Summary:      rel.Summary,
+		NextAction:   rel.NextAction,
+		StateReason:  rel.StateReason,
+		Risks:        append([]string(nil), rel.Risks...),
+		Milestones:   append([]string(nil), rel.Milestones...),
+		StateVersion: rel.StateVersion,
+	}
+	stateHash, assertionIDs, err := relationshipProjectionHash(next, selected)
+	if err != nil {
+		return err
+	}
+	stateJSON, err := json.Marshal(next)
+	if err != nil {
+		return err
+	}
+	updated, err := rel.Update().
+		SetStateHash(stateHash).
+		SetProjectorVersion(relationshipProjectorVersion).
+		SetProjectedAt(evaluatedAt).
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = client.RelationshipStateSnapshot.Create().
+		SetWorkspace(ws).
+		SetRelationship(updated).
+		SetUser(u).
+		SetVersion(updated.StateVersion).
+		SetStateJSON(string(stateJSON)).
+		SetStateHash(stateHash).
+		SetProjectorVersion(relationshipProjectorVersion).
+		SetEvaluatedAt(evaluatedAt).
+		SetChangedDimensions(deletionChangedDimensions(deleted)).
+		SetAssertionIds(assertionIDs).
+		Save(ctx)
+	return err
+}
+
 // RequestConversationDeletion executes legal-hold-aware server deletion idempotently.
 func (s *Service) RequestConversationDeletion(
 	ctx context.Context,
@@ -384,6 +459,13 @@ func (s *Service) RequestConversationDeletion(
 		}
 	}
 	if _, err := update.Save(ctx); err != nil {
+		return ConversationDeletionReceipt{}, err
+	}
+	saved, err := txc.Relationship.Get(ctx, txrel.ID)
+	if err != nil {
+		return ConversationDeletionReceipt{}, err
+	}
+	if err := recordConversationDeletionSnapshot(ctx, txc, txws, txu, saved, selected, deletedDimensions, now); err != nil {
 		return ConversationDeletionReceipt{}, err
 	}
 

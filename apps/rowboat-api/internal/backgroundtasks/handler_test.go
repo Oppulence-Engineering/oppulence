@@ -7,9 +7,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
@@ -705,5 +707,94 @@ func TestBackgroundTaskCreateValidation(t *testing.T) {
 	})
 	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "invalid startedAt") {
 		t.Fatalf("invalid startedAt: want 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestListRunsExactPageIsNotAnotherPage(t *testing.T) {
+	client, u, router := setupTest(t)
+	ctx := auth.WithInternal(context.Background())
+	task := client.BackgroundTask.Create().
+		SetUser(u).SetSlug("exact-runs").SetName("Exact Runs").
+		SetInstructions("x").SetExecutionTarget("api").
+		SaveX(ctx)
+	base := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	for i := 1; i <= 2; i++ {
+		client.BackgroundTaskRun.Create().
+			SetUser(u).SetTask(task).
+			SetRunID("exact-" + strconv.Itoa(i)).
+			SetTrigger("manual").SetStatus("succeeded").SetExecutor("api").
+			SetCreatedAt(base.Add(time.Duration(i) * time.Minute)).
+			SaveX(ctx)
+	}
+
+	exact := decodeBody[runsResponse](t, authedJSON(t, router, u, http.MethodGet, "/v1/background-tasks/exact-runs/runs?limit=2", nil))
+	if exact.NextCursor != "" || len(exact.Runs) != 2 {
+		t.Fatalf("exact page cursor=%q len=%d", exact.NextCursor, len(exact.Runs))
+	}
+	account := decodeBody[runsResponse](t, authedJSON(t, router, u, http.MethodGet, "/v1/background-task-runs?limit=2", nil))
+	if account.NextCursor != "" || len(account.Runs) != 2 {
+		t.Fatalf("exact account page cursor=%q len=%d", account.NextCursor, len(account.Runs))
+	}
+
+	client.BackgroundTaskRun.Create().
+		SetUser(u).SetTask(task).
+		SetRunID("exact-3").
+		SetTrigger("manual").SetStatus("succeeded").SetExecutor("api").
+		SetCreatedAt(base.Add(3 * time.Minute)).
+		SaveX(ctx)
+	page := decodeBody[runsResponse](t, authedJSON(t, router, u, http.MethodGet, "/v1/background-tasks/exact-runs/runs?limit=2", nil))
+	if page.NextCursor == "" || len(page.Runs) != 2 {
+		t.Fatalf("full page cursor=%q len=%d", page.NextCursor, len(page.Runs))
+	}
+	shown := page.Runs[0].RunID + "," + page.Runs[1].RunID
+	if strings.Contains(shown, "exact-1") || !strings.Contains(shown, "exact-3") {
+		t.Fatalf("first page = %s, want the two newest", shown)
+	}
+	next := decodeBody[runsResponse](t, authedJSON(
+		t, router, u, http.MethodGet,
+		"/v1/background-tasks/exact-runs/runs?limit=2&cursor="+url.QueryEscape(page.NextCursor),
+		nil,
+	))
+	if next.NextCursor != "" || len(next.Runs) != 1 || next.Runs[0].RunID != "exact-1" {
+		t.Fatalf("last page cursor=%q len=%d", next.NextCursor, len(next.Runs))
+	}
+}
+
+func TestListRunEventsExactPageIsNotAnotherPage(t *testing.T) {
+	client, u, router := setupTest(t)
+	ctx := auth.WithInternal(context.Background())
+	task := client.BackgroundTask.Create().
+		SetUser(u).SetSlug("exact-events").SetName("Exact Events").
+		SetInstructions("x").SetExecutionTarget("api").
+		SaveX(ctx)
+	run := client.BackgroundTaskRun.Create().
+		SetUser(u).SetTask(task).
+		SetRunID("exact-event-run").SetTrigger("manual").SetStatus("succeeded").SetExecutor("api").
+		SaveX(ctx)
+	for seq := 1; seq <= 2; seq++ {
+		client.BackgroundTaskRunEvent.Create().
+			SetUser(u).SetTask(task).SetRun(run).
+			SetSeq(seq).SetEventType("note").
+			SetEventJSON(`{"message":"Event ` + strconv.Itoa(seq) + `"}`).
+			SaveX(ctx)
+	}
+
+	exact := authedJSON(t, router, u, http.MethodGet, "/v1/background-tasks/exact-events/runs/exact-event-run/events?limit=2", nil)
+	if exact.Code != http.StatusOK || strings.Contains(exact.Body.String(), "nextSeq") {
+		t.Fatalf("exact page = %d %s", exact.Code, exact.Body.String())
+	}
+	client.BackgroundTaskRunEvent.Create().
+		SetUser(u).SetTask(task).SetRun(run).
+		SetSeq(3).SetEventType("note").
+		SetEventJSON(`{"message":"Event 3"}`).
+		SaveX(ctx)
+	page := authedJSON(t, router, u, http.MethodGet, "/v1/background-tasks/exact-events/runs/exact-event-run/events?limit=2", nil)
+	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), `"nextSeq":2`) || strings.Contains(page.Body.String(), "Event 3") {
+		t.Fatalf("full page = %d %s", page.Code, page.Body.String())
+	}
+	next := authedJSON(t, router, u, http.MethodGet, "/v1/background-tasks/exact-events/runs/exact-event-run/events?limit=2&afterSeq=2", nil)
+	body := next.Body.String()
+	if next.Code != http.StatusOK || strings.Contains(body, "nextSeq") || !strings.Contains(body, "Event 3") {
+		t.Fatalf("last page = %d %s", next.Code, body)
 	}
 }

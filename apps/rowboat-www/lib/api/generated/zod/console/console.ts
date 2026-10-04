@@ -277,7 +277,7 @@ export const PatchConsolePreferences500Response = zod
   );
 
 /**
- * Lists only the caller's resources in the exact organization workspace asserted by the token.
+ * Lists only the caller's resources in the exact organization workspace asserted by the token. A full page is the end of the list when hasMore is false.
  * @summary List console resources
  */
 export const listConsoleResourcesQueryLimitMax = 100;
@@ -332,6 +332,7 @@ export const listConsoleResources200ResponseResourcesItemSortOrderMax = 1000000;
 
 export const ListConsoleResources200Response = zod
   .strictObject({
+    hasMore: zod.boolean().optional().describe("Another resource exists beyond this page."),
     limit: zod.int().describe("Applied page limit."),
     offset: zod.int().describe("Applied page offset."),
     resources: zod
@@ -442,7 +443,9 @@ export const ListConsoleResources200Response = zod
       )
       .describe("Resources ordered by sortOrder, createdAt descending, then id."),
   })
-  .describe("Bounded deterministic resource page.");
+  .describe(
+    "Bounded deterministic resource page. A full page is the end of the list when hasMore is false.",
+  );
 
 export const ListConsoleResources400Response = zod
   .strictObject({
