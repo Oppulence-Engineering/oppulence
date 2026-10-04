@@ -844,6 +844,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if mail := relationshipSheetMailMatch(needle); mail != nil {
 			parts = append(parts, mail)
 		}
+		if empty := relationshipSheetEmptyCopyMatch(needle); empty != nil {
+			parts = append(parts, empty)
+		}
 		// The subject and the address are the first two lines of each thread.
 		// Searching either word has to open that company.
 		parts = append(parts, relationship.HasMailThreadsWith(mailthread.Or(
@@ -871,7 +874,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if people := relationshipSheetPeopleMatch(needle); people != nil {
 			parts = append(parts, people)
 		}
-		if activity := relationshipSheetActivityMatch(needle); activity != nil {
+		// "Nothing recorded yet" contains "recorded", and the calendar
+		// sentence contains "calendar". Those words are also activity
+		// headings. The empty sentence is the company with no history.
+		if activity := relationshipSheetActivityMatch(needle); activity != nil && !sheetEmptySentenceOwnsActivity(needle) {
 			parts = append(parts, activity)
 		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
@@ -3483,7 +3489,23 @@ func relationshipOpenActionCount(compare string, n int) predicate.Relationship {
 // fallback and does not mean a company with no mail.
 func relationshipSheetMailMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
-	if sheetPhraseMatches("no gmail threads linked yet", needle) {
+	// A confirmed meeting keeps the mailbox empty and adds "Confirmed
+	// meetings are in Activity." The shorter sentence is the mailbox
+	// with no meeting in Activity.
+	longMail := "no gmail threads linked yet. confirmed meetings are in activity."
+	shortMail := "no gmail threads linked yet"
+	switch {
+	case labelPhraseMatches(longMail, needle):
+		preds = append(preds, relationship.And(
+			relationshipMailThreadCount("=", 0),
+			relationshipHasMeetingObservation(),
+		))
+	case labelPhraseMatches(shortMail, needle):
+		preds = append(preds, relationship.And(
+			relationshipMailThreadCount("=", 0),
+			relationship.Not(relationshipHasMeetingObservation()),
+		))
+	case sheetPhraseMatches(shortMail, needle):
 		preds = append(preds, relationshipMailThreadCount("=", 0))
 	}
 	if sheetPhraseMatches("email conversation", needle) {
@@ -3515,6 +3537,81 @@ func relationshipSheetMailMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// relationshipSheetEmptyCopyMatch matches the empty lines on the company
+// sheet. The mail timeline is communication records, not Gmail threads.
+// Activity history is observations. What changed is snapshots. A meeting
+// observation or a promise lengthens the empty line, so the shorter
+// sentence stays on the company that has neither.
+func relationshipSheetEmptyCopyMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	longTimeline := "no gmail or calendar events yet. confirmed meetings are in activity."
+	shortTimeline := "no gmail or calendar events yet."
+	switch {
+	case labelPhraseMatches(longTimeline, needle):
+		preds = append(preds, relationship.And(
+			relationship.Not(relationshipHasVisibleCommunication()),
+			relationshipHasMeetingObservation(),
+		))
+	case labelPhraseMatches(shortTimeline, needle):
+		preds = append(preds, relationship.And(
+			relationship.Not(relationshipHasVisibleCommunication()),
+			relationship.Not(relationshipHasMeetingObservation()),
+		))
+	}
+	if labelPhraseMatches("nothing recorded yet.", needle) {
+		preds = append(preds, relationship.Not(relationship.HasObservations()))
+	}
+	longChange := "no account details have changed yet. promises and meetings are in the sections below."
+	shortChange := "no account details have changed yet."
+	switch {
+	case labelPhraseMatches(longChange, needle):
+		preds = append(preds, relationship.And(
+			relationship.Not(relationship.HasSnapshots()),
+			relationship.Or(
+				relationship.HasObservations(),
+				relationship.HasCommitments(),
+			),
+		))
+	case labelPhraseMatches(shortChange, needle):
+		preds = append(preds, relationship.And(
+			relationship.Not(relationship.HasSnapshots()),
+			relationship.Not(relationship.HasObservations()),
+			relationship.Not(relationship.HasCommitments()),
+		))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+// sheetEmptySentenceOwnsActivity is true when the query is an empty-sheet
+// sentence that happens to contain an activity heading. "recorded" and
+// "calendar" are those headings.
+func sheetEmptySentenceOwnsActivity(needle string) bool {
+	for _, phrase := range []string{
+		"no gmail or calendar events yet.",
+		"nothing recorded yet.",
+	} {
+		if labelPhraseMatches(phrase, needle) {
+			return true
+		}
+	}
+	return false
+}
+
+func relationshipHasMeetingObservation() predicate.Relationship {
+	return relationship.HasObservationsWith(relationshipobservation.SourceEQ("meeting"))
+}
+
+func relationshipHasVisibleCommunication() predicate.Relationship {
+	return relationship.HasCommunicationInteractionsWith(communicationinteraction.DeletedEQ(false))
 }
 
 // relationshipSheetReviewMatch matches the review line on the company sheet.

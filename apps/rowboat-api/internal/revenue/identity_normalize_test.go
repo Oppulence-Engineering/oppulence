@@ -692,6 +692,125 @@ func TestRelationshipSearchFindsTheSheetMailWords(t *testing.T) {
 	assertCompanyQuery("date")
 }
 
+func TestRelationshipSearchFindsTheEmptySheetSentences(t *testing.T) {
+	f := newFixture(t)
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	empty := makeCompany("Quay Empty")
+	meet := makeCompany("Quay Meet")
+	note := makeCompany("Quay Note")
+	inbox := makeCompany("Quay Inbox")
+	promise := makeCompany("Quay Promise")
+	changed := makeCompany("Quay Changed")
+	deleted := makeCompany("Quay Deleted")
+	calendar := makeCompany("Quay Calendar")
+	observed := makeCompany("Quay Observed")
+	_ = empty
+
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	at := time.Date(2026, 10, 2, 12, 0, 0, 0, time.UTC)
+	observe := func(rel *ent.Relationship, source, externalID string) {
+		t.Helper()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource(source).SetExternalID(externalID).
+			SetEventType("note").SetOccurredAt(at).SetReceivedAt(at).
+			SetSummary("A note").SetContentHash(externalID).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	observe(meet, "meeting", "quay-meet")
+	observe(note, "desktop_note", "quay-note")
+	observe(calendar, "calendar", "quay-calendar")
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(observed).
+		SetSource("user").SetExternalID("quay-observed").
+		SetEventType("relationship.observed").SetOccurredAt(at).SetReceivedAt(at).
+		SetSummary("A recorded row").SetContentHash("quay-observed").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	internal := auth.WithInternal(context.Background())
+	writeMail := func(rel *ent.Relationship, objectID string, removed bool) {
+		t.Helper()
+		if _, err := f.client.CommunicationInteraction.Create().
+			SetWorkspace(ws).SetOwner(f.user).SetRelationshipID(rel.ID).
+			SetSource("gmail").SetSourceAccountID("owner@x.co").SetProviderObjectID(objectID).
+			SetInteractionType("email").SetDirection("inbound").SetSubject("Hello").
+			SetOccurredAt(at).SetReceivedAt(at).SetVisibility("metadata").
+			SetContentHash("sha256:" + objectID).SetMetadataJSON(`{}`).SetDeleted(removed).
+			Save(internal); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeMail(inbox, "quay-inbox", false)
+	writeMail(deleted, "quay-deleted", true)
+	writeMail(calendar, "quay-calendar-mail", false)
+
+	if _, err := f.client.Commitment.Create().
+		SetWorkspace(ws).SetRelationship(promise).SetUser(f.user).
+		SetDirection("promised_by_them").SetText("Send the quay packet").
+		SetStatus("open").SetConfidence(1).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipStateSnapshot.Create().
+		SetWorkspace(ws).SetRelationship(changed).SetUser(f.user).
+		SetVersion(1).SetStateJSON(`{}`).SetStateHash("quay-changed").
+		SetEvaluatedAt(at).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+
+	assertCompanyQuery("Nothing recorded yet.", "Quay Empty", "Quay Inbox", "Quay Promise", "Quay Changed", "Quay Deleted")
+	assertCompanyQuery("which companies have nothing recorded yet", "Quay Empty", "Quay Inbox", "Quay Promise", "Quay Changed", "Quay Deleted")
+	assertCompanyQuery("No Gmail or calendar events yet.", "Quay Empty", "Quay Note", "Quay Promise", "Quay Changed", "Quay Deleted", "Quay Observed")
+	assertCompanyQuery(
+		"No Gmail or calendar events yet. Confirmed meetings are in Activity.",
+		"Quay Meet",
+	)
+	assertCompanyQuery("calendar", "Quay Calendar")
+	assertCompanyQuery("events yet")
+	assertCompanyQuery("No account details have changed yet.", "Quay Empty", "Quay Inbox", "Quay Deleted")
+	assertCompanyQuery(
+		"No account details have changed yet. Promises and meetings are in the sections below.",
+		"Quay Meet", "Quay Note", "Quay Promise", "Quay Calendar", "Quay Observed",
+	)
+	assertCompanyQuery("have changed yet")
+	assertCompanyQuery("No Gmail threads linked yet", "Quay Empty", "Quay Note", "Quay Inbox", "Quay Promise", "Quay Changed", "Quay Deleted", "Quay Calendar", "Quay Observed")
+	assertCompanyQuery("No Gmail threads linked yet. Confirmed meetings are in Activity.", "Quay Meet")
+}
+
 func TestRelationshipSearchFindsTheUnsupportedStateAnswer(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
