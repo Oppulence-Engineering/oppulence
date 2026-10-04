@@ -880,6 +880,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if activity := relationshipSheetActivityMatch(needle); activity != nil && !sheetEmptySentenceOwnsActivity(needle) {
 			parts = append(parts, activity)
 		}
+		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
+			parts = append(parts, subject)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -1692,6 +1695,94 @@ var activityEventSearchLabels = []struct {
 	{"escalated", "action.outcome.escalated"},
 	{"they left", "action.outcome.churned"},
 	{"corrected", "action.outcome.corrected"},
+}
+
+// relationshipSheetActivitySubjectMatch is "Subject: …" on an opened activity.
+// Gmail stores the thread subject on the note. The row summary is a longer
+// sentence, so the subject line stays visible. A subject that repeats the
+// summary is not printed again. local-user is not a subject.
+func relationshipSheetActivitySubjectMatch(needle string) predicate.Relationship {
+	const marker = "subject: "
+	index := strings.Index(needle, marker)
+	if index < 0 {
+		return nil
+	}
+	subject := strings.TrimSpace(needle[index+len(marker):])
+	if subject == "" {
+		return nil
+	}
+	return relationship.HasObservationsWith(observationFactSubject(subject))
+}
+
+func observationFactSubject(subject string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeSubjectTrim(b, s, facts)
+			b.WriteString(" <> '' AND ")
+			writeSubjectTrim(b, s, facts)
+			b.WriteString(" NOT IN ('local-user', 'meeting-counterparty') AND ")
+			writeNormalizedSubject(b, s, facts)
+			b.WriteString(" = ")
+			b.Arg(subject)
+			b.WriteString(" AND (")
+			writeSubjectToken(b, s, facts)
+			b.WriteString(" OR ")
+			writeSubjectTrim(b, s, facts)
+			b.WriteString(" <> ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))))")
+		}))
+	})
+}
+
+func writeSubjectTrim(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(coalesce(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->>'subject', ''))")
+		return
+	}
+	b.WriteString("trim(coalesce(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.subject'), ''))")
+}
+
+func writeNormalizedSubject(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
+		writeSubjectTrim(b, s, facts)
+		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
+		return
+	}
+	b.WriteString("trim(")
+	for range 4 {
+		b.WriteString("replace(")
+	}
+	b.WriteString("replace(replace(replace(lower(")
+	writeSubjectTrim(b, s, facts)
+	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
+	for range 4 {
+		b.WriteString(", '  ', ' ')")
+	}
+	b.WriteString(")")
+}
+
+func writeSubjectToken(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		writeSubjectTrim(b, s, facts)
+		b.WriteString(" ~ '^[a-z0-9_]*_[a-z0-9_]*$'")
+		return
+	}
+	writeSubjectTrim(b, s, facts)
+	b.WriteString(" GLOB '[a-z0-9_]*_[a-z0-9_]*'")
 }
 
 func relationshipSheetActivityMatch(needle string) predicate.Relationship {
