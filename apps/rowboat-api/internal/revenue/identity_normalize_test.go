@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -3749,6 +3750,106 @@ func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
 	assertCompanyQuery("Deletion is finished", "Harbor Ledger")
 	assertCompanyQuery("Last deletion: Deletion is finished", "Harbor Ledger")
 	assertCompanyQuery("Deletion is still running", "Lumen Packet")
+}
+
+func TestRelationshipSearchFindsEarlierPages(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	at := time.Now().UTC()
+	saveNotes := func(rel *ent.Relationship, n int) {
+		t.Helper()
+		for i := 0; i < n; i++ {
+			externalID := rel.DisplayName + ":" + strconv.Itoa(i)
+			if _, err := f.client.RelationshipObservation.Create().
+				SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+				SetSource("desktop_note").SetExternalID(externalID).
+				SetEventType("note").SetOccurredAt(at).SetReceivedAt(at).
+				SetSummary("A note").SetContentHash(externalID).
+				Save(f.ctx); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	internal := auth.WithInternal(context.Background())
+	saveMail := func(rel *ent.Relationship, n int, removed bool) {
+		t.Helper()
+		for i := 0; i < n; i++ {
+			objectID := rel.DisplayName + ":" + strconv.Itoa(i)
+			if _, err := f.client.CommunicationInteraction.Create().
+				SetWorkspace(ws).SetOwner(f.user).SetRelationshipID(rel.ID).
+				SetSource("gmail").SetSourceAccountID("owner@x.co").SetProviderObjectID(objectID).
+				SetInteractionType("email").SetDirection("inbound").SetSubject("Hello").
+				SetOccurredAt(at).SetReceivedAt(at).SetVisibility("metadata").
+				SetContentHash("sha256:" + objectID).SetMetadataJSON(`{}`).SetDeleted(removed).
+				Save(internal); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	saveChanges := func(rel *ent.Relationship, n int) {
+		t.Helper()
+		for i := 1; i <= n; i++ {
+			if _, err := f.client.RelationshipStateSnapshot.Create().
+				SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+				SetVersion(i).SetStateJSON(`{}`).SetStateHash(rel.DisplayName + ":" + strconv.Itoa(i)).
+				SetEvaluatedAt(at).
+				Save(f.ctx); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	quiet := makeCompany("Earlier Quiet")
+	exact := makeCompany("Earlier Exact")
+	activity := makeCompany("Earlier Activity")
+	evidence := makeCompany("Earlier Evidence")
+	mail := makeCompany("Earlier Mail")
+	removed := makeCompany("Earlier Removed")
+	change := makeCompany("Earlier Change")
+	two := makeCompany("Earlier Two")
+	_ = quiet
+	saveNotes(exact, relationshipActivityPage)
+	saveNotes(activity, relationshipActivityPage+1)
+	saveNotes(evidence, intelligenceObservationPage+1)
+	saveMail(mail, relationshipCommunicationPage+1, false)
+	saveMail(removed, relationshipCommunicationPage+1, true)
+	saveChanges(change, relationshipChangePage+1)
+	saveChanges(two, relationshipChangePage)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Show earlier activity", "Earlier Activity", "Earlier Evidence")
+	assertCompanyQuery("Show earlier activity.", "Earlier Activity", "Earlier Evidence")
+	assertCompanyQuery("Show earlier evidence", "Earlier Evidence")
+	assertCompanyQuery("Show earlier mail and meetings", "Earlier Mail")
+	assertCompanyQuery("Show earlier changes", "Earlier Change")
+	assertCompanyQuery("Show earlier")
 }
 
 func hasName(names []string, want string) bool {
