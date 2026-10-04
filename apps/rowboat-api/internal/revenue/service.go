@@ -880,6 +880,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if activity := relationshipSheetActivityMatch(needle); activity != nil && !sheetEmptySentenceOwnsActivity(needle) {
 			parts = append(parts, activity)
 		}
+		if emptyActivity := relationshipSheetEmptyActivityMatch(needle); emptyActivity != nil {
+			parts = append(parts, emptyActivity)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -1692,6 +1695,172 @@ var activityEventSearchLabels = []struct {
 	{"escalated", "action.outcome.escalated"},
 	{"they left", "action.outcome.churned"},
 	{"corrected", "action.outcome.corrected"},
+}
+
+// relationshipSheetEmptyActivityMatch matches "Nothing else was saved with
+// this activity." Opening an activity prints that when the saved note has no
+// payload and the stored facts have nothing else to read. A meeting flag
+// prints a different line, and a title or a promise still has something to read.
+func relationshipSheetEmptyActivityMatch(needle string) predicate.Relationship {
+	if !labelPhraseMatches("nothing else was saved with this activity.", needle) {
+		return nil
+	}
+	return relationship.HasObservationsWith(observationSavedNothing())
+}
+
+func observationSavedNothing() predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			payload := s.C(relationshipobservation.FieldPayloadCiphertext)
+			b.WriteString("(")
+			b.WriteString(payload)
+			b.WriteString(" IS NULL OR length(")
+			b.WriteString(payload)
+			b.WriteString(") = 0) AND (")
+			b.WriteString(facts)
+			b.WriteString(" IS NULL OR ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(")
+			} else {
+				b.WriteString("trim(")
+			}
+			b.WriteString(facts)
+			b.WriteString(") IN ('', '{}') OR (")
+			writeFactsAreObject(b, s, facts)
+			b.WriteString(" AND ")
+			writeMeetingLinkIsNotTrue(b, s, facts)
+			b.WriteString(" AND ")
+			writeFactTextBlank(b, s, facts, "content")
+			b.WriteString(" AND ")
+			writeFactDirectionBlank(b, s, facts)
+			b.WriteString(" AND ")
+			writeFactTextBlank(b, s, facts, "commitment_due_at")
+			b.WriteString(" AND ")
+			writeFactQuoteBlank(b, s, facts)
+			b.WriteString(" AND ")
+			writeFactParticipantToken(b, s, facts, "owner_participant_ref")
+			b.WriteString(" AND ")
+			writeFactParticipantToken(b, s, facts, "counterparty_participant_ref")
+			b.WriteString(" AND ")
+			writeFactParticipantToken(b, s, facts, "beneficiary_participant_ref")
+			b.WriteString(" AND NOT ")
+			writeVisibleExtraFact(b, s, facts)
+			b.WriteString("))")
+		}))
+	})
+}
+
+func writeFactsAreObject(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb) = 'object'")
+		return
+	}
+	b.WriteString("json_type(")
+	b.WriteString(facts)
+	b.WriteString(") = 'object'")
+}
+
+func writeMeetingLinkIsNotTrue(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("((")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'meetingLinked') IS DISTINCT FROM 'true'::jsonb)")
+		return
+	}
+	b.WriteString("ifnull(json_type(")
+	b.WriteString(facts)
+	b.WriteString(", '$.meetingLinked'), '') <> 'true'")
+}
+
+func writeFactText(b *sql.Builder, s *sql.Selector, facts, key string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(coalesce(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->>'")
+		b.WriteString(key)
+		b.WriteString("', ''))")
+		return
+	}
+	b.WriteString("trim(coalesce(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.")
+	b.WriteString(key)
+	b.WriteString("'), ''))")
+}
+
+func writeFactTextBlank(b *sql.Builder, s *sql.Selector, facts, key string) {
+	writeFactText(b, s, facts, key)
+	b.WriteString(" = ''")
+}
+
+func writeFactDirectionBlank(b *sql.Builder, s *sql.Selector, facts string) {
+	writeFactText(b, s, facts, "commitment_direction")
+	b.WriteString(" NOT IN ('promised_by_me', 'promised_by_them', 'mutual')")
+}
+
+func writeFactQuoteBlank(b *sql.Builder, s *sql.Selector, facts string) {
+	b.WriteString("(")
+	writeFactText(b, s, facts, "evidence_quote")
+	b.WriteString(" = '' OR ")
+	writeFactText(b, s, facts, "evidence_quote")
+	b.WriteString(" = ")
+	writeFactText(b, s, facts, "commitment_text")
+	b.WriteString(")")
+}
+
+func writeFactParticipantToken(b *sql.Builder, s *sql.Selector, facts, key string) {
+	b.WriteString("(")
+	writeFactText(b, s, facts, key)
+	b.WriteString(" = '' OR ")
+	writeFactText(b, s, facts, key)
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(" ~ '^[a-z0-9_:-]*$'")
+	} else {
+		b.WriteString(" GLOB '[a-z0-9_:-]*'")
+	}
+	b.WriteString(")")
+}
+
+func writeVisibleExtraFact(b *sql.Builder, s *sql.Selector, facts string) {
+	b.WriteString("EXISTS (SELECT 1 FROM ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_each(CASE WHEN jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb) = 'object' THEN ")
+		b.WriteString(facts)
+		b.WriteString("::jsonb ELSE '{}'::jsonb END) AS fact(key, value) WHERE fact.key NOT IN (")
+		writeSilentFactKeys(b)
+		b.WriteString(") AND (jsonb_typeof(fact.value) IN ('object', 'array', 'number', 'boolean') OR (jsonb_typeof(fact.value) = 'string' AND btrim(fact.value #>> '{}') <> '')))")
+		return
+	}
+	b.WriteString("json_each(CASE WHEN json_type(")
+	b.WriteString(facts)
+	b.WriteString(") = 'object' THEN ")
+	b.WriteString(facts)
+	b.WriteString(" ELSE '{}' END) AS fact WHERE fact.key NOT IN (")
+	writeSilentFactKeys(b)
+	b.WriteString(") AND (fact.type IN ('object', 'array', 'integer', 'real', 'true', 'false') OR (fact.type = 'text' AND trim(fact.atom) <> '')))")
+}
+
+func writeSilentFactKeys(b *sql.Builder) {
+	keys := []string{
+		"noteId", "content", "meetingLinked", "liveLinked", "externalId", "contentHash",
+		"outcome_kind", "provider_source", "action_id", "recommendation_revision", "channel",
+		"user_confirmed", "commitment_id", "evidence_start_ms", "evidence_end_ms",
+		"commitment_due_timezone", "commitment_direction", "commitment_due_at", "evidence_quote",
+		"owner_participant_ref", "counterparty_participant_ref", "beneficiary_participant_ref",
+	}
+	for i, key := range keys {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString("'")
+		b.WriteString(key)
+		b.WriteString("'")
+	}
 }
 
 func relationshipSheetActivityMatch(needle string) predicate.Relationship {
