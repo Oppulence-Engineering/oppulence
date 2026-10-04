@@ -666,6 +666,50 @@ test("asking held finds an open follow-up and leaves an open promise", () => {
   assert.equal(result.answer, "1 relationship matches held.");
 });
 
+test("asking drafted leaves a message that was sent", () => {
+  const drafted = parseRelationshipGraphQuery("drafted");
+  assert.equal(drafted.filters.drafted, true);
+  assert.equal(drafted.filters.sent, false);
+  assert.deepEqual(drafted.filters.freeText, []);
+  assert.deepEqual(drafted.applied, ["drafted"]);
+
+  const sent = parseRelationshipGraphQuery("sent");
+  assert.equal(sent.filters.sent, true);
+  assert.equal(sent.filters.drafted, false);
+  assert.deepEqual(sent.filters.freeText, []);
+  assert.deepEqual(sent.applied, ["sent"]);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:draft", kind: "relationship", label: "Quay Draft" },
+      {
+        id: "action:draft",
+        kind: "action",
+        label: "Customer risk",
+        relationshipId: "draft",
+        executionStatus: "sent",
+        metadata: { executionMode: "draft" },
+      },
+      { id: "relationship:sent", kind: "relationship", label: "Quay Sent" },
+      {
+        id: "action:sent",
+        kind: "action",
+        label: "Calendar hold",
+        relationshipId: "sent",
+        executionStatus: "sent",
+        metadata: { executionMode: "send" },
+      },
+    ],
+    edges: [],
+  };
+  const drafts = queryRelationshipGraph(graph, "drafted");
+  assert.deepEqual(drafts.relationshipIds, ["draft"]);
+  assert.equal(drafts.answer, "1 relationship matches drafted.");
+  const messages = queryRelationshipGraph(graph, "sent");
+  assert.deepEqual(messages.relationshipIds, ["sent"]);
+  assert.equal(messages.answer, "1 relationship matches sent.");
+});
+
 test("asking a follow-up title does not require that source", () => {
   const titles = [
     ["calendar hold", "Calendar hold", "calendar"],

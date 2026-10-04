@@ -762,7 +762,11 @@ function Inspector({
             ["Lifecycle", "lifecycle", node.lifecycle],
             ["Approval", "approval", node.approvalStatus],
             ["Policy", "policy", node.policyStatus],
-            ["Execution", "execution", graphExecutionLabel(node.executionStatus)],
+            [
+              "Execution",
+              "execution",
+              graphExecutionLabel(node.executionStatus, graphExecutionMode(node.metadata)),
+            ],
             ["Freshness", "freshness", node.freshness],
             [
               "Confidence",
@@ -1324,8 +1328,15 @@ export function graphNodeFieldLabel(kind: string, field: GraphField, value: stri
   return graphDetailLabel(value);
 }
 
+function graphExecutionMode(metadata: { executionMode?: unknown } | undefined): string | undefined {
+  return typeof metadata?.executionMode === "string" ? metadata.executionMode : undefined;
+}
+
 /** A send that has not started yet stays off the inspector. Pending is the default. */
-export function graphExecutionLabel(status: string | undefined): string | undefined {
+export function graphExecutionLabel(
+  status: string | undefined,
+  mode?: string,
+): string | undefined {
   switch (status) {
     case undefined:
     case "":
@@ -1334,7 +1345,8 @@ export function graphExecutionLabel(status: string | undefined): string | undefi
     case "requested":
       return "Sending…";
     case "sent":
-      return "Sent";
+      // A finished draft is drafted. Sent is the word for a message that went out.
+      return mode === "draft" ? "Drafted" : "Sent";
     case "failed":
       return "Failed";
     case "ambiguous":

@@ -194,6 +194,9 @@ export function parseRelationshipGraphQuery(query) {
     open: /\bopen\b/.test(normalized) && !/\bnot open\b/.test(normalized),
     // The follow-up inspector says Held. The stored queue status is still open.
     held: /\bheld\b/.test(normalized),
+    // A finished draft says Drafted. Sent is a message that went out.
+    drafted: /\bdrafted\b/.test(normalized),
+    sent: /\bsent\b/.test(normalized) && !/\bnot sent\b/.test(normalized),
     // The company card says Kept. The stored status is still met.
     kept: /\bkept\b|\bkept_promises?\b/.test(normalized),
     stale: /\bstale\b|\boutdated\b|\bout of date\b/.test(normalized),
@@ -428,7 +431,10 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bopen promise\b/g, " ")
     .replace(/\bnot open\b/g, " ")
     .replace(/\bopen\b/g, " ")
-    .replace(/\bheld\b/g, " ");
+    .replace(/\bheld\b/g, " ")
+    .replace(/\bnot sent\b/g, " ")
+    .replace(/\bdrafted\b/g, " ")
+    .replace(/\bsent\b/g, " ");
   filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
@@ -452,6 +458,8 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.kept) applied.push("kept");
   if (filters.open) applied.push("open");
   if (filters.held) applied.push("held");
+  if (filters.drafted) applied.push("drafted");
+  if (filters.sent) applied.push("sent");
   if (filters.stale) applied.push("out of date");
   if (filters.current) applied.push("up to date");
   if (filters.aging) applied.push("getting old");
@@ -556,6 +564,22 @@ export function queryRelationshipGraph(graph, query, options = {}) {
   if (filters.held) {
     constrainBy(
       (node) => node.kind === "action" && normalizedGraphValue(node.status) === "open",
+    );
+  }
+  if (filters.drafted) {
+    constrainBy(
+      (node) =>
+        node.kind === "action" &&
+        normalizedGraphValue(node.executionStatus) === "sent" &&
+        normalizedGraphValue(node.metadata?.executionMode) === "draft",
+    );
+  }
+  if (filters.sent) {
+    constrainBy(
+      (node) =>
+        node.kind === "action" &&
+        normalizedGraphValue(node.executionStatus) === "sent" &&
+        normalizedGraphValue(node.metadata?.executionMode) !== "draft",
     );
   }
   if (filters.approvalStatus.length) {

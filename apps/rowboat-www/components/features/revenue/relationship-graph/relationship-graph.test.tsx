@@ -176,6 +176,9 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphExecutionLabel("pending")).toBeUndefined();
     expect(graphExecutionLabel("ambiguous")).toBe("Needs reconcile");
     expect(graphExecutionLabel("failed")).toBe("Failed");
+    expect(graphExecutionLabel("sent", "draft")).toBe("Drafted");
+    expect(graphExecutionLabel("sent", "send")).toBe("Sent");
+    expect(graphExecutionLabel("sent")).toBe("Sent");
     expect(
       graphNodeSummaryLabel({ kind: "action", status: "open", approvalStatus: "pending" }),
     ).toBe("Awaiting approval");
@@ -428,6 +431,10 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryAnswer("1 relationship matches nodes: evidence.", 2)).toBe(
       "1 company matches Included: Detail.",
     );
+    expect(graphQueryAnswer("1 relationship matches drafted.", 2)).toBe(
+      "1 company matches drafted.",
+    );
+    expect(graphQueryAnswer("1 relationship matches sent.", 2)).toBe("1 company matches sent.");
     expect(graphQueryFilterLabel("held")).toBe("held");
     expect(graphQueryAnswer("1 relationship matches held.", 2)).toBe("1 company matches held.");
     expect(graphQueryFilterLabel("open")).toBe("open");
