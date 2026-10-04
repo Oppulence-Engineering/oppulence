@@ -2286,19 +2286,21 @@ func TestRelationshipSearchFindsTheDirectoryColumns(t *testing.T) {
 	if _, err := f.client.Relationship.UpdateOneID(healthy.ID).SetLifecycle("active_customer").Save(f.ctx); err != nil {
 		t.Fatal(err)
 	}
+	// The directory stores a stage before any source supports it. The sheet
+	// still says Not known, so the typed stage must not find that company.
 	active, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Active Customer"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := namesOf(active.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
-		t.Fatalf("active customer = %v", got)
+	if got := namesOf(active.Relationships); hasName(got, "Quill Atelier") {
+		t.Fatalf("unsupported active customer = %v", got)
 	}
 	prospects, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Prospect"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := namesOf(prospects.Relationships); !hasName(got, "Lumen Packet") || hasName(got, "Quill Atelier") {
-		t.Fatalf("prospect = %v", got)
+	if got := namesOf(prospects.Relationships); hasName(got, "Lumen Packet") || hasName(got, "Quill Atelier") {
+		t.Fatalf("unsupported prospect = %v", got)
 	}
 }
 

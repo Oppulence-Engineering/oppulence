@@ -796,7 +796,7 @@ func (s *Service) ListRelationshipsFiltered(
 		if threads := relationshipEmailThreadLabelMatch(value); threads != nil {
 			parts = append(parts, threads)
 		}
-		if columns := relationshipDirectoryColumnMatch(value); columns != nil {
+		if columns := relationshipDirectoryColumnMatch(value, s.now()); columns != nil {
 			parts = append(parts, columns)
 		}
 		if window, ok := visibleActivityWindow(value, time.Now()); ok {
@@ -1107,7 +1107,7 @@ func exactEmailThreadCount(needle string) (int, bool) {
 // directory: Health, People, and the next-action sentence. Health is stored
 // as a token and printed as a title. People is the participant count. A blank
 // next action reads "No open action", or "2 open actions" when drafts exist.
-func relationshipDirectoryColumnMatch(term string) predicate.Relationship {
+func relationshipDirectoryColumnMatch(term string, now time.Time) predicate.Relationship {
 	needle := normalizePersonSearch(term)
 	if needle == "" {
 		return nil
@@ -1116,7 +1116,7 @@ func relationshipDirectoryColumnMatch(term string) predicate.Relationship {
 	if health := relationshipHealthLabelMatch(needle); health != nil {
 		preds = append(preds, health)
 	}
-	if lifecycle := relationshipLifecycleLabelMatch(needle); lifecycle != nil {
+	if lifecycle := relationshipLifecycleLabelMatch(needle, now); lifecycle != nil {
 		preds = append(preds, lifecycle)
 	}
 	if n, ok := exactPersonCompanyCount(needle); ok {
@@ -1169,7 +1169,7 @@ func relationshipHealthLabelMatch(needle string) predicate.Relationship {
 	return relationship.HealthIn(values...)
 }
 
-func relationshipLifecycleLabelMatch(needle string) predicate.Relationship {
+func relationshipLifecycleLabelMatch(needle string, now time.Time) predicate.Relationship {
 	labels := []struct {
 		label string
 		value string
@@ -1192,10 +1192,16 @@ func relationshipLifecycleLabelMatch(needle string) predicate.Relationship {
 	if len(values) == 0 {
 		return nil
 	}
+	// A new company is stored as prospect before anyone chooses a stage. The
+	// sheet and the stage menu say Not known until a correction or cited
+	// evidence supports that stage, so typing the stage has to use that rule.
+	var stored predicate.Relationship
 	if len(values) == len(labels) {
-		return relationshipMatchAll()
+		stored = relationshipMatchAll()
+	} else {
+		stored = relationship.LifecycleIn(values...)
 	}
-	return relationship.LifecycleIn(values...)
+	return relationship.And(stored, relationshipHasSupportedDimension("lifecycle", now))
 }
 
 func relationshipOpenActionLabelMatch(needle string) predicate.Relationship {

@@ -877,6 +877,13 @@ func TestRelationshipStageFilterRequiresSupport(t *testing.T) {
 	if got := namesOf(prospects.Relationships); !hasName(got, "Corrected Filter") || hasName(got, "Bare Filter") {
 		t.Fatalf("prospect = %v", got)
 	}
+	typed, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Prospect"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(typed.Relationships); !hasName(got, "Corrected Filter") || hasName(got, "Bare Filter") {
+		t.Fatalf("typed prospect = %v", got)
+	}
 
 	evaluated := f.company(t, "Evaluated Filter", "evaluated@filter.example")
 	if _, err := f.client.Relationship.UpdateOneID(evaluated.ID).SetLifecycle("evaluation").Save(f.ctx); err != nil {
