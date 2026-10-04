@@ -1091,6 +1091,72 @@ func TestRelationshipSearchFindsTheActivitySubject(t *testing.T) {
 	assertCompanyQuery("subject")
 }
 
+func TestRelationshipSearchFindsTheActivityCounts(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string, payload []byte) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		create := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("gmail").SetExternalID(name).SetEventType("thread.snapshot").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts)
+		if len(payload) > 0 {
+			create.SetPayloadCiphertext(payload)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Locked",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Quill Packet", "Gmail thread observed: Harbor packet", `{"message_count":4}`, nil)
+	saveNote("Cedar Echo", "4", `{"message_count":4}`, nil)
+	saveNote("Birch Slide", "Gmail thread observed: Birch slide", `{"outbound_count":2}`, nil)
+	saveNote("Cedar Quiet", "Gmail thread observed: Cedar quiet", `{"inbound_count":1}`, []byte{1, 2, 3})
+	saveNote("Cedar Mine", "Gmail thread observed: local-user", `{"message_count":"local-user"}`, nil)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Message Count: 4", "Quill Packet")
+	assertCompanyQuery("which activity says message count: 4", "Quill Packet")
+	assertCompanyQuery("Outbound Count: 2", "Birch Slide")
+	assertCompanyQuery("Inbound Count: 1", "Cedar Quiet")
+	assertCompanyQuery("Message Count: local-user")
+	assertCompanyQuery("4 messages")
+	assertCompanyQuery("message count")
+	assertCompanyQuery("outbound count")
+	assertCompanyQuery("inbound count")
+}
+
 func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
