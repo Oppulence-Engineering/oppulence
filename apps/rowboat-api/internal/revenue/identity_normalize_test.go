@@ -2832,6 +2832,29 @@ func TestRelationshipSearchFindsEngagementAndSentiment(t *testing.T) {
 	if got := namesOf(storedSentiment.Relationships); hasName(got, "Lumen Packet") {
 		t.Fatalf("unsupported negative = %v", got)
 	}
+	assertBadge := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertBadge("Lifecycle · Not known", "Quill Atelier", "Lumen Packet")
+	assertBadge("Health · Not known", "Quill Atelier", "Lumen Packet")
+	assertBadge("Engagement · Not known", "Quill Atelier", "Lumen Packet")
+	assertBadge("Sentiment · Not known", "Quill Atelier", "Lumen Packet")
+	assertBadge("Engagement · Declining")
+	assertBadge("Sentiment · Negative")
+	assertBadge("engagement")
 	if _, err := f.svc.CorrectRelationship(f.ctx, f.user, declining.ID, RelationshipCorrectionInput{
 		Dimension: "engagement", Value: "declining", Reason: "Replies have slowed.",
 	}); err != nil {
@@ -2856,6 +2879,13 @@ func TestRelationshipSearchFindsEngagementAndSentiment(t *testing.T) {
 	if got := namesOf(bySentiment.Relationships); len(got) != 1 || got[0] != "Lumen Packet" {
 		t.Fatalf("negative = %v", got)
 	}
+	assertBadge("Engagement · Declining", "Quill Atelier")
+	assertBadge("Sentiment · Negative", "Lumen Packet")
+	assertBadge("Engagement · Not known", "Lumen Packet")
+	assertBadge("Sentiment · Not known", "Quill Atelier")
+	assertBadge("which companies have engagement · declining", "Quill Atelier")
+	assertBadge("Health · Healthy")
+	assertBadge("Health · Not known", "Quill Atelier", "Lumen Packet")
 }
 
 func TestRelationshipSearchFindsTheEnrichment(t *testing.T) {
