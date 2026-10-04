@@ -3433,25 +3433,36 @@ func relationshipSheetActionLabelMatch(needle string) predicate.Relationship {
 	}
 }
 
-// relationshipAttentionBandMatch is the urgency badge on the attention queue.
-// High and critical read "At risk", normal reads "Watch", and low reads "Stable".
-// A dismissed or snoozed row is off that queue, so it stays out of the search.
+// relationshipAttentionBandMatch is the urgency badge on the attention queue
+// and the badge on the company card. High and critical read "At risk", normal
+// reads "Watch", and low reads "Stable". The card also reads "Stable" when
+// health is healthy, and "Needs you" when health is critical or needs
+// attention. A dismissed or snoozed row is off the queue, so it stays out.
 func relationshipAttentionBandMatch(needle string) predicate.Relationship {
-	var band predicate.RelationshipAttentionItem
 	switch needle {
 	case "at risk":
-		band = relationshipattentionitem.UrgencyBandIn("high", "critical")
+		return relationship.HasAttentionItemsWith(
+			relationshipattentionitem.UrgencyBandIn("high", "critical"),
+			relationshipattentionitem.StatusEQ("open"),
+		)
 	case "watch":
-		band = relationshipattentionitem.UrgencyBandEQ("normal")
+		return relationship.HasAttentionItemsWith(
+			relationshipattentionitem.UrgencyBandEQ("normal"),
+			relationshipattentionitem.StatusEQ("open"),
+		)
 	case "stable":
-		band = relationshipattentionitem.UrgencyBandEQ("low")
+		return relationship.Or(
+			relationship.HasAttentionItemsWith(
+				relationshipattentionitem.UrgencyBandEQ("low"),
+				relationshipattentionitem.StatusEQ("open"),
+			),
+			relationship.HealthEQ("healthy"),
+		)
+	case "needs you":
+		return relationship.HealthIn("critical", "needs_attention")
 	default:
 		return nil
 	}
-	return relationship.HasAttentionItemsWith(
-		band,
-		relationshipattentionitem.StatusEQ("open"),
-	)
 }
 
 func relationshipSheetTruthPromiseMatch(needle string, now time.Time) predicate.Relationship {

@@ -1172,6 +1172,67 @@ func TestRelationshipSearchFindsTheAttentionBadge(t *testing.T) {
 	assertCompanyQuery("Stable", "Harbor Calm")
 }
 
+func TestRelationshipSearchFindsTheCardAttentionBadge(t *testing.T) {
+	f := newFixture(t)
+	makeHealth := func(name, health string) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.Relationship.UpdateOneID(rel.ID).SetHealth(health).Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mark Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	makeHealth("Mark Critical", "critical")
+	makeHealth("Mark Strained", "needs_attention")
+	makeHealth("Mark Fit", "healthy")
+	calm, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Mark Calm",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: calm.ID,
+		ActionType:     "proposal_nudge",
+		Channel:        "email",
+		Reason:         "Send the harbor note",
+		PriorityScore:  20,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Needs you", "Mark Critical", "Mark Strained")
+	assertCompanyQuery("needs your review")
+	assertCompanyQuery("Stable", "Mark Fit", "Mark Calm")
+	assertCompanyQuery("healthy", "Mark Fit")
+	assertCompanyQuery("critical", "Mark Critical")
+}
+
 func TestRelationshipSearchFindsThePeopleOnTheCompany(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
