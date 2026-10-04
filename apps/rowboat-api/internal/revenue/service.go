@@ -883,6 +883,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
+		if flag := relationshipSheetActivityFlagMatch(needle); flag != nil {
+			parts = append(parts, flag)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -1783,6 +1786,107 @@ func writeSubjectToken(b *sql.Builder, s *sql.Selector, facts string) {
 	}
 	writeSubjectTrim(b, s, facts)
 	b.WriteString(" GLOB '[a-z0-9_]*_[a-z0-9_]*'")
+}
+
+// relationshipSheetActivityFlagMatch is "Has Attachments: true",
+// "Is First Contact: false", or "Subject Present: true" on an opened activity.
+// Gmail stores those as booleans. The sheet prints the words, including false.
+// SQLite json_extract turns a JSON boolean into 1 or 0, so the comparison uses
+// the word the sheet shows. A flag that repeats the row summary stays hidden.
+// A numeric 1 is not the word true. local-user is not a flag.
+func relationshipSheetActivityFlagMatch(needle string) predicate.Relationship {
+	flags := []struct{ marker, key string }{
+		{"has attachments: ", "has_attachments"},
+		{"is first contact: ", "is_first_contact"},
+		{"subject present: ", "subject_present"},
+	}
+	var preds []predicate.RelationshipObservation
+	for _, flag := range flags {
+		index := strings.Index(needle, flag.marker)
+		if index < 0 {
+			continue
+		}
+		value := strings.TrimSpace(needle[index+len(flag.marker):])
+		if value == "" {
+			continue
+		}
+		preds = append(preds, observationFactFlag(flag.key, value))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
+}
+
+func observationFactFlag(key, value string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeFlagShown(b, s, facts, key)
+			b.WriteString(" <> '' AND ")
+			writeFlagShown(b, s, facts, key)
+			b.WriteString(" NOT IN ('local-user', 'meeting-counterparty') AND ")
+			writeNormalizedFlag(b, s, facts, key)
+			b.WriteString(" = ")
+			b.Arg(value)
+			b.WriteString(" AND ")
+			writeFlagShown(b, s, facts, key)
+			b.WriteString(" <> ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", '')))")
+		}))
+	})
+}
+
+func writeFlagShown(b *sql.Builder, s *sql.Selector, facts, key string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(coalesce(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->>'")
+		b.WriteString(key)
+		b.WriteString("', ''))")
+		return
+	}
+	b.WriteString("(CASE json_type(")
+	b.WriteString(facts)
+	b.WriteString(", '$.")
+	b.WriteString(key)
+	b.WriteString("') WHEN 'true' THEN 'true' WHEN 'false' THEN 'false' ELSE trim(coalesce(CAST(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.")
+	b.WriteString(key)
+	b.WriteString("') AS TEXT), '')) END)")
+}
+
+func writeNormalizedFlag(b *sql.Builder, s *sql.Selector, facts, key string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
+		writeFlagShown(b, s, facts, key)
+		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
+		return
+	}
+	b.WriteString("trim(")
+	for range 4 {
+		b.WriteString("replace(")
+	}
+	b.WriteString("replace(replace(replace(lower(")
+	writeFlagShown(b, s, facts, key)
+	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
+	for range 4 {
+		b.WriteString(", '  ', ' ')")
+	}
+	b.WriteString(")")
 }
 
 func relationshipSheetActivityMatch(needle string) predicate.Relationship {

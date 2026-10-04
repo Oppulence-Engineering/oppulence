@@ -1091,6 +1091,72 @@ func TestRelationshipSearchFindsTheActivitySubject(t *testing.T) {
 	assertCompanyQuery("subject")
 }
 
+func TestRelationshipSearchFindsTheActivityFlags(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string, payload []byte) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		create := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("gmail").SetExternalID(name).SetEventType("thread.snapshot").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts)
+		if len(payload) > 0 {
+			create.SetPayloadCiphertext(payload)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveNote("Quill Packet", "Gmail thread observed: Harbor packet", `{"has_attachments":true}`, nil)
+	saveNote("Cedar Echo", "true", `{"has_attachments":true}`, nil)
+	saveNote("Birch Slide", "Gmail thread observed: Birch slide", `{"has_attachments":false}`, nil)
+	saveNote("Cedar Quiet", "Gmail thread observed: Cedar quiet", `{"is_first_contact":true}`, []byte{1, 2, 3})
+	saveNote("Cedar Mine", "Gmail thread observed: Cedar mine", `{"subject_present":false}`, nil)
+	saveNote("Cedar Mark", "Gmail thread observed: Cedar mark", `{"has_attachments":1}`, nil)
+	saveNote("Cedar Locked", "Gmail thread observed: Cedar locked", `{"has_attachments":"local-user"}`, nil)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Has Attachments: true", "Quill Packet")
+	assertCompanyQuery("which activity says has attachments: true", "Quill Packet")
+	assertCompanyQuery("Has Attachments: false", "Birch Slide")
+	assertCompanyQuery("Is First Contact: true", "Cedar Quiet")
+	assertCompanyQuery("Subject Present: false", "Cedar Mine")
+	assertCompanyQuery("Has Attachments: 1", "Cedar Mark")
+	assertCompanyQuery("Has Attachments: local-user")
+	assertCompanyQuery("has attachments")
+	assertCompanyQuery("is first contact")
+	assertCompanyQuery("subject present")
+	assertCompanyQuery("true")
+	assertCompanyQuery("false")
+}
+
 func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

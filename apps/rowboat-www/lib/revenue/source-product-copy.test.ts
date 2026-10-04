@@ -218,4 +218,20 @@ describe("source product copy", () => {
       "Sync incomplete",
     );
   });
+
+  it("prints gmail flags as the words true and false", () => {
+    expect(
+      activityEvidenceLines(null, {
+        has_attachments: true,
+        is_first_contact: false,
+        subject_present: true,
+      }),
+    ).toEqual([
+      "Has Attachments: true",
+      "Is First Contact: false",
+      "Subject Present: true",
+    ]);
+    expect(activityEvidenceLines(null, { has_attachments: 1 })).toEqual(["Has Attachments: 1"]);
+    expect(activityLinesBesideSummary(["Has Attachments: true"], "true")).toEqual([]);
+  });
 });
