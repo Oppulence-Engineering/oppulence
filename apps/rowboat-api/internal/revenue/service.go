@@ -871,6 +871,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if people := relationshipSheetPeopleMatch(needle); people != nil {
 			parts = append(parts, people)
 		}
+		if activity := relationshipSheetActivityMatch(needle); activity != nil {
+			parts = append(parts, activity)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -1597,6 +1600,156 @@ func participantTextBlank(field string) predicate.RelationshipParticipant {
 			b.WriteString(fmt.Sprintf("trim(coalesce(%s, '')) = ''", s.C(field)))
 		}))
 	})
+}
+
+// Activity history prints "Added by you · Note saved". The stored row is
+// source user and event note. The same heading is used for every source and
+// event the timeline knows.
+var activitySourceSearchLabels = []struct {
+	phrase string
+	source string
+}{
+	{"gmail", "gmail"},
+	{"calendar", "calendar"},
+	{"slack", "slack"},
+	{"hubspot", "hubspot"},
+	{"a meeting", "meeting"},
+	{"a note", "desktop_note"},
+	{"a voice note", "voice_note"},
+	{"the browser", "browser"},
+	{"the crm", "crm"},
+	{"added by you", "user"},
+	{"a connected app", "composio"},
+}
+
+var activityEventSearchLabels = []struct {
+	phrase string
+	event  string
+}{
+	{"mail updated", "thread.updated"},
+	{"mail", "thread"},
+	{"mail", "thread.snapshot"},
+	{"message", "message.posted"},
+	{"message", "message.snapshot"},
+	{"message", "message.created"},
+	{"meeting updated", "event.updated"},
+	{"meeting", "meeting.snapshot"},
+	{"company added", "company.created"},
+	{"company updated", "company.updated"},
+	{"company record", "company.snapshot"},
+	{"recorded", "relationship.observed"},
+	{"reviewed", "relationship.reviewed"},
+	{"person added", "person_added"},
+	{"note saved", "note"},
+	{"note removed", "note_deleted"},
+	{"promise confirmed", "commitment_confirmed"},
+	{"promise added", "commitment_created"},
+	{"promise updated", "commitment_status_changed"},
+	{"promise evidence", "commitment_evidence_observed"},
+	{"lifecycle updated", "lifecycle_changed"},
+	{"lifecycle updated", "lifecycle_observed"},
+	{"deal stage updated", "deal_stage_changed"},
+	{"meeting missing", "meeting_missing"},
+	{"engagement changed", "engagement_declined"},
+	{"engagement changed", "engagement_changed"},
+	{"contact left", "contact_departed"},
+	{"conversation reviewed", "conversation_evidence_compiled"},
+	{"conversation corrected", "conversation_evidence_corrected"},
+	{"contradiction resolved", "relationship_contradiction_resolved"},
+	{"crm activity", "crm.activity"},
+	{"plan response", "mutual_action_plan_response_received"},
+	{"action recorded", "oppulence_action"},
+	{"message sent", "action.outcome.sent"},
+	{"delivered", "action.outcome.delivered"},
+	{"bounced", "action.outcome.bounced"},
+	{"they replied", "action.outcome.replied"},
+	{"meeting booked", "action.outcome.meeting_booked"},
+	{"won", "action.outcome.won"},
+	{"lost", "action.outcome.lost"},
+	{"dismissed", "action.outcome.dismissed"},
+	{"not a good suggestion", "action.outcome.bad_recommendation"},
+	{"deal moved forward", "action.outcome.deal_advanced"},
+	{"onboarding moved forward", "action.outcome.onboarding_progressed"},
+	{"renewed", "action.outcome.renewed"},
+	{"escalated", "action.outcome.escalated"},
+	{"they left", "action.outcome.churned"},
+	{"corrected", "action.outcome.corrected"},
+}
+
+func relationshipSheetActivityMatch(needle string) predicate.Relationship {
+	if strings.Contains(needle, "·") {
+		sides := strings.Split(needle, "·")
+		if len(sides) == 2 {
+			source := activitySources(normalizePersonSearch(sides[0]))
+			event := activityEvents(normalizePersonSearch(sides[1]))
+			if len(source) > 0 && len(event) > 0 {
+				return relationship.HasObservationsWith(relationshipobservation.And(
+					relationshipobservation.SourceIn(source...),
+					relationshipobservation.EventTypeIn(event...),
+				))
+			}
+		}
+	}
+	sources := activitySources(needle)
+	events := activityEvents(needle)
+	switch {
+	case len(sources) > 0 && len(events) > 0:
+		return relationship.HasObservationsWith(relationshipobservation.And(
+			relationshipobservation.SourceIn(sources...),
+			relationshipobservation.EventTypeIn(events...),
+		))
+	case len(sources) > 0:
+		return relationship.HasObservationsWith(relationshipobservation.SourceIn(sources...))
+	case len(events) > 0:
+		return relationship.HasObservationsWith(relationshipobservation.EventTypeIn(events...))
+	default:
+		return nil
+	}
+}
+
+func activitySources(needle string) []string {
+	return longestActivityMatches(needle, func(yield func(phrase, value string)) {
+		for _, item := range activitySourceSearchLabels {
+			yield(item.phrase, item.source)
+		}
+	})
+}
+
+func activityEvents(needle string) []string {
+	return longestActivityMatches(needle, func(yield func(phrase, value string)) {
+		for _, item := range activityEventSearchLabels {
+			yield(item.phrase, item.event)
+		}
+	})
+}
+
+// longestActivityMatches keeps the heading that was typed. "Conversation
+// reviewed" contains "reviewed", and the shorter heading is a different event.
+func longestActivityMatches(needle string, each func(func(phrase, value string))) []string {
+	type match struct{ phrase, value string }
+	var matched []match
+	each(func(phrase, value string) {
+		if queryHasPhrase(phrase, needle) {
+			matched = append(matched, match{phrase, value})
+		}
+	})
+	var values []string
+	seen := map[string]bool{}
+	for _, item := range matched {
+		shadowed := false
+		for _, other := range matched {
+			if len(other.phrase) > len(item.phrase) && strings.Contains(needle, other.phrase) && strings.Contains(other.phrase, item.phrase) {
+				shadowed = true
+				break
+			}
+		}
+		if shadowed || seen[item.value] {
+			continue
+		}
+		seen[item.value] = true
+		values = append(values, item.value)
+	}
+	return values
 }
 
 // relationshipSheetRiskMatch matches the unresolved-risk sentence. "1 unresolved

@@ -1123,6 +1123,68 @@ func TestRelationshipSearchFindsThePeopleOnTheCompany(t *testing.T) {
 	assertCompanyQuery("Contact", "Harbor Left")
 }
 
+func TestRelationshipSearchFindsTheActivityHeading(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	note, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Note",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mail, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Mail",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	writeObservation := func(rel *ent.Relationship, source, event, externalID string) {
+		t.Helper()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource(source).SetExternalID(externalID).SetSourceVersion("1").
+			SetEventType(event).SetOccurredAt(now).SetReceivedAt(now).
+			SetSummary("Noted the harbor").SetContentHash(externalID).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeObservation(note, "user", "note", "harbor-note")
+	writeObservation(mail, "gmail", "thread.updated", "harbor-mail")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Note saved", "Harbor Note")
+	assertCompanyQuery("Added by you · Note saved", "Harbor Note")
+	assertCompanyQuery("Mail updated", "Harbor Mail")
+	assertCompanyQuery("Gmail · Mail updated", "Harbor Mail")
+	assertCompanyQuery("Gmail", "Harbor Mail")
+	assertCompanyQuery("Added by you", "Harbor Note")
+}
+
 func TestRelationshipSearchFindsAnOpenableDetail(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
