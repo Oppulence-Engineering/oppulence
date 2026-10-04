@@ -899,6 +899,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if completeness := relationshipSheetCompletenessMatch(needle); completeness != nil {
 			parts = append(parts, completeness)
 		}
+		if duplicate := relationshipSheetDuplicateLineMatch(needle); duplicate != nil {
+			parts = append(parts, duplicate)
+		}
 		if sheetPhraseMatches("no next step", needle) ||
 			sheetPhraseMatches("add an owner and a date for what happens next.", needle) {
 			parts = append(parts, relationshipShowsMissingNextStep())
@@ -4529,6 +4532,217 @@ func relationshipSheetCompletenessMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// relationshipSheetDuplicateLineMatch matches the duplicate card on the
+// company sheet. The badge is "1 supporting detail · 80% match". The line
+// under the two names is "Matched on Email from Gmail: ada@northwind.example"
+// or "Matched on Domain: not shown" when the shared value is hidden.
+func relationshipSheetDuplicateLineMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	if details, percent, ok := duplicateMatchBadge(needle); ok {
+		preds = append(preds, relationshipShowsDuplicateBadge(details, percent))
+	}
+	if kind, provider, preview, ok := duplicateMatchLine(needle); ok {
+		preds = append(preds, relationshipShowsDuplicateAnchor(kind, provider, preview))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func duplicateMatchBadge(needle string) (details, percent int, ok bool) {
+	text := normalizePersonSearch(needle)
+	const marker = " supporting "
+	index := strings.Index(text, marker)
+	if index < 0 {
+		return 0, 0, false
+	}
+	start := index
+	for start > 0 && text[start-1] >= '0' && text[start-1] <= '9' {
+		start--
+	}
+	if start == index || (start > 0 && text[start-1] != ' ') {
+		return 0, 0, false
+	}
+	details, err := strconv.Atoi(text[start:index])
+	if err != nil || details < 0 || details > 500 {
+		return 0, 0, false
+	}
+	rest := text[index+len(marker):]
+	word := "details"
+	if details == 1 {
+		word = "detail"
+	}
+	prefix := word + " · "
+	if !strings.HasPrefix(rest, prefix) {
+		return 0, 0, false
+	}
+	rest = rest[len(prefix):]
+	end := 0
+	for end < len(rest) && rest[end] >= '0' && rest[end] <= '9' {
+		end++
+	}
+	if end == 0 {
+		return 0, 0, false
+	}
+	percent, err = strconv.Atoi(rest[:end])
+	if err != nil || percent < 0 || percent > 100 || !strings.HasPrefix(rest[end:], "% match") {
+		return 0, 0, false
+	}
+	return details, percent, true
+}
+
+func duplicateMatchLine(needle string) (kind, provider, preview string, ok bool) {
+	text := normalizePersonSearch(needle)
+	const prefix = "matched on "
+	index := strings.Index(text, prefix)
+	if index < 0 {
+		return "", "", "", false
+	}
+	rest := text[index+len(prefix):]
+	colon := strings.Index(rest, ":")
+	if colon < 0 {
+		return "", "", "", false
+	}
+	kind, provider, ok = duplicateMatchHead(strings.TrimSpace(rest[:colon]))
+	if !ok {
+		return "", "", "", false
+	}
+	preview = strings.TrimRight(strings.TrimSpace(rest[colon+1:]), ".,;?")
+	if preview == "" {
+		return "", "", "", false
+	}
+	return kind, provider, preview, true
+}
+
+func duplicateMatchHead(head string) (kind, provider string, ok bool) {
+	kinds := []struct{ label, stored string }{
+		{"a linked record", "resource_ref"},
+		{"email", "email"},
+		{"domain", "domain"},
+	}
+	for _, item := range kinds {
+		if head == item.label {
+			return item.stored, "", true
+		}
+		from := item.label + " from "
+		if !strings.HasPrefix(head, from) {
+			continue
+		}
+		source, known := identityProviderFromLabel(strings.TrimSpace(head[len(from):]))
+		if !known {
+			return "", "", false
+		}
+		return item.stored, source, true
+	}
+	return "", "", false
+}
+
+func identityProviderFromLabel(label string) (string, bool) {
+	for _, item := range []struct{ label, source string }{
+		{"a connected app", "composio"},
+		{"a voice note", "voice_note"},
+		{"added by you", "user"},
+		{"the browser", "browser"},
+		{"a meeting", "meeting"},
+		{"the web", "web"},
+		{"the crm", "crm"},
+		{"hubspot", "hubspot"},
+		{"calendar", "calendar"},
+		{"google", "google"},
+		{"gmail", "gmail"},
+		{"slack", "slack"},
+		{"a note", "desktop_note"},
+	} {
+		if label == item.label {
+			return item.source, true
+		}
+	}
+	return "", false
+}
+
+func relationshipShowsDuplicateBadge(details, percent int) predicate.Relationship {
+	return relationshipEitherIdentityCandidate(
+		sheetVisibleIdentityCandidate(),
+		relationshipidentitycandidate.EvidenceCountEQ(details),
+		identityConfidencePercent(percent),
+	)
+}
+
+func relationshipShowsDuplicateAnchor(kind, provider, preview string) predicate.Relationship {
+	preds := []predicate.RelationshipIdentityCandidate{
+		sheetVisibleIdentityCandidate(),
+		relationshipidentitycandidate.AnchorKindEQ(kind),
+		identityPreviewEquals(preview),
+	}
+	if provider == "" {
+		preds = append(preds, identityProviderBlank())
+	} else {
+		preds = append(preds, relationshipidentitycandidate.AnchorProviderEqualFold(provider))
+	}
+	return relationshipEitherIdentityCandidate(preds...)
+}
+
+func sheetVisibleIdentityCandidate() predicate.RelationshipIdentityCandidate {
+	return relationshipidentitycandidate.StatusIn("pending", "deferred", "resolved")
+}
+
+func relationshipEitherIdentityCandidate(preds ...predicate.RelationshipIdentityCandidate) predicate.Relationship {
+	match := relationshipidentitycandidate.And(preds...)
+	return relationship.Or(
+		relationship.HasProposedIdentityCandidatesWith(match),
+		relationship.HasExistingIdentityCandidatesWith(match),
+	)
+}
+
+func identityConfidencePercent(percent int) predicate.RelationshipIdentityCandidate {
+	return predicate.RelationshipIdentityCandidate(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(relationshipidentitycandidate.FieldConfidence)
+			// The badge is Math.round(confidence * 100). Postgres round() takes
+			// numeric; SQLite round() takes the stored real.
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(fmt.Sprintf("CAST(ROUND((%s)::numeric * 100) AS INTEGER) = ", column))
+			} else {
+				b.WriteString(fmt.Sprintf("CAST(ROUND(%s * 100) AS INTEGER) = ", column))
+			}
+			b.Arg(percent)
+		}))
+	})
+}
+
+func identityProviderBlank() predicate.RelationshipIdentityCandidate {
+	return predicate.RelationshipIdentityCandidate(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(fmt.Sprintf(
+				"trim(coalesce(%s, '')) = ''",
+				s.C(relationshipidentitycandidate.FieldAnchorProvider),
+			))
+		}))
+	})
+}
+
+func identityPreviewEquals(preview string) predicate.RelationshipIdentityCandidate {
+	return predicate.RelationshipIdentityCandidate(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(relationshipidentitycandidate.FieldAnchorPreview)
+			if preview == "not shown" {
+				b.WriteString(fmt.Sprintf("trim(coalesce(%s, '')) = ''", column))
+				return
+			}
+			b.WriteString(fmt.Sprintf(
+				"lower(replace(replace(replace(trim(coalesce(%s, '')), '-', ' '), '_', ' '), '.', ' ')) = ",
+				column,
+			))
+			b.Arg(preview)
+		}))
+	})
 }
 
 func relationshipConnectSourceCopy(now time.Time) predicate.Relationship {
