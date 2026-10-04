@@ -11,6 +11,7 @@ import {
   graphAsOfLabel,
   graphChangedDetail,
   graphDetailLabel,
+  graphStageReading,
   graphExecutionLabel,
   graphNodeFieldLabel,
   graphPromiseDirection,
@@ -129,6 +130,13 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphDetailLabel("unknown")).toBe("Not known");
     expect(graphNodeFieldLabel("relationship", "health", "unknown")).toBe("Not known");
     expect(graphNodeFieldLabel("relationship", "lifecycle", "unknown")).toBe("Not known");
+    expect(graphNodeFieldLabel("relationship", "engagement", "declining")).toBe("Declining");
+    expect(graphNodeFieldLabel("relationship", "sentiment", "negative")).toBe("Negative");
+    expect(graphStageReading("declining")).toBe("declining");
+    expect(graphStageReading("unknown")).toBeUndefined();
+    expect(graphStageReading(undefined)).toBeUndefined();
+    expect(source).toContain('["Engagement", "engagement", graphStageReading(node.engagement)]');
+    expect(source).toContain('["Sentiment", "sentiment", graphStageReading(node.sentiment)]');
     expect(graphDetailLabel("historical_unknown")).toBe("Not recorded for this date");
     expect(graphDetailLabel("review_required")).toBe("Needs review");
     expect(graphDetailLabel("needs_attention")).toBe("Needs attention");
@@ -395,6 +403,14 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryFilterLabel("they owe us")).toBe("they owe us");
     expect(graphQueryFilterLabel("kept")).toBe("kept");
     expect(graphQueryAnswer("1 relationship matches kept.", 1)).toBe("1 company matches kept.");
+    expect(graphQueryFilterLabel("engagement: declining")).toBe("Declining");
+    expect(graphQueryFilterLabel("sentiment: negative")).toBe("Negative");
+    expect(graphQueryAnswer("1 relationship matches engagement: declining.", 2)).toBe(
+      "1 company matches Declining.",
+    );
+    expect(graphQueryAnswer("1 relationship matches sentiment: negative.", 2)).toBe(
+      "1 company matches Negative.",
+    );
     expect(graphQueryFilterLabel("health: unknown")).toBe("Not known");
     expect(graphQueryAnswer("1 relationship matches health: unknown.", 1)).toBe(
       "1 company matches Not known.",

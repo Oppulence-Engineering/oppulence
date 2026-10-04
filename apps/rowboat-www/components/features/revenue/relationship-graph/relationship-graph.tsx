@@ -760,6 +760,8 @@ function Inspector({
             ],
             ["Health", "health", node.health],
             ["Lifecycle", "lifecycle", node.lifecycle],
+            ["Engagement", "engagement", graphStageReading(node.engagement)],
+            ["Sentiment", "sentiment", graphStageReading(node.sentiment)],
             ["Approval", "approval", node.approvalStatus],
             ["Policy", "policy", node.policyStatus],
             [
@@ -1219,7 +1221,25 @@ export function graphDetailLabel(value: string): string {
   }
 }
 
-type GraphField = "status" | "health" | "lifecycle" | "approval" | "policy" | "freshness";
+type GraphField =
+  | "status"
+  | "health"
+  | "lifecycle"
+  | "engagement"
+  | "sentiment"
+  | "approval"
+  | "policy"
+  | "freshness";
+
+/**
+ * Engagement and sentiment stay off the inspector until a reading exists.
+ * Unknown is the schema fallback, and Not known already belongs to health
+ * and lifecycle.
+ */
+export function graphStageReading(value: string | undefined): string | undefined {
+  if (!value || value === "unknown") return undefined;
+  return value;
+}
 
 /**
  * The same stored token means different things on different nodes. An open
@@ -1501,6 +1521,8 @@ function graphQueryTokenLabel(kind: string, token: string): string {
   switch (kind) {
     case "lifecycle":
     case "health":
+    case "engagement":
+    case "sentiment":
       return graphDetailLabel(raw);
     case "approval":
       return graphNodeFieldLabel("action", "approval", raw);
@@ -1534,7 +1556,15 @@ export function graphQueryFilterLabel(filter: string): string {
     .filter(Boolean);
   if (!labels.length) return filter;
   const value = labels.join(", ");
-  if (kind === "lifecycle" || kind === "health" || kind === "text") return value;
+  if (
+    kind === "lifecycle" ||
+    kind === "health" ||
+    kind === "engagement" ||
+    kind === "sentiment" ||
+    kind === "text"
+  ) {
+    return value;
+  }
   const titles: Record<string, string> = {
     nodes: "Included",
     approval: "Approval",

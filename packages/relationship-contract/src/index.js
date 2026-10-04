@@ -130,6 +130,9 @@ const GRAPH_QUERY_LIFECYCLES = [
 ];
 
 const GRAPH_QUERY_HEALTH = ["healthy", "needs_attention", "critical", "unknown"];
+// The inspector names these readings. They are not words in the company name.
+const GRAPH_QUERY_ENGAGEMENT = ["increasing", "steady", "declining", "dormant"];
+const GRAPH_QUERY_SENTIMENT = ["positive", "mixed", "negative"];
 const GRAPH_QUERY_SOURCES = [
   "gmail",
   "calendar",
@@ -174,6 +177,8 @@ export function parseRelationshipGraphQuery(query) {
     nodeKinds: [],
     lifecycle: [],
     health: [],
+    engagement: [],
+    sentiment: [],
     approvalStatus: [],
     sources: [],
     edgeKinds: [],
@@ -324,6 +329,25 @@ export function parseRelationshipGraphQuery(query) {
       filters.health.push(health);
     }
   }
+  // The inspector says Declining or Negative. Those stored fields are
+  // engagement and sentiment. Unknown stays off the inspector, so it is not
+  // a second way to ask "not known".
+  for (const engagement of GRAPH_QUERY_ENGAGEMENT) {
+    if (
+      new RegExp(`\\b${engagement}\\b`).test(normalized) &&
+      !filters.engagement.includes(engagement)
+    ) {
+      filters.engagement.push(engagement);
+    }
+  }
+  for (const sentiment of GRAPH_QUERY_SENTIMENT) {
+    if (
+      new RegExp(`\\b${sentiment}\\b`).test(normalized) &&
+      !filters.sentiment.includes(sentiment)
+    ) {
+      filters.sentiment.push(sentiment);
+    }
+  }
   // The follow-up row says Awaiting approval. The stored approval is pending.
   if (
     /\bawaiting approvals?\b|\bawaiting_approvals?\b/.test(normalized) &&
@@ -375,6 +399,8 @@ export function parseRelationshipGraphQuery(query) {
     ...Object.keys(GRAPH_QUERY_NODE_ALIASES),
     ...GRAPH_QUERY_LIFECYCLES.flatMap((value) => value.split("_")),
     ...GRAPH_QUERY_HEALTH.flatMap((value) => value.split("_")),
+    ...GRAPH_QUERY_ENGAGEMENT,
+    ...GRAPH_QUERY_SENTIMENT,
     ...GRAPH_QUERY_SOURCES.flatMap((value) => value.split("_")),
     "attention",
     "at",
@@ -515,6 +541,8 @@ export function parseRelationshipGraphQuery(query) {
   const applied = [];
   if (filters.lifecycle.length) applied.push(`lifecycle: ${filters.lifecycle.join(", ")}`);
   if (filters.health.length) applied.push(`health: ${filters.health.join(", ")}`);
+  if (filters.engagement.length) applied.push(`engagement: ${filters.engagement.join(", ")}`);
+  if (filters.sentiment.length) applied.push(`sentiment: ${filters.sentiment.join(", ")}`);
   if (filters.nodeKinds.length) applied.push(`nodes: ${filters.nodeKinds.join(", ")}`);
   if (filters.approvalStatus.length) {
     applied.push(`approval: ${filters.approvalStatus.join(", ")}`);
@@ -601,6 +629,20 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     constrainBy(
       (node) =>
         node.kind === "relationship" && filters.health.includes(normalizedGraphValue(node.health)),
+    );
+  }
+  if (filters.engagement.length) {
+    constrainBy(
+      (node) =>
+        node.kind === "relationship" &&
+        filters.engagement.includes(normalizedGraphValue(node.engagement)),
+    );
+  }
+  if (filters.sentiment.length) {
+    constrainBy(
+      (node) =>
+        node.kind === "relationship" &&
+        filters.sentiment.includes(normalizedGraphValue(node.sentiment)),
     );
   }
   if (filters.overdue) {

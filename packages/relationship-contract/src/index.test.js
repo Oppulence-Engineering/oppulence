@@ -365,6 +365,76 @@ test("asking not known finds a company whose health is unknown", () => {
   assert.equal(result.answer, "1 relationship matches health: unknown.");
 });
 
+test("asking declining finds a company whose engagement is declining", () => {
+  const parsed = parseRelationshipGraphQuery("declining");
+  assert.deepEqual(parsed.filters.engagement, ["declining"]);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["engagement: declining"]);
+
+  const steady = parseRelationshipGraphQuery("steady");
+  assert.deepEqual(steady.filters.engagement, ["steady"]);
+  assert.deepEqual(steady.filters.freeText, []);
+
+  const graph = {
+    nodes: [
+      {
+        id: "relationship:slide",
+        kind: "relationship",
+        label: "Quay Slide",
+        engagement: "declining",
+        health: "unknown",
+      },
+      {
+        id: "relationship:plain",
+        kind: "relationship",
+        label: "Quay Plain",
+        engagement: "unknown",
+        health: "unknown",
+      },
+    ],
+    edges: [],
+  };
+  const result = queryRelationshipGraph(graph, "declining");
+  assert.deepEqual(result.relationshipIds, ["slide"]);
+  assert.equal(result.visibleNodeIds.includes("relationship:plain"), false);
+  assert.equal(result.answer, "1 relationship matches engagement: declining.");
+});
+
+test("asking negative finds a company whose sentiment is negative", () => {
+  const parsed = parseRelationshipGraphQuery("negative");
+  assert.deepEqual(parsed.filters.sentiment, ["negative"]);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["sentiment: negative"]);
+
+  const positive = parseRelationshipGraphQuery("positive");
+  assert.deepEqual(positive.filters.sentiment, ["positive"]);
+  assert.deepEqual(positive.filters.engagement, []);
+
+  const graph = {
+    nodes: [
+      {
+        id: "relationship:tone",
+        kind: "relationship",
+        label: "Quay Tone",
+        sentiment: "negative",
+        engagement: "unknown",
+      },
+      {
+        id: "relationship:plain",
+        kind: "relationship",
+        label: "Quay Plain",
+        sentiment: "unknown",
+        engagement: "steady",
+      },
+    ],
+    edges: [],
+  };
+  const result = queryRelationshipGraph(graph, "negative");
+  assert.deepEqual(result.relationshipIds, ["tone"]);
+  assert.equal(result.visibleNodeIds.includes("relationship:plain"), false);
+  assert.equal(result.answer, "1 relationship matches sentiment: negative.");
+});
+
 test("asking awaiting approval finds a follow-up that is still pending", () => {
   const parsed = parseRelationshipGraphQuery("awaiting approval");
   assert.deepEqual(parsed.filters.approvalStatus, ["pending"]);
