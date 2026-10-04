@@ -692,6 +692,68 @@ func TestRelationshipSearchFindsTheSheetMailWords(t *testing.T) {
 	assertCompanyQuery("date")
 }
 
+func TestRelationshipSearchFindsTheMeetingNote(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	note := func(rel *ent.Relationship, externalID, facts string) {
+		t.Helper()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("desktop_note").SetExternalID(externalID).
+			SetEventType("note").SetOccurredAt(now).SetReceivedAt(now).
+			SetSummary("Harbor title").SetContentHash(externalID).
+			SetNormalizedFactsJSON(facts).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	quiet := makeCompany("Note Quiet")
+	plain := makeCompany("Note Plain")
+	linked := makeCompany("Note Linked")
+	text := makeCompany("Note Text")
+	live := makeCompany("Note Live")
+	_ = quiet
+	note(plain, "note-plain", `{"title":"Harbor title","meetingLinked":false}`)
+	note(linked, "note-linked", `{"title":"Harbor title","meetingLinked":true}`)
+	note(text, "note-text", `{"title":"Harbor title","meetingLinked":"true"}`)
+	note(live, "note-live", `{"title":"Harbor title","liveLinked":true}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Marked as a meeting note.", "Note Linked")
+	assertCompanyQuery("which activity is marked as a meeting note", "Note Linked")
+	assertCompanyQuery("meeting")
+	assertCompanyQuery("marked")
+}
+
 func TestRelationshipSearchFindsTheEmptySheetSentences(t *testing.T) {
 	f := newFixture(t)
 	makeCompany := func(name string) *ent.Relationship {

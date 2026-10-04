@@ -880,6 +880,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if activity := relationshipSheetActivityMatch(needle); activity != nil && !sheetEmptySentenceOwnsActivity(needle) {
 			parts = append(parts, activity)
 		}
+		if meetingNote := relationshipSheetMeetingNoteMatch(needle); meetingNote != nil {
+			parts = append(parts, meetingNote)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -1723,6 +1726,33 @@ func relationshipSheetActivityMatch(needle string) predicate.Relationship {
 	default:
 		return nil
 	}
+}
+
+// relationshipSheetMeetingNoteMatch matches the line under an opened activity.
+// A note linked to a meeting says "Marked as a meeting note." The stored flag
+// is a boolean. The string "true" is not that flag.
+func relationshipSheetMeetingNoteMatch(needle string) predicate.Relationship {
+	if !labelPhraseMatches("marked as a meeting note.", needle) {
+		return nil
+	}
+	return relationship.HasObservationsWith(observationMeetingLinked())
+}
+
+func observationMeetingLinked() predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("(")
+				b.WriteString(column)
+				b.WriteString("::jsonb->'meetingLinked') = 'true'::jsonb")
+				return
+			}
+			b.WriteString("json_type(")
+			b.WriteString(column)
+			b.WriteString(", '$.meetingLinked') = 'true'")
+		}))
+	})
 }
 
 func activitySources(needle string) []string {
