@@ -1091,6 +1091,68 @@ func TestRelationshipSearchFindsTheActivitySubject(t *testing.T) {
 	assertCompanyQuery("subject")
 }
 
+func TestRelationshipSearchFindsTheActivityMessageDays(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string, payload []byte) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		create := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("gmail").SetExternalID(name).SetEventType("thread.snapshot").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts)
+		if len(payload) > 0 {
+			create.SetPayloadCiphertext(payload)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveNote("Quill Packet", "Gmail thread observed: Harbor packet", `{"first_message_at":"2026-10-04T15:04:05.123Z"}`, nil)
+	saveNote("Cedar Echo", "Oct 4, 2026", `{"first_message_at":"2026-10-04T15:04:05Z"}`, nil)
+	saveNote("Birch Slide", "Gmail thread observed: Birch slide", `{"last_message_at":"2026-08-01T00:30:00Z"}`, nil)
+	saveNote("Cedar Quiet", "Gmail thread observed: Cedar quiet", `{"last_message_at":"2026-08-01T23:30:00Z"}`, []byte{1, 2, 3})
+	saveNote("Cedar Mine", "Gmail thread observed: Cedar mine", `{"first_message_at":"2026-10-05T00:30:00Z"}`, nil)
+	saveNote("Cedar Mark", "Gmail thread observed: Cedar mark", `{"first_message_at":"not-a-date"}`, nil)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("First message: Oct 4, 2026", "Quill Packet")
+	assertCompanyQuery("which activity says first message: Oct 4, 2026", "Quill Packet")
+	assertCompanyQuery("Last message: Aug 1, 2026", "Birch Slide", "Cedar Quiet")
+	assertCompanyQuery("First message: Oct 5, 2026", "Cedar Mine")
+	assertCompanyQuery("First message: Oct 4, 2026T15:04:05Z")
+	assertCompanyQuery("First Message At: 2026-10-04T15:04:05.123Z")
+	assertCompanyQuery("first message")
+	assertCompanyQuery("last message")
+	assertCompanyQuery("not-a-date")
+}
+
 func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

@@ -273,6 +273,8 @@ const HIDDEN_ACTIVITY_KEYS = new Set([
   "evidence_start_ms",
   "evidence_end_ms",
   "commitment_due_timezone",
+  // The clock was clamped. The first and last message days are the activity.
+  "occurred_at_clamped",
 ]);
 
 const ACTIVITY_FACT_LABELS: Record<string, string> = {
@@ -306,16 +308,26 @@ function activityDirectionLine(value: unknown): string | null {
 
 /** A due instant is stored in UTC. The activity names the day. */
 function activityDueLine(value: unknown): string | null {
+  const day = activityUtcDay(value);
+  return day ? `Due: ${day}` : null;
+}
+
+/** Gmail stores the first and last message as instants. The activity names the day. */
+function activityMessageDayLine(label: string, value: unknown): string | null {
+  const day = activityUtcDay(value);
+  return day ? `${label}: ${day}` : null;
+}
+
+function activityUtcDay(value: unknown): string | null {
   if (typeof value !== "string" || !value.trim()) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  const day = date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
     timeZone: "UTC",
   });
-  return `Due: ${day}`;
 }
 
 /** Participant refs on a confirmed meeting are tokens until a person is named. */
@@ -371,6 +383,14 @@ function linesFromActivity(value: unknown): string[] {
     if (key === "commitment_due_at") {
       const due = activityDueLine(item);
       if (due) lines.push(due);
+      continue;
+    }
+    if (key === "first_message_at" || key === "last_message_at") {
+      const day = activityMessageDayLine(
+        key === "first_message_at" ? "First message" : "Last message",
+        item,
+      );
+      if (day) lines.push(day);
       continue;
     }
     if (key === "evidence_quote") {

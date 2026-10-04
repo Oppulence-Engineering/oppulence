@@ -218,4 +218,18 @@ describe("source product copy", () => {
       "Sync incomplete",
     );
   });
+
+  it("names the first and last message by the UTC day", () => {
+    expect(
+      activityEvidenceLines(null, {
+        first_message_at: "2026-10-04T15:04:05.123Z",
+        last_message_at: "2026-08-01T00:30:00Z",
+        occurred_at_clamped: true,
+      }),
+    ).toEqual(["First message: Oct 4, 2026", "Last message: Aug 1, 2026"]);
+    expect(activityEvidenceLines(null, { first_message_at: "not-a-date" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(activityLinesBesideSummary(["First message: Oct 4, 2026"], "Oct 4, 2026")).toEqual([]);
+  });
 });
