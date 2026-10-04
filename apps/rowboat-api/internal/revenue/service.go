@@ -868,6 +868,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if truth := relationshipSheetTruthPromiseMatch(needle, searchedAt); truth != nil {
 			parts = append(parts, truth)
 		}
+		if badges := relationshipSheetPromiseBadgeMatch(needle, searchedAt); badges != nil {
+			parts = append(parts, badges)
+		}
 		if band := relationshipAttentionBandMatch(needle); band != nil {
 			parts = append(parts, band)
 		}
@@ -3452,6 +3455,53 @@ func relationshipAttentionBandMatch(needle string) predicate.Relationship {
 		band,
 		relationshipattentionitem.StatusEQ("open"),
 	)
+}
+
+// relationshipSheetPromiseBadgeMatch matches the status badge on each promise.
+// Kept, Waived, Missed, Cancelled, and Superseded are the stored status.
+// Disputed and Review are the acceptance. Open is a confirmed promise that
+// is not due inside 72 hours. At risk already has its own search.
+func relationshipSheetPromiseBadgeMatch(needle string, now time.Time) predicate.Relationship {
+	var preds []predicate.Relationship
+	// "Kept" is also a retention word. Only the badge itself, not "no audio was kept".
+	if needle == "kept" {
+		preds = append(preds, relationship.HasCommitmentsWith(commitment.StatusIn("fulfilled", "met")))
+	}
+	if needle == "waived" {
+		preds = append(preds, relationship.HasCommitmentsWith(commitment.StatusEQ("waived")))
+	}
+	if needle == "missed" {
+		preds = append(preds, relationship.HasCommitmentsWith(commitment.StatusEQ("missed")))
+	}
+	if needle == "review" {
+		preds = append(preds, relationship.HasCommitmentsWith(commitment.And(
+			commitment.AcceptanceEQ("candidate"),
+			commitment.StatusNotIn("fulfilled", "met", "waived", "missed", "cancelled", "superseded", "disputed"),
+		)))
+	}
+	if needle == "open" {
+		preds = append(preds, relationship.HasCommitmentsWith(openTruthCommitment(now)))
+	}
+	if labelPhraseMatches("cancelled", needle) {
+		preds = append(preds, relationship.HasCommitmentsWith(commitment.StatusEQ("cancelled")))
+	}
+	if labelPhraseMatches("superseded", needle) {
+		preds = append(preds, relationship.HasCommitmentsWith(commitment.StatusEQ("superseded")))
+	}
+	if labelPhraseMatches("disputed", needle) {
+		preds = append(preds, relationship.HasCommitmentsWith(commitment.Or(
+			commitment.StatusEQ("disputed"),
+			commitment.AcceptanceEQ("disputed"),
+		)))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
 }
 
 func relationshipSheetTruthPromiseMatch(needle string, now time.Time) predicate.Relationship {

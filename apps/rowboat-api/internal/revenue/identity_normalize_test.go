@@ -1089,6 +1089,70 @@ func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
 	assertCompanyQuery("No action is currently recommended", "Quill Atelier")
 }
 
+func TestRelationshipSearchFindsPromiseBadges(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Badge Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	makePromise := func(name, status, acceptance string, due *time.Time) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		row := seedCommitment(t, f, rel, "promised_by_them", "Send the quay packet", "", due)
+		update := f.client.Commitment.UpdateOneID(row.ID).SetStatus(status).SetAcceptance(acceptance)
+		if _, err := update.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	soon := time.Now().Add(24 * time.Hour)
+	later := time.Now().Add(30 * 24 * time.Hour)
+	past := time.Now().Add(-24 * time.Hour)
+	makePromise("Badge Kept", "fulfilled", "internally_confirmed", &past)
+	makePromise("Badge Released", "waived", "internally_confirmed", nil)
+	makePromise("Badge Late", "missed", "internally_confirmed", &past)
+	makePromise("Badge Halted", "cancelled", "internally_confirmed", nil)
+	makePromise("Badge Replaced", "superseded", "internally_confirmed", nil)
+	makePromise("Badge Argue", "open", "disputed", nil)
+	makePromise("Badge Guess", "open", "candidate", &past)
+	makePromise("Badge Live", "open", "internally_confirmed", &later)
+	makePromise("Badge Soon", "open", "internally_confirmed", &soon)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Kept", "Badge Kept")
+	assertCompanyQuery("Waived", "Badge Released")
+	assertCompanyQuery("Missed", "Badge Late")
+	assertCompanyQuery("Cancelled", "Badge Halted")
+	assertCompanyQuery("the promise is cancelled", "Badge Halted")
+	assertCompanyQuery("Superseded", "Badge Replaced")
+	assertCompanyQuery("Disputed", "Badge Argue")
+	assertCompanyQuery("Review", "Badge Guess")
+	assertCompanyQuery("Open", "Badge Live")
+	assertCompanyQuery("At risk", "Badge Soon")
+	assertCompanyQuery("kept until it is transcribed")
+	assertCompanyQuery("needs your review")
+}
+
 func TestRelationshipSearchFindsTheAttentionBadge(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
