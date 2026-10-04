@@ -852,8 +852,24 @@ func (s *Service) ListRelationshipsFiltered(
 		if review := relationshipSheetReviewMatch(u.ID, needle); review != nil {
 			parts = append(parts, review)
 		}
+		searchedAt := time.Now()
 		if sheetPhraseMatches("no supported answer yet", needle) {
-			parts = append(parts, relationship.Not(relationshipHasSupportedStateAnswer(time.Now())))
+			// An open confirmed promise is the answer on the sheet. A company
+			// that shows that promise is not "No supported answer yet."
+			parts = append(parts, relationship.And(
+				relationship.Not(relationshipHasSupportedStateAnswer(searchedAt)),
+				relationship.Not(relationship.HasCommitmentsWith(visibleTruthCommitment())),
+			))
+		}
+		if truth := relationshipSheetTruthPromiseMatch(needle, searchedAt); truth != nil {
+			parts = append(parts, truth)
+		}
+		parts = append(parts, relationship.HasCommitmentsWith(commitment.TextContainsFold(value)))
+		if text := promiseLineText(needle); text != "" {
+			parts = append(parts, relationship.HasCommitmentsWith(commitment.And(
+				visibleTruthCommitment(),
+				commitment.TextContainsFold(text),
+			)))
 		}
 		if counts := relationshipSheetDetailCountMatch(needle); counts != nil {
 			parts = append(parts, counts)
@@ -884,7 +900,6 @@ func (s *Service) ListRelationshipsFiltered(
 		if degraded := relationshipSheetSourceDegradationMatch(needle); degraded != nil {
 			parts = append(parts, degraded)
 		}
-		searchedAt := time.Now()
 		if quiet := relationshipSheetQuietMatch(needle, searchedAt); quiet != nil {
 			parts = append(parts, quiet)
 		}
@@ -913,8 +928,10 @@ func (s *Service) ListRelationshipsFiltered(
 			parts = append(parts, governance)
 		}
 		if sheetPhraseMatches("no action is currently recommended", needle) {
-			parts = append(parts, relationship.Not(
-				relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen)),
+			// A confirmed promise with no draft says "No follow-up is drafted."
+			parts = append(parts, relationship.And(
+				relationship.Not(relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen))),
+				relationship.Not(relationship.HasCommitmentsWith(visibleTruthCommitment())),
 			))
 		}
 		parts = append(parts, relationship.HasActionsWith(revenueaction.ReasonContainsFold(value)))
@@ -1114,15 +1131,15 @@ func relationshipDirectoryColumnMatch(term string, now time.Time) predicate.Rela
 	if health := relationshipHealthLabelMatch(needle); health != nil {
 		preds = append(preds, health)
 	}
-		if lifecycle := relationshipLifecycleLabelMatch(needle, now); lifecycle != nil {
-			preds = append(preds, lifecycle)
-		}
-		if engagement := relationshipClosedLabelMatch(needle, now, "engagement", engagementSearchLabels, relationship.EngagementIn); engagement != nil {
-			preds = append(preds, engagement)
-		}
-		if sentiment := relationshipClosedLabelMatch(needle, now, "sentiment", sentimentSearchLabels, relationship.SentimentIn); sentiment != nil {
-			preds = append(preds, sentiment)
-		}
+	if lifecycle := relationshipLifecycleLabelMatch(needle, now); lifecycle != nil {
+		preds = append(preds, lifecycle)
+	}
+	if engagement := relationshipClosedLabelMatch(needle, now, "engagement", engagementSearchLabels, relationship.EngagementIn); engagement != nil {
+		preds = append(preds, engagement)
+	}
+	if sentiment := relationshipClosedLabelMatch(needle, now, "sentiment", sentimentSearchLabels, relationship.SentimentIn); sentiment != nil {
+		preds = append(preds, sentiment)
+	}
 	if n, ok := exactPersonCompanyCount(needle); ok {
 		preds = append(preds, relationshipParticipantCount("=", n))
 		// "2 open actions" also prints that number. A bare "2" has to find it,
@@ -2809,6 +2826,102 @@ func writePolicyRetentionDays(b *sql.Builder, s *sql.Selector) {
 	b.WriteString(", '$.retentionDays'), 0)")
 }
 
+// visibleTruthCommitment is a promise the sheet can put on "What is true now?".
+// A candidate still needs confirmation, and a disputed promise is not the fact.
+func visibleTruthCommitment() predicate.Commitment {
+	return commitment.And(
+		commitment.Or(
+			commitment.StatusEQ("open"),
+			commitment.StatusEQ("at_risk"),
+		),
+		commitment.AcceptanceNEQ("candidate"),
+		commitment.AcceptanceNEQ("disputed"),
+	)
+}
+
+// openTruthCommitment is the promise the sheet calls "Open promise". A due
+// time inside 72 hours is "At risk" even while the stored status stays open.
+func openTruthCommitment(now time.Time) predicate.Commitment {
+	soon := now.UTC().Add(72 * time.Hour)
+	return commitment.And(
+		visibleTruthCommitment(),
+		commitment.StatusNEQ("at_risk"),
+		commitment.Or(
+			commitment.DueAtIsNil(),
+			commitment.DueAtGTE(soon),
+		),
+	)
+}
+
+func atRiskTruthCommitment(now time.Time) predicate.Commitment {
+	soon := now.UTC().Add(72 * time.Hour)
+	return commitment.And(
+		visibleTruthCommitment(),
+		commitment.Or(
+			commitment.StatusEQ("at_risk"),
+			commitment.And(
+				commitment.DueAtNotNil(),
+				commitment.DueAtLT(soon),
+			),
+		),
+	)
+}
+
+// promiseLineText is the promise inside "Open promise: …" or the action
+// sentence that ends with "No follow-up is drafted."
+func promiseLineText(needle string) string {
+	text := normalizePersonSearch(needle)
+	stripped := false
+	drafted := normalizePersonSearch("no follow-up is drafted")
+	if strings.HasSuffix(text, drafted) && text != drafted {
+		text = strings.TrimSpace(strings.TrimSuffix(text, drafted))
+		text = strings.TrimRight(text, ".")
+		text = strings.TrimSpace(text)
+		stripped = true
+	}
+	for _, prefix := range []string{"open promise:", "at risk promise:"} {
+		if strings.HasPrefix(text, prefix) {
+			text = strings.TrimSpace(strings.TrimPrefix(text, prefix))
+			text = strings.TrimRight(text, ".")
+			text = strings.TrimSpace(text)
+			stripped = true
+		}
+	}
+	if !stripped || text == "" {
+		return ""
+	}
+	return text
+}
+
+// relationshipSheetTruthPromiseMatch matches the promise sentence on
+// "What is true now?" and the follow-up sentence under "What should happen next?".
+func relationshipSheetTruthPromiseMatch(needle string, now time.Time) predicate.Relationship {
+	var preds []predicate.Relationship
+	if sheetPhraseMatches("open promise", needle) || sheetPhraseMatches("open promises", needle) {
+		preds = append(preds, relationship.HasCommitmentsWith(openTruthCommitment(now)))
+	}
+	if sheetPhraseMatches("at risk promise", needle) ||
+		sheetPhraseMatches("promise at risk", needle) ||
+		sheetPhraseMatches("promises at risk", needle) ||
+		sheetPhraseMatches("promises are at risk", needle) {
+		preds = append(preds, relationship.HasCommitmentsWith(atRiskTruthCommitment(now)))
+	}
+	if sheetPhraseMatches("no follow-up is drafted", needle) {
+		preds = append(preds, relationship.And(
+			relationship.Not(relationship.HasActionsWith(revenueaction.QueueStatusEQ(QueueOpen))),
+			relationship.HasCommitmentsWith(visibleTruthCommitment()),
+		))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
 func overdueCommitmentAny(now time.Time) predicate.Commitment {
 	return commitment.And(
 		overdueCommitmentEligible(),
@@ -3146,9 +3259,9 @@ func relationshipAcknowledgementExists(s *sql.Selector, userID uuid.UUID, covers
 }
 
 // relationshipHasSupportedStateAnswer is a stage, health, engagement, or
-// sentiment the sheet can show. Without one of those, the question reads
-// "No supported answer yet." A user correction stands on its own. Any other
-// claim needs an observation.
+// sentiment the sheet can show. A confirmed open promise is a separate
+// answer. A user correction stands on its own. Any other claim needs an
+// observation.
 func relationshipHasSupportedStateAnswer(now time.Time) predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {

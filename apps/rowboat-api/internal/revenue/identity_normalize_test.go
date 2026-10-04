@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
@@ -747,6 +748,70 @@ func TestRelationshipSearchSkipsASupportedEngagementAnswer(t *testing.T) {
 	if len(got) != 1 || got[0] != "Quill Atelier" {
 		t.Fatalf("no supported answer = %v", got)
 	}
+}
+
+func TestRelationshipSearchTreatsAnOpenPromiseAsTheTruthLine(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	owe, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Owe",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	seedCommitment(t, f, owe, "promised_by_them", "Send the quay review", "", nil)
+	risk, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Risk",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	soon := time.Now().Add(24 * time.Hour)
+	seedCommitment(t, f, risk, "promised_by_them", "Send the quay risk", "", &soon)
+	guess, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Guess",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	seedCommitment(t, f, guess, "promised_by_them", "Send the guessed note", "", nil)
+	if _, err := f.client.Commitment.Update().
+		Where(commitment.HasRelationshipWith(relationship.IDEQ(guess.ID))).
+		SetAcceptance("candidate").
+		SetUserConfirmed(false).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("No supported answer yet", "Quill Atelier", "Harbor Guess")
+	assertCompanyQuery("No action is currently recommended", "Quill Atelier", "Harbor Guess")
+	assertCompanyQuery("Open promise", "Harbor Owe")
+	assertCompanyQuery("Open promise: Send the quay review", "Harbor Owe")
+	assertCompanyQuery("Send the quay review", "Harbor Owe")
+	assertCompanyQuery("No follow-up is drafted", "Harbor Owe", "Harbor Risk")
+	assertCompanyQuery("At risk promise", "Harbor Risk")
+	assertCompanyQuery("At risk promise: Send the quay risk", "Harbor Risk")
+	assertCompanyQuery("Open promise: Send the quay review. No follow-up is drafted.", "Harbor Owe")
 }
 
 func TestRelationshipSearchFindsAnOpenableDetail(t *testing.T) {
