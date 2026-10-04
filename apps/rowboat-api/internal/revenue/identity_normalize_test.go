@@ -814,6 +814,67 @@ func TestRelationshipSearchTreatsAnOpenPromiseAsTheTruthLine(t *testing.T) {
 	assertCompanyQuery("Open promise: Send the quay review. No follow-up is drafted.", "Harbor Owe")
 }
 
+func TestRelationshipSearchFindsWhoOwesThePromise(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	them, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Them",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	seedCommitment(t, f, them, "promised_by_them", "Send the quay review", "", nil)
+	us, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Us",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	seedCommitment(t, f, us, "promised_by_me", "Send the quay packet", "", nil)
+	both, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Both",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	seedCommitment(t, f, both, "mutual", "Send the quay note", "", nil)
+	soonCompany, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Soon",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	soon := time.Now().Add(24 * time.Hour)
+	seedCommitment(t, f, soonCompany, "promised_by_them", "Send the quay risk", "", &soon)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("They owe us", "Harbor Them", "Harbor Soon")
+	assertCompanyQuery("What they owe us", "Harbor Them", "Harbor Soon")
+	assertCompanyQuery("We owe them", "Harbor Us")
+	assertCompanyQuery("We both owe", "Harbor Both")
+	assertCompanyQuery("At risk", "Harbor Soon")
+	assertCompanyQuery("At risk promise", "Harbor Soon")
+}
+
 func TestRelationshipSearchFindsAnOpenableDetail(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

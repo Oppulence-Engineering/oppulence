@@ -2869,6 +2869,19 @@ func atRiskTruthCommitment(now time.Time) predicate.Commitment {
 
 // promiseLineText is the promise inside "Open promise: …" or the action
 // sentence that ends with "No follow-up is drafted."
+// queryHasPhrase matches the printed label, and a longer question that still
+// contains it. "What they owe us" is the same card as "They owe us".
+func queryHasPhrase(phrase, needle string) bool {
+	phrase = normalizePersonSearch(phrase)
+	if phrase == "" || needle == "" {
+		return false
+	}
+	if sheetPhraseMatches(phrase, needle) {
+		return true
+	}
+	return len(phrase) >= 8 && strings.Contains(needle, phrase)
+}
+
 func promiseLineText(needle string) string {
 	text := normalizePersonSearch(needle)
 	stripped := false
@@ -2900,11 +2913,23 @@ func relationshipSheetTruthPromiseMatch(needle string, now time.Time) predicate.
 	if sheetPhraseMatches("open promise", needle) || sheetPhraseMatches("open promises", needle) {
 		preds = append(preds, relationship.HasCommitmentsWith(openTruthCommitment(now)))
 	}
-	if sheetPhraseMatches("at risk promise", needle) ||
+	// The promise card says At risk. That badge is the clock, not the stored status.
+	if needle == "at risk" ||
+		sheetPhraseMatches("at risk promise", needle) ||
 		sheetPhraseMatches("promise at risk", needle) ||
 		sheetPhraseMatches("promises at risk", needle) ||
 		sheetPhraseMatches("promises are at risk", needle) {
 		preds = append(preds, relationship.HasCommitmentsWith(atRiskTruthCommitment(now)))
+	}
+	// The same card says They owe us, We owe them, or We both owe.
+	if queryHasPhrase("they owe us", needle) {
+		preds = append(preds, relationship.HasCommitmentsWith(commitment.DirectionEQ("promised_by_them")))
+	}
+	if queryHasPhrase("we owe them", needle) {
+		preds = append(preds, relationship.HasCommitmentsWith(commitment.DirectionEQ("promised_by_me")))
+	}
+	if queryHasPhrase("we both owe", needle) {
+		preds = append(preds, relationship.HasCommitmentsWith(commitment.DirectionEQ("mutual")))
 	}
 	if sheetPhraseMatches("no follow-up is drafted", needle) {
 		preds = append(preds, relationship.And(
