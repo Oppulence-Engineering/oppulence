@@ -1140,6 +1140,11 @@ func relationshipDirectoryColumnMatch(term string) predicate.Relationship {
 }
 
 func relationshipHealthLabelMatch(needle string) predicate.Relationship {
+	// The directory Health badge prints "Not known" for the stored value
+	// unknown. The stored word still matches on its own.
+	if needle == "not known" {
+		return relationship.HealthEQ("unknown")
+	}
 	labels := []struct {
 		label string
 		value string

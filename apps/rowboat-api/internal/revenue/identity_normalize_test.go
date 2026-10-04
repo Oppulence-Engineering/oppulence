@@ -2248,6 +2248,20 @@ func TestRelationshipSearchFindsTheDirectoryColumns(t *testing.T) {
 	if got := namesOf(healthyRows.Relationships); len(got) != 1 || got[0] != "Quill Atelier" {
 		t.Fatalf("healthy = %v", got)
 	}
+	notKnown, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Not known"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(notKnown.Relationships); len(got) != 2 || !hasName(got, "Northwind Quiet") || !hasName(got, "Lumen Packet") || hasName(got, "Quill Atelier") {
+		t.Fatalf("not known = %v", got)
+	}
+	notKnownHyphen, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "not-known"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(notKnownHyphen.Relationships); len(got) != 2 || hasName(got, "Quill Atelier") {
+		t.Fatalf("not-known = %v", got)
+	}
 	onePerson, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "1"})
 	if err != nil {
 		t.Fatal(err)
