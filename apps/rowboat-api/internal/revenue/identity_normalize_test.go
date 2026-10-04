@@ -732,11 +732,16 @@ func TestRelationshipSearchFindsTheUnsupportedStateAnswer(t *testing.T) {
 	assertCompanyQuery("No supported answer yet", "Quill Atelier")
 	assertCompanyQuery("supported", "Quill Atelier")
 	assertCompanyQuery("answer")
-	assertCompanyQuery("0 of 8 details have a source", "Quill Atelier")
-	assertCompanyQuery("1 of 8 details have a source", "Lumen Packet")
-	assertCompanyQuery("0 of 8 details come from a source you can open", "Quill Atelier", "Lumen Packet")
-	assertCompanyQuery("1 of 8 details come from a source you can open")
-	assertCompanyQuery("2 of 8 details have a source")
+	assertCompanyQuery("0 of 8 account details have a source", "Quill Atelier")
+	assertCompanyQuery("1 of 8 account details have a source", "Lumen Packet")
+	assertCompanyQuery("0 of 8 account details come from a source you can open.", "Quill Atelier", "Lumen Packet")
+	assertCompanyQuery("1 of 8 account details come from a source you can open.")
+	assertCompanyQuery("2 of 8 account details have a source")
+	// The tail sits in the empty heading and in every count. It must not
+	// also return the company whose badge says one detail has a source.
+	assertCompanyQuery("details have a source", "Quill Atelier")
+	assertCompanyQuery("No account details have a source yet", "Quill Atelier")
+	assertCompanyQuery("Some details are still missing", "Lumen Packet")
 }
 
 func TestRelationshipSearchSkipsASupportedEngagementAnswer(t *testing.T) {
@@ -1293,8 +1298,8 @@ func TestRelationshipSearchFindsAnOpenableDetail(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("1 of 8 details come from a source you can open", "Harbor Source")
-	assertCompanyQuery("0 of 8 details come from a source you can open", "Lumen Packet", "Cited Nowhere")
+	assertCompanyQuery("1 of 8 account details come from a source you can open.", "Harbor Source")
+	assertCompanyQuery("0 of 8 account details come from a source you can open.", "Lumen Packet", "Cited Nowhere")
 }
 
 func TestRelationshipSearchFindsTheCompletenessCopy(t *testing.T) {
@@ -1425,7 +1430,8 @@ func TestRelationshipSearchFindsTheCompletenessHeading(t *testing.T) {
 			}
 		}
 	}
-	assertCompanyQuery("Some details are still missing", "Quill Atelier")
+	assertCompanyQuery("No account details have a source yet", "Quill Atelier")
+	assertCompanyQuery("Some details are still missing")
 	assertCompanyQuery("Needs a review before you act", "Lumen Packet", "Harbor Ledger")
 	assertCompanyQuery("Identity review is required before acting on this relationship", "Lumen Packet", "Harbor Ledger")
 	assertCompanyQuery("1 identity review blocks acting", "Lumen Packet", "Harbor Ledger")
@@ -1548,7 +1554,8 @@ func TestRelationshipSearchFindsTheRefreshHeading(t *testing.T) {
 	assertCompanyQuery("A required source is rebuilding; partial state is visible", "Lumen Packet")
 	assertCompanyQuery("Accepted evidence is waiting for the durable relationship projector", "Harbor Ledger")
 	assertCompanyQuery("Relationship projection requires operator repair before this state is safe to act on", "Northwind")
-	assertCompanyQuery("Some details are still missing", "Mesa Clay")
+	assertCompanyQuery("No account details have a source yet", "Mesa Clay")
+	assertCompanyQuery("Some details are still missing")
 	assertCompanyQuery("refresh")
 }
 

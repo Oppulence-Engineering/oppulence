@@ -3627,12 +3627,15 @@ func relationshipSheetDetailCountMatch(needle string) predicate.Relationship {
 	now := time.Now()
 	var preds []predicate.Relationship
 	for n := 0; n <= total; n++ {
-		have := fmt.Sprintf("%d of %d details have a source", n, total)
-		if sheetPhraseMatches(have, needle) {
+		// The badge says "0 of 8 account details have a source". A shared
+		// tail such as "details have a source" is inside every count, and
+		// treating it as each count returned every company.
+		have := fmt.Sprintf("%d of %d account details have a source", n, total)
+		if labelPhraseMatches(have, needle) {
 			preds = append(preds, relationshipSupportedDetailCount(n, now))
 		}
-		come := fmt.Sprintf("%d of %d details come from a source you can open.", n, total)
-		if sheetPhraseMatches(come, needle) {
+		come := fmt.Sprintf("%d of %d account details come from a source you can open.", n, total)
+		if labelPhraseMatches(come, needle) {
 			preds = append(preds, relationshipOpenableDetailCount(n, now))
 		}
 	}
@@ -4105,8 +4108,19 @@ func relationshipSheetCompletenessMatch(needle string) predicate.Relationship {
 			preds = append(preds, relationshipRemainingDetailCopy(supported, now))
 		}
 	}
+	// Zero supported details use their own heading. "Some details are still
+	// missing" is the heading once at least one detail has a source.
+	if sheetPhraseMatches("no account details have a source yet", needle) {
+		preds = append(preds, relationship.And(
+			relationshipShowsPartialHeading(now),
+			relationshipSupportedDetailCount(0, now),
+		))
+	}
 	if sheetPhraseMatches("some details are still missing", needle) {
-		preds = append(preds, relationshipShowsPartialHeading(now))
+		preds = append(preds, relationship.And(
+			relationshipShowsPartialHeading(now),
+			relationship.Not(relationshipSupportedDetailCount(0, now)),
+		))
 	}
 	if sheetPhraseMatches("details are current", needle) {
 		preds = append(preds, relationshipShowsCurrentHeading(now))
