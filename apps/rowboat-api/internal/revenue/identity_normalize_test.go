@@ -3236,6 +3236,121 @@ func TestRelationshipSearchFindsThePlanAndDeletionLines(t *testing.T) {
 	assertCompanyQuery("delete")
 }
 
+func TestRelationshipSearchFindsPlanStatus(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	savePlan := func(rel *ent.Relationship, stableID, columnStatus, payloadStatus string, artifactVersion, revision int) {
+		t.Helper()
+		payload := "{}"
+		if payloadStatus != "" || revision > 0 {
+			raw, err := json.Marshal(map[string]any{
+				"planId": stableID,
+				"status": payloadStatus,
+				"currentRevision": map[string]any{
+					"version": revision,
+					"items": []any{map[string]any{
+						"itemId": "item:1", "title": "Send the harbor note",
+						"ownerParticipantRef": "plan-participant", "status": "open",
+					}},
+				},
+				"tokenState": "not_issued",
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			payload = string(raw)
+		}
+		sum := sha256.Sum256([]byte(payload))
+		if _, err := f.client.ConversationIntelligenceArtifact.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetKind("mutual_action_plan").SetStableID(stableID).SetVersion(artifactVersion).
+			SetStatus(columnStatus).SetSubjectRef(rel.ID.String()).
+			SetEffectiveAt(now).SetEvidenceRefs([]string{}).
+			SetPayloadJSON(payload).SetPayloadHash(hex.EncodeToString(sum[:])).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	quiet := makeCompany("Plan Quiet")
+	blank := makeCompany("Plan Blank")
+	open := makeCompany("Plan Open")
+	edited := makeCompany("Plan Edited")
+	ready := makeCompany("Plan Ready")
+	reply := makeCompany("Plan Reply")
+	kept := makeCompany("Plan Kept")
+	halted := makeCompany("Plan Halted")
+	issued := makeCompany("Plan Issued")
+	stale := makeCompany("Plan Stale")
+	column := makeCompany("Plan Column")
+	_ = quiet
+	savePlan(blank, "plan:blank", "draft", "", 1, 0)
+	savePlan(open, "plan:open", "draft", "draft", 1, 1)
+	savePlan(edited, "plan:edited", "revised", "revised", 1, 2)
+	savePlan(ready, "plan:ready", "internally_approved", "internally_approved", 1, 2)
+	savePlan(reply, "plan:reply", "counterparty_responded", "counterparty_responded", 1, 3)
+	savePlan(kept, "plan:kept", "completed", "completed", 1, 1)
+	savePlan(halted, "plan:halted", "cancelled", "cancelled", 1, 1)
+	savePlan(issued, "plan:issued", "shared", "shared", 1, 4)
+	savePlan(stale, "plan:stale", "draft", "draft", 1, 1)
+	savePlan(stale, "plan:stale", "internally_approved", "internally_approved", 2, 2)
+	savePlan(column, "plan:column", "internally_approved", "draft", 1, 1)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("A shared plan starts once they accept a promise.", "Plan Quiet")
+	assertCompanyQuery("Approved in this workspace", "Plan Ready", "Plan Stale")
+	assertCompanyQuery("Approved in this workspace · Version 2", "Plan Ready", "Plan Stale")
+	assertCompanyQuery("Approved in this workspace · Version 1")
+	assertCompanyQuery("which companies are approved in this workspace", "Plan Ready", "Plan Stale")
+	assertCompanyQuery("Draft an email to share this plan", "Plan Ready", "Plan Stale")
+	assertCompanyQuery("They responded", "Plan Reply")
+	assertCompanyQuery("They responded · Version 3", "Plan Reply")
+	assertCompanyQuery("They responded · Version 2")
+	assertCompanyQuery("Finished", "Plan Kept")
+	assertCompanyQuery("Finished · Version 1", "Plan Kept")
+	assertCompanyQuery("the plan is finished", "Plan Kept")
+	assertCompanyQuery("Deletion is finished")
+	assertCompanyQuery("Cancelled", "Plan Halted")
+	assertCompanyQuery("Cancelled · Version 1", "Plan Halted")
+	assertCompanyQuery("Draft", "Plan Open", "Plan Column")
+	assertCompanyQuery("Draft · Version 1", "Plan Open", "Plan Column")
+	assertCompanyQuery("Revised", "Plan Edited")
+	assertCompanyQuery("Revised · Version 2", "Plan Edited")
+	assertCompanyQuery("Shared", "Plan Issued")
+	assertCompanyQuery("Shared · Version 4", "Plan Issued")
+	assertCompanyQuery("Approve this plan", "Plan Open", "Plan Edited", "Plan Column")
+	assertCompanyQuery("approved")
+	assertCompanyQuery("responded")
+}
+
 func TestRelationshipSearchFindsTheDisagreement(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
