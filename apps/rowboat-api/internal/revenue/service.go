@@ -3454,6 +3454,33 @@ func relationshipAttentionBandMatch(needle string) predicate.Relationship {
 	)
 }
 
+// observationFactDirection is the activity line "Direction: We owe them"
+// (and the two other sides). The sheet reads commitment_direction only when
+// the note has no encrypted payload, and only the three stored tokens.
+func observationFactDirection(direction string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			payload := s.C(relationshipobservation.FieldPayloadCiphertext)
+			b.WriteString("(")
+			b.WriteString(payload)
+			b.WriteString(" IS NULL OR length(")
+			b.WriteString(payload)
+			b.WriteString(") = 0) AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->>'commitment_direction', '')) = ")
+			} else {
+				b.WriteString("trim(coalesce(json_extract(")
+				b.WriteString(facts)
+				b.WriteString(", '$.commitment_direction'), '')) = ")
+			}
+			b.Arg(direction)
+		}))
+	})
+}
+
 func relationshipSheetTruthPromiseMatch(needle string, now time.Time) predicate.Relationship {
 	var preds []predicate.Relationship
 	// The highlight is labeled Open promises and counts every confirmed open
@@ -3472,15 +3499,26 @@ func relationshipSheetTruthPromiseMatch(needle string, now time.Time) predicate.
 		sheetPhraseMatches("promises are at risk", needle) {
 		preds = append(preds, relationship.HasCommitmentsWith(atRiskTruthCommitment(now)))
 	}
-	// The same card says They owe us, We owe them, or We both owe.
+	// The promise card says They owe us, We owe them, or We both owe. Opening
+	// the activity prints the same words as "Direction: …" from the saved
+	// note, even when that note never became a promise row.
 	if queryHasPhrase("they owe us", needle) {
-		preds = append(preds, relationship.HasCommitmentsWith(commitment.DirectionEQ("promised_by_them")))
+		preds = append(preds, relationship.Or(
+			relationship.HasCommitmentsWith(commitment.DirectionEQ("promised_by_them")),
+			relationship.HasObservationsWith(observationFactDirection("promised_by_them")),
+		))
 	}
 	if queryHasPhrase("we owe them", needle) {
-		preds = append(preds, relationship.HasCommitmentsWith(commitment.DirectionEQ("promised_by_me")))
+		preds = append(preds, relationship.Or(
+			relationship.HasCommitmentsWith(commitment.DirectionEQ("promised_by_me")),
+			relationship.HasObservationsWith(observationFactDirection("promised_by_me")),
+		))
 	}
 	if queryHasPhrase("we both owe", needle) {
-		preds = append(preds, relationship.HasCommitmentsWith(commitment.DirectionEQ("mutual")))
+		preds = append(preds, relationship.Or(
+			relationship.HasCommitmentsWith(commitment.DirectionEQ("mutual")),
+			relationship.HasObservationsWith(observationFactDirection("mutual")),
+		))
 	}
 	if sheetPhraseMatches("no follow-up is drafted", needle) {
 		preds = append(preds, relationship.And(
