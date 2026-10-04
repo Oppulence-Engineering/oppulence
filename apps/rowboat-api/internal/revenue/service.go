@@ -25,6 +25,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipattentionitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
@@ -863,6 +864,9 @@ func (s *Service) ListRelationshipsFiltered(
 		}
 		if truth := relationshipSheetTruthPromiseMatch(needle, searchedAt); truth != nil {
 			parts = append(parts, truth)
+		}
+		if band := relationshipAttentionBandMatch(needle); band != nil {
+			parts = append(parts, band)
 		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
@@ -2957,6 +2961,27 @@ func relationshipSheetActionLabelMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// relationshipAttentionBandMatch is the urgency badge on the attention queue.
+// High and critical read "At risk", normal reads "Watch", and low reads "Stable".
+// A dismissed or snoozed row is off that queue, so it stays out of the search.
+func relationshipAttentionBandMatch(needle string) predicate.Relationship {
+	var band predicate.RelationshipAttentionItem
+	switch needle {
+	case "at risk":
+		band = relationshipattentionitem.UrgencyBandIn("high", "critical")
+	case "watch":
+		band = relationshipattentionitem.UrgencyBandEQ("normal")
+	case "stable":
+		band = relationshipattentionitem.UrgencyBandEQ("low")
+	default:
+		return nil
+	}
+	return relationship.HasAttentionItemsWith(
+		band,
+		relationshipattentionitem.StatusEQ("open"),
+	)
 }
 
 func relationshipSheetTruthPromiseMatch(needle string, now time.Time) predicate.Relationship {

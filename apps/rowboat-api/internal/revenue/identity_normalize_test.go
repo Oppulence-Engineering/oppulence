@@ -936,6 +936,89 @@ func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
 	assertCompanyQuery("No action is currently recommended", "Quill Atelier")
 }
 
+func TestRelationshipSearchFindsTheAttentionBadge(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	queue, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Queue",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: queue.ID,
+		ActionType:     "meeting_follow_up",
+		Channel:        "email",
+		Reason:         "You confirmed this follow-up from the meeting.",
+		PriorityScore:  75,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	glance, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Glance",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: glance.ID,
+		ActionType:     "warm_follow_up",
+		Channel:        "email",
+		Reason:         "Send the harbor packet",
+		PriorityScore:  50,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	calm, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Calm",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: calm.ID,
+		ActionType:     "proposal_nudge",
+		Channel:        "email",
+		Reason:         "Send the harbor note",
+		PriorityScore:  20,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	soonCompany, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Soon",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	soon := time.Now().Add(24 * time.Hour)
+	seedCommitment(t, f, soonCompany, "promised_by_them", "Send the quay risk", "", &soon)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("At risk", "Harbor Queue", "Harbor Soon")
+	assertCompanyQuery("At risk promise", "Harbor Soon")
+	assertCompanyQuery("Watch", "Harbor Glance")
+	assertCompanyQuery("Stable", "Harbor Calm")
+}
+
 func TestRelationshipSearchFindsAnOpenableDetail(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
