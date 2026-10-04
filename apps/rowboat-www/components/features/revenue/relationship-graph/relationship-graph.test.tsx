@@ -431,6 +431,13 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryAnswer("1 relationship matches nodes: evidence.", 2)).toBe(
       "1 company matches Included: Detail.",
     );
+    expect(graphQueryAnswer("1 relationship matches needs reconcile.", 2)).toBe(
+      "1 company matches needs reconcile.",
+    );
+    expect(graphQueryAnswer("1 relationship matches sending.", 2)).toBe(
+      "1 company matches sending.",
+    );
+    expect(graphQueryAnswer("1 relationship matches failed.", 2)).toBe("1 company matches failed.");
     expect(graphQueryAnswer("1 relationship matches drafted.", 2)).toBe(
       "1 company matches drafted.",
     );

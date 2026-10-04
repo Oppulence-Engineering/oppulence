@@ -197,6 +197,11 @@ export function parseRelationshipGraphQuery(query) {
     // A finished draft says Drafted. Sent is a message that went out.
     drafted: /\bdrafted\b/.test(normalized),
     sent: /\bsent\b/.test(normalized) && !/\bnot sent\b/.test(normalized),
+    // The follow-up says Sending…, Failed, or Needs reconcile. Those stored
+    // execution states are requested, failed, and ambiguous.
+    sending: /\bsending\b/.test(normalized),
+    executionFailed: /\bfailed\b/.test(normalized),
+    needsReconcile: /\bneeds reconcile\b|\bneeds_reconcile\b/.test(normalized),
     // The company card says Kept. The stored status is still met.
     kept: /\bkept\b|\bkept_promises?\b/.test(normalized),
     stale: /\bstale\b|\boutdated\b|\bout of date\b/.test(normalized),
@@ -434,7 +439,11 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bheld\b/g, " ")
     .replace(/\bnot sent\b/g, " ")
     .replace(/\bdrafted\b/g, " ")
-    .replace(/\bsent\b/g, " ");
+    .replace(/\bsent\b/g, " ")
+    .replace(/\bneeds reconcile\b/g, " ")
+    .replace(/\bneeds_reconcile\b/g, " ")
+    .replace(/\bsending\b/g, " ")
+    .replace(/\bfailed\b/g, " ");
   filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
@@ -460,6 +469,9 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.held) applied.push("held");
   if (filters.drafted) applied.push("drafted");
   if (filters.sent) applied.push("sent");
+  if (filters.sending) applied.push("sending");
+  if (filters.executionFailed) applied.push("failed");
+  if (filters.needsReconcile) applied.push("needs reconcile");
   if (filters.stale) applied.push("out of date");
   if (filters.current) applied.push("up to date");
   if (filters.aging) applied.push("getting old");
@@ -580,6 +592,24 @@ export function queryRelationshipGraph(graph, query, options = {}) {
         node.kind === "action" &&
         normalizedGraphValue(node.executionStatus) === "sent" &&
         normalizedGraphValue(node.metadata?.executionMode) !== "draft",
+    );
+  }
+  if (filters.sending) {
+    constrainBy(
+      (node) => node.kind === "action" && normalizedGraphValue(node.executionStatus) === "requested",
+    );
+  }
+  if (filters.executionFailed) {
+    constrainBy((node) => {
+      if (node.kind === "action" && normalizedGraphValue(node.executionStatus) === "failed") {
+        return true;
+      }
+      return node.kind === "source" && normalizedGraphValue(node.status) === "failed";
+    });
+  }
+  if (filters.needsReconcile) {
+    constrainBy(
+      (node) => node.kind === "action" && normalizedGraphValue(node.executionStatus) === "ambiguous",
     );
   }
   if (filters.approvalStatus.length) {

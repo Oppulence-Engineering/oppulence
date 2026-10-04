@@ -710,6 +710,65 @@ test("asking drafted leaves a message that was sent", () => {
   assert.equal(messages.answer, "1 relationship matches sent.");
 });
 
+test("asking needs reconcile finds that follow-up and leaves a send still going out", () => {
+  const reconcile = parseRelationshipGraphQuery("needs reconcile");
+  assert.equal(reconcile.filters.needsReconcile, true);
+  assert.deepEqual(reconcile.filters.freeText, []);
+  assert.deepEqual(reconcile.applied, ["needs reconcile"]);
+
+  const sending = parseRelationshipGraphQuery("sending");
+  assert.equal(sending.filters.sending, true);
+  assert.deepEqual(sending.filters.freeText, []);
+  assert.deepEqual(sending.applied, ["sending"]);
+
+  const failed = parseRelationshipGraphQuery("failed");
+  assert.equal(failed.filters.executionFailed, true);
+  assert.deepEqual(failed.filters.freeText, []);
+  assert.deepEqual(failed.applied, ["failed"]);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:mix", kind: "relationship", label: "Quay Mix" },
+      {
+        id: "action:mix",
+        kind: "action",
+        label: "Calendar hold",
+        relationshipId: "mix",
+        executionStatus: "ambiguous",
+      },
+      { id: "relationship:wait", kind: "relationship", label: "Quay Wait" },
+      {
+        id: "action:wait",
+        kind: "action",
+        label: "Meeting recap",
+        relationshipId: "wait",
+        executionStatus: "requested",
+      },
+      { id: "relationship:fail", kind: "relationship", label: "Quay Fail" },
+      {
+        id: "action:fail",
+        kind: "action",
+        label: "Customer risk",
+        relationshipId: "fail",
+        executionStatus: "failed",
+        status: "open",
+      },
+      { id: "relationship:source", kind: "relationship", label: "Quay Source" },
+      {
+        id: "source:source",
+        kind: "source",
+        label: "Slack",
+        relationshipId: "source",
+        status: "failed",
+      },
+    ],
+    edges: [],
+  };
+  assert.deepEqual(queryRelationshipGraph(graph, "needs reconcile").relationshipIds, ["mix"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "sending").relationshipIds, ["wait"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "failed").relationshipIds.sort(), ["fail", "source"]);
+});
+
 test("asking a follow-up title does not require that source", () => {
   const titles = [
     ["calendar hold", "Calendar hold", "calendar"],
