@@ -1019,6 +1019,110 @@ func TestRelationshipSearchFindsTheAttentionBadge(t *testing.T) {
 	assertCompanyQuery("Stable", "Harbor Calm")
 }
 
+func TestRelationshipSearchFindsThePeopleOnTheCompany(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	makerCompany, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Maker",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	maker, err := f.client.Person.Create().
+		SetDisplayName("Casey Quinn").
+		SetTitle("Buyer").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetRelationship(makerCompany).SetPerson(maker).
+		SetDisplayName("Casey Quinn").
+		SetRole("decision_maker").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	leftCompany, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Left",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	left, err := f.client.Person.Create().
+		SetDisplayName("Ada Mesa").
+		SetTitle("Buyer").
+		SetEmploymentStatus("departed").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetRelationship(leftCompany).SetPerson(left).
+		SetDisplayName("Ada Mesa").
+		SetRole("contact").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	blankCompany, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Blank",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	blank, err := f.client.Person.Create().
+		SetDisplayName("No Profile").
+		SetWorkspace(ws).
+		SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetRelationship(blankCompany).SetPerson(blank).
+		SetDisplayName("No Profile").
+		SetRole("champion").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Decision maker", "Harbor Maker")
+	assertCompanyQuery("Left the company", "Harbor Left")
+	assertCompanyQuery("No profile details yet", "Harbor Blank")
+	assertCompanyQuery("Champion", "Harbor Blank")
+	assertCompanyQuery("Contact", "Harbor Left")
+}
+
 func TestRelationshipSearchFindsAnOpenableDetail(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

@@ -868,6 +868,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if band := relationshipAttentionBandMatch(needle); band != nil {
 			parts = append(parts, band)
 		}
+		if people := relationshipSheetPeopleMatch(needle); people != nil {
+			parts = append(parts, people)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -1536,6 +1539,64 @@ func relationshipHasDepartedContact() predicate.Relationship {
 			person.StatusEQ("active"),
 		),
 	)
+}
+
+// relationshipSheetPeopleMatch is the people section on the company sheet.
+// The role is stored with underscores, the badge says Left the company, and
+// a person with no title, company, seniority, or location says there are no
+// profile details yet.
+func relationshipSheetPeopleMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	if role := relationshipParticipantRoleMatch(needle); role != nil {
+		preds = append(preds, role)
+	}
+	if queryHasPhrase("left the company", needle) {
+		preds = append(preds, relationshipHasDepartedContact())
+	}
+	if queryHasPhrase("no profile details yet", needle) {
+		preds = append(preds, relationshipShowsEmptyPersonProfile())
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func relationshipParticipantRoleMatch(needle string) predicate.Relationship {
+	if needle == "" {
+		return nil
+	}
+	like := "%" + escapePersonSearchLike(needle) + "%"
+	return relationship.HasParticipantsWith(predicate.RelationshipParticipant(func(s *sql.Selector) {
+		s.Where(normalizedSearchLike(s, relationshipparticipant.FieldRole, like))
+	}))
+}
+
+func relationshipShowsEmptyPersonProfile() predicate.Relationship {
+	return relationship.HasParticipantsWith(
+		participantTextBlank(relationshipparticipant.FieldTitle),
+		relationshipparticipant.Or(
+			relationshipparticipant.Not(relationshipparticipant.HasPerson()),
+			relationshipparticipant.HasPersonWith(
+				personTextMissing(person.FieldTitle),
+				personTextMissing(person.FieldOrgName),
+				personTextMissing(person.FieldSeniority),
+				personTextMissing(person.FieldLocation),
+			),
+		),
+	)
+}
+
+func participantTextBlank(field string) predicate.RelationshipParticipant {
+	return predicate.RelationshipParticipant(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(fmt.Sprintf("trim(coalesce(%s, '')) = ''", s.C(field)))
+		}))
+	})
 }
 
 // relationshipSheetRiskMatch matches the unresolved-risk sentence. "1 unresolved
