@@ -3751,6 +3751,90 @@ func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
 	assertCompanyQuery("Deletion is still running", "Lumen Packet")
 }
 
+func TestRelationshipSearchFindsRankingFactors(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveRank := func(rel *ent.Relationship, stableID string, version int, factors string) {
+		t.Helper()
+		payload := `{"evaluationId":"` + stableID + `","factors":[` + factors + `]}`
+		sum := sha256.Sum256([]byte(payload))
+		if _, err := f.client.ConversationIntelligenceArtifact.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetKind("recommendation_evaluation").SetStableID(stableID).SetVersion(version).
+			SetStatus("ranked").SetSubjectRef(rel.ID.String()).
+			SetEffectiveAt(now).SetEvidenceRefs([]string{}).
+			SetPayloadJSON(payload).SetPayloadHash(hex.EncodeToString(sum[:])).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	quiet := makeCompany("Rank Quiet")
+	_ = quiet
+	due := makeCompany("Rank Due")
+	saveRank(due, "rank:due", 1, `{"factor":"commitment_due_state","contribution":12,"reason":"This promise is past due."}`)
+	old := makeCompany("Rank Old")
+	saveRank(old, "rank:old", 1, `{"factor":"commitment_due_state","contribution":8,"reason":"An accepted commitment is overdue."}`)
+	cover := makeCompany("Rank Cover")
+	saveRank(cover, "rank:cover", 1, `{"factor":"source_completeness","contribution":-2,"reason":"How complete the sources are changes where this sits."}`)
+	learn := makeCompany("Rank Learn")
+	saveRank(learn, "rank:learn", 1, `{"factor":"outcome_learning","contribution":5,"reason":"Earlier results change the order. They do not approve the action."}`)
+	fresh := makeCompany("Rank Fresh")
+	saveRank(fresh, "rank:fresh", 1, `{"factor":"source_completeness","contribution":3,"reason":"More complete fresh evidence increases confidence in ordering."}`)
+	revised := makeCompany("Rank Revised")
+	saveRank(revised, "rank:revised", 1, `{"factor":"commitment_due_state","contribution":12,"reason":"This promise is past due."}`)
+	saveRank(revised, "rank:revised", 2, `{"factor":"source_completeness","contribution":4,"reason":"How complete the sources are changes where this sits."}`)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	withFactors := []string{"Rank Due", "Rank Old", "Rank Cover", "Rank Learn", "Rank Fresh", "Rank Revised"}
+	assertCompanyQuery("Inspect ranking factors", withFactors...)
+	assertCompanyQuery("which companies show inspect ranking factors", withFactors...)
+	assertCompanyQuery("Due date", "Rank Due", "Rank Old")
+	assertCompanyQuery("Source coverage", "Rank Cover", "Rank Fresh", "Rank Revised")
+	assertCompanyQuery("Earlier outcomes", "Rank Learn")
+	assertCompanyQuery("This promise is past due.", "Rank Due", "Rank Old")
+	assertCompanyQuery(
+		"How complete the sources are changes where this sits.",
+		"Rank Cover", "Rank Fresh", "Rank Revised",
+	)
+	assertCompanyQuery(
+		"Earlier results change the order. They do not approve the action.",
+		"Rank Learn",
+	)
+	assertCompanyQuery("Due date: +12 · This promise is past due.", "Rank Due")
+	assertCompanyQuery("Due date: +8 · This promise is past due.", "Rank Old")
+	assertCompanyQuery("Source coverage: +4 · How complete the sources are changes where this sits.", "Rank Revised")
+	assertCompanyQuery("which companies show due date: +12 · this promise is past due.", "Rank Due")
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {

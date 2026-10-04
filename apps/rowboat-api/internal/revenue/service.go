@@ -934,6 +934,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if recovery := relationshipSheetRecoveryMatch(needle); recovery != nil {
 			parts = append(parts, recovery)
 		}
+		if ranking := relationshipSheetRankingMatch(needle); ranking != nil {
+			parts = append(parts, ranking)
+		}
 		if followUp := relationshipSheetFollowUpEmptyMatch(needle, searchedAt); followUp != nil {
 			parts = append(parts, followUp)
 		}
@@ -2047,6 +2050,290 @@ func relationshipSheetRecoveryMatch(needle string) predicate.Relationship {
 		return preds[0]
 	}
 	return relationship.Or(preds...)
+}
+
+// relationshipSheetRankingMatch matches the ranking inspection on the company
+// sheet. The summary is "Inspect ranking factors". Each factor prints its
+// label, a signed contribution, and the reason a person reads.
+func relationshipSheetRankingMatch(needle string) predicate.Relationship {
+	needle = normalizePersonSearch(needle)
+	if needle == "" {
+		return nil
+	}
+	if line, ok := rankingFactorLine(needle); ok {
+		return relationshipHasRankingLine(line)
+	}
+	var preds []predicate.Relationship
+	if labelPhraseMatches("inspect ranking factors", needle) {
+		preds = append(preds, relationshipHasRecommendationEvaluation())
+	}
+	for _, item := range rankingFactorLabels {
+		if labelPhraseMatches(item.label, needle) {
+			preds = append(preds, relationshipHasRankingFactor(item.key))
+		}
+	}
+	for _, item := range rankingPrintedReasons {
+		if labelPhraseMatches(item.printed, needle) {
+			preds = append(preds, relationshipHasRankingReason(item.stored))
+		}
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+type rankingFactorLabel struct {
+	label string
+	key   string
+}
+
+var rankingFactorLabels = []rankingFactorLabel{
+	{label: "due date", key: "commitment_due_state"},
+	{label: "source coverage", key: "source_completeness"},
+	{label: "earlier outcomes", key: "outcome_learning"},
+}
+
+type rankingPrintedReason struct {
+	printed string
+	stored  []string
+}
+
+var rankingPrintedReasons = []rankingPrintedReason{
+	{
+		printed: "this promise is past due.",
+		stored:  []string{"this promise is past due.", "an accepted commitment is overdue."},
+	},
+	{
+		printed: "this promise is due now.",
+		stored:  []string{"this promise is due now.", "an accepted commitment is due now."},
+	},
+	{
+		printed: "how complete the sources are changes where this sits.",
+		stored: []string{
+			"how complete the sources are changes where this sits.",
+			"fresh source coverage changes confidence in the queue position.",
+			"more complete fresh evidence increases confidence in ordering.",
+		},
+	},
+	{
+		printed: "earlier results change the order. they do not approve the action.",
+		stored: []string{
+			"earlier results change the order. they do not approve the action.",
+			"bounded prior decisions and outcomes adjust ordering, never authority.",
+		},
+	},
+	{
+		printed: "newer evidence matters more than older evidence.",
+		stored: []string{
+			"newer evidence matters more than older evidence.",
+			"recent evidence is more actionable than stale evidence.",
+		},
+	},
+	{
+		printed: "you have kept this channel before.",
+		stored: []string{
+			"you have kept this channel before.",
+			"the user has repeatedly retained this channel.",
+		},
+	},
+}
+
+type rankingLine struct {
+	key          string
+	contribution int
+	reasons      []string
+}
+
+func rankingFactorLine(needle string) (rankingLine, bool) {
+	var found rankingLine
+	matched := false
+	for _, label := range rankingFactorLabels {
+		marker := label.label + ": +"
+		search := needle
+		for {
+			index := strings.Index(search, marker)
+			if index < 0 {
+				break
+			}
+			rest := search[index+len(marker):]
+			end := 0
+			for end < len(rest) && rest[end] >= '0' && rest[end] <= '9' {
+				end++
+			}
+			if end == 0 {
+				search = search[index+len(marker):]
+				continue
+			}
+			contribution, err := strconv.Atoi(rest[:end])
+			if err != nil {
+				search = search[index+len(marker):]
+				continue
+			}
+			after := rest[end:]
+			var reasons []string
+			for _, item := range rankingPrintedReasons {
+				// The search box turns the sentence's period into a space.
+				if strings.Contains(after, " · "+normalizePersonSearch(item.printed)) {
+					reasons = item.stored
+					break
+				}
+			}
+			if len(reasons) == 0 {
+				search = search[index+len(marker):]
+				continue
+			}
+			line := rankingLine{key: label.key, contribution: contribution, reasons: reasons}
+			if matched && (found.key != line.key || found.contribution != line.contribution) {
+				return rankingLine{}, false
+			}
+			found = line
+			matched = true
+			search = rest[end:]
+		}
+	}
+	return found, matched
+}
+
+func relationshipHasRecommendationEvaluation() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			writeLatestRecommendation(b, s)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func relationshipHasRankingFactor(key string) predicate.Relationship {
+	return relationshipHasRankingFactorWhere(func(b *sql.Builder, s *sql.Selector) {
+		writeRankingFactorText(b, s, "factor")
+		b.WriteString(" = ")
+		b.Arg(key)
+	})
+}
+
+func relationshipHasRankingReason(stored []string) predicate.Relationship {
+	return relationshipHasRankingFactorWhere(func(b *sql.Builder, s *sql.Selector) {
+		b.WriteString("lower(trim(")
+		writeRankingFactorText(b, s, "reason")
+		b.WriteString(")) IN (")
+		for i, reason := range stored {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			b.Arg(reason)
+		}
+		b.WriteString(")")
+	})
+}
+
+func relationshipHasRankingLine(line rankingLine) predicate.Relationship {
+	return relationshipHasRankingFactorWhere(func(b *sql.Builder, s *sql.Selector) {
+		writeRankingFactorText(b, s, "factor")
+		b.WriteString(" = ")
+		b.Arg(line.key)
+		b.WriteString(" AND ")
+		writeRankingFactorNumber(b, s, "contribution")
+		b.WriteString(" = ")
+		b.Arg(line.contribution)
+		b.WriteString(" AND lower(trim(")
+		writeRankingFactorText(b, s, "reason")
+		b.WriteString(")) IN (")
+		for i, reason := range line.reasons {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			b.Arg(reason)
+		}
+		b.WriteString(")")
+	})
+}
+
+func relationshipHasRankingFactorWhere(match func(*sql.Builder, *sql.Selector)) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := "eval." + conversationintelligenceartifact.FieldPayloadJSON
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			writeLatestRecommendation(b, s)
+			b.WriteString(" AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("jsonb_typeof(")
+				b.WriteString(column)
+				b.WriteString("::jsonb->'factors') = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements(")
+				b.WriteString(column)
+				b.WriteString("::jsonb->'factors') AS factor WHERE ")
+			} else {
+				b.WriteString("json_valid(")
+				b.WriteString(column)
+				b.WriteString(") AND json_type(")
+				b.WriteString(column)
+				b.WriteString(", '$.factors') = 'array' AND EXISTS (SELECT 1 FROM json_each(")
+				b.WriteString(column)
+				b.WriteString(", '$.factors') AS factor WHERE ")
+			}
+			match(b, s)
+			b.WriteString("))")
+		}))
+	})
+}
+
+func writeLatestRecommendation(b *sql.Builder, s *sql.Selector) {
+	art := conversationintelligenceartifact.Table
+	b.WriteString(art)
+	b.WriteString(" AS eval WHERE eval.")
+	b.WriteString(conversationintelligenceartifact.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.FieldID))
+	b.WriteString(" AND eval.")
+	b.WriteString(conversationintelligenceartifact.FieldKind)
+	b.WriteString(" = 'recommendation_evaluation' AND eval.")
+	b.WriteString(conversationintelligenceartifact.FieldVersion)
+	b.WriteString(" = (SELECT MAX(newer.")
+	b.WriteString(conversationintelligenceartifact.FieldVersion)
+	b.WriteString(") FROM ")
+	b.WriteString(art)
+	b.WriteString(" AS newer WHERE newer.")
+	b.WriteString(conversationintelligenceartifact.FieldStableID)
+	b.WriteString(" = eval.")
+	b.WriteString(conversationintelligenceartifact.FieldStableID)
+	b.WriteString(" AND newer.")
+	b.WriteString(conversationintelligenceartifact.FieldKind)
+	b.WriteString(" = eval.")
+	b.WriteString(conversationintelligenceartifact.FieldKind)
+	b.WriteString(" AND newer.")
+	b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+	b.WriteString(" = eval.")
+	b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+	b.WriteString(")")
+}
+
+func writeRankingFactorText(b *sql.Builder, s *sql.Selector, field string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("factor->>'")
+		b.WriteString(field)
+		b.WriteString("'")
+		return
+	}
+	b.WriteString("json_extract(factor.value, '$.")
+	b.WriteString(field)
+	b.WriteString("')")
+}
+
+func writeRankingFactorNumber(b *sql.Builder, s *sql.Selector, field string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("COALESCE((factor->>'")
+		b.WriteString(field)
+		b.WriteString("')::int, 0)")
+		return
+	}
+	b.WriteString("CAST(COALESCE(json_extract(factor.value, '$.")
+	b.WriteString(field)
+	b.WriteString("'), 0) AS INTEGER)")
 }
 
 // relationshipSheetFollowUpEmptyMatch matches the line under Promises to
