@@ -47,7 +47,18 @@ describe("Composio connections", () => {
     renderWithQuery(<ComposioConnections />);
 
     expect(await screen.findByText("Jira")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Connect" })).toHaveLength(2);
+    expect(screen.getByText(/not treated as promises/)).toBeInTheDocument();
+    const promiseSources = screen.getByText(
+      /Promises come from Gmail, Google Calendar, and HubSpot/,
+    );
+    expect(promiseSources).toBeInTheDocument();
+    expect(promiseSources).not.toHaveTextContent(/Slack/);
+    expect(screen.queryByText(/so those are/)).toBeNull();
+    expect(screen.getAllByText("Not connected")).toHaveLength(2);
+    expect(screen.queryByText(/company evidence/)).toBeNull();
+    expect(screen.queryByText(/relationship sources/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Connect Jira" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Connect Asana" })).toBeInTheDocument();
   });
 
   // The account is linked on Composio's page, not here, so the click must hand
@@ -62,7 +73,7 @@ describe("Composio connections", () => {
     renderWithQuery(<ComposioConnections />);
     await screen.findByText("Jira");
 
-    await userEvent.click(screen.getAllByRole("button", { name: "Connect" })[0]);
+    await userEvent.click(screen.getByRole("button", { name: "Connect Jira" }));
 
     expect(mocks.startComposioConnection).toHaveBeenCalledWith("jira");
     expect(open).toHaveBeenCalledWith(
@@ -72,6 +83,45 @@ describe("Composio connections", () => {
     );
   });
 
+  it("explains a connect failure that is only a status code", async () => {
+    mocks.startComposioConnection.mockRejectedValue(new Error("Composio request failed (429)"));
+    renderWithQuery(<ComposioConnections />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Connect Jira" }));
+
+    expect(
+      await screen.findByText(
+        "Too many requests were sent from this workspace. Wait a moment, then try again.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Composio request failed/)).toBeNull();
+  });
+
+  it("names a connect failure that has no explanation", async () => {
+    mocks.startComposioConnection.mockRejectedValue(new Error("Composio request failed (500)"));
+    renderWithQuery(<ComposioConnections />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Connect Jira" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not start the connection.");
+    expect(screen.queryByText(/Composio request failed/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Connect Jira" })).toBeEnabled();
+  });
+
+  it("names a disconnect failure that has no explanation", async () => {
+    mocks.listComposioConnections.mockResolvedValue([
+      { id: "ca_1", toolkit: "jira", status: "ACTIVE", createdAt: "" },
+    ]);
+    mocks.disconnectComposio.mockRejectedValue(new Error("Composio request failed (500)"));
+    renderWithQuery(<ComposioConnections />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Disconnect Jira" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not disconnect.");
+    expect(screen.queryByText(/Composio request failed/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Disconnect Jira" })).toBeEnabled();
+  });
+
   it("offers disconnect for a linked product and reloads after it", async () => {
     mocks.listComposioConnections.mockResolvedValue([
       { id: "ca_1", toolkit: "jira", status: "ACTIVE", createdAt: "" },
@@ -79,7 +129,7 @@ describe("Composio connections", () => {
     mocks.disconnectComposio.mockResolvedValue(undefined);
     renderWithQuery(<ComposioConnections />);
 
-    await userEvent.click(await screen.findByRole("button", { name: "Disconnect" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Disconnect Jira" }));
 
     expect(mocks.disconnectComposio).toHaveBeenCalledWith("ca_1");
     expect(mocks.listComposioConnections).toHaveBeenCalledTimes(2);
@@ -96,7 +146,7 @@ describe("Composio connections", () => {
     });
     const user = userEvent.setup();
     renderWithQuery(<ComposioConnections />);
-    await user.click((await screen.findAllByRole("button", { name: "Connect" }))[0]);
+    await user.click(await screen.findByRole("button", { name: "Connect Jira" }));
 
     // The user authorizes on Composio's page, so the account now exists.
     mocks.listComposioConnections.mockResolvedValue([
@@ -104,7 +154,7 @@ describe("Composio connections", () => {
     ]);
     document.dispatchEvent(new Event("visibilitychange"));
 
-    expect(await screen.findByRole("button", { name: "Disconnect" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Disconnect Jira" })).toBeInTheDocument();
     expect(mocks.listComposioConnections).toHaveBeenCalledTimes(2);
   });
 
@@ -126,9 +176,9 @@ describe("Composio connections", () => {
     renderWithQuery(<ComposioConnections />);
 
     // The live connection wins over the newer pending ones, and Jira shows once.
-    expect(await screen.findByRole("button", { name: "Disconnect" })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Disconnect" })).toHaveLength(1);
-    expect(screen.getByText("active")).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Disconnect Jira" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Disconnect/ })).toHaveLength(1);
+    expect(screen.getByText("Connected")).toBeInTheDocument();
   });
 
   it("falls back to the newest connection when none is active", async () => {
@@ -138,8 +188,8 @@ describe("Composio connections", () => {
     ]);
     renderWithQuery(<ComposioConnections />);
 
-    expect(await screen.findByText("expired")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Disconnect" })).toHaveLength(1);
+    expect(await screen.findByText("Expired")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Disconnect Jira" })).toBeInTheDocument();
   });
 
   it("renders nothing when the server holds no project key", async () => {
@@ -151,11 +201,39 @@ describe("Composio connections", () => {
     });
   });
 
+  it("names a connection that is still waiting, and an unfamiliar status", async () => {
+    mocks.listComposioConnections.mockResolvedValue([
+      { id: "ca_wait", toolkit: "jira", status: "INITIATED", createdAt: "2026-09-16T09:00:00Z" },
+      { id: "ca_fail", toolkit: "asana", status: "FAILED", createdAt: "2026-09-16T09:00:00Z" },
+    ]);
+    renderWithQuery(<ComposioConnections />);
+
+    expect(await screen.findByText("Waiting to finish")).toBeInTheDocument();
+    expect(screen.getByText("Failed")).toBeInTheDocument();
+  });
+
   it("says so when the products cannot be loaded", async () => {
     mocks.listComposioToolkits.mockRejectedValue(new Error("upstream"));
     renderWithQuery(<ComposioConnections />);
 
-    expect(await screen.findByText("Could not load products.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Additional products are temporarily unavailable."),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps offered products when the refresh fails", async () => {
+    const { client } = renderWithQuery(<ComposioConnections />);
+    expect(await screen.findByText("Jira")).toBeVisible();
+
+    mocks.listComposioToolkits.mockRejectedValue(new Error("upstream"));
+    await client.invalidateQueries({ queryKey: ["composio", "toolkits"] });
+
+    expect(await screen.findByText("Could not refresh products. Try again.")).toBeVisible();
+    expect(screen.getByText("Jira")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Connect Asana" })).toBeVisible();
+    expect(
+      screen.queryByText("Additional products are temporarily unavailable."),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -171,7 +249,8 @@ describe("Composio connections for products no longer offered", () => {
     renderWithQuery(<ComposioConnections />);
 
     expect(await screen.findByText("gmail")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Disconnect" }));
+    expect(screen.getByText("Connected · no longer offered here")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Disconnect gmail" }));
 
     expect(mocks.disconnectComposio).toHaveBeenCalledWith("ca_1");
   });

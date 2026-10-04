@@ -8,7 +8,29 @@
 import { fetchPendingActionProposals } from "@/hooks/queries/utils/fetch-action-proposals";
 import { DashboardRequestError } from "@/lib/api/request-json";
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
-import type { ActionProposal, ApproveResult, AuditChain } from "@/lib/actions/types";
+import type { ActionProposal, ActionStatus, ApproveResult, AuditChain } from "@/lib/actions/types";
+
+/** The status a person sees on an approval and on its audit trail. */
+export function actionStatusLabel(status: ActionStatus | string): string {
+  switch (status) {
+    case "pending":
+      return "Awaiting approval";
+    case "approved":
+      return "Approved";
+    case "executed":
+      return "Executed";
+    case "executed_unconfirmed":
+      return "Executed · unconfirmed";
+    case "rejected":
+      return "Rejected";
+    case "failed":
+      return "Failed";
+    case "expired":
+      return "Expired";
+    default:
+      return status;
+  }
+}
 
 export class ActionAPIError extends Error {
   status: number;

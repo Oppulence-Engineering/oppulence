@@ -17,22 +17,47 @@ function commitmentsPath(filter: CommitmentRegisterFilter = {}): string {
   });
 }
 
+export type CommitmentPage = {
+  commitments: RegisterEntry[];
+  hasMore: boolean;
+};
+
+/** Rows from a register page. A bare array is a test fixture that has no flag. */
+export function commitmentRows(
+  page: CommitmentPage | readonly RegisterEntry[] | null | undefined,
+): RegisterEntry[] {
+  if (!page) return [];
+  if (Array.isArray(page)) return [...page];
+  return page.commitments ?? [];
+}
+
+/** True only when the server says another promise exists past this page. */
+export function commitmentPageHasMore(
+  page: CommitmentPage | readonly RegisterEntry[] | null | undefined,
+): boolean {
+  if (!page || Array.isArray(page)) return false;
+  return Boolean(page.hasMore);
+}
+
 export async function loadCommitments(
   request: RequestJsonFn,
   filter: CommitmentRegisterFilter = {},
   signal?: AbortSignal,
-): Promise<RegisterEntry[]> {
+): Promise<CommitmentPage> {
   const res = await request({
     path: commitmentsPath(filter),
     schema: ListCommitments200Response,
     signal,
   });
-  return res.commitments;
+  return {
+    commitments: res.commitments,
+    hasMore: Boolean(res.hasMore),
+  };
 }
 
 export function fetchCommitments(
   filter: CommitmentRegisterFilter = {},
   signal?: AbortSignal,
-): Promise<RegisterEntry[]> {
+): Promise<CommitmentPage> {
   return loadCommitments(requestJson, filter, signal);
 }

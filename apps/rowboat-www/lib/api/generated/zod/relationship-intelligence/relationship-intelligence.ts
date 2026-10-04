@@ -8,7 +8,7 @@
 import * as zod from "zod";
 
 /**
- * Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register.
+ * Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register. A full page is the end of the register when hasMore is false.
  * @summary List the commitment register
  */
 export const ListCommitmentsQueryParams = zod.object({
@@ -87,8 +87,9 @@ export const ListCommitments200Response = zod
           .describe("One cross-account register row with its reader-facing state and account."),
       )
       .describe("Register rows, each with its derived state and account."),
+    hasMore: zod.boolean().optional().describe("Another promise exists beyond this page."),
   })
-  .describe("Commitment register.");
+  .describe("Commitment register. A full page is the end of the register when hasMore is false.");
 
 export const ListCommitments400Response = zod
   .strictObject({
@@ -290,20 +291,32 @@ export const RespondPublicMutualActionPlan404Response = zod
   );
 
 /**
- * Returns deterministic relationship-native attention ordered by explicit factor contributions.
+ * Returns deterministic relationship-native attention ordered by explicit factor contributions. A full page is the end of the queue when hasMore is false.
  * @summary List portfolio attention
  */
+export const listRelationshipAttentionQueryOffsetMin = 0;
+
 export const ListRelationshipAttentionQueryParams = zod.object({
   status: zod
     .enum(["open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved", "all"])
     .optional(),
   limit: zod.coerce.number().int().optional(),
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(listRelationshipAttentionQueryOffsetMin)
+    .optional()
+    .describe("Page offset."),
 });
 
 export const ListRelationshipAttention200Response = zod
   .strictObject({
     asOf: zod.iso.datetime({ offset: true }).describe("Read boundary."),
     contractVersion: zod.string().describe("Contract version."),
+    hasMore: zod
+      .boolean()
+      .optional()
+      .describe("Another company exists beyond this page of the queue."),
     items: zod
       .array(
         zod
@@ -354,7 +367,7 @@ export const ListRelationshipAttention200Response = zod
       )
       .describe("Attention items."),
   })
-  .describe("Attention list.");
+  .describe("Attention list. A full page is the end of the queue when hasMore is false.");
 
 export const ListRelationshipAttention401Response = zod
   .strictObject({
@@ -597,14 +610,22 @@ export const GetRelationshipBetaDiagnostics403Response = zod
   );
 
 /**
- * Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage.
+ * Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage. A full page is the end of the inbox when hasMore is false.
  * @summary List identity review candidates
  */
+export const listRelationshipIdentityCandidatesQueryOffsetMin = 0;
+
 export const ListRelationshipIdentityCandidatesQueryParams = zod.object({
   status: zod.enum(["pending", "deferred", "resolving", "resolved", "undone"]).optional(),
   source: zod.string().optional(),
   relationshipId: zod.uuid().optional(),
   limit: zod.coerce.number().int().optional(),
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(listRelationshipIdentityCandidatesQueryOffsetMin)
+    .optional()
+    .describe("Page offset."),
 });
 
 export const ListRelationshipIdentityCandidates200Response = zod
@@ -950,8 +971,9 @@ export const ListRelationshipIdentityCandidates200Response = zod
           .describe("Durable, optimistic-versioned exact-anchor ambiguity review."),
       )
       .describe("Candidates."),
+    hasMore: zod.boolean().optional().describe("Another duplicate exists beyond this page."),
   })
-  .describe("Identity candidate list.");
+  .describe("Identity candidate list. A full page is the end of the inbox when hasMore is false.");
 
 export const ListRelationshipIdentityCandidates400Response = zod
   .strictObject({
@@ -1995,17 +2017,7 @@ export const ApproveRelationshipRecommendation200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Why this action was proposed."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -2166,17 +2178,7 @@ export const RejectRelationshipRecommendation200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Why this action was proposed."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -2954,18 +2956,27 @@ export const DisconnectRelationshipSource403Response = zod
   );
 
 /**
- * Lists canonical relationship state with optional text, lifecycle, health, and engagement filters.
+ * Lists canonical relationship state with optional text, lifecycle, health, and engagement filters. A full page of 200 is the end of the list when hasMore is false.
  * @summary List relationships
  */
+export const listRelationshipsQueryOffsetMin = 0;
+
 export const ListRelationshipsQueryParams = zod.object({
   q: zod.string().optional().describe("Account, domain, or contact search."),
   lifecycle: zod.string().optional().describe("Lifecycle filter."),
   health: zod.string().optional().describe("Health filter."),
   engagement: zod.string().optional().describe("Engagement filter."),
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(listRelationshipsQueryOffsetMin)
+    .optional()
+    .describe("How many relationships to skip. Each page is 200 rows, newest touch first."),
 });
 
 export const ListRelationships200Response = zod
   .strictObject({
+    hasMore: zod.boolean().optional().describe("Another company exists beyond this page."),
     relationships: zod
       .array(
         zod
@@ -3251,6 +3262,10 @@ export const getRelationshipGraphQueryScopeDefault = `portfolio`;
 export const getRelationshipGraphQueryDepthDefault = 2;
 export const getRelationshipGraphQueryDepthMax = 3;
 
+export const getRelationshipGraphQueryOffsetMin = 0;
+
+export const getRelationshipGraphQueryObservationOffsetMin = 0;
+
 export const GetRelationshipGraphQueryParams = zod.object({
   scope: zod
     .enum(["portfolio", "relationship"])
@@ -3268,6 +3283,18 @@ export const GetRelationshipGraphQueryParams = zod.object({
     .datetime({ offset: true })
     .optional()
     .describe("Historical evidence boundary; must not be in the future."),
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(getRelationshipGraphQueryOffsetMin)
+    .optional()
+    .describe("Company offset. The first page is the 200 most recently updated companies."),
+  observationOffset: zod.coerce
+    .number()
+    .int()
+    .min(getRelationshipGraphQueryObservationOffsetMin)
+    .optional()
+    .describe("Evidence offset. The first page is the newest conversations on each company."),
 });
 
 export const getRelationshipGraph200ResponseDepthMax = 3;
@@ -3329,6 +3356,11 @@ export const GetRelationshipGraph200Response = zod
       )
       .describe("Typed directed edges."),
     generatedAt: zod.iso.datetime({ offset: true }).describe("Projection generation time."),
+    hasMore: zod.boolean().optional().describe("Another company exists beyond this page."),
+    observationHasMore: zod
+      .boolean()
+      .optional()
+      .describe("An older conversation exists beyond this page."),
     historical: zod.boolean().describe("Whether the response is an historical projection."),
     nodes: zod
       .array(
@@ -3584,17 +3616,7 @@ export const GetRelationship200Response = zod
             queueStatus: zod
               .enum(["open", "snoozed", "dismissed", "handled"])
               .describe("Operator triage state."),
-            reason: zod
-              .enum([
-                "llm_call",
-                "llm_call_reserve",
-                "llm_settle",
-                "voice_tts",
-                "exa_search",
-                "grant",
-                "refund",
-              ])
-              .describe("Reason code for the ledger entry."),
+            reason: zod.string().describe("Why this action was proposed."),
             recipientEmail: zod.string().optional().describe("Recipient email address."),
             reconciliationAttempts: zod
               .int()
@@ -3846,6 +3868,10 @@ export const GetRelationship200Response = zod
         mutualActionPlans: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Mutual action plan."))
           .describe("Revision-bound bilateral plans."),
+        observationPageHasMore: zod
+          .boolean()
+          .optional()
+          .describe("An older conversation exists beyond this page of focused review."),
         recommendationEvaluations: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Recommendation evaluation."))
           .describe("Immutable contextual ranking factors."),
@@ -4172,17 +4198,7 @@ export const GetRelationship200Response = zod
             queueStatus: zod
               .enum(["open", "snoozed", "dismissed", "handled"])
               .describe("Operator triage state."),
-            reason: zod
-              .enum([
-                "llm_call",
-                "llm_call_reserve",
-                "llm_settle",
-                "voice_tts",
-                "exa_search",
-                "grant",
-                "refund",
-              ])
-              .describe("Reason code for the ledger entry."),
+            reason: zod.string().describe("Why this action was proposed."),
             recipientEmail: zod.string().optional().describe("Recipient email address."),
             reconciliationAttempts: zod
               .int()
@@ -4612,15 +4628,36 @@ export const RetractRelationshipAssertion409Response = zod
   );
 
 /**
- * Returns immutable projection snapshots so operators can see what changed and why.
+ * Returns immutable projection snapshots so operators can see what changed and why. The first page is the two newest snapshots.
  * @summary Get relationship changes
  */
 export const GetRelationshipChangesParams = zod.object({
   relationshipId: zod.uuid().describe("Relationship id."),
 });
 
+export const getRelationshipChangesQueryLimitMax = 50;
+
+export const getRelationshipChangesQueryOffsetMin = 0;
+
+export const GetRelationshipChangesQueryParams = zod.object({
+  limit: zod.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(getRelationshipChangesQueryLimitMax)
+    .optional()
+    .describe("Maximum snapshots (default 2, max 50)."),
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(getRelationshipChangesQueryOffsetMin)
+    .optional()
+    .describe("Page offset."),
+});
+
 export const GetRelationshipChanges200Response = zod
   .strictObject({
+    hasMore: zod.boolean().describe("An older snapshot exists beyond this page."),
     snapshots: zod
       .array(
         zod
@@ -4649,10 +4686,24 @@ export const GetRelationshipChanges200Response = zod
             "Immutable projection snapshot created only when material relationship state changes.",
           ),
       )
-      .optional()
       .describe("Snapshots."),
   })
   .describe("Snapshot list.");
+
+export const GetRelationshipChanges400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
 
 export const GetRelationshipChanges401Response = zod
   .strictObject({
@@ -5059,7 +5110,7 @@ export const AppendCommitmentTransition409Response = zod
   );
 
 /**
- * Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship.
+ * Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship. Rows that share a time stay in id order, so the next page does not skip them.
  * @summary Get communication timeline
  */
 export const GetRelationshipCommunicationTimelineParams = zod.object({
@@ -5072,6 +5123,10 @@ export const GetRelationshipCommunicationTimelineQueryParams = zod.object({
     .datetime({ offset: true })
     .optional()
     .describe("Return items before this RFC3339 timestamp."),
+  beforeId: zod
+    .uuid()
+    .optional()
+    .describe("With before, also return items at that time whose id sorts earlier."),
 });
 
 export const GetRelationshipCommunicationTimeline200Response = zod
@@ -5117,8 +5172,29 @@ export const GetRelationshipCommunicationTimeline200Response = zod
       )
       .describe("Timeline items."),
     nextBefore: zod.iso.datetime({ offset: true }).nullish().describe("Cursor for the next page."),
+    nextBeforeId: zod
+      .uuid()
+      .nullish()
+      .describe(
+        "Id of the last item on this page. Send it with nextBefore so rows that share that time stay on the next page.",
+      ),
   })
   .describe("Paginated communication timeline.");
+
+export const GetRelationshipCommunicationTimeline400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
 
 export const GetRelationshipCommunicationTimeline401Response = zod
   .strictObject({
@@ -5414,6 +5490,10 @@ export const CorrectConversationEvidence201Response = zod
         mutualActionPlans: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Mutual action plan."))
           .describe("Revision-bound bilateral plans."),
+        observationPageHasMore: zod
+          .boolean()
+          .optional()
+          .describe("An older conversation exists beyond this page of focused review."),
         recommendationEvaluations: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Recommendation evaluation."))
           .describe("Immutable contextual ranking factors."),
@@ -5808,6 +5888,10 @@ export const DecideConversationChange201Response = zod
         mutualActionPlans: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Mutual action plan."))
           .describe("Revision-bound bilateral plans."),
+        observationPageHasMore: zod
+          .boolean()
+          .optional()
+          .describe("An older conversation exists beyond this page of focused review."),
         recommendationEvaluations: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Recommendation evaluation."))
           .describe("Immutable contextual ranking factors."),
@@ -6246,6 +6330,146 @@ export const PutConversationPolicy401Response = zod
   );
 
 export const PutConversationPolicy404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Returns focused review items and governance receipts from conversations older than the newest page.
+ * @summary Get earlier conversation review
+ */
+export const GetRelationshipConversationReviewParams = zod.object({
+  relationshipId: zod.uuid().describe("Relationship id."),
+});
+
+export const getRelationshipConversationReviewQueryOffsetMin = 0;
+
+export const GetRelationshipConversationReviewQueryParams = zod.object({
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(getRelationshipConversationReviewQueryOffsetMin)
+    .optional()
+    .describe("Observation offset. The first page is the newest 200 conversations."),
+});
+
+export const GetRelationshipConversationReview200Response = zod
+  .strictObject({
+    governanceReceipts: zod
+      .array(
+        zod
+          .strictObject({
+            capturePolicy: zod.string().describe("Capture policy in force."),
+            capturedAt: zod.iso.datetime({ offset: true }).describe("Capture time."),
+            deletionOutcome: zod.string().describe("Observed deletion outcome."),
+            evidenceClip: zod
+              .enum(["not_retained", "encrypted"])
+              .describe("Material audio evidence status; retained clips may only be encrypted."),
+            legalHold: zod.boolean().describe("Whether deletion is blocked by legal hold."),
+            participantDisclosure: zod.string().describe("Recorded participant disclosure status."),
+            receiptId: zod.string().describe("Receipt id."),
+            region: zod.string().describe("Processing region or boundary."),
+            retention: zod.string().describe("Retention policy."),
+            routing: zod.string().describe("Evidence routing path."),
+          })
+          .describe(
+            "Capture, routing, retention, disclosure, legal-hold, deletion, and evidence-clip receipt stored beside a transcript.",
+          ),
+      )
+      .describe("Governance receipts from this page of conversations."),
+    hasMore: zod.boolean().describe("An older conversation exists beyond this page."),
+    reviewItems: zod
+      .array(
+        zod
+          .strictObject({
+            baselineVersion: zod.int().optional().describe("Pinned relationship-state version."),
+            batchId: zod.string().optional().describe("Idempotent review batch id."),
+            before: zod
+              .record(zod.string(), zod.unknown())
+              .optional()
+              .describe("State pinned before conversation processing."),
+            caveats: zod
+              .array(zod.string().describe("Caveat."))
+              .optional()
+              .describe("Extraction and capture caveats."),
+            claimId: zod.string().optional().describe("Material claim id."),
+            confidence: zod.number().describe("Current confidence."),
+            currentValue: zod.string().describe("Current inferred value."),
+            dependentActionIds: zod
+              .array(zod.string().describe("Action id."))
+              .optional()
+              .describe("Actions invalidated by rejection or correction."),
+            exactQuote: zod.string().optional().describe("Exact words under review."),
+            id: zod.string().describe("Stable UUID primary key."),
+            kind: zod
+              .enum(["word", "speaker", "entity", "claim", "capture"])
+              .describe("Review kind."),
+            label: zod.string().describe("Review prompt."),
+            observationId: zod.uuid().describe("Supporting observation."),
+            proposedAfter: zod
+              .record(zod.string(), zod.unknown())
+              .optional()
+              .describe("Typed proposed value after this item."),
+            stateDimension: zod
+              .string()
+              .optional()
+              .describe("Canonical state dimension affected by correction."),
+            status: zod
+              .enum(["pending_review", "accepted", "corrected", "rejected", "deferred"])
+              .optional()
+              .describe(
+                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+              ),
+          })
+          .describe(
+            "One evidence-backed proposed change requiring approve, correct, reject, or defer review.",
+          ),
+      )
+      .describe("Review items from this page of conversations."),
+  })
+  .describe("Focused review page.");
+
+export const GetRelationshipConversationReview400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetRelationshipConversationReview401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetRelationshipConversationReview404Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),
@@ -6795,7 +7019,7 @@ export const ShareMutualActionPlan409Response = zod
   );
 
 /**
- * Returns the latest immutable observations for a relationship.
+ * Returns the latest immutable observations for a relationship. Rows that share a time stay in id order, so the next page does not skip them.
  * @summary Get evidence timeline
  */
 export const GetRelationshipTimelineParams = zod.object({
@@ -6804,10 +7028,27 @@ export const GetRelationshipTimelineParams = zod.object({
 
 export const GetRelationshipTimelineQueryParams = zod.object({
   limit: zod.coerce.number().int().optional().describe("Maximum observations (1-100)."),
+  before: zod.iso
+    .datetime({ offset: true })
+    .optional()
+    .describe("Return observations before this RFC3339 timestamp."),
+  beforeId: zod
+    .uuid()
+    .optional()
+    .describe("With before, also return observations at that time whose id sorts earlier."),
 });
 
 export const GetRelationshipTimeline200Response = zod
   .strictObject({
+    hasMore: zod.boolean().describe("An older observation exists beyond this page."),
+    nextBefore: zod.iso
+      .datetime({ offset: true })
+      .nullish()
+      .describe("Occurred-at cursor for the next page."),
+    nextBeforeId: zod
+      .uuid()
+      .nullish()
+      .describe("Id cursor for the next page. Send it with nextBefore."),
     observations: zod
       .array(
         zod
@@ -6828,10 +7069,24 @@ export const GetRelationshipTimeline200Response = zod
           })
           .describe("Immutable, idempotent provider evidence used to project relationship state."),
       )
-      .optional()
       .describe("Observations."),
   })
-  .describe("Observation list.");
+  .describe("Observation page.");
+
+export const GetRelationshipTimeline400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
 
 export const GetRelationshipTimeline401Response = zod
   .strictObject({

@@ -3,6 +3,7 @@
 import "client-only";
 
 import * as React from "react";
+import { openCompanyCreate } from "@/lib/dashboard/company-create-request";
 import {
   ArrowClockwise,
   Check,
@@ -27,9 +28,15 @@ import {
 } from "@oppulence/ui/components/card";
 import { Label } from "@oppulence/ui/components/label";
 import { Spinner } from "@oppulence/ui/components/spinner";
-import { Tabs, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
 import type { AppendCommitmentTransitionInput } from "@/hooks/queries/utils/mutate-append-commitment-transition";
-import { REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue/revenue";
+import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
+import { promiseDueDay } from "@/lib/revenue/revenue-records";
+import {
+  auditFailureCopy,
+  examinedConversationCount,
+  REVENUE_EVIDENCE_LOOKBACK_LABEL,
+} from "@/lib/revenue/revenue";
 import {
   Dialog,
   DialogContent,
@@ -48,15 +55,7 @@ import {
 } from "@oppulence/ui/components/select";
 import { cn } from "@oppulence/ui/lib/utils";
 import { Badge as SimBadge, Chip } from "@sim/emcn";
-import {
-  Columns3,
-  ListFilter,
-  Plus,
-  Table as TableIcon,
-  TagIcon,
-  TypeNumber,
-  TypeText,
-} from "@sim/emcn/icons";
+import { Plus, Table as TableIcon, TagIcon, TypeNumber, TypeText } from "@sim/emcn/icons";
 import { WorkspaceEmptyIllustration } from "@/components/features/revenue/shared/shared";
 import {
   SimProductHeader,
@@ -114,26 +113,26 @@ export interface CommitmentQueueItem {
  *  different query against GET /v1/commitments, not a different screen. */
 
 export const REGISTER_VIEWS: { id: RegisterView; label: string; hint: string }[] = [
-  { id: "we_owe", label: "What we owe", hint: "Outbound obligations by risk, then by date." },
+  { id: "we_owe", label: "What we owe", hint: "Promises we made, most urgent first." },
   {
     id: "they_owe",
     label: "What they owe us",
-    hint: "Inbound obligations. The view no other tool offers.",
+    hint: "Promises they made to us.",
   },
   {
     id: "changed",
     label: "What changed",
-    hint: "New commitments and slippage since the last review.",
+    hint: "Promises that are new, or that slipped, in the last 7 days.",
   },
   {
     id: "by_account",
-    label: "By account",
-    hint: "The full two-sided history for one relationship.",
+    label: "By company",
+    hint: "Every promise for one company.",
   },
   {
     id: "by_owner",
     label: "By owner",
-    hint: "What each person has promised. Used for load and handover.",
+    hint: "What each person has promised.",
   },
 ];
 
@@ -145,8 +144,15 @@ export interface CommitmentQueueProps extends Omit<
   entries: RegisterEntry[];
   view?: RegisterView;
   onViewChange?: (view: RegisterView) => void;
-  /** Fetches the Markdown record a user forwards. */
-  onExport?: (item: CommitmentQueueItem) => Promise<void>;
+  /**
+   * Home asked for the past-due count. That count is every direction, and it
+   * does not include promises that are only due soon, so none of the five
+   * register views is the right selection while this is on.
+   */
+  overdueOnly?: boolean;
+  onLeaveOverdue?: () => void;
+  /** Fetches the Markdown record a user forwards. A string result is the failure sentence. */
+  onExport?: (item: CommitmentQueueItem) => Promise<void | string>;
   /** Accounts in the workspace, for the "no accounts yet" empty state. */
   relationshipCount?: number;
   accounts?: { id: string; label: string }[];
@@ -163,6 +169,10 @@ export interface CommitmentQueueProps extends Omit<
   failedScan?: RevenueLeakScan | null;
   loading?: boolean;
   error?: string;
+  /** The register page already arrived, so an error is a refresh of that page. */
+  registerKnown?: boolean;
+  /** Asks the register for the same page again after a failed load. */
+  onRetry?: () => void;
   scanning?: boolean;
   onScan: () => void;
   onOpenConnectors?: () => void;
@@ -171,14 +181,198 @@ export interface CommitmentQueueProps extends Omit<
   onTransition: (
     item: CommitmentQueueItem,
     transition: CommitmentQueueTransition,
-  ) => Promise<boolean>;
-  onDraftRecovery: (relationshipId: string) => Promise<boolean>;
+  ) => Promise<boolean | string>;
+  onDraftRecovery: (relationshipId: string) => Promise<boolean | string>;
+  /** The loaded page filled the register limit and a later page may exist. */
+  hasMorePromises?: boolean;
+  loadingMorePromises?: boolean;
+  onLoadMorePromises?: () => void;
+  /**
+   * Open promises in every direction. This view's query hides the others, so an
+   * empty page can still point at the view that holds them.
+   */
+  otherPromises?: readonly LocatedPromise[];
+  /** The other-view list is still loading. An empty page must not say none exist yet. */
+  otherPromisesPending?: boolean;
+  /** The company directory page is full and a later page may hold more accounts. */
+  hasMoreAccounts?: boolean;
+  loadingMoreAccounts?: boolean;
+  onLoadMoreAccounts?: () => void;
+}
+
+/**
+ * The header count says when this page is not the whole register.
+ * Zero in this view is not zero in the register when another view holds a promise.
+ */
+export function registerCountLabel(
+  shown: number,
+  hasMore: boolean,
+  heldElsewhere = false,
+  pastDue = false,
+): string {
+  const count = Number.isFinite(shown) ? Math.max(0, Math.round(shown)) : 0;
+  if (count === 0 && heldElsewhere) return pastDue ? "None past due" : "None in this view";
+  const noun = count === 1 ? "commitment" : "commitments";
+  return hasMore ? `${count}+ ${noun}` : `${count} ${noun}`;
+}
+
+/** A search of the loaded page is not a search of promises still past it. */
+export function registerMissTitle(hasMore: boolean): string {
+  return hasMore ? "No loaded promises match this view" : "No commitments match this view";
+}
+
+export function registerMissDetail(hasMore: boolean): string {
+  return hasMore ? "Show the next promises to keep looking." : "Change the filter or search query.";
+}
+
+type LocatedPromise = {
+  direction?: string | null;
+  relationshipName?: string | null;
+};
+
+function locatedCompanyNames(promises: readonly LocatedPromise[]): string[] {
+  const names: string[] = [];
+  for (const row of promises) {
+    const name = row.relationshipName?.trim();
+    if (name && !names.includes(name)) names.push(name);
+  }
+  return names;
+}
+
+/**
+ * A shared promise is not on What we owe or What they owe us. By company
+ * lists it only after that company is chosen, so the sentence names the choice.
+ */
+export function registerSharedPromiseCopy(promises: readonly LocatedPromise[] | undefined): string {
+  const shared = (promises ?? []).filter((row) => row.direction === "mutual");
+  if (shared.length === 0) return "";
+  const names = locatedCompanyNames(shared);
+  const noun = shared.length === 1 ? "1 shared promise" : `${shared.length} shared promises`;
+  if (names.length === 1) {
+    const company = names[0];
+    return `${noun} with ${company}. Choose ${company} in By company.`;
+  }
+  return `${noun}. Choose the company in By company.`;
+}
+
+/** By company starts with no company. A shared promise waiting there names itself. */
+export function registerAccountScopeCopy(promises: readonly LocatedPromise[] | undefined): string {
+  const shared = (promises ?? []).filter((row) => row.direction === "mutual");
+  const names = locatedCompanyNames(shared);
+  if (shared.length === 1 && names.length === 1) {
+    return `${names[0]} has a shared promise. Choose it to see that promise.`;
+  }
+  if (shared.length > 1 && names.length === 1) {
+    return `${names[0]} has ${shared.length} shared promises. Choose it to see them.`;
+  }
+  if (shared.length > 0) return "Shared promises are filed by company. Choose one to see them.";
+  return "Select one company to see every promise for it.";
+}
+
+/** Where an open promise lives when this slice does not list it. */
+export function registerPromiseLocationCopy(
+  promises: readonly LocatedPromise[] | undefined,
+): string {
+  const rows = promises ?? [];
+  const theirs = rows.filter((row) => row.direction === "promised_by_them").length;
+  const ours = rows.filter((row) => row.direction === "promised_by_me").length;
+  const lines: string[] = [];
+  if (ours === 1) lines.push("1 promise we made is in What we owe.");
+  else if (ours > 1) lines.push(`${ours} promises we made are in What we owe.`);
+  if (theirs === 1) lines.push("1 promise they made is in What they owe us.");
+  else if (theirs > 1) lines.push(`${theirs} promises they made are in What they owe us.`);
+  const shared = registerSharedPromiseCopy(rows);
+  if (shared) lines.push(shared);
+  return lines.join(" ");
+}
+
+/**
+ * "What we owe" is empty when the only promise is one they made. That is not
+ * a workspace with no commitments. A 7-day change window and the past-due
+ * slice are the same kind of miss.
+ */
+export function registerElsewhereCopy(
+  view: string,
+  promises: readonly LocatedPromise[] | undefined,
+): { title: string; detail: string } | null {
+  const rows = promises ?? [];
+  const located = registerPromiseLocationCopy(promises);
+  if (view === "changed" || view === "overdue") {
+    if (!located) return null;
+    return {
+      title:
+        view === "overdue"
+          ? "No promises are past due"
+          : "No promises changed in the last 7 days",
+      detail: located,
+    };
+  }
+  if (view === "we_owe") {
+    const detail = registerPromiseLocationCopy(
+      rows.filter((row) => row.direction !== "promised_by_me"),
+    );
+    if (!detail) return null;
+    return { title: "No promises we made", detail };
+  }
+  if (view === "they_owe") {
+    const detail = registerPromiseLocationCopy(
+      rows.filter((row) => row.direction !== "promised_by_them"),
+    );
+    if (!detail) return null;
+    return { title: "No promises they made", detail };
+  }
+  return null;
+}
+
+export function registerRemainderLabel(): string {
+  return "Show the next promises";
+}
+
+/** The By company menu only holds the companies already loaded. */
+export function registerNextCompaniesLabel(): string {
+  return "Show the next companies";
+}
+
+export function registerEmptyAccountsTitle(hasMoreAccounts: boolean): string {
+  return hasMoreAccounts ? "More companies are still in this list." : "No companies yet";
+}
+
+export function registerEmptyAccountsDetail(hasMoreAccounts: boolean): string {
+  return hasMoreAccounts
+    ? "Show the next companies before choosing a company."
+    : "Add a company before this view can show its promise history.";
 }
 
 // The register already carries direction, owner, counterparty, the derived
 // state and the account name, so the queue no longer reconstructs commitments
 // from relationship-graph nodes and edges. That reconstruction could not page,
 // could not filter server-side, and could not answer "by owner" at all.
+
+/** A missing register field is a stored token. The record names the gap. */
+export function missingEvidenceLabel(item: string): string {
+  switch (item) {
+    case "promiser":
+      return "who promised";
+    case "recipient":
+      return "who it was promised to";
+    default:
+      return item;
+  }
+}
+
+export function formatMissingEvidence(items: readonly string[]): string {
+  return items.map(missingEvidenceLabel).join(", ");
+}
+
+/**
+ * An empty gap used to read "Evidence missing / None", which sounds like the
+ * quote is gone. The record says the evidence is complete until a field is
+ * actually absent.
+ */
+export function evidenceGapFact(items: readonly string[]): { label: string; value: string } {
+  if (items.length === 0) return { label: "Evidence", value: "Complete" };
+  return { label: "Evidence missing", value: formatMissingEvidence(items) };
+}
 
 function missingEvidence(entry: RegisterEntry) {
   const missing: string[] = [];
@@ -192,11 +386,22 @@ function missingEvidence(entry: RegisterEntry) {
   return missing;
 }
 
+/**
+ * An open, complete promise used to say "watch connected sources" while the
+ * workspace had none. The next step names the connection that is actually missing.
+ */
+export function sourceWatchCopy(input: { connected: boolean; needsReconnect: boolean }): string {
+  if (input.needsReconnect) return "Reconnect Google to watch for fulfillment or a reply.";
+  if (!input.connected) return "Connect Gmail and Calendar to watch for fulfillment or a reply.";
+  return "Watch connected sources for fulfillment or a reply.";
+}
+
 function nextAction(
   state: string,
   missing: string[],
   urgency: CommitmentQueueItem["urgency"],
   blocked = false,
+  watch = sourceWatchCopy({ connected: false, needsReconnect: false }),
 ) {
   if (state === "met") return "Closed from observed or confirmed evidence.";
   if (state === "waived") return "Released by the counterparty. No action required.";
@@ -204,24 +409,65 @@ function nextAction(
   if (state === "missed") return "Acknowledge with the counterparty or renegotiate.";
   if (state === "disputed") return "Clarify the promise with the counterparty.";
   if (blocked) return "Resolve the blocker or renegotiate the promise.";
-  if (missing.length > 0) return `Confirm or correct ${missing[0]}.`;
+  if (missing[0] === "confirmation") return "Confirm or correct this promise.";
+  if (missing.length > 0) return `Confirm or correct ${missingEvidenceLabel(missing[0])}.`;
   if (urgency === "overdue") return "Draft a recovery message or task now.";
   if (urgency === "due_soon") return "Review and warn the owner before it is overdue.";
-  return "Watch connected sources for fulfillment or a reply.";
+  return watch;
 }
 
-function toQueueItems(entries: RegisterEntry[], now = new Date()): CommitmentQueueItem[] {
+/** The promise row and the parties use one company name. Spaces are not a name. */
+export function registerCompanyLabel(name?: string | null): string {
+  return name?.trim() || "Unknown company";
+}
+
+/** Meeting ingest stores these when nobody was named. They are not people. */
+const UNNAMED_PARTICIPANT_REFS = new Set(["local-user", "meeting-counterparty"]);
+
+function participantName(ref?: string): string {
+  const name = ref?.trim() || "";
+  return name && !UNNAMED_PARTICIPANT_REFS.has(name) ? name : "";
+}
+
+/**
+ * A mutual promise has no single promiser. Without a named person, the
+ * register used to say the company promised it to the company.
+ */
+export function registerPartyLabels(entry: {
+  direction: string;
+  relationshipName?: string;
+  ownerParticipantRef?: string;
+  beneficiaryParticipantRef?: string;
+  counterpartyParticipantRef?: string;
+}): { owner: string; counterparty: string } {
+  const relationshipName = registerCompanyLabel(entry.relationshipName);
+  const namedOwner = participantName(entry.ownerParticipantRef);
+  const namedBeneficiary = participantName(entry.beneficiaryParticipantRef);
+  const namedCounterparty = participantName(entry.counterpartyParticipantRef);
+  const both = `You and ${relationshipName}`;
+  if (entry.direction === "mutual") {
+    return {
+      owner: namedOwner || both,
+      counterparty: namedBeneficiary || namedCounterparty || both,
+    };
+  }
+  return {
+    owner: namedOwner || (entry.direction === "promised_by_me" ? "You" : relationshipName),
+    counterparty:
+      namedBeneficiary ||
+      (entry.direction === "promised_by_them" ? "You" : namedCounterparty || relationshipName),
+  };
+}
+
+function toQueueItems(
+  entries: RegisterEntry[],
+  now = new Date(),
+  watch = sourceWatchCopy({ connected: false, needsReconnect: false }),
+): CommitmentQueueItem[] {
   return entries
     .map((entry): CommitmentQueueItem => {
-      const relationshipName = entry.relationshipName || "Unknown account";
-      const owner =
-        entry.ownerParticipantRef ||
-        (entry.direction === "promised_by_me" ? "You" : relationshipName);
-      const counterparty =
-        entry.beneficiaryParticipantRef ||
-        (entry.direction === "promised_by_them"
-          ? "You"
-          : entry.counterpartyParticipantRef || relationshipName);
+      const relationshipName = registerCompanyLabel(entry.relationshipName);
+      const { owner, counterparty } = registerPartyLabels(entry);
       const due = entry.dueAt ? new Date(entry.dueAt).getTime() : undefined;
       const closed = ["met", "waived", "cancelled", "superseded"].includes(entry.state);
       const urgency: CommitmentQueueItem["urgency"] = closed
@@ -246,7 +492,13 @@ function toQueueItems(entries: RegisterEntry[], now = new Date()): CommitmentQue
         blocker: entry.blocker,
         quote: entry.sourcePhrase,
         missingEvidence: missing,
-        nextAction: nextAction(entry.state, missing, urgency, Boolean(entry.blocker?.trim())),
+        nextAction: nextAction(
+          entry.state,
+          missing,
+          urgency,
+          Boolean(entry.blocker?.trim()),
+          watch,
+        ),
         urgency,
         confidence: Math.round((entry.confidence ?? 0) * 100),
         currentEventVersion: entry.currentEventVersion ?? 0,
@@ -281,7 +533,7 @@ function scanFailure(scan: RevenueLeakScan | null | undefined, sourceStillBroken
       ? "Google stopped accepting the authorization, so we could not read your mail. Reconnect to run the audit again."
       : wasAuthFailure
         ? "The last audit could not read your mail. The connection looks healthy now, so running it again should work."
-        : scan.error,
+        : auditFailureCopy(scan.error),
   };
 }
 
@@ -314,7 +566,7 @@ function statusLabel(value: string) {
   const labels: Record<string, string> = {
     open: "Open",
     at_risk: "At risk",
-    met: "Met",
+    met: "Kept",
     missed: "Missed",
     waived: "Waived",
     disputed: "Disputed",
@@ -324,10 +576,41 @@ function statusLabel(value: string) {
   return labels[value] || value.replaceAll("_", " ");
 }
 
-function acceptanceLabel(value: string) {
+/**
+ * The list already says Review for an extraction nobody confirmed, including
+ * one the register clock would call at risk. The open record used the clock
+ * word instead, so the same promise read At risk once it was opened.
+ */
+export function commitmentDetailStatus(item: { state: string; acceptance: string }): string {
+  if (item.acceptance === "candidate") return "Review";
+  return statusLabel(item.state);
+}
+
+/** Urgency is overdue, due soon, open, or closed. Promise status uses a different map. */
+export function urgencyLabel(urgency: string): string {
+  switch (urgency) {
+    case "overdue":
+      return "Overdue";
+    case "due_soon":
+      return "Due within 72h";
+    case "open":
+      return "Open";
+    case "closed":
+      return "Closed";
+    default:
+      return statusLabel(urgency);
+  }
+}
+
+/**
+ * Internal confirmation means this workspace agrees the promise was made.
+ * "Confirmed" alone sat next to "Mark accepted" and sounded like the same step.
+ * Acceptance is the later state, once the other party has accepted it.
+ */
+export function acceptanceLabel(value: string) {
   const labels: Record<string, string> = {
     candidate: "Needs confirmation",
-    internally_confirmed: "Confirmed",
+    internally_confirmed: "Confirmed in this workspace",
     offered: "Offered",
     accepted: "Accepted",
     disputed: "Disputed",
@@ -335,28 +618,115 @@ function acceptanceLabel(value: string) {
   return labels[value] || value.replaceAll("_", " ");
 }
 
-function localDateTime(iso?: string) {
-  if (!iso) return "";
+/** The record names the UTC day. The editor has to open on that same day. */
+export function promiseDueEditorValue(iso?: string | null): string {
+  if (!iso?.trim()) return "";
   const date = new Date(iso);
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 16);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+}
+
+/** The editor shows the UTC day. Save that clock as UTC. */
+export function promiseDueFromEditor(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const date = new Date(trimmed.endsWith("Z") ? trimmed : `${trimmed}Z`);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toISOString();
+}
+
+const COMMITMENT_FILTER_LABEL: Record<string, string> = {
+  active: "Active",
+  review: "Needs review",
+  overdue: "Overdue",
+  due: "Due soon or overdue",
+  closed: "Closed",
+  all: "All",
+};
+
+/** The visible word is the current commitment filter, not the menu's name. */
+export function commitmentFilterName(value: string): string {
+  return comboboxFilterName("Commitments", COMMITMENT_FILTER_LABEL[value] ?? "Active");
+}
+
+/**
+ * The By company menu's accessible name replaced its value, so a selected
+ * company was still announced as "Choose a company".
+ */
+export function registerAccountName(label: string | null | undefined): string {
+  const choice = label?.trim() || "Choose a company";
+  return comboboxFilterName("Company", choice);
 }
 
 const REGISTER_COLUMNS = [
   { name: "Company", icon: TypeText },
-  { name: "Score", icon: TypeNumber },
+  { name: "Confidence", icon: TypeNumber },
   { name: "Status", icon: TagIcon },
   { name: "Contact", icon: TypeText },
 ] as const;
 
-function registerPreviewStatus(item: CommitmentQueueItem) {
-  if (item.acceptance === "candidate") {
-    return { label: "Review", variant: "amber" as const };
+/** The register score is how sure the promise is, on a percent scale. */
+export function registerConfidenceLabel(score: number): string {
+  const value = Number.isFinite(score) ? Math.max(0, Math.round(score)) : 0;
+  return `${value}%`;
+}
+
+/**
+ * The row Status is the same word as the open record. "Confirmed" is the
+ * acceptance step, so an open promise must not wear it in this column.
+ */
+export function registerRowStatus(item: {
+  state: string;
+  acceptance: string;
+  urgency?: string;
+}): { label: string; variant: "green" | "amber" | "red" } {
+  const label = commitmentDetailStatus(item);
+  if (item.acceptance === "candidate" || label === "Review") {
+    return { label, variant: "amber" };
   }
-  if (item.state === "at_risk" || item.urgency === "overdue") {
-    return { label: "At risk", variant: "red" as const };
+  if (
+    label === "At risk" ||
+    label === "Missed" ||
+    label === "Disputed" ||
+    item.urgency === "overdue"
+  ) {
+    return { label, variant: "red" };
   }
-  return { label: "Confirmed", variant: "green" as const };
+  if (label === "Kept") return { label, variant: "green" };
+  return { label, variant: "amber" };
+}
+
+/** Search matches the words on the row and the words on the open promise. */
+export function commitmentSearchText(item: CommitmentQueueItem): string {
+  const missing = formatMissingEvidence(item.missingEvidence);
+  const gap = evidenceGapFact(item.missingEvidence);
+  const evidence =
+    item.missingEvidence.length > 0
+      ? [gap.label, missing, `${item.missingEvidence.length} items missing`, `Missing ${missing}`].join(
+          " ",
+        )
+      : `${gap.label} ${gap.value}`;
+  return [
+    item.relationshipName,
+    item.owner,
+    item.counterparty,
+    item.text,
+    String(item.confidence),
+    registerRowStatus(item).label,
+    urgencyLabel(item.urgency),
+    item.urgency === "due_soon" ? "due soon" : "",
+    item.urgency === "overdue" ? "past due" : "",
+    statusLabel(item.state),
+    item.state === "met" ? "met" : "",
+    acceptanceLabel(item.acceptance),
+    promiseDueDay(item.dueAt) ?? "Missing",
+    promiseDueDay(item.dueAt) ?? "Not confirmed",
+    evidence,
+    item.nextAction,
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export function CommitmentQueue({
@@ -364,6 +734,8 @@ export function CommitmentQueue({
   entries,
   view = "we_owe",
   onViewChange,
+  overdueOnly = false,
+  onLeaveOverdue,
   onExport,
   relationshipCount = 0,
   accounts = [],
@@ -377,6 +749,8 @@ export function CommitmentQueue({
   failedScan,
   loading = false,
   error,
+  registerKnown = false,
+  onRetry,
   scanning = false,
   onScan,
   onOpenConnectors,
@@ -384,6 +758,14 @@ export function CommitmentQueue({
   onOpenRecoveryQueue,
   onTransition,
   onDraftRecovery,
+  hasMorePromises = false,
+  loadingMorePromises = false,
+  onLoadMorePromises,
+  hasMoreAccounts = false,
+  loadingMoreAccounts = false,
+  onLoadMoreAccounts,
+  otherPromises,
+  otherPromisesPending = false,
   ...props
 }: CommitmentQueueProps) {
   const [query, setQuery] = React.useState("");
@@ -394,22 +776,21 @@ export function CommitmentQueue({
   const [editing, setEditing] = React.useState<CommitmentQueueItem | null>(null);
   const [correctedText, setCorrectedText] = React.useState("");
   const [correctedDueAt, setCorrectedDueAt] = React.useState("");
-  const items = React.useMemo(() => toQueueItems(entries), [entries]);
-  const scopeMissing =
-    (view === "by_account" && !accountId) || (view === "by_owner" && !owner.trim());
-  const filtered = items.filter((item) => {
-    if (filter === "review" && item.missingEvidence.length === 0) return false;
-    if (filter === "due" && item.urgency !== "overdue" && item.urgency !== "due_soon") return false;
-    if (filter === "closed" && item.urgency !== "closed") return false;
-    if (filter === "active" && item.urgency === "closed") return false;
-    const needle = query.trim().toLowerCase();
-    return (
-      !needle ||
-      `${item.relationshipName} ${item.owner} ${item.counterparty} ${item.text}`
-        .toLowerCase()
-        .includes(needle)
-    );
-  });
+  const [blocking, setBlocking] = React.useState(false);
+  const [blockerText, setBlockerText] = React.useState("");
+  const [fulfilling, setFulfilling] = React.useState(false);
+  const [recordError, setRecordError] = React.useState<string | null>(null);
+  // Home's count is past due only. "Due soon or overdue" would add rows the
+  // number did not include.
+  React.useEffect(() => {
+    if (overdueOnly) setFilter("overdue");
+  }, [overdueOnly]);
+  React.useEffect(() => {
+    setBlocking(false);
+    setBlockerText("");
+    setFulfilling(false);
+    setRecordError(null);
+  }, [selected?.id]);
   const google = sources.find((source) => source.source === "google");
   const googleNeedsReconnect = sourceNeedsReconnect(google);
   // A past failure is history; the source status says whether it is still true.
@@ -419,26 +800,80 @@ export function CommitmentQueue({
   // Coverage, read straight from the scan. An older scan that predates
   // these counters reports zero for them, so fall back to the sweep total
   // rather than claiming nothing was examined.
-  const swept = latestScan?.threadsSeen ?? 0;
   const skipped = latestScan?.threadsSkipped ?? 0;
   const snippetOnly = latestScan?.threadsSnippetOnly ?? 0;
-  const deepRead = latestScan?.threadsDeepRead ?? 0;
-  const examined = deepRead + snippetOnly > 0 || skipped > 0 ? deepRead + snippetOnly : swept;
+  const examined = examinedConversationCount(latestScan);
   const googleConnected = !googleNeedsReconnect && sourceConnected(google);
-
+  const items = React.useMemo(
+    () =>
+      toQueueItems(
+        entries,
+        new Date(),
+        sourceWatchCopy({ connected: googleConnected, needsReconnect: googleNeedsReconnect }),
+      ),
+    [entries, googleConnected, googleNeedsReconnect],
+  );
+  const elsewhere =
+    items.length === 0
+      ? registerElsewhereCopy(overdueOnly ? "overdue" : view, otherPromises)
+      : null;
+  // The open record is a snapshot from the click. A saved transition refetches
+  // the register, and this replaces that snapshot so the button and the
+  // acceptance card leave the step that just finished.
+  React.useEffect(() => {
+    setSelected((current) => {
+      if (!current) return current;
+      const fresh = items.find((item) => item.id === current.id);
+      if (!fresh) return current;
+      if (
+        fresh.acceptance === current.acceptance &&
+        fresh.state === current.state &&
+        fresh.currentEventVersion === current.currentEventVersion &&
+        fresh.text === current.text &&
+        fresh.dueAt === current.dueAt &&
+        fresh.blocker === current.blocker &&
+        fresh.nextAction === current.nextAction &&
+        fresh.urgency === current.urgency
+      ) {
+        return current;
+      }
+      return fresh;
+    });
+  }, [items]);
+  // An empty select cannot be "chosen". That case is a missing company, not a
+  // prompt to pick one.
+  const noAccounts = view === "by_account" && accounts.length === 0 && !hasMoreAccounts;
+  const waitingForAccounts = view === "by_account" && accounts.length === 0 && hasMoreAccounts;
+  const scopeMissing =
+    (view === "by_account" && !noAccounts && !accountId) || (view === "by_owner" && !owner.trim());
+  const filtered = items.filter((item) => {
+    if (filter === "review" && item.missingEvidence.length === 0) return false;
+    if (filter === "overdue" && item.urgency !== "overdue") return false;
+    if (filter === "due" && item.urgency !== "overdue" && item.urgency !== "due_soon") return false;
+    if (filter === "closed" && item.urgency !== "closed") return false;
+    if (filter === "active" && item.urgency === "closed") return false;
+    const needle = query.trim().toLowerCase();
+    return !needle || commitmentSearchText(item).toLowerCase().includes(needle);
+  });
   const transition = async (
     item: CommitmentQueueItem,
     kind: AppendCommitmentTransitionInput["kind"],
     extra: Partial<CommitmentQueueTransition> = {},
   ) => {
     setBusy(`${item.id}:${kind}`);
+    setRecordError(null);
     try {
-      return await onTransition(item, {
+      const saved = await onTransition(item, {
         kind,
         idempotencyKey: `commitment-queue:${kind}:${item.id}:v${item.currentEventVersion}`,
         reason: `Reviewed from the Commitment Queue (${statusLabel(kind)}).`,
         ...extra,
       });
+      if (saved === true) return true;
+      setRecordError(
+        typeof saved === "string" && saved.trim() ? saved : "Could not update this promise.",
+      );
+      return false;
     } finally {
       setBusy(null);
     }
@@ -452,17 +887,37 @@ export function CommitmentQueue({
     >
       <SimProductPanel className="mx-3 mt-3 flex min-h-0 flex-1 flex-col">
         <SimProductHeader
-          actions={`${filtered.length} row${filtered.length === 1 ? "" : "s"}`}
+          actions={registerCountLabel(
+            filtered.length,
+            hasMorePromises,
+            Boolean(elsewhere) || otherPromisesPending,
+            overdueOnly,
+          )}
           icon={TableIcon}
           title="Commitment register"
         />
         <SimProductToolbar aria-label="Register views" role="tablist">
+          {overdueOnly ? (
+            <Chip
+              active
+              aria-selected
+              role="tab"
+              title="Past-due promises, whoever made them."
+              type="button"
+            >
+              Overdue
+            </Chip>
+          ) : null}
           {REGISTER_VIEWS.map((registerView) => (
             <Chip
-              active={view === registerView.id}
-              aria-selected={view === registerView.id}
+              active={!overdueOnly && view === registerView.id}
+              aria-selected={!overdueOnly && view === registerView.id}
               key={registerView.id}
-              onClick={() => onViewChange?.(registerView.id)}
+              onClick={() => {
+                setFilter("active");
+                onLeaveOverdue?.();
+                onViewChange?.(registerView.id);
+              }}
               role="tab"
               title={registerView.hint}
               type="button"
@@ -482,10 +937,16 @@ export function CommitmentQueue({
               value={query}
             />
           </div>
-          {view === "by_account" ? (
+          {view === "by_account" && (accounts.length > 0 || hasMoreAccounts) ? (
             <Select onValueChange={onAccountChange} value={accountId}>
-              <SelectTrigger aria-label="Choose account" className="h-8 w-44">
-                <SelectValue placeholder="Choose an account" />
+              <SelectTrigger
+                aria-label={registerAccountName(
+                  accounts.find((account) => account.id === accountId)?.label ??
+                    (waitingForAccounts ? "More companies are still in this list." : undefined),
+                )}
+                className="h-8 w-44"
+              >
+                <SelectValue placeholder="Choose a company" />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-none">
                 {accounts.map((account) => (
@@ -493,6 +954,23 @@ export function CommitmentQueue({
                     {account.label}
                   </SelectItem>
                 ))}
+                {hasMoreAccounts ? (
+                  <Button
+                    className={cn(
+                      "sticky bottom-0 z-10 h-8 w-full justify-start rounded-none",
+                      "border-t border-border bg-background px-2 text-[12px]",
+                    )}
+                    disabled={loadingMoreAccounts}
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      onLoadMoreAccounts?.();
+                    }}
+                    type="button"
+                    variant="ghost"
+                  >
+                    {loadingMoreAccounts ? "Loading…" : registerNextCompaniesLabel()}
+                  </Button>
+                ) : null}
               </SelectContent>
             </Select>
           ) : null}
@@ -509,24 +987,22 @@ export function CommitmentQueue({
             onValueChange={(value) => {
               setFilter(value);
               onIncludeCandidatesChange?.(value === "review");
+              if (overdueOnly && value !== "overdue") onLeaveOverdue?.();
             }}
             value={filter}
           >
-            <SelectTrigger aria-label="Filter commitments" className="h-8 w-36">
+            <SelectTrigger aria-label={commitmentFilterName(filter)} className="h-8 w-36">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="app-shell rounded-none">
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="review">Needs review</SelectItem>
+              <SelectItem value="overdue">Overdue</SelectItem>
               <SelectItem value="due">Due soon or overdue</SelectItem>
               <SelectItem value="closed">Closed</SelectItem>
               <SelectItem value="all">All</SelectItem>
             </SelectContent>
           </Select>
-          <Chip leftIcon={ListFilter}>Filter</Chip>
-          <span className="ml-auto hidden items-center gap-1 2xl:inline-flex">
-            <Chip leftIcon={Columns3}>Columns</Chip>
-          </span>
           <Button
             className="hidden 2xl:inline-flex"
             onClick={onOpenRecoveryQueue}
@@ -561,7 +1037,10 @@ export function CommitmentQueue({
               >
                 <Plugs /> Reconnect Google
               </Button>
-            ) : (
+            ) : googleConnected || scanning ? (
+              // A scan with no mailbox is rejected before it reads anything.
+              // Connect is already the action in that case; this button only
+              // stays while a scan is running or Gmail can actually be read.
               <Button
                 className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
                 disabled={scanning}
@@ -579,7 +1058,7 @@ export function CommitmentQueue({
                   {scanning ? "Scanning" : "Run audit"}
                 </Label>
               </Button>
-            )}
+            ) : null}
           </div>
         </SimProductToolbar>
 
@@ -617,7 +1096,7 @@ export function CommitmentQueue({
               ) : null}
               <div className="flex items-center gap-1.5">
                 <dd className="font-medium text-primary">{latestScan.relationshipsCreated ?? 0}</dd>
-                <dt>New relationships</dt>
+                <dt>New companies</dt>
               </div>
               <div className="hidden items-center gap-1.5 lg:flex">
                 <dd className="font-medium text-primary">{latestScan.candidatesSeen ?? 0}</dd>
@@ -632,7 +1111,7 @@ export function CommitmentQueue({
                 type="button"
                 variant="outline"
               >
-                Review relationships
+                Review companies
               </Button>
             ) : null}
           </div>
@@ -668,25 +1147,89 @@ export function CommitmentQueue({
           </Alert>
         ) : null}
 
-        {error ? (
+        {error && (items.length > 0 || registerKnown) ? (
           <div
             role="alert"
-            className="m-3 rounded-none border border-destructive/40 p-3 text-sm text-destructive"
+            className={
+              "mx-3 mt-3 flex items-center justify-between gap-3 rounded-none border " +
+              "border-destructive/40 p-3 text-sm text-destructive"
+            }
           >
-            {error}
+            <p>{error}</p>
+            {onRetry ? (
+              <Button onClick={onRetry} size="sm" type="button" variant="outline">
+                Try again
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {error && items.length === 0 && !registerKnown ? (
+          <div
+            role="alert"
+            className={
+              "m-3 flex items-center justify-between gap-3 rounded-none border " +
+              "border-destructive/40 p-3 text-sm text-destructive"
+            }
+          >
+            <p>{error}</p>
+            {onRetry ? (
+              <Button onClick={onRetry} size="sm" type="button" variant="outline">
+                Try again
+              </Button>
+            ) : null}
           </div>
         ) : loading ? (
           <div className="flex flex-1 items-center justify-center gap-2 p-6 text-sm text-primary/55">
             <Spinner className="size-4" /> Loading commitments…
           </div>
+        ) : noAccounts ? (
+          <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
+            <h2 className="text-[20px] font-semibold leading-6 text-primary">
+              {registerEmptyAccountsTitle(false)}
+            </h2>
+            <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
+              {registerEmptyAccountsDetail(false)}
+            </p>
+            <Button
+              className="mt-5 bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+              onClick={() => openCompanyCreate(onOpenAccounts)}
+              size="sm"
+              type="button"
+            >
+              <Plus /> Add a company
+            </Button>
+          </div>
+        ) : waitingForAccounts ? (
+          <div
+            className={
+              "flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center"
+            }
+          >
+            <h2 className="text-[20px] font-semibold leading-6 text-primary">
+              {registerEmptyAccountsTitle(true)}
+            </h2>
+            <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
+              {registerEmptyAccountsDetail(true)}
+            </p>
+            <Button
+              className="mt-5"
+              disabled={loadingMoreAccounts}
+              onClick={() => onLoadMoreAccounts?.()}
+              size="sm"
+              type="button"
+            >
+              {loadingMoreAccounts ? "Loading…" : registerNextCompaniesLabel()}
+            </Button>
+          </div>
         ) : scopeMissing ? (
           <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
             <h2 className="text-[20px] font-semibold leading-6 text-primary">
-              {view === "by_account" ? "Choose an account" : "Enter an owner"}
+              {view === "by_account" ? "Choose a company" : "Enter an owner"}
             </h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
               {view === "by_account"
-                ? "Select one relationship to see its two-sided promise history."
+                ? registerAccountScopeCopy(otherPromises)
                 : "Use a name or email to see what that person has promised."}
             </p>
           </div>
@@ -737,17 +1280,36 @@ export function CommitmentQueue({
           <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[84px] text-center">
             <WorkspaceEmptyIllustration image="commitments" />
             <h2 className="text-[20px] font-semibold leading-6 text-primary">
-              {items.length === 0 ? "Commitment Queue" : "No commitments match this view"}
+              {items.length === 0
+                ? otherPromisesPending
+                  ? "Checking the other views"
+                  : (elsewhere?.title ?? "No commitments yet")
+                : registerMissTitle(hasMorePromises)}
             </h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
               {items.length === 0
-                ? googleConnected
-                  ? "No explicit promises were found. Run another audit after new conversations or import reviewed meeting evidence."
-                  : googleNeedsReconnect
-                    ? "Reconnect Google to resume finding who promised what, when it is due, and the exact evidence behind it."
-                    : "Connect Gmail and Calendar to find who promised what, when it is due, and the exact evidence behind it."
-                : "Change the filter or search query."}
+                ? otherPromisesPending
+                  ? "Looking for promises in the other register views."
+                  : (elsewhere?.detail ??
+                    (googleConnected
+                      ? "No explicit promises were found. Run another audit after new conversations."
+                      : googleNeedsReconnect
+                        ? "Reconnect Google to resume finding who promised what, when it is due, and the message it came from."
+                        : "Connect Gmail and Calendar to find who promised what, when it is due, and the message it came from."))
+                : registerMissDetail(hasMorePromises)}
             </p>
+            {items.length > 0 && hasMorePromises && onLoadMorePromises ? (
+              <Button
+                className="mt-5"
+                disabled={loadingMorePromises}
+                onClick={onLoadMorePromises}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {registerRemainderLabel()}
+              </Button>
+            ) : null}
             {items.length === 0 ? (
               <div className="mt-5 flex flex-wrap justify-center gap-2">
                 {!googleConnected ? (
@@ -771,18 +1333,18 @@ export function CommitmentQueue({
                     <MagnifyingGlass /> Run 6-month audit
                   </Button>
                 )}
-                <Button type="button" size="sm" variant="outline" onClick={onOpenAccounts}>
-                  Import meeting evidence
-                </Button>
               </div>
             ) : null}
             {items.length === 0 ? (
               <div className="mb-4 mt-auto w-full max-w-[640px] text-left">
-                <p className="mb-2 text-[12px] text-primary/45">Learn more</p>
+                {/* These are actions. "Learn more" made the recovery card
+                    read like an article, and its label described an approval
+                    the click never performs. It only opens the recovery queue. */}
+                <p className="mb-2 text-[12px] text-primary/45">What you can do</p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Button
                     className="flex h-[72px] items-center justify-start gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] font-normal text-primary/80 hover:bg-background-100"
-                    onClick={onOpenAccounts}
+                    onClick={() => openCompanyCreate(onOpenAccounts)}
                     type="button"
                     variant="ghost"
                   >
@@ -791,7 +1353,7 @@ export function CommitmentQueue({
                         <Check className="size-4" />
                       </AvatarFallback>
                     </Avatar>
-                    Confirm promises with exact evidence
+                    Add a company
                   </Button>
                   <Button
                     className="flex h-[72px] items-center justify-start gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] font-normal text-primary/80 hover:bg-background-100"
@@ -804,7 +1366,7 @@ export function CommitmentQueue({
                         <ArrowClockwise className="size-4" />
                       </AvatarFallback>
                     </Avatar>
-                    Approve recovery before anything is sent
+                    Review recovery drafts
                   </Button>
                 </div>
               </div>
@@ -844,7 +1406,7 @@ export function CommitmentQueue({
               </thead>
               <tbody>
                 {filtered.map((item, index) => {
-                  const previewStatus = registerPreviewStatus(item);
+                  const previewStatus = registerRowStatus(item);
                   return (
                     <tr
                       className={cn(
@@ -873,7 +1435,7 @@ export function CommitmentQueue({
                         </span>
                       </td>
                       <td className="border-[var(--border)] border-r px-2.5 tabular-nums">
-                        {item.confidence}
+                        {registerConfidenceLabel(item.confidence)}
                       </td>
                       <td className="border-[var(--border)] border-r px-2.5">
                         <SimBadge variant={previewStatus.variant}>{previewStatus.label}</SimBadge>
@@ -886,29 +1448,40 @@ export function CommitmentQueue({
                 })}
               </tbody>
             </table>
-            <div className="flex h-9 items-center gap-2 px-3 text-[var(--text-muted)]">
-              <Plus className="size-[14px]" />
-              <span>New row</span>
-            </div>
+            {hasMorePromises && onLoadMorePromises ? (
+              <Button
+                className="m-3"
+                disabled={loadingMorePromises}
+                onClick={onLoadMorePromises}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {registerRemainderLabel()}
+              </Button>
+            ) : null}
           </div>
         )}
       </SimProductPanel>
 
       {selected ? (
-        <div className="fixed inset-y-0 right-0 z-40 flex bg-background md:left-[285px]">
+        <div
+          className="fixed inset-y-0 right-0 z-40 flex bg-background md:left-[var(--shell-sidebar-offset,calc(0.625rem+1px+var(--shell-sidebar-width,252px)))]"
+          data-record-overlay="shell"
+        >
           <aside className="flex w-[320px] shrink-0 flex-col border-r border-border bg-background">
             <div className="flex h-12 items-center gap-2 border-b border-border px-3">
               <Button
                 className="size-8 rounded-none text-primary/50 hover:bg-background-100 hover:text-primary"
                 onClick={() => setSelected(null)}
                 type="button"
-                aria-label="Close commitment"
+                aria-label="Close"
                 size="icon-xs"
                 variant="ghost"
               >
                 <X className="size-4" />
               </Button>
-              <Label className="text-[12px] font-normal text-primary/45">Commitment record</Label>
+              <Label className="text-[12px] font-normal text-primary/45">Promise record</Label>
               {/* One-pager §3: a record that cannot leave the tool cannot
                   settle an argument. */}
               {onExport ? (
@@ -920,7 +1493,12 @@ export function CommitmentQueue({
                   disabled={exporting}
                   onClick={() => {
                     setExporting(true);
-                    void onExport(selected).finally(() => setExporting(false));
+                    setRecordError(null);
+                    void onExport(selected)
+                      .then((result) => {
+                        if (typeof result === "string" && result.trim()) setRecordError(result);
+                      })
+                      .finally(() => setExporting(false));
                   }}
                 >
                   {exporting ? <Spinner className="size-4" /> : <Export />}
@@ -928,6 +1506,14 @@ export function CommitmentQueue({
                 </Button>
               ) : null}
             </div>
+            {recordError ? (
+              <p
+                className="border-b border-destructive/30 px-4 py-2 text-sm text-destructive"
+                role="alert"
+              >
+                {recordError}
+              </p>
+            ) : null}
             <div className="border-b border-border p-4">
               <div className="flex items-start gap-3">
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-none bg-[#3478f6] text-white">
@@ -950,8 +1536,15 @@ export function CommitmentQueue({
                     disabled={busy !== null}
                     onClick={async () => {
                       setBusy(`${selected.id}:recovery`);
+                      setRecordError(null);
                       try {
-                        await onDraftRecovery(selected.relationshipId);
+                        const drafted = await onDraftRecovery(selected.relationshipId);
+                        if (drafted === true) return;
+                        setRecordError(
+                          typeof drafted === "string" && drafted.trim()
+                            ? drafted
+                            : "Could not draft a follow-up.",
+                        );
                       } finally {
                         setBusy(null);
                       }
@@ -970,9 +1563,10 @@ export function CommitmentQueue({
                   size="sm"
                   variant="outline"
                   onClick={() => {
+                    setRecordError(null);
                     setEditing(selected);
                     setCorrectedText(selected.text);
-                    setCorrectedDueAt(localDateTime(selected.dueAt));
+                    setCorrectedDueAt(promiseDueEditorValue(selected.dueAt));
                   }}
                 >
                   <PencilSimple /> Correct
@@ -986,175 +1580,260 @@ export function CommitmentQueue({
                 <Fact label="To" value={selected.counterparty} />
                 <Fact
                   label="Due date"
-                  value={selected.dueAt ? new Date(selected.dueAt).toLocaleString() : "Missing"}
+                  value={promiseDueDay(selected.dueAt) ?? "Missing"}
                 />
                 <div>
                   <dt className="text-[12px] text-primary/45">Status</dt>
                   <dd className="mt-1">
-                    <StatusBadge state={selected.state} />
+                    <StatusBadge acceptance={selected.acceptance} state={selected.state} />
                   </dd>
                 </div>
-                <Fact
-                  label="Evidence missing"
-                  value={
-                    selected.missingEvidence.length ? selected.missingEvidence.join(", ") : "None"
-                  }
-                />
+                <Fact {...evidenceGapFact(selected.missingEvidence)} />
               </dl>
             </div>
           </aside>
           <div className="min-w-0 flex-1 overflow-y-auto">
-            <Tabs defaultValue="overview">
-              <TabsList className="h-12 w-full justify-start rounded-none border-b border-border bg-transparent px-4">
+            {/* A new record starts on Overview. Evidence used to be a tab that
+                left this same page in place, so the quote never came forward. */}
+            <Tabs className="flex min-h-full flex-col" defaultValue="overview" key={selected.id}>
+              <TabsList
+                aria-label="Promise detail"
+                className="h-12 w-full justify-start rounded-none border-b border-border bg-transparent px-4"
+              >
                 <TabsTrigger
-                  className="rounded-none bg-background-200 px-3 py-1.5 text-[13px] data-[state=active]:bg-background-200"
+                  className="flex-none rounded-none px-3 py-1.5 text-[13px] text-primary/45 data-[state=active]:bg-background-200 data-[state=active]:text-primary"
                   value="overview"
                 >
                   Overview
                 </TabsTrigger>
                 <TabsTrigger
-                  className="rounded-none px-2 text-[13px] text-primary/45"
+                  className="flex-none rounded-none px-3 py-1.5 text-[13px] text-primary/45 data-[state=active]:bg-background-200 data-[state=active]:text-primary"
                   value="evidence"
                 >
                   Evidence
                 </TabsTrigger>
-                <TabsTrigger
-                  className="rounded-none px-2 text-[13px] text-primary/45"
-                  value="activity"
-                >
-                  Activity
-                </TabsTrigger>
               </TabsList>
-            </Tabs>
-            <div className="mx-auto max-w-4xl p-6">
-              <h3 className="text-sm font-medium text-primary/60">Highlights</h3>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                <DetailCard
-                  label="Urgency"
-                  value={
-                    selected.urgency === "due_soon"
-                      ? "Due within 72h"
-                      : statusLabel(selected.urgency)
-                  }
-                />
-                <DetailCard label="Promise status" value={statusLabel(selected.state)} />
-                <DetailCard label="Acceptance" value={acceptanceLabel(selected.acceptance)} />
-                <DetailCard
-                  label="Evidence completeness"
-                  value={
-                    selected.missingEvidence.length
-                      ? `${selected.missingEvidence.length} items missing`
-                      : "Complete"
-                  }
-                />
-                <DetailCard label="Owner" value={selected.owner} />
-                <DetailCard label="Recipient" value={selected.counterparty} />
-                <DetailCard
-                  label="Due"
-                  value={
-                    selected.dueAt ? new Date(selected.dueAt).toLocaleDateString() : "Not confirmed"
-                  }
-                />
-              </div>
-              <section className="mt-8">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-primary/60">Supporting evidence</h3>
-                  <Badge className="text-[12px] font-normal text-primary/40" variant="secondary">
-                    Exact quote
-                  </Badge>
+              <TabsContent className="mx-auto w-full max-w-4xl p-6" value="overview">
+                <h3 className="text-sm font-medium text-primary/60">Highlights</h3>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  <DetailCard label="Urgency" value={urgencyLabel(selected.urgency)} />
+                  <DetailCard label="Promise status" value={commitmentDetailStatus(selected)} />
+                  <DetailCard label="Acceptance" value={acceptanceLabel(selected.acceptance)} />
+                  <DetailCard
+                    label="Evidence completeness"
+                    value={
+                      selected.missingEvidence.length
+                        ? `${selected.missingEvidence.length} items missing`
+                        : "Complete"
+                    }
+                  />
+                  <DetailCard label="Owner" value={selected.owner} />
+                  <DetailCard label="Recipient" value={selected.counterparty} />
+                  <DetailCard
+                    label="Due"
+                    value={
+                      promiseDueDay(selected.dueAt) ?? "Not confirmed"
+                    }
+                  />
                 </div>
-                <blockquote className="mt-3 rounded-none border border-border bg-background-50 p-4 text-[14px] leading-6 text-primary/75">
-                  {selected.quote ? `“${selected.quote}”` : "No exact quote is attached yet."}
-                </blockquote>
-              </section>
-              <section className="mt-8">
-                <h3 className="text-sm font-medium text-primary/60">Next action</h3>
-                <Card className="mt-3 gap-3 py-4">
-                  <CardContent className="px-4 text-[14px] text-primary">
-                    {selected.nextAction}
-                  </CardContent>
-                  {selected.missingEvidence.length > 0 ? (
-                    <p className="mt-2 flex items-center gap-1.5 text-[12px] text-amber-400">
-                      <Warning /> Missing {selected.missingEvidence.join(", ")}
-                    </p>
-                  ) : null}
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {selected.acceptance === "candidate" ? (
-                      <ActionButton
-                        busy={busy === `${selected.id}:internally_confirmed`}
-                        disabled={busy !== null}
-                        onClick={() => void transition(selected, "internally_confirmed")}
-                      >
-                        <Check /> Confirm promise
-                      </ActionButton>
+                <section className="mt-8">
+                  <h3 className="text-sm font-medium text-primary/60">Next action</h3>
+                  <Card className="mt-3 gap-3 py-4">
+                    <CardContent className="px-4 text-[14px] text-primary">
+                      {selected.nextAction}
+                    </CardContent>
+                    {selected.missingEvidence.length > 0 ? (
+                      <p className="mt-2 flex items-center gap-1.5 text-[12px] text-amber-400">
+                        <Warning /> Missing {formatMissingEvidence(selected.missingEvidence)}
+                      </p>
                     ) : null}
-                    {["internally_confirmed", "offered", "disputed"].includes(
-                      selected.acceptance,
-                    ) ? (
-                      <ActionButton
-                        busy={busy === `${selected.id}:accepted`}
-                        disabled={busy !== null}
-                        onClick={() => void transition(selected, "accepted")}
-                      >
-                        <Check /> Mark accepted
-                      </ActionButton>
-                    ) : null}
-                    {selected.acceptance === "accepted" || selected.acceptance === "offered" ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={busy !== null}
-                        onClick={() => void transition(selected, "disputed")}
-                      >
-                        Mark disputed
-                      </Button>
-                    ) : null}
-                    {selected.acceptance === "accepted" ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={busy !== null}
-                        onClick={() => {
-                          const blocker = window.prompt("What is blocking this commitment?");
-                          if (blocker?.trim())
-                            void transition(selected, "blocked", { blocker: blocker.trim() });
-                        }}
-                      >
-                        Mark blocked
-                      </Button>
-                    ) : null}
-                    {selected.blocker ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={busy !== null}
-                        onClick={() => void transition(selected, "unblocked")}
-                      >
-                        Unblock
-                      </Button>
-                    ) : null}
-                    {["internally_confirmed", "accepted"].includes(selected.acceptance) ||
-                    selected.blocker ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={busy !== null}
-                        onClick={() => {
-                          if (window.confirm("Mark this commitment fulfilled?"))
-                            void transition(selected, "fulfilled");
-                        }}
-                      >
-                        Mark fulfilled
-                      </Button>
-                    ) : null}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {selected.acceptance === "candidate" ? (
+                        <ActionButton
+                          busy={busy === `${selected.id}:internally_confirmed`}
+                          disabled={busy !== null}
+                          onClick={() => void transition(selected, "internally_confirmed")}
+                        >
+                          <Check /> Confirm promise
+                        </ActionButton>
+                      ) : null}
+                      {["internally_confirmed", "offered", "disputed"].includes(
+                        selected.acceptance,
+                      ) ? (
+                        <ActionButton
+                          busy={busy === `${selected.id}:accepted`}
+                          disabled={busy !== null}
+                          onClick={() => void transition(selected, "accepted")}
+                        >
+                          <Check /> They accepted
+                        </ActionButton>
+                      ) : null}
+                      {selected.acceptance === "accepted" || selected.acceptance === "offered" ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={busy !== null}
+                          onClick={() => void transition(selected, "disputed")}
+                        >
+                          Mark disputed
+                        </Button>
+                      ) : null}
+                      {selected.acceptance === "accepted" ? (
+                        blocking ? (
+                          <>
+                            <Input
+                              aria-label="What is blocking this promise"
+                              className="h-8 max-w-xs rounded-none"
+                              placeholder="Waiting on legal review"
+                              value={blockerText}
+                              onChange={(event) => setBlockerText(event.target.value)}
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={busy !== null || !blockerText.trim()}
+                              onClick={() => {
+                                const blocker = blockerText.trim();
+                                if (!blocker) return;
+                                void transition(selected, "blocked", { blocker }).then((saved) => {
+                                  if (!saved) return;
+                                  setSelected((current) =>
+                                    current && current.id === selected.id
+                                      ? {
+                                          ...current,
+                                          blocker,
+                                          currentEventVersion: current.currentEventVersion + 1,
+                                          nextAction:
+                                            "Resolve the blocker or renegotiate the promise.",
+                                        }
+                                      : current,
+                                  );
+                                  setBlocking(false);
+                                  setBlockerText("");
+                                });
+                              }}
+                            >
+                              Confirm blocked
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              disabled={busy !== null}
+                              onClick={() => {
+                                setBlocking(false);
+                                setBlockerText("");
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={busy !== null}
+                            onClick={() => {
+                              setFulfilling(false);
+                              setBlocking(true);
+                            }}
+                          >
+                            Mark blocked
+                          </Button>
+                        )
+                      ) : null}
+                      {selected.blocker ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={busy !== null}
+                          onClick={() => void transition(selected, "unblocked")}
+                        >
+                          Unblock
+                        </Button>
+                      ) : null}
+                      {selected.state !== "met" &&
+                      (["internally_confirmed", "accepted"].includes(selected.acceptance) ||
+                        selected.blocker) ? (
+                        fulfilling ? (
+                          <>
+                            <p className="w-full text-[13px] text-primary/70">
+                              Mark this promise fulfilled?
+                            </p>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={busy !== null}
+                              onClick={() => {
+                                void transition(selected, "fulfilled").then((saved) => {
+                                  if (!saved) return;
+                                  setSelected((current) =>
+                                    current && current.id === selected.id
+                                      ? {
+                                          ...current,
+                                          state: "met",
+                                          urgency: "closed",
+                                          blocker: undefined,
+                                          currentEventVersion: current.currentEventVersion + 1,
+                                          nextAction: "Closed from observed or confirmed evidence.",
+                                        }
+                                      : current,
+                                  );
+                                  setFulfilling(false);
+                                });
+                              }}
+                            >
+                              Confirm fulfilled
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              disabled={busy !== null}
+                              onClick={() => setFulfilling(false)}
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={busy !== null}
+                            onClick={() => {
+                              setBlocking(false);
+                              setBlockerText("");
+                              setFulfilling(true);
+                            }}
+                          >
+                            Mark fulfilled
+                          </Button>
+                        )
+                      ) : null}
+                    </div>
+                  </Card>
+                </section>
+              </TabsContent>
+              <TabsContent className="mx-auto w-full max-w-4xl p-6" value="evidence">
+                <section>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-primary/60">Supporting evidence</h3>
+                    <Badge className="text-[12px] font-normal text-primary/40" variant="secondary">
+                      Exact quote
+                    </Badge>
                   </div>
-                </Card>
-              </section>
-            </div>
+                  <blockquote className="mt-3 rounded-none border border-border bg-background-50 p-4 text-[14px] leading-6 text-primary/75">
+                    {selected.quote ? `“${selected.quote}”` : "No exact quote is attached yet."}
+                  </blockquote>
+                </section>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       ) : null}
@@ -1162,10 +1841,9 @@ export function CommitmentQueue({
       <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
         <DialogContent className="app-shell rounded-[2px] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Correct commitment</DialogTitle>
+            <DialogTitle>Correct this promise</DialogTitle>
             <DialogDescription>
-              The correction is recorded as a new immutable event; the supporting quote is
-              preserved.
+              The correction is saved, and the original quote stays with it.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-1 text-xs text-primary/60">
@@ -1185,6 +1863,11 @@ export function CommitmentQueue({
               onChange={(event) => setCorrectedDueAt(event.target.value)}
             />
           </div>
+          {recordError ? (
+            <p className="text-sm text-destructive" role="alert">
+              {recordError}
+            </p>
+          ) : null}
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setEditing(null)}>
               Cancel
@@ -1196,8 +1879,8 @@ export function CommitmentQueue({
                 if (!editing) return;
                 void transition(editing, "corrected", {
                   action: correctedText.trim(),
-                  dueAt: correctedDueAt ? new Date(correctedDueAt).toISOString() : undefined,
-                  reason: "User corrected the extracted commitment in the Commitment Queue.",
+                  dueAt: promiseDueFromEditor(correctedDueAt),
+                  reason: "You corrected this promise.",
                 }).then((saved) => saved && setEditing(null));
               }}
             >
@@ -1233,19 +1916,23 @@ function Fact({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StatusBadge({ state }: { state: string }) {
+function StatusBadge({ state, acceptance }: { state: string; acceptance: string }) {
+  const review = acceptance === "candidate";
   return (
     <Badge
       variant="outline"
       className={cn(
-        "rounded-[2px] capitalize",
-        state === "met" && "border-emerald-500/40 text-emerald-600 dark:text-emerald-400",
-        state === "at_risk" && "border-amber-500/40 text-amber-600 dark:text-amber-400",
-        (state === "missed" || state === "disputed") &&
+        "rounded-[2px]",
+        !review &&
+          state === "met" &&
+          "border-emerald-500/40 text-emerald-600 dark:text-emerald-400",
+        (review || state === "at_risk") && "border-amber-500/40 text-amber-600 dark:text-amber-400",
+        !review &&
+          (state === "missed" || state === "disputed") &&
           "border-red-500/40 text-red-600 dark:text-red-400",
       )}
     >
-      {statusLabel(state)}
+      {commitmentDetailStatus({ state, acceptance })}
     </Badge>
   );
 }

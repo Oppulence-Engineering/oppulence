@@ -84,7 +84,7 @@ describe("Google OAuth return handler", () => {
       true,
     );
     expect(mocks.toastSuccess).toHaveBeenCalledWith(
-      "Google connected. Your evidence sync has started.",
+      "Google connected. Oppulence is reading recent mail and meetings.",
     );
 
     window.removeEventListener(GOOGLE_OAUTH_CONNECTED_EVENT, connected);

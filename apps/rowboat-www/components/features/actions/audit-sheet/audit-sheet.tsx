@@ -16,8 +16,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@oppulence/ui/components/sheet";
-import { getAudit } from "@/lib/actions/actions";
+import { actionStatusLabel, getAudit } from "@/lib/actions/actions";
 import { errMessage } from "@/components/features/revenue/shared/shared";
+import { friendlyRevenueError } from "@/lib/revenue/revenue";
 import type { AuditChain, AuditEntry } from "@/lib/actions/types";
 
 // ActionAuditSheet renders the full RFC 023 audit chain for one object:
@@ -38,7 +39,11 @@ export function ActionAuditSheet({
     setError(null);
     void getAudit(resourceRef)
       .then((c) => live && setChain(c))
-      .catch((e) => live && setError(errMessage(e, "Could not load the audit trail.")));
+      .catch(
+        (e) =>
+          live &&
+          setError(friendlyRevenueError(errMessage(e, "Could not load the audit trail."))),
+      );
     return () => {
       live = false;
     };
@@ -81,9 +86,7 @@ function AuditEntryCard({ entry }: { entry: AuditEntry }) {
         <code className="rounded-[2px] bg-background-200 px-1.5 py-0.5 font-mono text-xs text-primary/70 dark:bg-background-100">
           {p.kind}
         </code>
-        <Badge variant="outline" className="capitalize">
-          {p.status.replace(/_/g, " ")}
-        </Badge>
+        <Badge variant="outline">{actionStatusLabel(p.status)}</Badge>
         <Badge className="ml-auto text-xs font-normal text-primary/45" variant="secondary">
           {new Date(p.createdAt).toLocaleString()}
         </Badge>

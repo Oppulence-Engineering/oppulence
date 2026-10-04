@@ -27,6 +27,8 @@ import { Switch } from "@oppulence/ui/components/switch";
 import { Textarea } from "@oppulence/ui/components/textarea";
 
 import { dashboardFetch } from "@/lib/auth/client";
+import { agentInstructionsCopy, agentSlugTitle } from "@/lib/agents/agent-schemas";
+import { AGENT_TOOL_CATALOG, DEVELOPER_TOOL_NAMES, agentToolLabel } from "@/lib/agents/agent-tools";
 import { cn } from "@/lib/utils";
 
 type AgentTool =
@@ -62,151 +64,11 @@ type AgentDocument = {
   };
 };
 
-const TOOL_CATALOG = [
-  {
-    name: "current_time",
-    label: "Current time",
-    description: "Read the current UTC date and time.",
-  },
-  {
-    name: "web.search",
-    label: "Web search",
-    description: "Search the web for current information.",
-  },
-  { name: "echo", label: "Echo", description: "Test that tool calls are wired correctly." },
-  {
-    name: "tool_result.read",
-    label: "Tool results",
-    description: "Read results produced by another tool.",
-  },
-  {
-    name: "relationship.read",
-    label: "Read relationship memory",
-    description:
-      "Read accounts, people, conversations, notes, tasks, commitments, risks, and source health.",
-  },
-  {
-    name: "source.retry_sync",
-    label: "Retry source sync",
-    description: "Retry an existing source sync without reconnecting or starting OAuth.",
-  },
-  {
-    name: "task.create",
-    label: "Create internal task",
-    description: "Create an Oppulence task; never send a message or calendar invite.",
-  },
-  {
-    name: "task.update",
-    label: "Edit internal task",
-    description: "Edit an Oppulence task title, due time, or priority; never send anything.",
-  },
-  {
-    name: "task.complete",
-    label: "Complete internal task",
-    description: "Complete an Oppulence task; cannot dismiss other actions or send anything.",
-  },
-  {
-    name: "task.snooze",
-    label: "Snooze internal task",
-    description: "Snooze an Oppulence task until a future time; never send anything.",
-  },
-  {
-    name: "note.create",
-    label: "Create internal note",
-    description: "Create an Oppulence note; never send a message or external event.",
-  },
-  {
-    name: "note.update",
-    label: "Edit internal note",
-    description: "Edit an Oppulence note while keeping its append-only history.",
-  },
-  {
-    name: "note.delete",
-    label: "Delete internal note",
-    description: "Delete an Oppulence note while keeping a tombstone in its history.",
-  },
-  {
-    name: "action.propose",
-    label: "Propose finance action",
-    description: "Create a pending action for human review; never execute it automatically.",
-  },
-  {
-    name: "slack.read_thread",
-    label: "Read Slack",
-    description: "Read messages from a Slack thread.",
-  },
-  {
-    name: "slack.post_message",
-    label: "Post to Slack",
-    description: "Send a Slack message with approval controls.",
-  },
-  {
-    name: "connector.read.gmail",
-    label: "Read Gmail",
-    description: "Read connected Gmail messages.",
-  },
-  {
-    name: "connector.write.gmail_draft",
-    label: "Draft email",
-    description: "Create a Gmail draft for review.",
-  },
-  {
-    name: "connector.write.gmail_send",
-    label: "Send email",
-    description: "Send Gmail messages with approval controls.",
-  },
-  {
-    name: "connector.read.calendar",
-    label: "Read calendar",
-    description: "Read connected calendar events.",
-  },
-  {
-    name: "connector.write.calendar_create",
-    label: "Create event",
-    description: "Create a calendar event.",
-  },
-  {
-    name: "connector.write.calendar_update",
-    label: "Update event",
-    description: "Update an existing calendar event.",
-  },
-  { name: "connector.read.drive", label: "Read Drive", description: "Read connected Drive files." },
-  {
-    name: "connector.write.drive_update",
-    label: "Update Drive",
-    description: "Update connected Drive files.",
-  },
-  {
-    name: "connector.read.hubspot_search",
-    label: "Search HubSpot",
-    description: "Find records in the connected HubSpot account.",
-  },
-  {
-    name: "connector.write.hubspot_note",
-    label: "Add HubSpot note",
-    description: "Attach a note to a HubSpot record.",
-  },
-  {
-    name: "connector.write.hubspot_task",
-    label: "Create HubSpot task",
-    description: "Create a follow-up task in HubSpot.",
-  },
-  {
-    name: "conduit.read",
-    label: "Read Conduit",
-    description: "Read revenue context from Conduit.",
-  },
-  {
-    name: "eigen.simulate",
-    label: "Run simulation",
-    description: "Run an Eigen scenario simulation.",
-  },
-  {
-    name: "demo.payment",
-    label: "Payment demo",
-    description: "Exercise approval flows without moving real funds.",
-  },
-] as const;
+function visibleTools(selected: readonly string[]) {
+  return AGENT_TOOL_CATALOG.filter(
+    (tool) => selected.includes(tool.name) || !DEVELOPER_TOOL_NAMES.has(tool.name),
+  );
+}
 
 function parseDocument(content: string): AgentDocument | null {
   try {
@@ -237,6 +99,7 @@ function TagEditor({
   addLabel,
   disabled,
   emptyLabel,
+  format,
   onChange,
   placeholder,
   values,
@@ -244,6 +107,7 @@ function TagEditor({
   addLabel: string;
   disabled: boolean;
   emptyLabel: string;
+  format?: (value: string) => string;
   onChange: (values: string[]) => void;
   placeholder: string;
   values: string[];
@@ -261,16 +125,20 @@ function TagEditor({
     <div className="space-y-2">
       {values.length ? (
         <div className="flex flex-wrap gap-2">
-          {values.map((value) => (
+          {values.map((value) => {
+            const label = format ? format(value) : value;
+            return (
             <Badge
-              className="gap-1.5 py-1 pl-2.5 pr-1 font-mono font-normal"
+              className="gap-1.5 py-1 pl-2.5 pr-1 font-normal"
               key={value}
               variant="secondary"
             >
-              {value}
+              {/* The badge already shows the product name. A tooltip with the
+                  stored id (run_history.read) is what a person sees on hover. */}
+              {label}
               {!disabled ? (
                 <Button
-                  aria-label={`Remove ${value}`}
+                  aria-label={`Remove ${label}`}
                   className="size-auto rounded p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
                   onClick={() => onChange(values.filter((candidate) => candidate !== value))}
                   size="icon-xs"
@@ -281,7 +149,8 @@ function TagEditor({
                 </Button>
               ) : null}
             </Badge>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <p className="text-xs text-muted-foreground">{emptyLabel}</p>
@@ -308,6 +177,38 @@ function TagEditor({
       ) : null}
     </div>
   );
+}
+
+/**
+ * The identity section is an editor for a workspace copy and a description for a
+ * maintained agent. A read-only form must not ask the teammate to rename it.
+ */
+export function agentIdentityHint(readOnly: boolean): string {
+  return readOnly
+    ? "Oppulence maintains this name and how the agent works."
+    : "Give the agent a clear name and tell it how to work.";
+}
+
+/** A maintained agent cannot change its model. The hint must not ask for an edit. */
+export function agentModelHint(readOnly: boolean): string {
+  return readOnly
+    ? "Oppulence sets the provider and model for this agent."
+    : "Leave these blank to use the workspace defaults.";
+}
+
+/** The switches are disabled on a maintained agent, so this is not a choice. */
+export function agentToolsHint(readOnly: boolean): string {
+  return readOnly
+    ? "Oppulence chooses the capabilities for this agent."
+    : "Choose only the capabilities this agent needs.";
+}
+
+/** "Included" is only true when a tool sits outside the catalog. */
+export function agentExtraToolsHint(readOnly: boolean, extraCount: number): string {
+  if (!readOnly) return "Add another tool Oppulence has approved for this workspace.";
+  return extraCount > 0
+    ? "These are included with this agent."
+    : "No other tools are included.";
 }
 
 export function AgentConfigurationForm({
@@ -365,7 +266,7 @@ export function AgentConfigurationForm({
 
   const selectedTools = (document.spec.tools || []).map(toolName);
   const customTools = selectedTools.filter(
-    (name) => !TOOL_CATALOG.some((tool) => tool.name === name),
+    (name) => !AGENT_TOOL_CATALOG.some((tool) => tool.name === name),
   );
   const selectedSubagents = document.spec.subagents || [];
   const connectionScopes = (document.spec.connections || []).map((connection) => connection.scope);
@@ -407,7 +308,7 @@ export function AgentConfigurationForm({
           </div>
           <div>
             <h3 className="text-sm font-medium">Identity and behavior</h3>
-            <FieldHint>Give the agent a clear name and tell it how to work.</FieldHint>
+            <FieldHint>{agentIdentityHint(readOnly)}</FieldHint>
           </div>
         </div>
 
@@ -427,24 +328,36 @@ export function AgentConfigurationForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="agent-slug">Agent ID</Label>
+            {/* Same short name as creation. It stays fixed, so the field is read-only here. */}
+            <Label htmlFor="agent-slug">Short name</Label>
             <Input disabled id="agent-slug" value={document.metadata.slug} />
-            <FieldHint>The ID is fixed after an agent is created.</FieldHint>
+            <FieldHint>The short name is fixed after an agent is created.</FieldHint>
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="agent-instructions">Instructions</Label>
-          <Textarea
-            className="min-h-44 resize-y leading-6"
-            disabled={readOnly}
-            id="agent-instructions"
-            onChange={(event) => setString("instructions", event.target.value)}
-            placeholder="Describe the agent’s role, priorities, tone, and boundaries in plain language."
-            value={document.spec.instructions || ""}
-          />
+          <Label htmlFor="agent-instructions">Purpose</Label>
+          {readOnly ? (
+            <p className="text-sm leading-6" id="agent-instructions">
+              {agentInstructionsCopy({
+                slug: document.metadata.slug,
+                source: "builtin",
+                instructions: document.spec.instructions,
+              })}
+            </p>
+          ) : (
+            <Textarea
+              className="min-h-44 resize-y leading-6"
+              id="agent-instructions"
+              onChange={(event) => setString("instructions", event.target.value)}
+              placeholder="Describe the agent’s role, priorities, tone, and boundaries in plain language."
+              value={document.spec.instructions || ""}
+            />
+          )}
           <FieldHint>
-            Use plain language. These instructions guide every conversation this agent handles.
+            {readOnly
+              ? "Oppulence maintains these instructions."
+              : "Use plain language. These instructions guide every conversation this agent handles."}
           </FieldHint>
         </div>
       </section>
@@ -452,7 +365,7 @@ export function AgentConfigurationForm({
       <section className="space-y-5 p-5 sm:p-6">
         <div>
           <h3 className="text-sm font-medium">AI model</h3>
-          <FieldHint>Leave these blank to use the workspace defaults.</FieldHint>
+          <FieldHint>{agentModelHint(readOnly)}</FieldHint>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
@@ -510,12 +423,12 @@ export function AgentConfigurationForm({
           </div>
           <div>
             <h3 className="text-sm font-medium">Tools</h3>
-            <FieldHint>Choose only the capabilities this agent needs.</FieldHint>
+            <FieldHint>{agentToolsHint(readOnly)}</FieldHint>
           </div>
         </div>
 
         <div className="grid gap-2 sm:grid-cols-2">
-          {TOOL_CATALOG.map((tool) => {
+          {visibleTools(selectedTools).map((tool) => {
             const checked = selectedTools.includes(tool.name);
             return (
               <label
@@ -549,19 +462,20 @@ export function AgentConfigurationForm({
         </div>
 
         <div className="space-y-2 rounded-none border border-dashed p-4">
-          <Label>Custom tools</Label>
-          <FieldHint>Add an approved tool by its registered name.</FieldHint>
+          <Label>More tools</Label>
+          <FieldHint>{agentExtraToolsHint(readOnly, customTools.length)}</FieldHint>
           <TagEditor
-            addLabel="Custom tool name"
+            addLabel="Tool name"
             disabled={readOnly}
-            emptyLabel="No custom tools added."
+            emptyLabel="No other tools."
+            format={agentToolLabel}
             onChange={(nextCustomTools) =>
               setTools([
                 ...selectedTools.filter((name) => !customTools.includes(name)),
                 ...nextCustomTools,
               ])
             }
-            placeholder="connector.custom.action"
+            placeholder="Tool name"
             values={customTools}
           />
         </div>
@@ -571,7 +485,9 @@ export function AgentConfigurationForm({
         <div>
           <h3 className="text-sm font-medium">Team and connections</h3>
           <FieldHint>
-            Allow delegation to another agent or declare connected-service access.
+            {readOnly
+              ? "Other agents this one can ask for help, and services it may use."
+              : "Choose who this agent can ask for help, and which services it may use."}
           </FieldHint>
         </div>
 
@@ -599,7 +515,7 @@ export function AgentConfigurationForm({
                     type="button"
                     variant="outline"
                   >
-                    <Robot className="size-4" /> {slug}
+                    <Robot className="size-4" /> {agentSlugTitle(slug)}
                   </Button>
                 );
               })}
@@ -610,20 +526,23 @@ export function AgentConfigurationForm({
         </div>
 
         <div className="space-y-2">
-          <Label>Required connection scopes</Label>
-          <FieldHint>
-            Scopes describe what a connected service may do; they never contain credentials.
-          </FieldHint>
+          <Label>Connected services</Label>
+          <FieldHint>Services this agent may use. Sign-in stays with Oppulence.</FieldHint>
           <TagEditor
-            addLabel="Connection scope"
+            addLabel="Connected service"
             disabled={readOnly}
-            emptyLabel="This agent does not require a connected service."
+            emptyLabel="No extra services are required."
+            format={(scope) => {
+              const words = scope.replace(/[:._-]+/g, " ").trim();
+              if (!words) return scope;
+              return words.charAt(0).toUpperCase() + words.slice(1);
+            }}
             onChange={(scopes) =>
               update((next) => {
                 next.spec.connections = scopes.map((scope) => ({ scope }));
               })
             }
-            placeholder="slack:messages.read"
+            placeholder="Service name"
             values={connectionScopes}
           />
         </div>
@@ -636,9 +555,9 @@ export function AgentConfigurationForm({
               <div className="flex items-center gap-3">
                 <ShieldCheck className="size-5 text-muted-foreground" />
                 <div>
-                  <Label className="block text-sm font-medium">Advanced run limits</Label>
+                  <Label className="block text-sm font-medium">Safety limits</Label>
                   <CardDescription className="mt-1 block text-xs font-normal">
-                    Optional safeguards; blank fields inherit workspace limits.
+                    Blank fields use the workspace limits.
                   </CardDescription>
                 </div>
               </div>
@@ -647,10 +566,10 @@ export function AgentConfigurationForm({
               <div className="grid gap-4 border-t pt-4 sm:grid-cols-2">
                 {(
                   [
-                    ["maxTurns", "Maximum turns", "20"],
-                    ["maxLLMCalls", "Maximum AI calls", "50"],
-                    ["maxToolCalls", "Maximum tool calls", "25"],
-                    ["spendCeilingUsd", "Spend ceiling (USD)", "5.00"],
+                    ["maxTurns", "Reply limit", "20"],
+                    ["maxLLMCalls", "Model call limit", "50"],
+                    ["maxToolCalls", "Tool use limit", "25"],
+                    ["spendCeilingUsd", "Spending limit (USD)", "5.00"],
                   ] as const
                 ).map(([field, label, placeholder]) => (
                   <div className="space-y-2" key={field}>
@@ -660,7 +579,8 @@ export function AgentConfigurationForm({
                       id={`agent-${field}`}
                       min="0"
                       onChange={(event) => setLimit(field, event.target.value)}
-                      placeholder={placeholder}
+                      // Example numbers read as the real limit once the field is locked.
+                      placeholder={readOnly ? "" : placeholder}
                       step={field === "spendCeilingUsd" ? "0.01" : "1"}
                       type="number"
                       value={limits[field] ?? ""}

@@ -367,3 +367,41 @@ func TestMissionControlIncludesActiveActionProviderAndProgressiveWriteScope(t *t
 		t.Fatalf("progressive write scope did not restore action safety: %+v err=%v", after.Completeness, err)
 	}
 }
+
+func TestMissionControlNoteEvidenceIsCurrentWithoutASyncRow(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	note, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Dogfood Source", AccountDomain: "dogfood-source.example",
+		Source: "desktop_note", ExternalID: "note-health", EventType: "company.snapshot",
+		OccurredAt: now, ReceivedAt: now, Summary: "Public company profile.",
+		Assertions: []RelationshipAssertionInput{{
+			Dimension: "health", Value: "needs_attention", SourceType: "source_fact",
+			Confidence: 1, Reason: "Recorded from a note.", ValidFrom: now,
+		}},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	model, err := f.svc.MissionControl(f.ctx, f.user, note[0].Relationship.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	health := model.Evidence["health"]
+	if !health.Supported || !health.Fresh || len(health.Evidence) != 1 || health.Evidence[0].Source != "desktop_note" {
+		t.Fatalf("a note with no sync row looked stale: %+v", health)
+	}
+
+	connector, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{acmeObservation(now)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	connectorModel, err := f.svc.MissionControl(f.ctx, f.user, connector[0].Relationship.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if connectorModel.Evidence["lifecycle"].Fresh {
+		t.Fatalf("hubspot evidence with no completed sync looked current: %+v", connectorModel.Evidence["lifecycle"])
+	}
+}

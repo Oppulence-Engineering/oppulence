@@ -26,6 +26,7 @@ import type {
   GetPublicMutualActionPlan200,
   GetRelationship200,
   GetRelationshipChanges200,
+  GetRelationshipConversationReview200,
   GetRelationshipEvidence200,
   GetRelationshipSourceInventory200,
   GetRelationshipSourceStatuses200,
@@ -73,6 +74,7 @@ import {
   getGetRelationshipBetaDiagnosticsResponseMock,
   getGetRelationshipChangesResponseMock,
   getGetRelationshipCommunicationTimelineResponseMock,
+  getGetRelationshipConversationReviewResponseMock,
   getGetRelationshipEvidenceResponseMock,
   getGetRelationshipGraphResponseMock,
   getGetRelationshipIdentityCandidateResponseMock,
@@ -135,6 +137,7 @@ export {
   getRequestConversationDeletionResponseMock,
   getGetConversationPolicyResponseMock,
   getPutConversationPolicyResponseMock,
+  getGetRelationshipConversationReviewResponseMock,
   getCorrectRelationshipResponseMock,
   getGetRelationshipEvidenceResponseMock,
   getCreateMutualActionPlanResponseMock,
@@ -1015,6 +1018,30 @@ export const getPutConversationPolicyMockHandler = (
   );
 };
 
+export const getGetRelationshipConversationReviewMockHandler = (
+  overrideResponse?:
+    | GetRelationshipConversationReview200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<GetRelationshipConversationReview200> | GetRelationshipConversationReview200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/relationships/:relationshipId/conversation-review",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetRelationshipConversationReviewResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
 export const getCorrectRelationshipMockHandler = (
   overrideResponse?:
     | RevenueRelationship
@@ -1267,6 +1294,7 @@ export const getRelationshipIntelligenceMock = () => [
   getRequestConversationDeletionMockHandler(),
   getGetConversationPolicyMockHandler(),
   getPutConversationPolicyMockHandler(),
+  getGetRelationshipConversationReviewMockHandler(),
   getCorrectRelationshipMockHandler(),
   getGetRelationshipEvidenceMockHandler(),
   getCreateMutualActionPlanMockHandler(),

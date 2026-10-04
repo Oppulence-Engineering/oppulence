@@ -32,34 +32,39 @@ import { useQueryClient } from "@tanstack/react-query";
 import { usePendingActionProposals } from "@/hooks/queries/use-action-proposals";
 import { actionProposalKeys } from "@/hooks/queries/utils/action-proposal-keys";
 import { capture, ActionEvents } from "@/lib/analytics/analytics";
-import { ActionAPIError, approve, execute, reject } from "@/lib/actions/actions";
+import { ActionAPIError, actionStatusLabel, approve, execute, reject } from "@/lib/actions/actions";
 import { DashboardRequestError } from "@/lib/api/request-json";
 import {
   errMessage,
   ListSkeleton,
   WorkspaceEmptyState,
 } from "@/components/features/revenue/shared/shared";
+import { friendlyRevenueError } from "@/lib/revenue/revenue";
 import { ActionAuditSheet } from "@/components/features/actions/audit-sheet/audit-sheet";
 import type { ActionProposal, ActionStatus } from "@/lib/actions/types";
+
+function actionFailure(error: unknown, fallback: string) {
+  return friendlyRevenueError(errMessage(error, fallback));
+}
 
 function StatusBadge({ status }: { status: ActionStatus }) {
   const map: Record<
     ActionStatus,
-    { label: string; variant: "secondary" | "outline" | "destructive"; icon?: React.ReactNode }
+    { variant: "secondary" | "outline" | "destructive"; icon?: React.ReactNode }
   > = {
-    pending: { label: "Awaiting approval", variant: "secondary" },
-    approved: { label: "Approved", variant: "outline", icon: <ShieldCheck weight="fill" /> },
-    executed: { label: "Executed", variant: "outline", icon: <CheckCircle weight="fill" /> },
-    executed_unconfirmed: { label: "Executed · unconfirmed", variant: "secondary" },
-    rejected: { label: "Rejected", variant: "destructive" },
-    failed: { label: "Failed", variant: "destructive" },
-    expired: { label: "Expired", variant: "secondary" },
+    pending: { variant: "secondary" },
+    approved: { variant: "outline", icon: <ShieldCheck weight="fill" /> },
+    executed: { variant: "outline", icon: <CheckCircle weight="fill" /> },
+    executed_unconfirmed: { variant: "secondary" },
+    rejected: { variant: "destructive" },
+    failed: { variant: "destructive" },
+    expired: { variant: "secondary" },
   };
-  const m = map[status] ?? { label: status, variant: "outline" as const };
+  const m = map[status] ?? { variant: "outline" as const };
   return (
     <Badge variant={m.variant} className="gap-1">
       {m.icon}
-      {m.label}
+      {actionStatusLabel(status)}
     </Badge>
   );
 }
@@ -76,6 +81,16 @@ function Ref({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** A failed approval request is not an empty approval queue. */
+export function approvalListFailureCopy(): string {
+  return "Agent approvals could not load. Try again.";
+}
+
+/** A failed refresh is not a queue that never loaded. */
+export function approvalRefreshFailureCopy(): string {
+  return "Could not refresh agent approvals. Try again.";
+}
+
 export function ActionsView() {
   const queryClient = useQueryClient();
   const proposalsQuery = usePendingActionProposals();
@@ -85,7 +100,7 @@ export function ActionsView() {
   const [rejecting, setRejecting] = React.useState<ActionProposal | null>(null);
   const [auditRef, setAuditRef] = React.useState<string | null>(null);
   // Tokens held in memory after approve for a within-session execute retry when
-  // the Act seam is momentarily unavailable. Never persisted.
+  // execution is momentarily unavailable. Never persisted.
   const tokens = React.useRef<Record<string, string>>({});
   const unavailable =
     proposalsQuery.error instanceof DashboardRequestError &&
@@ -94,15 +109,19 @@ export function ActionsView() {
   const proposals = unavailable
     ? []
     : (localProposals ?? proposalsQuery.data ?? (proposalsQuery.isPending ? null : []));
+  const approvalsLoaded = localProposals != null || proposalsQuery.data != null;
 
   React.useEffect(() => {
     if (proposalsQuery.data) setLocalProposals(proposalsQuery.data);
   }, [proposalsQuery.data]);
 
   React.useEffect(() => {
-    if (!proposalsQuery.error || unavailable) return;
-    setError(errMessage(proposalsQuery.error, "Could not load action proposals."));
-  }, [proposalsQuery.error, unavailable]);
+    if (!proposalsQuery.error || unavailable || !approvalsLoaded) {
+      setError((current) => (current === approvalRefreshFailureCopy() ? null : current));
+      return;
+    }
+    setError(approvalRefreshFailureCopy());
+  }, [approvalsLoaded, proposalsQuery.error, unavailable]);
 
   const load = React.useCallback(async () => {
     setError(null);
@@ -120,9 +139,9 @@ export function ActionsView() {
   const replace = (p: ActionProposal) =>
     setLocalProposals((cur) => (cur ? cur.map((x) => (x.id === p.id ? p : x)) : cur));
 
-  // Approve then immediately execute with the freshly issued token. If the Act
-  // seam is unavailable the proposal stays approved and the token is kept for a
-  // manual retry.
+  // Approve then immediately execute with the freshly issued approval. If
+  // execution is unavailable the proposal stays approved and the approval is
+  // kept for a manual retry.
   async function approveAndExecute(p: ActionProposal) {
     setRowBusy(p.id, "approve");
     setError(null);
@@ -138,7 +157,7 @@ export function ActionsView() {
           "This financial action needs recent re-authentication. Sign in again, then approve.",
         );
       } else {
-        setError(errMessage(e, "Could not approve the action."));
+        setError(actionFailure(e, "Could not approve the action."));
       }
       void load();
     } finally {
@@ -156,10 +175,10 @@ export function ActionsView() {
     } catch (e) {
       if (e instanceof ActionAPIError && e.code === "execution_unavailable") {
         setError(
-          "Approved, but no execution backend is configured yet. The approval is held — retry execute once the product Act seam is connected.",
+          "Approved, but this action cannot run yet. The approval is saved — try again once execution is available.",
         );
       } else {
-        setError(errMessage(e, "Execution failed."));
+        setError(actionFailure(e, "Execution failed."));
       }
       void load();
     } finally {
@@ -177,7 +196,7 @@ export function ActionsView() {
       capture(ActionEvents.ProposalRejected, { kind: p.kind });
       replace(done);
     } catch (e) {
-      setError(errMessage(e, "Could not reject the action."));
+      setError(actionFailure(e, "Could not reject the action."));
     } finally {
       setRowBusy(p.id, null);
     }
@@ -192,8 +211,8 @@ export function ActionsView() {
     <div className="flex min-h-full w-full min-w-0 flex-col" data-slot="actions-view">
       <header className="flex min-h-12 items-center justify-between gap-4 border-b border-border px-3 py-2">
         <p className="min-w-0 flex-1 truncate text-[13px] text-primary/55">
-          Closed-loop finance actions your agents propose. Approve one to issue a single-use, scoped
-          token and execute it against the product — money never moves without it.
+          {/* Finance proposals are badged on the row. This queue holds every proposal. */}
+          Actions an agent proposes wait here. Nothing happens until you approve one.
         </p>
         <Button
           variant="outline"
@@ -208,7 +227,19 @@ export function ActionsView() {
       {error ? (
         <Alert className="m-3 border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-300">
           <WarningCircle weight="fill" className="mt-0.5 shrink-0" />
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription className="flex items-center justify-between gap-3">
+            <span>{error}</span>
+            {error === approvalRefreshFailureCopy() ? (
+              <Button
+                onClick={() => void proposalsQuery.refetch()}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                Try again
+              </Button>
+            ) : null}
+          </AlertDescription>
         </Alert>
       ) : null}
 
@@ -216,16 +247,32 @@ export function ActionsView() {
         <ListSkeleton rows={3} />
       ) : disabled ? (
         <ActionsEmpty
-          description="Agent approvals are not switched on for this workspace yet. When they are, every finance action an agent proposes will wait here before anything happens."
+          description="Agent approvals are not switched on for this workspace yet. When they are, every action an agent proposes will wait here before anything happens."
+          title="Agent approvals"
+        />
+      ) : proposalsQuery.isError && !unavailable && !approvalsLoaded ? (
+        <ActionsEmpty
+          action={
+            <Button
+              onClick={() => void proposalsQuery.refetch()}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              Try again
+            </Button>
+          }
+          description={approvalListFailureCopy()}
+          learnMore={[]}
           title="Agent approvals"
         />
       ) : proposals.length === 0 ? (
         <ActionsEmpty
           description={
             <>
-              No pending actions yet! Agent proposals
+              No pending actions yet! Actions an agent wants to take
               <br />
-              will land here for your approval.
+              will wait here until you approve them.
             </>
           }
           title="Agent approvals"
@@ -298,7 +345,7 @@ export function ActionsView() {
                             ? "Approving…"
                             : verb === "execute"
                               ? "Executing…"
-                              : "Approve & execute"}
+                              : "Approve and run"}
                         </Button>
                         <Button
                           size="sm"
@@ -318,7 +365,7 @@ export function ActionsView() {
                           heldToken
                             ? void runExecute(p.id, heldToken, p.kind)
                             : setError(
-                                "This approval's token is no longer in this session. Reject and re-propose.",
+                                "This approval cannot be run again from this page. Reject it and propose it again.",
                               )
                         }
                         disabled={!!verb || !heldToken}
@@ -370,15 +417,26 @@ function ExecutedNote({ proposal }: { proposal: ActionProposal }) {
   );
 }
 
-function ActionsEmpty({ title, description }: { title: string; description: React.ReactNode }) {
+function ActionsEmpty({
+  title,
+  description,
+  action,
+  learnMore = [
+    { label: "Nothing happens until you approve" },
+    { label: "A record of what you approved" },
+  ],
+}: {
+  title: string;
+  description: React.ReactNode;
+  action?: React.ReactNode;
+  learnMore?: { label: string }[];
+}) {
   return (
     <WorkspaceEmptyState
+      action={action}
       description={description}
       image="actions"
-      learnMore={[
-        { label: "Approve before anything executes" },
-        { label: "Audit trail for every action" },
-      ]}
+      learnMore={learnMore}
       title={title}
     />
   );
@@ -401,7 +459,7 @@ function RejectDialog({
         <DialogHeader>
           <DialogTitle>Reject this action</DialogTitle>
           <DialogDescription>
-            The proposal is discarded. Add a short reason for the audit trail.
+            This action is discarded. Add a short reason for the audit trail.
           </DialogDescription>
         </DialogHeader>
         <Textarea

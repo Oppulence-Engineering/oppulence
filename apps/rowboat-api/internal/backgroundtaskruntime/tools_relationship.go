@@ -368,12 +368,12 @@ type relationshipToolIdentityReview struct {
 }
 
 func (t *relationshipReadTool) identityReviews(ctx context.Context, owner *ent.User, filter revenue.IdentityCandidateFilter) ([]relationshipToolIdentityReview, error) {
-	rows, err := t.revenue.ListIdentityCandidates(ctx, owner, filter)
+	page, err := t.revenue.ListIdentityCandidates(ctx, owner, filter)
 	if err != nil {
 		return nil, fmt.Errorf("query relationship identity reviews: %w", err)
 	}
-	items := make([]relationshipToolIdentityReview, 0, len(rows))
-	for _, row := range rows {
+	items := make([]relationshipToolIdentityReview, 0, len(page.Candidates))
+	for _, row := range page.Candidates {
 		proposed, proposedErr := row.Edges.ProposedRelationshipOrErr()
 		existing, existingErr := row.Edges.ExistingRelationshipOrErr()
 		if proposedErr != nil || existingErr != nil {

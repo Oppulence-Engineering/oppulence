@@ -33,6 +33,12 @@ interface ChipDatePickerBaseProps {
   fullWidth?: boolean
   /** Forwarded class for the trigger button. */
   className?: string
+  /**
+   * Accessible name for the trigger. The visible label is the chosen date, so
+   * this has to include both the field and that date or the field name replaces
+   * the choice.
+   */
+  'aria-label'?: string
 }
 
 interface ChipDatePickerSingleProps extends ChipDatePickerBaseProps {
@@ -93,6 +99,7 @@ const ChipDatePicker = forwardRef<HTMLButtonElement, ChipDatePickerProps>(
       disabled,
       fullWidth,
       className,
+      'aria-label': ariaLabel,
     } = props
 
     /**
@@ -116,6 +123,7 @@ const ChipDatePicker = forwardRef<HTMLButtonElement, ChipDatePickerProps>(
             ref={ref}
             type='button'
             disabled={disabled}
+            aria-label={ariaLabel}
             className={cn(
               variant === 'ghost'
                 ? chipVariants({ fullWidth })

@@ -80,6 +80,16 @@ describe("SupportChat", () => {
     expect(options.appId).toBe("app-1");
     expect(options.theme).toBe("dark");
     expect(options.customerDetails).toBeUndefined();
+    const links = options.links as { text: string; url: string }[];
+    expect(links).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          text: "API reference",
+          url: `${window.location.origin}/api/reference`,
+        }),
+      ]),
+    );
+    expect(JSON.stringify(links)).not.toContain("docs.oppulence.io");
   });
 
   it("links signed-in users by externalId and email without requiring a hash", async () => {

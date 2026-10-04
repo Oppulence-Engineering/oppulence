@@ -29,11 +29,13 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputTools,
+  usePromptInputAttachments,
 } from "@/components/ai-elements/prompt-input";
 import { useAuthSession } from "@/components/auth/auth-gate";
 import { useWorkspaceLabel } from "@/components/features/dashboard/app-shell/app-shell";
 import { useAgentCatalog } from "@/hooks/dashboard/use-agent-catalog";
-import { useAgentRun } from "@/hooks/dashboard/use-agent-run";
+import { agentDisplayName, agentSelectName, visibleAgentLabel } from "@/lib/agents/agent-schemas";
+import { useAgentRun, type AgentRunStatus } from "@/hooks/dashboard/use-agent-run";
 import { useChatSessions } from "@/hooks/dashboard/use-chat-sessions";
 import { useDashboardArtifact } from "@/hooks/dashboard/use-dashboard-artifact";
 import { useProductRouteState } from "@/hooks/dashboard/use-product-route-state";
@@ -76,9 +78,17 @@ export type ChatRouteState = {
 
 export type DashboardChatController = {
   agentOptions: string[];
+  /** Full records so surfaces can show a name while still opening by slug. */
+  agentCatalog: readonly { slug: string; name: string }[];
   activeRunId: string | null;
   empty: boolean;
   sessions: SessionMeta[];
+  hasMoreSessions?: boolean;
+  loadingMoreSessions?: boolean;
+  loadingSessions?: boolean;
+  onLoadMoreSessions?: () => void;
+  onRetrySessions?: () => void;
+  sessionsLoadError?: string | null;
   selectedResource: SelectedResource | null;
   clearSelectedResource: () => void;
   onAgentsChanged: () => Promise<void>;
@@ -116,6 +126,7 @@ export function useDashboardChatController(): DashboardChatController {
 
 type ChatPromptInputProps = {
   agentOptions: string[];
+  agents: Parameters<typeof agentDisplayName>[0];
   chatError: string | null;
   empty: boolean;
   selectedAgent: string;
@@ -129,12 +140,44 @@ type ChatPromptInputProps = {
   onSelectAgent: (agent: string) => void;
 };
 
+/** Stop stays available. Send stays off until there is text or a file. */
+export function chatSubmitDisabled(status: AgentRunStatus, text: string, fileCount: number): boolean {
+  if (status === "submitted") return true;
+  if (status === "streaming") return false;
+  return !text.trim() && fileCount === 0;
+}
+
+function ChatPromptSubmit({
+  status,
+  stopRun,
+  text,
+}: {
+  status: AgentRunStatus;
+  stopRun: () => void | Promise<void>;
+  text: string;
+}) {
+  const attachments = usePromptInputAttachments();
+  return (
+    <PromptInputSubmit
+      aria-label={status === "streaming" ? "Stop response" : "Submit"}
+      disabled={chatSubmitDisabled(status, text, attachments.files.length)}
+      onClick={(event) => {
+        if (status !== "streaming") return;
+        event.preventDefault();
+        void stopRun();
+      }}
+      status={status}
+    />
+  );
+}
+
 /**
  * Keeps the prompt's attachment and stop semantics beside the chat lifecycle
  * that owns them, rather than coupling shell chrome to agent-run details.
  */
 function ChatPromptInput({
   agentOptions,
+  agents,
   chatError,
   empty,
   onSelectAgent,
@@ -173,50 +216,51 @@ function ChatPromptInput({
             ref={textareaRef}
             className={empty ? "min-h-12 max-h-[200px]" : "min-h-[46px] max-h-[200px]"}
             onChange={(event) => setText(event.target.value)}
-            placeholder={
-              empty ? "Name the loose end…" : "Ask about a client, commitment, or next step"
-            }
+            // An empty thread used to ask people to "name the loose end," and a
+            // started thread said "client." Both states ask the same question.
+            placeholder="Ask about a company, a promise, or the next step."
             value={text}
           />
         </PromptInputBody>
         <PromptInputFooter>
           <PromptInputTools>
             <PromptInputActionMenu>
-              <PromptInputActionMenuTrigger />
+              <PromptInputActionMenuTrigger aria-label="Add text file" />
               <PromptInputActionMenuContent>
                 <PromptInputActionAddAttachments label="Add text file" />
               </PromptInputActionMenuContent>
             </PromptInputActionMenu>
             <PromptInputSpeechButton
               aria-label="Dictate message"
+              onDictationError={setChatError}
+              onListening={() => setChatError("")}
               onTranscriptionChange={setText}
               textareaRef={textareaRef}
             />
             <Select onValueChange={onSelectAgent} value={selectedAgent}>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Agent" />
+              <SelectTrigger
+                aria-label={agentSelectName(agents, selectedAgent)}
+                className="w-auto max-w-52"
+              >
+                {/* Radix copies the item label into the trigger only while the
+                    menu is mounted. Closed, that left the composer showing a
+                    blank control, so the name is rendered from the catalog. */}
+                <SelectValue placeholder="Agent">
+                  {visibleAgentLabel(agents, selectedAgent)}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
                   {agentOptions.map((agent) => (
                     <SelectItem key={agent} value={agent}>
-                      {agent}
+                      {agentDisplayName(agents, agent)}
                     </SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
           </PromptInputTools>
-          <PromptInputSubmit
-            aria-label={status === "streaming" ? "Stop response" : "Submit"}
-            disabled={status === "submitted"}
-            onClick={(event) => {
-              if (status !== "streaming") return;
-              event.preventDefault();
-              void stopRun();
-            }}
-            status={status}
-          />
+          <ChatPromptSubmit status={status} stopRun={stopRun} text={text} />
         </PromptInputFooter>
       </PromptInput>
     </div>
@@ -243,7 +287,8 @@ export function ChatRouteProvider({ children, className, ...props }: ChatRoutePr
   const workspace = useWorkspaceLabel(workspaceUser);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [selectedResource, setSelectedResource] = useState<SelectedResource | null>(null);
-  const { agentOptions, refreshAgents, selectedAgent, setSelectedAgent } = useAgentCatalog();
+  const { agentOptions, agents = [], refreshAgents, selectedAgent, setSelectedAgent } =
+    useAgentCatalog();
   const run = useAgentRun(selectedAgent);
 
   const selectPrompt = useCallback(
@@ -274,7 +319,16 @@ export function ChatRouteProvider({ children, className, ...props }: ChatRoutePr
     },
     [setSelectedAgent, startNewChat],
   );
-  const { openSession: loadSession, sessions } = useChatSessions({
+  const {
+    hasMoreSessions,
+    loadEarlierSessions,
+    loadingEarlierSessions,
+    loadingSessions,
+    openSession: loadSession,
+    reloadSessions,
+    sessions,
+    sessionsLoadError,
+  } = useChatSessions({
     activeRunId: run.runId,
     conversation: run.conversation,
     onBeginOpen: run.beginOpenRun,
@@ -319,6 +373,7 @@ export function ChatRouteProvider({ children, className, ...props }: ChatRoutePr
   const promptInput = (
     <ChatPromptInput
       agentOptions={agentOptions}
+      agents={agents}
       chatError={run.chatError}
       empty={run.conversation.length === 0}
       onSelectAgent={selectAgent}
@@ -334,7 +389,7 @@ export function ChatRouteProvider({ children, className, ...props }: ChatRoutePr
   );
   const value: ChatRouteContextValue = {
     chat: {
-      activeAgent: selectedAgent,
+      activeAgent: visibleAgentLabel(agents, selectedAgent),
       workspace,
       processing: run.processing,
       conversation: run.conversation,
@@ -347,9 +402,16 @@ export function ChatRouteProvider({ children, className, ...props }: ChatRoutePr
     },
     controller: {
       agentOptions,
+      agentCatalog: agents,
       activeRunId: run.runId,
       empty: run.conversation.length === 0,
       sessions,
+      hasMoreSessions,
+      loadingMoreSessions: loadingEarlierSessions,
+      loadingSessions,
+      onLoadMoreSessions: () => void loadEarlierSessions(),
+      onRetrySessions: () => void reloadSessions(),
+      sessionsLoadError,
       selectedResource,
       clearSelectedResource,
       onAgentsChanged: refreshAgents,

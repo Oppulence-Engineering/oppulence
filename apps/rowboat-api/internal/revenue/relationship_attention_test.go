@@ -13,6 +13,15 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 )
 
+func TestOverduePromiseExplanationNamesThePromise(t *testing.T) {
+	if got := overdueCommitmentExplanation(1); got != "A confirmed promise is overdue by 1 day." {
+		t.Fatalf("one day = %q", got)
+	}
+	if got := overdueCommitmentExplanation(3); got != "A confirmed promise is overdue by 3 days." {
+		t.Fatalf("three days = %q", got)
+	}
+}
+
 func TestRelationshipAttentionRunnerPaginatesAllActiveWorkspaces(t *testing.T) {
 	f := newFixture(t)
 	now := time.Date(2026, 8, 2, 12, 0, 0, 0, time.UTC)
@@ -81,10 +90,11 @@ func TestRelationshipAttentionProjectionIsDeterministicAndMaterialChangesReopenT
 	if err := f.svc.RefreshRelationshipAttention(f.ctx, f.user); err != nil {
 		t.Fatal(err)
 	}
-	items, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "all", 100)
-	if err != nil {
+	page, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "all", 100, 0)
+	if err != nil || page == nil {
 		t.Fatal(err)
 	}
+	items := page.Items
 	byReason := map[string]bool{}
 	for _, item := range items {
 		byReason[item.ReasonCode] = true
@@ -133,11 +143,15 @@ func TestRelationshipAttentionDecisionUsesOptimisticVersioningAndBoundedSnooze(t
 	if err := f.svc.RefreshRelationshipAttention(f.ctx, f.user); err != nil {
 		t.Fatal(err)
 	}
-	items, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 20)
-	if err != nil || len(items) == 0 {
-		t.Fatalf("missing projected item: count=%d err=%v", len(items), err)
+	page, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 20, 0)
+	if err != nil || page == nil || len(page.Items) == 0 {
+		count := 0
+		if page != nil {
+			count = len(page.Items)
+		}
+		t.Fatalf("missing projected item: count=%d err=%v", count, err)
 	}
-	item := items[0]
+	item := page.Items[0]
 	until := now.Add(24 * time.Hour)
 	snoozed, err := f.svc.DecideRelationshipAttention(f.ctx, f.user, item.ID, AttentionDecisionInput{
 		Decision: "snooze", ExpectedVersion: item.Version, SnoozedUntil: &until,
@@ -149,5 +163,138 @@ func TestRelationshipAttentionDecisionUsesOptimisticVersioningAndBoundedSnooze(t
 		Decision: "acknowledge", ExpectedVersion: item.Version,
 	}); !errors.Is(err, ErrConflict) {
 		t.Fatalf("stale decision should conflict: %v", err)
+	}
+}
+
+func TestAttentionExplanationsReadAsSentences(t *testing.T) {
+	if got := quietAccountExplanation("prospect", 60, 30); got != "No recorded interaction for 60 days. Prospects are usually contacted again within 30 days." {
+		t.Fatalf("quiet prospect = %q", got)
+	}
+	if got := quietAccountExplanation("contracting", 10, 7); got != "No recorded interaction for 10 days. Companies in contracting are usually contacted again within 7 days." {
+		t.Fatalf("quiet contracting = %q", got)
+	}
+	if got := quietAccountExplanation("active_customer", 21, 21); got != "No recorded interaction for 21 days. Active customers are usually contacted again within 21 days." {
+		t.Fatalf("quiet active = %q", got)
+	}
+	if got := unresolvedRiskExplanation(1, "needs_attention"); got != "1 unresolved risk. This company needs attention." {
+		t.Fatalf("needs attention = %q", got)
+	}
+	if got := unresolvedRiskExplanation(2, "critical"); got != "2 unresolved risks. This company is critical." {
+		t.Fatalf("critical = %q", got)
+	}
+	if got := missingNextStepExplanation("contracting"); got != "This company is in Contracting and has no next step." {
+		t.Fatalf("contracting next step = %q", got)
+	}
+	if got := missingNextStepExplanation("active_customer"); got != "This company is an active customer and has no next step." {
+		t.Fatalf("active next step = %q", got)
+	}
+	if got := actionOutcomeExplanation("email", ExecAmbiguous, "manual_review"); got != "The email action may have gone through. Review it before trying again." {
+		t.Fatalf("ambiguous action = %q", got)
+	}
+	if got := actionOutcomeExplanation("email", ExecFailed, ""); got != "The email action failed. Review it before trying again." {
+		t.Fatalf("failed action = %q", got)
+	}
+	if got := sourceDegradationExplanation([]string{"google", "slack"}); got != "Google and Slack evidence is incomplete, stale, rebuilding, or missing a required permission." {
+		t.Fatalf("degraded sources = %q", got)
+	}
+}
+
+func TestListRelationshipAttentionOffsetSkipsTheNextRank(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	for _, company := range []struct{ name, domain string }{
+		{"Ada Queue", "ada-queue.example"},
+		{"Bea Queue", "bea-queue.example"},
+		{"Cara Queue", "cara-queue.example"},
+	} {
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: company.name, AccountDomain: company.domain,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		rel.Update().SetLifecycle("contracting").SaveX(f.ctx)
+	}
+	all, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 10, 0)
+	if err != nil || all == nil || len(all.Items) != 3 || all.HasMore {
+		count := 0
+		hasMore := false
+		if all != nil {
+			count = len(all.Items)
+			hasMore = all.HasMore
+		}
+		t.Fatalf("queue = %d hasMore=%v err=%v", count, hasMore, err)
+	}
+	page, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 1, 1)
+	if err != nil || page == nil || len(page.Items) != 1 || !page.HasMore || page.Items[0].ID != all.Items[1].ID {
+		t.Fatalf("offset page = %+v err=%v", page, err)
+	}
+	none, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 1, 3)
+	if err != nil || none == nil || len(none.Items) != 0 || none.HasMore {
+		count := -1
+		if none != nil {
+			count = len(none.Items)
+		}
+		t.Fatalf("past the end = %d err=%v", count, err)
+	}
+	neg, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 10, -4)
+	if err != nil || neg == nil || len(neg.Items) != 3 || neg.HasMore || neg.Items[0].ID != all.Items[0].ID {
+		t.Fatalf("negative offset = %+v err=%v", neg, err)
+	}
+}
+
+func TestListRelationshipAttentionExactPageIsNotAnotherPage(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	for i := 1; i <= 50; i++ {
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: fmt.Sprintf("Queue %03d", i), AccountDomain: fmt.Sprintf("queue-%03d.example", i),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		rel.Update().SetLifecycle("contracting").SaveX(f.ctx)
+	}
+	exact, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 50, 0)
+	if err != nil || exact == nil || len(exact.Items) != 50 || exact.HasMore {
+		count := 0
+		hasMore := false
+		if exact != nil {
+			count = len(exact.Items)
+			hasMore = exact.HasMore
+		}
+		t.Fatalf("exact page = %d hasMore=%v err=%v", count, hasMore, err)
+	}
+	rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Queue Extra", AccountDomain: "queue-extra.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel.Update().SetLifecycle("contracting").SaveX(f.ctx)
+	first, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 50, 0)
+	if err != nil || first == nil || len(first.Items) != 50 || !first.HasMore {
+		count := 0
+		hasMore := false
+		if first != nil {
+			count = len(first.Items)
+			hasMore = first.HasMore
+		}
+		t.Fatalf("first page = %d hasMore=%v err=%v", count, hasMore, err)
+	}
+	next, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 50, 50)
+	if err != nil || next == nil || len(next.Items) != 1 || next.HasMore {
+		count := 0
+		hasMore := false
+		if next != nil {
+			count = len(next.Items)
+			hasMore = next.HasMore
+		}
+		t.Fatalf("next page = %d hasMore=%v err=%v", count, hasMore, err)
+	}
+	if next.Items[0].Edges.Relationship == nil || next.Items[0].Edges.Relationship.DisplayName != "Queue Extra" {
+		t.Fatalf("dropped company = %+v", next.Items[0])
 	}
 }

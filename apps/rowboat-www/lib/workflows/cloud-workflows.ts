@@ -10,6 +10,8 @@ import {
   fetchWorkflowTemplates,
 } from "@/hooks/queries/utils/fetch-workflows";
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
+import { friendlyAgentError } from "@/lib/agents/agent-history";
+import { workflowProductDescription } from "@/lib/workflows/workflow-product-copy";
 
 export const CloudTaskSchema = z.object({
   id: z.string(),
@@ -113,7 +115,7 @@ export function compileVisualWorkflow(definition: VisualWorkflowDefinition): {
     case "communication":
       triggers.eventMatchCriteria =
         workflow.trigger.criteria?.trim() ||
-        "A Gmail, Calendar, Slack, or HubSpot event materially changes a customer relationship, commitment, objection, decision, or next step.";
+        "A Gmail, Calendar, or HubSpot event materially changes a customer relationship, commitment, objection, decision, or next step.";
       break;
     case "schedule":
       triggers.cronExpr = workflow.trigger.cronExpr?.trim() || "0 9 * * 1-5";
@@ -152,6 +154,191 @@ export function taskVisualWorkflow(task: CloudTask): VisualWorkflowDefinition | 
   }
   const parsed = VisualWorkflowDefinitionSchema.safeParse(task.triggers.workflow);
   return parsed.success ? parsed.data : null;
+}
+
+const RUN_ID_PREFIXES = [
+  "sched-temporal-",
+  "sched-window-",
+  "sched-cron-",
+  "api-trigger-",
+  "retry-",
+  "event-",
+] as const;
+
+const RUN_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * A run id starts with the scheduler that created it, then a UUID. The inspector
+ * already names the workflow, status, and trigger, so the visible reference is
+ * the first UUID group. The full id stays on the title for support.
+ */
+export function runReference(runId: string): string {
+  const trimmed = runId.trim();
+  let body = trimmed;
+  for (const prefix of RUN_ID_PREFIXES) {
+    if (trimmed.startsWith(prefix) && trimmed.length > prefix.length) {
+      body = trimmed.slice(prefix.length);
+      break;
+    }
+  }
+  if (RUN_UUID.test(body)) return body.slice(0, 8);
+  return body;
+}
+
+/**
+ * Run status and trigger values are API tokens such as "succeeded" and "cron".
+ * The product shows them as words. The stored value stays the token.
+ */
+export function readableEnum(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
+/**
+ * Trigger tokens are stored as cron, window, event, manual, and retry.
+ * Title-casing leaves "Cron" on every scheduled run. The list says what
+ * started the run, and the stored token stays unchanged.
+ */
+export function triggerLabel(value: string): string {
+  switch (value) {
+    case "window":
+      return "Time window";
+    case "cron":
+      return "Scheduled";
+    case "event":
+      return "Incoming event";
+    case "manual":
+      return "Started by hand";
+    case "retry":
+      return "Retry";
+    default:
+      return readableEnum(value);
+  }
+}
+
+/**
+ * Schedule health "current" means the cloud schedule matches the workflow.
+ * The badge sits next to "Run in Oppulence Cloud", where "current" reads as
+ * an unfinished token.
+ */
+export function scheduleHealthLabel(value: string): string {
+  switch (value) {
+    case "current":
+      return "In sync";
+    case "syncing":
+      return "Syncing";
+    case "failed":
+      return "Needs repair";
+    case "paused":
+      return "Paused";
+    case "unknown":
+      return "Unknown";
+    default:
+      return readableEnum(value);
+  }
+}
+
+/**
+ * Transcript types are dotted tokens such as temporal.failed and
+ * runtime.tool_call_started. The prefix is the emitter, not something a
+ * person needs in the heading.
+ */
+export function runEventLabel(type: string): string {
+  const stripped = type.trim().replace(/^(temporal|runtime|desktop)\./, "");
+  if (stripped === "llm_call_started") return "Model call started";
+  if (stripped === "llm_stream_event") return "Model stream";
+  const body = stripped.replaceAll("_", " ");
+  if (!body) return type;
+  const withAcronyms = body.replace(/\bllm\b/g, "model");
+  return withAcronyms.charAt(0).toUpperCase() + withAcronyms.slice(1);
+}
+
+/** Provider paths such as openai/gpt-4.1 are runtime ids. The transcript names the model. */
+export function calledModelLabel(model: string): string {
+  const trimmed = model.trim();
+  const slash = trimmed.lastIndexOf("/");
+  const bare = slash >= 0 ? trimmed.slice(slash + 1).trim() : trimmed;
+  if (!bare) return trimmed;
+  if (/^gpt-/i.test(bare)) return `GPT-${bare.slice(4).replace(/-/g, " ")}`;
+  if (/^claude-/i.test(bare)) return `Claude ${titledModelRest(bare.slice("claude-".length))}`;
+  if (/^gemini-/i.test(bare)) return `Gemini ${titledModelRest(bare.slice("gemini-".length))}`;
+  return bare;
+}
+
+function titledModelRest(rest: string): string {
+  return rest
+    .replace(/-/g, " ")
+    .replace(/\b(\d) (\d)\b/g, "$1.$2")
+    .split(" ")
+    .filter(Boolean)
+    .map((word) =>
+      /^\d/.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1),
+    )
+    .join(" ");
+}
+
+const INFRASTRUCTURE_EVENT_COPY: Record<string, string> = {
+  "Queued by Temporal schedule.": "Queued on the schedule.",
+  "Queued for API worker.": "Queued to run.",
+  "API worker claimed the run.": "Oppulence Cloud started this run.",
+};
+
+function rewriteInfrastructureEvent(value: string): string {
+  const step = /^Agent step (\d+)\.$/.exec(value);
+  if (step) return `Step ${step[1]}.`;
+  return INFRASTRUCTURE_EVENT_COPY[value] ?? value;
+}
+
+function eventStringField(record: Record<string, unknown>, key: string): string {
+  const value = record[key];
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/**
+ * Transcript rows store worker payloads. A message is shown when it is already
+ * a sentence. Model-call records have no message, and stringifying them put
+ * prompt versions and event types on screen.
+ */
+export function runEventBody(event: { type?: string; event: unknown }): string {
+  if (typeof event.event === "string") return rewriteInfrastructureEvent(event.event);
+  if (!event.event || typeof event.event !== "object") return "Recorded an update.";
+  const record = event.event as Record<string, unknown>;
+  const type = event.type || eventStringField(record, "type");
+  if (type === "runtime.llm_call_started") {
+    const model = calledModelLabel(eventStringField(record, "model"));
+    return model ? `Calling ${model}.` : "Calling the model.";
+  }
+  const message = ["message", "summary", "content"]
+    .map((key) => eventStringField(record, key))
+    .find(Boolean);
+  if (message && message !== "Failed.") return rewriteInfrastructureEvent(message);
+  const error = eventStringField(record, "error");
+  if (error) return friendlyAgentError(error, "run");
+  if (message) return "This run could not finish.";
+  return "Recorded an update.";
+}
+
+/**
+ * The library subtitle. A saved canvas objective wins. Otherwise a known
+ * first-party description wins over the sentence stored with the template,
+ * which still says "relationship" for company workflows. One shared fallback
+ * is last, so an unknown row is not blank.
+ */
+export function workflowListSummary(
+  task: CloudTask,
+  templates: readonly Pick<CloudTaskTemplate, "slug" | "taskSlug" | "description">[] = [],
+): string {
+  const objective = taskVisualWorkflow(task)?.objective?.trim();
+  if (objective) return objective;
+  const template = templates.find(
+    (item) =>
+      (task.templateSlug !== "" && item.slug === task.templateSlug) ||
+      (item.taskSlug !== "" && item.taskSlug === task.slug),
+  );
+  const description = workflowProductDescription(task.slug, template?.description);
+  if (description) return description;
+  return "Recurring company follow-up";
 }
 
 export const CloudTaskTemplateSchema = z.object({
@@ -239,7 +426,21 @@ export const CloudScheduleSchema = z.object({
 export type CloudSchedule = z.infer<typeof CloudScheduleSchema>;
 
 const TaskListSchema = z.object({ tasks: z.array(CloudTaskSchema) });
-const EventListSchema = z.object({ events: z.array(CloudRunEventSchema) });
+const EventListSchema = z.object({
+  events: z.array(CloudRunEventSchema),
+  nextSeq: z.number().int().nullish(),
+});
+
+/** One transcript page. nextSeq is absent when this page is the end. */
+export type CloudRunEventPage = {
+  events: CloudRunEvent[];
+  nextSeq: number | null;
+};
+
+/** The transcript page is 500 events. The inspector keeps going only when another event exists. */
+export function transcriptNextEventsLabel(): string {
+  return "Show the next events";
+}
 
 async function workflowRequest<T>(
   path: string,
@@ -363,6 +564,26 @@ export async function updateCloudTask(
   });
 }
 
+/** DELETE returns no body. A maintained workflow stays; the API refuses it. */
+export async function deleteCloudTask(task: Pick<CloudTask, "slug" | "revision">): Promise<void> {
+  const response = await dashboardFetch(
+    toDashboardAPIPath(
+      `/background-tasks/${encodeURIComponent(task.slug)}?revision=${encodeURIComponent(String(task.revision))}`,
+    ),
+    { method: "DELETE" },
+  );
+  if (response.status === 204) return;
+  const body = await response.json().catch(() => null);
+  const message =
+    body && typeof body === "object" && "message" in body && typeof body.message === "string"
+      ? body.message
+      : "";
+  if (response.status === 409 && message === "revision conflict") {
+    throw new Error("This workflow changed. Open it again, then remove it.");
+  }
+  throw new Error(message || `Could not remove the workflow (${response.status}).`);
+}
+
 export type RunFilters = {
   status?: CloudRunStatus | "all";
   trigger?: CloudRunTrigger | "all";
@@ -415,17 +636,70 @@ export async function retryCloudRun(run: CloudRun): Promise<CloudRun> {
   );
 }
 
-export async function listCloudRunEvents(slug: string, runId: string): Promise<CloudRunEvent[]> {
-  return (
-    await workflowRequest(
-      `/background-tasks/${encodeURIComponent(slug)}/runs/${encodeURIComponent(runId)}/events`,
-      EventListSchema,
-    )
-  ).events;
+export async function listCloudRunEvents(
+  slug: string,
+  runId: string,
+  afterSeq?: number,
+): Promise<CloudRunEventPage> {
+  const params = new URLSearchParams();
+  if (afterSeq != null) params.set("afterSeq", String(afterSeq));
+  const query = params.size > 0 ? `?${params.toString()}` : "";
+  const path =
+    `/background-tasks/${encodeURIComponent(slug)}/runs/${encodeURIComponent(runId)}/events` +
+    query;
+  const page = await workflowRequest(path, EventListSchema);
+  return { events: page.events, nextSeq: page.nextSeq ?? null };
 }
 
 export function taskCron(task: CloudTask): string {
   if (!task.triggers || typeof task.triggers !== "object" || !("cronExpr" in task.triggers))
     return "";
   return typeof task.triggers.cronExpr === "string" ? task.triggers.cronExpr : "";
+}
+
+/**
+ * Cloud schedules fire in UTC. Some tasks also store a timezone, and that
+ * zone is not applied yet, so a bare "8:00 AM" sounds like the viewer's
+ * morning while the run happens at 08:00 UTC. The clock in these labels is
+ * that UTC hour. Interval schedules have no clock hour, so they stay here
+ * out of this map.
+ */
+const CRON_CLOCK_LABELS: Record<string, string> = {
+  "0 9 * * *": "Every day at 9:00 AM UTC",
+  "0 9 * * 1-5": "Weekdays at 9:00 AM UTC",
+  "0 8 * * *": "Every day at 8:00 AM UTC",
+  "0 8 * * 1": "Every Monday at 8:00 AM UTC",
+  "0 8 * * 1-5": "Weekdays at 8:00 AM UTC",
+  "0 17 * * 1-5": "Weekdays at 5:00 PM UTC",
+};
+
+export function cronClockLabel(cron: string): string {
+  return CRON_CLOCK_LABELS[cron] ?? "Recurring schedule";
+}
+
+function formatClock(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone,
+  }).format(date);
+}
+
+/**
+ * A schedule row already says the clock hour is UTC. The moment beside it is
+ * the viewer's local time, so outside UTC "8:00 AM UTC" sat next to "4:00 AM"
+ * with nothing tying them together. When those clocks differ, show both.
+ */
+export function scheduleMomentLabel(value: string | null | undefined, timeZone?: string): string {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) return "—";
+  const date = new Date(trimmed);
+  if (Number.isNaN(date.getTime())) return trimmed;
+  const zone = timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const local = formatClock(date, zone);
+  const utc = formatClock(date, "UTC");
+  if (local === utc) return local;
+  return `${local} (${utc} UTC)`;
 }

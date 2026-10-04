@@ -128,7 +128,13 @@ export function SupportChat({ theme = "auto", className, ...props }: SupportChat
           ? { threadDetails: { labelTypeIds: config.labelTypeIds } }
           : {}),
         links: [
-          { icon: "book", text: "Read the docs", url: "https://docs.oppulence.io" },
+          // docs.oppulence.io has no DNS record. The reference this app renders
+          // is the document that shortcut is supposed to open.
+          {
+            icon: "book",
+            text: "API reference",
+            url: `${window.location.origin}/api/reference`,
+          },
           {
             icon: "bug",
             text: "Report an issue on GitHub",

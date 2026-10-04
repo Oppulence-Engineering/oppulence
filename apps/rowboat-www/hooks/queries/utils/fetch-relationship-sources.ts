@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import {
   GetRelationshipSourceInventory200Response,
   GetRelationshipSourceStatuses200Response,
@@ -10,15 +12,36 @@ import type {
 
 const RELATIONSHIP_SOURCE_STATUS_PATH = "/relationship-sources/status";
 
+/** The status contract publishes connector rows only. Observation provenance
+ * such as "user" is stored in the same table, and one unknown row used to
+ * fail the whole list so the sidebar said the status was unavailable. */
+const CONNECTOR_SOURCES = new Set(["google", "slack", "hubspot"]);
+
+const LooseSourceStatusList = z.object({
+  sources: z.array(z.unknown()).optional(),
+});
+
+function connectorSourceRows(body: unknown): unknown {
+  const parsed = LooseSourceStatusList.safeParse(body);
+  if (!parsed.success) return body;
+  return {
+    sources: (parsed.data.sources ?? []).filter((item) => {
+      if (!item || typeof item !== "object" || !("source" in item)) return false;
+      return CONNECTOR_SOURCES.has(String((item as { source: unknown }).source));
+    }),
+  };
+}
+
 export async function loadRelationshipSourceStatuses(
   request: RequestJsonFn,
   signal?: AbortSignal,
 ): Promise<RelationshipSourceStatus[]> {
-  const body = await request({
+  const raw = await request({
     path: RELATIONSHIP_SOURCE_STATUS_PATH,
-    schema: GetRelationshipSourceStatuses200Response,
+    schema: z.unknown(),
     signal,
   });
+  const body = GetRelationshipSourceStatuses200Response.parse(connectorSourceRows(raw));
   return body.sources ?? [];
 }
 

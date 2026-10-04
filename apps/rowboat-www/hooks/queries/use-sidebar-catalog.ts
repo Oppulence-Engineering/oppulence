@@ -4,12 +4,20 @@ import "client-only";
 
 import { useQuery } from "@tanstack/react-query";
 
-import { fetchSidebarRuns, fetchSidebarTasks } from "@/hooks/queries/utils/fetch-sidebar";
-import { useAgentSlugs } from "@/hooks/queries/use-agents";
+import {
+  fetchSidebarRuns,
+  fetchSidebarTasks,
+  sidebarAgentItem,
+} from "@/hooks/queries/utils/fetch-sidebar";
+import { useAgentSummaries } from "@/hooks/queries/use-agents";
 import { SIDEBAR_LIST_STALE_TIME, sidebarKeys } from "@/hooks/queries/utils/sidebar-keys";
 
 export function useSidebarAgents() {
-  return useAgentSlugs();
+  const query = useAgentSummaries();
+  return {
+    ...query,
+    data: query.data?.map(sidebarAgentItem),
+  };
 }
 
 export function useSidebarTasks() {

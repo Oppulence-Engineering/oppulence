@@ -3,6 +3,7 @@ package revenue
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -76,6 +77,65 @@ func seedCommunicationInteraction(
 	return interaction, attachment
 }
 
+func TestCommunicationTimelineKeepsTiedOccurredAt(t *testing.T) {
+	f, _, _, ws := communicationPrivacyFixture(t)
+	rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "person", DisplayName: "Buyer", PrimaryEmail: "buyer-tied@example.com",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	occurred := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	internal := auth.WithInternal(context.Background())
+	for i := 1; i <= 3; i++ {
+		subject := fmt.Sprintf("Tied Mail %03d", i)
+		if i == 1 {
+			subject = "Tied Mail Last"
+		}
+		if _, err := f.client.CommunicationInteraction.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("a1162000-0000-4000-8000-%012x", i))).
+			SetWorkspace(ws).
+			SetOwner(f.user).
+			SetRelationshipID(rel.ID).
+			SetSource("gmail").
+			SetSourceAccountID("owner@x.co").
+			SetProviderObjectID(fmt.Sprintf("tied-mail-%d", i)).
+			SetInteractionType("email").
+			SetDirection("inbound").
+			SetSubject(subject).
+			SetOccurredAt(occurred).
+			SetReceivedAt(occurred).
+			SetVisibility("metadata").
+			SetContentHash(fmt.Sprintf("sha256:tied-mail-%d", i)).
+			SetMetadataJSON(`{"threadId":"thread-tied"}`).
+			Save(internal); err != nil {
+			t.Fatal(err)
+		}
+	}
+	first, err := f.svc.RelationshipCommunicationTimeline(f.ctx, f.user, rel.ID, nil, nil, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !first.HasMore || len(first.Items) != 2 || first.Items[0].Subject != "Tied Mail 003" {
+		t.Fatalf("newest mail page = %#v", first.Items)
+	}
+	for _, item := range first.Items {
+		if item.Subject == "Tied Mail Last" {
+			t.Fatal("the lowest id was included in the newest mail page")
+		}
+	}
+	if first.NextBefore == nil || !first.NextBefore.Equal(occurred) || first.NextBeforeID == nil {
+		t.Fatalf("mail cursor = %v %v", first.NextBefore, first.NextBeforeID)
+	}
+	second, err := f.svc.RelationshipCommunicationTimeline(f.ctx, f.user, rel.ID, first.NextBefore, first.NextBeforeID, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.HasMore || len(second.Items) != 1 || second.Items[0].Subject != "Tied Mail Last" {
+		t.Fatalf("older mail page = %#v hasMore=%v", second.Items, second.HasMore)
+	}
+}
+
 func TestCommunicationTimelineRedactsTeammateBody(t *testing.T) {
 	f, teammate, teammateCtx, _ := communicationPrivacyFixture(t)
 	rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
@@ -85,14 +145,14 @@ func TestCommunicationTimelineRedactsTeammateBody(t *testing.T) {
 		t.Fatal(err)
 	}
 	interaction, _ := seedCommunicationInteraction(t, f, rel.ID)
-	page, err := f.svc.RelationshipCommunicationTimeline(teammateCtx, teammate, rel.ID, nil, 10)
+	page, err := f.svc.RelationshipCommunicationTimeline(teammateCtx, teammate, rel.ID, nil, nil, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(page.Items) != 1 || !page.Items[0].BodyLocked || !page.Items[0].Access.Metadata {
 		t.Fatalf("teammate timeline: %#v err=%v", page, err)
 	}
-	ownerPage, err := f.svc.RelationshipCommunicationTimeline(f.ctx, f.user, rel.ID, nil, 10)
+	ownerPage, err := f.svc.RelationshipCommunicationTimeline(f.ctx, f.user, rel.ID, nil, nil, 10)
 	if err != nil || len(ownerPage.Items) != 1 || ownerPage.Items[0].BodyLocked {
 		t.Fatalf("owner timeline: %#v err=%v", ownerPage, err)
 	}

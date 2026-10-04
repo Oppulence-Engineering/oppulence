@@ -9,6 +9,7 @@ import {
   CircleNotch,
   ClockCounterClockwise,
   EnvelopeSimple,
+  WarningCircle,
   PaperPlaneTilt,
   PencilSimple,
   Prohibit,
@@ -32,16 +33,20 @@ import {
 import { Textarea } from "@oppulence/ui/components/textarea";
 import {
   ACTION_TYPE_LABELS,
+  actionReasonCopy,
   approveAction,
   DETECTOR_LABELS,
   dismissAction,
+  dismissReasonLabel,
   editAction,
   evaluateAction,
   executeAction,
+  friendlyRevenueError,
   getAction,
   getSourceBody,
   rejectAction,
   RevenueAPIError,
+  snoozeWakeCopy,
   startCheckout,
 } from "@/lib/revenue/revenue";
 import {
@@ -59,10 +64,123 @@ import {
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
 import type { RevenueAction, RevenueWorkspace } from "@/lib/revenue/types";
 
+/** An uncertain send stores a reconciliation token. The review says where that check stands. */
+export function reconciliationStatusLabel(status: string | null | undefined): string {
+  switch (status) {
+    case "found":
+      return "The provider confirmed this send.";
+    case "not_found":
+      return "The provider has no record of this send.";
+    case "error":
+      return "The provider check failed.";
+    case "manual_review":
+      return "This needs a person to check it.";
+    default:
+      return "Still checking with the provider.";
+  }
+}
+
+/**
+ * A definite send failure is stored, then the action returns to pending so it
+ * can be retried. The review sheet has to say why the last attempt stopped.
+ */
+export function executionFailureCopy(error: string | null | undefined): string {
+  const raw = (error ?? "").trim();
+  if (!raw) return "";
+  if (/no execution backend configured/i.test(raw)) {
+    return "Sending is not set up for this workspace yet.";
+  }
+  if (/no execution backend for channel/i.test(raw)) {
+    return "This channel cannot send yet.";
+  }
+  if (/execution backend for channel .+ is not configured/i.test(raw)) {
+    return "This channel is not set up to send yet.";
+  }
+  if (/has no recipient email/i.test(raw)) return "Add a recipient before sending.";
+  if (/has no proposed message/i.test(raw)) return "Write the message before sending.";
+  if (/Slack has no provider draft/i.test(raw)) {
+    return "Slack cannot save a draft. Switch this to send after you review it.";
+  }
+  if (/Google Calendar has no provider draft/i.test(raw)) {
+    return "Calendar cannot save a draft. Switch this to send after you review it.";
+  }
+  if (/HubSpot has no provider draft/i.test(raw)) {
+    return "HubSpot cannot save a draft. Switch this to send after you review it.";
+  }
+  if (/needs dueAt/i.test(raw)) return "Add a start time before creating the event.";
+  if (/Google Calendar executor is not configured/i.test(raw)) {
+    return "Calendar sending is not set up yet.";
+  }
+  if (/google is not connected/i.test(raw)) {
+    return "Connect Google for the person who will send this, then try again.";
+  }
+  if (/missing the .+ scope|reconnect Google/i.test(raw)) {
+    return "Google is missing permission for this send. Reconnect, then try again.";
+  }
+  if (/refresh token is invalid/i.test(raw)) {
+    return "Google stopped accepting the authorization. Reconnect, then try again.";
+  }
+  if (/could not obtain a google access token/i.test(raw)) {
+    return "Google could not authorize this send. Reconnect, then try again.";
+  }
+  if (/gmail returned 403|returned 403/i.test(raw)) {
+    return "Google refused this send. Reconnect Gmail, then try again.";
+  }
+  if (/Slack action needs target/i.test(raw)) return "Choose the Slack channel before sending.";
+  if (/HubSpot action needs a relationship resource ref/i.test(raw)) {
+    return "Link the HubSpot record before sending.";
+  }
+  const friendly = friendlyRevenueError(raw);
+  if (friendly !== raw) return friendly;
+  if (/^revenue:/i.test(raw)) {
+    return "The last attempt did not send. Fix the draft, then try again.";
+  }
+  return raw;
+}
+
+/** The bounded-retry sentence is the same fact as "needs a person". Hide that duplicate. */
+export function reconciliationErrorCopy(error: string | null | undefined): string {
+  const raw = (error ?? "").trim();
+  if (
+    !raw ||
+    raw === "provider marker was not found after bounded reconciliation attempts" ||
+    raw === "The provider could not confirm this send."
+  ) {
+    return "";
+  }
+  if (raw === "execution idempotency key is missing" || raw === "This send has no receipt to check.") {
+    return "This send has no receipt to check.";
+  }
+  return raw;
+}
+
+/** Only a Gmail message has an original body. A meeting quote is not that email. */
+export function actionHasOriginalEmail(action: {
+  evidence: readonly { source: string }[];
+}): boolean {
+  return action.evidence.some((item) => item.source.trim().toLowerCase() === "gmail");
+}
+
+/** Quotes already on the action, in the order they were stored. */
+export function reviewSupportingQuotes(action: {
+  evidence: readonly { excerpt?: string | null }[];
+}): string[] {
+  const seen = new Set<string>();
+  const quotes: string[] = [];
+  for (const item of action.evidence) {
+    const quote = item.excerpt?.trim() ?? "";
+    if (!quote || seen.has(quote)) continue;
+    seen.add(quote);
+    quotes.push(quote);
+  }
+  return quotes;
+}
+
 function governedSourceLine(action: RevenueAction) {
   const evidence = action.evidence[0];
   if (!evidence) {
-    return action.reason ? `Source: ${action.reason}` : undefined;
+    const reason = actionReasonCopy(action.reason);
+    return reason ? `Source: ${reason}` : undefined;
   }
   const date = new Date(evidence.occurredAt).toLocaleDateString(undefined, {
     month: "short",
@@ -100,16 +218,18 @@ export function ReviewSheet({
   const [upsell, setUpsell] = React.useState(false);
   const [original, setOriginal] = React.useState<string | null>(null);
   const [loadingOriginal, setLoadingOriginal] = React.useState(false);
+  const [actionError, setActionError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (action) {
-      setSubject(action.proposedSubject ?? "");
-      setMessage(action.proposedMessage ?? "");
+      setSubject((action.proposedSubject ?? "").trim());
+      setMessage((action.proposedMessage ?? "").trim());
       setAcceptRisk(false);
       setRejecting(false);
       setRejectReason("");
       setUpsell(false);
       setOriginal(null);
+      setActionError(null);
     }
   }, [action]);
 
@@ -117,11 +237,21 @@ export function ReviewSheet({
 
   const isSend = action.executionMode === "send";
   const isEmail = action.channel === "email";
+  const originalEmail = isEmail && actionHasOriginalEmail(action);
+  const supportingQuotes = originalEmail ? [] : reviewSupportingQuotes(action);
   const uncertain =
     action.executionStatus === "ambiguous" || action.reconciliationStatus === "manual_review";
+  const sendFailure =
+    action.executionStatus === "pending" || action.executionStatus === "failed"
+      ? executionFailureCopy(action.executionError)
+      : "";
+  const dismissal =
+    action.queueStatus === "dismissed" ? dismissReasonLabel(action.dismissReason) : "";
+  const snooze = action.queueStatus === "snoozed" ? snoozeWakeCopy(action.snoozedUntil) : "";
   const linked = workspace?.mode === "linked" && workspace.status === "active";
-  const dirty =
-    subject !== (action.proposedSubject ?? "") || message !== (action.proposedMessage ?? "");
+  const storedSubject = (action.proposedSubject ?? "").trim();
+  const storedMessage = (action.proposedMessage ?? "").trim();
+  const dirty = subject !== storedSubject || message !== storedMessage;
   const approved =
     action.approvalStatus === "approved" && action.approvedRevision === action.revision;
   const needsRisk = isSend && action.policyStatus === "review_required";
@@ -144,6 +274,7 @@ export function ReviewSheet({
   ) => {
     setBusy(key);
     onError("");
+    setActionError(null);
     try {
       const updated = await fn();
       onPatched(updated);
@@ -154,11 +285,12 @@ export function ReviewSheet({
         setUpsell(true); // acting is a paid step; show the upgrade prompt inline
         return;
       }
-      onError(
+      const message =
         e instanceof RevenueAPIError
           ? e.message
-          : errMessage(e, "The action could not be completed."),
-      );
+          : errMessage(e, "The action could not be completed.");
+      setActionError(message);
+      onError(message);
     } finally {
       setBusy(null);
     }
@@ -168,13 +300,16 @@ export function ReviewSheet({
     if (!action) return;
     setLoadingOriginal(true);
     onError("");
+    setActionError(null);
     try {
       setOriginal(await getSourceBody(action.id));
     } catch (e) {
       if (e instanceof RevenueAPIError && e.status === 404) {
-        setOriginal("(The original email body is not available.)");
+        setOriginal("The original email is not available.");
       } else {
-        onError(errMessage(e, "Could not load the original email."));
+        const message = errMessage(e, "Could not load the original email.");
+        setActionError(message);
+        onError(message);
       }
     } finally {
       setLoadingOriginal(false);
@@ -184,12 +319,15 @@ export function ReviewSheet({
   const upgrade = async () => {
     setBusy("upgrade");
     onError("");
+    setActionError(null);
     capture(RevenueEvents.UpgradeClicked, { from: "review_sheet" });
     try {
       const url = await startCheckout("pro");
       window.location.assign(url);
     } catch (e) {
-      onError(errMessage(e, "Could not start checkout."));
+      const message = errMessage(e, "Could not start checkout.");
+      setActionError(message);
+      onError(message);
       setBusy(null);
     }
   };
@@ -197,9 +335,13 @@ export function ReviewSheet({
   const saveEdit = () =>
     wrap(
       "save",
-      () => editAction(action.id, { proposedSubject: subject, proposedMessage: message }),
+      () =>
+        editAction(action.id, {
+          proposedSubject: subject.trim(),
+          proposedMessage: message.trim(),
+        }),
       {
-        note: "Saved — this created a new revision, so re-check and approve before sending.",
+        note: "Saved. This is a new version, so check it and approve it before sending.",
       },
     );
 
@@ -262,8 +404,16 @@ export function ReviewSheet({
             </Button>
           </div>
           <SheetTitle>{ACTION_TYPE_LABELS[action.actionType] ?? action.actionType}</SheetTitle>
-          <SheetDescription>{action.reason}</SheetDescription>
+          <SheetDescription>{actionReasonCopy(action.reason)}</SheetDescription>
         </SheetHeader>
+        {actionError ? (
+          <p
+            className="border-b border-destructive/30 px-4 py-2 text-sm text-destructive"
+            role="alert"
+          >
+            {actionError}
+          </p>
+        ) : null}
 
         <div className="flex flex-1 flex-col gap-5 px-4 py-5">
           {upsell ? (
@@ -300,19 +450,38 @@ export function ReviewSheet({
             </Alert>
           ) : null}
 
+          {dismissal ? (
+            <Alert>
+              <AlertTitle>Dismissed</AlertTitle>
+              <AlertDescription>{dismissal}</AlertDescription>
+            </Alert>
+          ) : null}
+          {snooze ? (
+            <Alert>
+              <AlertDescription>{snooze}</AlertDescription>
+            </Alert>
+          ) : null}
+
+          {sendFailure && !uncertain ? (
+            <Alert>
+              <WarningCircle weight="fill" />
+              <AlertTitle>The last attempt did not send</AlertTitle>
+              <AlertDescription>{sendFailure}</AlertDescription>
+            </Alert>
+          ) : null}
+
           {uncertain ? (
             <Alert>
               <ClockCounterClockwise weight="fill" />
               <AlertTitle>Provider result uncertain — do not retry</AlertTitle>
               <AlertDescription>
-                Oppulence is reconciling this write with read-only provider checks. Status:{" "}
-                {action.reconciliationStatus || "pending"}
+                {reconciliationStatusLabel(action.reconciliationStatus)}
                 {action.reconciliationAttempts
-                  ? ` after ${action.reconciliationAttempts} attempt${action.reconciliationAttempts === 1 ? "" : "s"}`
+                  ? ` Checked ${action.reconciliationAttempts} time${action.reconciliationAttempts === 1 ? "" : "s"}.`
                   : ""}
-                .{" "}
-                {action.reconciliationError ||
-                  "The item will move to manual review if the provider cannot confirm it."}
+                {reconciliationErrorCopy(action.reconciliationError)
+                  ? ` ${reconciliationErrorCopy(action.reconciliationError)}`
+                  : ""}
               </AlertDescription>
             </Alert>
           ) : null}
@@ -322,7 +491,7 @@ export function ReviewSheet({
               <Input value={action.recipientEmail} readOnly className="bg-background-100/50" />
             </Field>
           ) : null}
-          {isEmail || action.proposedSubject ? (
+          {isEmail || storedSubject ? (
             <Field label={action.channel === "calendar" ? "Event title" : "Subject"}>
               <Input
                 value={subject}
@@ -389,11 +558,11 @@ export function ReviewSheet({
                 onChange={(e) => setMessage(e.target.value)}
                 rows={10}
                 className="resize-y font-normal"
-                placeholder="Exact approved content"
+                placeholder="What this should say"
               />
               <p className="mt-1 text-xs text-primary/45">
-                Editing the draft creates a new revision and clears any prior approval — you&apos;ll
-                re-approve below.
+                Editing this draft starts a new version and clears the earlier approval. You will
+                approve it again below.
               </p>
             </Field>
           )}
@@ -401,7 +570,7 @@ export function ReviewSheet({
           <PriorityBreakdown action={action} />
 
           {/* The original email, fetched on demand (RFC 031 Layer 3). */}
-          {isEmail ? (
+          {originalEmail ? (
             <div className="rounded-[2px] border border-border p-3">
               {original === null ? (
                 <Button variant="ghost" size="sm" onClick={viewOriginal} disabled={loadingOriginal}>
@@ -414,18 +583,29 @@ export function ReviewSheet({
                 </pre>
               )}
             </div>
+          ) : supportingQuotes.length > 0 ? (
+            <div className="rounded-[2px] border border-border p-3">
+              <p className="text-xs font-medium text-primary">Supporting words</p>
+              <ul className="mt-2 space-y-1">
+                {supportingQuotes.map((quote) => (
+                  <li className="text-xs text-primary/70" key={quote}>
+                    “{quote}”
+                  </li>
+                ))}
+              </ul>
+            </div>
           ) : null}
 
           {isSend ? (
             <div className="flex flex-col gap-2 rounded-[2px] border border-border p-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm text-primary">Policy preflight</CardTitle>
+                <CardTitle className="text-sm text-primary">Sending check</CardTitle>
                 <PolicyBadge status={action.policyStatus} />
               </div>
               {!linked ? (
                 <p className="text-xs text-primary/55">
-                  This workspace is in local mode. Sending is disabled until it&apos;s linked to a
-                  governed OutboundConsole workspace — you can still create a draft in Gmail.
+                  This workspace is in local mode. Sending stays off until it is linked. You can
+                  still create a Gmail draft.
                 </p>
               ) : (
                 <div className="flex items-center gap-2">

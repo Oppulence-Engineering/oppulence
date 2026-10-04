@@ -19,8 +19,78 @@ import {
   createCommunicationPrivacyRule,
   deleteCommunicationPrivacyRule,
   putCommunicationPolicy,
+  shownRequestError,
 } from "@/lib/revenue/revenue";
 import type { CommunicationPolicy, CommunicationPrivacyRule } from "@/lib/revenue/types";
+
+const PRIVACY_RULE_LABELS: Record<string, string> = {
+  protected_address: "Protected address",
+  protected_domain: "Protected domain",
+  blocked_address: "Blocked address",
+  blocked_domain: "Blocked domain",
+};
+
+/**
+ * The menu already names each kind. The saved list used to repeat the stored
+ * snake_case token, so a rule the person just added read as protected_address.
+ */
+export function privacyRuleLabel(kind: string): string {
+  const known = PRIVACY_RULE_LABELS[kind];
+  if (known) return known;
+  const words = kind.replaceAll("_", " ").trim();
+  if (!words) return kind;
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/** A failed rules request is not an empty protected-address list. */
+export function privacyRulesEmptyCopy(): string {
+  return "No protected or blocked addresses yet.";
+}
+
+export function privacyLoadNotice(input: {
+  accountEntered: boolean;
+  policyFailed: boolean;
+  rulesFailed: boolean;
+  policyLoaded?: boolean;
+  rulesLoaded?: boolean;
+}): string | null {
+  if (!input.accountEntered) return null;
+  const policyLoaded = input.policyLoaded === true;
+  const rulesLoaded = input.rulesLoaded === true;
+  if (input.policyFailed && input.rulesFailed) {
+    if (policyLoaded && rulesLoaded) {
+      return "Could not refresh mailbox policy and privacy rules. Try again.";
+    }
+    if (policyLoaded) {
+      return "Could not refresh mailbox policy. Privacy rules could not load. Try again.";
+    }
+    if (rulesLoaded) {
+      return "Mailbox policy could not load. Could not refresh privacy rules. Try again.";
+    }
+    return "Mailbox policy and privacy rules could not load. Try again.";
+  }
+  if (input.policyFailed) {
+    return policyLoaded
+      ? "Could not refresh mailbox policy. Try again."
+      : "Mailbox policy could not load. Try again.";
+  }
+  if (input.rulesFailed) {
+    return rulesLoaded
+      ? "Could not refresh privacy rules. Try again."
+      : "Privacy rules could not load. Try again.";
+  }
+  return null;
+}
+
+export async function retryPrivacyLoad(
+  policy: { isError: boolean; refetch: () => Promise<unknown> },
+  rules: { isError: boolean; refetch: () => Promise<unknown> },
+): Promise<void> {
+  await Promise.all([
+    policy.isError ? policy.refetch() : Promise.resolve(),
+    rules.isError ? rules.refetch() : Promise.resolve(),
+  ]);
+}
 
 export function CommunicationPrivacySettings() {
   const queryClient = useQueryClient();
@@ -43,12 +113,14 @@ export function CommunicationPrivacySettings() {
     if (rulesQuery.data) setRules(rulesQuery.data);
   }, [rulesQuery.data]);
 
-  React.useEffect(() => {
-    if (policyQuery.error || rulesQuery.error) {
-      const error = policyQuery.error || rulesQuery.error;
-      setStatus(error instanceof Error ? error.message : "Could not load mailbox policy.");
-    }
-  }, [policyQuery.error, rulesQuery.error]);
+  const accountEntered = trimmedAccountId.length > 0;
+  const loadNotice = privacyLoadNotice({
+    accountEntered,
+    policyFailed: policyQuery.isError,
+    rulesFailed: rulesQuery.isError,
+    policyLoaded: policyQuery.data != null,
+    rulesLoaded: rulesQuery.data != null,
+  });
 
   const refresh = React.useCallback(async () => {
     if (!trimmedAccountId) return;
@@ -67,7 +139,7 @@ export function CommunicationPrivacySettings() {
       setPolicy(saved);
       setStatus("Mailbox policy saved.");
     } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "Could not save mailbox policy.");
+      setStatus(shownRequestError(error, "Could not save mailbox policy."));
     } finally {
       setBusy(false);
     }
@@ -83,7 +155,7 @@ export function CommunicationPrivacySettings() {
       await refresh();
       setStatus("Privacy rule added.");
     } catch (error: unknown) {
-      setStatus(error instanceof Error ? error.message : "Could not add privacy rule.");
+      setStatus(shownRequestError(error, "Could not add privacy rule."));
     } finally {
       setBusy(false);
     }
@@ -106,6 +178,10 @@ export function CommunicationPrivacySettings() {
           value={accountId}
         />
       </div>
+
+      {accountEntered && !policy && policyQuery.isPending ? (
+        <p className="settings-inline-notice">Loading mailbox policy…</p>
+      ) : null}
 
       {policy ? (
         <>
@@ -169,8 +245,8 @@ export function CommunicationPrivacySettings() {
         <div className="settings-row-copy">
           <p className="settings-row-label">Protected or blocked addresses</p>
           <p className="settings-row-description">
-            Protected recipients stay owner-only. Blocked addresses never project into the
-            workspace.
+            Protected recipients stay visible only to you. Blocked addresses are left out of
+            this workspace.
           </p>
         </div>
         <div className="settings-inline-controls">
@@ -191,7 +267,12 @@ export function CommunicationPrivacySettings() {
             placeholder="buyer@example.com"
             value={ruleValue}
           />
-          <Button disabled={busy} onClick={() => void addRule()} type="button" variant="outline">
+          <Button
+            disabled={busy || !ruleValue.trim()}
+            onClick={() => void addRule()}
+            type="button"
+            variant="outline"
+          >
             Add rule
           </Button>
         </div>
@@ -202,7 +283,7 @@ export function CommunicationPrivacySettings() {
           {rules.map((rule) => (
             <li className="settings-list-item" key={rule.id}>
               <span>
-                {rule.kind}: {rule.value}
+                {privacyRuleLabel(rule.kind)}: {rule.value}
               </span>
               <Button
                 disabled={busy}
@@ -215,6 +296,24 @@ export function CommunicationPrivacySettings() {
             </li>
           ))}
         </ul>
+      ) : accountEntered && rulesQuery.isPending && rulesQuery.data == null ? (
+        <p className="settings-inline-notice">Loading privacy rules…</p>
+      ) : accountEntered && rulesQuery.data != null ? (
+        <p className="settings-inline-notice">{privacyRulesEmptyCopy()}</p>
+      ) : null}
+
+      {loadNotice ? (
+        <div className="settings-row">
+          <p className="settings-inline-notice">{loadNotice}</p>
+          <Button
+            onClick={() => void retryPrivacyLoad(policyQuery, rulesQuery)}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            Try again
+          </Button>
+        </div>
       ) : null}
 
       {status ? <p className="settings-inline-notice">{status}</p> : null}

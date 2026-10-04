@@ -10,7 +10,11 @@ import { Badge } from "@oppulence/ui/components/badge";
 import { Label } from "@oppulence/ui/components/label";
 import { Button } from "@oppulence/ui/components/button";
 import { Spinner } from "@oppulence/ui/components/spinner";
-import { WorkspaceEmptyState } from "@/components/features/revenue/shared/shared";
+import {
+  ListRefreshFailure,
+  listRefreshFailureCopy,
+  WorkspaceEmptyState,
+} from "@/components/features/revenue/shared/shared";
 import {
   Table,
   TableBody,
@@ -19,14 +23,69 @@ import {
   TableHeader,
   TableRow,
 } from "@oppulence/ui/components/table";
-import { relativeTime, REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue/revenue";
+import {
+  auditFailureCopy,
+  auditLaunchLabel,
+  examinedConversationCount,
+  relativeTime,
+  REVENUE_EVIDENCE_LOOKBACK_LABEL,
+} from "@/lib/revenue/revenue";
 import type { RevenueLeakScan } from "@/lib/revenue/types";
+
+/** A failed audit list is not a workspace that has never been audited. */
+export function auditListFailureCopy(): string {
+  return "Audits could not load. Try again.";
+}
+
+export function auditRefreshCopy(): string {
+  return listRefreshFailureCopy("audits");
+}
+
+/** Promises already recorded are not hidden behind the mail connection. */
+export function auditKnownPromiseCopy(count: number, hasMore = false): string {
+  const total = Number.isFinite(count) ? Math.max(0, Math.round(count)) : 0;
+  if (total <= 0) return "";
+  if (hasMore) return `${total}+ promises are already in Commitments.`;
+  if (total === 1) return "1 promise is already in Commitments.";
+  return `${total} promises are already in Commitments.`;
+}
+
+/**
+ * The button already says reconnect or connect. The empty list has to say the
+ * same thing. A dead Google grant is not a workspace that has never been audited.
+ * A promise already in Commitments stays in the sentence.
+ */
+export function auditEmptyDescription(input: {
+  needsConnect: boolean;
+  needsReconnect: boolean;
+  knownPromiseCount?: number;
+  knownPromiseHasMore?: boolean;
+}): string {
+  const known = auditKnownPromiseCopy(input.knownPromiseCount ?? 0, input.knownPromiseHasMore);
+  const prefix = known ? `${known} ` : "";
+  if (input.needsReconnect) return `${prefix}Reconnect Google before an audit can read your mail.`;
+  if (input.needsConnect) {
+    return `${prefix}Connect Gmail and Calendar before an audit can read your mail.`;
+  }
+  return "No audits yet! Run your first audit to find promises in your mail.";
+}
 
 export function ScansView({
   scans,
   activeScan,
   scanning,
   needsReconnect = false,
+  needsConnect = false,
+  knownPromiseCount = 0,
+  knownPromiseHasMore = false,
+  knownPromisesPending = false,
+  hasMoreAudits = false,
+  loadingEarlierAudits = false,
+  earlierAuditsError = null,
+  loadFailed = false,
+  refreshFailed = false,
+  onLoadEarlierAudits,
+  onRetry,
   onScan,
 }: {
   scans: RevenueLeakScan[];
@@ -34,6 +93,23 @@ export function ScansView({
   scanning: boolean;
   /** The audit can only fail until Google is reconnected; `onScan` opens the fix. */
   needsReconnect?: boolean;
+  /** No mailbox is connected, so `onScan` opens connections instead of a scan. */
+  needsConnect?: boolean;
+  /** Open or at-risk promises already in Commitments. */
+  knownPromiseCount?: number;
+  knownPromiseHasMore?: boolean;
+  /** The promise count is still loading, so the empty sentence would be incomplete. */
+  knownPromisesPending?: boolean;
+  /** The server found another audit past the scans already loaded. */
+  hasMoreAudits?: boolean;
+  loadingEarlierAudits?: boolean;
+  earlierAuditsError?: string | null;
+  /** The audit list request failed and no audits are on screen. */
+  loadFailed?: boolean;
+  /** A later refresh failed. Audits already loaded stay on screen. */
+  refreshFailed?: boolean;
+  onLoadEarlierAudits?: () => void;
+  onRetry?: () => void;
   onScan: () => void;
 }) {
   const rows = React.useMemo(() => {
@@ -42,21 +118,49 @@ export function ScansView({
     if (activeScan) map.set(activeScan.id, activeScan);
     return [...map.values()].sort((a, b) => (b.startedAt ?? "").localeCompare(a.startedAt ?? ""));
   }, [scans, activeScan]);
+  const launchLabel = auditLaunchLabel({
+    needsReconnect,
+    needsConnect,
+    scanning,
+    scanningLabel: "Auditing…",
+    runLabel: "Run Promise Leak Audit",
+  });
+  const waitingOnGoogle = needsReconnect || needsConnect;
 
   return (
     <div className="flex min-h-full w-full min-w-0 flex-col" data-slot="scans-view">
       <div className="flex min-h-12 items-center justify-between gap-4 border-b border-border px-3 py-2">
         <p className="min-w-0 flex-1 truncate text-[13px] text-primary/55">
-          A Promise Leak Audit reviews {REVENUE_EVIDENCE_LOOKBACK_LABEL} of Gmail for explicit
-          promises and stalled client follow-ups. Nothing is sent without your approval.
+          A Promise Leak Audit reads the last {REVENUE_EVIDENCE_LOOKBACK_LABEL} of Gmail for
+          promises and follow-ups that have gone quiet. Nothing is sent without your approval.
         </p>
         <Button size="sm" onClick={onScan} disabled={scanning}>
-          {needsReconnect ? <Plugs /> : scanning ? <Spinner /> : <MagnifyingGlass />}
-          {needsReconnect ? "Reconnect Google" : scanning ? "Auditing…" : "Run Promise Leak Audit"}
+          {waitingOnGoogle ? <Plugs /> : scanning ? <Spinner /> : <MagnifyingGlass />}
+          {launchLabel}
         </Button>
       </div>
 
-      {rows.length === 0 ? (
+      {refreshFailed ? (
+        <ListRefreshFailure message={auditRefreshCopy()} onRetry={() => onRetry?.()} />
+      ) : null}
+
+      {loadFailed && rows.length === 0 ? (
+        <WorkspaceEmptyState
+          action={
+            <Button onClick={onRetry} size="sm" type="button" variant="outline">
+              Try again
+            </Button>
+          }
+          description={auditListFailureCopy()}
+          image="audits"
+          learnMore={[]}
+          title="Audits"
+        />
+      ) : rows.length === 0 && knownPromisesPending ? (
+        <div className="flex flex-1 items-center justify-center p-8">
+          <Spinner />
+        </div>
+      ) : rows.length === 0 ? (
         <WorkspaceEmptyState
           action={
             <Button
@@ -65,26 +169,27 @@ export function ScansView({
               onClick={onScan}
               size="sm"
             >
-              {needsReconnect ? (
+              {waitingOnGoogle ? (
                 <>
-                  <Plugs /> Reconnect Google
+                  <Plugs /> {launchLabel}
                 </>
               ) : (
-                <>{scanning ? <Spinner /> : <MagnifyingGlass />} Run audit</>
+                <>
+                  {scanning ? <Spinner /> : <MagnifyingGlass />} {launchLabel}
+                </>
               )}
             </Button>
           }
-          description={
-            <>
-              No audits yet! Run your first audit
-              <br />
-              to build the commitment register.
-            </>
-          }
+          description={auditEmptyDescription({
+            needsConnect,
+            needsReconnect,
+            knownPromiseCount,
+            knownPromiseHasMore,
+          })}
           image="audits"
           learnMore={[
-            { label: "Promise Leak Audit explained" },
-            { label: "How evidence becomes commitments" },
+            { label: "Reads the mail you connect" },
+            { label: "Nothing is sent without approval" },
           ]}
           title="Audits"
         />
@@ -95,10 +200,10 @@ export function ScansView({
               <TableRow className="h-10 border-border px-3 text-[12px] text-primary/45 hover:bg-transparent">
                 <TableHead className="h-10 min-w-[220px] px-3 text-primary/45">Audit</TableHead>
                 <TableHead className="h-10 w-[70px] px-3 text-primary/45">Window</TableHead>
-                <TableHead className="h-10 w-[100px] px-3 text-primary/45">Threads</TableHead>
-                <TableHead className="h-10 w-[100px] px-3 text-primary/45">Candidates</TableHead>
+                <TableHead className="h-10 w-[120px] px-3 text-primary/45">Conversations</TableHead>
+                <TableHead className="h-10 w-[140px] px-3 text-primary/45">Follow-up signals</TableHead>
                 <TableHead className="h-10 w-[100px] px-3 text-primary/45">Drafts</TableHead>
-                <TableHead className="h-10 w-[100px] px-3 text-primary/45">Relationships</TableHead>
+                <TableHead className="h-10 w-[100px] px-3 text-primary/45">Companies</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -107,6 +212,22 @@ export function ScansView({
               ))}
             </TableBody>
           </Table>
+          {hasMoreAudits ? (
+            <div className="border-t border-border px-3 py-3">
+              <Button
+                disabled={loadingEarlierAudits || !onLoadEarlierAudits}
+                onClick={onLoadEarlierAudits}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {loadingEarlierAudits ? "Loading…" : "Show earlier audits"}
+              </Button>
+              {earlierAuditsError ? (
+                <p className="mt-2 text-[13px] text-destructive">{earlierAuditsError}</p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       )}
     </div>
@@ -150,8 +271,11 @@ function ScanRow({ scan }: { scan: RevenueLeakScan }) {
             </Badge>
           </div>
           {scan.error ? (
-            <p className="mt-1 truncate text-[12px] text-primary/45" title={scan.error}>
-              {scan.error}
+            <p
+              className="mt-1 truncate text-[12px] text-primary/45"
+              title={auditFailureCopy(scan.error)}
+            >
+              {auditFailureCopy(scan.error)}
             </p>
           ) : null}
         </div>
@@ -161,10 +285,17 @@ function ScanRow({ scan }: { scan: RevenueLeakScan }) {
           {scan.lookbackDays}d
         </Badge>
       </TableCell>
-      <TableCell className="w-[100px] px-3 tabular-nums text-primary/65">
-        {scan.threadsSeen ?? 0}
+      <TableCell
+        className="w-[120px] px-3 tabular-nums text-primary/65"
+        title={
+          (scan.threadsSkipped ?? 0) > 0
+            ? `${scan.threadsSkipped} were not conversations`
+            : undefined
+        }
+      >
+        {examinedConversationCount(scan)}
       </TableCell>
-      <TableCell className="w-[100px] px-3 tabular-nums text-primary/65">
+      <TableCell className="w-[140px] px-3 tabular-nums text-primary/65">
         {scan.candidatesSeen ?? 0}
       </TableCell>
       <TableCell className="w-[100px] px-3 tabular-nums text-primary/65">

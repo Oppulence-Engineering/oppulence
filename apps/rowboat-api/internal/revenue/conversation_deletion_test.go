@@ -8,8 +8,10 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/google/uuid"
 )
 
 func TestConversationDeletionHonorsLegalHoldThenRemovesServerContentIdempotently(t *testing.T) {
@@ -99,5 +101,72 @@ func TestConversationDeletionHonorsLegalHoldThenRemovesServerContentIdempotently
 		conversationintelligenceartifact.StableIDEQ("delete-released-1"),
 	).CountX(f.ctx); count != 1 {
 		t.Fatalf("want one immutable deletion receipt, got %d", count)
+	}
+	assertMissionControlAfterConversationDeletion(t, f, rel.ID)
+}
+
+func TestConversationDeletionKeepsANotedCompanyReadable(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 6, 15, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Sheet Co",
+		PrimaryEmail: "hello@sheet.example", AccountDomain: "sheet.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetRelationship(rel).
+		SetSource("desktop_note").
+		SetExternalID("sandbox-question").
+		SetEventType("note").
+		SetOccurredAt(now).
+		SetReceivedAt(now).
+		SetSummary("They asked about the sandbox.").
+		SetNormalizedFactsJSON(`{"title":"Sandbox question"}`).
+		SetContentHash("sandbox-question").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	receipt, err := f.svc.RequestConversationDeletion(f.ctx, f.user, rel.ID, "delete-note-1")
+	if err != nil || receipt.Status != "partial" {
+		t.Fatalf("note deletion failed: %#v err=%v", receipt, err)
+	}
+	observation, err := f.client.RelationshipObservation.Query().Where(
+		relationshipobservation.HasRelationshipWith(relationship.IDEQ(rel.ID)),
+		relationshipobservation.SourceEQ("desktop_note"),
+	).Only(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if observation.Summary != "" || observation.NormalizedFactsJSON != "{}" {
+		t.Fatalf("note content remained: summary=%q facts=%s", observation.Summary, observation.NormalizedFactsJSON)
+	}
+	assertMissionControlAfterConversationDeletion(t, f, rel.ID)
+}
+
+func assertMissionControlAfterConversationDeletion(t *testing.T, f *fixture, id uuid.UUID) {
+	t.Helper()
+	model, err := f.svc.MissionControl(f.ctx, f.user, id)
+	if err != nil {
+		t.Fatalf("company sheet after conversation deletion: %v", err)
+	}
+	if model.StateVersion < 1 {
+		t.Fatalf("state version = %d, want a durable post-deletion version", model.StateVersion)
+	}
+	count, err := f.client.RelationshipStateSnapshot.Query().Where(
+		relationshipstatesnapshot.HasRelationshipWith(relationship.IDEQ(id)),
+		relationshipstatesnapshot.VersionEQ(model.StateVersion),
+		relationshipstatesnapshot.StateHashEQ(model.StateHash),
+	).Count(f.ctx)
+	if err != nil || count != 1 {
+		t.Fatalf("snapshot for version %d hash %s = %d, err=%v", model.StateVersion, model.StateHash, count, err)
 	}
 }

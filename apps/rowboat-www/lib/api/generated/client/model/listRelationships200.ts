@@ -11,6 +11,8 @@ import type { RevenueRelationship } from "./revenueRelationship";
  * Relationship list.
  */
 export type ListRelationships200 = {
+  /** Another company exists beyond this page. */
+  hasMore?: boolean;
   /** Relationships. */
   relationships?: RevenueRelationship[];
 };

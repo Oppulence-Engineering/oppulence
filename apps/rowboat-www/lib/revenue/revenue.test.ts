@@ -1,17 +1,38 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  ApproveRevenueAction200Response,
+  RejectRevenueAction200Response,
+} from "@/lib/api/generated/zod/revenue/revenue";
 import { dashboardRequest } from "@/lib/auth/dashboard-fetch";
 import {
+  attentionReasonLabel,
+  DETECTOR_LABELS,
+  auditFailureCopy,
+  examinedConversationCount,
+  companyLinkedInAction,
   companyLinkedInURL,
+  explainedRevenueError,
   friendlyRevenueError,
+  shownRequestError,
+  getRelationshipChanges,
+  getRelationshipConversationReview,
   getRelationshipCommunicationTimeline,
   getRelationshipGraph,
+  getRelationshipTimelinePage,
   googleSourceHealth,
   interactionCountLabel,
   latestCompletedScan,
   listScans,
   relationshipSourceHealth,
   semanticSearch,
+  planResponseToken,
+  attentionExplanationCopy,
+  sharedPlanOwnerLabel,
+  sharedPlanVersionLabel,
 } from "@/lib/revenue/revenue";
 
 vi.mock("@/lib/auth/dashboard-fetch", () => ({
@@ -24,6 +45,36 @@ vi.mock("@/lib/auth/dashboard-fetch", () => ({
 const mockFetch = vi.mocked(dashboardRequest);
 
 beforeEach(() => mockFetch.mockReset());
+
+describe("examined conversations", () => {
+  it("counts what was read once coverage is known", () => {
+    expect(
+      examinedConversationCount({
+        threadsSeen: 90,
+        threadsDeepRead: 8,
+        threadsSnippetOnly: 2,
+        threadsSkipped: 80,
+      }),
+    ).toBe(10);
+  });
+
+  it("keeps the sweep total when an older audit has no coverage", () => {
+    expect(examinedConversationCount({ threadsSeen: 12 })).toBe(12);
+    expect(examinedConversationCount(null)).toBe(0);
+  });
+});
+
+describe("attention reason labels", () => {
+  it("names an exposure reason instead of the stored code", () => {
+    expect(attentionReasonLabel("quiet_account")).toBe("Quiet company");
+    expect(attentionReasonLabel("source_degradation")).toBe("Source needs reconnecting");
+    expect(attentionReasonLabel("missing_next_step")).toBe("No next step");
+    expect(attentionReasonLabel("unresolved_risk")).toBe("Unresolved risk");
+    expect(attentionReasonLabel("requested_follow_up_due")).toBe("Follow-up due");
+    expect(attentionReasonLabel("custom_signal")).toBe("Custom Signal");
+    expect(attentionReasonLabel("source_degradation")).not.toBe("source degradation");
+  });
+});
 
 describe("getRelationshipGraph", () => {
   it("returns an empty portfolio for a legacy API with no relationships", async () => {
@@ -112,7 +163,7 @@ describe("getRelationshipGraph", () => {
     }
 
     await expect(getRelationshipGraph({ scope: "portfolio", depth: 1 })).rejects.toThrow(
-      "1 of 5 relationship requests failed",
+      "1 of 5 company graphs failed",
     );
   });
 });
@@ -203,7 +254,196 @@ describe("getRelationshipCommunicationTimeline", () => {
       }),
     );
 
-    await expect(getRelationshipCommunicationTimeline("rel-1")).resolves.toEqual([]);
+    await expect(getRelationshipCommunicationTimeline("rel-1")).resolves.toEqual({
+      items: [],
+      hasMore: false,
+    });
+  });
+
+  it("keeps the cursor when an earlier page of mail exists", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          items: [{ id: "mail-1" }],
+          hasMore: true,
+          nextBefore: "2026-09-01T00:00:00Z",
+          nextBeforeId: "a1162000-0000-4000-8000-000000000002",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    await expect(getRelationshipCommunicationTimeline("rel-1")).resolves.toEqual({
+      items: [{ id: "mail-1" }],
+      hasMore: true,
+      nextBefore: "2026-09-01T00:00:00Z",
+      nextBeforeId: "a1162000-0000-4000-8000-000000000002",
+    });
+  });
+});
+
+describe("getRelationshipTimelinePage", () => {
+  it("keeps the cursor when older activity exists", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          observations: [{ id: "obs-1" }],
+          hasMore: true,
+          nextBefore: "2026-08-01T00:00:00Z",
+          nextBeforeId: "a1160000-0000-4000-8000-000000000002",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    await expect(getRelationshipTimelinePage("rel-1")).resolves.toEqual({
+      observations: [{ id: "obs-1" }],
+      hasMore: true,
+      nextBefore: "2026-08-01T00:00:00Z",
+      nextBeforeId: "a1160000-0000-4000-8000-000000000002",
+    });
+  });
+
+  it("asks for rows that share the boundary time", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ observations: [], hasMore: false }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await getRelationshipTimelinePage("rel-1", 50, {
+      before: "2026-06-01T00:00:00Z",
+      beforeId: "a1160000-0000-4000-8000-000000000002",
+    });
+    expect(mockFetch.mock.calls[0]?.[0]).toBe(
+      "/relationships/rel-1/timeline?limit=50&before=2026-06-01T00%3A00%3A00Z&beforeId=a1160000-0000-4000-8000-000000000002",
+    );
+  });
+});
+
+describe("getRelationshipChanges", () => {
+  it("loads the two newest snapshots first", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ snapshots: [{ id: "snap-3" }], hasMore: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await expect(getRelationshipChanges("rel-1")).resolves.toEqual({
+      snapshots: [{ id: "snap-3" }],
+      hasMore: true,
+    });
+    expect(mockFetch.mock.calls[0]?.[0]).toBe("/relationships/rel-1/changes?limit=2");
+  });
+
+  it("asks for the snapshots hidden behind the newest two", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ snapshots: [{ id: "snap-1" }], hasMore: false }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await expect(getRelationshipChanges("rel-1", 2)).resolves.toEqual({
+      snapshots: [{ id: "snap-1" }],
+      hasMore: false,
+    });
+    expect(mockFetch.mock.calls[0]?.[0]).toBe("/relationships/rel-1/changes?limit=2&offset=2");
+  });
+});
+
+describe("getRelationshipConversationReview", () => {
+  it("asks for the conversations hidden behind the newest page", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          reviewItems: [{ id: "review-oldest", exactQuote: "Oldest sheet promise quote" }],
+          governanceReceipts: [{ receiptId: "receipt-oldest" }],
+          hasMore: false,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    await expect(getRelationshipConversationReview("rel-1", 200)).resolves.toEqual({
+      reviewItems: [{ id: "review-oldest", exactQuote: "Oldest sheet promise quote" }],
+      governanceReceipts: [{ receiptId: "receipt-oldest" }],
+      hasMore: false,
+    });
+    expect(mockFetch.mock.calls[0]?.[0]).toBe(
+      "/relationships/rel-1/conversation-review?offset=200",
+    );
+  });
+});
+
+describe("explainedRevenueError", () => {
+  it("keeps a short fallback when the failure is not one we explain", () => {
+    expect(explainedRevenueError(new Error("upstream"), "Could not load connections.")).toBe(
+      "Could not load connections.",
+    );
+    expect(explainedRevenueError(new Error("  "), "Could not load connections.")).toBe(
+      "Could not load connections.",
+    );
+    expect(
+      explainedRevenueError(new Error("Request failed (429)"), "Could not load connections."),
+    ).toBe("Too many requests were sent from this workspace. Wait a moment, then try again.");
+    expect(
+      explainedRevenueError(
+        new Error("Composio request failed (503)"),
+        "Additional products are temporarily unavailable.",
+      ),
+    ).toBe(
+      "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.",
+    );
+  });
+});
+
+describe("shownRequestError", () => {
+  it("replaces a bare status code and keeps a specific sentence", () => {
+    const company = "Could not create the company.";
+    expect(shownRequestError(new Error("Request failed (500)"), company)).toBe(company);
+    expect(shownRequestError(new Error("Console request failed (500)."), "Could not save.")).toBe(
+      "Could not save.",
+    );
+    expect(
+      shownRequestError(new Error("Workflow request failed (409)"), "Could not create workflow"),
+    ).toBe("Could not create workflow");
+    expect(
+      shownRequestError(
+        new Error("Composio request failed (500)"),
+        "Could not start the connection.",
+      ),
+    ).toBe("Could not start the connection.");
+    expect(
+      shownRequestError(new Error("Export failed (500)"), "Could not export the record."),
+    ).toBe("Could not export the record.");
+    expect(
+      shownRequestError(
+        new Error("Report export failed (500)"),
+        "The report could not be downloaded.",
+      ),
+    ).toBe("The report could not be downloaded.");
+    expect(
+      shownRequestError(
+        new Error("Report export failed (429)"),
+        "The report could not be downloaded.",
+      ),
+    ).toBe("Too many requests were sent from this workspace. Wait a moment, then try again.");
+    expect(shownRequestError(new Error("revision conflict"), company)).toBe("revision conflict");
+    expect(shownRequestError(new Error("Request failed (429)"), company)).toBe(
+      "Too many requests were sent from this workspace. Wait a moment, then try again.",
+    );
+    expect(shownRequestError(new Error("Request failed (503)"), company)).toBe(
+      [
+        "The Oppulence API returned an error (503).",
+        "Confirm rowboat-api is running on port 18080, then reload.",
+      ].join(" "),
+    );
+    expect(shownRequestError("nope", "Could not save mailbox policy.")).toBe(
+      "Could not save mailbox policy.",
+    );
   });
 });
 
@@ -211,6 +451,40 @@ describe("friendlyRevenueError", () => {
   it("turns Gmail rate limits into an actionable message", () => {
     expect(
       friendlyRevenueError(
+        "revenue: gmail thread sweep: gmail threads.list: google api returned 429: User-rate limit exceeded",
+      ),
+    ).toContain("try the audit again in about 15 minutes");
+    expect(friendlyRevenueError("rate limit exceeded")).toBe(
+      "Too many requests were sent from this workspace. Wait a moment, then try again.",
+    );
+    expect(friendlyRevenueError("Report export failed (429)")).toBe(
+      "Too many requests were sent from this workspace. Wait a moment, then try again.",
+    );
+    expect(friendlyRevenueError("Request failed (503)")).toBe(
+      "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.",
+    );
+    expect(friendlyRevenueError("Report export failed (503)")).toBe(
+      "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.",
+    );
+    expect(friendlyRevenueError("Export failed (503)")).toBe(
+      "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.",
+    );
+  });
+
+  it("explains a failed audit without the provider payload", () => {
+    expect(auditFailureCopy("google api /gmail returned 503: Backend Error")).toBe(
+      "Google could not finish reading your mail. Try the audit again in a few minutes.",
+    );
+    expect(auditFailureCopy("scan abandoned (process restart)")).toBe(
+      "The audit stopped before it finished. Run it again.",
+    );
+    expect(
+      auditFailureCopy(
+        "revenue: gmail thread sweep: google api returned 401: Request had invalid authentication credentials.",
+      ),
+    ).toBe("Google stopped accepting the authorization. Reconnect, then run the audit again.");
+    expect(
+      auditFailureCopy(
         "revenue: gmail thread sweep: gmail threads.list: google api returned 429: User-rate limit exceeded",
       ),
     ).toContain("try the audit again in about 15 minutes");
@@ -226,6 +500,23 @@ describe("companyLinkedInURL", () => {
     expect(
       companyLinkedInURL("Solomon AI", [], "https://www.linkedin.com/company/solomon-ai-inc"),
     ).toBe("https://www.linkedin.com/company/solomon-ai-inc");
+    expect(companyLinkedInURL("Acme", [], "https://linkedin.com/company/acme")).toBe(
+      "https://linkedin.com/company/acme",
+    );
+    expect(companyLinkedInURL("Acme", [], "  www.linkedin.com/company/acme  ")).toBe(
+      "https://www.linkedin.com/company/acme",
+    );
+    expect(companyLinkedInURL("Acme", [], "javascript:alert(1)")).toContain("keywords=Acme");
+    expect(companyLinkedInAction("Acme", [], null)).toEqual({
+      href: companyLinkedInURL("Acme", []),
+      label: "Find profile",
+    });
+    expect(companyLinkedInAction("Acme", ["linkedin:company:acme"], null).label).toBe(
+      "View profile",
+    );
+    expect(companyLinkedInAction("Acme", [], "https://www.linkedin.com/company/acme").label).toBe(
+      "View profile",
+    );
   });
 });
 
@@ -241,4 +532,74 @@ it("interactionCountLabel does not invent a zero", () => {
   expect(interactionCountLabel(undefined)).toBe("—");
   expect(interactionCountLabel(null)).toBe("—");
   expect(interactionCountLabel(0)).toBe("0 email threads");
+});
+
+// The queue returns the company name beside the action. Reject and approve
+// return that same record. A strict schema that omitted the name treated a
+// successful reject as a version mismatch.
+it("accepts the company name on an action the API just changed", () => {
+  const action = {
+    id: "d6fd056f-5c9a-44d6-b9a6-4b93b3bf5cb9",
+    relationshipId: "9339e7b0-f28c-4df9-ad86-5007f3571ed1",
+    relationshipName: "North Pier",
+    actionType: "follow_up_task",
+    channel: "task",
+    detector: "manual",
+    revision: 1,
+    revisionHash: "sha256:e308f29126c4c170a775e6dc1d42b657520ff3e07f1a5f47507395f796bf5e0a",
+    reason: "Send the pier note",
+    priorityScore: 0,
+    queueStatus: "open",
+    policyStatus: "pending",
+    approvalStatus: "rejected",
+    executionStatus: "pending",
+    executionOwner: "rowboat",
+    executionMode: "draft",
+    createdAt: "2026-10-03T08:00:27.050027Z",
+    updatedAt: "2026-10-03T08:00:27.092945Z",
+    evidence: [],
+  };
+  expect(RejectRevenueAction200Response.safeParse(action).success).toBe(true);
+  expect(
+    ApproveRevenueAction200Response.safeParse({ ...action, approvalStatus: "approved" }).success,
+  ).toBe(true);
+});
+
+it("names a follow-up you added without calling it manual", () => {
+  expect(DETECTOR_LABELS.manual).toBe("Added by you");
+  expect(attentionReasonLabel("manual")).toBe("Added by you");
+});
+
+it("names an overdue promise in an older attention sentence", () => {
+  expect(attentionExplanationCopy("A confirmed commitment is overdue by 1 day.")).toBe(
+    "A confirmed promise is overdue by 1 day.",
+  );
+  expect(attentionExplanationCopy("A confirmed commitment is overdue by 3 days.")).toBe(
+    "A confirmed promise is overdue by 3 days.",
+  );
+  expect(attentionExplanationCopy("No reply in 14 days")).toBe("No reply in 14 days");
+});
+
+it("names a shared plan without the stored hash or a redacted owner", () => {
+  expect(sharedPlanOwnerLabel("plan-participant")).toBe("");
+  expect(sharedPlanOwnerLabel("local-user")).toBe("");
+  expect(sharedPlanOwnerLabel("9c8dfa9b-a7b2-46ea-982c-622a914c00e5")).toBe("");
+  expect(sharedPlanOwnerLabel("Jordan Buyer")).toBe("Jordan Buyer");
+  expect(sharedPlanOwnerLabel("jordan@northpier.example")).toBe("jordan@northpier.example");
+  expect(sharedPlanVersionLabel(2)).toBe("Version 2");
+  expect(sharedPlanVersionLabel(0)).toBe("Version 1");
+  expect(planResponseToken("#response-token", "")).toBe("response-token");
+  expect(planResponseToken("", "response-token")).toBe("response-token");
+  expect(planResponseToken("#", "response-token")).toBe("response-token");
+  expect(planResponseToken("", "")).toBe("");
+  const page = fs.readFileSync(
+    path.join(import.meta.dirname, "../../app/plan-response/page.tsx"),
+    "utf8",
+  );
+  expect(page).toContain("sharedPlanVersionLabel(plan.currentRevision.version)");
+  expect(page).toContain("sharedPlanOwnerLabel(item.ownerParticipantRef)");
+  expect(page).toContain("planResponseToken(window.location.hash, rememberedToken.current)");
+  expect(page).not.toContain("plan.currentRevision.revisionHash");
+  expect(page).not.toContain("Owner: {item.ownerParticipantRef}");
+  expect(page).not.toContain("Opening the scoped plan");
 });

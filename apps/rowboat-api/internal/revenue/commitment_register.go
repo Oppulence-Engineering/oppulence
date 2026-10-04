@@ -65,6 +65,69 @@ type CommitmentFilter struct {
 	IncludeCandidates bool
 }
 
+// ownerSearchPredicate matches the owner the register prints. A named person
+// matches their ref. "You" matches this workspace. A company name matches a
+// promise whose unnamed owner is shown as that company.
+func ownerSearchPredicate(owner string) predicate.Commitment {
+	owner = strings.TrimSpace(owner)
+	folded := strings.ToLower(owner)
+	preds := []predicate.Commitment{
+		commitment.OwnerParticipantRefContainsFold(owner),
+	}
+	if folded == "you" || folded == "me" {
+		preds = append(preds,
+			commitment.OwnerParticipantRefEQ("local-user"),
+			commitment.And(commitment.DirectionEQ("promised_by_me"), unnamedOwnerRef()),
+			commitment.And(commitment.DirectionEQ("mutual"), unnamedOwnerRef()),
+		)
+	}
+	if rest, ok := strings.CutPrefix(folded, "you and "); ok {
+		if rest = strings.TrimSpace(rest); rest != "" {
+			preds = append(preds, unnamedOwnerOnCompany(rest, "mutual"))
+		}
+	}
+	if folded != "you" && folded != "me" {
+		preds = append(preds, unnamedOwnerOnCompany(owner, "promised_by_them", "mutual"))
+	}
+	return commitment.Or(preds...)
+}
+
+func unnamedOwnerOnCompany(name string, directions ...string) predicate.Commitment {
+	company := []predicate.Relationship{relationship.DisplayNameContainsFold(name)}
+	for _, needle := range companySearchNeedles(name) {
+		company = append(company,
+			relationship.DisplayNameContainsFold(needle),
+			relationship.AccountDomainContainsFold(needle),
+		)
+	}
+	return commitment.And(
+		commitment.DirectionIn(directions...),
+		unnamedOwnerRef(),
+		commitment.HasRelationshipWith(relationship.Or(company...)),
+	)
+}
+
+func unnamedOwnerRef() predicate.Commitment {
+	return commitment.Or(
+		commitment.OwnerParticipantRefEQ("meeting-counterparty"),
+		commitment.OwnerParticipantRefEQ(""),
+	)
+}
+
+func companySearchNeedles(name string) []string {
+	folded := strings.ToLower(strings.TrimSpace(name))
+	var needles []string
+	for _, needle := range []string{
+		strings.ReplaceAll(folded, " ", "-"),
+		strings.ReplaceAll(folded, " ", "_"),
+	} {
+		if needle != "" && needle != folded {
+			needles = append(needles, needle)
+		}
+	}
+	return needles
+}
+
 // commitmentRegisterState projects a stored commitment onto the state the user
 // reads in the register.
 func commitmentRegisterState(row *ent.Commitment, now time.Time) string {
@@ -127,12 +190,35 @@ func registerStatePredicates(states []string, now time.Time) ([]predicate.Commit
 	return predicates, nil
 }
 
+// CommitmentListPage is one register page. HasMore is true only when another
+// promise exists past this page, so an exact page of 200 is not offered as if
+// a 201st promise were waiting.
+type CommitmentListPage struct {
+	Commitments []*ent.Commitment
+	HasMore     bool
+}
+
 // ListCommitments returns one page of the register for the caller's workspace.
+// Promises that share a due time and a created time stay in id order, so the
+// next page does not repeat one and skip another.
 func (s *Service) ListCommitments(
 	ctx context.Context,
 	u *ent.User,
 	f CommitmentFilter,
 ) ([]*ent.Commitment, error) {
+	page, err := s.ListCommitmentPage(ctx, u, f)
+	if err != nil || page == nil {
+		return nil, err
+	}
+	return page.Commitments, nil
+}
+
+// ListCommitmentPage is ListCommitments plus the end-of-list flag.
+func (s *Service) ListCommitmentPage(
+	ctx context.Context,
+	u *ent.User,
+	f CommitmentFilter,
+) (*CommitmentListPage, error) {
 	limit := f.Limit
 	if limit <= 0 {
 		limit = 50
@@ -166,7 +252,12 @@ func (s *Service) ListCommitments(
 		q = q.Where(commitment.HasRelationshipWith(relationship.IDEQ(f.RelationshipID)))
 	}
 	if owner := strings.TrimSpace(f.Owner); owner != "" {
-		q = q.Where(commitment.OwnerParticipantRefEQ(owner))
+		// The box says "Owner name or email". The stored ref is often the full
+		// address, and an exact match hid the row when someone typed the name
+		// or a different case. A meeting with no named person stores
+		// local-user or meeting-counterparty, which the register shows as
+		// "You" or the company.
+		q = q.Where(ownerSearchPredicate(owner))
 	}
 	if !f.DueBefore.IsZero() {
 		q = q.Where(commitment.DueAtNotNil(), commitment.DueAtLT(f.DueBefore.UTC()))
@@ -189,6 +280,18 @@ func (s *Service) ListCommitments(
 	if len(statePredicates) > 0 {
 		q = q.Where(commitment.Or(statePredicates...))
 	}
-	q = q.WithRelationship().Order(ent.Asc(commitment.FieldDueAt), ent.Desc(commitment.FieldCreatedAt))
-	return q.Limit(limit).Offset(f.Offset).All(ctx)
+	q = q.WithRelationship().Order(
+		ent.Asc(commitment.FieldDueAt),
+		ent.Desc(commitment.FieldCreatedAt),
+		ent.Desc(commitment.FieldID),
+	)
+	rows, err := q.Limit(limit + 1).Offset(f.Offset).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	hasMore := len(rows) > limit
+	if hasMore {
+		rows = rows[:limit]
+	}
+	return &CommitmentListPage{Commitments: rows, HasMore: hasMore}, nil
 }

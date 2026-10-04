@@ -15,14 +15,29 @@ vi.mock("@/components/ai-elements/prompt-input", () => ({
   PromptInputActionAddAttachments: () => null,
   PromptInputActionMenu: ({ children }: { children: React.ReactNode }) => children,
   PromptInputActionMenuContent: ({ children }: { children: React.ReactNode }) => children,
-  PromptInputActionMenuTrigger: () => null,
+  PromptInputActionMenuTrigger: ({ "aria-label": label }: { "aria-label"?: string }) => (
+    <button type="button" aria-label={label}>
+      Add
+    </button>
+  ),
   PromptInputAttachment: () => null,
   PromptInputAttachments: () => null,
   PromptInputBody: ({ children }: { children: React.ReactNode }) => children,
   PromptInputFooter: ({ children }: { children: React.ReactNode }) => children,
   PromptInputHeader: ({ children }: { children: React.ReactNode }) => children,
   PromptInputSpeechButton: () => null,
-  PromptInputSubmit: () => <button type="submit">Submit</button>,
+  PromptInputSubmit: ({
+    disabled,
+    "aria-label": label,
+  }: {
+    disabled?: boolean;
+    "aria-label"?: string;
+  }) => (
+    <button type="submit" disabled={disabled} aria-label={label}>
+      Submit
+    </button>
+  ),
+  usePromptInputAttachments: () => ({ files: [] }),
   PromptInputTextarea: ({ placeholder }: { placeholder: string }) => (
     <textarea aria-label="Prompt" placeholder={placeholder} />
   ),
@@ -39,6 +54,7 @@ vi.mock("@/components/auth/auth-gate", () => ({
 vi.mock("@/hooks/dashboard/use-agent-catalog", () => ({
   useAgentCatalog: () => ({
     agentOptions: ["assistant"],
+    agents: [{ slug: "assistant", name: "Assistant" }],
     refreshAgents: vi.fn(),
     selectedAgent: "assistant",
     setSelectedAgent: vi.fn(),
@@ -84,11 +100,12 @@ vi.mock("@oppulence/ui/components/select", () => ({
   SelectTrigger: ({ children }: { children: React.ReactNode }) => (
     <button type="button">{children}</button>
   ),
-  SelectValue: () => <span>Agent</span>,
+  SelectValue: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
 }));
 
 import {
   ChatRouteProvider,
+  chatSubmitDisabled,
   useChatRouteState,
   useDashboardChatController,
 } from "./chat-route-provider";
@@ -120,8 +137,16 @@ describe("ChatRouteProvider", () => {
     expect(component).toHaveTextContent("Acme");
     expect(screen.getByRole("textbox", { name: "Prompt" })).toHaveAttribute(
       "placeholder",
-      "Name the loose end…",
+      "Ask about a company, a promise, or the next step.",
     );
+    expect(screen.getByRole("button", { name: "Assistant" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add text file" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
+    expect(chatSubmitDisabled("ready", "   ", 0)).toBe(true);
+    expect(chatSubmitDisabled("ready", "Find the slipping promise", 0)).toBe(false);
+    expect(chatSubmitDisabled("ready", "", 1)).toBe(false);
+    expect(chatSubmitDisabled("streaming", "", 0)).toBe(false);
+    expect(chatSubmitDisabled("submitted", "Find the slipping promise", 0)).toBe(true);
 
     screen.getByRole("button", { name: "New chat" }).click();
     expect(mocks.resetRun).toHaveBeenCalledOnce();

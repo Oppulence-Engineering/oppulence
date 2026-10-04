@@ -57,9 +57,10 @@ describe("requestJson", () => {
     } satisfies Partial<DashboardRequestError>);
   });
 
-  it("treats missing or degraded routes as optional failures", () => {
+  it("treats a missing route as optional and a down API as a failure", () => {
     expect(isOptionalRequestFailure(new DashboardRequestError("gone", 404))).toBe(true);
-    expect(isOptionalRequestFailure(new DashboardRequestError("down", 503))).toBe(true);
+    expect(isOptionalRequestFailure(new DashboardRequestError("gateway", 502))).toBe(false);
+    expect(isOptionalRequestFailure(new DashboardRequestError("down", 503))).toBe(false);
     expect(isOptionalRequestFailure(new DashboardRequestError("bad", 400))).toBe(false);
   });
 

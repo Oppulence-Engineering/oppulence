@@ -15,6 +15,7 @@ import {
 
 import { Avatar, AvatarFallback } from "@oppulence/ui/components/avatar";
 import { Badge } from "@oppulence/ui/components/badge";
+import { Button } from "@oppulence/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@oppulence/ui/components/card";
 import {
   Empty,
@@ -27,7 +28,7 @@ import {
 import { Label } from "@oppulence/ui/components/label";
 import { Skeleton } from "@oppulence/ui/components/skeleton";
 import { cn } from "@/lib/utils";
-import { PRIORITY_COMPONENT_LABELS } from "@/lib/revenue/revenue";
+import { priorityComponentLabel, shownRequestError } from "@/lib/revenue/revenue";
 import type { RevenueAction } from "@/lib/revenue/types";
 
 export function priorityTone(score: number): { label: string; className: string } {
@@ -112,7 +113,7 @@ export function PriorityBreakdown({ action }: { action: RevenueAction }) {
     <Card className="gap-3 py-3">
       <CardHeader className="px-3 pb-0">
         <CardTitle className="text-sm font-medium text-primary">
-          Why this ranks {action.priorityScore}
+          Why this ranks {priorityTone(action.priorityScore).label.toLowerCase()}
         </CardTitle>
       </CardHeader>
       <CardContent className="px-3">
@@ -120,7 +121,7 @@ export function PriorityBreakdown({ action }: { action: RevenueAction }) {
           {entries.map(([key, value]) => (
             <li key={key} className="flex items-center justify-between text-xs">
               <Label className="font-normal text-primary/60">
-                {PRIORITY_COMPONENT_LABELS[key] ?? key}
+                {priorityComponentLabel(key)}
               </Label>
               <Badge
                 className={cn(
@@ -160,11 +161,6 @@ export function ListSkeleton({ rows = 3 }: { rows?: number }) {
 export type WorkspaceLearnMoreItem = {
   label: string;
 };
-
-const DEFAULT_LEARN_MORE: WorkspaceLearnMoreItem[] = [
-  { label: "Notes, Tasks, and Email sending" },
-  { label: "Introduction to tasks" },
-];
 
 type WorkspaceEmptyImageSet = {
   light: string;
@@ -234,13 +230,17 @@ export function WorkspaceEmptyState({
   title,
   description,
   action,
-  learnMore = DEFAULT_LEARN_MORE,
+  learnMore = [],
 }: {
   image?: WorkspaceEmptyImageKey;
   icon?: React.ReactNode;
   title: string;
   description: React.ReactNode;
   action?: React.ReactNode;
+  /**
+   * Empty unless the surface names its own cards. A shared fallback used to
+   * advertise help articles this app does not publish.
+   */
   learnMore?: WorkspaceLearnMoreItem[];
 }) {
   const illustrated = Boolean(image);
@@ -291,7 +291,7 @@ export function WorkspaceEmptyState({
       {learnMore.length > 0 ? (
         <div className={cn("w-full", illustrated ? "mb-4 mt-auto max-w-[640px] text-left" : "")}>
           <p className={cn("text-[12px] text-primary/45", illustrated ? "mb-2" : "mb-3")}>
-            Learn more
+            What to expect
           </p>
           <div className={cn("grid gap-2 sm:grid-cols-2", !illustrated && "grid-cols-2 gap-3")}>
             {learnMore.map((item) => (
@@ -347,5 +347,44 @@ export function EmptyBlock({
 }
 
 export function errMessage(e: unknown, fallback: string): string {
-  return e instanceof Error ? e.message : fallback;
+  return shownRequestError(e, fallback);
+}
+
+/** A successful retry should take down the banner that the failed load raised. */
+export async function refetchClearingBanner(
+  refetch: () => Promise<{ isError: boolean }>,
+  onError: (message: string) => void,
+): Promise<void> {
+  const result = await refetch();
+  if (result?.isError) return;
+  onError("");
+}
+
+/**
+ * A failed refresh keeps a page already on screen, including an empty one.
+ * The load failure is only for a query that never returned a page.
+ */
+export function listNeverLoaded(isError: boolean, data: unknown): boolean {
+  return isError && data == null;
+}
+
+export function listRefreshFailureCopy(noun: string): string {
+  return `Could not refresh ${noun}. Try again.`;
+}
+
+export function ListRefreshFailure({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+      <p className="text-[13px] text-primary/70">{message}</p>
+      <Button onClick={onRetry} size="sm" type="button" variant="outline">
+        Try again
+      </Button>
+    </div>
+  );
 }

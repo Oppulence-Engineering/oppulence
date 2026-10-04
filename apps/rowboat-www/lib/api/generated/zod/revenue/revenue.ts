@@ -8,15 +8,27 @@
 import * as zod from "zod";
 
 /**
- * Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions.
+ * Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.
  * @summary List the action queue
  */
+export const listRevenueActionsQueryOffsetMin = 0;
+
 export const ListRevenueActionsQueryParams = zod.object({
   queueStatus: zod
     .enum(["open", "snoozed", "dismissed", "handled", "all"])
     .optional()
     .describe("Queue status filter, or all."),
   limit: zod.coerce.number().int().optional().describe("Page size (max 100, default 10)."),
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(listRevenueActionsQueryOffsetMin)
+    .optional()
+    .describe("How many actions to skip. Pages stay in priority order."),
+  surface: zod
+    .enum(["task", "recovery"])
+    .optional()
+    .describe("task keeps follow-up tasks. recovery keeps every other action."),
 });
 
 export const ListRevenueActions200Response = zod
@@ -114,17 +126,7 @@ export const ListRevenueActions200Response = zod
             queueStatus: zod
               .enum(["open", "snoozed", "dismissed", "handled"])
               .describe("Operator triage state."),
-            reason: zod
-              .enum([
-                "llm_call",
-                "llm_call_reserve",
-                "llm_settle",
-                "voice_tts",
-                "exa_search",
-                "grant",
-                "refund",
-              ])
-              .describe("Reason code for the ledger entry."),
+            reason: zod.string().describe("Why this action was proposed."),
             recipientEmail: zod.string().optional().describe("Recipient email address."),
             reconciliationAttempts: zod
               .int()
@@ -144,6 +146,12 @@ export const ListRevenueActions200Response = zod
               .optional()
               .describe("Read-only provider reconciliation state for an ambiguous write."),
             relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+            relationshipName: zod
+              .string()
+              .optional()
+              .describe(
+                "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+              ),
             revision: zod.int().describe("Current revision number."),
             revisionHash: zod.string().describe("Canonical hash of the revision content."),
             senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -157,10 +165,13 @@ export const ListRevenueActions200Response = zod
             "One Revenue Action Queue item. State is split into independent dimensions: queue triage, policy preflight, approval, and execution. Every edit creates a new revision and invalidates the previous policy decision and approval.",
           ),
       )
-      .optional()
       .describe("Actions."),
+    hasMore: zod
+      .boolean()
+      .optional()
+      .describe("Another task or follow-up exists beyond this page."),
   })
-  .describe("Action list.");
+  .describe("Action list. A full page is the end of the queue when hasMore is false.");
 
 export const ListRevenueActions401Response = zod
   .strictObject({
@@ -301,17 +312,7 @@ export const CreateRevenueAction201Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Why this action was proposed."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -331,6 +332,12 @@ export const CreateRevenueAction201Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -479,17 +486,7 @@ export const GetRevenueAction200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Why this action was proposed."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -509,6 +506,12 @@ export const GetRevenueAction200Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -648,17 +651,7 @@ export const ApproveRevenueAction200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Why this action was proposed."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -678,6 +671,12 @@ export const ApproveRevenueAction200Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -843,17 +842,7 @@ export const GetRevenueActionAudit200Response = zod
         queueStatus: zod
           .enum(["open", "snoozed", "dismissed", "handled"])
           .describe("Operator triage state."),
-        reason: zod
-          .enum([
-            "llm_call",
-            "llm_call_reserve",
-            "llm_settle",
-            "voice_tts",
-            "exa_search",
-            "grant",
-            "refund",
-          ])
-          .describe("Reason code for the ledger entry."),
+        reason: zod.string().describe("Why this action was proposed."),
         recipientEmail: zod.string().optional().describe("Recipient email address."),
         reconciliationAttempts: zod
           .int()
@@ -873,6 +862,12 @@ export const GetRevenueActionAudit200Response = zod
           .optional()
           .describe("Read-only provider reconciliation state for an ambiguous write."),
         relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+        relationshipName: zod
+          .string()
+          .optional()
+          .describe(
+            "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+          ),
         revision: zod.int().describe("Current revision number."),
         revisionHash: zod.string().describe("Canonical hash of the revision content."),
         senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -1100,17 +1095,7 @@ export const DismissRevenueAction200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Why this action was proposed."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -1130,6 +1115,12 @@ export const DismissRevenueAction200Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -1285,17 +1276,7 @@ export const EditRevenueAction200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Why this action was proposed."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -1315,6 +1296,12 @@ export const EditRevenueAction200Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -1572,17 +1559,7 @@ export const ExecuteRevenueAction200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Why this action was proposed."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -1602,6 +1579,12 @@ export const ExecuteRevenueAction200Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -1880,17 +1863,7 @@ export const RejectRevenueAction200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Why this action was proposed."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -1910,6 +1883,12 @@ export const RejectRevenueAction200Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -2066,17 +2045,7 @@ export const SnoozeRevenueAction200Response = zod
     queueStatus: zod
       .enum(["open", "snoozed", "dismissed", "handled"])
       .describe("Operator triage state."),
-    reason: zod
-      .enum([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ])
-      .describe("Reason code for the ledger entry."),
+    reason: zod.string().describe("Why this action was proposed."),
     recipientEmail: zod.string().optional().describe("Recipient email address."),
     reconciliationAttempts: zod
       .int()
@@ -2096,6 +2065,12 @@ export const SnoozeRevenueAction200Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -2275,6 +2250,9 @@ export const GetRevenueImpact200Response = zod
       .describe("Meeting rate = meetings \/ executed; null with no denominator."),
     meetingsBooked: zod.int().optional().describe("Meetings booked."),
     open: zod.int().describe("Actions currently open."),
+    openTasks: zod
+      .int()
+      .describe("Open follow-up tasks. These are saved work, not recovery follow-ups."),
     outcomes: zod
       .record(zod.string(), zod.unknown())
       .optional()
@@ -2327,10 +2305,12 @@ export const GetRevenueImpact401Response = zod
   );
 
 /**
- * Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions.
+ * Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions. A full page is the end of the history when hasMore is false.
  * @summary List revenue leak scans
  */
 export const listRevenueLeakScansQueryLimitMax = 100;
+
+export const listRevenueLeakScansQueryOffsetMin = 0;
 
 export const ListRevenueLeakScansQueryParams = zod.object({
   limit: zod.coerce
@@ -2340,10 +2320,17 @@ export const ListRevenueLeakScansQueryParams = zod.object({
     .max(listRevenueLeakScansQueryLimitMax)
     .optional()
     .describe("Maximum scans to return (default 10, max 100)."),
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(listRevenueLeakScansQueryOffsetMin)
+    .optional()
+    .describe("Page offset."),
 });
 
 export const ListRevenueLeakScans200Response = zod
   .strictObject({
+    hasMore: zod.boolean().optional().describe("Another audit exists beyond this page."),
     scans: zod
       .array(
         zod
@@ -2388,7 +2375,7 @@ export const ListRevenueLeakScans200Response = zod
       )
       .describe("Scans newest first."),
   })
-  .describe("Audit history.");
+  .describe("Audit history. A full page is the end of the history when hasMore is false.");
 
 export const ListRevenueLeakScans400Response = zod
   .strictObject({

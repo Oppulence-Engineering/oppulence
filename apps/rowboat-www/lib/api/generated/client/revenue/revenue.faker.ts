@@ -26,8 +26,8 @@ import type {
 export const getListRevenueActionsResponseMock = (
   overrideResponse: Partial<Extract<ListRevenueActions200, object>> = {},
 ): ListRevenueActions200 => ({
-  actions: faker.helpers.arrayElement([
-    Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+  actions: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => ({
       actionType: faker.helpers.arrayElement([
         "warm_follow_up",
         "proposal_nudge",
@@ -139,15 +139,7 @@ export const getListRevenueActionsResponseMock = (
         undefined,
       ]),
       queueStatus: faker.helpers.arrayElement(["open", "snoozed", "dismissed", "handled"] as const),
-      reason: faker.helpers.arrayElement([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ] as const),
+      reason: faker.string.alpha({ length: { min: 10, max: 20 } }),
       recipientEmail: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
@@ -190,9 +182,9 @@ export const getListRevenueActionsResponseMock = (
         faker.date.past().toISOString().slice(0, 19) + "Z",
         undefined,
       ]),
-    })),
-    undefined,
-  ]),
+    }),
+  ),
+  hasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
   ...overrideResponse,
 });
 
@@ -310,15 +302,7 @@ export const getCreateRevenueActionResponseMock = (
     undefined,
   ]),
   queueStatus: faker.helpers.arrayElement(["open", "snoozed", "dismissed", "handled"] as const),
-  reason: faker.helpers.arrayElement([
-    "llm_call",
-    "llm_call_reserve",
-    "llm_settle",
-    "voice_tts",
-    "exa_search",
-    "grant",
-    "refund",
-  ] as const),
+  reason: faker.string.alpha({ length: { min: 10, max: 20 } }),
   recipientEmail: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
@@ -478,15 +462,7 @@ export const getGetRevenueActionResponseMock = (
     undefined,
   ]),
   queueStatus: faker.helpers.arrayElement(["open", "snoozed", "dismissed", "handled"] as const),
-  reason: faker.helpers.arrayElement([
-    "llm_call",
-    "llm_call_reserve",
-    "llm_settle",
-    "voice_tts",
-    "exa_search",
-    "grant",
-    "refund",
-  ] as const),
+  reason: faker.string.alpha({ length: { min: 10, max: 20 } }),
   recipientEmail: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
@@ -646,15 +622,7 @@ export const getApproveRevenueActionResponseMock = (
     undefined,
   ]),
   queueStatus: faker.helpers.arrayElement(["open", "snoozed", "dismissed", "handled"] as const),
-  reason: faker.helpers.arrayElement([
-    "llm_call",
-    "llm_call_reserve",
-    "llm_settle",
-    "voice_tts",
-    "exa_search",
-    "grant",
-    "refund",
-  ] as const),
+  reason: faker.string.alpha({ length: { min: 10, max: 20 } }),
   recipientEmail: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
@@ -816,15 +784,7 @@ export const getGetRevenueActionAuditResponseMock = (
         undefined,
       ]),
       queueStatus: faker.helpers.arrayElement(["open", "snoozed", "dismissed", "handled"] as const),
-      reason: faker.helpers.arrayElement([
-        "llm_call",
-        "llm_call_reserve",
-        "llm_settle",
-        "voice_tts",
-        "exa_search",
-        "grant",
-        "refund",
-      ] as const),
+      reason: faker.string.alpha({ length: { min: 10, max: 20 } }),
       recipientEmail: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
@@ -1047,15 +1007,7 @@ export const getDismissRevenueActionResponseMock = (
     undefined,
   ]),
   queueStatus: faker.helpers.arrayElement(["open", "snoozed", "dismissed", "handled"] as const),
-  reason: faker.helpers.arrayElement([
-    "llm_call",
-    "llm_call_reserve",
-    "llm_settle",
-    "voice_tts",
-    "exa_search",
-    "grant",
-    "refund",
-  ] as const),
+  reason: faker.string.alpha({ length: { min: 10, max: 20 } }),
   recipientEmail: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
@@ -1215,15 +1167,7 @@ export const getEditRevenueActionResponseMock = (
     undefined,
   ]),
   queueStatus: faker.helpers.arrayElement(["open", "snoozed", "dismissed", "handled"] as const),
-  reason: faker.helpers.arrayElement([
-    "llm_call",
-    "llm_call_reserve",
-    "llm_settle",
-    "voice_tts",
-    "exa_search",
-    "grant",
-    "refund",
-  ] as const),
+  reason: faker.string.alpha({ length: { min: 10, max: 20 } }),
   recipientEmail: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
@@ -1405,15 +1349,7 @@ export const getExecuteRevenueActionResponseMock = (
     undefined,
   ]),
   queueStatus: faker.helpers.arrayElement(["open", "snoozed", "dismissed", "handled"] as const),
-  reason: faker.helpers.arrayElement([
-    "llm_call",
-    "llm_call_reserve",
-    "llm_settle",
-    "voice_tts",
-    "exa_search",
-    "grant",
-    "refund",
-  ] as const),
+  reason: faker.string.alpha({ length: { min: 10, max: 20 } }),
   recipientEmail: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
@@ -1609,15 +1545,7 @@ export const getRejectRevenueActionResponseMock = (
     undefined,
   ]),
   queueStatus: faker.helpers.arrayElement(["open", "snoozed", "dismissed", "handled"] as const),
-  reason: faker.helpers.arrayElement([
-    "llm_call",
-    "llm_call_reserve",
-    "llm_settle",
-    "voice_tts",
-    "exa_search",
-    "grant",
-    "refund",
-  ] as const),
+  reason: faker.string.alpha({ length: { min: 10, max: 20 } }),
   recipientEmail: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
@@ -1777,15 +1705,7 @@ export const getSnoozeRevenueActionResponseMock = (
     undefined,
   ]),
   queueStatus: faker.helpers.arrayElement(["open", "snoozed", "dismissed", "handled"] as const),
-  reason: faker.helpers.arrayElement([
-    "llm_call",
-    "llm_call_reserve",
-    "llm_settle",
-    "voice_tts",
-    "exa_search",
-    "grant",
-    "refund",
-  ] as const),
+  reason: faker.string.alpha({ length: { min: 10, max: 20 } }),
   recipientEmail: faker.helpers.arrayElement([
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
@@ -1898,6 +1818,7 @@ export const getGetRevenueImpactResponseMock = (
   ]),
   meetingsBooked: faker.helpers.arrayElement([faker.number.int(), undefined]),
   open: faker.number.int(),
+  openTasks: faker.number.int(),
   outcomes: faker.helpers.arrayElement([{}, undefined]),
   overdueByThem: faker.number.int(),
   overdueByUs: faker.number.int(),
@@ -1924,6 +1845,7 @@ export const getGetRevenueImpactResponseMock = (
 export const getListRevenueLeakScansResponseMock = (
   overrideResponse: Partial<Extract<ListRevenueLeakScans200, object>> = {},
 ): ListRevenueLeakScans200 => ({
+  hasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
   scans: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
     actionsCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
     candidatesSeen: faker.helpers.arrayElement([faker.number.int(), undefined]),

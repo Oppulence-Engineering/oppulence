@@ -85,3 +85,66 @@ func TestImpactAggregates(t *testing.T) {
 		t.Fatalf("cross-tenant leak: other user surfaced = %d", oimp.Surfaced)
 	}
 }
+
+func TestImpactOpenTasksStayOutOfTheRecoveryCount(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	for _, task := range []ActionInput{
+		{RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task", Reason: "Task", PriorityScore: 90, DedupeKey: "impact-task-high"},
+		{RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task", Reason: "Task", PriorityScore: 10, DedupeKey: "impact-task-low"},
+	} {
+		if _, err := f.svc.CreateAction(f.ctx, f.user, task); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "warm_follow_up", Channel: "email",
+		Reason: "The email", PriorityScore: 40, DedupeKey: "impact-email",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	imp, err := f.svc.Impact(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if imp.Open != 3 || imp.OpenTasks != 2 || imp.Open-imp.OpenTasks != 1 {
+		t.Fatalf("open=%d openTasks=%d, want 3 tasks-and-email with 2 tasks", imp.Open, imp.OpenTasks)
+	}
+}
+
+func TestSavedTasksStayOutOfAtRisk(t *testing.T) {
+	f := newFixture(t)
+	taskRel := f.relationship(t)
+	emailRel := f.relationship(t)
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: taskRel.ID, ActionType: "follow_up_task", Channel: "task",
+		Reason: "Call them", PriorityScore: 90, DedupeKey: "risk-task",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: emailRel.ID, ActionType: "warm_follow_up", Channel: "email",
+		Reason: "Send the note", PriorityScore: 40, DedupeKey: "risk-email",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.svc.RefreshRelationshipAttention(f.ctx, f.user); err != nil {
+		t.Fatal(err)
+	}
+	page, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", 50, 0)
+	if err != nil || page == nil {
+		t.Fatal(err)
+	}
+	for _, item := range page.Items {
+		if item.Edges.Relationship != nil && item.Edges.Relationship.ID == taskRel.ID {
+			t.Fatalf("saved task opened attention: %+v", item)
+		}
+	}
+	imp, err := f.svc.Impact(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if imp.AtRiskRelationships != 1 {
+		t.Fatalf("atRisk=%d, want the email company only", imp.AtRiskRelationships)
+	}
+}

@@ -250,20 +250,28 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	events, err := q.
 		Order(ent.Desc(cloudevent.FieldReceivedAt), ent.Desc(cloudevent.FieldID)).
-		Limit(limit).
+		Limit(limit + 1).
 		All(r.Context())
 	if err != nil {
 		h.log.Error("list cloud events", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not list events", "internal_error")
 		return
 	}
+	hasMore := limit > 0 && len(events) > limit
+	if hasMore {
+		events = events[:limit]
+	}
 	views := make([]eventView, 0, len(events))
 	for _, ev := range events {
 		views = append(views, viewEvent(ev))
 	}
+	cursor := ""
+	if hasMore {
+		cursor = nextEventCursor(events, limit)
+	}
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{
 		"events":     views,
-		"nextCursor": nextEventCursor(events, limit),
+		"nextCursor": cursor,
 	})
 }
 

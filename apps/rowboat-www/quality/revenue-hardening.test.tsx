@@ -60,6 +60,10 @@ vi.mock("@/hooks/queries/utils/fetch-report", () => ({
   loadReportScans: mocks.listScans,
   loadReportScan: mocks.getScan,
   loadOpenPromisesReport: mocks.getOpenPromisesReport,
+  auditRows: (page: { scans?: unknown[] } | unknown[] | null | undefined) =>
+    Array.isArray(page) ? page : (page?.scans ?? []),
+  auditPageHasMore: (page: { hasMore?: boolean } | unknown[] | null | undefined) =>
+    Boolean(page && !Array.isArray(page) && page.hasMore),
 }));
 vi.mock("@/hooks/queries/utils/fetch-impact", () => ({
   fetchImpact: mocks.getImpact,
@@ -68,10 +72,22 @@ vi.mock("@/hooks/queries/utils/fetch-impact", () => ({
   loadDigest: mocks.getDigest,
 }));
 vi.mock("@/hooks/queries/utils/fetch-revenue-actions", () => ({
+  ACTION_QUEUE_PAGE: 100,
   fetchRevenueActions: (filter: string, limit?: number, signal?: AbortSignal) =>
     mocks.listActions(filter, limit, signal),
   loadRevenueActions: (request: unknown, filter: string, limit?: number, signal?: AbortSignal) =>
     mocks.listActions(filter, limit, signal),
+  actionRows: (page: { actions?: RevenueAction[] } | RevenueAction[] | null | undefined) =>
+    Array.isArray(page) ? page : (page?.actions ?? []),
+  actionPageHasMore: (page: { hasMore?: boolean } | unknown[] | null | undefined) =>
+    Boolean(page && !Array.isArray(page) && page.hasMore),
+  replaceActionPage: (
+    page: { hasMore?: boolean } | unknown[] | null | undefined,
+    actions: RevenueAction[],
+  ) => ({
+    actions,
+    hasMore: Boolean(page && !Array.isArray(page) && page.hasMore),
+  }),
 }));
 vi.mock("@/lib/api/connectors/google-oauth", () => ({
   createGoogleCommitmentsAuthorizationURL: mocks.createGoogleCommitmentsAuthorizationURL,
@@ -80,7 +96,8 @@ vi.mock("@/lib/analytics/analytics", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/analytics/analytics")>()),
   capture: vi.fn(),
 }));
-vi.mock("@/components/features/revenue/review-sheet/review-sheet", () => ({
+vi.mock("@/components/features/revenue/review-sheet/review-sheet", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/features/revenue/review-sheet/review-sheet")>()),
   ReviewSheet: () => null,
 }));
 vi.mock("@/components/features/revenue/audit-sheet/audit-sheet", () => ({
@@ -157,6 +174,7 @@ const action: RevenueAction = {
 const impact: RevenueImpact = {
   surfaced: 1,
   open: 1,
+  openTasks: 0,
   handled: 0,
   snoozed: 0,
   dismissed: 0,
@@ -265,8 +283,8 @@ describe("Open Promises report hardening", () => {
 
     const view = renderWithQuery(<OpenPromisesReportClient />);
 
-    expect(await screen.findByText("Syncing Google evidence")).toBeInTheDocument();
-    expect(screen.getByText("25 of 100 evidence records processed.")).toBeInTheDocument();
+    expect(await screen.findByText("Reading Google")).toBeInTheDocument();
+    expect(screen.getByText("25 of 100 conversations read.")).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "25");
     await waitFor(() => {
       expect(mocks.startScan).toHaveBeenCalledOnce();
@@ -277,6 +295,17 @@ describe("Open Promises report hardening", () => {
     await waitFor(() => {
       expect(navigation.params.get("scan")).toBe("scan-first");
     });
+  });
+
+  it("names a connected Google account whose first read has not started", async () => {
+    mocks.listRelationshipSourceStatuses.mockResolvedValue([sourceStatus("stale")]);
+
+    renderWithQuery(<OpenPromisesReportClient />);
+
+    expect(await screen.findByText("Google is connected")).toBeInTheDocument();
+    expect(screen.getByText("The first read has not started yet.")).toBeInTheDocument();
+    expect(screen.queryByText(/evidence|backfill/i)).not.toBeInTheDocument();
+    expect(mocks.startScan).not.toHaveBeenCalled();
   });
 
   it("loads a deep-linked scan, refreshes terminal health, and selects another scan in the URL", async () => {

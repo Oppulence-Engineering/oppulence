@@ -203,19 +203,41 @@ func (s *Service) GetScan(ctx context.Context, id uuid.UUID) (*ent.RevenueLeakSc
 	return scan, err
 }
 
+// ScanListPage is one audit-history page. HasMore is true only when another
+// scan exists past this page, so an exact page of ten is not offered as if
+// an eleventh audit were waiting.
+type ScanListPage struct {
+	Scans   []*ent.RevenueLeakScan
+	HasMore bool
+}
+
 // ListScans returns the caller's persisted audit history newest first.
-func (s *Service) ListScans(ctx context.Context, u *ent.User, limit int) ([]*ent.RevenueLeakScan, error) {
+// Offset walks past that page. Created time can tie, so the id keeps the
+// next page from skipping or repeating a row.
+func (s *Service) ListScans(ctx context.Context, u *ent.User, limit int, offset int) (*ScanListPage, error) {
 	if limit <= 0 {
 		limit = 10
 	}
 	if limit > 100 {
 		limit = 100
 	}
-	return s.client.RevenueLeakScan.Query().
+	if offset < 0 {
+		offset = 0
+	}
+	rows, err := s.client.RevenueLeakScan.Query().
 		Where(revenueleakscan.HasUserWith(user.IDEQ(u.ID))).
-		Order(ent.Desc(revenueleakscan.FieldCreatedAt)).
-		Limit(limit).
+		Order(ent.Desc(revenueleakscan.FieldCreatedAt), ent.Desc(revenueleakscan.FieldID)).
+		Limit(limit + 1).
+		Offset(offset).
 		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	hasMore := len(rows) > limit
+	if hasMore {
+		rows = rows[:limit]
+	}
+	return &ScanListPage{Scans: rows, HasMore: hasMore}, nil
 }
 
 // runScan performs the sweep, detection, and queue writes, then finalizes the

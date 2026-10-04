@@ -5,12 +5,38 @@ import {
   googleNeedsReconnect,
   revenueTabFromParam,
   revenueTabSearch,
+  sidebarGroupFallback,
+  sidebarQueryError,
   sourceHealth,
+  sourceMeterVisible,
   trialDaysRemaining,
+  workspaceLabel,
 } from "@/components/features/dashboard/app-shell/app-shell";
+import { auditHistoryLabel, auditLaunchLabel, googleAuditLaunch } from "@/lib/revenue/revenue";
 import type { RelationshipSourceStatus } from "@/lib/revenue/types";
 
 const inDays = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString();
+
+describe("workspace label", () => {
+  it("shows the saved profile name ahead of the account name", () => {
+    expect(
+      workspaceLabel({ preferenceName: "Ada Lovelace", deviceName: "Local", userName: "Dev" }),
+    ).toBe("Ada Lovelace");
+  });
+
+  it("falls back to the account name when the profile name is blank", () => {
+    expect(
+      workspaceLabel({ preferenceName: "  ", deviceName: null, userName: "dev@solomon-ai.co" }),
+    ).toBe("dev");
+    expect(workspaceLabel({ preferenceName: "", userName: "" })).toBe("Workspace");
+  });
+
+  it("keeps a saved name that contains an @ sign", () => {
+    expect(
+      workspaceLabel({ preferenceName: "Ada @ Northwind", userName: "dev@solomon-ai.co" }),
+    ).toBe("Ada @ Northwind");
+  });
+});
 
 describe("sidebar trial banner", () => {
   it("counts the whole days left on a trial", () => {
@@ -36,6 +62,13 @@ describe("sidebar source status", () => {
 
   it("says nothing is connected when no source reports", () => {
     expect(sourceHealth([]).tone).toBe("idle");
+    expect(sourceMeterVisible(0, 0)).toBe(false);
+    expect(sourceMeterVisible(undefined, undefined)).toBe(false);
+  });
+
+  it("shows the meter once a source exists, including a ratio of zero", () => {
+    expect(sourceMeterVisible(2, 0)).toBe(true);
+    expect(sourceMeterVisible(2, 2)).toBe(true);
   });
 
   it("reports a healthy portfolio of sources", () => {
@@ -64,6 +97,24 @@ describe("sidebar source status", () => {
   // The status card's meter reads "connected / total". A source that needs
   // reconnecting delivers nothing, so counting it would show a full meter over
   // a dead grant.
+  it("explains a rate limit instead of calling the source list unavailable", () => {
+    expect(sidebarQueryError(new Error("Request failed (429)"), "Source status unavailable")).toBe(
+      "Too many requests were sent from this workspace. Wait a moment, then try again.",
+    );
+    expect(sidebarQueryError(new Error("Request failed (503)"), "Could not load runs")).toBe(
+      "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.",
+    );
+    expect(sidebarQueryError(new Error("Request failed (500)"), "Could not load agents")).toBe(
+      "Could not load agents",
+    );
+    expect(sidebarGroupFallback(false, "agents")).toBe("Could not load agents");
+    expect(sidebarGroupFallback(true, "schedules")).toBe("Could not refresh schedules");
+    expect(sidebarGroupFallback(true, "runs")).toBe("Could not refresh runs");
+    expect(sidebarQueryError(new Error("  "), "Source status unavailable")).toBe(
+      "Source status unavailable",
+    );
+  });
+
   it("does not count a source that stopped reporting as connected", () => {
     expect(
       connectedSourceCount([
@@ -95,14 +146,42 @@ describe("audit reconnect guard", () => {
     ).toBe(false);
   });
 
-  // With no rows the audit runs, fails if it must, and marks the real account.
-  it("does not block when nothing is known about Google yet", () => {
+  // A missing reconnect flag is not permission to start the scan. No Google
+  // rows means there is no mailbox to read, so the button connects instead.
+  it("does not treat a missing mailbox as a dead grant", () => {
     expect(googleNeedsReconnect([])).toBe(false);
     expect(
       googleNeedsReconnect([
         { source: "slack", status: "reconnect_required" } as RelationshipSourceStatus,
       ]),
     ).toBe(false);
+    expect(googleAuditLaunch([])).toBe("connect");
+    expect(
+      googleAuditLaunch([{ source: "slack", status: "connected" } as RelationshipSourceStatus]),
+    ).toBe("connect");
+  });
+
+  it("runs the audit only when a Google account can be read", () => {
+    expect(googleAuditLaunch([google("connected")])).toBe("run");
+    expect(googleAuditLaunch([google("reconnect_required"), google("live", "default")])).toBe(
+      "run",
+    );
+    expect(googleAuditLaunch([google("reconnect_required")])).toBe("reconnect");
+    expect(googleAuditLaunch([google("not_connected")])).toBe("reconnect");
+    expect(
+      auditLaunchLabel({
+        needsReconnect: false,
+        needsConnect: true,
+        scanning: false,
+        scanningLabel: "Auditing…",
+        runLabel: "Run Promise Leak Audit",
+      }),
+    ).toBe("Connect Gmail & Calendar");
+    expect(auditHistoryLabel("completed")).toBe("Completed");
+    expect(auditHistoryLabel("failed")).toBe("Failed");
+    expect(auditHistoryLabel("running")).toBe("In progress");
+    expect(auditHistoryLabel("pending")).toBe("In progress");
+    expect(auditHistoryLabel("failed")).not.toBe("failed");
   });
 });
 

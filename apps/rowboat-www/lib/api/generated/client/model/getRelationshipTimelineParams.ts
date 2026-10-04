@@ -11,4 +11,12 @@ export type GetRelationshipTimelineParams = {
    * Maximum observations (1-100).
    */
   limit?: number;
+  /**
+   * Return observations before this RFC3339 timestamp.
+   */
+  before?: string;
+  /**
+   * With before, also return observations at that time whose id sorts earlier.
+   */
+  beforeId?: string;
 };

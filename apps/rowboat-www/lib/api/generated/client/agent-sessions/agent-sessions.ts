@@ -9,6 +9,7 @@ import type {
   AgentSessionEventsResponse,
   AgentSessionListResponse,
   ListAgentSessionEventsParams,
+  ListAgentSessionsParams,
   N400Response,
   N401Response,
   N404Response,
@@ -42,18 +43,31 @@ export type listAgentSessionsResponseError = (
 export type listAgentSessionsResponse =
   listAgentSessionsResponseSuccess | listAgentSessionsResponseError;
 
-export const getListAgentSessionsUrl = () => {
-  return `/v1/agent-sessions`;
+export const getListAgentSessionsUrl = (params?: ListAgentSessionsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/agent-sessions?${stringifiedParams}`
+    : `/v1/agent-sessions`;
 };
 
 /**
- * Returns the authenticated user's recent durable agent conversations.
+ * Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.
  * @summary List agent sessions
  */
 export const listAgentSessions = async (
+  params?: ListAgentSessionsParams,
   options?: RequestInit,
 ): Promise<listAgentSessionsResponse> => {
-  const res = await fetch(getListAgentSessionsUrl(), {
+  const res = await fetch(getListAgentSessionsUrl(params), {
     ...options,
     method: "GET",
   });

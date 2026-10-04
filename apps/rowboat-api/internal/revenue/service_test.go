@@ -16,6 +16,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	appcrypto "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/google/uuid"
 )
 
 // --- fixtures ----------------------------------------------------------------
@@ -171,6 +172,38 @@ func (f *fixture) action(t *testing.T, mode string) *ent.RevenueAction {
 		t.Fatalf("action: %v", err)
 	}
 	return action
+}
+
+func TestCreateActionDropsABlankDraftSubject(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	action, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "warm_follow_up", Channel: "email",
+		Reason: "  Send the harbor note  ", ProposedSubject: "   ", ProposedMessage: " \n ",
+		ExecutionMode: ExecModeDraft, PriorityScore: 40,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if action.Reason != "Send the harbor note" || action.ProposedSubject != "" || action.ProposedMessage != "" {
+		t.Fatalf("blank draft was stored: reason=%q subject=%q message=%q", action.Reason, action.ProposedSubject, action.ProposedMessage)
+	}
+	spaced := "  Harbor follow-up  "
+	edited, err := f.svc.EditAction(f.ctx, f.user, action.ID, EditInput{ProposedSubject: &spaced})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if edited.ProposedSubject != "Harbor follow-up" {
+		t.Fatalf("subject = %q", edited.ProposedSubject)
+	}
+	blank := "   "
+	cleared, err := f.svc.EditAction(f.ctx, f.user, action.ID, EditInput{ProposedSubject: &blank})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cleared.ProposedSubject != "" {
+		t.Fatalf("cleared subject = %q", cleared.ProposedSubject)
+	}
 }
 
 // link puts the workspace into linked mode (facade configured in fixtures).
@@ -716,6 +749,37 @@ func TestOutcomesIdempotent(t *testing.T) {
 	if len(timeline) != 1 || timeline[0].EventType != "action.outcome.replied" {
 		t.Fatalf("outcome was not published once into relationship history: %#v", timeline)
 	}
+	if timeline[0].Summary != "They replied" {
+		t.Fatalf("outcome summary = %q", timeline[0].Summary)
+	}
+	rel, err := f.client.Relationship.Get(f.ctx, actionRelationshipID(storedAction))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rel.LastTouchAt == nil {
+		t.Fatal("a reply must count as last activity")
+	}
+}
+
+func TestDismissedOutcomeDoesNotCountAsLastActivity(t *testing.T) {
+	f := newFixture(t)
+	action := f.action(t, ExecModeDraft)
+	if _, err := f.svc.AppendOutcome(f.ctx, f.user, action.ID, OutcomeInput{
+		Kind: "dismissed", Source: "user", SourceEventID: "dismiss-1",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	stored, err := f.svc.GetAction(f.ctx, action.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel, err := f.client.Relationship.Get(f.ctx, actionRelationshipID(stored))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rel.LastTouchAt != nil {
+		t.Fatalf("dismissing a suggestion counted as activity: %s", rel.LastTouchAt)
+	}
 }
 
 // Duplicate detector dedupe keys collapse to one queue item.
@@ -756,6 +820,226 @@ func TestManualActionsWithoutDedupeKeyRemainDistinct(t *testing.T) {
 	}
 	if first.ID == second.ID {
 		t.Fatal("separate manual tasks must not collapse into one action")
+	}
+}
+
+func TestListActionsRecoverySkipsHigherPriorityTasks(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	task, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task",
+		Reason: "A task", PriorityScore: 90, DedupeKey: "task-crowd",
+	})
+	if err != nil {
+		t.Fatalf("task: %v", err)
+	}
+	email, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "warm_follow_up", Channel: "email",
+		Reason: "The email", PriorityScore: 10, DedupeKey: "email-behind-tasks",
+	})
+	if err != nil {
+		t.Fatalf("email: %v", err)
+	}
+	recovery, err := f.svc.ListActions(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 1, Surface: "recovery"})
+	if err != nil || len(recovery) != 1 || recovery[0].ID != email.ID {
+		t.Fatalf("recovery page = %+v err=%v, want the lower-priority email", recovery, err)
+	}
+	tasks, err := f.svc.ListActions(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 1, Surface: "task"})
+	if err != nil || len(tasks) != 1 || tasks[0].ID != task.ID {
+		t.Fatalf("task page = %+v err=%v", tasks, err)
+	}
+}
+
+func TestListActionsOffsetSkipsHigherPriority(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	high, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task",
+		Reason: "High", PriorityScore: 90, DedupeKey: "offset-high",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	low, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task",
+		Reason: "Low", PriorityScore: 10, DedupeKey: "offset-low",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	page, err := f.svc.ListActions(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 1, Offset: 1, Surface: "task"})
+	if err != nil || len(page) != 1 || page[0].ID != low.ID {
+		t.Fatalf("offset page = %+v err=%v", page, err)
+	}
+	none, err := f.svc.ListActions(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 1, Offset: 2, Surface: "task"})
+	if err != nil || len(none) != 0 {
+		t.Fatalf("past the end = %d err=%v", len(none), err)
+	}
+	all, err := f.svc.ListActions(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 10, Offset: -3, Surface: "task"})
+	if err != nil || len(all) != 2 || all[0].ID != high.ID {
+		t.Fatalf("negative offset = %+v err=%v", all, err)
+	}
+}
+
+func TestListActionsTaskDueOrderPutsTheSoonestFirst(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	yesterday := time.Now().Add(-24 * time.Hour).UTC()
+	nextYear := time.Now().Add(365 * 24 * time.Hour).UTC()
+	soon, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task",
+		Reason: "Yesterday", PriorityScore: 10, DedupeKey: "due-yesterday", DueAt: &yesterday,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	later, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task",
+		Reason: "Next year", PriorityScore: 90, DedupeKey: "due-next-year", DueAt: &nextYear,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	undated, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task",
+		Reason: "No date", PriorityScore: 100, DedupeKey: "due-none",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	asc, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{
+		QueueStatus: QueueOpen, Limit: 10, Surface: "task", DueOrder: "asc",
+	})
+	if err != nil || len(asc.Actions) != 3 || asc.Actions[0].ID != soon.ID || asc.Actions[1].ID != later.ID || asc.Actions[2].ID != undated.ID {
+		t.Fatalf("soonest page = %v err=%v", reasonsOf(asc.Actions), err)
+	}
+	desc, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{
+		QueueStatus: QueueOpen, Limit: 10, Surface: "task", DueOrder: "desc",
+	})
+	if err != nil || len(desc.Actions) != 3 || desc.Actions[0].ID != later.ID || desc.Actions[1].ID != soon.ID || desc.Actions[2].ID != undated.ID {
+		t.Fatalf("latest page = %v err=%v", reasonsOf(desc.Actions), err)
+	}
+}
+
+func reasonsOf(actions []*ent.RevenueAction) []string {
+	names := make([]string, 0, len(actions))
+	for _, action := range actions {
+		names = append(names, action.Reason)
+	}
+	return names
+}
+
+func TestListActionsTiedPriorityUsesID(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel := f.relationship(t)
+	touched := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	const total = 101
+	for i := 1; i <= total; i++ {
+		reason := "Tied Task"
+		if i == total {
+			reason = "Tied Task Last"
+		}
+		if _, err := f.client.RevenueAction.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("a115d000-0000-4000-8000-%012x", i))).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetRelationship(rel).
+			SetActionType("follow_up_task").
+			SetChannel("task").
+			SetDetector("manual").
+			SetDedupeKey(fmt.Sprintf("tied-task-%03d", i)).
+			SetRevisionHash(fmt.Sprintf("tied-task-hash-%03d", i)).
+			SetReason(reason).
+			SetPriorityScore(40).
+			SetCreatedAt(touched).
+			SetUpdatedAt(touched).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	first, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 100, Surface: "task"})
+	if err != nil || first == nil {
+		t.Fatal(err)
+	}
+	if len(first.Actions) != 100 || !first.HasMore {
+		t.Fatalf("newest page = %d hasMore=%v", len(first.Actions), first.HasMore)
+	}
+	for _, action := range first.Actions {
+		if action.Reason == "Tied Task Last" {
+			t.Fatal("the highest id was included beside lower ids with the same priority")
+		}
+	}
+	second, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 100, Offset: 100, Surface: "task"})
+	if err != nil || second == nil {
+		t.Fatal(err)
+	}
+	if len(second.Actions) != 1 || second.Actions[0].Reason != "Tied Task Last" || second.HasMore {
+		t.Fatalf("later id page = %d hasMore=%v %q", len(second.Actions), second != nil && second.HasMore, func() string {
+			if second == nil || len(second.Actions) == 0 {
+				return ""
+			}
+			return second.Actions[0].Reason
+		}())
+	}
+}
+
+func TestListActionsExactPageIsNotAnotherPage(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel := f.relationship(t)
+	touched := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	seed := func(i int, reason string) {
+		t.Helper()
+		if _, err := f.client.RevenueAction.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("a116b000-0000-4000-8000-%012x", i))).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetRelationship(rel).
+			SetActionType("follow_up_task").
+			SetChannel("task").
+			SetDetector("manual").
+			SetDedupeKey(fmt.Sprintf("exact-task-%d", i)).
+			SetRevisionHash(fmt.Sprintf("exact-task-hash-%d", i)).
+			SetReason(reason).
+			SetPriorityScore(40).
+			SetCreatedAt(touched).
+			SetUpdatedAt(touched).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	seed(1, "Task One")
+	seed(2, "Task Two")
+	exact, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 2, Surface: "task"})
+	if err != nil || exact == nil || len(exact.Actions) != 2 || exact.HasMore {
+		hasMore := false
+		count := 0
+		if exact != nil {
+			hasMore = exact.HasMore
+			count = len(exact.Actions)
+		}
+		t.Fatalf("exact page = %d hasMore=%v err=%v", count, hasMore, err)
+	}
+	seed(3, "Task Extra")
+	first, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 2, Surface: "task"})
+	if err != nil || first == nil || len(first.Actions) != 2 || !first.HasMore {
+		t.Fatalf("full page = %+v err=%v", first, err)
+	}
+	for _, action := range first.Actions {
+		if action.Reason == "Task Extra" {
+			t.Fatal("the highest id was included on the first page")
+		}
+	}
+	next, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{QueueStatus: QueueOpen, Limit: 2, Offset: 2, Surface: "task"})
+	if err != nil || next == nil || len(next.Actions) != 1 || next.Actions[0].Reason != "Task Extra" || next.HasMore {
+		t.Fatalf("later page = %+v err=%v", next, err)
 	}
 }
 

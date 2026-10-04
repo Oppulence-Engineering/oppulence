@@ -10,4 +10,9 @@ import type { ListRelationshipAttentionStatus } from "./listRelationshipAttentio
 export type ListRelationshipAttentionParams = {
   status?: ListRelationshipAttentionStatus;
   limit?: number;
+  /**
+   * Page offset.
+   * @minimum 0
+   */
+  offset?: number;
 };

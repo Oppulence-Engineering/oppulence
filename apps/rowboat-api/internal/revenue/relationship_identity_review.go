@@ -46,6 +46,7 @@ type IdentityCandidateFilter struct {
 	Source         string
 	RelationshipID uuid.UUID
 	Limit          int
+	Offset         int
 }
 
 // IdentityDecisionInput is an optimistic, idempotent identity command.
@@ -277,8 +278,16 @@ func containsString(values []string, wanted string) bool {
 	return false
 }
 
+// IdentityCandidateListPage is one duplicate-inbox page. HasMore is true only
+// when another candidate exists past this page, so an exact page of 50 is not
+// offered as if a 51st duplicate were waiting.
+type IdentityCandidateListPage struct {
+	Candidates []*ent.RelationshipIdentityCandidate
+	HasMore    bool
+}
+
 // ListIdentityCandidates returns the durable workspace inbox.
-func (s *Service) ListIdentityCandidates(ctx context.Context, u *ent.User, filter IdentityCandidateFilter) ([]*ent.RelationshipIdentityCandidate, error) {
+func (s *Service) ListIdentityCandidates(ctx context.Context, u *ent.User, filter IdentityCandidateFilter) (*IdentityCandidateListPage, error) {
 	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceView)
 	if err != nil {
 		return nil, err
@@ -289,6 +298,10 @@ func (s *Service) ListIdentityCandidates(ctx context.Context, u *ent.User, filte
 	}
 	if limit > 100 {
 		limit = 100
+	}
+	offset := filter.Offset
+	if offset < 0 {
+		offset = 0
 	}
 	q := s.client.RelationshipIdentityCandidate.Query().
 		Where(relationshipidentitycandidate.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID))).
@@ -305,7 +318,19 @@ func (s *Service) ListIdentityCandidates(ctx context.Context, u *ent.User, filte
 			relationshipidentitycandidate.HasExistingRelationshipWith(relationship.IDEQ(filter.RelationshipID)),
 		))
 	}
-	return q.Order(ent.Desc(relationshipidentitycandidate.FieldCreatedAt)).Limit(limit).All(ctx)
+	// Created time can tie. The id keeps an offset from skipping or repeating a row.
+	rows, err := q.Order(
+		ent.Desc(relationshipidentitycandidate.FieldCreatedAt),
+		ent.Desc(relationshipidentitycandidate.FieldID),
+	).Limit(limit + 1).Offset(offset).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	hasMore := len(rows) > limit
+	if hasMore {
+		rows = rows[:limit]
+	}
+	return &IdentityCandidateListPage{Candidates: rows, HasMore: hasMore}, nil
 }
 
 // GetIdentityCandidate returns one tenant-scoped ambiguity with its impact,

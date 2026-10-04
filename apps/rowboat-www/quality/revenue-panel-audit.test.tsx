@@ -41,6 +41,10 @@ vi.mock("@/hooks/queries/utils/fetch-report", () => ({
   loadReportScans: mocks.listScans,
   loadReportScan: mocks.getScan,
   loadOpenPromisesReport: vi.fn(),
+  auditRows: (page: { scans?: unknown[] } | unknown[] | null | undefined) =>
+    Array.isArray(page) ? page : (page?.scans ?? []),
+  auditPageHasMore: (page: { hasMore?: boolean } | unknown[] | null | undefined) =>
+    Boolean(page && !Array.isArray(page) && page.hasMore),
 }));
 vi.mock("@/hooks/queries/utils/fetch-workspace", () => ({
   fetchWorkspace: mocks.getWorkspace,
@@ -49,6 +53,10 @@ vi.mock("@/hooks/queries/utils/fetch-workspace", () => ({
 vi.mock("@/hooks/queries/utils/fetch-commitments", () => ({
   fetchCommitments: mocks.listCommitments,
   loadCommitments: mocks.listCommitments,
+  commitmentRows: (page: { commitments?: unknown[] } | unknown[] | null | undefined) =>
+    Array.isArray(page) ? page : (page?.commitments ?? []),
+  commitmentPageHasMore: (page: { hasMore?: boolean } | unknown[] | null | undefined) =>
+    Boolean(page && !Array.isArray(page) && page.hasMore),
 }));
 vi.mock("@/lib/analytics/analytics", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/analytics/analytics")>()),
@@ -184,6 +192,22 @@ describe("revenue panel after an audit", () => {
     const buttons = await screen.findAllByRole("button", { name: /Reconnect Google/ });
     expect(buttons).toHaveLength(2);
     expect(screen.queryByRole("button", { name: /Run/ })).not.toBeInTheDocument();
+    await userEvent.click(buttons[0]);
+
+    expect(onOpenConnectors).toHaveBeenCalledTimes(1);
+    expect(mocks.startScan).not.toHaveBeenCalled();
+  });
+
+  // No Google row is not an unknown grant. The scan is rejected before it
+  // reads mail, so the button should open connections instead of failing.
+  it("opens connections when Gmail is not connected", async () => {
+    mocks.listRelationshipSourceStatuses.mockResolvedValue([]);
+    const onOpenConnectors = renderPanel("scans");
+
+    const buttons = await screen.findAllByRole("button", { name: /Connect Gmail & Calendar/ });
+    expect(buttons.length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /Run Promise Leak Audit/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/Connect Gmail and Calendar before an audit/)).toBeInTheDocument();
     await userEvent.click(buttons[0]);
 
     expect(onOpenConnectors).toHaveBeenCalledTimes(1);

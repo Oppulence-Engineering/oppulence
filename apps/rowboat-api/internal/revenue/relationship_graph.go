@@ -18,6 +18,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipreviewacknowledgement"
@@ -35,21 +36,35 @@ const relationshipGraphContractVersion = "2026-08-01"
 
 // RelationshipGraphFilter is a bounded read request for the shared graph projection.
 type RelationshipGraphFilter struct {
-	Scope          string
-	RelationshipID *uuid.UUID
-	Depth          int
-	AsOf           time.Time
+	Scope             string
+	RelationshipID    *uuid.UUID
+	Depth             int
+	AsOf              time.Time
+	Offset            int
+	ObservationOffset int
 }
 
 // RelationshipGraphAggregate is the authorized, eagerly loaded source for one graph response.
 type RelationshipGraphAggregate struct {
-	Relationships []*ent.Relationship
-	Sources       []*ent.RelationshipSourceStatus
-	Role          string
-	Scope         string
-	Depth         int
-	AsOf          time.Time
-	Historical    bool
+	Relationships      []*ent.Relationship
+	Sources            []*ent.RelationshipSourceStatus
+	Role               string
+	Scope              string
+	Depth              int
+	AsOf               time.Time
+	Historical         bool
+	HasMore            bool
+	ObservationHasMore bool
+}
+
+// graphObservationPage is one page of evidence on a company. Account graphs
+// show the newest 100 conversations; a portfolio graph shows 500 per company.
+// The next page uses the same size as an offset.
+func graphObservationPage(scope string) int {
+	if scope == "relationship" {
+		return 100
+	}
+	return 500
 }
 
 // RelationshipGraph returns a tenant-scoped graph aggregate. It filters time-bearing
@@ -132,17 +147,31 @@ func (s *Service) RelationshipGraph(
 				relationshipreviewacknowledgement.AcknowledgedAtLTE(filter.AsOf),
 				relationshipreviewacknowledgement.HasUserWith(user.IDEQ(u.ID)),
 			).Order(ent.Desc(relationshipreviewacknowledgement.FieldStateVersion))
+		}).
+		// The company row stores "prospect" before any stage is chosen. The
+		// graph only shows a stage when the same assertion the company record
+		// trusts is still winning at this boundary.
+		WithAssertions(func(q *ent.RelationshipAssertionQuery) {
+			q.Where(
+				relationshipassertion.CreatedAtLTE(filter.AsOf),
+				relationshipassertion.ValidFromLTE(filter.AsOf),
+			).WithObservation()
 		})
 
+	observationOffset := filter.ObservationOffset
+	if observationOffset < 0 {
+		observationOffset = 0
+	}
+	observationPage := graphObservationPage(filter.Scope)
 	if filter.Depth >= 2 {
-		observationLimit := 500
-		if filter.Scope == "relationship" {
-			observationLimit = 100
-		}
 		q.WithObservations(func(q *ent.RelationshipObservationQuery) {
 			q.Where(relationshipobservation.OccurredAtLTE(filter.AsOf)).
-				Order(ent.Desc(relationshipobservation.FieldOccurredAt)).
-				Limit(observationLimit)
+				Order(
+					ent.Desc(relationshipobservation.FieldOccurredAt),
+					ent.Desc(relationshipobservation.FieldID),
+				).
+				Limit(observationPage + 1).
+				Offset(observationOffset)
 		})
 	}
 	if historical {
@@ -155,9 +184,30 @@ func (s *Service) RelationshipGraph(
 		q.Where(relationship.IDEQ(*filter.RelationshipID))
 	}
 
-	relationships, err := q.Order(ent.Desc(relationship.FieldUpdatedAt)).Limit(relationshipListLimit).All(ctx)
+	offset := filter.Offset
+	if offset < 0 {
+		offset = 0
+	}
+	relationships, err := q.Order(
+		ent.Desc(relationship.FieldUpdatedAt),
+		ent.Desc(relationship.FieldID),
+	).Limit(relationshipListLimit + 1).Offset(offset).All(ctx)
 	if err != nil {
 		return nil, err
+	}
+	hasMore := len(relationships) > relationshipListLimit
+	if hasMore {
+		relationships = relationships[:relationshipListLimit]
+	}
+	observationHasMore := false
+	if filter.Depth >= 2 {
+		for _, rel := range relationships {
+			observations := rel.Edges.Observations
+			if len(observations) > observationPage {
+				observationHasMore = true
+				rel.Edges.Observations = observations[:observationPage]
+			}
+		}
 	}
 	if filter.Scope == "relationship" && len(relationships) == 0 {
 		return nil, ErrNotFound
@@ -173,15 +223,22 @@ func (s *Service) RelationshipGraph(
 	if err != nil {
 		return nil, err
 	}
+	// The sources list derives "stale" from the cadence. The stored row can
+	// still say "live" after that window, and the graph was printing that.
+	for _, status := range sources {
+		applySourceFreshness(status, filter.AsOf)
+	}
 
 	return &RelationshipGraphAggregate{
-		Relationships: relationships,
-		Sources:       sources,
-		Role:          role,
-		Scope:         filter.Scope,
-		Depth:         filter.Depth,
-		AsOf:          filter.AsOf,
-		Historical:    historical,
+		Relationships:      relationships,
+		Sources:            sources,
+		Role:               role,
+		Scope:              filter.Scope,
+		Depth:              filter.Depth,
+		AsOf:               filter.AsOf,
+		Historical:         historical,
+		HasMore:            hasMore,
+		ObservationHasMore: observationHasMore,
 	}, nil
 }
 
@@ -253,16 +310,18 @@ type relationshipGraphEdgeDTO struct {
 }
 
 type relationshipGraphDTO struct {
-	ContractVersion string                          `json:"contractVersion"`
-	GeneratedAt     time.Time                       `json:"generatedAt"`
-	AsOf            time.Time                       `json:"asOf"`
-	Historical      bool                            `json:"historical"`
-	Scope           string                          `json:"scope"`
-	RelationshipID  string                          `json:"relationshipId,omitempty"`
-	Depth           int                             `json:"depth"`
-	Nodes           []relationshipGraphNodeDTO      `json:"nodes"`
-	Edges           []relationshipGraphEdgeDTO      `json:"edges"`
-	Permissions     relationshipGraphPermissionsDTO `json:"permissions"`
+	ContractVersion    string                          `json:"contractVersion"`
+	GeneratedAt        time.Time                       `json:"generatedAt"`
+	AsOf               time.Time                       `json:"asOf"`
+	Historical         bool                            `json:"historical"`
+	Scope              string                          `json:"scope"`
+	RelationshipID     string                          `json:"relationshipId,omitempty"`
+	Depth              int                             `json:"depth"`
+	Nodes              []relationshipGraphNodeDTO      `json:"nodes"`
+	Edges              []relationshipGraphEdgeDTO      `json:"edges"`
+	Permissions        relationshipGraphPermissionsDTO `json:"permissions"`
+	HasMore            bool                            `json:"hasMore,omitempty"`
+	ObservationHasMore bool                            `json:"observationHasMore,omitempty"`
 }
 
 type graphProjectionState struct {
@@ -356,6 +415,41 @@ func latestGraphState(rel *ent.Relationship, historical bool, asOf time.Time) gr
 	return boundary
 }
 
+// applySupportedGraphStages hides a stored default. "Prospect" on a new
+// company is the schema fallback, and the company record already says Not
+// known until a winning assertion is a user correction or cites evidence.
+func applySupportedGraphStages(state *graphProjectionState, rel *ent.Relationship, asOf time.Time) {
+	assertions, err := rel.Edges.AssertionsOrErr()
+	if err != nil {
+		assertions = nil
+	}
+	winners, _, selectErr := selectRelationshipAssertionsAt(assertions, asOf)
+	if selectErr != nil {
+		winners = nil
+	}
+	state.Lifecycle = supportedGraphStage(winners["lifecycle"])
+	state.Engagement = supportedGraphStage(winners["engagement"])
+	state.Sentiment = supportedGraphStage(winners["sentiment"])
+	state.Health = supportedGraphStage(winners["health"])
+}
+
+func supportedGraphStage(winner *ent.RelationshipAssertion) string {
+	if winner == nil || strings.TrimSpace(winner.Value) == "" {
+		return "unknown"
+	}
+	if winner.SourceType == "user_correction" {
+		return winner.Value
+	}
+	if len(winner.SupportingObservationIds) > 0 {
+		return winner.Value
+	}
+	observation, err := winner.Edges.ObservationOrErr()
+	if err == nil && observation != nil {
+		return winner.Value
+	}
+	return "unknown"
+}
+
 func changedSinceGraphReview(rel *ent.Relationship, stateVersion int) bool {
 	acknowledgements, err := rel.Edges.ReviewAcknowledgementsOrErr()
 	if err != nil || len(acknowledgements) == 0 {
@@ -368,6 +462,16 @@ func changedSinceGraphReview(rel *ent.Relationship, stateVersion int) bool {
 		}
 	}
 	return stateVersion > latestVersion
+}
+
+// A promise link stores the dependency kind. The graph says what that link does.
+func graphDependencyLabel(kind string) string {
+	switch strings.TrimSpace(kind) {
+	case "supersedes":
+		return "replaces"
+	default:
+		return strings.ReplaceAll(kind, "_", " ")
+	}
 }
 
 func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedAt time.Time) relationshipGraphDTO {
@@ -398,12 +502,13 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 		relationshipNodeID := "relationship:" + relationshipID
 		boundary := latestGraphState(rel, aggregate.Historical, aggregate.AsOf)
 		state := boundary.State
+		applySupportedGraphStages(&state, rel, aggregate.AsOf)
 		relationshipStatus := rel.Status
 		if aggregate.Historical && rel.UpdatedAt.After(aggregate.AsOf) {
 			relationshipStatus = "historical_unknown"
 		}
 		nodes[relationshipNodeID] = relationshipGraphNodeDTO{
-			ID: relationshipNodeID, Kind: "relationship", Label: rel.DisplayName,
+			ID: relationshipNodeID, Kind: "relationship", Label: reportAccountTitle(rel),
 			RelationshipID: relationshipID, RelationshipIDs: []string{relationshipID},
 			Summary: state.Summary, Status: relationshipStatus, Lifecycle: state.Lifecycle,
 			Engagement: state.Engagement, Sentiment: state.Sentiment, Health: state.Health,
@@ -423,9 +528,11 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 			// the participant UUID) and silently merged two people who shared a
 			// role address. The person layer resolves both cases properly; the
 			// string key remains only for rows the backfill has not reached.
+			var linked *ent.Person
 			identity := participant.ID.String()
-			if linked, err := participant.Edges.PersonOrErr(); err == nil && linked != nil {
-				identity = "person-id:" + linked.ID.String()
+			if person, err := participant.Edges.PersonOrErr(); err == nil && person != nil {
+				linked = person
+				identity = "person-id:" + person.ID.String()
 			} else if strings.TrimSpace(participant.Email) != "" {
 				identity = participant.Email
 			}
@@ -441,7 +548,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 					participantMetadata = nil
 				}
 				node = relationshipGraphNodeDTO{
-					ID: personNodeID, Kind: "person", Label: participant.DisplayName,
+					ID: personNodeID, Kind: "person", Label: graphPersonLabel(participant, linked),
 					Role: participantRole, Status: participantStatus,
 					RelationshipID: relationshipID, RelationshipIDs: []string{},
 					ResourceRef: participant.ID.String(), Metadata: participantMetadata,
@@ -464,7 +571,13 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 			commitmentNodeID := "commitment:" + item.ID.String()
 			confidence := item.Confidence
 			confidenceRef := &confidence
-			commitmentStatus := item.Status
+			commitmentStatus := commitmentRegisterState(item, aggregate.AsOf)
+			// An extraction waiting for review stays Review on the company
+			// record even when the due date is soon. The register clock would
+			// call that same row at risk.
+			if item.Acceptance == "candidate" {
+				commitmentStatus = "review"
+			}
 			commitmentDueAt := item.DueAt
 			commitmentUpdatedAt := item.UpdatedAt
 			if aggregate.Historical && item.UpdatedAt.After(aggregate.AsOf) {
@@ -475,12 +588,14 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 			}
 			evidenceRefs := []string{}
 			if evidences, err := item.Edges.EvidencesOrErr(); err == nil {
-				for _, evidence := range evidences {
-					evidenceRefs = append(evidenceRefs, evidence.ID.String())
-				}
+				evidenceRefs = graphCommitmentEvidenceRefs(evidences)
+			}
+			commitmentLabel := strings.TrimSpace(item.Text)
+			if commitmentLabel == "" {
+				commitmentLabel = "Promise"
 			}
 			nodes[commitmentNodeID] = relationshipGraphNodeDTO{
-				ID: commitmentNodeID, Kind: "commitment", Label: item.Text,
+				ID: commitmentNodeID, Kind: "commitment", Label: commitmentLabel,
 				RelationshipID: relationshipID, RelationshipIDs: []string{relationshipID},
 				Summary: item.SourcePhrase, Status: commitmentStatus, Confidence: confidenceRef,
 				DueAt: commitmentDueAt, UpdatedAt: &commitmentUpdatedAt, EvidenceRefs: evidenceRefs,
@@ -495,7 +610,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 					"currentEventVersion": item.CurrentEventVersion,
 				},
 			}
-			addEdge("has_commitment", "has commitment", relationshipNodeID, commitmentNodeID, true, confidenceRef, evidenceRefs)
+			addEdge("has_commitment", "has promise", relationshipNodeID, commitmentNodeID, true, confidenceRef, evidenceRefs)
 			if ownerNodeID := participantRefs[strings.ToLower(strings.TrimSpace(item.OwnerParticipantRef))]; ownerNodeID != "" {
 				addEdge("owns", "owns", ownerNodeID, commitmentNodeID, true, &confidence, evidenceRefs)
 			}
@@ -509,7 +624,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 				continue
 			}
 			addEdge(
-				dependency.Kind, strings.ReplaceAll(dependency.Kind, "_", " "),
+				dependency.Kind, graphDependencyLabel(dependency.Kind),
 				"commitment:"+from.ID.String(), "commitment:"+to.ID.String(), true, nil,
 				dependency.EvidenceRefs,
 			)
@@ -564,7 +679,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 				}
 			}
 			nodes[actionNodeID] = relationshipGraphNodeDTO{
-				ID: actionNodeID, Kind: "action", Label: strings.ReplaceAll(actionType, "_", " "),
+				ID: actionNodeID, Kind: "action", Label: graphActionLabel(actionType),
 				RelationshipID: relationshipID, RelationshipIDs: []string{relationshipID},
 				Summary: actionReason, Status: actionStatus, ApprovalStatus: approvalStatus,
 				PolicyStatus: policyStatus, ExecutionStatus: executionStatus,
@@ -581,7 +696,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 					sourceNodeID := "source:" + relationshipID + ":" + evidence.Source
 					occurredAt := evidence.OccurredAt.UTC()
 					nodes[evidenceNodeID] = relationshipGraphNodeDTO{
-						ID: evidenceNodeID, Kind: "evidence", Label: evidence.Excerpt,
+						ID: evidenceNodeID, Kind: "evidence", Label: graphEvidenceLabel(evidence.Excerpt),
 						RelationshipID: relationshipID, RelationshipIDs: []string{relationshipID},
 						Source: evidence.Source, Freshness: graphFreshness(occurredAt, aggregate.AsOf),
 						OccurredAt: &occurredAt, EvidenceRefs: []string{evidence.ID.String()},
@@ -590,6 +705,7 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 					evidenceRefs = append(evidenceRefs, evidence.ID.String())
 					addEdge("supports", "supports", evidenceNodeID, actionNodeID, true, nil, []string{evidence.ID.String()})
 					ensureGraphSourceNode(nodes, sourceNodeID, relationshipID, evidence.Source, "", sourceStatuses, aggregate.AsOf)
+					noteGraphSourceObservation(nodes, sourceNodeID, occurredAt, aggregate.AsOf)
 					addEdge("observed_from", "observed from", evidenceNodeID, sourceNodeID, true, nil, []string{evidence.ID.String()})
 				}
 				actionNode := nodes[actionNodeID]
@@ -605,19 +721,17 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 				observationNodeID := "evidence:" + observation.ID.String()
 				sourceNodeID := "source:" + relationshipID + ":" + observation.Source
 				occurredAt := observation.OccurredAt.UTC()
-				label := observation.Summary
-				if strings.TrimSpace(label) == "" {
-					label = strings.ReplaceAll(observation.EventType, "_", " ")
-				}
+				label, detail := graphObservationPresentation(observation.EventType, observation.Summary)
 				nodes[observationNodeID] = relationshipGraphNodeDTO{
-					ID: observationNodeID, Kind: "evidence", Label: label,
+					ID: observationNodeID, Kind: "evidence", Label: label, Summary: detail,
 					RelationshipID: relationshipID, RelationshipIDs: []string{relationshipID},
-					Status: observation.EventType, Source: observation.Source,
+					Status: graphEventLabel(observation.EventType), Source: observation.Source,
 					Freshness: graphFreshness(occurredAt, aggregate.AsOf), OccurredAt: &occurredAt,
 					EvidenceRefs: []string{observation.ID.String()}, ResourceRef: observation.ID.String(),
 				}
 				addEdge("supports", "supports", observationNodeID, relationshipNodeID, true, nil, []string{observation.ID.String()})
 				ensureGraphSourceNode(nodes, sourceNodeID, relationshipID, observation.Source, observation.SourceAccountID, sourceStatuses, aggregate.AsOf)
+				noteGraphSourceObservation(nodes, sourceNodeID, occurredAt, aggregate.AsOf)
 				addEdge("observed_from", "observed from", observationNodeID, sourceNodeID, true, nil, []string{observation.ID.String()})
 			}
 		}
@@ -650,11 +764,209 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 		ContractVersion: relationshipGraphContractVersion, GeneratedAt: generatedAt.UTC(),
 		AsOf: aggregate.AsOf, Historical: aggregate.Historical, Scope: aggregate.Scope,
 		Depth: aggregate.Depth, Nodes: nodeList, Edges: edgeList, Permissions: permissions,
+		HasMore:            aggregate.HasMore,
+		ObservationHasMore: aggregate.ObservationHasMore,
 	}
 	if aggregate.Scope == "relationship" && len(aggregate.Relationships) == 1 {
 		dto.RelationshipID = aggregate.Relationships[0].ID.String()
 	}
 	return dto
+}
+
+// graphCommitmentEvidenceRefs points a promise at the activity that confirmed
+// it. The stored evidence id is not a graph node, so the inspector used to
+// say the detail stayed on the record while Promise confirmed sat beside it.
+func graphCommitmentEvidenceRefs(evidences []*ent.RevenueEvidence) []string {
+	refs := make([]string, 0, len(evidences))
+	seen := map[string]struct{}{}
+	add := func(id string) {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			return
+		}
+		if _, ok := seen[id]; ok {
+			return
+		}
+		seen[id] = struct{}{}
+		refs = append(refs, id)
+	}
+	for _, evidence := range evidences {
+		if evidence == nil {
+			continue
+		}
+		linked := false
+		for _, ref := range evidence.ExternalEvidenceRefs {
+			if id, ok := strings.CutPrefix(strings.TrimSpace(ref), "relationship-observation:"); ok {
+				add(id)
+				linked = true
+			}
+		}
+		if !linked {
+			add(evidence.ID.String())
+		}
+	}
+	return refs
+}
+
+// graphEvidenceLabel matches the company sheet. A blank excerpt is not a
+// sentence, so the node says the evidence is unavailable instead of showing
+// an empty card.
+func graphEvidenceLabel(excerpt string) string {
+	if trimmed := strings.TrimSpace(excerpt); trimmed != "" {
+		return trimmed
+	}
+	return "Evidence excerpt unavailable"
+}
+
+// graphPersonLabel matches the people directory. A corrected name lives on the
+// person; the company membership still has the name from the original header.
+// A blank header falls back to the address, then to the same unknown label.
+func graphPersonLabel(participant *ent.RelationshipParticipant, linked *ent.Person) string {
+	if linked != nil {
+		if name := strings.TrimSpace(linked.DisplayName); name != "" {
+			return name
+		}
+		if email := strings.TrimSpace(linked.PrimaryEmail); email != "" {
+			return email
+		}
+	}
+	if name := strings.TrimSpace(participant.DisplayName); name != "" {
+		return name
+	}
+	if email := strings.TrimSpace(participant.Email); email != "" {
+		return email
+	}
+	return "Unknown person"
+}
+
+// graphActionLabel matches the titles Recovery and the company sheet use.
+// A stored follow_up_task is "Follow-up task", not "follow up task".
+func graphActionLabel(actionType string) string {
+	switch actionType {
+	case "warm_follow_up":
+		return "Warm follow-up"
+	case "proposal_nudge":
+		return "Proposal nudge"
+	case "referral_reconnect":
+		return "Referral reconnect"
+	case "customer_risk":
+		return "Customer risk"
+	case "meeting_follow_up":
+		return "Meeting follow-up"
+	case "meeting_recap":
+		return "Meeting recap"
+	case "crm_update":
+		return "CRM update"
+	case "follow_up_task":
+		return "Follow-up task"
+	case "calendar_hold":
+		return "Calendar hold"
+	case "commitment_rescue":
+		return "Promise follow-up"
+	default:
+		return strings.ReplaceAll(actionType, "_", " ")
+	}
+}
+
+// graphSourceLabel matches the company activity titles. A stored desktop_note
+// is "A note", and gmail is "Gmail".
+func graphSourceLabel(source string) string {
+	switch strings.ToLower(strings.TrimSpace(source)) {
+	case "gmail":
+		return "Gmail"
+	case "google":
+		return "Google"
+	case "calendar":
+		return "Calendar"
+	case "slack":
+		return "Slack"
+	case "hubspot":
+		return "HubSpot"
+	case "meeting":
+		return "A meeting"
+	case "desktop_note":
+		return "A note"
+	case "voice_note":
+		return "A voice note"
+	case "browser":
+		return "The browser"
+	case "crm":
+		return "The CRM"
+	case "user":
+		return "Added by you"
+	case "web":
+		return "The web"
+	case "composio":
+		return "A connected app"
+	default:
+		return graphTokenLabel(source)
+	}
+}
+
+// graphObservationPresentation names an activity. A confirmed promise already
+// has its own node, so the activity keeps the event name and the sentence
+// moves to the detail. A note still uses its summary as the name.
+func graphObservationPresentation(eventType, summary string) (label, detail string) {
+	trimmed := strings.TrimSpace(summary)
+	eventLabel := graphEventLabel(eventType)
+	if strings.EqualFold(strings.TrimSpace(eventType), "commitment_confirmed") && trimmed != "" {
+		return eventLabel, trimmed
+	}
+	if trimmed == "" {
+		return eventLabel, ""
+	}
+	return trimmed, ""
+}
+
+// graphEventLabel is the activity name when an observation has no summary.
+// thread.updated is "Mail updated", not the stored token.
+func graphEventLabel(eventType string) string {
+	switch strings.ToLower(strings.TrimSpace(eventType)) {
+	case "thread.updated":
+		return "Mail updated"
+	case "thread", "thread.snapshot":
+		return "Mail"
+	case "message.posted", "message.snapshot", "message.created":
+		return "Message"
+	case "event.updated":
+		return "Meeting updated"
+	case "meeting.snapshot":
+		return "Meeting"
+	case "company.created":
+		return "Company added"
+	case "company.updated":
+		return "Company updated"
+	case "company.snapshot":
+		return "Company record"
+	case "relationship.observed":
+		return "Recorded"
+	case "relationship.reviewed":
+		return "Reviewed"
+	case "person_added":
+		return "Person added"
+	case "note":
+		return "Note saved"
+	case "note_deleted":
+		return "Note removed"
+	case "commitment_confirmed":
+		return "Promise confirmed"
+	default:
+		return graphTokenLabel(eventType)
+	}
+}
+
+func graphTokenLabel(value string) string {
+	parts := strings.Fields(strings.NewReplacer("_", " ", ".", " ").Replace(strings.TrimSpace(value)))
+	for i, part := range parts {
+		if part == "" {
+			continue
+		}
+		parts[i] = strings.ToUpper(part[:1]) + part[1:]
+	}
+	if len(parts) == 0 {
+		return "Unknown"
+	}
+	return strings.Join(parts, " ")
 }
 
 func ensureGraphSourceNode(
@@ -674,7 +986,7 @@ func ensureGraphSourceNode(
 		status = statuses[source]
 	}
 	node := relationshipGraphNodeDTO{
-		ID: nodeID, Kind: "source", Label: strings.ReplaceAll(source, "_", " "),
+		ID: nodeID, Kind: "source", Label: graphSourceLabel(source),
 		RelationshipID: relationshipID, RelationshipIDs: []string{relationshipID}, Source: source,
 		ResourceRef: source,
 	}
@@ -692,6 +1004,31 @@ func ensureGraphSourceNode(
 			"missingScopes": status.MissingScopes,
 		}
 	}
+	nodes[nodeID] = node
+}
+
+// A company's meeting row uses that company's newest meeting. A shared source
+// clock would let another company's older meeting make this one look old.
+func noteGraphSourceObservation(
+	nodes map[string]relationshipGraphNodeDTO,
+	nodeID string,
+	occurredAt time.Time,
+	asOf time.Time,
+) {
+	node, ok := nodes[nodeID]
+	if !ok {
+		return
+	}
+	switch node.Status {
+	case "disconnected", "reconnect_required", "revoked", "failed":
+		return
+	}
+	stamp := occurredAt.UTC()
+	if node.OccurredAt != nil && !stamp.After(node.OccurredAt.UTC()) {
+		return
+	}
+	node.OccurredAt = &stamp
+	node.Freshness = graphFreshness(stamp, asOf)
 	nodes[nodeID] = node
 }
 
@@ -726,6 +1063,26 @@ func (h *Handler) RelationshipGraph(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		filter.AsOf = asOf
+	}
+	if rawOffset := strings.TrimSpace(r.URL.Query().Get("offset")); rawOffset != "" {
+		value, err := strconv.Atoi(rawOffset)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid offset", ErrInvalidInput))
+			return
+		}
+		if value > 0 {
+			filter.Offset = value
+		}
+	}
+	if rawObservations := strings.TrimSpace(r.URL.Query().Get("observationOffset")); rawObservations != "" {
+		value, err := strconv.Atoi(rawObservations)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid observationOffset", ErrInvalidInput))
+			return
+		}
+		if value > 0 {
+			filter.ObservationOffset = value
+		}
 	}
 	if rawID := strings.TrimSpace(r.URL.Query().Get("relationshipId")); rawID != "" {
 		id, err := uuid.Parse(rawID)

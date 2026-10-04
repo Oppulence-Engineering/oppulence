@@ -14,6 +14,26 @@ import {
   startComposioConnection,
   type ComposioConnection,
 } from "@/lib/api/composio/client";
+import { explainedRevenueError, shownRequestError } from "@/lib/revenue/revenue";
+
+/**
+ * Composio returns connection enums. A teammate should see the same kind of
+ * status the native cards use, not `active` or `expired`.
+ */
+const CONNECTION_STATUS_LABELS: Record<string, string> = {
+  ACTIVE: "Connected",
+  INITIATED: "Waiting to finish",
+  EXPIRED: "Expired",
+};
+
+function connectionStatusLabel(status: string): string {
+  const key = status.trim().toUpperCase();
+  if (!key) return "Not connected";
+  const known = CONNECTION_STATUS_LABELS[key];
+  if (known) return known;
+  const words = key.toLowerCase().replace(/[_-]+/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
 
 /** An active connection wins; otherwise the most recently created one does. */
 function betterConnection(candidate: ComposioConnection, held: ComposioConnection): boolean {
@@ -53,12 +73,12 @@ export function ComposioConnections({
   const [busy, setBusy] = React.useState("");
   const [error, setError] = React.useState("");
   // Set when the user leaves for Composio's page, so their return refreshes the
-  // list. Without it a finished connection still reads "not connected".
+  // list. Without it a finished connection still reads "Not connected".
   const awaitingConnection = React.useRef(false);
 
   React.useEffect(() => {
-    if (state === "ready") onToolkits?.(toolkits.map((kit) => kit.slug));
-  }, [onToolkits, state, toolkits]);
+    if (toolkitsQuery.data) onToolkits?.(toolkits.map((kit) => kit.slug));
+  }, [onToolkits, toolkits, toolkitsQuery.data]);
 
   const refreshLists = React.useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: composioKeys.all });
@@ -105,7 +125,7 @@ export function ComposioConnections({
       awaitingConnection.current = true;
       window.open(link.redirectUrl, "_blank", "noopener,noreferrer");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not start the connection.");
+      setError(shownRequestError(cause, "Could not start the connection."));
     } finally {
       setBusy("");
     }
@@ -118,7 +138,7 @@ export function ComposioConnections({
       await disconnectComposio(connection.id);
       refreshLists();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not disconnect.");
+      setError(shownRequestError(cause, "Could not disconnect."));
     } finally {
       setBusy("");
     }
@@ -133,20 +153,38 @@ export function ComposioConnections({
       <div className="border-b border-primary/10 p-4">
         <h3 className="text-sm font-medium text-primary">More products</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Connect the tools Oppulence does not track as relationship sources, such as Jira or Asana.
-          Agents can act in them; nothing they return counts as evidence for a commitment. Gmail,
-          Google Calendar, Slack and HubSpot are not listed here: connect those above, where they
-          become relationship evidence.
+          Connect other tools, such as Jira or Asana. Agents can use them, but they are not treated
+          as promises. Promises come from Gmail, Google Calendar, and HubSpot.
         </p>
       </div>
-      {state === "loading" ? (
+      {state === "loading" && toolkits.length === 0 && connections.length === 0 ? (
         <p className="p-4 text-sm text-muted-foreground">Loading products…</p>
-      ) : state === "error" ? (
-        <p className="p-4 text-sm text-muted-foreground">Could not load products.</p>
+      ) : state === "error" && toolkits.length === 0 && connections.length === 0 ? (
+        <div className="flex flex-col items-start gap-3 p-4">
+          <p className="text-sm text-muted-foreground">
+            {explainedRevenueError(
+              toolkitsQuery.error ?? connectionsQuery.error,
+              "Additional products are temporarily unavailable.",
+            )}
+          </p>
+          <Button onClick={() => void refreshLists()} size="sm" type="button" variant="outline">
+            Try again
+          </Button>
+        </div>
       ) : toolkits.length === 0 && orphans.length === 0 ? (
         <p className="p-4 text-sm text-muted-foreground">No products are available to connect.</p>
       ) : (
         <div className="flex flex-col divide-y divide-primary/10">
+          {state === "error" ? (
+            <div className="flex items-center justify-between gap-3 px-4 py-3">
+              <p className="text-sm text-muted-foreground">
+                Could not refresh products. Try again.
+              </p>
+              <Button onClick={() => void refreshLists()} size="sm" type="button" variant="outline">
+                Try again
+              </Button>
+            </div>
+          ) : null}
           {toolkits.map((toolkit) => {
             const connection = connectedBySlug.get(toolkit.slug);
             return (
@@ -154,11 +192,16 @@ export function ComposioConnections({
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-primary">{toolkit.name || toolkit.slug}</p>
                   <p className="text-xs text-muted-foreground">
-                    {connection ? connection.status.toLowerCase() : "not connected"}
+                    {connection ? connectionStatusLabel(connection.status) : "Not connected"}
                   </p>
                 </div>
                 {connection ? (
                   <Button
+                    aria-label={
+                      busy === toolkit.slug
+                        ? `Working on ${toolkit.name || toolkit.slug}`
+                        : `Disconnect ${toolkit.name || toolkit.slug}`
+                    }
                     disabled={busy === toolkit.slug}
                     onClick={() => void disconnect(connection)}
                     size="sm"
@@ -168,6 +211,11 @@ export function ComposioConnections({
                   </Button>
                 ) : (
                   <Button
+                    aria-label={
+                      busy === toolkit.slug
+                        ? `Opening ${toolkit.name || toolkit.slug}`
+                        : `Connect ${toolkit.name || toolkit.slug}`
+                    }
                     disabled={busy === toolkit.slug}
                     onClick={() => void connect(toolkit.slug)}
                     size="sm"
@@ -183,10 +231,15 @@ export function ComposioConnections({
               <div className="min-w-0">
                 <p className="text-sm font-medium text-primary">{connection.toolkit}</p>
                 <p className="text-xs text-muted-foreground">
-                  {connection.status.toLowerCase()} · no longer offered here
+                  {connectionStatusLabel(connection.status)} · no longer offered here
                 </p>
               </div>
               <Button
+                aria-label={
+                  busy === connection.toolkit
+                    ? `Working on ${connection.toolkit}`
+                    : `Disconnect ${connection.toolkit}`
+                }
                 disabled={busy === connection.toolkit}
                 onClick={() => void disconnect(connection)}
                 size="sm"
@@ -198,7 +251,11 @@ export function ComposioConnections({
           ))}
         </div>
       )}
-      {error ? <p className="p-4 pt-0 font-mono text-xs text-destructive">{error}</p> : null}
+      {error ? (
+        <p className="p-4 pt-0 text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

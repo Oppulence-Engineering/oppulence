@@ -20,4 +20,9 @@ export interface CommunicationTimelinePage {
    * @nullable
    */
   nextBefore?: string | null;
+  /**
+   * Id of the last item on this page. Send it with nextBefore so rows that share that time stay on the next page.
+   * @nullable
+   */
+  nextBeforeId?: string | null;
 }

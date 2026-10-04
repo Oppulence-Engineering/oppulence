@@ -6,17 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * Reason code for the ledger entry.
- */
-export type RevenueActionReason = (typeof RevenueActionReason)[keyof typeof RevenueActionReason];
+export type ListRevenueActionsSurface =
+  (typeof ListRevenueActionsSurface)[keyof typeof ListRevenueActionsSurface];
 
-export const RevenueActionReason = {
-  llm_call: "llm_call",
-  llm_call_reserve: "llm_call_reserve",
-  llm_settle: "llm_settle",
-  voice_tts: "voice_tts",
-  exa_search: "exa_search",
-  grant: "grant",
-  refund: "refund",
+export const ListRevenueActionsSurface = {
+  task: "task",
+  recovery: "recovery",
 } as const;

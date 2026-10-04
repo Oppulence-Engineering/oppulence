@@ -82,10 +82,10 @@ function deletionError(code: string): string {
 
 /**
  * Self-serve account deletion (DELETE /v1/me). Typing DELETE records intent.
- * One button then proves identity and finishes the deletion: Google
- * re-authentication, or a one-time email code when no second factor is
- * enrolled. The API still requires that proof. It is single-use, stays in
- * memory, and is never written to storage. Coming back from Google deletes
+ * One button then proves identity and finishes the deletion: a fresh
+ * sign-in, or a one-time email code when no second factor is enrolled.
+ * The API still requires that proof. It is single-use, stays in memory,
+ * and is never written to storage. Coming back from that sign-in deletes
  * the account only because this button stored the challenge first.
  */
 export function DeleteAccountRow() {
@@ -214,12 +214,12 @@ export function DeleteAccountRow() {
     }
   }
 
-  async function continueWithGoogle() {
+  async function continueWithSignIn() {
     const id = await startChallenge("oauth_reauth");
     if (!id) return;
     // The id lets the settings page finish verification after AuthKit returns.
-    // max_age=0 forces a real sign-in; the hosted picker is required so Google
-    // re-authentication and an enrolled second factor both run.
+    // max_age=0 forces a real sign-in through AuthKit, including an enrolled
+    // second factor. It must not jump straight to Google.
     window.sessionStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify({ challengeId: id }));
     const params = new URLSearchParams({
       return_to: REAUTH_RETURN_TO,
@@ -362,7 +362,7 @@ export function DeleteAccountRow() {
                   </label>
                 ) : phase === "intent" ? (
                   <p className="text-sm text-muted-foreground">
-                    Google confirms it is you. We delete the account when you come back.
+                    Sign in again to confirm it is you. We delete the account when you come back.
                   </p>
                 ) : null}
                 {error ? (
@@ -384,7 +384,7 @@ export function DeleteAccountRow() {
                   <>
                     <Button
                       disabled={!intentReady || pending}
-                      onClick={() => void continueWithGoogle()}
+                      onClick={() => void continueWithSignIn()}
                       variant="destructive"
                     >
                       {pending ? "Continuing…" : "Permanently delete account"}

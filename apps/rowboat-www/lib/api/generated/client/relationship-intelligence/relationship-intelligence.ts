@@ -36,7 +36,10 @@ import type {
   GetPublicMutualActionPlan200,
   GetRelationship200,
   GetRelationshipChanges200,
+  GetRelationshipChangesParams,
   GetRelationshipCommunicationTimelineParams,
+  GetRelationshipConversationReview200,
+  GetRelationshipConversationReviewParams,
   GetRelationshipEvidence200,
   GetRelationshipGraphParams,
   GetRelationshipSourceInventory200,
@@ -125,7 +128,7 @@ export const getListCommitmentsUrl = (params?: ListCommitmentsParams) => {
 };
 
 /**
- * Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register.
+ * Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register. A full page is the end of the register when hasMore is false.
  * @summary List the commitment register
  */
 export const listCommitments = async (
@@ -354,7 +357,7 @@ export const getListRelationshipAttentionUrl = (params?: ListRelationshipAttenti
 };
 
 /**
- * Returns deterministic relationship-native attention ordered by explicit factor contributions.
+ * Returns deterministic relationship-native attention ordered by explicit factor contributions. A full page is the end of the queue when hasMore is false.
  * @summary List portfolio attention
  */
 export const listRelationshipAttention = async (
@@ -540,7 +543,7 @@ export const getListRelationshipIdentityCandidatesUrl = (
 };
 
 /**
- * Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage.
+ * Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage. A full page is the end of the inbox when hasMore is false.
  * @summary List identity review candidates
  */
 export const listRelationshipIdentityCandidates = async (
@@ -1199,7 +1202,7 @@ export const getListRelationshipsUrl = (params?: ListRelationshipsParams) => {
 };
 
 /**
- * Lists canonical relationship state with optional text, lifecycle, health, and engagement filters.
+ * Lists canonical relationship state with optional text, lifecycle, health, and engagement filters. A full page of 200 is the end of the list when hasMore is false.
  * @summary List relationships
  */
 export const listRelationships = async (
@@ -1526,6 +1529,11 @@ export type getRelationshipChangesResponse200 = {
   status: 200;
 };
 
+export type getRelationshipChangesResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
 export type getRelationshipChangesResponse401 = {
   data: N401Response;
   status: 401;
@@ -1540,7 +1548,9 @@ export type getRelationshipChangesResponseSuccess = getRelationshipChangesRespon
   headers: Headers;
 };
 export type getRelationshipChangesResponseError = (
-  getRelationshipChangesResponse401 | getRelationshipChangesResponse404
+  | getRelationshipChangesResponse400
+  | getRelationshipChangesResponse401
+  | getRelationshipChangesResponse404
 ) & {
   headers: Headers;
 };
@@ -1548,19 +1558,35 @@ export type getRelationshipChangesResponseError = (
 export type getRelationshipChangesResponse =
   getRelationshipChangesResponseSuccess | getRelationshipChangesResponseError;
 
-export const getGetRelationshipChangesUrl = (relationshipId: string) => {
-  return `/v1/relationships/${relationshipId}/changes`;
+export const getGetRelationshipChangesUrl = (
+  relationshipId: string,
+  params?: GetRelationshipChangesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/relationships/${relationshipId}/changes?${stringifiedParams}`
+    : `/v1/relationships/${relationshipId}/changes`;
 };
 
 /**
- * Returns immutable projection snapshots so operators can see what changed and why.
+ * Returns immutable projection snapshots so operators can see what changed and why. The first page is the two newest snapshots.
  * @summary Get relationship changes
  */
 export const getRelationshipChanges = async (
   relationshipId: string,
+  params?: GetRelationshipChangesParams,
   options?: RequestInit,
 ): Promise<getRelationshipChangesResponse> => {
-  const res = await fetch(getGetRelationshipChangesUrl(relationshipId), {
+  const res = await fetch(getGetRelationshipChangesUrl(relationshipId, params), {
     ...options,
     method: "GET",
   });
@@ -1813,6 +1839,11 @@ export type getRelationshipCommunicationTimelineResponse200 = {
   status: 200;
 };
 
+export type getRelationshipCommunicationTimelineResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
 export type getRelationshipCommunicationTimelineResponse401 = {
   data: N401Response;
   status: 401;
@@ -1828,7 +1859,9 @@ export type getRelationshipCommunicationTimelineResponseSuccess =
     headers: Headers;
   };
 export type getRelationshipCommunicationTimelineResponseError = (
-  getRelationshipCommunicationTimelineResponse401 | getRelationshipCommunicationTimelineResponse404
+  | getRelationshipCommunicationTimelineResponse400
+  | getRelationshipCommunicationTimelineResponse401
+  | getRelationshipCommunicationTimelineResponse404
 ) & {
   headers: Headers;
 };
@@ -1857,7 +1890,7 @@ export const getGetRelationshipCommunicationTimelineUrl = (
 };
 
 /**
- * Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship.
+ * Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship. Rows that share a time stay in id order, so the next page does not skip them.
  * @summary Get communication timeline
  */
 export const getRelationshipCommunicationTimeline = async (
@@ -2254,6 +2287,84 @@ export const putConversationPolicy = async (
   return { data, status: res.status, headers: res.headers } as putConversationPolicyResponse;
 };
 
+export type getRelationshipConversationReviewResponse200 = {
+  data: GetRelationshipConversationReview200;
+  status: 200;
+};
+
+export type getRelationshipConversationReviewResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type getRelationshipConversationReviewResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getRelationshipConversationReviewResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type getRelationshipConversationReviewResponseSuccess =
+  getRelationshipConversationReviewResponse200 & {
+    headers: Headers;
+  };
+export type getRelationshipConversationReviewResponseError = (
+  | getRelationshipConversationReviewResponse400
+  | getRelationshipConversationReviewResponse401
+  | getRelationshipConversationReviewResponse404
+) & {
+  headers: Headers;
+};
+
+export type getRelationshipConversationReviewResponse =
+  getRelationshipConversationReviewResponseSuccess | getRelationshipConversationReviewResponseError;
+
+export const getGetRelationshipConversationReviewUrl = (
+  relationshipId: string,
+  params?: GetRelationshipConversationReviewParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/relationships/${relationshipId}/conversation-review?${stringifiedParams}`
+    : `/v1/relationships/${relationshipId}/conversation-review`;
+};
+
+/**
+ * Returns focused review items and governance receipts from conversations older than the newest page.
+ * @summary Get earlier conversation review
+ */
+export const getRelationshipConversationReview = async (
+  relationshipId: string,
+  params?: GetRelationshipConversationReviewParams,
+  options?: RequestInit,
+): Promise<getRelationshipConversationReviewResponse> => {
+  const res = await fetch(getGetRelationshipConversationReviewUrl(relationshipId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getRelationshipConversationReviewResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getRelationshipConversationReviewResponse;
+};
+
 export type correctRelationshipResponse201 = {
   data: RevenueRelationship;
   status: 201;
@@ -2623,6 +2734,11 @@ export type getRelationshipTimelineResponse200 = {
   status: 200;
 };
 
+export type getRelationshipTimelineResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
 export type getRelationshipTimelineResponse401 = {
   data: N401Response;
   status: 401;
@@ -2637,7 +2753,9 @@ export type getRelationshipTimelineResponseSuccess = getRelationshipTimelineResp
   headers: Headers;
 };
 export type getRelationshipTimelineResponseError = (
-  getRelationshipTimelineResponse401 | getRelationshipTimelineResponse404
+  | getRelationshipTimelineResponse400
+  | getRelationshipTimelineResponse401
+  | getRelationshipTimelineResponse404
 ) & {
   headers: Headers;
 };
@@ -2665,7 +2783,7 @@ export const getGetRelationshipTimelineUrl = (
 };
 
 /**
- * Returns the latest immutable observations for a relationship.
+ * Returns the latest immutable observations for a relationship. Rows that share a time stay in id order, so the next page does not skip them.
  * @summary Get evidence timeline
  */
 export const getRelationshipTimeline = async (

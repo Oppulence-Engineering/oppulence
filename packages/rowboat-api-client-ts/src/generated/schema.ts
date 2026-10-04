@@ -9603,7 +9603,7 @@ export interface components {
       expiresAt?: string | null;
       /**
        * @description Readable explanation.
-       * @example A confirmed commitment is overdue by two days.
+       * @example A confirmed promise is overdue by two days.
        */
       explanation: string;
       /**

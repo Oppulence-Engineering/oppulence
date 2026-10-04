@@ -110,6 +110,12 @@ describe("DeleteAccountRow", () => {
         within(dialog).getByText(/shared workspace goes to another member/i),
       ).toBeInTheDocument();
       expect(within(dialog).getByText(/cannot sign in to this account again/i)).toBeInTheDocument();
+      expect(
+        within(dialog).getByText(
+          "Sign in again to confirm it is you. We delete the account when you come back.",
+        ),
+      ).toBeInTheDocument();
+      expect(within(dialog).queryByText(/Google/)).not.toBeInTheDocument();
     });
 
     it("starts with an empty confirmation and no deletion request", async () => {

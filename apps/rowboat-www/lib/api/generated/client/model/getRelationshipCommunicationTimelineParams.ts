@@ -15,4 +15,8 @@ export type GetRelationshipCommunicationTimelineParams = {
    * Return items before this RFC3339 timestamp.
    */
   before?: string;
+  /**
+   * With before, also return items at that time whose id sorts earlier.
+   */
+  beforeId?: string;
 };

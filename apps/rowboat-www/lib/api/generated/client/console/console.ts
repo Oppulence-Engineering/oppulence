@@ -240,7 +240,7 @@ export const getListConsoleResourcesUrl = (params: ListConsoleResourcesParams) =
 };
 
 /**
- * Lists only the caller's resources in the exact organization workspace asserted by the token.
+ * Lists only the caller's resources in the exact organization workspace asserted by the token. A full page is the end of the list when hasMore is false.
  * @summary List console resources
  */
 export const listConsoleResources = async (

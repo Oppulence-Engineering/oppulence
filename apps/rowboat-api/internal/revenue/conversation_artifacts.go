@@ -296,12 +296,12 @@ func persistContradictionArtifacts(
 				sum := sha256.Sum256([]byte(rel.ID.String() + ":" + dimension + ":" + strings.Join(ids, ":")))
 				caseID := "contradiction:" + hex.EncodeToString(sum[:12])
 				status := "open"
-				reason := "equally authoritative typed evidence overlaps with different values"
+				reason := "Two sources disagree. Choose which value is current."
 				openedAt := left.ValidFrom.UTC()
 				resolvedAt := ""
 				if assertionPriority(left.SourceType) != assertionPriority(right.SourceType) {
 					status = "auto_resolved_by_authority"
-					reason = "deterministic assertion authority selected the current value"
+					reason = "A stronger source already chose the current value."
 					resolvedAt = openedAt.Format(time.RFC3339)
 				}
 				sides := []ConversationContradictionEvidenceSide{

@@ -387,7 +387,14 @@ func (s *Service) buildMissionControl(ctx context.Context, u *ent.User, relation
 			if sourceStatus == nil && statusCountBySource[source] == 1 {
 				sourceStatus = singleStatusBySource[source]
 			}
-			if sourceStatus == nil || sourceStatus.Completeness != "complete" {
+			// A missing connector row means that sync never finished. A note, a
+			// meeting, or a browser capture has no sync row, so that absence
+			// is not a stale grant.
+			if sourceStatus == nil {
+				if observationSourceRequiresSync(source) {
+					item.Fresh = false
+				}
+			} else if sourceStatus.Completeness != "complete" {
 				item.Fresh = false
 			}
 			item.Evidence = append(item.Evidence, MissionControlEvidenceReference{
@@ -567,6 +574,17 @@ func missionControlDimensionValue(rel *ent.Relationship, dimension string) any {
 		return rel.Milestones
 	default:
 		return nil
+	}
+}
+
+// observationSourceRequiresSync is true for connectors that publish a source
+// status. A note, a meeting, or a browser capture never does.
+func observationSourceRequiresSync(source string) bool {
+	switch canonicalSource(source) {
+	case "google", "slack", "hubspot":
+		return true
+	default:
+		return false
 	}
 }
 
