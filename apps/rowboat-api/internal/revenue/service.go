@@ -946,6 +946,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if deletion := relationshipSheetDeletionEmptyMatch(needle); deletion != nil {
 			parts = append(parts, deletion)
 		}
+		if deletionButton := relationshipSheetDeletionButtonMatch(needle); deletionButton != nil {
+			parts = append(parts, deletionButton)
+		}
 		if accepted := relationshipSheetAcceptedPromiseMatch(needle); accepted != nil {
 			parts = append(parts, accepted)
 		}
@@ -2303,6 +2306,19 @@ func relationshipSheetDeletionEmptyMatch(needle string) predicate.Relationship {
 	if !labelPhraseMatches("no mail or meeting data to delete.", needle) {
 		return nil
 	}
+	return relationshipWithoutConversationData()
+}
+
+// relationshipSheetDeletionButtonMatch matches the privacy button. It is the
+// opposite of the empty line: mail, a meeting, a note, or any promise.
+func relationshipSheetDeletionButtonMatch(needle string) predicate.Relationship {
+	if !labelPhraseMatches("delete conversation data", needle) {
+		return nil
+	}
+	return relationship.Not(relationshipWithoutConversationData())
+}
+
+func relationshipWithoutConversationData() predicate.Relationship {
 	return relationship.And(
 		relationshipMailThreadCount("=", 0),
 		relationship.Not(relationshipHasVisibleCommunication()),

@@ -3296,6 +3296,15 @@ func TestRelationshipSearchFindsThePlanAndDeletionLines(t *testing.T) {
 	assertCompanyQuery("which companies have they accepted send the soon packet", "Quay Soon")
 	assertCompanyQuery("They accepted “this promise”", "Quay Blank")
 	assertCompanyQuery("delete")
+	assertCompanyQuery(
+		"Delete conversation data",
+		"Quay Soon", "Quay Note", "Quay Mail", "Quay Accepted", "Quay Blank",
+	)
+	assertCompanyQuery(
+		"which companies have delete conversation data",
+		"Quay Soon", "Quay Note", "Quay Mail", "Quay Accepted", "Quay Blank",
+	)
+	assertCompanyQuery("conversation data")
 }
 
 func TestRelationshipSearchFindsTheDisagreement(t *testing.T) {
