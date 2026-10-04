@@ -3965,6 +3965,11 @@ func relationshipSheetEmptyCopyMatch(needle string) predicate.Relationship {
 	if labelPhraseMatches("nothing recorded yet.", needle) {
 		preds = append(preds, relationship.Not(relationship.HasObservations()))
 	}
+	// Activity history shows fifty events, then "Show earlier activity".
+	// Fifty events fill that page. A fifty-first is the button.
+	if labelPhraseMatches("show earlier activity", needle) {
+		preds = append(preds, relationshipHasEarlierActivity())
+	}
 	// The promise card and the Promises section both use this line when
 	// the company has no commitments. "recorded" is also an activity heading.
 	if labelPhraseMatches("no commitments recorded for this company yet.", needle) {
@@ -4012,6 +4017,23 @@ func sheetEmptySentenceOwnsActivity(needle string) bool {
 		}
 	}
 	return false
+}
+
+// relationshipHasEarlierActivity is the "Show earlier activity" button. The
+// company sheet loads fifty observations at a time, so the button appears
+// once a fifty-first observation exists.
+func relationshipHasEarlierActivity() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT count(*) FROM ")
+			b.WriteString(relationshipobservation.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(relationshipobservation.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(") > 50")
+		}))
+	})
 }
 
 func relationshipHasMeetingObservation() predicate.Relationship {
