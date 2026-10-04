@@ -3563,6 +3563,11 @@ func relationshipSheetEmptyCopyMatch(needle string) predicate.Relationship {
 	if labelPhraseMatches("nothing recorded yet.", needle) {
 		preds = append(preds, relationship.Not(relationship.HasObservations()))
 	}
+	// The promise card and the Promises section both use this line when
+	// the company has no commitments. "recorded" is also an activity heading.
+	if labelPhraseMatches("no commitments recorded for this company yet.", needle) {
+		preds = append(preds, relationship.Not(relationship.HasCommitments()))
+	}
 	longChange := "no account details have changed yet. promises and meetings are in the sections below."
 	shortChange := "no account details have changed yet."
 	switch {
@@ -3598,6 +3603,7 @@ func sheetEmptySentenceOwnsActivity(needle string) bool {
 	for _, phrase := range []string{
 		"no gmail or calendar events yet.",
 		"nothing recorded yet.",
+		"no commitments recorded for this company yet.",
 	} {
 		if labelPhraseMatches(phrase, needle) {
 			return true

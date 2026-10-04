@@ -767,6 +767,14 @@ func TestRelationshipSearchFindsTheEmptySheetSentences(t *testing.T) {
 		Save(f.ctx); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(promise).
+		SetSource("user").SetExternalID("quay-promise-observed").
+		SetEventType("relationship.observed").SetOccurredAt(at).SetReceivedAt(at).
+		SetSummary("A recorded promise").SetContentHash("quay-promise-observed").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := f.client.RelationshipStateSnapshot.Create().
 		SetWorkspace(ws).SetRelationship(changed).SetUser(f.user).
 		SetVersion(1).SetStateJSON(`{}`).SetStateHash("quay-changed").
@@ -792,8 +800,12 @@ func TestRelationshipSearchFindsTheEmptySheetSentences(t *testing.T) {
 		}
 	}
 
-	assertCompanyQuery("Nothing recorded yet.", "Quay Empty", "Quay Inbox", "Quay Promise", "Quay Changed", "Quay Deleted")
-	assertCompanyQuery("which companies have nothing recorded yet", "Quay Empty", "Quay Inbox", "Quay Promise", "Quay Changed", "Quay Deleted")
+	assertCompanyQuery("Nothing recorded yet.", "Quay Empty", "Quay Inbox", "Quay Changed", "Quay Deleted")
+	assertCompanyQuery("which companies have nothing recorded yet", "Quay Empty", "Quay Inbox", "Quay Changed", "Quay Deleted")
+	assertCompanyQuery(
+		"No commitments recorded for this company yet.",
+		"Quay Empty", "Quay Inbox", "Quay Changed", "Quay Deleted", "Quay Note", "Quay Meet", "Quay Calendar", "Quay Observed",
+	)
 	assertCompanyQuery("No Gmail or calendar events yet.", "Quay Empty", "Quay Note", "Quay Promise", "Quay Changed", "Quay Deleted", "Quay Observed")
 	assertCompanyQuery(
 		"No Gmail or calendar events yet. Confirmed meetings are in Activity.",
