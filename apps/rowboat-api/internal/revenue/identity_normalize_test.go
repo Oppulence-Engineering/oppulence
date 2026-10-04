@@ -2591,6 +2591,108 @@ func TestRelationshipSearchFindsTheSheetReviewAndRecommendation(t *testing.T) {
 	assertCompanyQuery("reviewed", "Quill Atelier", "Lumen Packet")
 }
 
+func TestRelationshipSearchFindsNoVisibleConnections(t *testing.T) {
+	f := newFixture(t)
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	none := makeCompany("Quill North")
+	noted := makeCompany("Cedar Slide")
+	promised := makeCompany("Aspen Ledger")
+	acted := makeCompany("Birch Quiet")
+	risky := makeCompany("Maple Kept")
+	mailed := makeCompany("Lumen Fold")
+	peopled := makeCompany("Harbor Person")
+	_ = none
+
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	at := time.Date(2026, 10, 2, 12, 0, 0, 0, time.UTC)
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(noted).
+		SetSource("user").SetExternalID("cedar-note").
+		SetEventType("note").SetOccurredAt(at).SetReceivedAt(at).
+		SetSummary("A recorded note").SetContentHash("cedar-note").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Commitment.Create().
+		SetWorkspace(ws).SetRelationship(promised).SetUser(f.user).
+		SetDirection("promised_by_them").SetText("Send the packet").
+		SetStatus("open").SetConfidence(1).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: acted.ID,
+		ActionType:     "warm_follow_up",
+		Channel:        "email",
+		Reason:         "Send the harbor packet",
+		PriorityScore:  80,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(risky.ID).
+		SetRisks([]string{"A delivery risk"}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.CommunicationInteraction.Create().
+		SetWorkspace(ws).SetOwner(f.user).SetRelationshipID(mailed.ID).
+		SetSource("gmail").SetSourceAccountID("owner@x.co").SetProviderObjectID("lumen-mail").
+		SetInteractionType("email").SetDirection("inbound").SetSubject("Hello").
+		SetOccurredAt(at).SetReceivedAt(at).SetVisibility("metadata").
+		SetContentHash("sha256:lumen-mail").SetMetadataJSON(`{}`).
+		Save(auth.WithInternal(context.Background())); err != nil {
+		t.Fatal(err)
+	}
+	person, err := f.client.Person.Create().
+		SetDisplayName("Casey Quinn").SetTitle("Buyer").
+		SetWorkspace(ws).SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).SetUser(f.user).
+		SetRelationship(peopled).SetPerson(person).
+		SetDisplayName("Casey Quinn").SetRole("decision_maker").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+
+	assertCompanyQuery("No visible connections.", "Quill North", "Lumen Fold")
+	assertCompanyQuery("which companies have no visible connections", "Quill North", "Lumen Fold")
+	assertCompanyQuery("visible")
+	assertCompanyQuery("connections")
+}
+
 func TestRelationshipSearchFindsTheLastInteraction(t *testing.T) {
 	f := newFixture(t)
 	recent, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
