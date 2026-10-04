@@ -3133,6 +3133,109 @@ func TestRelationshipSearchFindsTheEmptyFollowUp(t *testing.T) {
 	assertCompanyQuery("due soon")
 }
 
+func TestRelationshipSearchFindsThePlanAndDeletionLines(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	quiet := makeCompany("Quay Quiet")
+	soon := makeCompany("Quay Soon")
+	noted := makeCompany("Quay Note")
+	mailed := makeCompany("Quay Mail")
+	planned := makeCompany("Quay Plan")
+	accepted := makeCompany("Quay Accepted")
+	blank := makeCompany("Quay Blank")
+	_ = quiet
+	if _, err := f.client.Commitment.Create().
+		SetWorkspace(ws).SetRelationship(soon).SetUser(f.user).
+		SetDirection("promised_by_them").SetText("Send the soon packet").
+		SetStatus("open").SetConfidence(1).SetAcceptance("internally_confirmed").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Commitment.Create().
+		SetWorkspace(ws).SetRelationship(blank).SetUser(f.user).
+		SetDirection("promised_by_them").SetText("   ").
+		SetStatus("open").SetConfidence(1).SetAcceptance("internally_confirmed").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Commitment.Create().
+		SetWorkspace(ws).SetRelationship(accepted).SetUser(f.user).
+		SetDirection("promised_by_them").SetText("Send the soon packet").
+		SetStatus("open").SetConfidence(1).SetAcceptance("accepted").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(noted).
+		SetSource("desktop_note").SetExternalID("quay-note").
+		SetEventType("note").SetOccurredAt(now).SetReceivedAt(now).
+		SetSummary("A note").SetContentHash("quay-note").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.MailThread.Create().
+		SetUser(f.user).SetProviderThreadID("quay-mail").
+		SetSubject("The quay note").SetMessageCount(1).
+		SetRelationship(mailed).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256([]byte("{}"))
+	if _, err := f.client.ConversationIntelligenceArtifact.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(planned).
+		SetKind("mutual_action_plan").SetStableID("plan:quay").SetVersion(1).
+		SetStatus("draft").SetSubjectRef(planned.ID.String()).
+		SetEffectiveAt(now).SetEvidenceRefs([]string{}).
+		SetPayloadJSON(`{}`).SetPayloadHash(hex.EncodeToString(sum[:])).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery(
+		"No mail or meeting data to delete.",
+		"Quay Quiet", "Quay Plan",
+	)
+	assertCompanyQuery(
+		"A shared plan starts once they accept a promise.",
+		"Quay Quiet", "Quay Soon", "Quay Note", "Quay Mail", "Quay Accepted", "Quay Blank",
+	)
+	assertCompanyQuery("They accepted “Send the soon packet”", "Quay Soon")
+	assertCompanyQuery(`They accepted "Send the soon packet"`, "Quay Soon")
+	assertCompanyQuery("which companies have they accepted send the soon packet", "Quay Soon")
+	assertCompanyQuery("They accepted “this promise”", "Quay Blank")
+	assertCompanyQuery("delete")
+}
+
 func TestRelationshipSearchFindsTheDisagreement(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
