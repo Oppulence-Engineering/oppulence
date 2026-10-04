@@ -1091,6 +1091,79 @@ func TestRelationshipSearchFindsTheActivitySubject(t *testing.T) {
 	assertCompanyQuery("subject")
 }
 
+func TestRelationshipSearchFindsTheMailTimelineSubject(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return rel
+	}
+	saveMail := func(rel *ent.Relationship, subject string, deleted bool) {
+		t.Helper()
+		now := time.Now().UTC()
+		if _, err := f.client.CommunicationInteraction.Create().
+			SetWorkspace(ws).SetOwner(f.user).SetRelationshipID(rel.ID).
+			SetSource("gmail").SetSourceAccountID("owner@x.co").SetProviderObjectID(rel.DisplayName).
+			SetInteractionType("email").SetDirection("inbound").SetSubject(subject).
+			SetOccurredAt(now).SetReceivedAt(now).SetVisibility("metadata").
+			SetContentHash(rel.DisplayName).SetMetadataJSON(`{}`).
+			SetDeleted(deleted).
+			Save(auth.WithInternal(f.ctx)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	noted := saveCompany("Quill North")
+	now := time.Now().UTC()
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(noted).
+		SetSource("gmail").SetExternalID("quill-north").SetEventType("thread.snapshot").
+		SetOccurredAt(now).SetReceivedAt(now).SetContentHash("quill-north").
+		SetSummary("Harbor packet").
+		SetNormalizedFactsJSON(`{}`).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	harbor := saveCompany("Birch Slide")
+	saveMail(harbor, "Harbor packet", false)
+	invoice := saveCompany("Cedar Mine")
+	saveMail(invoice, "Invoice packet", false)
+	removed := saveCompany("Cedar Mark")
+	saveMail(removed, "Harbor packet", true)
+	blank := saveCompany("Cedar Quiet")
+	saveMail(blank, "   ", false)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Harbor packet", "Birch Slide")
+	assertCompanyQuery("harbor", "Birch Slide")
+	assertCompanyQuery("Invoice packet", "Cedar Mine")
+	assertCompanyQuery("packet", "Birch Slide", "Cedar Mine")
+	assertCompanyQuery("No message preview", "Cedar Quiet")
+}
+
 func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
