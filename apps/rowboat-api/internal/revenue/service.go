@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -4533,6 +4534,9 @@ func writeSupportedAssertionTail(b *sql.Builder, s *sql.Selector, now time.Time)
 func relationshipSheetCompletenessMatch(needle string) predicate.Relationship {
 	now := time.Now()
 	var preds []predicate.Relationship
+	if gmail := relationshipGmailClearerSourceMatch(needle, now); gmail != nil {
+		preds = append(preds, gmail)
+	}
 	if sheetPhraseMatches("connect a source before these details can fill in.", needle) {
 		preds = append(preds, relationshipConnectSourceCopy(now))
 	}
@@ -4797,6 +4801,69 @@ func relationshipGmailExplanation(now time.Time) predicate.Relationship {
 		relationshipHasMailThreads(),
 		relationshipSupportedDetailCount(0, now),
 	)
+}
+
+// relationshipGmailClearerSourceMatch matches that paragraph. One thread
+// reads "1 Gmail thread is linked." Several read "2 Gmail threads are linked."
+// A counted sentence stays on that count. The shared ending matches any count.
+func relationshipGmailClearerSourceMatch(needle string, now time.Time) predicate.Relationship {
+	counts := gmailClearerSourceCounts(needle)
+	if len(counts) > 0 {
+		preds := make([]predicate.Relationship, 0, len(counts))
+		for _, n := range counts {
+			preds = append(preds, relationship.And(
+				relationshipMailThreadCount("=", n),
+				relationshipSupportedDetailCount(0, now),
+			))
+		}
+		if len(preds) == 1 {
+			return preds[0]
+		}
+		return relationship.Or(preds...)
+	}
+	if !labelPhraseMatches("health and status still need a clearer source.", needle) {
+		return nil
+	}
+	return relationship.And(
+		relationshipMailThreadCount("<>", 0),
+		relationshipSupportedDetailCount(0, now),
+	)
+}
+
+func gmailClearerSourceSentence(n int) string {
+	if n == 1 {
+		return "1 Gmail thread is linked. Health and status still need a clearer source."
+	}
+	return fmt.Sprintf("%d Gmail threads are linked. Health and status still need a clearer source.", n)
+}
+
+var gmailClearerSourceCountPattern = regexp.MustCompile(`(?:^|\s)(\d+) gmail threads are linked health and status still need a clearer source`)
+
+func gmailClearerSourceCounts(needle string) []int {
+	text := normalizePersonSearch(needle)
+	var counts []int
+	seen := map[int]bool{}
+	add := func(n int) {
+		if n < 1 || seen[n] {
+			return
+		}
+		seen[n] = true
+		counts = append(counts, n)
+	}
+	if labelPhraseMatches(gmailClearerSourceSentence(1), text) {
+		add(1)
+	}
+	for _, match := range gmailClearerSourceCountPattern.FindAllStringSubmatch(text, -1) {
+		n, err := strconv.Atoi(match[1])
+		if err != nil || n < 2 {
+			continue
+		}
+		if !labelPhraseMatches(gmailClearerSourceSentence(n), text) {
+			continue
+		}
+		add(n)
+	}
+	return counts
 }
 
 func relationshipHasMailThreads() predicate.Relationship {

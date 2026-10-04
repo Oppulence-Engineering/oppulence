@@ -1556,6 +1556,66 @@ func TestRelationshipSearchFindsTheCompletenessCopy(t *testing.T) {
 	assertCompanyQuery("missing")
 }
 
+func TestRelationshipSearchFindsTheGmailClearerSource(t *testing.T) {
+	f := newFixture(t)
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	one := makeCompany("Quill North")
+	two := makeCompany("Birch Slide")
+	filled := makeCompany("Cedar Mark")
+	makeCompany("Lumen Quiet")
+	saveThread := func(rel *ent.Relationship, id string) {
+		t.Helper()
+		if _, err := f.client.MailThread.Create().
+			SetUser(f.user).SetProviderThreadID(id).
+			SetSubject("Harbor note").SetMessageCount(1).
+			SetRelationship(rel).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveThread(one, "quill-one")
+	saveThread(two, "birch-one")
+	saveThread(two, "birch-two")
+	saveThread(filled, "cedar-one")
+	if _, err := f.svc.CorrectRelationship(f.ctx, f.user, filled.ID, RelationshipCorrectionInput{
+		Dimension: "health", Value: "needs_attention", Reason: "The last note needs a reply.",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	oneSentence := "1 Gmail thread is linked. Health and status still need a clearer source."
+	twoSentence := "2 Gmail threads are linked. Health and status still need a clearer source."
+	assertCompanyQuery(oneSentence, "Quill North")
+	assertCompanyQuery(twoSentence, "Birch Slide")
+	assertCompanyQuery("which companies have "+oneSentence, "Quill North")
+	assertCompanyQuery("Health and status still need a clearer source.", "Quill North", "Birch Slide")
+	assertCompanyQuery("clearer")
+}
+
 func TestRelationshipSearchFindsTheCompletenessHeading(t *testing.T) {
 	f := newFixture(t)
 	quill, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
