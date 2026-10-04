@@ -650,6 +650,12 @@ func TestPersonSearchFindsThePrintedLabels(t *testing.T) {
 			t.Fatalf("query %q = %v err=%v", query, got, err)
 		}
 	}
+	for _, query := range []string{"profile", "contributor", "filled"} {
+		found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query})
+		if err != nil || found == nil || len(found.Persons) != 0 {
+			t.Fatalf("fragment %q = %+v err=%v", query, found, err)
+		}
+	}
 }
 
 func TestPersonSearchFindsNoEmail(t *testing.T) {
@@ -684,6 +690,10 @@ func TestPersonSearchFindsNoEmail(t *testing.T) {
 		}
 		t.Fatalf("no email = %v err=%v", got, err)
 	}
+	email, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "email"})
+	if err != nil || email == nil || len(email.Persons) != 0 {
+		t.Fatalf("email fragment = %+v err=%v", email, err)
+	}
 }
 
 func TestPersonSearchFindsTheDetailCount(t *testing.T) {
@@ -716,6 +726,21 @@ func TestPersonSearchFindsTheDetailCount(t *testing.T) {
 	two, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "2 details filled in"})
 	if err != nil || two == nil || len(two.Persons) != 1 || two.Persons[0].DisplayName != "Morgan Lee" {
 		t.Fatalf("two details = %+v err=%v", two, err)
+	}
+	// "filled" is inside both "Not filled in" and "1 detail filled in".
+	filled, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "filled"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(filled.Persons) != 0 {
+		t.Fatalf("filled = %+v", filled.Persons)
+	}
+	word, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "filled in"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(word.Persons) != 0 {
+		t.Fatalf("filled in = %+v", word.Persons)
 	}
 }
 
@@ -996,6 +1021,10 @@ func TestPersonSearchFindsWhoLeft(t *testing.T) {
 	found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "Left the company"})
 	if err != nil || found == nil || len(found.Persons) != 1 || found.Persons[0].DisplayName != "Casey Quinn" {
 		t.Fatalf("left = %+v err=%v", found, err)
+	}
+	company, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "company"})
+	if err != nil || company == nil || len(company.Persons) != 0 {
+		t.Fatalf("company fragment = %+v err=%v", company, err)
 	}
 }
 

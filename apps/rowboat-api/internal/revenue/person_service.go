@@ -135,33 +135,39 @@ func personVisibleLabelMatch(term string) predicate.Person {
 		return nil
 	}
 	var preds []predicate.Person
-	if strings.Contains("individual contributor", needle) {
+	if labelPhraseMatches("individual contributor", needle) {
 		preds = append(preds, personPrintsIndividualContributor())
 	}
-	unfilled := strings.Contains("not filled in", needle)
-	filled := strings.Contains("detail filled in", needle)
-	switch {
-	case unfilled && filled:
-		preds = append(preds, personMatchAll())
-	case unfilled:
-		preds = append(preds, personUnfilled())
-	case filled:
-		preds = append(preds, person.Not(personUnfilled()))
+	// "filled" and "filled in" sit inside both "Not filled in" and "1 detail
+	// filled in". Treating the word as both labels returned every person.
+	// A numbered cell is handled on its own, so "1 detail filled in" stays
+	// that count.
+	if _, counted := exactPersonDetailCount(needle); !counted {
+		unfilled := labelPhraseMatches("not filled in", needle)
+		filled := labelPhraseMatches("detail filled in", needle) || labelPhraseMatches("details filled in", needle)
+		switch {
+		case unfilled && filled:
+			preds = append(preds, personMatchAll())
+		case unfilled:
+			preds = append(preds, personUnfilled())
+		case filled:
+			preds = append(preds, person.Not(personUnfilled()))
+		}
 	}
-	if strings.Contains("view profile", needle) {
+	if labelPhraseMatches("view profile", needle) {
 		preds = append(preds, personPrintsViewProfile())
 	}
 	// The address sits under the name. A missing one is the words "No email".
-	// Spaces are the same as no address.
-	if strings.Contains("no email", needle) {
+	// Spaces are the same as no address. The word "email" is not that sentence.
+	if labelPhraseMatches("no email", needle) {
 		preds = append(preds, personTextMissing(person.FieldPrimaryEmail))
 	}
 	// Another name is printed as "Also known as". The stored list is JSON.
-	if strings.Contains("also known as", needle) {
+	if labelPhraseMatches("also known as", needle) {
 		preds = append(preds, personHasAlias())
 	}
 	// A departed person is badged "Left the company". The stored token is departed.
-	if strings.Contains("left the company", needle) {
+	if labelPhraseMatches("left the company", needle) {
 		preds = append(preds, person.EmploymentStatusEQ("departed"))
 	}
 	// The employment line says Current. The stored status is active. The word
@@ -171,7 +177,7 @@ func personVisibleLabelMatch(term string) predicate.Person {
 	}
 	// "Not known" is the empty company, role, department, location, profile, and
 	// last interaction. One blank fact is enough for the row or the sheet to say it.
-	if strings.Contains("not known", needle) {
+	if labelPhraseMatches("not known", needle) {
 		preds = append(preds, personPrintsNotKnown())
 	}
 	// "Where details came from" is empty until a fact other than the name exists.
