@@ -934,6 +934,18 @@ func (s *Service) ListRelationshipsFiltered(
 		if recovery := relationshipSheetRecoveryMatch(needle); recovery != nil {
 			parts = append(parts, recovery)
 		}
+		if followUp := relationshipSheetFollowUpEmptyMatch(needle, searchedAt); followUp != nil {
+			parts = append(parts, followUp)
+		}
+		if plan := relationshipSheetPlanEmptyMatch(needle); plan != nil {
+			parts = append(parts, plan)
+		}
+		if deletion := relationshipSheetDeletionEmptyMatch(needle); deletion != nil {
+			parts = append(parts, deletion)
+		}
+		if accepted := relationshipSheetAcceptedPromiseMatch(needle); accepted != nil {
+			parts = append(parts, accepted)
+		}
 		if contradiction := relationshipSheetContradictionMatch(needle); contradiction != nil {
 			parts = append(parts, contradiction)
 		}
@@ -2035,6 +2047,244 @@ func relationshipSheetRecoveryMatch(needle string) predicate.Relationship {
 		return preds[0]
 	}
 	return relationship.Or(preds...)
+}
+
+// relationshipSheetFollowUpEmptyMatch matches the line under Promises to
+// follow up when no check has been saved. A saved check replaces that line,
+// and a promise due inside 72 hours is not the empty sentence.
+func relationshipSheetFollowUpEmptyMatch(needle string, now time.Time) predicate.Relationship {
+	overdue, dueSoon, ok := promiseFollowUpEmptyCounts(needle)
+	if !ok {
+		return nil
+	}
+	return relationship.And(
+		relationship.Not(relationshipHasRecoveryEvaluation()),
+		relationshipFollowUpCounts(now, overdue, dueSoon),
+	)
+}
+
+// promiseFollowUpEmptyCounts reads the sentence the sheet prints. Zero is
+// "No promises are due for a follow-up." A due promise adds "Reconcile to
+// check the follow-up." A longer question that still contains the sentence
+// counts as that sentence.
+func promiseFollowUpEmptyCounts(needle string) (overdue int, dueSoon int, ok bool) {
+	needle = normalizePersonSearch(needle)
+	if needle == "" {
+		return 0, 0, false
+	}
+	if labelPhraseMatches("no promises are due for a follow-up.", needle) {
+		return 0, 0, true
+	}
+	const suffix = "reconcile to check the follow up"
+	index := strings.LastIndex(needle, suffix)
+	if index < 0 {
+		return 0, 0, false
+	}
+	head := strings.TrimSpace(needle[:index])
+	if overdue, dueSoon, ok = promiseFollowUpCombinedCounts(head); ok {
+		return overdue, dueSoon, true
+	}
+	if n, matched := followUpClauseCount(head, "a promise is past due", " promises are past due"); matched {
+		return n, 0, true
+	}
+	if n, matched := followUpClauseCount(head, "a promise is due soon", " promises are due soon"); matched {
+		return 0, n, true
+	}
+	return 0, 0, false
+}
+
+func promiseFollowUpCombinedCounts(head string) (overdue int, dueSoon int, ok bool) {
+	index := strings.LastIndex(head, " and ")
+	if index < 0 {
+		return 0, 0, false
+	}
+	left := strings.TrimSpace(head[:index])
+	right := strings.TrimSpace(head[index+len(" and "):])
+	overdue, ok = followUpClauseCount(left, "a promise is past due", " promises are past due")
+	if !ok {
+		return 0, 0, false
+	}
+	dueSoon, ok = followUpSoonSideCount(right)
+	if !ok {
+		return 0, 0, false
+	}
+	return overdue, dueSoon, true
+}
+
+func followUpSoonSideCount(clause string) (int, bool) {
+	if clause == "1 is due soon" || strings.HasSuffix(clause, " 1 is due soon") {
+		return 1, true
+	}
+	return followUpPluralCount(clause, " are due soon")
+}
+
+func followUpClauseCount(head, singular, pluralSuffix string) (int, bool) {
+	if head == singular || strings.HasSuffix(head, " "+singular) {
+		return 1, true
+	}
+	return followUpPluralCount(head, pluralSuffix)
+}
+
+func followUpPluralCount(head, suffix string) (int, bool) {
+	if !strings.HasSuffix(head, suffix) {
+		return 0, false
+	}
+	prefix := strings.TrimSpace(strings.TrimSuffix(head, suffix))
+	number := prefix
+	if i := strings.LastIndex(prefix, " "); i >= 0 {
+		number = prefix[i+1:]
+	}
+	n, err := strconv.Atoi(number)
+	if err != nil || n < 2 {
+		return 0, false
+	}
+	return n, true
+}
+
+func relationshipHasRecoveryEvaluation() predicate.Relationship {
+	return relationshipHasArtifactKind("recovery_evaluation")
+}
+
+func relationshipFollowUpCounts(now time.Time, overdue, dueSoon int) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.And(
+			followUpBucketCount(s, now, true, overdue),
+			followUpBucketCount(s, now, false, dueSoon),
+		))
+	})
+}
+
+func followUpBucketCount(s *sql.Selector, now time.Time, past bool, n int) *sql.Predicate {
+	return sql.P(func(b *sql.Builder) {
+		soon := now.UTC().Add(72 * time.Hour)
+		b.WriteString("(SELECT count(*) FROM ")
+		b.WriteString(commitment.Table)
+		b.WriteString(" WHERE ")
+		b.WriteString(commitment.RelationshipColumn)
+		b.WriteString(" = ")
+		b.WriteString(s.C(relationship.FieldID))
+		b.WriteString(" AND ")
+		b.WriteString(commitment.FieldStatus)
+		b.WriteString(" IN ('open', 'at_risk') AND ")
+		b.WriteString(commitment.FieldAcceptance)
+		b.WriteString(" NOT IN ('candidate', 'disputed') AND (")
+		b.WriteString(commitment.FieldStatus)
+		b.WriteString(" = 'at_risk' OR (")
+		b.WriteString(commitment.FieldDueAt)
+		b.WriteString(" IS NOT NULL AND ")
+		b.WriteString(commitment.FieldDueAt)
+		b.WriteString(" < ")
+		b.Arg(soon)
+		b.WriteString(")) AND ")
+		if past {
+			b.WriteString(commitment.FieldDueAt)
+			b.WriteString(" IS NOT NULL AND ")
+			b.WriteString(commitment.FieldDueAt)
+			b.WriteString(" < ")
+			b.Arg(now.UTC())
+		} else {
+			b.WriteString("(")
+			b.WriteString(commitment.FieldDueAt)
+			b.WriteString(" IS NULL OR ")
+			b.WriteString(commitment.FieldDueAt)
+			b.WriteString(" >= ")
+			b.Arg(now.UTC())
+			b.WriteString(")")
+		}
+		b.WriteString(") = ")
+		b.Arg(n)
+	})
+}
+
+// relationshipSheetPlanEmptyMatch matches the mutual-plan line. The sheet
+// prints it when no plan is saved, including a company that already has a
+// promise waiting for the other party to accept.
+func relationshipSheetPlanEmptyMatch(needle string) predicate.Relationship {
+	if !labelPhraseMatches("a shared plan starts once they accept a promise.", needle) {
+		return nil
+	}
+	return relationship.Not(relationshipHasArtifactKind("mutual_action_plan"))
+}
+
+// relationshipSheetDeletionEmptyMatch matches the privacy line. The delete
+// button appears once there is mail, a meeting, a note, or any promise.
+func relationshipSheetDeletionEmptyMatch(needle string) predicate.Relationship {
+	if !labelPhraseMatches("no mail or meeting data to delete.", needle) {
+		return nil
+	}
+	return relationship.And(
+		relationshipMailThreadCount("=", 0),
+		relationship.Not(relationshipHasVisibleCommunication()),
+		relationship.Not(relationship.HasCommitments()),
+		relationship.Not(relationship.HasObservationsWith(relationshipobservation.SourceIn(
+			"meeting", "desktop_note", "voice_note", "browser",
+		))),
+	)
+}
+
+// relationshipSheetAcceptedPromiseMatch matches the button on a promise the
+// workspace confirmed and the other party has not accepted yet. The button
+// reads They accepted “Send the packet”.
+func relationshipSheetAcceptedPromiseMatch(needle string) predicate.Relationship {
+	name, ok := acceptedPromiseQuery(needle)
+	if !ok {
+		return nil
+	}
+	text := commitment.And(
+		commitment.AcceptanceEQ("internally_confirmed"),
+		commitmentTextEquals(name),
+	)
+	if name == "this promise" {
+		text = commitment.And(
+			commitment.AcceptanceEQ("internally_confirmed"),
+			commitment.Or(commitmentTextEquals(""), commitmentTextEquals(name)),
+		)
+	}
+	return relationship.HasCommitmentsWith(text)
+}
+
+func acceptedPromiseQuery(needle string) (string, bool) {
+	text := strings.NewReplacer("“", "", "”", "", "\"", "", "'", "").Replace(normalizePersonSearch(needle))
+	const prefix = "they accepted "
+	index := strings.Index(text, prefix)
+	if index < 0 {
+		return "", false
+	}
+	name := strings.TrimSpace(text[index+len(prefix):])
+	if name == "" {
+		return "", false
+	}
+	return name, true
+}
+
+func commitmentTextEquals(text string) predicate.Commitment {
+	return predicate.Commitment(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("lower(trim(")
+			b.WriteString(s.C(commitment.FieldText))
+			b.WriteString(")) = ")
+			b.Arg(strings.ToLower(strings.TrimSpace(text)))
+		}))
+	})
+}
+
+func relationshipHasArtifactKind(kind string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			art := conversationintelligenceartifact.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(art)
+			b.WriteString(" WHERE ")
+			b.WriteString(conversationintelligenceartifact.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" = ")
+			b.Arg(kind)
+			b.WriteString(")")
+		}))
+	})
 }
 
 func relationshipHasLatestRecovery(item recoverySearchPhrase) predicate.Relationship {
