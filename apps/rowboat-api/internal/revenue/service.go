@@ -3556,10 +3556,16 @@ func relationshipJSONArrayCount(field, compare string, n int) predicate.Relation
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
 			column := s.C(field)
+			// A correction that only fills one list stores the other as JSON
+			// null. The sheet still prints "None recorded." for that list.
+			// jsonb_array_length rejects the null, so a missing list counts as 0.
 			if s.Dialect() == dialect.Postgres {
-				b.WriteString(fmt.Sprintf("jsonb_array_length(coalesce(%s, '[]'::jsonb))", column))
+				b.WriteString(fmt.Sprintf(
+					"CASE WHEN jsonb_typeof(%s) = 'array' THEN jsonb_array_length(%s) ELSE 0 END",
+					column, column,
+				))
 			} else {
-				b.WriteString(fmt.Sprintf("json_array_length(coalesce(%s, '[]'))", column))
+				b.WriteString(fmt.Sprintf("coalesce(json_array_length(%s), 0)", column))
 			}
 			b.WriteString(" ")
 			b.WriteString(compare)
