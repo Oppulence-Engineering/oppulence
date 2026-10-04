@@ -3380,6 +3380,87 @@ func TestRelationshipSearchFindsTheDisagreement(t *testing.T) {
 	assertCompanyQuery("A stronger source already chose the current value.", "Cedar Mill")
 }
 
+func TestRelationshipSearchFindsTheChosenContradictionValue(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveCase := func(rel *ent.Relationship, status, reason, stableID string) {
+		t.Helper()
+		payload, err := json.Marshal(ConversationContradictionCase{
+			CaseID: stableID, RelationshipID: rel.ID.String(), SubjectRef: rel.ID.String(),
+			Dimension: "health", Status: status, Reason: reason,
+			Sides: []ConversationContradictionEvidenceSide{
+				{AssertionID: "left", Source: "desktop_note"},
+				{AssertionID: "right", Source: "gmail"},
+			},
+			OpenedAt: time.Now().UTC().Format(time.RFC3339),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(payload)
+		if _, err := f.client.ConversationIntelligenceArtifact.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetKind("contradiction_case").SetStableID(stableID).SetVersion(1).
+			SetStatus(status).SetSubjectRef(rel.ID.String()).
+			SetEffectiveAt(time.Now().UTC()).SetEvidenceRefs([]string{}).
+			SetPayloadJSON(string(payload)).SetPayloadHash(hex.EncodeToString(sum[:])).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	note := makeCompany("Quill North")
+	legacy := makeCompany("Cedar Mark")
+	plain := makeCompany("Birch Slide")
+	open := makeCompany("Aspen Quay")
+	stronger := makeCompany("Harbor Ledger")
+	gmail := makeCompany("Lumen Packet")
+	saveCase(note, "user_resolved", "You chose the value from A note.", "contradiction:note")
+	saveCase(legacy, "user_resolved", "Selected desktop_note as current evidence.", "contradiction:legacy")
+	saveCase(plain, "user_resolved", "User selected the current value from a focused contradiction case.", "contradiction:plain")
+	saveCase(open, "open", "You chose the value from A note.", "contradiction:open")
+	saveCase(stronger, "auto_resolved_by_authority", "A stronger source already chose the current value.", "contradiction:stronger")
+	saveCase(gmail, "user_resolved", "You chose the value from Gmail.", "contradiction:gmail")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("You chose the value from A note.", "Quill North", "Cedar Mark")
+	assertCompanyQuery("which companies have you chose the value from a note", "Quill North", "Cedar Mark")
+	assertCompanyQuery("You chose the current value.", "Birch Slide")
+	assertCompanyQuery("You chose the value from Gmail.", "Lumen Packet")
+	assertCompanyQuery("Choose the current value from 2 sources.", "Aspen Quay")
+	assertCompanyQuery("A stronger source already chose the current value.", "Harbor Ledger")
+	assertCompanyQuery("you chose")
+	assertCompanyQuery("a note")
+	assertCompanyQuery("gmail")
+}
+
 func TestRelationshipSearchFindsSuggestionTitles(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

@@ -2474,6 +2474,9 @@ type contradictionSearchPhrase struct {
 	minSides   int
 	exactSides int
 	reason     string
+	// labelOnly matches the full printed sentence. A word inside it, such as
+	// "a meeting", stays on the activity heading that already uses that word.
+	labelOnly bool
 }
 
 func contradictionSearchPhrases() []contradictionSearchPhrase {
@@ -2508,7 +2511,59 @@ func contradictionSearchPhrases() []contradictionSearchPhrase {
 			reason:    "deterministic assertion authority selected the current value",
 		},
 	)
+	// An open case prints "Choose the current value from N sources." A
+	// resolved case prints who was chosen. The button stores that sentence.
+	// An older row stored "Selected desktop_note as current evidence."
+	for _, slug := range contradictionChosenSources() {
+		label := contradictionChosenSourceLabel(slug)
+		display := "You chose the value from " + label + "."
+		phrases = append(phrases,
+			contradictionSearchPhrase{
+				phrase:    normalizePersonSearch(display),
+				statusNot: "open",
+				reason:    display,
+				labelOnly: true,
+			},
+			contradictionSearchPhrase{
+				phrase:    normalizePersonSearch(display),
+				statusNot: "open",
+				reason:    "Selected " + slug + " as current evidence.",
+				labelOnly: true,
+			},
+		)
+	}
+	phrases = append(phrases, contradictionSearchPhrase{
+		phrase:    normalizePersonSearch("You chose the current value."),
+		statusNot: "open",
+		reason:    "User selected the current value from a focused contradiction case.",
+		labelOnly: true,
+	})
 	return phrases
+}
+
+func contradictionChosenSources() []string {
+	return []string{
+		"user_correction", "source_fact", "deterministic", "ai_inference",
+		"gmail", "google", "calendar", "slack", "hubspot", "meeting",
+		"desktop_note", "voice_note", "browser", "crm", "user", "web", "composio",
+	}
+}
+
+// contradictionChosenSourceLabel is the name on "You chose the value from …".
+// Authority tokens win over the activity title, matching the company sheet.
+func contradictionChosenSourceLabel(source string) string {
+	switch strings.ToLower(strings.TrimSpace(source)) {
+	case "user_correction":
+		return "Your correction"
+	case "source_fact":
+		return "A connected source"
+	case "deterministic":
+		return "A rule"
+	case "ai_inference":
+		return "A suggestion"
+	default:
+		return graphSourceLabel(source)
+	}
 }
 
 // relationshipSheetContradictionMatch matches the suggestion "Two details disagree"
@@ -2524,6 +2579,12 @@ func relationshipSheetContradictionMatch(needle string) predicate.Relationship {
 	}
 	if len(chosen) == 0 {
 		for _, item := range phrases {
+			if item.labelOnly {
+				if labelPhraseMatches(item.phrase, needle) {
+					chosen = append(chosen, item)
+				}
+				continue
+			}
 			if sheetPhraseMatches(item.phrase, needle) {
 				chosen = append(chosen, item)
 			}
