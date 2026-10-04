@@ -202,6 +202,10 @@ export function parseRelationshipGraphQuery(query) {
     sending: /\bsending\b/.test(normalized),
     executionFailed: /\bfailed\b/.test(normalized),
     needsReconcile: /\bneeds reconcile\b|\bneeds_reconcile\b/.test(normalized),
+    // The inspector says Cancelled for a send that was cancelled, and the
+    // promise row uses the same word. The stored execution state is cancelled.
+    executionCancelled:
+      /\bcancelled\b/.test(normalized) && !/\bnot cancelled\b/.test(normalized),
     // The company card says Kept. The stored status is still met.
     kept: /\bkept\b|\bkept_promises?\b/.test(normalized),
     stale: /\bstale\b|\boutdated\b|\bout of date\b/.test(normalized),
@@ -443,7 +447,9 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bneeds reconcile\b/g, " ")
     .replace(/\bneeds_reconcile\b/g, " ")
     .replace(/\bsending\b/g, " ")
-    .replace(/\bfailed\b/g, " ");
+    .replace(/\bfailed\b/g, " ")
+    .replace(/\bnot cancelled\b/g, " ")
+    .replace(/\bcancelled\b/g, " ");
   filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
@@ -472,6 +478,7 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.sending) applied.push("sending");
   if (filters.executionFailed) applied.push("failed");
   if (filters.needsReconcile) applied.push("needs reconcile");
+  if (filters.executionCancelled) applied.push("cancelled");
   if (filters.stale) applied.push("out of date");
   if (filters.current) applied.push("up to date");
   if (filters.aging) applied.push("getting old");
@@ -611,6 +618,14 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     constrainBy(
       (node) => node.kind === "action" && normalizedGraphValue(node.executionStatus) === "ambiguous",
     );
+  }
+  if (filters.executionCancelled) {
+    constrainBy((node) => {
+      if (node.kind === "action" && normalizedGraphValue(node.executionStatus) === "cancelled") {
+        return true;
+      }
+      return node.kind === "commitment" && normalizedGraphValue(node.status) === "cancelled";
+    });
   }
   if (filters.approvalStatus.length) {
     constrainBy(

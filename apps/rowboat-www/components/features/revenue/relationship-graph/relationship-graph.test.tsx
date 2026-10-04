@@ -176,6 +176,7 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphExecutionLabel("pending")).toBeUndefined();
     expect(graphExecutionLabel("ambiguous")).toBe("Needs reconcile");
     expect(graphExecutionLabel("failed")).toBe("Failed");
+    expect(graphExecutionLabel("cancelled")).toBe("Cancelled");
     expect(graphExecutionLabel("sent", "draft")).toBe("Drafted");
     expect(graphExecutionLabel("sent", "send")).toBe("Sent");
     expect(graphExecutionLabel("sent")).toBe("Sent");
@@ -438,6 +439,10 @@ describe("RelationshipGraphWorkspace", () => {
       "1 company matches sending.",
     );
     expect(graphQueryAnswer("1 relationship matches failed.", 2)).toBe("1 company matches failed.");
+    expect(graphQueryFilterLabel("cancelled")).toBe("cancelled");
+    expect(graphQueryAnswer("2 relationships match cancelled.", 3)).toBe(
+      "2 companies match cancelled.",
+    );
     expect(graphQueryAnswer("1 relationship matches drafted.", 2)).toBe(
       "1 company matches drafted.",
     );

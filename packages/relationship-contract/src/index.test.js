@@ -769,6 +769,50 @@ test("asking needs reconcile finds that follow-up and leaves a send still going 
   assert.deepEqual(queryRelationshipGraph(graph, "failed").relationshipIds.sort(), ["fail", "source"]);
 });
 
+test("asking cancelled finds a cancelled send and a cancelled promise", () => {
+  const parsed = parseRelationshipGraphQuery("cancelled");
+  assert.equal(parsed.filters.executionCancelled, true);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["cancelled"]);
+  assert.equal(parseRelationshipGraphQuery("not cancelled").filters.executionCancelled, false);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:stop", kind: "relationship", label: "Quay Stop" },
+      {
+        id: "action:stop",
+        kind: "action",
+        label: "Customer risk",
+        relationshipId: "stop",
+        status: "open",
+        approvalStatus: "pending",
+        executionStatus: "cancelled",
+      },
+      { id: "relationship:void", kind: "relationship", label: "Quay Void" },
+      {
+        id: "commitment:void",
+        kind: "commitment",
+        label: "Send the quay void",
+        relationshipId: "void",
+        status: "cancelled",
+      },
+      { id: "relationship:open", kind: "relationship", label: "Quay Open" },
+      {
+        id: "commitment:open",
+        kind: "commitment",
+        label: "Send the quay note",
+        relationshipId: "open",
+        status: "open",
+      },
+    ],
+    edges: [],
+  };
+  const result = queryRelationshipGraph(graph, "cancelled");
+  assert.deepEqual(result.relationshipIds.sort(), ["stop", "void"]);
+  assert.equal(result.visibleNodeIds.includes("relationship:open"), false);
+  assert.equal(result.answer, "2 relationships match cancelled.");
+});
+
 test("asking a follow-up title does not require that source", () => {
   const titles = [
     ["calendar hold", "Calendar hold", "calendar"],
