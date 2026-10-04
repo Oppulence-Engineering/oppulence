@@ -2722,6 +2722,12 @@ func relationshipSheetSuggestionMatch(needle string) predicate.Relationship {
 	} else if sheetPhraseMatches("focused evidence review", needle) {
 		preds = append(preds, relationshipHasReviewClaim("any"))
 	}
+	// Focused evidence review shows two hundred conversations, then
+	// "Show earlier evidence". Two hundred fill that page. A two-hundred-first
+	// conversation is the button.
+	if labelPhraseMatches("show earlier evidence", needle) {
+		preds = append(preds, relationshipHasEarlierEvidence())
+	}
 	if sheetPhraseMatches("low-confidence material claim", needle) || sheetPhraseMatches("what was said", needle) {
 		preds = append(preds, relationshipHasReviewClaim("claim"))
 	}
@@ -2742,6 +2748,21 @@ func relationshipSheetSuggestionMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+func relationshipHasEarlierEvidence() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT count(*) FROM ")
+			b.WriteString(relationshipobservation.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(relationshipobservation.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(") > ")
+			b.Arg(intelligenceObservationPage)
+		}))
+	})
 }
 
 func relationshipHasConversationClaimKind(kind string) predicate.Relationship {
