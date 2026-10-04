@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -3749,6 +3750,193 @@ func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
 	assertCompanyQuery("Deletion is finished", "Harbor Ledger")
 	assertCompanyQuery("Last deletion: Deletion is finished", "Harbor Ledger")
 	assertCompanyQuery("Deletion is still running", "Lumen Packet")
+}
+
+func TestRelationshipSearchFindsOlderReview(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveNotes := func(rel *ent.Relationship, n int, at time.Time) {
+		t.Helper()
+		for i := 0; i < n; i++ {
+			externalID := rel.DisplayName + ":" + strconv.Itoa(i)
+			if _, err := f.client.RelationshipObservation.Create().
+				SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+				SetSource("desktop_note").SetExternalID(externalID).
+				SetEventType("note").SetOccurredAt(at).SetReceivedAt(at).
+				SetSummary("A note").SetContentHash(externalID).
+				Save(f.ctx); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	saveFacts := func(rel *ent.Relationship, externalID string, at time.Time, facts map[string]any) *ent.RelationshipObservation {
+		t.Helper()
+		raw, err := json.Marshal(facts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		row, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(externalID).
+			SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(at).SetReceivedAt(at).
+			SetContentHash(externalID).SetNormalizedFactsJSON(string(raw)).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	claimFacts := func(id, kind string, confidence, speaker float64) map[string]any {
+		return map[string]any{
+			"conversation_claims": []map[string]any{{
+				"id": id, "kind": kind, "value": "The packet is late",
+				"confidence": confidence, "speakerConfidence": speaker,
+			}},
+		}
+	}
+	candidateFacts := func() map[string]any {
+		return map[string]any{
+			"conversation_claim_candidates": []map[string]any{{
+				"candidateId": "candidate-risk", "kind": "risk",
+				"displayValue": "Security review may delay renewal", "confidence": 0.96,
+			}},
+		}
+	}
+	now := time.Now().UTC()
+	older := now.Add(-2 * time.Hour)
+	quiet := makeCompany("Older Quiet")
+	page := makeCompany("Older Page")
+	open := makeCompany("Older Open")
+	claimed := makeCompany("Older Claim")
+	buried := makeCompany("Older Buried")
+	fixed := makeCompany("Older Fixed")
+	sure := makeCompany("Older Sure")
+	speaker := makeCompany("Older Speaker")
+	heard := makeCompany("Older Heard")
+	role := makeCompany("Older Role")
+	candidate := makeCompany("Older Candidate")
+	decided := makeCompany("Older Decided")
+	deferred := makeCompany("Older Deferred")
+	half := makeCompany("Older Half")
+	_ = quiet
+	saveNotes(page, intelligenceObservationPage, now)
+	saveNotes(open, intelligenceObservationPage+1, now)
+	saveNotes(claimed, intelligenceObservationPage, older)
+	saveNotes(buried, intelligenceObservationPage, now)
+	saveNotes(fixed, intelligenceObservationPage, older)
+	saveNotes(sure, intelligenceObservationPage, older)
+	saveNotes(speaker, intelligenceObservationPage, older)
+	saveNotes(heard, intelligenceObservationPage, older)
+	saveNotes(role, intelligenceObservationPage, older)
+	saveNotes(candidate, intelligenceObservationPage, older)
+	saveNotes(decided, intelligenceObservationPage, older)
+	saveNotes(deferred, intelligenceObservationPage, older)
+	saveNotes(half, intelligenceObservationPage, older)
+	saveFacts(claimed, "older-claim", now, claimFacts("weak-claim", "risk", 0.2, 0.95))
+	saveFacts(buried, "older-buried", older.Add(-time.Hour), claimFacts("buried-claim", "risk", 0.2, 0.95))
+	fixedClaim := saveFacts(fixed, "older-fixed", now, claimFacts("fixed-claim", "risk", 0.2, 0.95))
+	saveFacts(fixed, "older-fixed-correction", now.Add(time.Minute), map[string]any{
+		"review_correction": map[string]any{
+			"review_item_id": reviewItemID(fixedClaim.ID.String(), "fixed-claim", "claim"),
+			"kind":           "claim", "claim_id": "fixed-claim",
+			"observation_id": fixedClaim.ID.String(), "corrected_value": "The packet is on time",
+		},
+	})
+	saveFacts(sure, "older-sure", now, claimFacts("sure-claim", "risk", 0.95, 0.95))
+	saveFacts(speaker, "older-speaker", now, claimFacts("speaker-claim", "risk", 0.95, 0.2))
+	heardClaim := saveFacts(heard, "older-heard", now, claimFacts("heard-claim", "risk", 0.95, 0.2))
+	saveFacts(heard, "older-heard-correction", now.Add(time.Minute), map[string]any{
+		"review_correction": map[string]any{
+			"review_item_id": reviewItemID(heardClaim.ID.String(), "heard-claim", "speaker"),
+			"kind":           "speaker", "claim_id": "heard-claim",
+			"observation_id": heardClaim.ID.String(), "corrected_value": "Ada",
+		},
+	})
+	saveFacts(role, "older-role", now, claimFacts("role-claim", "stakeholder", 0.8, 0.95))
+	saveFacts(candidate, "older-candidate", now, candidateFacts())
+	decidedClaim := saveFacts(decided, "older-decided", now, candidateFacts())
+	saveFacts(decided, "older-decided-choice", now.Add(time.Minute), map[string]any{
+		"review_decision": map[string]any{
+			"item_id": reviewItemID(decidedClaim.ID.String(), "candidate-risk", "candidate"),
+			"kind":    "approve", "candidate_id": "candidate-risk",
+			"observation_id": decidedClaim.ID.String(),
+		},
+	})
+	deferredClaim := saveFacts(deferred, "older-deferred", now, candidateFacts())
+	saveFacts(deferred, "older-deferred-choice", now.Add(time.Minute), map[string]any{
+		"review_decision": map[string]any{
+			"item_id": reviewItemID(deferredClaim.ID.String(), "candidate-risk", "candidate"),
+			"kind":    "defer", "candidate_id": "candidate-risk",
+			"observation_id": deferredClaim.ID.String(),
+		},
+	})
+	halfClaim := saveFacts(half, "older-half", now, claimFacts("half-claim", "risk", 0.2, 0.2))
+	saveFacts(half, "older-half-correction", now.Add(time.Minute), map[string]any{
+		"review_correction": map[string]any{
+			"review_item_id": reviewItemID(halfClaim.ID.String(), "half-claim", "speaker"),
+			"kind":           "speaker", "claim_id": "half-claim",
+			"observation_id": halfClaim.ID.String(), "corrected_value": "Ada",
+		},
+	})
+
+	assertReview := func(rel *ent.Relationship, items int, hasMore bool) {
+		t.Helper()
+		intelligence, err := f.svc.RelationshipIntelligenceFor(f.ctx, rel)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(intelligence.ReviewItems) != items || intelligence.ObservationPageHasMore != hasMore {
+			t.Fatalf("%s review items = %d hasMore %v, want %d hasMore %v",
+				rel.DisplayName, len(intelligence.ReviewItems), intelligence.ObservationPageHasMore, items, hasMore)
+		}
+	}
+	assertReview(open, 0, true)
+	assertReview(page, 0, false)
+	assertReview(claimed, 2, true)
+	assertReview(buried, 0, true)
+	assertReview(fixed, 0, true)
+	assertReview(sure, 0, true)
+	assertReview(speaker, 1, true)
+	assertReview(heard, 0, true)
+	assertReview(role, 1, true)
+	assertReview(candidate, 1, true)
+	assertReview(decided, 0, true)
+	assertReview(deferred, 1, true)
+	assertReview(half, 2, true)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	want := []string{"Older Open", "Older Buried", "Older Fixed", "Older Sure", "Older Heard", "Older Decided"}
+	assertCompanyQuery("Older conversations may still need review.", want...)
+	assertCompanyQuery("Older conversations may still need review", want...)
 }
 
 func hasName(names []string, want string) bool {
