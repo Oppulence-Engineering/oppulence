@@ -865,6 +865,9 @@ func (s *Service) ListRelationshipsFiltered(
 				relationship.Not(relationship.HasCommitmentsWith(visibleTruthCommitment())),
 			))
 		}
+		if state := relationshipSheetStateAnswerMatch(needle, searchedAt); state != nil {
+			parts = append(parts, state)
+		}
 		if truth := relationshipSheetTruthPromiseMatch(needle, searchedAt); truth != nil {
 			parts = append(parts, truth)
 		}
@@ -4476,6 +4479,81 @@ func writeCurrentAssertionWindow(b *sql.Builder, now time.Time) {
 	b.WriteString(" > ")
 	b.Arg(now)
 	b.WriteByte(')')
+}
+
+// relationshipSheetStateAnswerMatch matches "What is true now?". The sheet
+// prints "Health: Needs attention" only after that detail is supported.
+func relationshipSheetStateAnswerMatch(needle string, now time.Time) predicate.Relationship {
+	var preds []predicate.Relationship
+	for _, dim := range stateAnswerDimensions() {
+		for _, value := range dim.values {
+			phrase := dim.title + ": " + companyRecordSearchLabel(value)
+			if !labelPhraseMatches(phrase, needle) {
+				continue
+			}
+			preds = append(preds, relationship.And(
+				relationshipHasSupportedDimension(dim.dimension, now),
+				dim.eq(value),
+			))
+		}
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func companyRecordSearchLabel(value string) string {
+	switch value {
+	case "unknown":
+		return "Not known"
+	case "needs_attention":
+		return "Needs attention"
+	case "active_customer":
+		return "Active customer"
+	case "former_customer":
+		return "Former customer"
+	default:
+		if value == "" {
+			return "Not known"
+		}
+		return strings.ToUpper(value[:1]) + value[1:]
+	}
+}
+
+type stateAnswerDimension struct {
+	title     string
+	dimension string
+	values    []string
+	eq        func(string) predicate.Relationship
+}
+
+func stateAnswerDimensions() []stateAnswerDimension {
+	return []stateAnswerDimension{
+		{
+			title: "Lifecycle", dimension: "lifecycle", eq: relationship.LifecycleEQ,
+			values: []string{
+				"unknown", "prospect", "evaluation", "contracting", "onboarding",
+				"active_customer", "renewal", "churned", "former_customer",
+			},
+		},
+		{
+			title: "Health", dimension: "health", eq: relationship.HealthEQ,
+			values: []string{"unknown", "healthy", "needs_attention", "critical"},
+		},
+		{
+			title: "Engagement", dimension: "engagement", eq: relationship.EngagementEQ,
+			values: []string{"unknown", "increasing", "steady", "declining", "dormant"},
+		},
+		{
+			title: "Sentiment", dimension: "sentiment", eq: relationship.SentimentEQ,
+			values: []string{"unknown", "positive", "mixed", "negative"},
+		},
+	}
 }
 
 // relationshipHasSupportedDimension matches a stage the company record will
