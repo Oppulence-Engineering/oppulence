@@ -874,6 +874,11 @@ func (s *Service) ListRelationshipsFiltered(
 		if people := relationshipSheetPeopleMatch(needle); people != nil {
 			parts = append(parts, people)
 		}
+		// A membership with no name and no address reads "Unknown person".
+		// A named header, or an address, is the line the sheet prints instead.
+		if unknown := relationshipSheetUnknownPersonMatch(needle); unknown != nil {
+			parts = append(parts, unknown)
+		}
 		// "Nothing recorded yet" contains "recorded", and the calendar
 		// sentence contains "calendar". Those words are also activity
 		// headings. The empty sentence is the company with no history.
@@ -1569,6 +1574,49 @@ func relationshipHasDepartedContact() predicate.Relationship {
 // The role is stored with underscores, the badge says Left the company, and
 // a person with no title, company, seniority, or location says there are no
 // profile details yet.
+// relationshipSheetUnknownPersonMatch matches "Unknown person" on the people
+// list. The sheet uses that label only when the membership header, the
+// person's name, and both email fields are blank. A name or an address is a
+// different line.
+func relationshipSheetUnknownPersonMatch(needle string) predicate.Relationship {
+	if !labelPhraseMatches("unknown person", needle) {
+		return nil
+	}
+	return relationshipHasUnknownPerson()
+}
+
+func relationshipHasUnknownPerson() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			part := relationshipparticipant.Table
+			people := person.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(part)
+			b.WriteString(" AS member LEFT JOIN ")
+			b.WriteString(people)
+			b.WriteString(" AS who ON who.")
+			b.WriteString(person.FieldID)
+			b.WriteString(" = member.")
+			b.WriteString(relationshipparticipant.PersonColumn)
+			b.WriteString(" WHERE member.")
+			b.WriteString(relationshipparticipant.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND trim(coalesce(member.")
+			b.WriteString(relationshipparticipant.FieldDisplayName)
+			b.WriteString(", '')) = '' AND trim(coalesce(member.")
+			b.WriteString(relationshipparticipant.FieldEmail)
+			b.WriteString(", '')) = '' AND (member.")
+			b.WriteString(relationshipparticipant.PersonColumn)
+			b.WriteString(" IS NULL OR (trim(coalesce(who.")
+			b.WriteString(person.FieldDisplayName)
+			b.WriteString(", '')) = '' AND trim(coalesce(who.")
+			b.WriteString(person.FieldPrimaryEmail)
+			b.WriteString(", '')) = '')))")
+		}))
+	})
+}
+
 func relationshipSheetPeopleMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
 	if role := relationshipParticipantRoleMatch(needle); role != nil {
