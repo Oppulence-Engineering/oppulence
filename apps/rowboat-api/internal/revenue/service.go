@@ -864,6 +864,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if truth := relationshipSheetTruthPromiseMatch(needle, searchedAt); truth != nil {
 			parts = append(parts, truth)
 		}
+		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
+			parts = append(parts, actionLabel)
+		}
 		parts = append(parts, relationship.HasCommitmentsWith(commitment.TextContainsFold(value)))
 		if text := promiseLineText(needle); text != "" {
 			parts = append(parts, relationship.HasCommitmentsWith(commitment.And(
@@ -2841,6 +2844,15 @@ func visibleTruthCommitment() predicate.Commitment {
 
 // openTruthCommitment is the promise the sheet calls "Open promise". A due
 // time inside 72 hours is "At risk" even while the stored status stays open.
+// countedOpenPromise is the Open promises highlight. Due soon still counts.
+func countedOpenPromise() predicate.Commitment {
+	return commitment.And(
+		commitment.StatusEQ("open"),
+		commitment.AcceptanceNEQ("candidate"),
+		commitment.AcceptanceNEQ("disputed"),
+	)
+}
+
 func openTruthCommitment(now time.Time) predicate.Commitment {
 	soon := now.UTC().Add(72 * time.Hour)
 	return commitment.And(
@@ -2908,9 +2920,53 @@ func promiseLineText(needle string) string {
 
 // relationshipSheetTruthPromiseMatch matches the promise sentence on
 // "What is true now?" and the follow-up sentence under "What should happen next?".
+// actionTypeSearchLabels are the words on What should happen next. The stored
+// follow-up type still uses underscores.
+var actionTypeSearchLabels = []struct {
+	phrase     string
+	actionType string
+}{
+	{"warm follow-up", "warm_follow_up"},
+	{"proposal nudge", "proposal_nudge"},
+	{"referral reconnect", "referral_reconnect"},
+	{"customer risk", "customer_risk"},
+	{"meeting follow-up", "meeting_follow_up"},
+	{"meeting recap", "meeting_recap"},
+	{"crm update", "crm_update"},
+	{"follow-up task", "follow_up_task"},
+	{"calendar hold", "calendar_hold"},
+	{"promise follow-up", "commitment_rescue"},
+}
+
+func relationshipSheetActionLabelMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	for _, item := range actionTypeSearchLabels {
+		if !queryHasPhrase(item.phrase, needle) {
+			continue
+		}
+		preds = append(preds, relationship.HasActionsWith(
+			revenueaction.ActionTypeEQ(item.actionType),
+			revenueaction.QueueStatusEQ(QueueOpen),
+		))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
 func relationshipSheetTruthPromiseMatch(needle string, now time.Time) predicate.Relationship {
 	var preds []predicate.Relationship
-	if sheetPhraseMatches("open promise", needle) || sheetPhraseMatches("open promises", needle) {
+	// The highlight is labeled Open promises and counts every confirmed open
+	// promise, including one the card badges At risk because it is due soon.
+	// "Open promise:" on What is true now is only a promise that is not at risk.
+	if needle == "open promises" {
+		preds = append(preds, relationship.HasCommitmentsWith(countedOpenPromise()))
+	} else if sheetPhraseMatches("open promise", needle) || strings.Contains(needle, "open promises") {
 		preds = append(preds, relationship.HasCommitmentsWith(openTruthCommitment(now)))
 	}
 	// The promise card says At risk. That badge is the clock, not the stored status.

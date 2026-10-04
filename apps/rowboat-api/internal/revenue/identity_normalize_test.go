@@ -806,6 +806,7 @@ func TestRelationshipSearchTreatsAnOpenPromiseAsTheTruthLine(t *testing.T) {
 	assertCompanyQuery("No supported answer yet", "Quill Atelier", "Harbor Guess")
 	assertCompanyQuery("No action is currently recommended", "Quill Atelier", "Harbor Guess")
 	assertCompanyQuery("Open promise", "Harbor Owe")
+	assertCompanyQuery("Open promises", "Harbor Owe", "Harbor Risk")
 	assertCompanyQuery("Open promise: Send the quay review", "Harbor Owe")
 	assertCompanyQuery("Send the quay review", "Harbor Owe")
 	assertCompanyQuery("No follow-up is drafted", "Harbor Owe", "Harbor Risk")
@@ -873,6 +874,66 @@ func TestRelationshipSearchFindsWhoOwesThePromise(t *testing.T) {
 	assertCompanyQuery("We both owe", "Harbor Both")
 	assertCompanyQuery("At risk", "Harbor Soon")
 	assertCompanyQuery("At risk promise", "Harbor Soon")
+}
+
+func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	meeting, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Meeting",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: meeting.ID,
+		ActionType:     "meeting_follow_up",
+		Channel:        "email",
+		Reason:         "You confirmed this follow-up from the meeting.",
+		PriorityScore:  70,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	warm, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Warm",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: warm.ID,
+		ActionType:     "warm_follow_up",
+		Channel:        "email",
+		Reason:         "Send the harbor packet",
+		PriorityScore:  60,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Meeting follow-up", "Harbor Meeting")
+	assertCompanyQuery("Meeting follow-up. You confirmed this follow-up from the meeting.", "Harbor Meeting")
+	assertCompanyQuery("Warm follow-up", "Harbor Warm")
+	assertCompanyQuery("No action is currently recommended", "Quill Atelier")
 }
 
 func TestRelationshipSearchFindsAnOpenableDetail(t *testing.T) {
