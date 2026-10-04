@@ -220,6 +220,14 @@ export function parseRelationshipGraphQuery(query) {
     // The source row says Not connected. The word connected in that phrase
     // is not a request to hide unconnected rows.
     notConnected: /\bnot connected\b|\bnot_connected\b/.test(normalized),
+    // The follow-up badge says Not checked, Cleared, Review required, or
+    // Re-check needed. The stored policy is pending, passed, review_required, or stale.
+    notChecked: /\bnot checked\b|\bnot_checked\b/.test(normalized),
+    cleared: /\bcleared\b/.test(normalized),
+    reviewRequired: /\breview required\b|\breview_required\b/.test(normalized),
+    recheck: /\bre_check needed\b|\brecheck needed\b/.test(normalized),
+    // "Blocked" is the policy badge and a blocked promise. "Blocks" is a connection.
+    blocked: /\bblocked\b/.test(normalized),
     hideIsolated:
       !/\bnot connected\b|\bnot_connected\b/.test(normalized) &&
       /\bconnected\b|\bhide isolated\b|\bunconnected\b|\bhide unconnected\b/.test(normalized),
@@ -306,7 +314,7 @@ export function parseRelationshipGraphQuery(query) {
   if (/\bdepend(?:s|ent)?\b|\brequires?\b/.test(normalized)) {
     filters.edgeKinds.push("requires");
   }
-  if (/\bblocks?|\bblocked\b/.test(normalized)) filters.edgeKinds.push("blocks");
+  if (/\bblocks?\b/.test(normalized)) filters.edgeKinds.push("blocks");
   if (/\bcontradict(?:s|ed|ion)?\b/.test(normalized)) filters.edgeKinds.push("contradicts");
 
   const recognized = new Set([
@@ -365,6 +373,14 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bnot connected\b/g, " ")
     .replace(/\bnot_connected\b/g, " ")
     .replace(/\bunconnected\b/g, " ")
+    .replace(/\bnot checked\b/g, " ")
+    .replace(/\bnot_checked\b/g, " ")
+    .replace(/\bcleared\b/g, " ")
+    .replace(/\breview required\b/g, " ")
+    .replace(/\breview_required\b/g, " ")
+    .replace(/\bre_check needed\b/g, " ")
+    .replace(/\brecheck needed\b/g, " ")
+    .replace(/\bblocked\b/g, " ")
     .replace(/\bhide isolated\b/g, " ")
     .replace(/\bpast due\b/g, " ")
     .replace(/\bpast_due\b/g, " ")
@@ -444,6 +460,11 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.meetingRecap) applied.push("meeting recap");
   if (filters.changed) applied.push("changed since you last looked");
   if (filters.notConnected) applied.push("not connected");
+  if (filters.notChecked) applied.push("not checked");
+  if (filters.cleared) applied.push("cleared");
+  if (filters.reviewRequired) applied.push("review required");
+  if (filters.recheck) applied.push("re-check needed");
+  if (filters.blocked) applied.push("blocked");
   if (filters.hideIsolated) applied.push("hide unconnected");
   if (filters.freeText.length) applied.push(`text: ${filters.freeText.join(" ")}`);
 
@@ -551,6 +572,35 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     constrainBy(
       (node) => node.kind === "source" && normalizedGraphValue(node.status) === "not_connected",
     );
+  }
+  if (filters.notChecked) {
+    constrainBy(
+      (node) => node.kind === "action" && normalizedGraphValue(node.policyStatus) === "pending",
+    );
+  }
+  if (filters.cleared) {
+    constrainBy(
+      (node) => node.kind === "action" && normalizedGraphValue(node.policyStatus) === "passed",
+    );
+  }
+  if (filters.reviewRequired) {
+    constrainBy(
+      (node) =>
+        node.kind === "action" && normalizedGraphValue(node.policyStatus) === "review_required",
+    );
+  }
+  if (filters.recheck) {
+    constrainBy(
+      (node) => node.kind === "action" && normalizedGraphValue(node.policyStatus) === "stale",
+    );
+  }
+  if (filters.blocked) {
+    constrainBy((node) => {
+      if (node.kind === "action" && normalizedGraphValue(node.policyStatus) === "blocked") {
+        return true;
+      }
+      return node.kind === "commitment" && normalizedGraphValue(node.status) === "blocked";
+    });
   }
   if (filters.meetingFollowUp) {
     constrainBy((node) => {

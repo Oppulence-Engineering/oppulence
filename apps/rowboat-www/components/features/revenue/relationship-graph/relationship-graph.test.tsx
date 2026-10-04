@@ -443,6 +443,13 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryFilterLabel("changed since you last looked")).toBe(
       "changed since you last looked",
     );
+    expect(graphQueryFilterLabel("not checked")).toBe("not checked");
+    expect(graphQueryAnswer("1 relationship matches not checked.", 2)).toBe(
+      "1 company matches not checked.",
+    );
+    expect(graphQueryAnswer("1 relationship matches cleared.", 2)).toBe(
+      "1 company matches cleared.",
+    );
     expect(graphQueryFilterLabel("not connected")).toBe("not connected");
     expect(graphQueryAnswer("1 relationship matches not connected.", 2)).toBe(
       "1 company matches not connected.",

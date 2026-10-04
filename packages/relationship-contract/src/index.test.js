@@ -933,6 +933,110 @@ test("asking not connected finds that source and leaves a live one", () => {
   assert.equal(result.answer, "1 relationship matches not connected.");
 });
 
+test("asking not checked finds a follow-up whose policy has not run", () => {
+  const parsed = parseRelationshipGraphQuery("not checked");
+  assert.equal(parsed.filters.notChecked, true);
+  assert.equal(parsed.filters.cleared, false);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["not checked"]);
+
+  const cleared = parseRelationshipGraphQuery("cleared");
+  assert.equal(cleared.filters.cleared, true);
+  assert.equal(cleared.filters.notChecked, false);
+  assert.deepEqual(cleared.filters.freeText, []);
+  assert.deepEqual(cleared.applied, ["cleared"]);
+
+  const review = parseRelationshipGraphQuery("review required");
+  assert.equal(review.filters.reviewRequired, true);
+  assert.deepEqual(review.filters.freeText, []);
+  assert.deepEqual(review.applied, ["review required"]);
+
+  const recheck = parseRelationshipGraphQuery("re-check needed");
+  assert.equal(recheck.filters.recheck, true);
+  assert.deepEqual(recheck.filters.freeText, []);
+  assert.deepEqual(recheck.applied, ["re-check needed"]);
+
+  const blocked = parseRelationshipGraphQuery("blocked");
+  assert.equal(blocked.filters.blocked, true);
+  assert.deepEqual(blocked.filters.edgeKinds, []);
+  assert.deepEqual(blocked.filters.freeText, []);
+  assert.deepEqual(blocked.applied, ["blocked"]);
+
+  const blocks = parseRelationshipGraphQuery("blocks");
+  assert.deepEqual(blocks.filters.edgeKinds, ["blocks"]);
+  assert.equal(blocks.filters.blocked, false);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:check", kind: "relationship", label: "Quay Check" },
+      {
+        id: "action:check",
+        kind: "action",
+        label: "Meeting follow-up",
+        relationshipId: "check",
+        status: "open",
+        approvalStatus: "pending",
+        policyStatus: "pending",
+      },
+      { id: "relationship:clear", kind: "relationship", label: "Quay Clear" },
+      {
+        id: "action:clear",
+        kind: "action",
+        label: "Calendar hold",
+        relationshipId: "clear",
+        status: "open",
+        approvalStatus: "pending",
+        policyStatus: "passed",
+      },
+    ],
+    edges: [
+      { id: "edge:check", source: "relationship:check", target: "action:check", kind: "recommends" },
+      { id: "edge:clear", source: "relationship:clear", target: "action:clear", kind: "recommends" },
+    ],
+  };
+  const pending = queryRelationshipGraph(graph, "not checked");
+  assert.deepEqual(pending.relationshipIds, ["check"]);
+  assert.equal(pending.answer, "1 relationship matches not checked.");
+  const passed = queryRelationshipGraph(graph, "cleared");
+  assert.deepEqual(passed.relationshipIds, ["clear"]);
+  assert.equal(passed.answer, "1 relationship matches cleared.");
+
+  const heldBack = queryRelationshipGraph(
+    {
+      nodes: [
+        { id: "relationship:policy", kind: "relationship", label: "Quay Policy" },
+        {
+          id: "action:policy",
+          kind: "action",
+          label: "Warm follow-up",
+          relationshipId: "policy",
+          policyStatus: "blocked",
+          status: "open",
+        },
+        { id: "relationship:promise", kind: "relationship", label: "Quay Promise" },
+        {
+          id: "commitment:promise",
+          kind: "commitment",
+          label: "Send the quay note",
+          relationshipId: "promise",
+          status: "blocked",
+        },
+        { id: "relationship:open", kind: "relationship", label: "Quay Open" },
+        {
+          id: "commitment:open",
+          kind: "commitment",
+          label: "Send the open note",
+          relationshipId: "open",
+          status: "open",
+        },
+      ],
+      edges: [],
+    },
+    "blocked",
+  );
+  assert.deepEqual(heldBack.relationshipIds.sort(), ["policy", "promise"]);
+});
+
 test("hide unconnected drops a company with nothing linked", () => {
   const parsed = parseRelationshipGraphQuery("hide unconnected");
   assert.equal(parsed.filters.hideIsolated, true);
