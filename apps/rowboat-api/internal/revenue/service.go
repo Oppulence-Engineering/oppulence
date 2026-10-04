@@ -952,6 +952,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if suggestion := relationshipSheetSuggestionMatch(needle); suggestion != nil {
 			parts = append(parts, suggestion)
 		}
+		if uncertain := relationshipSheetUncertainClaimMatch(needle); uncertain != nil {
+			parts = append(parts, uncertain)
+		}
 		if privacy := relationshipSheetPrivacyMatch(needle); privacy != nil {
 			parts = append(parts, privacy)
 		}
@@ -2550,6 +2553,133 @@ func writeContradictionSideCount(b *sql.Builder, s *sql.Selector) {
 	b.WriteString("COALESCE(json_array_length(json_extract(")
 	b.WriteString(column)
 	b.WriteString(", '$.sides')), 0)")
+}
+
+// relationshipSheetUncertainClaimMatch matches the sentence under What changed.
+// The sheet counts each claim on the newest observation page whose confidence
+// or speaker confidence is still below 0.75. A saved correction for that side
+// raises it to 1, so the claim is no longer uncertain.
+func relationshipSheetUncertainClaimMatch(needle string) predicate.Relationship {
+	n, ok := uncertainClaimCount(needle)
+	if !ok {
+		return nil
+	}
+	return relationshipUncertainClaimCount(n)
+}
+
+func uncertainClaimCount(needle string) (int, bool) {
+	const singular = "1 material claim remains uncertain and queued for focused review"
+	if needle == singular {
+		return 1, true
+	}
+	const tail = " material claims remain uncertain and queued for focused review"
+	if !strings.HasSuffix(needle, tail) {
+		return 0, false
+	}
+	body := strings.TrimSuffix(needle, tail)
+	parsed, err := strconv.Atoi(body)
+	if err != nil || parsed < 2 || strconv.Itoa(parsed) != body {
+		return 0, false
+	}
+	return parsed, true
+}
+
+func relationshipUncertainClaimCount(n int) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			obs := relationshipobservation.Table
+			facts := "obs." + relationshipobservation.FieldNormalizedFactsJSON
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(obs)
+			b.WriteString(" AS obs")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(", LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'conversation_claims') = 'array' THEN ")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->'conversation_claims' ELSE '[]'::jsonb END) AS claim WHERE obs.")
+			} else {
+				b.WriteString(", json_each(CASE WHEN json_valid(")
+				b.WriteString(facts)
+				b.WriteString(") AND json_type(")
+				b.WriteString(facts)
+				b.WriteString(", '$.conversation_claims') = 'array' THEN json_extract(")
+				b.WriteString(facts)
+				b.WriteString(", '$.conversation_claims') ELSE '[]' END) AS claim WHERE obs.")
+			}
+			b.WriteString(relationshipobservation.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND obs.")
+			b.WriteString(relationshipobservation.FieldID)
+			b.WriteString(" IN (SELECT page.")
+			b.WriteString(relationshipobservation.FieldID)
+			b.WriteString(" FROM ")
+			b.WriteString(obs)
+			b.WriteString(" AS page WHERE page.")
+			b.WriteString(relationshipobservation.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" ORDER BY page.")
+			b.WriteString(relationshipobservation.FieldOccurredAt)
+			b.WriteString(" DESC, page.")
+			b.WriteString(relationshipobservation.FieldID)
+			b.WriteString(" DESC LIMIT ")
+			b.WriteString(strconv.Itoa(intelligenceObservationPage))
+			b.WriteString(") AND (")
+			writeUncertainClaimSide(b, s, "confidence", []string{"claim", "entity", "word"})
+			b.WriteString(" OR ")
+			writeUncertainClaimSide(b, s, "speakerConfidence", []string{"speaker"})
+			b.WriteString(")) = ")
+			b.Arg(n)
+		}))
+	})
+}
+
+func writeUncertainClaimSide(b *sql.Builder, s *sql.Selector, field string, kinds []string) {
+	b.WriteString("(")
+	b.WriteString(reviewClaimNumber(s, field))
+	b.WriteString(" < 0.75 AND NOT ")
+	writeUncertainClaimCorrection(b, s, kinds)
+	b.WriteString(")")
+}
+
+func writeUncertainClaimCorrection(b *sql.Builder, s *sql.Selector, kinds []string) {
+	fixFacts := "fix." + relationshipobservation.FieldNormalizedFactsJSON
+	b.WriteString("EXISTS (SELECT 1 FROM ")
+	b.WriteString(relationshipobservation.Table)
+	b.WriteString(" AS fix WHERE fix.")
+	b.WriteString(relationshipobservation.RelationshipColumn)
+	b.WriteString(" = obs.")
+	b.WriteString(relationshipobservation.RelationshipColumn)
+	b.WriteString(" AND ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(fixFacts)
+		b.WriteString("::jsonb->'review_correction'->>'observation_id' = obs.")
+		b.WriteString(relationshipobservation.FieldID)
+		b.WriteString("::text AND ")
+		b.WriteString(fixFacts)
+		b.WriteString("::jsonb->'review_correction'->>'claim_id' = claim->>'id' AND ")
+		b.WriteString(fixFacts)
+		b.WriteString("::jsonb->'review_correction'->>'kind' IN (")
+	} else {
+		b.WriteString("json_extract(")
+		b.WriteString(fixFacts)
+		b.WriteString(", '$.review_correction.observation_id') = obs.")
+		b.WriteString(relationshipobservation.FieldID)
+		b.WriteString(" AND json_extract(")
+		b.WriteString(fixFacts)
+		b.WriteString(", '$.review_correction.claim_id') = json_extract(claim.value, '$.id') AND json_extract(")
+		b.WriteString(fixFacts)
+		b.WriteString(", '$.review_correction.kind') IN (")
+	}
+	for i, kind := range kinds {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.Arg(kind)
+	}
+	b.WriteString("))")
 }
 
 // relationshipSheetSuggestionMatch matches suggestion titles the sheet prints

@@ -3318,6 +3318,116 @@ func TestRelationshipSearchFindsTheDisagreement(t *testing.T) {
 	assertCompanyQuery("A stronger source already chose the current value.", "Cedar Mill")
 }
 
+func TestRelationshipSearchFindsUncertainClaims(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveClaims := func(rel *ent.Relationship, externalID string, claims []map[string]any) string {
+		t.Helper()
+		facts, err := json.Marshal(map[string]any{"conversation_claims": claims})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		row, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(externalID).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(externalID).
+			SetNormalizedFactsJSON(string(facts)).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row.ID.String()
+	}
+	saveCorrection := func(rel *ent.Relationship, externalID, observationID, claimID, kind string) {
+		t.Helper()
+		facts, err := json.Marshal(map[string]any{
+			"review_correction": map[string]any{
+				"review_item_id":  "review:test",
+				"kind":            kind,
+				"corrected_value": "kept",
+				"claim_id":        claimID,
+				"observation_id":  observationID,
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("user").SetExternalID(externalID).SetEventType("conversation_evidence_corrected").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(externalID).
+			SetNormalizedFactsJSON(string(facts)).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	claim := func(id string, confidence, speaker float64) map[string]any {
+		return map[string]any{
+			"id": id, "kind": "claim", "value": id,
+			"confidence": confidence, "speakerConfidence": speaker,
+		}
+	}
+	makeCompany("Claim Quiet")
+	saveClaims(makeCompany("Claim One"), "claim-one", []map[string]any{claim("one", 0.2, 0.9)})
+	saveClaims(makeCompany("Claim Speaker"), "claim-speaker", []map[string]any{claim("speaker", 0.9, 0.2)})
+	saveClaims(makeCompany("Claim Two"), "claim-two", []map[string]any{
+		claim("two-a", 0.2, 0.9),
+		claim("two-b", 0.9, 0.2),
+	})
+	saveClaims(makeCompany("Claim Sure"), "claim-sure", []map[string]any{claim("sure", 0.9, 0.9)})
+	saveClaims(makeCompany("Claim Omitted"), "claim-omitted", []map[string]any{{
+		"id": "omitted", "kind": "claim", "value": "omitted", "confidence": 0.95,
+	}})
+	fixed := makeCompany("Claim Fixed")
+	fixedID := saveClaims(fixed, "claim-fixed", []map[string]any{claim("fixed", 0.2, 0.9)})
+	saveCorrection(fixed, "claim-fixed-correction", fixedID, "fixed", "claim")
+	half := makeCompany("Claim Half")
+	halfID := saveClaims(half, "claim-half", []map[string]any{claim("half", 0.2, 0.2)})
+	saveCorrection(half, "claim-half-correction", halfID, "half", "claim")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery(
+		"1 material claim remains uncertain and queued for focused review.",
+		"Claim One", "Claim Speaker", "Claim Omitted", "Claim Half",
+	)
+	assertCompanyQuery(
+		"2 material claims remain uncertain and queued for focused review.",
+		"Claim Two",
+	)
+	assertCompanyQuery("1 material claims remain uncertain and queued for focused review.")
+	assertCompanyQuery("0 material claims remain uncertain and queued for focused review.")
+}
+
 func TestRelationshipSearchFindsSuggestionTitles(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
