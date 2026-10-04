@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -3749,6 +3750,169 @@ func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
 	assertCompanyQuery("Deletion is finished", "Harbor Ledger")
 	assertCompanyQuery("Last deletion: Deletion is finished", "Harbor Ledger")
 	assertCompanyQuery("Deletion is still running", "Lumen Packet")
+}
+
+func TestRelationshipSearchFindsSuggestionCounts(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name, lifecycle, next string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		update := f.client.Relationship.UpdateOneID(row.ID)
+		if lifecycle != "" {
+			update.SetLifecycle(lifecycle)
+		}
+		if next != "" {
+			update.SetNextAction(next)
+		}
+		saved, err := update.Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return saved
+	}
+	saveClaim := func(rel *ent.Relationship, kind, externalID string, at time.Time) {
+		t.Helper()
+		facts, err := json.Marshal(map[string]any{
+			"conversation_claims": []map[string]any{{
+				"id": externalID, "kind": kind, "value": "The cue sentence",
+			}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("meeting").SetExternalID(externalID).SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(at).SetReceivedAt(at).SetContentHash(externalID).
+			SetNormalizedFactsJSON(string(facts)).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	savePromise := func(rel *ent.Relationship, status string) {
+		t.Helper()
+		due := time.Now().Add(-24 * time.Hour)
+		if _, err := f.client.Commitment.Create().
+			SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+			SetDirection("promised_by_them").SetText("Send the cue packet").
+			SetStatus(status).SetConfidence(1).SetDueAt(due).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveCase := func(rel *ent.Relationship, status string, sides int) {
+		t.Helper()
+		caseSides := make([]ConversationContradictionEvidenceSide, sides)
+		for i := range caseSides {
+			caseSides[i] = ConversationContradictionEvidenceSide{AssertionID: strconv.Itoa(i), Source: "user"}
+		}
+		payload, err := json.Marshal(ConversationContradictionCase{
+			CaseID: rel.ID.String(), RelationshipID: rel.ID.String(), SubjectRef: rel.ID.String(),
+			Dimension: "health", Status: status, Reason: "Two sources disagree.",
+			Sides: caseSides, OpenedAt: time.Now().UTC().Format(time.RFC3339),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(payload)
+		if _, err := f.client.ConversationIntelligenceArtifact.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetKind("contradiction_case").SetStableID("cue:" + rel.ID.String()).SetVersion(1).
+			SetStatus(status).SetSubjectRef(rel.ID.String()).
+			SetEffectiveAt(time.Now().UTC()).SetEvidenceRefs([]string{}).
+			SetPayloadJSON(string(payload)).SetPayloadHash(hex.EncodeToString(sum[:])).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	quiet := makeCompany("Suggest Quiet", "", "Keep the account")
+	renew := makeCompany("Suggest Renew", "renewal", "Call them")
+	gap := makeCompany("Suggest Gap", "evaluation", "")
+	double := makeCompany("Suggest Double", "renewal", "")
+	late := makeCompany("Suggest Late", "", "Keep the account")
+	kept := makeCompany("Suggest Kept", "", "Keep the account")
+	twice := makeCompany("Suggest Twice", "", "Keep the account")
+	objection := makeCompany("Suggest Objection", "", "Keep the account")
+	pair := makeCompany("Suggest Pair", "", "Keep the account")
+	split := makeCompany("Suggest Split", "", "Keep the account")
+	closed := makeCompany("Suggest Closed", "", "Keep the account")
+	buried := makeCompany("Suggest Buried", "", "Keep the account")
+	savePromise(late, "open")
+	savePromise(kept, "fulfilled")
+	savePromise(twice, "open")
+	savePromise(twice, "open")
+	now := time.Now().UTC()
+	saveClaim(objection, "objection", "objection-a", now)
+	saveClaim(objection, "objection", "objection-b", now)
+	saveClaim(pair, "objection", "pair-objection", now)
+	saveClaim(pair, "risk", "pair-risk", now)
+	saveCase(split, "open", 2)
+	saveCase(closed, "user_resolved", 2)
+	saveClaim(buried, "objection", "buried-objection", now.Add(-2*time.Hour))
+	for i := 0; i < intelligenceObservationPage; i++ {
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(buried).
+			SetSource("meeting").SetExternalID("buried-note:" + strconv.Itoa(i)).
+			SetEventType("conversation_evidence_compiled").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash("buried-note:" + strconv.Itoa(i)).
+			SetNormalizedFactsJSON("{}").
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	expectCues := func(rel *ent.Relationship, want int) {
+		t.Helper()
+		intelligence, err := f.svc.RelationshipIntelligenceFor(f.ctx, rel)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(intelligence.LiveCues) != want {
+			t.Fatalf("%s cues = %d, want %d (%+v)", rel.DisplayName, len(intelligence.LiveCues), want, intelligence.LiveCues)
+		}
+	}
+	expectCues(quiet, 0)
+	expectCues(renew, 1)
+	expectCues(gap, 1)
+	expectCues(double, 2)
+	expectCues(late, 1)
+	expectCues(kept, 0)
+	expectCues(twice, 2)
+	expectCues(objection, 1)
+	expectCues(pair, 2)
+	expectCues(split, 1)
+	expectCues(closed, 0)
+	expectCues(buried, 0)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Suggestions (1)", "Suggest Renew", "Suggest Gap", "Suggest Late", "Suggest Objection", "Suggest Split")
+	assertCompanyQuery("Suggestions (2)", "Suggest Double", "Suggest Twice", "Suggest Pair")
+	assertCompanyQuery("Suggestions (0)")
+	assertCompanyQuery("Suggestions (3)")
+	assertCompanyQuery("Suggestions (1+)")
 }
 
 func hasName(names []string, want string) bool {
