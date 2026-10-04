@@ -545,6 +545,14 @@ func TestRelationshipSearchFindsTheLinkedInLabel(t *testing.T) {
 	if got := namesOf(find.Relationships); len(got) != 1 || got[0] != "Lumen Packet" {
 		t.Fatalf("find profile = %v", got)
 	}
+	// "profile" is inside both labels. It must not return every company.
+	fragment, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "profile"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(fragment.Relationships); len(got) != 0 {
+		t.Fatalf("profile = %v", got)
+	}
 }
 
 func TestRelationshipSearchFindsTheEmailThreadLabel(t *testing.T) {
@@ -580,6 +588,15 @@ func TestRelationshipSearchFindsTheEmailThreadLabel(t *testing.T) {
 	}
 	if got := namesOf(none.Relationships); len(got) != 1 || got[0] != "Lumen Packet" {
 		t.Fatalf("0 email threads = %v", got)
+	}
+	// "email" is inside both the singular and the plural label. Matching both
+	// used to return every company.
+	fragment, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "email"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(fragment.Relationships); len(got) != 0 {
+		t.Fatalf("email = %v", got)
 	}
 }
 
@@ -2772,6 +2789,15 @@ func TestRelationshipSearchFindsTheDirectoryColumns(t *testing.T) {
 	}
 	if got := namesOf(two.Relationships); len(got) != 1 || got[0] != "Northwind Quiet" {
 		t.Fatalf("2 open actions = %v", got)
+	}
+	// "action" is inside "No open action" and "open actions". It must not
+	// return every company that has no next-action sentence.
+	actionWord, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "action"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := namesOf(actionWord.Relationships); len(got) != 0 {
+		t.Fatalf("action = %v", got)
 	}
 	if _, err := f.client.Relationship.UpdateOneID(healthy.ID).SetLifecycle("active_customer").Save(f.ctx); err != nil {
 		t.Fatal(err)

@@ -806,16 +806,16 @@ func (s *Service) ListRelationshipsFiltered(
 			))
 		}
 		needle := normalizePersonSearch(value)
-		if strings.Contains("no activity", needle) {
+		if labelPhraseMatches("no activity", needle) {
 			parts = append(parts, relationship.LastTouchAtIsNil())
 		}
-		if strings.Contains("no description yet", needle) {
+		if labelPhraseMatches("no description yet", needle) {
 			parts = append(parts, relationship.And(
 				relationshipTextBlank(relationship.FieldCompanyDescription),
 				relationshipTextBlank(relationship.FieldSummary),
 			))
 		}
-		if strings.Contains("not filled in", needle) {
+		if labelPhraseMatches("not filled in", needle) {
 			parts = append(parts, relationship.Or(
 				relationshipTextBlank(relationship.FieldAccountDomain),
 				relationshipTextBlank(relationship.FieldPrimaryEmail),
@@ -1046,8 +1046,8 @@ func relationshipLinkedInLabelMatch(term string) predicate.Relationship {
 	if needle == "" {
 		return nil
 	}
-	view := strings.Contains("view profile", needle)
-	find := strings.Contains("find profile", needle)
+	view := labelPhraseMatches("view profile", needle)
+	find := labelPhraseMatches("find profile", needle)
 	switch {
 	case view && find:
 		return relationshipMatchAll()
@@ -1102,8 +1102,8 @@ func relationshipEmailThreadLabelMatch(term string) predicate.Relationship {
 	if n, ok := exactEmailThreadCount(needle); ok {
 		return relationshipMailThreadCount("=", n)
 	}
-	singular := strings.Contains("1 email thread", needle)
-	plural := strings.Contains("email threads", needle)
+	singular := labelPhraseMatches("1 email thread", needle)
+	plural := labelPhraseMatches("email threads", needle)
 	switch {
 	case singular && plural:
 		return relationshipMatchAll()
@@ -1190,7 +1190,7 @@ func relationshipHealthLabelMatch(needle string) predicate.Relationship {
 	}
 	values := make([]string, 0, len(labels))
 	for _, item := range labels {
-		if strings.Contains(item.label, needle) {
+		if sheetPhraseMatches(item.label, needle) {
 			values = append(values, item.value)
 		}
 	}
@@ -1219,7 +1219,7 @@ func relationshipLifecycleLabelMatch(needle string, now time.Time) predicate.Rel
 	}
 	values := make([]string, 0, len(labels))
 	for _, item := range labels {
-		if strings.Contains(item.label, needle) {
+		if sheetPhraseMatches(item.label, needle) {
 			values = append(values, item.value)
 		}
 	}
@@ -1271,7 +1271,7 @@ func relationshipClosedLabelMatch(
 ) predicate.Relationship {
 	values := make([]string, 0, len(labels))
 	for _, item := range labels {
-		if strings.Contains(item.label, needle) {
+		if sheetPhraseMatches(item.label, needle) {
 			values = append(values, item.value)
 		}
 	}
@@ -1296,8 +1296,8 @@ func relationshipOpenActionLabelMatch(needle string) predicate.Relationship {
 	if n, ok := exactOpenActionCount(needle); ok {
 		return relationship.And(relationshipNextActionBlank(), relationshipOpenActionCount("=", n))
 	}
-	none := strings.Contains("no open action", needle)
-	some := strings.Contains("open actions", needle) || strings.Contains("1 open action", needle)
+	none := labelPhraseMatches("no open action", needle)
+	some := labelPhraseMatches("open actions", needle) || labelPhraseMatches("1 open action", needle)
 	switch {
 	case none && some:
 		return relationshipNextActionBlank()
@@ -4630,6 +4630,22 @@ func writeDependentSource(b *sql.Builder, s *sql.Selector, alias string) {
 	b.WriteString(") IN ('hubspot', 'crm') AND ")
 	writeRelationshipDependsOn(b, s, []string{"hubspot", "crm"}, []string{"hubspot", "crm", "crm_task", "task"})
 	b.WriteString("))")
+}
+
+// labelPhraseMatches is the sentence on the company row, or a longer question
+// that still contains that sentence. A word from the middle is not the
+// sentence. "email" sits inside both "1 email thread" and "email threads",
+// and treating it as both used to return every company.
+func labelPhraseMatches(phrase, needle string) bool {
+	phrase = normalizePersonSearch(phrase)
+	needle = normalizePersonSearch(needle)
+	if phrase == "" || needle == "" {
+		return false
+	}
+	if needle == phrase {
+		return true
+	}
+	return len(phrase) >= 8 && strings.Contains(needle, phrase)
 }
 
 func sheetPhraseMatches(phrase, needle string) bool {
