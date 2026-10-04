@@ -844,6 +844,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if mail := relationshipSheetMailMatch(needle); mail != nil {
 			parts = append(parts, mail)
 		}
+		if linked := relationshipSheetGmailLinkedMatch(needle); linked != nil {
+			parts = append(parts, linked)
+		}
 		if empty := relationshipSheetEmptyCopyMatch(needle); empty != nil {
 			parts = append(parts, empty)
 		}
@@ -4699,6 +4702,50 @@ func writeMissingScopesEmpty(b *sql.Builder, s *sql.Selector) {
 	b.WriteString(fmt.Sprintf("json_array_length(coalesce(%s, '[]')) = 0", column))
 }
 
+// relationshipSheetGmailLinkedMatch matches the mission-control paragraph.
+// It prints "1 Gmail thread is linked" or "N Gmail threads are linked", then
+// "Health and status still need a clearer source." A supported account detail
+// replaces that paragraph, and a company with no Gmail thread does not say it.
+func relationshipSheetGmailLinkedMatch(needle string) predicate.Relationship {
+	unsupported := relationshipSupportedDetailCount(0, time.Now())
+	if n, ok := gmailLinkedThreadCount(needle); ok {
+		return relationship.And(relationshipMailThreadCount("=", n), unsupported)
+	}
+	switch {
+	case labelPhraseMatches("health and status still need a clearer source.", needle):
+		return relationship.And(relationshipMailThreadCount("<>", 0), unsupported)
+	case strings.Contains(normalizePersonSearch(needle), "gmail threads are linked"):
+		return relationship.And(relationshipMailThreadCount(">=", 2), unsupported)
+	case labelPhraseMatches("gmail thread is linked", needle):
+		return relationship.And(relationshipMailThreadCount("=", 1), unsupported)
+	default:
+		return nil
+	}
+}
+
+func gmailLinkedThreadCount(needle string) (int, bool) {
+	text := normalizePersonSearch(needle)
+	const singular = "1 gmail thread is linked"
+	const plural = " gmail threads are linked"
+	if strings.Contains(text, singular) && !strings.Contains(text, strings.TrimPrefix(plural, " ")) {
+		return 1, true
+	}
+	index := strings.Index(text, plural)
+	if index < 0 {
+		return 0, false
+	}
+	prefix := strings.TrimSpace(text[:index])
+	fields := strings.Fields(prefix)
+	if len(fields) == 0 {
+		return 0, false
+	}
+	n, err := strconv.Atoi(fields[len(fields)-1])
+	if err != nil || n < 2 {
+		return 0, false
+	}
+	return n, true
+}
+
 // relationshipGmailExplanation is the paragraph that replaces completeness
 // copy when Gmail threads are linked and no detail has a source yet.
 func relationshipGmailExplanation(now time.Time) predicate.Relationship {
@@ -5066,7 +5113,7 @@ func exactMailMessageCount(needle string) (int, bool) {
 }
 
 func relationshipMailThreadCount(compare string, n int) predicate.Relationship {
-	if compare != "=" && compare != "<>" {
+	if compare != "=" && compare != "<>" && compare != ">=" {
 		compare = "="
 	}
 	return predicate.Relationship(func(s *sql.Selector) {
