@@ -379,6 +379,12 @@ describe("RelationshipGraphWorkspace", () => {
     expect(graphQueryFilterLabel("edges: blocks")).toBe("Connections: Blocks");
     expect(graphQueryFilterLabel("edges: has_commitment")).toBe("Connections: Has promise");
     expect(graphQueryFilterLabel("edges: supersedes")).toBe("Connections: Replaces");
+    expect(graphQueryAnswer("1 relationship matches edges: supersedes.", 2)).toBe(
+      "1 company matches Connections: Replaces.",
+    );
+    expect(graphQueryAnswer("2 relationships match edges: has_commitment.", 2)).toBe(
+      "2 companies match Connections: Has promise.",
+    );
     expect(graphEdgeLabel("has commitment")).toBe("has promise");
     expect(graphEdgeLabel("has_commitment")).toBe("has promise");
     expect(graphEdgeLabel("supersedes")).toBe("replaces");

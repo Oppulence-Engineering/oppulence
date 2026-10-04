@@ -1124,6 +1124,64 @@ test("asking not connected finds that source and leaves a live one", () => {
   assert.equal(result.answer, "1 relationship matches not connected.");
 });
 
+test("asking replaces keeps the promise that takes another's place", () => {
+  const replaces = parseRelationshipGraphQuery("replaces");
+  assert.deepEqual(replaces.filters.edgeKinds, ["supersedes"]);
+  assert.deepEqual(replaces.filters.freeText, []);
+  assert.deepEqual(replaces.applied, ["edges: supersedes"]);
+
+  const promise = parseRelationshipGraphQuery("has promise");
+  assert.deepEqual(promise.filters.edgeKinds, ["has_commitment"]);
+  assert.deepEqual(promise.filters.nodeKinds, []);
+  assert.deepEqual(promise.filters.freeText, []);
+  assert.deepEqual(promise.applied, ["edges: has_commitment"]);
+
+  const risk = parseRelationshipGraphQuery("has risk");
+  assert.deepEqual(risk.filters.edgeKinds, ["has_risk"]);
+  assert.deepEqual(risk.filters.nodeKinds, []);
+  assert.deepEqual(risk.filters.freeText, []);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:swap", kind: "relationship", label: "Quay Swap" },
+      {
+        id: "commitment:old",
+        kind: "commitment",
+        label: "Send the old note",
+        relationshipId: "swap",
+        status: "open",
+      },
+      {
+        id: "commitment:new",
+        kind: "commitment",
+        label: "Send the new note",
+        relationshipId: "swap",
+        status: "open",
+      },
+      { id: "relationship:open", kind: "relationship", label: "Quay Open" },
+      {
+        id: "commitment:open",
+        kind: "commitment",
+        label: "Send the open note",
+        relationshipId: "open",
+        status: "open",
+      },
+      { id: "relationship:risk", kind: "relationship", label: "Quay Risk" },
+      { id: "risk:one", kind: "risk", label: "A risk", relationshipId: "risk" },
+    ],
+    edges: [
+      { id: "edge:old", source: "relationship:swap", target: "commitment:old", kind: "has_commitment" },
+      { id: "edge:new", source: "relationship:swap", target: "commitment:new", kind: "has_commitment" },
+      { id: "edge:replace", source: "commitment:new", target: "commitment:old", kind: "supersedes" },
+      { id: "edge:open", source: "relationship:open", target: "commitment:open", kind: "has_commitment" },
+      { id: "edge:risk", source: "relationship:risk", target: "risk:one", kind: "has_risk" },
+    ],
+  };
+  assert.deepEqual(queryRelationshipGraph(graph, "replaces").relationshipIds, ["swap"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "has promise").relationshipIds.sort(), ["open", "swap"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "has risk").relationshipIds, ["risk"]);
+});
+
 test("asking syncing finds a source that is still loading", () => {
   const syncing = parseRelationshipGraphQuery("syncing");
   assert.equal(syncing.filters.syncing, true);

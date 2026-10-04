@@ -268,7 +268,15 @@ export function parseRelationshipGraphQuery(query) {
     // Neither phrase is a request for risk nodes.
     if (
       alias === "risk" &&
-      (/\bat risk\b|\bat_risk\b/.test(normalized) || /\bcustomer risks?\b/.test(normalized))
+      (/\bat risk\b|\bat_risk\b/.test(normalized) ||
+        /\bcustomer risks?\b/.test(normalized) ||
+        /\bhas risks?\b/.test(normalized))
+    ) {
+      continue;
+    }
+    if (
+      (alias === "milestone" || alias === "milestones") &&
+      /\bhas milestones?\b/.test(normalized)
     ) {
       continue;
     }
@@ -278,7 +286,8 @@ export function parseRelationshipGraphQuery(query) {
         alias === "commitment" ||
         alias === "commitments") &&
       (/\bpromise follow_ups?\b|\bpromise follow ups?\b/.test(normalized) ||
-        /\bopen promises?\b/.test(normalized))
+        /\bopen promises?\b/.test(normalized) ||
+        /\bhas promises?\b/.test(normalized))
     ) {
       continue;
     }
@@ -345,6 +354,22 @@ export function parseRelationshipGraphQuery(query) {
   }
   if (/\bblocks?\b/.test(normalized)) filters.edgeKinds.push("blocks");
   if (/\bcontradict(?:s|ed|ion)?\b/.test(normalized)) filters.edgeKinds.push("contradicts");
+  // The connection row says replaces, has promise, has risk, or has milestone.
+  // Those stored kinds are supersedes, has_commitment, has_risk, and has_milestone.
+  const addEdgeKind = (kind) => {
+    if (!filters.edgeKinds.includes(kind)) filters.edgeKinds.push(kind);
+  };
+  if (/\breplaces\b|\bsupersedes\b/.test(normalized)) addEdgeKind("supersedes");
+  if (/\bhas promises?\b/.test(normalized)) addEdgeKind("has_commitment");
+  if (/\bhas risks?\b/.test(normalized)) addEdgeKind("has_risk");
+  if (/\bhas milestones?\b/.test(normalized)) addEdgeKind("has_milestone");
+  if (/\bparticipates in\b/.test(normalized)) addEdgeKind("participant_of");
+  if (/\bobserved from\b/.test(normalized)) addEdgeKind("observed_from");
+  if (/\brecommended for\b/.test(normalized)) addEdgeKind("recommended_for");
+  if (/\bowns\b/.test(normalized) && !/\bwe both owe\b|\bthey owe\b|\bwe owe\b/.test(normalized)) {
+    addEdgeKind("owns");
+  }
+  if (/\bsupports\b/.test(normalized)) addEdgeKind("supports");
 
   const recognized = new Set([
     ...Object.keys(GRAPH_QUERY_NODE_ALIASES),
@@ -471,7 +496,17 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bsending\b/g, " ")
     .replace(/\bfailed\b/g, " ")
     .replace(/\bnot cancelled\b/g, " ")
-    .replace(/\bcancelled\b/g, " ");
+    .replace(/\bcancelled\b/g, " ")
+    .replace(/\bhas promises?\b/g, " ")
+    .replace(/\bhas risks?\b/g, " ")
+    .replace(/\bhas milestones?\b/g, " ")
+    .replace(/\bparticipates in\b/g, " ")
+    .replace(/\bobserved from\b/g, " ")
+    .replace(/\brecommended for\b/g, " ")
+    .replace(/\bsupersedes\b/g, " ")
+    .replace(/\breplaces\b/g, " ")
+    .replace(/\bowns\b/g, " ")
+    .replace(/\bsupports\b/g, " ");
   filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
