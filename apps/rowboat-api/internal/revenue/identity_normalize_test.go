@@ -3751,6 +3751,133 @@ func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
 	assertCompanyQuery("Deletion is still running", "Lumen Packet")
 }
 
+func TestRelationshipSearchFindsMailAccess(t *testing.T) {
+	f, teammate, teammateCtx, ws := communicationPrivacyFixture(t)
+	internal := auth.WithInternal(context.Background())
+	at := time.Now().UTC()
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveMail := func(rel *ent.Relationship, owner *ent.User, account, object, email string, removed bool) *ent.CommunicationInteraction {
+		t.Helper()
+		row, err := f.client.CommunicationInteraction.Create().
+			SetWorkspace(ws).SetOwner(owner).SetRelationshipID(rel.ID).
+			SetSource("gmail").SetSourceAccountID(account).SetProviderObjectID(object).
+			SetInteractionType("email").SetDirection("inbound").SetSubject("Hello").
+			SetOccurredAt(at).SetReceivedAt(at).SetVisibility("metadata").
+			SetContentHash("sha256:" + object).SetMetadataJSON(`{}`).SetDeleted(removed).
+			Save(internal)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if email != "" {
+			if _, err := f.client.CommunicationParticipant.Create().
+				SetWorkspace(ws).SetInteraction(row).SetEmail(email).
+				SetRole("to").SetExternal(true).Save(internal); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return row
+	}
+	quiet := makeCompany("Mail Quiet")
+	mine := makeCompany("Mail Mine")
+	ownerRule := makeCompany("Mail Owner Rule")
+	shared := makeCompany("Mail Shared")
+	private := makeCompany("Mail Private")
+	blocked := makeCompany("Mail Blocked")
+	protected := makeCompany("Mail Shield")
+	domain := makeCompany("Mail Domain")
+	granted := makeCompany("Mail Granted")
+	expired := makeCompany("Mail Expired")
+	removed := makeCompany("Mail Removed")
+	_ = quiet
+	saveMail(mine, teammate, "teammate@x.co", "mine-message", "buyer@mine.example", false)
+	saveMail(ownerRule, teammate, "teammate@x.co", "owner-message", "buyer@owner-rule.example", false)
+	saveMail(shared, f.user, "shared@x.co", "shared-message", "buyer@shared.example", false)
+	saveMail(private, f.user, "private@x.co", "private-message", "buyer@private.example", false)
+	saveMail(blocked, f.user, "shared@x.co", "blocked-message", "buyer@blocked.example", false)
+	saveMail(protected, f.user, "shared@x.co", "protected-message", "buyer@protected.example", false)
+	saveMail(domain, f.user, "shared@x.co", "domain-message", "buyer@domain.example", false)
+	saveMail(granted, f.user, "shared@x.co", "grant-message", "buyer@grant.example", false)
+	saveMail(expired, f.user, "shared@x.co", "expired-message", "buyer@expired.example", false)
+	saveMail(removed, teammate, "teammate@x.co", "removed-message", "buyer@removed.example", true)
+	if _, err := f.client.CommunicationPrivacyRule.Create().
+		SetWorkspace(ws).SetOwner(teammate).
+		SetKind("protected_address").SetValue("buyer@owner-rule.example").
+		SetValueHash(privacyValueHash("buyer@owner-rule.example")).SetActive(true).
+		Save(internal); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.UpsertCommunicationPolicy(f.ctx, f.user, "private@x.co", CommunicationPolicyInput{
+		MetadataVisibility: "private", ShareSubject: true, RetentionDays: 30,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateCommunicationPrivacyRule(f.ctx, f.user, CommunicationRuleInput{
+		Kind: "blocked_address", Value: "buyer@blocked.example",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateCommunicationPrivacyRule(f.ctx, f.user, CommunicationRuleInput{
+		Kind: "protected_address", Value: "buyer@protected.example",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateCommunicationPrivacyRule(f.ctx, f.user, CommunicationRuleInput{
+		Kind: "protected_domain", Value: "domain.example",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.GrantCommunicationAccess(f.ctx, f.user, CommunicationGrantInput{
+		Scope: "body", ResourceType: "message", ResourceID: "grant-message", GranteeID: &teammate.ID,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	f.svc.now = func() time.Time { return at }
+	later := at.Add(time.Hour)
+	if _, err := f.svc.GrantCommunicationAccess(f.ctx, f.user, CommunicationGrantInput{
+		Scope: "body", ResourceType: "message", ResourceID: "expired-message",
+		GranteeID: &teammate.ID, ExpiresAt: &later,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	f.svc.now = func() time.Time { return at.Add(2 * time.Hour) }
+
+	assertCompanyQuery := func(actorCtx context.Context, actor *ent.User, query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(actorCtx, actor, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery(teammateCtx, teammate, "Your mailbox", "Mail Mine", "Mail Owner Rule")
+	assertCompanyQuery(teammateCtx, teammate, "Protected", "Mail Shield", "Mail Domain")
+	assertCompanyQuery(teammateCtx, teammate, "Kept private", "Mail Private", "Mail Blocked")
+	assertCompanyQuery(teammateCtx, teammate, "Shared with you", "Mail Granted")
+	assertCompanyQuery(teammateCtx, teammate, "Shared in this workspace", "Mail Shared", "Mail Expired")
+	assertCompanyQuery(f.ctx, f.user, "Your mailbox",
+		"Mail Shared", "Mail Private", "Mail Blocked", "Mail Shield", "Mail Domain", "Mail Granted", "Mail Expired")
+	assertCompanyQuery(f.ctx, f.user, "Shared in this workspace", "Mail Mine")
+	assertCompanyQuery(f.ctx, f.user, "Protected", "Mail Owner Rule")
+	assertCompanyQuery(f.ctx, f.user, "mailbox")
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {
