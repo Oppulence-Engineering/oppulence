@@ -31,8 +31,13 @@ function requestReturning(body: unknown): RequestJsonFn {
 }
 
 describe("loadRelationshipSourceStatuses", () => {
-  it("keeps connector rows when an observation source shares the list", async () => {
-    const google = { ...userSource, connectionId: "6af76170-66ad-40e9-9318-dd95cdea19ab", source: "google" };
+  it("keeps a real connector when an observation source shares the list", async () => {
+    const google = {
+      ...userSource,
+      connectionId: "6af76170-66ad-40e9-9318-dd95cdea19ab",
+      source: "google",
+      requiredScopes: ["https://www.googleapis.com/auth/gmail.readonly"],
+    };
     const sources = await loadRelationshipSourceStatuses(
       requestReturning({ sources: [userSource, google] }),
     );
@@ -42,5 +47,33 @@ describe("loadRelationshipSourceStatuses", () => {
   it("treats a list of only observation sources as no connectors", async () => {
     const sources = await loadRelationshipSourceStatuses(requestReturning({ sources: [userSource] }));
     expect(sources).toEqual([]);
+  });
+
+  // Ingest stores a Gmail note as source "google" with no consent. That row
+  // used to be the only sidebar source, so a saved note read as "1 source is behind".
+  it("drops a Google row that is only evidence from an observation", async () => {
+    const noted = { ...userSource, connectionId: "6af76170-66ad-40e9-9318-dd95cdea19ab", source: "google" };
+    const sources = await loadRelationshipSourceStatuses(requestReturning({ sources: [noted] }));
+    expect(sources).toEqual([]);
+  });
+
+  it("keeps Google once consent or a history sync exists", async () => {
+    const consented = {
+      ...userSource,
+      connectionId: "6af76170-66ad-40e9-9318-dd95cdea19ab",
+      source: "google",
+      status: "connected",
+    };
+    const syncing = {
+      ...userSource,
+      connectionId: "7af76170-66ad-40e9-9318-dd95cdea19ab",
+      source: "slack",
+      status: "backfilling",
+      backfillPhase: "running",
+    };
+    const sources = await loadRelationshipSourceStatuses(
+      requestReturning({ sources: [consented, syncing] }),
+    );
+    expect(sources.map((source) => source.source)).toEqual(["google", "slack"]);
   });
 });

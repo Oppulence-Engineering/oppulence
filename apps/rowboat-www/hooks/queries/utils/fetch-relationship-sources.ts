@@ -21,13 +21,45 @@ const LooseSourceStatusList = z.object({
   sources: z.array(z.unknown()).optional(),
 });
 
+/**
+ * A Gmail or Calendar observation is stored under the Google connector name.
+ * That row has no consent and no history sync, so it is not a connection.
+ * Leaving it in the list made the sidebar say Google was behind.
+ */
+function isProviderConnection(item: Record<string, unknown>): boolean {
+  if (!CONNECTOR_SOURCES.has(String(item.source ?? ""))) return false;
+  const required = Array.isArray(item.requiredScopes) ? item.requiredScopes.length : 0;
+  const granted = Array.isArray(item.grantedScopes) ? item.grantedScopes.length : 0;
+  if (required > 0 || granted > 0) return true;
+  const account = String(item.sourceAccountId ?? "default");
+  if (account !== "default") return true;
+  const status = String(item.status ?? "");
+  if (
+    status === "connected" ||
+    status === "authorizing" ||
+    status === "not_connected" ||
+    status === "reconnect_required" ||
+    status === "disconnected"
+  ) {
+    return true;
+  }
+  const phase = String(item.backfillPhase ?? "");
+  return (
+    phase === "queued" ||
+    phase === "running" ||
+    phase === "failed" ||
+    phase === "live" ||
+    phase === "paused"
+  );
+}
+
 function connectorSourceRows(body: unknown): unknown {
   const parsed = LooseSourceStatusList.safeParse(body);
   if (!parsed.success) return body;
   return {
     sources: (parsed.data.sources ?? []).filter((item) => {
-      if (!item || typeof item !== "object" || !("source" in item)) return false;
-      return CONNECTOR_SOURCES.has(String((item as { source: unknown }).source));
+      if (!item || typeof item !== "object") return false;
+      return isProviderConnection(item as Record<string, unknown>);
     }),
   };
 }
