@@ -659,6 +659,24 @@ func TestRelationshipSearchFindsTheSheetMailWords(t *testing.T) {
 		Save(f.ctx); err != nil {
 		t.Fatal(err)
 	}
+	addressed, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Mark",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.MailThread.Create().
+		SetUser(f.user).
+		SetProviderThreadID("cedar-address").
+		SetSubject("The cedar note").
+		SetCounterpartyEmail("blair@quay.example").
+		SetMessageCount(1).
+		SetLastActivityAt(when).
+		SetReplyState("quiet").
+		SetRelationship(addressed).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
 
 	assertCompanyQuery := func(query string, want ...string) {
 		t.Helper()
@@ -681,14 +699,19 @@ func TestRelationshipSearchFindsTheSheetMailWords(t *testing.T) {
 	assertCompanyQuery("Email conversation", "Harbor Ledger")
 	assertCompanyQuery("Needs a reply", "Harbor Ledger")
 	assertCompanyQuery("Waiting on them", "Northwind Ledger")
-	assertCompanyQuery("Quiet", "Quill Atelier")
+	assertCompanyQuery("Quiet", "Quill Atelier", "Cedar Mark")
 	assertCompanyQuery("gmail", "Quill Atelier", "Harbor Ledger")
 	assertCompanyQuery("the quill invoice", "Quill Atelier")
 	assertCompanyQuery("quill invoice", "Quill Atelier")
 	assertCompanyQuery("ada@northwind.example", "Northwind Ledger")
-	assertCompanyQuery("1 message", "Quill Atelier")
+	assertCompanyQuery("1 message", "Quill Atelier", "Cedar Mark")
 	assertCompanyQuery("2 messages", "Northwind Ledger")
 	assertCompanyQuery("0 messages", "Harbor Ledger")
+	assertCompanyQuery("blair@quay.example · 1 message", "Cedar Mark")
+	assertCompanyQuery("ada@northwind.example · 2 messages", "Northwind Ledger")
+	assertCompanyQuery("ada@northwind.example · 1 message")
+	assertCompanyQuery("blair@quay.example · 2 messages")
+	assertCompanyQuery("which companies have blair@quay.example · 1 message", "Cedar Mark")
 	assertCompanyQuery("date")
 }
 
