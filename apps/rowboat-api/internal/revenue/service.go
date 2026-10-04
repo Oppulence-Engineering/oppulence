@@ -4025,8 +4025,9 @@ func relationshipHasVisibleCommunication() predicate.Relationship {
 // relationshipSheetReviewMatch matches the review line on the company sheet.
 // A company at version 0 with no later acknowledgement reads "Not reviewed yet."
 // Acknowledging the current version reads "Nothing changed since your last
-// review" and "Nothing new since your last review." The acknowledgement is
-// the signed-in person's, so another reviewer's row does not change this search.
+// review" and "Nothing new since your last review." A newer version than that
+// acknowledgement shows "Mark as reviewed." The acknowledgement is the
+// signed-in person's, so another reviewer's row does not change this search.
 func relationshipSheetReviewMatch(userID uuid.UUID, needle string) predicate.Relationship {
 	var preds []predicate.Relationship
 	if sheetPhraseMatches("not reviewed yet", needle) {
@@ -4035,6 +4036,9 @@ func relationshipSheetReviewMatch(userID uuid.UUID, needle string) predicate.Rel
 	if sheetPhraseMatches("nothing changed since your last review", needle) ||
 		sheetPhraseMatches("nothing new since your last review", needle) {
 		preds = append(preds, relationshipReviewedUnchanged(userID))
+	}
+	if labelPhraseMatches("mark as reviewed", needle) {
+		preds = append(preds, relationshipChangedSinceReview(userID))
 	}
 	switch len(preds) {
 	case 0:
@@ -4058,6 +4062,31 @@ func relationshipNotReviewedYet(userID uuid.UUID) predicate.Relationship {
 func relationshipReviewedUnchanged(userID uuid.UUID) predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(relationshipAcknowledgementExists(s, userID, true))
+	})
+}
+
+// relationshipChangedSinceReview is the "Mark as reviewed" button. It is
+// shown only when this person's latest acknowledgement is behind the company
+// version. A company that has never changed stays at version 0, so the button
+// stays hidden. Another person's acknowledgement does not count.
+func relationshipChangedSinceReview(userID uuid.UUID) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(s.C(relationship.FieldStateVersion))
+			b.WriteString(" > COALESCE((SELECT MAX(")
+			b.WriteString(relationshipreviewacknowledgement.FieldStateVersion)
+			b.WriteString(") FROM ")
+			b.WriteString(relationshipreviewacknowledgement.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(relationshipreviewacknowledgement.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			b.WriteString(relationshipreviewacknowledgement.UserColumn)
+			b.WriteString(" = ")
+			b.Arg(userID.String())
+			b.WriteString("), 0)")
+		}))
 	})
 }
 
