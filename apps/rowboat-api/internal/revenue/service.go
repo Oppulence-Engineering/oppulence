@@ -880,6 +880,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if activity := relationshipSheetActivityMatch(needle); activity != nil && !sheetEmptySentenceOwnsActivity(needle) {
 			parts = append(parts, activity)
 		}
+		if quote := relationshipSheetActivityQuoteMatch(needle); quote != nil {
+			parts = append(parts, quote)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -1692,6 +1695,90 @@ var activityEventSearchLabels = []struct {
 	{"escalated", "action.outcome.escalated"},
 	{"they left", "action.outcome.churned"},
 	{"corrected", "action.outcome.corrected"},
+}
+
+// relationshipSheetActivityQuoteMatch is the quote under an opened activity.
+// The sheet prints "Quote: …" only when that sentence is not the promise and
+// not the row summary. An encrypted payload can replace the stored facts.
+func relationshipSheetActivityQuoteMatch(needle string) predicate.Relationship {
+	const marker = "quote: "
+	index := strings.Index(needle, marker)
+	if index < 0 {
+		return nil
+	}
+	quote := strings.TrimSpace(needle[index+len(marker):])
+	if quote == "" {
+		return nil
+	}
+	return relationship.HasObservationsWith(observationFactQuote(quote))
+}
+
+func observationFactQuote(quote string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			payload := s.C(relationshipobservation.FieldPayloadCiphertext)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			b.WriteString(payload)
+			b.WriteString(" IS NULL OR length(")
+			b.WriteString(payload)
+			b.WriteString(") = 0) AND ")
+			writeNormalizedJSONText(b, s, facts, "evidence_quote")
+			b.WriteString(" = ")
+			b.Arg(quote)
+			b.WriteString(" AND ")
+			writeFactTrim(b, s, facts, "evidence_quote")
+			b.WriteString(" <> ")
+			writeFactTrim(b, s, facts, "commitment_text")
+			b.WriteString(" AND ")
+			writeFactTrim(b, s, facts, "evidence_quote")
+			b.WriteString(" <> ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))")
+		}))
+	})
+}
+
+func writeFactTrim(b *sql.Builder, s *sql.Selector, facts, key string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(coalesce(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->>'")
+		b.WriteString(key)
+		b.WriteString("', ''))")
+		return
+	}
+	b.WriteString("trim(coalesce(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.")
+	b.WriteString(key)
+	b.WriteString("'), ''))")
+}
+
+func writeNormalizedJSONText(b *sql.Builder, s *sql.Selector, facts, key string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
+		writeFactTrim(b, s, facts, key)
+		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
+		return
+	}
+	b.WriteString("trim(")
+	for range 4 {
+		b.WriteString("replace(")
+	}
+	b.WriteString("replace(replace(replace(lower(")
+	writeFactTrim(b, s, facts, key)
+	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
+	for range 4 {
+		b.WriteString(", '  ', ' ')")
+	}
+	b.WriteString(")")
 }
 
 func relationshipSheetActivityMatch(needle string) predicate.Relationship {
