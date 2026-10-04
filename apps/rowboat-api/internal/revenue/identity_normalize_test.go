@@ -1629,7 +1629,81 @@ func TestRelationshipSearchFindsTheCompletenessHeading(t *testing.T) {
 	assertCompanyQuery("Identity review is required before acting on this relationship", "Lumen Packet", "Harbor Ledger")
 	assertCompanyQuery("1 identity review blocks acting", "Lumen Packet", "Harbor Ledger")
 	assertCompanyQuery("1 possible duplicate must be reviewed before you act", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("Keep separate", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("Move the evidence", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("Decide later", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("Review possible duplicates", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("Needs your review", "Lumen Packet", "Harbor Ledger")
 	assertCompanyQuery("Details are current")
+}
+
+func TestRelationshipSearchFindsAnOpenDuplicateChoice(t *testing.T) {
+	f := newFixture(t)
+	create := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	create("Quill North")
+	cedar := create("Cedar Slide")
+	birch := create("Birch Quay")
+	aspen := create("Aspen Ledger")
+	lumen := create("Lumen Packet")
+	save := func(proposed, existing *ent.Relationship, key, status string) {
+		t.Helper()
+		if _, err := f.client.RelationshipIdentityCandidate.Create().
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetProposedRelationship(proposed).
+			SetExistingRelationship(existing).
+			SetDedupeKey(key).
+			SetAnchorKind("domain").
+			SetAnchorKeyHash(key + "-hash").
+			SetStatus(status).
+			Save(auth.WithInternal(f.ctx)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save(cedar, birch, "cedar-birch", "pending")
+	save(aspen, lumen, "aspen-lumen", "resolved")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	open := []string{"Cedar Slide", "Birch Quay"}
+	inbox := []string{"Aspen Ledger", "Birch Quay", "Cedar Slide", "Lumen Packet"}
+	assertCompanyQuery("Keep separate", open...)
+	assertCompanyQuery("which companies should I keep separate", open...)
+	assertCompanyQuery("Move the evidence", open...)
+	assertCompanyQuery("Decide later", open...)
+	assertCompanyQuery("Review possible duplicates", inbox...)
+	assertCompanyQuery("Needs your review", inbox...)
+	assertCompanyQuery("Needs a review before you act", open...)
+	assertCompanyQuery("keep")
+	assertCompanyQuery("separate")
+	assertCompanyQuery("later")
 }
 
 func TestRelationshipSearchFindsTheRefreshHeading(t *testing.T) {
