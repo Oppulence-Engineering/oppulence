@@ -34,6 +34,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipreviewacknowledgement"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
@@ -942,6 +943,9 @@ func (s *Service) ListRelationshipsFiltered(
 		}
 		if deletion := relationshipSheetDeletionEmptyMatch(needle); deletion != nil {
 			parts = append(parts, deletion)
+		}
+		if excerpt := relationshipSheetEvidenceExcerptMatch(needle); excerpt != nil {
+			parts = append(parts, excerpt)
 		}
 		if accepted := relationshipSheetAcceptedPromiseMatch(needle); accepted != nil {
 			parts = append(parts, accepted)
@@ -2204,6 +2208,52 @@ func relationshipSheetPlanEmptyMatch(needle string) predicate.Relationship {
 		return nil
 	}
 	return relationship.Not(relationshipHasArtifactKind("mutual_action_plan"))
+}
+
+// relationshipSheetEvidenceExcerptMatch matches the quote under Inspect
+// supporting words. A blank or missing excerpt prints the same sentence.
+// A saved excerpt matches the words on that line, including the quotes.
+func relationshipSheetEvidenceExcerptMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	if labelPhraseMatches("evidence excerpt unavailable", needle) {
+		preds = append(preds, relationship.HasActionsWith(revenueaction.HasEvidencesWith(evidenceExcerptBlank())))
+	}
+	if text := evidenceExcerptQuery(needle); text != "" {
+		preds = append(preds, relationship.HasActionsWith(revenueaction.HasEvidencesWith(evidenceExcerptEquals(text))))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func evidenceExcerptQuery(needle string) string {
+	return strings.TrimSpace(strings.Trim(needle, "\"'“”"))
+}
+
+func evidenceExcerptBlank() predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("trim(COALESCE(")
+			b.WriteString(s.C(revenueevidence.FieldExcerpt))
+			b.WriteString(", '')) = ''")
+		}))
+	})
+}
+
+func evidenceExcerptEquals(text string) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("lower(trim(replace(replace(replace(COALESCE(")
+			b.WriteString(s.C(revenueevidence.FieldExcerpt))
+			b.WriteString(", ''), '-', ' '), '_', ' '), '.', ' '))) = ")
+			b.Arg(text)
+		}))
+	})
 }
 
 // relationshipSheetDeletionEmptyMatch matches the privacy line. The delete
