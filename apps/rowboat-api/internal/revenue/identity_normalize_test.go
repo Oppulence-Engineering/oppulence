@@ -3653,6 +3653,130 @@ func TestRelationshipSearchFindsFocusedReview(t *testing.T) {
 	assertCompanyQuery("Focused evidence review (1)", "Lumen Packet")
 }
 
+func TestRelationshipSearchFindsOlderUnreviewedConversations(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	claimFacts := func(kind string, confidence, speaker float64, id string) string {
+		t.Helper()
+		body, err := json.Marshal(map[string]any{
+			"conversation_claims": []map[string]any{{
+				"id": id, "kind": kind, "value": "Noted in the call",
+				"confidence": confidence, "speakerConfidence": speaker, "speakerLabel": "Other",
+			}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(body)
+	}
+	candidateFacts := `{
+		"conversation_claim_candidates":[{
+			"candidateId":"oldest-promise",
+			"kind":"promise",
+			"normalizedValue":"Oldest sheet promise",
+			"displayValue":"Oldest sheet promise",
+			"evidence":[{"exactQuote":"Oldest sheet promise quote"}],
+			"stateDimension":"next_action",
+			"confidence":0.4,
+			"caveats":[]
+		}],
+		"conversation_review":{"batch_id":"batch-oldest","baseline_version":0}
+	}`
+	fillNotes := func(rel *ent.Relationship, prefix string, count int, newestFacts, oldestFacts string) {
+		t.Helper()
+		now := time.Now().UTC()
+		for i := 1; i <= count; i++ {
+			facts := "{}"
+			if i == 1 && newestFacts != "" {
+				facts = newestFacts
+			} else if i == count && oldestFacts != "" {
+				facts = oldestFacts
+			}
+			externalID := fmt.Sprintf("%s-%03d", prefix, i)
+			if _, err := f.client.RelationshipObservation.Create().
+				SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+				SetSource("user").SetExternalID(externalID).SetEventType("note").
+				SetOccurredAt(now.Add(-time.Duration(i) * time.Second)).
+				SetReceivedAt(now).SetSummary("A recorded note").
+				SetNormalizedFactsJSON(facts).SetContentHash(externalID).
+				Save(f.ctx); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	quill := makeCompany("Quill North")
+	cedar := makeCompany("Cedar Slide")
+	aspen := makeCompany("Aspen Ledger")
+	birch := makeCompany("Birch Quiet")
+	maple := makeCompany("Maple Kept")
+	makeCompany("Harbor Quiet")
+	fillNotes(quill, "quill-older", intelligenceObservationPage+1, "", "")
+	fillNotes(cedar, "cedar-older", intelligenceObservationPage, "", "")
+	fillNotes(aspen, "aspen-older", intelligenceObservationPage+1, claimFacts("objection", 0.5, 1, "aspen-claim"), "")
+	fillNotes(birch, "birch-older", intelligenceObservationPage+1, "", candidateFacts)
+	fillNotes(maple, "maple-older", intelligenceObservationPage+1, claimFacts("fact", 0.95, 0.95, "maple-claim"), "")
+
+	page := func(rel *ent.Relationship) (bool, int) {
+		t.Helper()
+		intelligence, err := f.svc.RelationshipIntelligenceFor(f.ctx, rel)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return intelligence.ObservationPageHasMore, len(intelligence.ReviewItems)
+	}
+	if hasMore, items := page(quill); !hasMore || items != 0 {
+		t.Fatalf("quill page = hasMore %v items %d", hasMore, items)
+	}
+	if hasMore, items := page(cedar); hasMore || items != 0 {
+		t.Fatalf("cedar page = hasMore %v items %d", hasMore, items)
+	}
+	if hasMore, items := page(aspen); !hasMore || items == 0 {
+		t.Fatalf("aspen page = hasMore %v items %d", hasMore, items)
+	}
+	if hasMore, items := page(birch); !hasMore || items != 0 {
+		t.Fatalf("birch page = hasMore %v items %d", hasMore, items)
+	}
+	if hasMore, items := page(maple); !hasMore || items != 0 {
+		t.Fatalf("maple page = hasMore %v items %d", hasMore, items)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Older conversations may still need review.", "Quill North", "Birch Quiet", "Maple Kept")
+	assertCompanyQuery("which companies have older conversations may still need review", "Quill North", "Birch Quiet", "Maple Kept")
+	assertCompanyQuery("Low-confidence material claim", "Aspen Ledger")
+	assertCompanyQuery("older")
+	assertCompanyQuery("conversations")
+	assertCompanyQuery("review")
+}
+
 func TestRelationshipSearchFindsPrivacySentences(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
