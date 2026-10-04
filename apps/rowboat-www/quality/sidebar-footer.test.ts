@@ -88,10 +88,50 @@ describe("sidebar source status", () => {
     expect(health).toEqual({ tone: "attention", label: "1 source needs reconnecting" });
   });
 
-  it("counts sources that are behind", () => {
+  it("counts sources the sources page would call behind", () => {
     expect(
-      sourceHealth([source({ status: "stale" }), source({ completeness: "partial" })]),
+      sourceHealth([
+        source({ source: "gmail", status: "stale" }),
+        source({ source: "google", status: "live", completeness: "partial" }),
+      ]),
     ).toEqual({ tone: "attention", label: "2 sources are behind" });
+  });
+
+  // A note or mailbox created from an observation is live with a partial
+  // history. The sources page calls that Active, and the meter already counts
+  // it, so the headline must not say the source is behind.
+  it("treats a live note or mailbox as current", () => {
+    expect(
+      sourceHealth([
+        source({ source: "user", status: "live", completeness: "partial", backfillPhase: "idle" }),
+        source({ source: "gmail", status: "live", completeness: "partial", backfillPhase: "idle" }),
+      ]),
+    ).toEqual({ tone: "ok", label: "Sources are current" });
+  });
+
+  // A half-finished history sync used to be counted as behind before the
+  // syncing check, so "Syncing sources" never appeared for a real backfill.
+  it("says a source is syncing while its history is still arriving", () => {
+    expect(
+      sourceHealth([
+        source({
+          source: "google",
+          status: "backfilling",
+          completeness: "partial",
+          backfillPhase: "running",
+        }),
+      ]),
+    ).toEqual({ tone: "syncing", label: "Syncing sources" });
+    expect(
+      sourceHealth([
+        source({
+          source: "slack",
+          status: "live",
+          completeness: "partial",
+          backfillPhase: "queued",
+        }),
+      ]),
+    ).toEqual({ tone: "syncing", label: "Syncing sources" });
   });
 
   // The status card's meter reads "connected / total". A source that needs

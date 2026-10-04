@@ -71,6 +71,7 @@ import {
 } from "@/hooks/queries/utils/fetch-sidebar";
 import { getPref, setPref, usePref } from "@/lib/console/console-prefs";
 import { connectedSourceCount, googleNeedsReconnect } from "@/lib/revenue/revenue";
+import { sourceConnectionLabel } from "@/lib/revenue/source-product-copy";
 import { loadChangelog, type ChangelogEntry } from "@/lib/api/changelog/changelog";
 import type { ResourceKind } from "@/lib/dashboard/dashboard-resource";
 import {
@@ -464,9 +465,24 @@ export function AppTopBar({
 export type SourceHealth = { tone: "ok" | "syncing" | "attention" | "idle"; label: string };
 
 /**
+ * The sources page already names each connection. The sidebar uses those same
+ * sentences, so a live note does not read as behind while its badge says Active.
+ */
+function sourcePageLabel(source: RelationshipSourceStatus): string {
+  return sourceConnectionLabel({
+    source: source.source ?? "",
+    status: source.status,
+    backfillPhase: source.backfillPhase,
+    completeness: source.completeness,
+  });
+}
+
+/**
  * One line for the state of the evidence sources. A source that stopped
  * reporting is the difference between "no risk" and "we cannot see the risk",
- * so a stalled or disconnected source outranks anything else here.
+ * so a stalled or disconnected source outranks anything else here. Behind
+ * means the sources page would say Out of date or Sync incomplete. An
+ * in-progress sync says Syncing before a finished live source says current.
  */
 export function sourceHealth(sources: RelationshipSourceStatus[]): SourceHealth {
   if (sources.length === 0) return { tone: "idle", label: "No sources connected" };
@@ -479,16 +495,17 @@ export function sourceHealth(sources: RelationshipSourceStatus[]): SourceHealth 
       label: stopped === 1 ? "1 source needs reconnecting" : `${stopped} sources need reconnecting`,
     };
   }
-  const behind = sources.filter(
-    (source) => source.status === "stale" || source.completeness !== "complete",
-  ).length;
+  const behind = sources.filter((source) => {
+    const label = sourcePageLabel(source);
+    return label === "Out of date" || label === "Sync incomplete";
+  }).length;
   if (behind > 0) {
     return {
       tone: "attention",
       label: behind === 1 ? "1 source is behind" : `${behind} sources are behind`,
     };
   }
-  if (sources.some((source) => source.status === "backfilling" || source.status === "rebuilding")) {
+  if (sources.some((source) => sourcePageLabel(source) === "Syncing")) {
     return { tone: "syncing", label: "Syncing sources" };
   }
   return { tone: "ok", label: "Sources are current" };
