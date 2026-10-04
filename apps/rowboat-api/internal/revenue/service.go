@@ -883,6 +883,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
+		if roster := relationshipSheetActivityRosterMatch(needle); roster != nil {
+			parts = append(parts, roster)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -1783,6 +1786,120 @@ func writeSubjectToken(b *sql.Builder, s *sql.Selector, facts string) {
 	}
 	writeSubjectTrim(b, s, facts)
 	b.WriteString(" GLOB '[a-z0-9_]*_[a-z0-9_]*'")
+}
+
+// relationshipSheetActivityRosterMatch is "Attachment Count: 1",
+// "Participant Count: 3", or "External Participant Count: 2" on an opened
+// activity. Gmail stores those as numbers. The thread id and the message id
+// are not printed. "External Participant Count" contains the shorter
+// participant sentence, so that shorter sentence is a different count.
+// A count that repeats the row summary stays hidden.
+func relationshipSheetActivityRosterMatch(needle string) predicate.Relationship {
+	roster := []struct{ marker, key, skipAfter string }{
+		{"external participant count: ", "external_participant_count", ""},
+		{"participant count: ", "participant_count", "external "},
+		{"attachment count: ", "attachment_count", ""},
+	}
+	var preds []predicate.RelationshipObservation
+	for _, item := range roster {
+		index := rosterMarkerIndex(needle, item.marker, item.skipAfter)
+		if index < 0 {
+			continue
+		}
+		fields := strings.Fields(needle[index+len(item.marker):])
+		if len(fields) == 0 || fields[0] == "" {
+			continue
+		}
+		preds = append(preds, observationFactCount(item.key, fields[0]))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
+}
+
+func rosterMarkerIndex(needle, marker, skipAfter string) int {
+	from := 0
+	for from <= len(needle) {
+		index := strings.Index(needle[from:], marker)
+		if index < 0 {
+			return -1
+		}
+		index += from
+		if skipAfter != "" && index >= len(skipAfter) && needle[index-len(skipAfter):index] == skipAfter {
+			from = index + len(marker)
+			continue
+		}
+		return index
+	}
+	return -1
+}
+
+func observationFactCount(key, value string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeCountShown(b, s, facts, key)
+			b.WriteString(" <> '' AND ")
+			writeCountShown(b, s, facts, key)
+			b.WriteString(" NOT IN ('local-user', 'meeting-counterparty') AND ")
+			writeNormalizedCount(b, s, facts, key)
+			b.WriteString(" = ")
+			b.Arg(value)
+			b.WriteString(" AND ")
+			writeCountShown(b, s, facts, key)
+			b.WriteString(" <> ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", '')))")
+		}))
+	})
+}
+
+func writeCountShown(b *sql.Builder, s *sql.Selector, facts, key string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(coalesce(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->>'")
+		b.WriteString(key)
+		b.WriteString("', ''))")
+		return
+	}
+	b.WriteString("trim(coalesce(CAST(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.")
+	b.WriteString(key)
+	b.WriteString("') AS TEXT), ''))")
+}
+
+func writeNormalizedCount(b *sql.Builder, s *sql.Selector, facts, key string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
+		writeCountShown(b, s, facts, key)
+		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
+		return
+	}
+	b.WriteString("trim(")
+	for range 4 {
+		b.WriteString("replace(")
+	}
+	b.WriteString("replace(replace(replace(lower(")
+	writeCountShown(b, s, facts, key)
+	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
+	for range 4 {
+		b.WriteString(", '  ', ' ')")
+	}
+	b.WriteString(")")
 }
 
 func relationshipSheetActivityMatch(needle string) predicate.Relationship {

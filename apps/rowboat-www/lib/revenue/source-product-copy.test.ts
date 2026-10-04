@@ -218,4 +218,21 @@ describe("source product copy", () => {
       "Sync incomplete",
     );
   });
+
+  it("prints roster counts and hides gmail ids", () => {
+    const lines = activityEvidenceLines(null, {
+      thread_id: "18abc",
+      message_id: "18def",
+      attachment_count: 1,
+      participant_count: 3,
+      external_participant_count: 2,
+    });
+    expect(lines).toEqual([
+      "Attachment Count: 1",
+      "Participant Count: 3",
+      "External Participant Count: 2",
+    ]);
+    expect(lines.join("\n")).not.toMatch(/18abc|18def|Thread Id|Message Id/);
+    expect(activityLinesBesideSummary(["Attachment Count: 1"], "1")).toEqual([]);
+  });
 });

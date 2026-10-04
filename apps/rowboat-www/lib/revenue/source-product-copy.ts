@@ -273,6 +273,9 @@ const HIDDEN_ACTIVITY_KEYS = new Set([
   "evidence_start_ms",
   "evidence_end_ms",
   "commitment_due_timezone",
+  // Gmail ids. The attachment and participant counts are the activity.
+  "thread_id",
+  "message_id",
 ]);
 
 const ACTIVITY_FACT_LABELS: Record<string, string> = {
