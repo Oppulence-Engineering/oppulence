@@ -4036,6 +4036,12 @@ func relationshipSheetReviewMatch(userID uuid.UUID, needle string) predicate.Rel
 		sheetPhraseMatches("nothing new since your last review", needle) {
 		preds = append(preds, relationshipReviewedUnchanged(userID))
 	}
+	// The graph marks a company "Changed since you last looked" when its
+	// version is past this person's latest review. Version 0 has not moved.
+	// Another person's review does not clear it.
+	if labelPhraseMatches("changed since you last looked", needle) {
+		preds = append(preds, relationshipChangedSinceReview(userID))
+	}
 	switch len(preds) {
 	case 0:
 		return nil
@@ -4058,6 +4064,27 @@ func relationshipNotReviewedYet(userID uuid.UUID) predicate.Relationship {
 func relationshipReviewedUnchanged(userID uuid.UUID) predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(relationshipAcknowledgementExists(s, userID, true))
+	})
+}
+
+func relationshipChangedSinceReview(userID uuid.UUID) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString(s.C(relationship.FieldStateVersion))
+			b.WriteString(" > COALESCE((SELECT MAX(")
+			b.WriteString(relationshipreviewacknowledgement.FieldStateVersion)
+			b.WriteString(") FROM ")
+			b.WriteString(relationshipreviewacknowledgement.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(relationshipreviewacknowledgement.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			b.WriteString(relationshipreviewacknowledgement.UserColumn)
+			b.WriteString(" = ")
+			b.Arg(userID.String())
+			b.WriteString("), 0)")
+		}))
 	})
 }
 
