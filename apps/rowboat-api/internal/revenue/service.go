@@ -3870,6 +3870,24 @@ func relationshipSheetMailMatch(needle string) predicate.Relationship {
 	if sheetPhraseMatches("quiet", needle) {
 		preds = append(preds, relationship.HasMailThreadsWith(mailthread.ReplyStateEQ("quiet")))
 	}
+	// The email and meeting timeline prints "Gmail · Email" or
+	// "Calendar · Meeting". Activity history prints "Gmail · Mail" for the
+	// same mailbox, so the timeline heading is its own sentence. A one-word
+	// fragment such as "email" stays out.
+	for _, heading := range []struct{ phrase, source, kind string }{
+		{"gmail · email", "gmail", "email"},
+		{"gmail · meeting", "gmail", "meeting"},
+		{"calendar · email", "calendar", "email"},
+		{"calendar · meeting", "calendar", "meeting"},
+	} {
+		if labelPhraseMatches(heading.phrase, needle) {
+			preds = append(preds, relationship.HasCommunicationInteractionsWith(
+				communicationinteraction.DeletedEQ(false),
+				communicationinteraction.SourceEQ(heading.source),
+				communicationinteraction.InteractionTypeEQ(heading.kind),
+			))
+		}
+	}
 	switch len(preds) {
 	case 0:
 		return nil
