@@ -4655,6 +4655,13 @@ func relationshipSheetCompletenessMatch(needle string) predicate.Relationship {
 	if sheetPhraseMatches("relationship projection requires operator repair before this state is safe to act on.", needle) {
 		preds = append(preds, relationshipHasDeadProjection(now))
 	}
+	// The duplicate inbox shows fifty candidates, then "Show the next duplicates".
+	// Pending, deferred, and resolved each have their own page. Fifty of one
+	// status fill that page. A fifty-first of that status is the button.
+	// Resolving is not one of those pages.
+	if labelPhraseMatches("show the next duplicates", needle) {
+		preds = append(preds, relationshipHasNextDuplicatePage())
+	}
 	for n := 1; n <= 20; n++ {
 		phrases := []string{
 			fmt.Sprintf("%d identity reviews block acting.", n),
@@ -4758,6 +4765,31 @@ func relationshipShowsAmbiguousHeading(now time.Time) predicate.Relationship {
 		relationshipHasUnresolvedIdentity(),
 		relationship.Not(relationshipHasBlockingProjection(now)),
 	)
+}
+
+func relationshipHasNextDuplicatePage() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			id := s.C(relationship.FieldID)
+			b.WriteString("EXISTS (SELECT 1 FROM (SELECT ")
+			b.WriteString(relationshipidentitycandidate.FieldStatus)
+			b.WriteString(", count(*) AS page_count FROM ")
+			b.WriteString(relationshipidentitycandidate.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(relationshipidentitycandidate.FieldStatus)
+			b.WriteString(fmt.Sprintf(
+				" IN ('%s', '%s', '%s') AND (%s = %s OR %s = %s) GROUP BY %s) AS duplicate_pages WHERE page_count > 50)",
+				identityPending,
+				identityDeferred,
+				identityResolved,
+				relationshipidentitycandidate.ProposedRelationshipColumn,
+				id,
+				relationshipidentitycandidate.ExistingRelationshipColumn,
+				id,
+				relationshipidentitycandidate.FieldStatus,
+			))
+		}))
+	})
 }
 
 func relationshipIdentityReviewCount(n int) predicate.Relationship {
