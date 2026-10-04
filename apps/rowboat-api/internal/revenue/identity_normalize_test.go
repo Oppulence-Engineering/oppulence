@@ -3751,6 +3751,89 @@ func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
 	assertCompanyQuery("Deletion is still running", "Lumen Packet")
 }
 
+func TestRelationshipSearchFindsPublicResearchCounts(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	addPerson := func(rel *ent.Relationship, name string) *ent.Person {
+		t.Helper()
+		personRow, err := f.client.Person.Create().
+			SetDisplayName(name).SetWorkspace(ws).SetUser(f.user).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.RelationshipParticipant.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetRelationship(rel).SetPerson(personRow).
+			SetDisplayName(name).SetRole("contact").
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+		return personRow
+	}
+	addAttribute := func(personRow *ent.Person, sourceType, status, key, value string) {
+		t.Helper()
+		if _, err := f.client.PersonAttribute.Create().
+			SetWorkspace(ws).SetUser(f.user).SetPerson(personRow).
+			SetDimension("title").SetValue(value).
+			SetSourceType(sourceType).SetSource("web").SetExtractor("parallel").
+			SetStatus(status).SetConfidence(0.8).
+			SetObservedAt(now).SetValidFrom(now).
+			SetCitationsJSON(`[{"title":"Bio","url":"https://example.com/bio","excerpts":["Engineer"]}]`).
+			SetDedupeKey(key).SetSupportingObservationIds([]string{}).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	one := makeCompany("Quay One")
+	addAttribute(addPerson(one, "Ada Mesa"), "external_research", "active", "research-one", "Engineer")
+	two := makeCompany("Quay Two")
+	twoPerson := addPerson(two, "Riley Chen")
+	addAttribute(twoPerson, "external_research", "active", "research-two-a", "Engineer")
+	addAttribute(twoPerson, "external_research", "superseded", "research-two-b", "Director")
+	retracted := makeCompany("Quay Retracted")
+	addAttribute(addPerson(retracted, "Jules Pike"), "external_research", "retracted", "research-retracted", "Engineer")
+	fact := makeCompany("Quay Fact")
+	addAttribute(addPerson(fact, "Casey Quinn"), "source_fact", "active", "research-fact", "Buyer")
+	makeCompany("Quay None")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Public research · 1 detail", "Quay One")
+	assertCompanyQuery("Public research · 2 details", "Quay Two")
+	assertCompanyQuery("which companies have public research · 2 details", "Quay Two")
+	assertCompanyQuery("Public research · 1 details")
+	assertCompanyQuery("Public research · 2 detail")
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {
