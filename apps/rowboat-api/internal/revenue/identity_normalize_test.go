@@ -1089,6 +1089,49 @@ func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
 	assertCompanyQuery("No action is currently recommended", "Quill Atelier")
 }
 
+func TestRelationshipSearchFindsPromiseOverflow(t *testing.T) {
+	f := newFixture(t)
+	makeCompany := func(name string, count int) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i := 0; i < count; i++ {
+			seedCommitment(t, f, rel, "promised_by_them", fmt.Sprintf("Send the quay packet %d", i+1), "", nil)
+		}
+	}
+	makeCompany("Pile Quiet", 0)
+	makeCompany("Pile Three", 3)
+	makeCompany("Pile Four", 4)
+	makeCompany("Pile Six", 6)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Show the other 1 promise", "Pile Four")
+	assertCompanyQuery("which button says show the other 1 promise", "Pile Four")
+	assertCompanyQuery("Show the other 3 promises", "Pile Six")
+	assertCompanyQuery("Show the other 2 promises")
+	assertCompanyQuery("Show the other 1 promises")
+	assertCompanyQuery("show the other")
+}
+
 func TestRelationshipSearchFindsTheAttentionBadge(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

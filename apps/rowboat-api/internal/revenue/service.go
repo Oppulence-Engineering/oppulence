@@ -868,6 +868,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if truth := relationshipSheetTruthPromiseMatch(needle, searchedAt); truth != nil {
 			parts = append(parts, truth)
 		}
+		if overflow := relationshipSheetPromiseOverflowMatch(needle); overflow != nil {
+			parts = append(parts, overflow)
+		}
 		if band := relationshipAttentionBandMatch(needle); band != nil {
 			parts = append(parts, band)
 		}
@@ -3452,6 +3455,64 @@ func relationshipAttentionBandMatch(needle string) predicate.Relationship {
 		band,
 		relationshipattentionitem.StatusEQ("open"),
 	)
+}
+
+// relationshipSheetPromiseOverflowMatch matches "Show the other 1 promise"
+// and "Show the other N promises". The overview previews three promises.
+// The button counts the rest. Three or fewer prints no button.
+func relationshipSheetPromiseOverflowMatch(needle string) predicate.Relationship {
+	hidden, ok := promisePreviewHidden(needle)
+	if !ok {
+		return nil
+	}
+	return relationshipCommitmentCount(hidden + 3)
+}
+
+func promisePreviewHidden(needle string) (int, bool) {
+	needle = normalizePersonSearch(needle)
+	const singular = "show the other 1 promise"
+	if strings.Contains(needle, singular) && !strings.Contains(needle, singular+"s") {
+		return 1, true
+	}
+	const lead = "show the other "
+	const tail = " promises"
+	index := strings.LastIndex(needle, lead)
+	if index < 0 {
+		return 0, false
+	}
+	rest := needle[index+len(lead):]
+	end := strings.Index(rest, tail)
+	if end < 0 {
+		return 0, false
+	}
+	number := rest[:end]
+	if number == "" || strings.Contains(number, " ") {
+		return 0, false
+	}
+	n, err := strconv.Atoi(number)
+	if err != nil || n < 2 || strconv.Itoa(n) != number {
+		return 0, false
+	}
+	after := rest[end+len(tail):]
+	if after != "" && !strings.HasPrefix(after, " ") {
+		return 0, false
+	}
+	return n, true
+}
+
+func relationshipCommitmentCount(n int) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT count(*) FROM ")
+			b.WriteString(commitment.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(commitment.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(") = ")
+			b.Arg(n)
+		}))
+	})
 }
 
 func relationshipSheetTruthPromiseMatch(needle string, now time.Time) predicate.Relationship {
