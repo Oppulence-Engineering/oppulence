@@ -2241,6 +2241,8 @@ export function missionControlStateAnswer(
   evidence: {
     lifecycle?: { supported?: boolean; value?: unknown };
     health?: { supported?: boolean; value?: unknown };
+    engagement?: { supported?: boolean; value?: unknown };
+    sentiment?: { supported?: boolean; value?: unknown };
   },
   commitments: readonly {
     status?: string;
@@ -2256,9 +2258,13 @@ export function missionControlStateAnswer(
   };
   const lifecycle = shown(evidence.lifecycle);
   const health = shown(evidence.health);
+  const engagement = shown(evidence.engagement);
+  const sentiment = shown(evidence.sentiment);
   const parts = [
     lifecycle ? `Lifecycle: ${companyRecordLabel(lifecycle)}` : "",
     health ? `Health: ${companyRecordLabel(health)}` : "",
+    engagement ? `Engagement: ${companyRecordLabel(engagement)}` : "",
+    sentiment ? `Sentiment: ${companyRecordLabel(sentiment)}` : "",
   ].filter(Boolean);
   const promise = missionControlPromiseAnswer(commitments, now);
   if (promise) parts.push(promise);

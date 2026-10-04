@@ -528,6 +528,21 @@ describe("RelationshipsView", () => {
         health: { supported: true, value: "needs_attention" },
       }),
     ).toBe("Lifecycle: Active customer · Health: Needs attention");
+    expect(
+      missionControlStateAnswer({
+        lifecycle: { supported: false, value: "prospect" },
+        health: { supported: false, value: "unknown" },
+        engagement: { supported: true, value: "declining" },
+        sentiment: { supported: false, value: "unknown" },
+      }),
+    ).toBe("Engagement: Declining");
+    expect(
+      missionControlStateAnswer({
+        lifecycle: { supported: true, value: "prospect" },
+        engagement: { supported: true, value: "declining" },
+        sentiment: { supported: true, value: "negative" },
+      }),
+    ).toBe("Lifecycle: Prospect · Engagement: Declining · Sentiment: Negative");
     expect(missionControlPromiseAnswer([])).toBe("");
     expect(
       missionControlPromiseAnswer([

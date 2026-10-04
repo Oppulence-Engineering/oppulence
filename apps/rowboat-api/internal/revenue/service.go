@@ -3145,9 +3145,10 @@ func relationshipAcknowledgementExists(s *sql.Selector, userID uuid.UUID, covers
 	})
 }
 
-// relationshipHasSupportedStateAnswer is the lifecycle or health evidence the
-// sheet can show. Without either, the question reads "No supported answer yet."
-// A user correction stands on its own. Any other claim needs an observation.
+// relationshipHasSupportedStateAnswer is a stage, health, engagement, or
+// sentiment the sheet can show. Without one of those, the question reads
+// "No supported answer yet." A user correction stands on its own. Any other
+// claim needs an observation.
 func relationshipHasSupportedStateAnswer(now time.Time) predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
@@ -3159,7 +3160,7 @@ func relationshipHasSupportedStateAnswer(now time.Time) predicate.Relationship {
 				evidence = fmt.Sprintf("json_array_length(coalesce(%s, '[]')) > 0", col)
 			}
 			b.WriteString(fmt.Sprintf(
-				"EXISTS (SELECT 1 FROM %s WHERE %s = %s AND %s IN ('lifecycle', 'health') AND %s IN ('accepted', 'active') AND %s <= ",
+				"EXISTS (SELECT 1 FROM %s WHERE %s = %s AND %s IN ('lifecycle', 'health', 'engagement', 'sentiment') AND %s IN ('accepted', 'active') AND %s <= ",
 				relationshipassertion.Table,
 				relationshipassertion.RelationshipColumn,
 				s.C(relationship.FieldID),

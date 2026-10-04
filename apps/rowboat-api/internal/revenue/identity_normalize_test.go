@@ -721,6 +721,34 @@ func TestRelationshipSearchFindsTheUnsupportedStateAnswer(t *testing.T) {
 	assertCompanyQuery("2 of 8 details have a source")
 }
 
+func TestRelationshipSearchSkipsASupportedEngagementAnswer(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill Atelier",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	slide, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Slide",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CorrectRelationship(f.ctx, f.user, slide.ID, RelationshipCorrectionInput{
+		Dimension: "engagement", Value: "declining", Reason: "Replies have slowed.",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "No supported answer yet"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := namesOf(found.Relationships)
+	if len(got) != 1 || got[0] != "Quill Atelier" {
+		t.Fatalf("no supported answer = %v", got)
+	}
+}
+
 func TestRelationshipSearchFindsAnOpenableDetail(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
