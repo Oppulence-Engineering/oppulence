@@ -1124,6 +1124,62 @@ test("asking not connected finds that source and leaves a live one", () => {
   assert.equal(result.answer, "1 relationship matches not connected.");
 });
 
+test("asking review keeps the promise that still needs confirmation", () => {
+  const parsed = parseRelationshipGraphQuery("review");
+  assert.equal(parsed.filters.promiseReview, true);
+  assert.equal(parsed.filters.reviewRequired, false);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["review"]);
+
+  const needs = parseRelationshipGraphQuery("needs review");
+  assert.equal(needs.filters.promiseReview, true);
+  assert.equal(needs.filters.reviewRequired, false);
+  assert.deepEqual(needs.filters.freeText, []);
+  assert.deepEqual(needs.applied, ["review"]);
+
+  const policy = parseRelationshipGraphQuery("review required");
+  assert.equal(policy.filters.promiseReview, false);
+  assert.equal(policy.filters.reviewRequired, true);
+
+  const graph = {
+    nodes: [
+      { id: "relationship:review", kind: "relationship", label: "Quay Review" },
+      {
+        id: "commitment:review",
+        kind: "commitment",
+        label: "Send the quay review",
+        relationshipId: "review",
+        status: "review",
+      },
+      { id: "relationship:open", kind: "relationship", label: "Quay Open" },
+      {
+        id: "commitment:open",
+        kind: "commitment",
+        label: "Send the open note",
+        relationshipId: "open",
+        status: "open",
+      },
+      { id: "relationship:policy", kind: "relationship", label: "Quay Policy" },
+      {
+        id: "action:policy",
+        kind: "action",
+        label: "Customer risk",
+        relationshipId: "policy",
+        status: "open",
+        policyStatus: "review_required",
+      },
+    ],
+    edges: [],
+  };
+  const result = queryRelationshipGraph(graph, "review");
+  assert.deepEqual(result.relationshipIds, ["review"]);
+  assert.equal(result.visibleNodeIds.includes("relationship:open"), false);
+  assert.equal(result.visibleNodeIds.includes("relationship:policy"), false);
+  assert.equal(result.answer, "1 relationship matches review.");
+  assert.deepEqual(queryRelationshipGraph(graph, "needs review").relationshipIds, ["review"]);
+  assert.deepEqual(queryRelationshipGraph(graph, "review required").relationshipIds, ["policy"]);
+});
+
 test("asking not checked finds a follow-up whose policy has not run", () => {
   const parsed = parseRelationshipGraphQuery("not checked");
   assert.equal(parsed.filters.notChecked, true);

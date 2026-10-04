@@ -239,6 +239,13 @@ export function parseRelationshipGraphQuery(query) {
     notChecked: /\bnot checked\b|\bnot_checked\b/.test(normalized),
     cleared: /\bcleared\b/.test(normalized),
     reviewRequired: /\breview required\b|\breview_required\b/.test(normalized),
+    // The promise row says Review while it still needs a person to confirm it.
+    // "Review required" stays the policy badge.
+    promiseReview:
+      (/\breview\b/.test(normalized) || /\bneeds_review\b/.test(normalized)) &&
+      !/\breview required\b|\breview_required\b/.test(normalized) &&
+      !/\bnot review\b/.test(normalized) &&
+      !/\bsince (?:my )?last review\b|\bchanged since review\b/.test(normalized),
     recheck: /\bre_check needed\b|\brecheck needed\b/.test(normalized),
     // "Blocked" is the policy badge and a blocked promise. "Blocks" is a connection.
     blocked: /\bblocked\b/.test(normalized),
@@ -392,6 +399,10 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bcleared\b/g, " ")
     .replace(/\breview required\b/g, " ")
     .replace(/\breview_required\b/g, " ")
+    .replace(/\bneeds review\b/g, " ")
+    .replace(/\bneeds_review\b/g, " ")
+    .replace(/\bnot review\b/g, " ")
+    .replace(/\breview\b/g, " ")
     .replace(/\bre_check needed\b/g, " ")
     .replace(/\brecheck needed\b/g, " ")
     .replace(/\bblocked\b/g, " ")
@@ -494,6 +505,7 @@ export function parseRelationshipGraphQuery(query) {
   if (filters.notChecked) applied.push("not checked");
   if (filters.cleared) applied.push("cleared");
   if (filters.reviewRequired) applied.push("review required");
+  if (filters.promiseReview) applied.push("review");
   if (filters.recheck) applied.push("re-check needed");
   if (filters.blocked) applied.push("blocked");
   if (filters.hideIsolated) applied.push("hide unconnected");
@@ -578,6 +590,11 @@ export function queryRelationshipGraph(graph, query, options = {}) {
   if (filters.open) {
     constrainBy(
       (node) => node.kind === "commitment" && normalizedGraphValue(node.status) === "open",
+    );
+  }
+  if (filters.promiseReview) {
+    constrainBy(
+      (node) => node.kind === "commitment" && normalizedGraphValue(node.status) === "review",
     );
   }
   if (filters.held) {
