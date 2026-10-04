@@ -622,6 +622,50 @@ test("asking open promises leaves a kept promise with an open follow-up", () => 
   assert.equal(result.answer, "1 relationship matches open.");
 });
 
+test("asking held finds an open follow-up and leaves an open promise", () => {
+  const parsed = parseRelationshipGraphQuery("held");
+  assert.equal(parsed.filters.held, true);
+  assert.equal(parsed.filters.open, false);
+  assert.deepEqual(parsed.filters.freeText, []);
+  assert.deepEqual(parsed.applied, ["held"]);
+
+  const result = queryRelationshipGraph(
+    {
+      nodes: [
+        { id: "relationship:hold", kind: "relationship", label: "Quay Hold" },
+        {
+          id: "action:hold",
+          kind: "action",
+          label: "Customer risk",
+          relationshipId: "hold",
+          status: "open",
+          approvalStatus: "pending",
+        },
+        { id: "relationship:note", kind: "relationship", label: "Quay Note" },
+        {
+          id: "commitment:note",
+          kind: "commitment",
+          label: "Send the quay note",
+          relationshipId: "note",
+          status: "open",
+        },
+        { id: "relationship:later", kind: "relationship", label: "Quay Later" },
+        {
+          id: "action:later",
+          kind: "action",
+          label: "Warm follow-up",
+          relationshipId: "later",
+          status: "snoozed",
+        },
+      ],
+      edges: [],
+    },
+    "held",
+  );
+  assert.deepEqual(result.relationshipIds, ["hold"]);
+  assert.equal(result.answer, "1 relationship matches held.");
+});
+
 test("asking a follow-up title does not require that source", () => {
   const titles = [
     ["calendar hold", "Calendar hold", "calendar"],

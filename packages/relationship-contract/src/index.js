@@ -192,6 +192,8 @@ export function parseRelationshipGraphQuery(query) {
           : "",
     // The promise row says Open. An open follow-up is still awaiting approval.
     open: /\bopen\b/.test(normalized) && !/\bnot open\b/.test(normalized),
+    // The follow-up inspector says Held. The stored queue status is still open.
+    held: /\bheld\b/.test(normalized),
     // The company card says Kept. The stored status is still met.
     kept: /\bkept\b|\bkept_promises?\b/.test(normalized),
     stale: /\bstale\b|\boutdated\b|\bout of date\b/.test(normalized),
@@ -425,7 +427,8 @@ export function parseRelationshipGraphQuery(query) {
     .replace(/\bopen promises\b/g, " ")
     .replace(/\bopen promise\b/g, " ")
     .replace(/\bnot open\b/g, " ")
-    .replace(/\bopen\b/g, " ");
+    .replace(/\bopen\b/g, " ")
+    .replace(/\bheld\b/g, " ");
   filters.freeText = withoutFilterPhrases
     .replace(/[^a-z0-9_@.\s-]/g, " ")
     .split(/\s+/)
@@ -448,6 +451,7 @@ export function parseRelationshipGraphQuery(query) {
   else if (filters.direction === "promised_by_me") applied.push("we owe them");
   if (filters.kept) applied.push("kept");
   if (filters.open) applied.push("open");
+  if (filters.held) applied.push("held");
   if (filters.stale) applied.push("out of date");
   if (filters.current) applied.push("up to date");
   if (filters.aging) applied.push("getting old");
@@ -547,6 +551,11 @@ export function queryRelationshipGraph(graph, query, options = {}) {
   if (filters.open) {
     constrainBy(
       (node) => node.kind === "commitment" && normalizedGraphValue(node.status) === "open",
+    );
+  }
+  if (filters.held) {
+    constrainBy(
+      (node) => node.kind === "action" && normalizedGraphValue(node.status) === "open",
     );
   }
   if (filters.approvalStatus.length) {
