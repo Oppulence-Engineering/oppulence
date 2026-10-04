@@ -1763,11 +1763,15 @@ func writeActivityNoteText(b *sql.Builder, s *sql.Selector, facts string) {
 		b.WriteString(facts)
 		b.WriteString("::jsonb->>'content') <> '' THEN btrim(")
 		b.WriteString(facts)
-		b.WriteString("::jsonb->>'content') ELSE (SELECT string_agg(btrim(txt #>> '{}'), ' ' ORDER BY ord) FROM jsonb_path_query(CASE WHEN jsonb_typeof(")
+		b.WriteString("::jsonb->>'content') ELSE coalesce((SELECT string_agg(btrim(txt #>> '{}'), ' ' ORDER BY ord) FROM jsonb_path_query(CASE WHEN jsonb_typeof(")
 		b.WriteString(facts)
 		b.WriteString("::jsonb) = 'object' THEN ")
 		b.WriteString(facts)
-		b.WriteString("::jsonb ELSE '{}'::jsonb END, '$.content.**.text') WITH ORDINALITY AS slate(txt, ord) WHERE btrim(txt #>> '{}') <> '') END")
+		b.WriteString("::jsonb ELSE '{}'::jsonb END, '$.content[*].children[*].text') WITH ORDINALITY AS slate(txt, ord) WHERE btrim(txt #>> '{}') <> ''), (SELECT string_agg(btrim(txt #>> '{}'), ' ' ORDER BY ord) FROM jsonb_path_query(CASE WHEN jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb) = 'object' THEN ")
+		b.WriteString(facts)
+		b.WriteString("::jsonb ELSE '{}'::jsonb END, '$.content[*].text') WITH ORDINALITY AS slate(txt, ord) WHERE btrim(txt #>> '{}') <> '')) END")
 		return
 	}
 	b.WriteString("CASE WHEN json_type(")
