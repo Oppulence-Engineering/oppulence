@@ -3033,6 +3033,104 @@ func TestRelationshipSearchFindsThePromiseFollowUp(t *testing.T) {
 	assertCompanyQuery("This promise looks forgotten")
 	assertCompanyQuery("The promise was renegotiated", "Cedar Mill")
 	assertCompanyQuery("This promise was renegotiated. Review the new terms.", "Cedar Mill")
+	assertCompanyQuery("No promises are due for a follow-up.", "Harbor Ledger")
+}
+
+func TestRelationshipSearchFindsTheEmptyFollowUp(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	promise := func(rel *ent.Relationship, text, acceptance, status string, due *time.Time) {
+		t.Helper()
+		create := f.client.Commitment.Create().
+			SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+			SetDirection("promised_by_them").SetText(text).
+			SetStatus(status).SetConfidence(1).SetAcceptance(acceptance)
+		if due != nil {
+			create.SetDueAt(*due)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	soon := now.Add(24 * time.Hour)
+	late := now.Add(-48 * time.Hour)
+	later := now.Add(10 * 24 * time.Hour)
+	quiet := makeCompany("Quay Quiet")
+	_ = quiet
+	laterCo := makeCompany("Quay Later")
+	soonCo := makeCompany("Quay Soon")
+	lateCo := makeCompany("Quay Late")
+	pair := makeCompany("Quay Pair")
+	two := makeCompany("Quay Two")
+	review := makeCompany("Quay Review")
+	checked := makeCompany("Quay Checked")
+	promise(laterCo, "Send the later packet", "internally_confirmed", "open", &later)
+	promise(soonCo, "Send the soon packet", "internally_confirmed", "open", &soon)
+	promise(lateCo, "Send the late packet", "internally_confirmed", "open", &late)
+	promise(pair, "Send the late half", "internally_confirmed", "open", &late)
+	promise(pair, "Send the soon half", "accepted", "open", &soon)
+	promise(two, "Send the first soon packet", "internally_confirmed", "open", &soon)
+	promise(two, "Send the second soon packet", "internally_confirmed", "open", &soon)
+	promise(review, "Send the unreviewed packet", "candidate", "open", &soon)
+	payload, err := json.Marshal(CommitmentRecoveryEvaluation{
+		EvaluationID: "recovery:quay-checked", CommitmentID: uuid.NewString(),
+		Classification: "forgotten", Explanation: recoveryExplanation("forgotten", nil),
+		EvaluatedAt: now.Format(time.RFC3339), EvidenceRefs: []string{}, StaleSources: []string{},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(payload)
+	if _, err := f.client.ConversationIntelligenceArtifact.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(checked).
+		SetKind("recovery_evaluation").SetStableID("recovery:quay-checked").SetVersion(1).
+		SetStatus("forgotten").SetSubjectRef(checked.ID.String()).
+		SetEffectiveAt(now).SetEvidenceRefs([]string{}).
+		SetPayloadJSON(string(payload)).SetPayloadHash(hex.EncodeToString(sum[:])).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery(
+		"No promises are due for a follow-up.",
+		"Quay Quiet", "Quay Later", "Quay Review",
+	)
+	assertCompanyQuery("which companies have no promises are due for a follow-up", "Quay Quiet", "Quay Later", "Quay Review")
+	assertCompanyQuery("A promise is due soon. Reconcile to check the follow-up.", "Quay Soon")
+	assertCompanyQuery("A promise is past due. Reconcile to check the follow-up.", "Quay Late")
+	assertCompanyQuery("A promise is past due and 1 is due soon. Reconcile to check the follow-up.", "Quay Pair")
+	assertCompanyQuery("2 promises are due soon. Reconcile to check the follow-up.", "Quay Two")
+	assertCompanyQuery("due soon")
 }
 
 func TestRelationshipSearchFindsTheDisagreement(t *testing.T) {
