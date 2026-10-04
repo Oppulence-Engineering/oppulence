@@ -883,6 +883,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
 			parts = append(parts, subject)
 		}
+		if preview := relationshipSheetActivityPreviewMatch(needle); preview != nil {
+			parts = append(parts, preview)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -1702,35 +1705,57 @@ var activityEventSearchLabels = []struct {
 // sentence, so the subject line stays visible. A subject that repeats the
 // summary is not printed again. local-user is not a subject.
 func relationshipSheetActivitySubjectMatch(needle string) predicate.Relationship {
-	const marker = "subject: "
+	return relationshipSheetActivityFactMatch(needle, "subject: ", "subject")
+}
+
+// relationshipSheetActivityPreviewMatch is "Preview: …" on an opened activity.
+// A mail snippet and a stored preview use the same label. A preview that
+// repeats the summary is not printed again. local-user is not a preview.
+func relationshipSheetActivityPreviewMatch(needle string) predicate.Relationship {
+	const marker = "preview: "
 	index := strings.Index(needle, marker)
 	if index < 0 {
 		return nil
 	}
-	subject := strings.TrimSpace(needle[index+len(marker):])
-	if subject == "" {
+	value := strings.TrimSpace(needle[index+len(marker):])
+	if value == "" {
 		return nil
 	}
-	return relationship.HasObservationsWith(observationFactSubject(subject))
+	return relationship.HasObservationsWith(relationshipobservation.Or(
+		observationFactLine("snippet", value),
+		observationFactLine("preview", value),
+	))
 }
 
-func observationFactSubject(subject string) predicate.RelationshipObservation {
+func relationshipSheetActivityFactMatch(needle, marker, key string) predicate.Relationship {
+	index := strings.Index(needle, marker)
+	if index < 0 {
+		return nil
+	}
+	value := strings.TrimSpace(needle[index+len(marker):])
+	if value == "" {
+		return nil
+	}
+	return relationship.HasObservationsWith(observationFactLine(key, value))
+}
+
+func observationFactLine(key, value string) predicate.RelationshipObservation {
 	return predicate.RelationshipObservation(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
 			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
 			summary := s.C(relationshipobservation.FieldSummary)
 			b.WriteString("(")
-			writeSubjectTrim(b, s, facts)
+			writeActivityFactTrim(b, s, facts, key)
 			b.WriteString(" <> '' AND ")
-			writeSubjectTrim(b, s, facts)
+			writeActivityFactTrim(b, s, facts, key)
 			b.WriteString(" NOT IN ('local-user', 'meeting-counterparty') AND ")
-			writeNormalizedSubject(b, s, facts)
+			writeNormalizedActivityFact(b, s, facts, key)
 			b.WriteString(" = ")
-			b.Arg(subject)
+			b.Arg(value)
 			b.WriteString(" AND (")
-			writeSubjectToken(b, s, facts)
+			writeActivityFactToken(b, s, facts, key)
 			b.WriteString(" OR ")
-			writeSubjectTrim(b, s, facts)
+			writeActivityFactTrim(b, s, facts, key)
 			b.WriteString(" <> ")
 			if s.Dialect() == dialect.Postgres {
 				b.WriteString("btrim(coalesce(")
@@ -1743,22 +1768,26 @@ func observationFactSubject(subject string) predicate.RelationshipObservation {
 	})
 }
 
-func writeSubjectTrim(b *sql.Builder, s *sql.Selector, facts string) {
+func writeActivityFactTrim(b *sql.Builder, s *sql.Selector, facts, key string) {
 	if s.Dialect() == dialect.Postgres {
 		b.WriteString("btrim(coalesce(")
 		b.WriteString(facts)
-		b.WriteString("::jsonb->>'subject', ''))")
+		b.WriteString("::jsonb->>'")
+		b.WriteString(key)
+		b.WriteString("', ''))")
 		return
 	}
 	b.WriteString("trim(coalesce(json_extract(")
 	b.WriteString(facts)
-	b.WriteString(", '$.subject'), ''))")
+	b.WriteString(", '$.")
+	b.WriteString(key)
+	b.WriteString("'), ''))")
 }
 
-func writeNormalizedSubject(b *sql.Builder, s *sql.Selector, facts string) {
+func writeNormalizedActivityFact(b *sql.Builder, s *sql.Selector, facts, key string) {
 	if s.Dialect() == dialect.Postgres {
 		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
-		writeSubjectTrim(b, s, facts)
+		writeActivityFactTrim(b, s, facts, key)
 		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
 		return
 	}
@@ -1767,7 +1796,7 @@ func writeNormalizedSubject(b *sql.Builder, s *sql.Selector, facts string) {
 		b.WriteString("replace(")
 	}
 	b.WriteString("replace(replace(replace(lower(")
-	writeSubjectTrim(b, s, facts)
+	writeActivityFactTrim(b, s, facts, key)
 	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
 	for range 4 {
 		b.WriteString(", '  ', ' ')")
@@ -1775,13 +1804,13 @@ func writeNormalizedSubject(b *sql.Builder, s *sql.Selector, facts string) {
 	b.WriteString(")")
 }
 
-func writeSubjectToken(b *sql.Builder, s *sql.Selector, facts string) {
+func writeActivityFactToken(b *sql.Builder, s *sql.Selector, facts, key string) {
 	if s.Dialect() == dialect.Postgres {
-		writeSubjectTrim(b, s, facts)
+		writeActivityFactTrim(b, s, facts, key)
 		b.WriteString(" ~ '^[a-z0-9_]*_[a-z0-9_]*$'")
 		return
 	}
-	writeSubjectTrim(b, s, facts)
+	writeActivityFactTrim(b, s, facts, key)
 	b.WriteString(" GLOB '[a-z0-9_]*_[a-z0-9_]*'")
 }
 
