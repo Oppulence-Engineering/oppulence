@@ -110,6 +110,8 @@ const GRAPH_QUERY_NODE_ALIASES = {
   evidence: "evidence",
   observation: "evidence",
   observations: "evidence",
+  detail: "evidence",
+  details: "evidence",
   source: "source",
   sources: "source",
   note: "note",
@@ -597,10 +599,8 @@ export function queryRelationshipGraph(graph, query, options = {}) {
     constrained = true;
   }
 
-  if (!constrained && filters.nodeKinds.length) {
-    for (const node of nodes) {
-      if (filters.nodeKinds.includes(node.kind)) matched.add(node.id);
-    }
+  if (filters.nodeKinds.length) {
+    constrainBy((node) => filters.nodeKinds.includes(node.kind));
   }
 
   // Each individual constraint can find useful nodes while their relationship sets have no
