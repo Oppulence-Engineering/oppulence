@@ -689,6 +689,10 @@ func TestRelationshipSearchFindsTheSheetMailWords(t *testing.T) {
 	assertCompanyQuery("1 message", "Quill Atelier")
 	assertCompanyQuery("2 messages", "Northwind Ledger")
 	assertCompanyQuery("0 messages", "Harbor Ledger")
+	assertCompanyQuery("Gmail · 1 message", "Quill Atelier")
+	assertCompanyQuery("Gmail · 0 messages", "Harbor Ledger")
+	assertCompanyQuery("Gmail · 2 messages")
+	assertCompanyQuery("which companies have gmail · 1 message", "Quill Atelier")
 	assertCompanyQuery("date")
 }
 
