@@ -965,6 +965,9 @@ func (s *Service) ListRelationshipsFiltered(
 				relationship.Not(relationship.HasCommitmentsWith(visibleTruthCommitment())),
 			))
 		}
+		if confirmed := relationshipSheetConfirmedMeetingMatch(needle); confirmed != nil {
+			parts = append(parts, confirmed)
+		}
 		parts = append(parts, relationship.HasActionsWith(revenueaction.ReasonContainsFold(value)))
 		q.Where(relationship.Or(parts...))
 	}
@@ -3452,6 +3455,30 @@ func relationshipAttentionBandMatch(needle string) predicate.Relationship {
 		band,
 		relationshipattentionitem.StatusEQ("open"),
 	)
+}
+
+// relationshipSheetConfirmedMeetingMatch matches the recommendation line
+// "You confirmed this follow-up from the meeting." The sheet rewrites a
+// stored reason that still names the source evidence path to that sentence.
+// Searching the words on the card has to find both.
+func relationshipSheetConfirmedMeetingMatch(needle string) predicate.Relationship {
+	if !labelPhraseMatches("you confirmed this follow-up from the meeting.", needle) {
+		return nil
+	}
+	return relationship.HasActionsWith(predicate.RevenueAction(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			column := s.C(revenueaction.FieldReason)
+			b.WriteString("(lower(trim(")
+			b.WriteString(column)
+			b.WriteString(")) = 'you confirmed this follow-up from the meeting.' OR lower(trim(")
+			b.WriteString(column)
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString(")) ~ '^you confirmed this follow-up from source evidence meeting/.+\\.$')")
+				return
+			}
+			b.WriteString(")) GLOB 'you confirmed this follow-up from source evidence meeting/?*.')")
+		}))
+	}))
 }
 
 func relationshipSheetTruthPromiseMatch(needle string, now time.Time) predicate.Relationship {

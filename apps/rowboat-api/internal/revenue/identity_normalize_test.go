@@ -1089,6 +1089,114 @@ func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
 	assertCompanyQuery("No action is currently recommended", "Quill Atelier")
 }
 
+func TestRelationshipSearchFindsTheConfirmedMeetingReason(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quay Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	packet, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quay Packet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: packet.ID,
+		ActionType:     "meeting_follow_up",
+		Channel:        "email",
+		Reason:         "You confirmed this follow-up from the meeting.",
+		PriorityScore:  70,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	ledger, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quay Ledger",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: ledger.ID,
+		ActionType:     "meeting_follow_up",
+		Channel:        "email",
+		Reason:         "You confirmed this follow-up from source evidence meeting/commitment:harbor-rank.",
+		PriorityScore:  70,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	call, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quay Call",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: call.ID,
+		ActionType:     "warm_follow_up",
+		Channel:        "email",
+		Reason:         "You confirmed this follow-up from the call.",
+		PriorityScore:  40,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	open, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quay Open",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: open.ID,
+		ActionType:     "crm_update",
+		Channel:        "email",
+		Reason:         "You confirmed this follow-up from source evidence meeting/abc",
+		PriorityScore:  20,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	mail, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quay Mail",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: mail.ID,
+		ActionType:     "crm_update",
+		Channel:        "email",
+		Reason:         "You confirmed this follow-up from source evidence email/abc.",
+		PriorityScore:  20,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("You confirmed this follow-up from the meeting.", "Quay Packet", "Quay Ledger")
+	assertCompanyQuery(
+		"where it says you confirmed this follow-up from the meeting",
+		"Quay Packet", "Quay Ledger",
+	)
+	assertCompanyQuery("You confirmed this follow-up from the call.", "Quay Call")
+	assertCompanyQuery("xylophone")
+}
+
 func TestRelationshipSearchFindsTheAttentionBadge(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
