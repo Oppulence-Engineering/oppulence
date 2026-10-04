@@ -1089,6 +1089,53 @@ func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
 	assertCompanyQuery("No action is currently recommended", "Quill Atelier")
 }
 
+func TestRelationshipSearchFindsThePromiseDueDay(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Day Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	makeDue := func(name string, due time.Time) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		seedCommitment(t, f, rel, "promised_by_them", "Send the quay packet", "", &due)
+	}
+	makeDue("Day Third", time.Date(2026, 10, 3, 15, 0, 0, 0, time.UTC))
+	makeDue("Day Early", time.Date(2026, 10, 3, 0, 30, 0, 0, time.UTC))
+	makeDue("Day Late", time.Date(2026, 10, 3, 23, 30, 0, 0, time.UTC))
+	makeDue("Day Fourth", time.Date(2026, 10, 4, 0, 30, 0, 0, time.UTC))
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Due: Oct 3, 2026", "Day Third", "Day Early", "Day Late")
+	assertCompanyQuery("which promise is due: Oct 3, 2026", "Day Third", "Day Early", "Day Late")
+	assertCompanyQuery("Oct 3, 2026", "Day Third", "Day Early", "Day Late")
+	assertCompanyQuery("Due: Oct 4, 2026", "Day Fourth")
+	assertCompanyQuery("Due: Oct 32, 2026")
+	assertCompanyQuery("Oct 3")
+	assertCompanyQuery("due")
+}
+
 func TestRelationshipSearchFindsTheAttentionBadge(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

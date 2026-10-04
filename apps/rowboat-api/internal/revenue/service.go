@@ -868,6 +868,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if truth := relationshipSheetTruthPromiseMatch(needle, searchedAt); truth != nil {
 			parts = append(parts, truth)
 		}
+		if due := relationshipSheetPromiseDueMatch(needle); due != nil {
+			parts = append(parts, due)
+		}
 		if band := relationshipAttentionBandMatch(needle); band != nil {
 			parts = append(parts, band)
 		}
@@ -3452,6 +3455,71 @@ func relationshipAttentionBandMatch(needle string) predicate.Relationship {
 		band,
 		relationshipattentionitem.StatusEQ("open"),
 	)
+}
+
+// relationshipSheetPromiseDueMatch matches "Due: Oct 3, 2026" on the promise
+// card. The day is the UTC day, the same one the sheet prints. A date with
+// no "Due:" prefix matches only when the search is that day and nothing else.
+func relationshipSheetPromiseDueMatch(needle string) predicate.Relationship {
+	start, ok := promiseDueDayStart(needle)
+	if !ok {
+		return nil
+	}
+	return relationship.HasCommitmentsWith(commitment.And(
+		commitment.DueAtGTE(start),
+		commitment.DueAtLT(start.Add(24*time.Hour)),
+	))
+}
+
+func promiseDueDayStart(needle string) (time.Time, bool) {
+	needle = normalizePersonSearch(needle)
+	const prefix = "due: "
+	if i := strings.LastIndex(needle, prefix); i >= 0 {
+		return parseLeadingDueDate(strings.TrimSpace(needle[i+len(prefix):]), true)
+	}
+	return parseLeadingDueDate(needle, false)
+}
+
+func parseLeadingDueDate(rest string, allowTrailing bool) (time.Time, bool) {
+	parts := strings.Fields(rest)
+	if len(parts) < 3 || (!allowTrailing && len(parts) != 3) {
+		return time.Time{}, false
+	}
+	month, ok := promiseDueMonths[parts[0]]
+	if !ok || !strings.HasSuffix(parts[1], ",") {
+		return time.Time{}, false
+	}
+	day, err := strconv.Atoi(strings.TrimSuffix(parts[1], ","))
+	if err != nil || day < 1 || day > 31 || parts[1] != strconv.Itoa(day)+"," {
+		return time.Time{}, false
+	}
+	if len(parts[2]) != 4 {
+		return time.Time{}, false
+	}
+	year, err := strconv.Atoi(parts[2])
+	if err != nil || year < 1000 {
+		return time.Time{}, false
+	}
+	start := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+	if start.Year() != year || start.Month() != month || start.Day() != day {
+		return time.Time{}, false
+	}
+	return start, true
+}
+
+var promiseDueMonths = map[string]time.Month{
+	"jan": time.January,
+	"feb": time.February,
+	"mar": time.March,
+	"apr": time.April,
+	"may": time.May,
+	"jun": time.June,
+	"jul": time.July,
+	"aug": time.August,
+	"sep": time.September,
+	"oct": time.October,
+	"nov": time.November,
+	"dec": time.December,
 }
 
 func relationshipSheetTruthPromiseMatch(needle string, now time.Time) predicate.Relationship {
