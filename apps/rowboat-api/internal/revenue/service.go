@@ -880,6 +880,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if activity := relationshipSheetActivityMatch(needle); activity != nil && !sheetEmptySentenceOwnsActivity(needle) {
 			parts = append(parts, activity)
 		}
+		if person := relationshipSheetActivityPersonMatch(needle); person != nil {
+			parts = append(parts, person)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -1692,6 +1695,135 @@ var activityEventSearchLabels = []struct {
 	{"escalated", "action.outcome.escalated"},
 	{"they left", "action.outcome.churned"},
 	{"corrected", "action.outcome.corrected"},
+}
+
+// relationshipSheetActivityPersonMatch is "From: …", "To: …", or "For: …"
+// on an opened activity. The sheet names a participant only when the stored
+// ref is a person, not a token or an id. A name that repeats the row summary
+// is not printed again.
+func relationshipSheetActivityPersonMatch(needle string) predicate.Relationship {
+	type side struct {
+		marker string
+		key    string
+	}
+	sides := []side{
+		{"from: ", "owner_participant_ref"},
+		{"for: ", "beneficiary_participant_ref"},
+		{"to: ", "counterparty_participant_ref"},
+	}
+	chosen := side{}
+	at := -1
+	for _, item := range sides {
+		index := strings.Index(needle, item.marker)
+		if index < 0 || (at >= 0 && index >= at) {
+			continue
+		}
+		at = index
+		chosen = item
+	}
+	if at < 0 {
+		return nil
+	}
+	name := strings.TrimSpace(needle[at+len(chosen.marker):])
+	if name == "" {
+		return nil
+	}
+	return relationship.HasObservationsWith(observationFactParticipant(chosen.key, name))
+}
+
+func observationFactParticipant(key, name string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			payload := s.C(relationshipobservation.FieldPayloadCiphertext)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			b.WriteString(payload)
+			b.WriteString(" IS NULL OR length(")
+			b.WriteString(payload)
+			b.WriteString(") = 0) AND ")
+			writeParticipantTrim(b, s, facts, key)
+			b.WriteString(" <> '' AND ")
+			writeParticipantTrim(b, s, facts, key)
+			b.WriteString(" NOT IN ('local-user', 'meeting-counterparty') AND NOT ")
+			writeParticipantUUID(b, s, facts, key)
+			b.WriteString(" AND NOT ")
+			writeParticipantToken(b, s, facts, key)
+			b.WriteString(" AND ")
+			writeNormalizedParticipant(b, s, facts, key)
+			b.WriteString(" = ")
+			b.Arg(name)
+			b.WriteString(" AND ")
+			writeParticipantTrim(b, s, facts, key)
+			b.WriteString(" <> ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))")
+		}))
+	})
+}
+
+func writeParticipantTrim(b *sql.Builder, s *sql.Selector, facts, key string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(coalesce(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->>'")
+		b.WriteString(key)
+		b.WriteString("', ''))")
+		return
+	}
+	b.WriteString("trim(coalesce(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.")
+	b.WriteString(key)
+	b.WriteString("'), ''))")
+}
+
+func writeNormalizedParticipant(b *sql.Builder, s *sql.Selector, facts, key string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
+		writeParticipantTrim(b, s, facts, key)
+		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
+		return
+	}
+	b.WriteString("trim(")
+	for range 4 {
+		b.WriteString("replace(")
+	}
+	b.WriteString("replace(replace(replace(lower(")
+	writeParticipantTrim(b, s, facts, key)
+	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
+	for range 4 {
+		b.WriteString(", '  ', ' ')")
+	}
+	b.WriteString(")")
+}
+
+func writeParticipantUUID(b *sql.Builder, s *sql.Selector, facts, key string) {
+	if s.Dialect() == dialect.Postgres {
+		writeParticipantTrim(b, s, facts, key)
+		b.WriteString(" ~* '^[0-9a-f-]{36}$'")
+		return
+	}
+	b.WriteString("(length(")
+	writeParticipantTrim(b, s, facts, key)
+	b.WriteString(") = 36 AND lower(")
+	writeParticipantTrim(b, s, facts, key)
+	b.WriteString(") NOT GLOB '*[^0-9a-f-]*')")
+}
+
+func writeParticipantToken(b *sql.Builder, s *sql.Selector, facts, key string) {
+	if s.Dialect() == dialect.Postgres {
+		writeParticipantTrim(b, s, facts, key)
+		b.WriteString(" ~ '^[a-z0-9_:-]+$'")
+		return
+	}
+	writeParticipantTrim(b, s, facts, key)
+	b.WriteString(" NOT GLOB '*[^a-z0-9_:-]*'")
 }
 
 func relationshipSheetActivityMatch(needle string) predicate.Relationship {

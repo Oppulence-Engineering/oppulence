@@ -1029,6 +1029,73 @@ func TestRelationshipSearchFindsWhoOwesThePromise(t *testing.T) {
 	assertCompanyQuery("At risk promise", "Harbor Soon")
 }
 
+func TestRelationshipSearchFindsTheActivityPerson(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string, payload []byte) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		create := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("desktop_note").SetExternalID(name).SetEventType("note").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts)
+		if len(payload) > 0 {
+			create.SetPayloadCiphertext(payload)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Palm Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Palm Ada", "Quiet note", `{"owner_participant_ref":"Ada Harbor"}`, nil)
+	saveNote("Palm Blair", "Quiet note", `{"counterparty_participant_ref":"Blair Quinn"}`, nil)
+	saveNote("Palm Casey", "Quiet note", `{"beneficiary_participant_ref":"Casey Lane"}`, nil)
+	saveNote("Palm Token", "Quiet note", `{"owner_participant_ref":"local-user","counterparty_participant_ref":"meeting-counterparty"}`, nil)
+	saveNote("Palm Slug", "Quiet note", `{"owner_participant_ref":"ada-harbor"}`, nil)
+	saveNote("Palm Ident", "Quiet note", `{"owner_participant_ref":"14000001-0000-4000-8000-000000000011"}`, nil)
+	saveNote("Palm Echo", "Ada Harbor", `{"owner_participant_ref":"Ada Harbor"}`, nil)
+	saveNote("Palm Sealed", "Quiet note", `{"owner_participant_ref":"Ada Harbor"}`, []byte{1, 2, 3})
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("From: Ada Harbor", "Palm Ada")
+	assertCompanyQuery("which activity says from: Ada Harbor", "Palm Ada")
+	assertCompanyQuery("To: Blair Quinn", "Palm Blair")
+	assertCompanyQuery("For: Casey Lane", "Palm Casey")
+	assertCompanyQuery("From: local-user")
+	assertCompanyQuery("Ada Harbor")
+	assertCompanyQuery("from")
+}
+
 func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
