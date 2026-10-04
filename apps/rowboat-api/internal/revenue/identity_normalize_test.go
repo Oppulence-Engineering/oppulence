@@ -3751,6 +3751,85 @@ func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
 	assertCompanyQuery("Deletion is still running", "Lumen Packet")
 }
 
+func TestRelationshipSearchFindsDuplicateImpact(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	link := func(proposed, existing *ent.Relationship, status, impact, dedupe string) {
+		t.Helper()
+		if _, err := f.client.RelationshipIdentityCandidate.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetProposedRelationship(proposed).SetExistingRelationship(existing).
+			SetDedupeKey(dedupe).SetAnchorKind("domain").SetAnchorKeyHash(dedupe).
+			SetStatus(status).SetImpactJSON(impact).
+			Save(auth.WithInternal(f.ctx)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	quiet := makeCompany("Impact Quiet")
+	_ = quiet
+	event := makeCompany("Impact Event")
+	twin := makeCompany("Impact Twin")
+	link(event, twin, "pending", `{"observations":1}`, "impact-event")
+	saved := makeCompany("Impact Saved")
+	ledger := makeCompany("Impact Ledger")
+	link(saved, ledger, "pending", `{"assertions":3,"evidence":2}`, "impact-saved")
+	done := makeCompany("Impact Done")
+	old := makeCompany("Impact Old")
+	link(done, old, "resolved", `{"observations":4}`, "impact-done")
+	undone := makeCompany("Impact Undone")
+	gone := makeCompany("Impact Gone")
+	link(undone, gone, "undone", `{"observations":5}`, "impact-undone")
+	wait := makeCompany("Impact Wait")
+	later := makeCompany("Impact Later")
+	link(wait, later, "deferred", `{"assertions":1}`, "impact-wait")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	openReview := []string{
+		"Impact Event", "Impact Twin", "Impact Saved", "Impact Ledger", "Impact Wait", "Impact Later",
+	}
+	assertCompanyQuery("1 recorded event", "Impact Event", "Impact Twin")
+	assertCompanyQuery("which companies show 1 recorded event", "Impact Event", "Impact Twin")
+	assertCompanyQuery("4 recorded events", "Impact Done", "Impact Old")
+	assertCompanyQuery("recorded events", "Impact Done", "Impact Old")
+	assertCompanyQuery("5 recorded events")
+	assertCompanyQuery("0 recorded events")
+	assertCompanyQuery("3 saved details", "Impact Saved", "Impact Ledger")
+	assertCompanyQuery("1 saved detail", "Impact Wait", "Impact Later")
+	assertCompanyQuery("2 supporting records", "Impact Saved", "Impact Ledger")
+	assertCompanyQuery("Keep separate", openReview...)
+	assertCompanyQuery("Move the evidence", openReview...)
+	assertCompanyQuery("Decide later", openReview...)
+	assertCompanyQuery("which companies show decide later", openReview...)
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {

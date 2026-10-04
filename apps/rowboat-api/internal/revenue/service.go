@@ -946,6 +946,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if accepted := relationshipSheetAcceptedPromiseMatch(needle); accepted != nil {
 			parts = append(parts, accepted)
 		}
+		if impact := relationshipSheetDuplicateImpactMatch(needle); impact != nil {
+			parts = append(parts, impact)
+		}
 		if contradiction := relationshipSheetContradictionMatch(needle); contradiction != nil {
 			parts = append(parts, contradiction)
 		}
@@ -2255,6 +2258,177 @@ func acceptedPromiseQuery(needle string) (string, bool) {
 		return "", false
 	}
 	return name, true
+}
+
+// relationshipSheetDuplicateImpactMatch matches the duplicate-card badges and
+// the review buttons. A zero count is omitted. Pending and deferred cards
+// offer Keep separate, Move the evidence, and Decide later. Resolved cards
+// keep the count badges and replace those buttons.
+func relationshipSheetDuplicateImpactMatch(needle string) predicate.Relationship {
+	needle = normalizePersonSearch(needle)
+	if needle == "" {
+		return nil
+	}
+	var preds []predicate.Relationship
+	for _, item := range duplicateImpactBadges {
+		n, numbered, ok := duplicateImpactCount(needle, item.one, item.many)
+		if numbered {
+			if ok {
+				preds = append(preds, relationshipDuplicateImpact(item.key, "=", n))
+			}
+			continue
+		}
+		if labelPhraseMatches(item.many, needle) {
+			preds = append(preds, relationshipDuplicateImpact(item.key, ">=", 2))
+			continue
+		}
+		if labelPhraseMatches("1 "+item.one, needle) {
+			preds = append(preds, relationshipDuplicateImpact(item.key, "=", 1))
+		}
+	}
+	if labelPhraseMatches("keep separate", needle) ||
+		labelPhraseMatches("move the evidence", needle) ||
+		labelPhraseMatches("decide later", needle) {
+		preds = append(preds, relationshipHasOpenDuplicateReview())
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+type duplicateImpactBadge struct {
+	key  string
+	one  string
+	many string
+}
+
+var duplicateImpactBadges = []duplicateImpactBadge{
+	{key: "observations", one: "recorded event", many: "recorded events"},
+	{key: "assertions", one: "saved detail", many: "saved details"},
+	{key: "evidence", one: "supporting record", many: "supporting records"},
+}
+
+func duplicateImpactCount(needle, one, many string) (n int, numbered bool, ok bool) {
+	singular := "1 " + one
+	found := -1
+	if labelPhraseMatches(singular, needle) && !strings.Contains(needle, many) {
+		found = 1
+		numbered = true
+	}
+	marker := " " + many
+	search := needle
+	for {
+		index := strings.Index(search, marker)
+		if index < 0 {
+			break
+		}
+		head := strings.TrimSpace(search[:index])
+		number := head
+		if space := strings.LastIndex(head, " "); space >= 0 {
+			number = head[space+1:]
+		}
+		parsed, err := strconv.Atoi(number)
+		if err != nil || strconv.Itoa(parsed) != number {
+			search = search[index+1:]
+			continue
+		}
+		numbered = true
+		if parsed < 1 {
+			return 0, true, false
+		}
+		phrase := fmt.Sprintf("%d %s", parsed, many)
+		if parsed == 1 {
+			phrase = singular
+		}
+		if !labelPhraseMatches(phrase, needle) {
+			search = search[index+1:]
+			continue
+		}
+		if found >= 0 && found != parsed {
+			return 0, true, false
+		}
+		found = parsed
+		search = search[index+len(marker):]
+	}
+	if found < 1 {
+		return 0, numbered, false
+	}
+	return found, numbered, true
+}
+
+func relationshipDuplicateImpact(key, compare string, n int) predicate.Relationship {
+	if compare != "=" && compare != ">=" {
+		compare = "="
+	}
+	if n < 1 {
+		return relationship.Not(relationshipMatchAll())
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			table := relationshipidentitycandidate.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(table)
+			b.WriteString(" AS dup WHERE dup.")
+			b.WriteString(relationshipidentitycandidate.FieldStatus)
+			b.WriteString(" IN ('pending', 'deferred', 'resolved') AND (dup.")
+			b.WriteString(relationshipidentitycandidate.ProposedRelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" OR dup.")
+			b.WriteString(relationshipidentitycandidate.ExistingRelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(") AND ")
+			writeDuplicateImpactCount(b, s, "dup."+relationshipidentitycandidate.FieldImpactJSON, key)
+			b.WriteString(" ")
+			b.WriteString(compare)
+			b.WriteString(" ")
+			b.Arg(n)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeDuplicateImpactCount(b *sql.Builder, s *sql.Selector, column, key string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("COALESCE((")
+		b.WriteString(column)
+		b.WriteString("::jsonb->>'")
+		b.WriteString(key)
+		b.WriteString("')::int, 0)")
+		return
+	}
+	b.WriteString("CAST(COALESCE(json_extract(")
+	b.WriteString(column)
+	b.WriteString(", '$.")
+	b.WriteString(key)
+	b.WriteString("'), 0) AS INTEGER)")
+}
+
+func relationshipHasOpenDuplicateReview() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			table := relationshipidentitycandidate.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(table)
+			b.WriteString(" AS dup WHERE dup.")
+			b.WriteString(relationshipidentitycandidate.FieldStatus)
+			b.WriteString(" IN ('pending', 'deferred') AND (dup.")
+			b.WriteString(relationshipidentitycandidate.ProposedRelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" OR dup.")
+			b.WriteString(relationshipidentitycandidate.ExistingRelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString("))")
+		}))
+	})
 }
 
 func commitmentTextEquals(text string) predicate.Commitment {
