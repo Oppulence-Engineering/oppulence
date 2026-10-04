@@ -3751,6 +3751,92 @@ func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
 	assertCompanyQuery("Deletion is still running", "Lumen Packet")
 }
 
+func TestRelationshipSearchFindsTheRecommendationBadges(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	create := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	recommend := func(company *ent.Relationship, key, policy, approval, mode string, score int) {
+		t.Helper()
+		if _, err := f.client.RevenueAction.Create().
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetRelationship(company).
+			SetActionType("follow_up_task").
+			SetChannel("task").
+			SetDetector("manual").
+			SetDedupeKey(key).
+			SetRevisionHash(key + "-hash").
+			SetReason("Mail the ledger excerpt").
+			SetPolicyStatus(policy).
+			SetApprovalStatus(approval).
+			SetExecutionMode(mode).
+			SetPriorityScore(score).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	review := create("Review Co")
+	stale := create("Stale Co")
+	pending := create("Pending Co")
+	cleared := create("Cleared Co")
+	blocked := create("Blocked Co")
+	approved := create("Approved Co")
+	rejected := create("Rejected Co")
+	_ = create("Quiet Forge")
+	recommend(review, "badge-review", PolicyReviewRequired, ApprovalPending, ExecModeDraft, 80)
+	recommend(stale, "badge-stale", PolicyStale, ApprovalPending, ExecModeDraft, 50)
+	recommend(pending, "badge-pending", PolicyPending, ApprovalPending, ExecModeDraft, 10)
+	recommend(cleared, "badge-cleared", PolicyPassed, ApprovalPending, ExecModeSend, 80)
+	recommend(blocked, "badge-blocked", PolicyBlocked, ApprovalPending, ExecModeDraft, 10)
+	recommend(approved, "badge-approved", PolicyPassed, ApprovalApproved, ExecModeDraft, 50)
+	recommend(rejected, "badge-rejected", PolicyBlocked, ApprovalRejected, ExecModeSend, 85)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+
+	assertCompanyQuery("Review required", "Review Co")
+	assertCompanyQuery("Re-check needed", "Stale Co")
+	assertCompanyQuery("re check needed", "Stale Co")
+	assertCompanyQuery("Not checked", "Pending Co")
+	assertCompanyQuery("Cleared", "Cleared Co", "Approved Co")
+	assertCompanyQuery("Blocked", "Blocked Co", "Rejected Co")
+	assertCompanyQuery("Approved", "Approved Co")
+	assertCompanyQuery("Rejected", "Rejected Co")
+	assertCompanyQuery("Draft", "Review Co", "Stale Co", "Pending Co", "Blocked Co", "Approved Co")
+	assertCompanyQuery("Send", "Cleared Co", "Rejected Co")
+	assertCompanyQuery("High", "Review Co", "Cleared Co", "Rejected Co")
+	assertCompanyQuery("Medium", "Stale Co", "Approved Co")
+	assertCompanyQuery("Low", "Pending Co", "Blocked Co")
+	assertCompanyQuery("Awaiting approval")
+	assertCompanyQuery("Approved in this workspace")
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {

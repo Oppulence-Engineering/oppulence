@@ -883,6 +883,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
+		if badges := relationshipSheetRecommendationBadgeMatch(needle); badges != nil {
+			parts = append(parts, badges)
+		}
 		parts = append(parts, relationship.HasCommitmentsWith(commitment.TextContainsFold(value)))
 		if text := promiseLineText(needle); text != "" {
 			parts = append(parts, relationship.HasCommitmentsWith(commitment.And(
@@ -3431,6 +3434,88 @@ func relationshipSheetActionLabelMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// relationshipSheetRecommendationBadgeMatch matches the badges on a
+// recommendation. Policy reads "Review required", "Re-check needed",
+// "Not checked", "Cleared", or "Blocked". A decided recommendation reads
+// "Approved" or "Rejected". The corner chip reads "Draft" or "Send".
+// Priority reads "High", "Medium", or "Low".
+func relationshipSheetRecommendationBadgeMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	for _, item := range []struct {
+		phrase string
+		status string
+	}{
+		{"review required", PolicyReviewRequired},
+		{"re-check needed", PolicyStale},
+		{"not checked", PolicyPending},
+		{"cleared", PolicyPassed},
+		{"blocked", PolicyBlocked},
+	} {
+		if recommendationBadgePhrase(item.phrase, needle) {
+			preds = append(preds, relationship.HasActionsWith(revenueaction.PolicyStatusEQ(item.status)))
+		}
+	}
+	for _, item := range []struct {
+		phrase string
+		status string
+	}{
+		{"approved", ApprovalApproved},
+		{"rejected", ApprovalRejected},
+	} {
+		if recommendationBadgePhrase(item.phrase, needle) {
+			preds = append(preds, relationship.HasActionsWith(revenueaction.ApprovalStatusEQ(item.status)))
+		}
+	}
+	for _, item := range []struct {
+		phrase string
+		mode   string
+	}{
+		{"draft", ExecModeDraft},
+		{"send", ExecModeSend},
+	} {
+		if recommendationBadgePhrase(item.phrase, needle) {
+			preds = append(preds, relationship.HasActionsWith(revenueaction.ExecutionModeEQ(item.mode)))
+		}
+	}
+	switch {
+	case recommendationBadgePhrase("high", needle):
+		preds = append(preds, relationship.HasActionsWith(revenueaction.PriorityScoreGTE(70)))
+	case recommendationBadgePhrase("medium", needle):
+		preds = append(preds, relationship.HasActionsWith(
+			revenueaction.PriorityScoreGTE(40),
+			revenueaction.PriorityScoreLT(70),
+		))
+	case recommendationBadgePhrase("low", needle):
+		preds = append(preds, relationship.HasActionsWith(revenueaction.PriorityScoreLT(40)))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+// recommendationBadgePhrase is the badge, or a longer question that still
+// contains a specific badge. "Approved" is also the start of "Approved in
+// this workspace", so the short badges match only the word itself.
+func recommendationBadgePhrase(phrase, needle string) bool {
+	phrase = normalizePersonSearch(phrase)
+	needle = normalizePersonSearch(needle)
+	if phrase == "" || needle == "" {
+		return false
+	}
+	if needle == phrase {
+		return true
+	}
+	if len(phrase) < 12 {
+		return false
+	}
+	return strings.Contains(needle, phrase)
 }
 
 // relationshipAttentionBandMatch is the urgency badge on the attention queue.
