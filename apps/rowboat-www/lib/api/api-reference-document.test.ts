@@ -302,4 +302,14 @@ describe("API reference document", () => {
     expect(page).toContain("The API reference could not be loaded.");
     expect(page).not.toContain("unpkg.com");
   });
+
+  it("uses a status sample the field allows", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const run = presented.components.schemas.BackgroundTaskRunStatusResponse.properties.status;
+    expect(run.example).toBe("queued");
+    expect(run.description).toContain("Background runs");
+    expect(presented.components.schemas.HealthResponse.properties.status.example).toBe("ok");
+    expect(presented.components.schemas.ReadyResponse.properties.status.example).toBe("ready");
+    expect(presented.components.schemas.RevenueWorkspace.properties.status.example).toBe("active");
+  });
 });
