@@ -432,6 +432,11 @@ function FieldLabel({
 
 /* -------------------------------- sections --------------------------------- */
 
+/** An empty profile is unnamed. A sample person would read as this account. */
+export function displayNamePlaceholder(loading: boolean): string {
+  return loading ? "Loading…" : "Your name";
+}
+
 function ProfileCard() {
   const { query, mutation } = useConsolePreferences();
   const [name, setName] = React.useState("");
@@ -497,7 +502,7 @@ function ProfileCard() {
                 disabled={query.isLoading}
                 id="settings-display-name"
                 onChange={(event) => setName(event.target.value)}
-                placeholder={query.isLoading ? "Loading…" : "Ada Lovelace"}
+                placeholder={displayNamePlaceholder(query.isLoading)}
                 value={name}
               />
               {mutation.isError ? (
