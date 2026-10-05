@@ -273,10 +273,23 @@ export function recoveryNextCompaniesLabel(): string {
   return "Show the next companies";
 }
 
-export function recoveryNoCompaniesCopy(hasMoreCompanies: boolean): string {
-  return hasMoreCompanies
-    ? "More companies are still in this list."
-    : "No companies yet. Add one in Companies, or run an audit to find them.";
+/**
+ * A new action needs a company. An audit can only discover one after mail
+ * can be read, so the empty dialog follows the same connect gate as Recovery.
+ */
+export function recoveryNoCompaniesCopy(input: {
+  hasMoreCompanies: boolean;
+  needsConnect?: boolean;
+  needsReconnect?: boolean;
+}): string {
+  if (input.hasMoreCompanies) return "More companies are still in this list.";
+  if (input.needsReconnect) {
+    return "No companies yet. Add one in Companies. Reconnect Google before an audit can find them.";
+  }
+  if (input.needsConnect) {
+    return "No companies yet. Add one in Companies. Connect Gmail and Calendar before an audit can find them.";
+  }
+  return "No companies yet. Add one in Companies, or run an audit to find them.";
 }
 
 export function QueueView({
@@ -567,6 +580,8 @@ export function QueueView({
 
       {creating ? (
         <CreateActionDialog
+          needsConnect={needsConnect}
+          needsReconnect={needsReconnect}
           onClose={() => setCreating(false)}
           onCreated={(a) => {
             setCreating(false);
@@ -718,11 +733,15 @@ function ActionCard({
 }
 
 function CreateActionDialog({
+  needsConnect = false,
+  needsReconnect = false,
   onClose,
   onCreated,
   onError,
   onOpenCompanies,
 }: {
+  needsConnect?: boolean;
+  needsReconnect?: boolean;
   onClose: () => void;
   onCreated: (a: RevenueAction) => void;
   onError: (m: string) => void;
@@ -830,7 +849,11 @@ function CreateActionDialog({
           <Empty className="gap-3 py-4">
             <EmptyHeader>
               <EmptyDescription className="text-sm text-primary/55">
-                {recoveryNoCompaniesCopy(false)}
+                {recoveryNoCompaniesCopy({
+                  hasMoreCompanies: false,
+                  needsConnect,
+                  needsReconnect,
+                })}
               </EmptyDescription>
             </EmptyHeader>
             {onOpenCompanies ? (

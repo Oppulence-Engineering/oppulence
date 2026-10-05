@@ -21,6 +21,7 @@ import {
   recoveryShownLabel,
   recoveryStatusLabel,
   newActionIntro,
+  recoveryNoCompaniesCopy,
 } from "@/components/features/revenue/queue-view/queue-view";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "queue-view.tsx"), "utf8");
@@ -117,7 +118,34 @@ describe("QueueView", () => {
     );
     expect(newActionIntro(false)).toBe("Add a company before a follow-up can be created.");
     expect(source).not.toContain("manual follow-up");
-    expect(source).toContain("No companies yet. Add one in Companies, or run an audit to find them.");
+    expect(recoveryNoCompaniesCopy({ hasMoreCompanies: false })).toBe(
+      "No companies yet. Add one in Companies, or run an audit to find them.",
+    );
+    expect(
+      recoveryNoCompaniesCopy({ hasMoreCompanies: false, needsConnect: true }),
+    ).toBe(
+      "No companies yet. Add one in Companies. Connect Gmail and Calendar before an audit can find them.",
+    );
+    expect(
+      recoveryNoCompaniesCopy({ hasMoreCompanies: false, needsReconnect: true }),
+    ).toBe(
+      "No companies yet. Add one in Companies. Reconnect Google before an audit can find them.",
+    );
+    expect(
+      recoveryNoCompaniesCopy({
+        hasMoreCompanies: false,
+        needsConnect: true,
+        needsReconnect: true,
+      }),
+    ).toBe(
+      "No companies yet. Add one in Companies. Reconnect Google before an audit can find them.",
+    );
+    expect(
+      recoveryNoCompaniesCopy({ hasMoreCompanies: true, needsConnect: true }),
+    ).toBe("More companies are still in this list.");
+    expect(source).toContain("needsConnect={needsConnect}");
+    expect(source).toContain("needsReconnect={needsReconnect}");
+    expect(source).not.toContain("recoveryNoCompaniesCopy(false)");
     expect(source).toContain("Add a company");
     expect(source).toContain("onOpenCompanies");
     expect(source).toContain("openCompanyCreate(onOpenCompanies)");
