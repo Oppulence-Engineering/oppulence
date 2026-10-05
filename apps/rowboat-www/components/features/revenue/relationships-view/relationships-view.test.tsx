@@ -25,6 +25,7 @@ import {
   companyRecordLabel,
   companyListEmptyCopy,
   companyListFailureCopy,
+  companySourceCountsAsConnected,
   companyStageFilterName,
   companySheetPositionLabel,
   companyReviewCopy,
@@ -203,6 +204,22 @@ describe("RelationshipsView", () => {
         lookbackLabel: "6 months",
       }),
     ).toBe("Connect Gmail to discover companies from real conversations, or add one by hand.");
+    expect(
+      companyListEmptyCopy({
+        filtered: false,
+        hasConnectedSource: true,
+        lookbackLabel: "6 months",
+      }),
+    ).toBe(
+      "Gmail is connected. Run the 6 months audit from Commitments to discover companies and the people behind each conversation.",
+    );
+    for (const status of ["connected", "backfilling", "live", "stale", "rebuilding", "degraded"]) {
+      expect(companySourceCountsAsConnected(status)).toBe(true);
+    }
+    for (const status of ["not_connected", "authorizing", "reconnect_required", "disconnected"]) {
+      expect(companySourceCountsAsConnected(status)).toBe(false);
+    }
+    expect(source).toContain("companySourceCountsAsConnected(source.status)");
     expect(source).toContain("companyListEmptyCopy({");
     expect(companyListFailureCopy()).toBe("Companies could not load. Try again.");
     expect(source).toContain(

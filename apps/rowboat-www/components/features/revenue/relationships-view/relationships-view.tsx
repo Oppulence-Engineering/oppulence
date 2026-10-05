@@ -699,6 +699,24 @@ export function companyListEmptyCopy(input: {
   return "Connect Gmail to discover companies from real conversations, or add one by hand.";
 }
 
+/**
+ * A missed sync is still a connected mailbox. Stale, rebuilding, and degraded
+ * used to look disconnected, so an empty company list told someone who had
+ * already authorized Gmail to connect it again.
+ */
+const COMPANY_DIRECTORY_CONNECTED_SOURCE_STATES = new Set([
+  "connected",
+  "backfilling",
+  "live",
+  "stale",
+  "rebuilding",
+  "degraded",
+]);
+
+export function companySourceCountsAsConnected(status: string): boolean {
+  return COMPANY_DIRECTORY_CONNECTED_SOURCE_STATES.has(status);
+}
+
 /** A failed directory request is not an empty workspace. */
 export function companyListFailureCopy(): string {
   return "Companies could not load. Try again.";
@@ -873,7 +891,7 @@ export function RelationshipsView({
     deferredQuery.isPending ||
     attentionQuery.isPending;
   const hasConnectedSource = sources.some((source) =>
-    ["connected", "backfilling", "live"].includes(source.status),
+    companySourceCountsAsConnected(source.status),
   );
   const companies = rows.filter((relationship) => relationship.kind !== "person");
   const directoryTitle = companyDirectoryTitle({ query, health, lifecycle });
