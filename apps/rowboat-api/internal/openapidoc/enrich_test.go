@@ -338,6 +338,40 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertProjectorVersion(t, schemas)
+}
+
+func TestProjectorVersionMatchesTheRelationshipProjector(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertProjectorVersion(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertProjectorVersion(t *testing.T, schemas obj) {
+	t.Helper()
+	for _, schema := range []string{"RevenueRelationship", "RelationshipStateSnapshot", "RelationshipAttentionItem", "MissionControlReadModel"} {
+		field := asObj(asObj(asObj(schemas[schema])["properties"])["projectorVersion"])
+		if !exampleEquals(field["example"], 2) {
+			t.Fatalf("%s projector version: %#v", schema, field)
+		}
+	}
+	for _, schema := range []string{"RelationshipAttentionItem", "MissionControlReadModel"} {
+		field := asObj(asObj(asObj(schemas[schema])["properties"])["detectorVersion"])
+		if !exampleEquals(field["example"], 1) {
+			t.Fatalf("%s detector version: %#v", schema, field)
+		}
+	}
+}
+
+func exampleEquals(value any, want int) bool {
+	switch n := value.(type) {
+	case int:
+		return n == want
+	case float64:
+		return n == float64(want)
+	default:
+		return false
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
