@@ -343,7 +343,7 @@ func addRevenueSchemas(schemas obj) {
 	}, "id", "kind", "label", "currentValue", "confidence", "observationId")
 
 	schemas["ConversationGovernanceReceipt"] = objectSchema("Capture, routing, retention, disclosure, legal-hold, deletion, and evidence-clip receipt stored beside a transcript.", obj{
-		"receiptId":             stringSchema("Receipt id.", "governance:ab12"),
+		"receiptId":             stringSchema("Receipt id.", "governance:session-42:2026-07-31T14:00:00Z"),
 		"capturedAt":            stringSchema("Capture time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
 		"capturePolicy":         stringSchema("Capture policy in force.", "manual_capture"),
 		"routing":               stringSchema("Evidence routing path.", "local_transcription_to_oppulence"),

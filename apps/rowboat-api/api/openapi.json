@@ -5817,7 +5817,7 @@
           },
           "receiptId": {
             "description": "Receipt id.",
-            "example": "governance:ab12",
+            "example": "governance:session-42:2026-07-31T14:00:00Z",
             "type": "string"
           },
           "region": {
