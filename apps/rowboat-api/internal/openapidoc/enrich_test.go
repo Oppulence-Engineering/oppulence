@@ -3,6 +3,7 @@ package openapidoc
 import (
 	"encoding/json"
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -335,6 +336,38 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	entityProperties := asObj(asObj(schemas["EntityProjection"])["properties"])
 	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
+	}
+	assertLineageAccounts(t, schemas)
+}
+
+func TestLineageNamesTheMergedAccounts(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertLineageAccounts(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertLineageAccounts(t *testing.T, schemas obj) {
+	t.Helper()
+	lineage := asObj(schemas["RelationshipIdentityLineage"])
+	if lineage == nil {
+		return
+	}
+	props := asObj(lineage["properties"])
+	const proposed = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	const existing = "3a196c5e-b10e-46cb-a177-7c001f7be573"
+	before := asObj(props["beforeRelationshipIds"])
+	after := asObj(props["afterRelationshipIds"])
+	if !reflect.DeepEqual(before["example"], []any{proposed, existing}) {
+		t.Fatalf("before relationship ids: %#v", before["example"])
+	}
+	if !reflect.DeepEqual(after["example"], []any{existing}) {
+		t.Fatalf("after relationship ids: %#v", after["example"])
+	}
+	if asObj(before["items"])["example"] != proposed || asObj(after["items"])["example"] != existing {
+		t.Fatalf("relationship id items: before %#v after %#v", before["items"], after["items"])
+	}
+	if before["description"] != "Relationship ids before." || after["description"] != "Relationship ids after." {
+		t.Fatalf("lineage descriptions changed: %#v %#v", before["description"], after["description"])
 	}
 }
 

@@ -11139,18 +11139,25 @@
           },
           "afterRelationshipIds": {
             "description": "Relationship ids after.",
+            "example": [
+              "3a196c5e-b10e-46cb-a177-7c001f7be573"
+            ],
             "items": {
               "description": "Relationship id.",
-              "example": "relationship:2",
+              "example": "3a196c5e-b10e-46cb-a177-7c001f7be573",
               "type": "string"
             },
             "type": "array"
           },
           "beforeRelationshipIds": {
             "description": "Relationship ids before.",
+            "example": [
+              "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+              "3a196c5e-b10e-46cb-a177-7c001f7be573"
+            ],
             "items": {
               "description": "Relationship id.",
-              "example": "relationship:1",
+              "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "type": "string"
             },
             "type": "array"
