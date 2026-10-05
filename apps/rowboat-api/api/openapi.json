@@ -11186,9 +11186,12 @@
           },
           "observationIds": {
             "description": "Moved observation ids.",
+            "example": [
+              "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+            ],
             "items": {
               "description": "Observation id.",
-              "example": "observation:1",
+              "example": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "type": "string"
             },
             "type": "array"
