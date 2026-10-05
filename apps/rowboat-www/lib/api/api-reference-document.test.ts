@@ -297,6 +297,19 @@ describe("API reference document", () => {
     );
   });
 
+  it("does not sample openai for a workflow template provider", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const template = presented.components.schemas.BackgroundTaskTemplate.properties.provider;
+    expect(template.description).toBe("Default provider for tasks created from this template.");
+    expect(template.example).toBe("openrouter");
+    const request =
+      presented.components.schemas.BackgroundTaskTemplateInstantiateRequest.properties.provider;
+    expect(request.description).toBe("Provider override.");
+    expect(request.example).toBe("openrouter");
+    const task = presented.components.schemas.BackgroundTask.properties.provider;
+    expect(task.example).toBe("openai");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

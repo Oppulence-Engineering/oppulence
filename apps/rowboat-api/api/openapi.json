@@ -2577,8 +2577,8 @@
             "type": "string"
           },
           "provider": {
-            "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
-            "example": "openai",
+            "description": "Default provider for tasks created from this template.",
+            "example": "openrouter",
             "nullable": true,
             "type": "string"
           },
@@ -2664,8 +2664,8 @@
             "type": "string"
           },
           "provider": {
-            "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
-            "example": "openai",
+            "description": "Provider override.",
+            "example": "openrouter",
             "nullable": true,
             "type": "string"
           },
