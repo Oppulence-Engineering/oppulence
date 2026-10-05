@@ -230,7 +230,7 @@ func addRevenueSchemas(schemas obj) {
 		"id": uuidSchema("Attention id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "version": intSchema("Optimistic version.", 1),
 		"relationshipId": uuidSchema("Relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"), "relationshipName": stringSchema("Relationship name.", "Acme"),
 		"reasonCode": stringSchema("Detector reason.", "overdue_commitment"), "explanation": stringSchema("Readable explanation.", "A confirmed promise is overdue by two days."),
-		"triggeringObjectRef": stringSchema("Triggering object.", "commitment:123"), "evidenceRefs": arraySchema("Evidence refs.", stringSchema("Evidence ref.", "relationship-observation:1")),
+		"triggeringObjectRef": stringSchema("Triggering object.", "commitment:8b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "evidenceRefs": arraySchema("Evidence refs.", stringSchema("Evidence ref.", "relationship-observation:1")),
 		"urgencyBand": stringEnum("Urgency.", "high", "low", "normal", "high", "critical"), "rankScore": intSchema("Internal deterministic rank.", 82), "rankFactors": freeFormSchema("Readable factor contributions."),
 		"sourceRequirements": arraySchema("Fresh sources required.", stringSchema("Source.", "google")), "recommendationId": uuidSchema("Recommendation id.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "recommendationRevision": intSchema("Recommendation revision.", 2),
 		"ownerId": uuidSchema("Owner id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"), "status": stringEnum("Triage state.", "open", "open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved"), "stateReason": stringSchema("Triage reason.", "Reviewed with account owner."),

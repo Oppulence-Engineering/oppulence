@@ -10332,7 +10332,7 @@
           },
           "triggeringObjectRef": {
             "description": "Triggering object.",
-            "example": "commitment:123",
+            "example": "commitment:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "type": "string"
           },
           "updatedAt": {

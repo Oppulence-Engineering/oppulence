@@ -336,6 +336,31 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
+	assertTriggeringCommitment(t, schemas)
+}
+
+func TestAttentionTriggerNamesTheCommitment(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertTriggeringCommitment(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertTriggeringCommitment(t *testing.T, schemas obj) {
+	t.Helper()
+	item := asObj(schemas["RelationshipAttentionItem"])
+	if item == nil {
+		return
+	}
+	props := asObj(item["properties"])
+	trigger := asObj(props["triggeringObjectRef"])
+	const commitment = "commitment:8b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	if trigger["example"] != commitment || trigger["description"] != "Triggering object." {
+		t.Fatalf("attention trigger is not the commitment: %#v", trigger)
+	}
+	reason := asObj(props["reasonCode"])
+	if reason["example"] != "overdue_commitment" {
+		t.Fatalf("attention reason changed: %#v", reason)
+	}
 }
 
 func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {
