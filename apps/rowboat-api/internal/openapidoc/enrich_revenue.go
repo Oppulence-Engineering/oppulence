@@ -213,13 +213,15 @@ func addRevenueSchemas(schemas obj) {
 		"afterRelationshipIds":  arraySchema("Relationship ids after.", stringSchema("Relationship id.", "relationship:2")),
 		"occurredAt":            stringSchema("Event time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
 	}, "id", "kind", "actorId", "observationIds", "identityIds", "movedObjectRefs", "beforeRelationshipIds", "afterRelationshipIds", "occurredAt")
+	reviewEvidence := arraySchema("Evidence references.", stringSchema("Evidence ref.", "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"))
+	reviewEvidence["example"] = []any{"relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"}
 	schemas["RelationshipIdentityCandidate"] = objectSchema("Durable, optimistic-versioned exact-anchor ambiguity review.", obj{
 		"id": uuidSchema("Candidate id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "status": stringEnum("Review state.", "pending", "pending", "deferred", "resolving", "resolved", "undone"),
 		"candidateType": stringSchema("Candidate kind.", "anchor_collision"), "version": intSchema("Optimistic version.", 1),
 		"proposedRelationship": ref("RevenueRelationship"), "existingRelationship": ref("RevenueRelationship"),
 		"anchorKind": stringSchema("Exact anchor kind.", "provider_resource"), "anchorProvider": stringSchema("Provider.", "hubspot"), "anchorPreview": stringSchema("Redacted anchor preview.", "contact …123"),
 		"matchingAnchors": arraySchema("Matching exact anchors.", stringSchema("Anchor.", "hubspot:contact:123")), "conflictingAnchors": arraySchema("Conflicting anchors.", stringSchema("Anchor.", "email:other@example.com")),
-		"evidenceRefs": arraySchema("Evidence references.", stringSchema("Evidence ref.", "relationship-observation:1")), "evidenceCount": intSchema("Affected evidence count.", 4),
+		"evidenceRefs": reviewEvidence, "evidenceCount": intSchema("Affected evidence count.", 4),
 		"evidenceFrom": stringSchema("Earliest evidence.", "2026-01-01T00:00:00Z", obj{"format": "date-time"}, nullable()), "evidenceTo": stringSchema("Latest evidence.", "2026-07-31T00:00:00Z", obj{"format": "date-time"}, nullable()),
 		"impact": freeFormSchema("Counts and history that would move."), "recommendedDecision": stringSchema("Advisory decision.", "merge"), "recommendationConfidence": numberSchema("Advisory confidence.", 0.92),
 		"decision": stringSchema("Resolved decision.", "merge"), "decisionReason": stringSchema("Reason.", "Confirmed duplicate."), "decisionActorId": uuidSchema("Actor.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"), "decidedAt": stringSchema("Decision time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}, nullable()),
