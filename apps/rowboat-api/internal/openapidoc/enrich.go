@@ -1935,6 +1935,34 @@ func enrichEntitySchemas(schemas obj) {
 			}
 		}
 	}
+	// The shared audience note samples canvas-api. A minted product token uses
+	// mcp:canvas, and that is the example already shown on those endpoints.
+	for _, item := range []struct {
+		schema      string
+		description string
+		nullable    bool
+	}{
+		{"ConnectionConnectedResponse", "Audience accepted by the product resource server.", false},
+		{"MCPTokenResponse", "Exact product resource-server audience.", false},
+		{"MCPTokenRequest", "Must exactly match the connector and stored connection audience.", true},
+		{"ConsentConnectorIdentity", "Audience bound to any resulting resource token.", false},
+		{"InternalConnectionStatusRequest", "Exact product resource audience.", false},
+		{"ConsentAuditRequest", "Bound connector audience.", false},
+	} {
+		schema := asObj(schemas[item.schema])
+		if schema == nil {
+			continue
+		}
+		properties := asObj(schema["properties"])
+		if properties == nil || properties["audience"] == nil {
+			continue
+		}
+		if item.nullable {
+			properties["audience"] = stringSchema(item.description, "mcp:canvas", nullable())
+			continue
+		}
+		properties["audience"] = stringSchema(item.description, "mcp:canvas")
+	}
 
 	backgroundPropDocs := map[string]obj{
 		"slug":                 {"description": "Stable per-user background task slug matching bg-tasks/<slug> locally.", "example": "daily-summary"},
