@@ -198,8 +198,10 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	spec := obj{
 		"components": obj{
 			"schemas": obj{
-				"CreditLedger": obj{"type": "object", "properties": obj{"delta": obj{"type": "integer"}, "reason": obj{"type": "string"}}},
-				"User":         obj{"type": "object", "properties": obj{"workos_user_id": obj{"type": "string"}}},
+				"CreditLedger":         obj{"type": "object", "properties": obj{"delta": obj{"type": "integer"}, "reason": obj{"type": "string"}}},
+				"User":                 obj{"type": "object", "properties": obj{"workos_user_id": obj{"type": "string"}}},
+				"PersonIdentity":       obj{"type": "object", "properties": obj{"provider": obj{"type": "string"}}},
+				"RelationshipIdentity": obj{"type": "object", "properties": obj{"provider": obj{"type": "string"}}},
 			},
 		},
 	}
@@ -230,6 +232,16 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	delta := asObj(asObj(creditLedger["properties"])["delta"])
 	if delta["description"] == nil || delta["example"] == nil {
 		t.Fatal("CreditLedger.delta should have a detailed description and example")
+	}
+	identityDescription := "Tool this identity came from. For an external record it is the first part of that record, such as hubspot."
+	for _, name := range []string{"PersonIdentity", "RelationshipIdentity"} {
+		provider := asObj(asObj(asObj(schemas[name])["properties"])["provider"])
+		if provider["example"] != "hubspot" || provider["description"] != identityDescription {
+			t.Fatalf("%s.provider sampled a model provider: %#v", name, provider)
+		}
+	}
+	if taskProvider := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["provider"]); taskProvider["example"] != "openai" {
+		t.Fatalf("BackgroundTask.provider lost its model example: %#v", taskProvider)
 	}
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
@@ -324,6 +336,16 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	}
 	if schemas["ConnectorCredentialCleanupJob"] != nil || schemas["ConnectorCredentialRecovery"] != nil {
 		t.Fatal("checked-in openapi json exposes internal credential cleanup or recovery state")
+	}
+	identityDescription := "Tool this identity came from. For an external record it is the first part of that record, such as hubspot."
+	for _, name := range []string{"PersonIdentity", "RelationshipIdentity"} {
+		provider := asObj(asObj(asObj(schemas[name])["properties"])["provider"])
+		if provider["example"] != "hubspot" || provider["description"] != identityDescription {
+			t.Fatalf("checked-in %s.provider sampled a model provider: %#v", name, provider)
+		}
+	}
+	if taskProvider := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["provider"]); taskProvider["example"] != "openai" {
+		t.Fatalf("checked-in BackgroundTask.provider lost its model example: %#v", taskProvider)
 	}
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {

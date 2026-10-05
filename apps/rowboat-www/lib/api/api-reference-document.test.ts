@@ -297,6 +297,20 @@ describe("API reference document", () => {
     );
   });
 
+  it("does not sample a model provider for an identity", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const description =
+      "Tool this identity came from. For an external record it is the first part of that record, such as hubspot.";
+    const person = presented.components.schemas.PersonIdentity.properties.provider;
+    expect(person.description).toBe(description);
+    expect(person.example).toBe("hubspot");
+    const relationship = presented.components.schemas.RelationshipIdentity.properties.provider;
+    expect(relationship.description).toBe(description);
+    expect(relationship.example).toBe("hubspot");
+    const task = presented.components.schemas.BackgroundTask.properties.provider;
+    expect(task.example).toBe("openai");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
