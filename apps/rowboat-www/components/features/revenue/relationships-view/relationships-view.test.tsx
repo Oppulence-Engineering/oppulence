@@ -105,6 +105,7 @@ import {
   detailEvidenceCopy,
   detailSourceLabel,
   enrichmentAvailabilityCopy,
+  researchStatusPendingCopy,
   enrichConfirmCopy,
   identityAnchorKindLabel,
   identityDecisionLabel,
@@ -448,6 +449,15 @@ describe("RelationshipsView", () => {
     expect(source).toContain("Support file downloaded. Secrets are left out.");
     expect(source).not.toContain("Export diagnostics");
     expect(source).not.toContain("beta diagnostics");
+  });
+
+  it("says when public research could not be checked", () => {
+    expect(researchStatusPendingCopy(false)).toBe(
+      "Checking whether public research is available…",
+    );
+    expect(researchStatusPendingCopy(true)).toBe("Public research could not be checked.");
+    expect(source).toContain('researchStatusPendingCopy(statusPhase === "failed")');
+    expect(source).not.toContain(">Checking whether public research is available…</p>");
   });
 
   it("names the enrichment plan instead of the research vendor", () => {

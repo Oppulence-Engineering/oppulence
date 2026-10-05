@@ -374,6 +374,7 @@ function RelationshipEnrichment({
   onChanged: () => void;
 }) {
   const [status, setStatus] = React.useState<ResearchStatus | null>(null);
+  const [statusPhase, setStatusPhase] = React.useState<"loading" | "ready" | "failed">("loading");
   const [personEstimate, setPersonEstimate] = React.useState<ResearchEstimate | null>(null);
   const [companyEstimate, setCompanyEstimate] = React.useState<ResearchEstimate | null>(null);
   const [busy, setBusy] = React.useState(false);
@@ -381,9 +382,11 @@ function RelationshipEnrichment({
   const [result, setResult] = React.useState<string | null>(null);
 
   const load = React.useCallback(async () => {
+    setStatusPhase("loading");
     try {
       const nextStatus = await getResearchStatus();
       setStatus(nextStatus);
+      setStatusPhase("ready");
       if (nextStatus.allowed && nextStatus.consent.consented) {
         const [people, companies] = await Promise.all([
           getResearchEstimate(),
@@ -396,6 +399,8 @@ function RelationshipEnrichment({
         setCompanyEstimate(null);
       }
     } catch (error) {
+      setStatus(null);
+      setStatusPhase("failed");
       onError(errMessage(error, "Could not load public research."));
     }
   }, [onError]);
@@ -486,7 +491,22 @@ function RelationshipEnrichment({
       </div>
 
       {!status ? (
-        <p className="mt-3 text-xs text-primary/45">Checking whether public research is available…</p>
+        <div className="mt-3">
+          <p className="text-xs text-primary/45">
+            {researchStatusPendingCopy(statusPhase === "failed")}
+          </p>
+          {statusPhase === "failed" ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="mt-2"
+              onClick={() => void load()}
+            >
+              Try again
+            </Button>
+          ) : null}
+        </div>
       ) : status.allowed && status.consent.consented ? (
         <div className="mt-3 flex flex-col justify-between gap-3 border-t border-border pt-3 sm:flex-row sm:items-center">
           <div className="text-xs text-primary/65">
@@ -554,6 +574,15 @@ function RelationshipEnrichment({
   );
 }
 
+
+/**
+ * A missing status is either still loading or a failed check. The panel must
+ * not keep saying it is checking after the request has failed.
+ */
+export function researchStatusPendingCopy(failed: boolean): string {
+  if (failed) return "Public research could not be checked.";
+  return "Checking whether public research is available…";
+}
 
 /**
  * Research status mixes a vendor setup step with the stored plan slug. The
