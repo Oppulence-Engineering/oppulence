@@ -3,7 +3,7 @@
 import "@testing-library/jest-dom/vitest";
 
 import { cleanup, fireEvent, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   fetchCommunicationPolicy,
@@ -14,10 +14,28 @@ import { renderWithQuery } from "@/quality/test-support/render-query";
 
 import {
   CommunicationPrivacySettings,
+  mailboxPrivacyCopy,
   privacyLoadNotice,
   privacyRuleLabel,
   privacyRulesEmptyCopy,
 } from "./communication-privacy-settings";
+
+const { googleStatus } = vi.hoisted(() => ({
+  googleStatus: vi.fn(),
+}));
+
+vi.mock("@/hooks/queries/use-google-oauth", () => ({
+  useGoogleConnectionStatus: googleStatus,
+}));
+
+function googleConnection(connected: boolean | null, failed = false) {
+  googleStatus.mockReturnValue({
+    data: connected == null ? undefined : { connected, accounts: [] },
+    isSuccess: connected != null,
+    isError: failed,
+    isPending: connected == null && !failed,
+  });
+}
 
 vi.mock("@/hooks/queries/utils/fetch-communication", () => ({
   fetchCommunicationPolicy: vi.fn(),
@@ -44,15 +62,43 @@ afterEach(() => {
 });
 
 describe("CommunicationPrivacySettings", () => {
+  beforeEach(() => {
+    googleConnection(true);
+  });
+
   it("renders the mailbox privacy controls shell", () => {
     renderWithQuery(<CommunicationPrivacySettings />);
     expect(screen.getByText("Mailbox account")).toBeInTheDocument();
+    expect(
+      screen.getByText("Configure privacy defaults for one connected Google mailbox."),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("Mailbox account email")).toBeInTheDocument();
     expect(screen.getByText(/visible only to you/)).toBeInTheDocument();
     expect(screen.queryByText(/project into/)).not.toBeInTheDocument();
     expect(screen.queryByText(/owner-only/)).not.toBeInTheDocument();
     expect(privacyRuleLabel("protected_address")).toBe("Protected address");
     expect(privacyRuleLabel("blocked_domain")).toBe("Blocked domain");
+  });
+
+  it("does not claim a mailbox is connected when Google has no grant", () => {
+    googleConnection(false);
+    renderWithQuery(<CommunicationPrivacySettings />);
+    expect(
+      screen.getByText("Connect a Google mailbox before privacy defaults can apply."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Configure privacy defaults for one connected Google mailbox."),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Mailbox account email")).not.toBeInTheDocument();
+    expect(mailboxPrivacyCopy({ connected: null, failed: false })).toBe(
+      "Checking whether a Google mailbox is connected.",
+    );
+    expect(mailboxPrivacyCopy({ connected: null, failed: true })).toBe(
+      "Could not check whether a Google mailbox is connected.",
+    );
+    expect(mailboxPrivacyCopy({ connected: true, failed: true })).toBe(
+      "Configure privacy defaults for one connected Google mailbox.",
+    );
   });
 
   it("keeps Add rule off until an address or domain is entered", () => {
