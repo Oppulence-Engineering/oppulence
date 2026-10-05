@@ -717,6 +717,21 @@ export function companySourceCountsAsConnected(status: string): boolean {
   return COMPANY_DIRECTORY_CONNECTED_SOURCE_STATES.has(status);
 }
 
+/**
+ * The company list reads both the filtered status rows and the source cards.
+ * A stale Gmail account can be dropped from the status list when it has no
+ * scopes, while the card still shows it. The empty list has to follow the card.
+ */
+export function companyDirectoryHasConnectedSource(
+  statuses: readonly { status: string }[],
+  inventory: readonly { accounts: readonly { status: string }[] }[],
+): boolean {
+  if (statuses.some((source) => companySourceCountsAsConnected(source.status))) return true;
+  return inventory.some((item) =>
+    item.accounts.some((account) => companySourceCountsAsConnected(account.status)),
+  );
+}
+
 /** A failed directory request is not an empty workspace. */
 export function companyListFailureCopy(): string {
   return "Companies could not load. Try again.";
@@ -890,9 +905,7 @@ export function RelationshipsView({
     pendingQuery.isPending ||
     deferredQuery.isPending ||
     attentionQuery.isPending;
-  const hasConnectedSource = sources.some((source) =>
-    companySourceCountsAsConnected(source.status),
-  );
+  const hasConnectedSource = companyDirectoryHasConnectedSource(sources, sourceInventory);
   const companies = rows.filter((relationship) => relationship.kind !== "person");
   const directoryTitle = companyDirectoryTitle({ query, health, lifecycle });
   const directoryFilterSettled =

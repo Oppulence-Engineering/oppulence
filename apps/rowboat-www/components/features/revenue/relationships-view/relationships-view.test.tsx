@@ -25,6 +25,7 @@ import {
   companyRecordLabel,
   companyListEmptyCopy,
   companyListFailureCopy,
+  companyDirectoryHasConnectedSource,
   companySourceCountsAsConnected,
   companyStageFilterName,
   companySheetPositionLabel,
@@ -219,7 +220,13 @@ describe("RelationshipsView", () => {
     for (const status of ["not_connected", "authorizing", "reconnect_required", "disconnected"]) {
       expect(companySourceCountsAsConnected(status)).toBe(false);
     }
-    expect(source).toContain("companySourceCountsAsConnected(source.status)");
+    expect(companyDirectoryHasConnectedSource([], [{ accounts: [{ status: "stale" }] }])).toBe(true);
+    expect(companyDirectoryHasConnectedSource([], [{ accounts: [{ status: "not_connected" }] }])).toBe(
+      false,
+    );
+    expect(companyDirectoryHasConnectedSource([], [])).toBe(false);
+    expect(companyDirectoryHasConnectedSource([{ status: "live" }], [])).toBe(true);
+    expect(source).toContain("companyDirectoryHasConnectedSource(sources, sourceInventory)");
     expect(source).toContain("companyListEmptyCopy({");
     expect(companyListFailureCopy()).toBe("Companies could not load. Try again.");
     expect(source).toContain(
