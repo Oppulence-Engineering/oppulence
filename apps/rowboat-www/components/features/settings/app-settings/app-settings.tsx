@@ -32,6 +32,7 @@ import {
 import { DeleteAccountRow } from "@/components/features/account/delete-account-row/delete-account-row";
 import { CommunicationPrivacySettings } from "@/components/features/connectors/communication-privacy-settings/communication-privacy-settings";
 import { ConnectorSettings } from "@/components/features/connectors/connector-settings/connector-settings";
+import { useGoogleConnectionStatus } from "@/hooks/queries/use-google-oauth";
 import { capture, RevenueEvents, setAnalyticsConsent } from "@/lib/analytics/analytics";
 import { billingStatusLabel, planLabel } from "@/lib/product/plan-label";
 import {
@@ -1238,6 +1239,27 @@ function AccountSection({ session }: { session: SessionShape }) {
   );
 }
 
+/**
+ * Sharing choices apply to a mailbox Google has granted. The connections
+ * card says Not connected when that grant is missing, so this row must not
+ * invite someone to choose what mail is shared.
+ */
+export function mailPrivacySectionCopy(input: {
+  connected: boolean | null;
+  failed: boolean;
+}): string {
+  if (input.connected === true) {
+    return "Choose what from mail and calendar can be shared, and which addresses stay private.";
+  }
+  if (input.failed && input.connected == null) {
+    return "Could not check whether a Google mailbox is connected.";
+  }
+  if (input.connected == null) {
+    return "Checking whether a Google mailbox is connected.";
+  }
+  return "Connect a Google mailbox before you can choose what from mail and calendar is shared.";
+}
+
 /* ------------------------------- main view --------------------------------- */
 
 export function SettingsView({
@@ -1250,6 +1272,12 @@ export function SettingsView({
   onNavigate: (section: SettingsSection) => void;
 }) {
   const current = SETTINGS_SECTIONS.find((item) => item.key === section) ?? SETTINGS_SECTIONS[0];
+  const google = useGoogleConnectionStatus();
+  const googleStatus = google.data;
+  const mailPrivacy = mailPrivacySectionCopy({
+    connected: googleStatus ? googleStatus.connected : google.isSuccess ? false : null,
+    failed: google.isError && googleStatus == null,
+  });
 
   return (
     <div className="settings-page-scroll flex-1" data-slot="app-settings">
@@ -1265,10 +1293,7 @@ export function SettingsView({
           <>
             <PageIntro description={current.description} title={current.label} />
             <ConnectorSettings />
-            <SettingsRow
-              description="Choose what from mail and calendar can be shared, and which addresses stay private."
-              title="Email & Calendar privacy"
-            >
+            <SettingsRow description={mailPrivacy} title="Email & Calendar privacy">
               <CommunicationPrivacySettings />
             </SettingsRow>
           </>
