@@ -231,6 +231,7 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if delta["description"] == nil || delta["example"] == nil {
 		t.Fatal("CreditLedger.delta should have a detailed description and example")
 	}
+	assertAttentionOwner(t, schemas)
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
@@ -325,6 +326,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if schemas["ConnectorCredentialCleanupJob"] != nil || schemas["ConnectorCredentialRecovery"] != nil {
 		t.Fatal("checked-in openapi json exposes internal credential cleanup or recovery state")
 	}
+	assertAttentionOwner(t, schemas)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -335,6 +337,25 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	entityProperties := asObj(asObj(schemas["EntityProjection"])["properties"])
 	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
+	}
+}
+
+func assertAttentionOwner(t *testing.T, schemas obj) {
+	t.Helper()
+	properties := asObj(asObj(schemas["RelationshipAttentionItem"])["properties"])
+	owner := asObj(properties["ownerId"])
+	relationship := asObj(properties["relationshipId"])["example"]
+	if owner["description"] != "Assigned user id." || owner["example"] != "a8dfa9b6-a7b2-46ea-982c-622a914c00e5" || owner["example"] == relationship {
+		t.Fatalf("attention owner sampled the relationship: owner=%#v relationship=%#v", owner["example"], relationship)
+	}
+	if relationship != "9c8dfa9b-a7b2-46ea-982c-622a914c00e5" {
+		t.Fatalf("attention relationship changed: %#v", relationship)
+	}
+	for _, name := range []string{"acknowledgedBy", "acknowledgedAt", "dismissedBy", "dismissedAt"} {
+		field := asObj(properties[name])
+		if _, ok := field["example"]; ok {
+			t.Fatalf("%s sampled a decision on an open attention item: %#v", name, field["example"])
+		}
 	}
 }
 

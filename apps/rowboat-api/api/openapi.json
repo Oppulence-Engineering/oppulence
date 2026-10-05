@@ -10187,16 +10187,15 @@
         "description": "Versioned relationship-native reason for portfolio attention.",
         "properties": {
           "acknowledgedAt": {
-            "description": "Acknowledged time.",
-            "example": "2026-07-31T14:00:00Z",
+            "description": "When this item was acknowledged. Empty until then.",
             "format": "date-time",
             "nullable": true,
             "type": "string"
           },
           "acknowledgedBy": {
-            "description": "Acknowledging actor.",
-            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "description": "User who acknowledged this item. Empty until it is acknowledged.",
             "format": "uuid",
+            "nullable": true,
             "type": "string"
           },
           "createdAt": {
@@ -10211,16 +10210,15 @@
             "type": "integer"
           },
           "dismissedAt": {
-            "description": "Dismissed time.",
-            "example": "2026-07-31T14:00:00Z",
+            "description": "When this item was dismissed. Empty until then.",
             "format": "date-time",
             "nullable": true,
             "type": "string"
           },
           "dismissedBy": {
-            "description": "Dismissing actor.",
-            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "description": "User who dismissed this item. Empty until it is dismissed.",
             "format": "uuid",
+            "nullable": true,
             "type": "string"
           },
           "evidenceRefs": {
@@ -10251,8 +10249,8 @@
             "type": "string"
           },
           "ownerId": {
-            "description": "Owner id.",
-            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "description": "Assigned user id.",
+            "example": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
             "format": "uuid",
             "type": "string"
           },
@@ -10320,8 +10318,7 @@
             "type": "array"
           },
           "stateReason": {
-            "description": "Triage reason.",
-            "example": "Reviewed with account owner.",
+            "description": "Why this item was acknowledged, snoozed, or dismissed. Empty while it is still open.",
             "type": "string"
           },
           "status": {

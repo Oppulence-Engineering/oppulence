@@ -297,6 +297,24 @@ describe("API reference document", () => {
     );
   });
 
+  it("does not sample the relationship as the attention owner", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const item = (
+      presented.components.schemas as Record<
+        string,
+        { properties?: Record<string, { example?: unknown; description?: string }> }
+      >
+    ).RelationshipAttentionItem?.properties;
+    expect(item?.ownerId?.description).toBe("Assigned user id.");
+    expect(item?.ownerId?.example).toBe("a8dfa9b6-a7b2-46ea-982c-622a914c00e5");
+    expect(item?.relationshipId?.example).toBe("9c8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    expect(item?.acknowledgedBy?.example).toBeUndefined();
+    expect(item?.dismissedBy?.example).toBeUndefined();
+    expect(item?.dismissedBy?.description).toBe(
+      "User who dismissed this item. Empty until it is dismissed.",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
