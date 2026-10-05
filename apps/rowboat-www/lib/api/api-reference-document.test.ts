@@ -297,6 +297,21 @@ describe("API reference document", () => {
     );
   });
 
+  it("names the object a lineage row moved", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const lineage = presented.components.schemas.RelationshipIdentityLineage.properties;
+    const objectRef = "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    expect(lineage.movedObjectRefs).toMatchObject({
+      description: "All moved graph objects.",
+      example: [objectRef],
+    });
+    expect(lineage.movedObjectRefs.items.example).toBe(objectRef);
+    expect(JSON.stringify(lineage.movedObjectRefs)).not.toContain("relationship-observation:1");
+    expect(presented.components.schemas.MissionControlEvidenceReference.properties.observationId.example).toBe(
+      "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

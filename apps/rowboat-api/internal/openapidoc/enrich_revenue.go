@@ -203,12 +203,14 @@ func addRevenueSchemas(schemas obj) {
 		"reason": stringSchema("Decision reason.", "Confirmed the provider records are the same account."), "decidedAt": stringSchema("Decision time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
 		"compensatesDecisionId": uuidSchema("Decision compensated by undo.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 	}, "id", "decision", "candidateVersion", "actorId", "decidedAt")
+	movedObjects := arraySchema("All moved graph objects.", stringSchema("Object ref.", "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"))
+	movedObjects["example"] = []any{"relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"}
 	schemas["RelationshipIdentityLineage"] = objectSchema("Immutable graph lineage produced by an identity decision.", obj{
 		"id": uuidSchema("Lineage event id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "kind": stringSchema("Lineage kind.", "merged"),
 		"actorId": uuidSchema("Actor.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"), "reason": stringSchema("Reason.", "Confirmed duplicate."),
 		"observationIds":        arraySchema("Moved observation ids.", stringSchema("Observation id.", "observation:1")),
 		"identityIds":           arraySchema("Affected identity ids.", stringSchema("Identity id.", "identity:1")),
-		"movedObjectRefs":       arraySchema("All moved graph objects.", stringSchema("Object ref.", "relationship-observation:1")),
+		"movedObjectRefs":       movedObjects,
 		"beforeRelationshipIds": arraySchema("Relationship ids before.", stringSchema("Relationship id.", "relationship:1")),
 		"afterRelationshipIds":  arraySchema("Relationship ids after.", stringSchema("Relationship id.", "relationship:2")),
 		"occurredAt":            stringSchema("Event time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
