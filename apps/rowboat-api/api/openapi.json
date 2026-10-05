@@ -24567,7 +24567,7 @@
           "content": {
             "application/json": {
               "example": {
-                "selectedAssertionId": "assertion:ab12"
+                "selectedAssertionId": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"
               },
               "schema": {
                 "description": "Contradiction resolution.",
@@ -24579,7 +24579,8 @@
                   },
                   "selectedAssertionId": {
                     "description": "Selected assertion id.",
-                    "example": "assertion:ab12",
+                    "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "format": "uuid",
                     "type": "string"
                   }
                 },

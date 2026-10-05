@@ -934,9 +934,9 @@ func addRevenuePaths(paths obj) {
 	copy(caseParam, relationshipParam)
 	caseParam = append(caseParam, obj{"name": "caseId", "in": "path", "required": true, "description": "Contradiction case id.", "schema": obj{"type": "string"}})
 	paths["/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve"] = obj{"post": operation("Relationship Intelligence", "Resolve a typed contradiction", "Records the user's selected evidence side as a top-authority correction without rewriting either source.", "resolveRelationshipContradiction", bearer(), caseParam, jsonRequest("Resolution.", objectSchema("Contradiction resolution.", obj{
-		"selectedAssertionId": stringSchema("Selected assertion id.", "assertion:ab12"),
+		"selectedAssertionId": uuidSchema("Selected assertion id.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"reason":              stringSchema("Optional rationale.", "CRM was updated after the meeting."),
-	}, "selectedAssertionId"), obj{"selectedAssertionId": "assertion:ab12"}), obj{
+	}, "selectedAssertionId"), obj{"selectedAssertionId": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"}), obj{
 		"201": jsonResponse("Updated relationship and intelligence.", freeFormSchema("Relationship detail result."), nil),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
