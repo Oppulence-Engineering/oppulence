@@ -447,6 +447,73 @@ func TestListRelationshipsTiedUpdatedAtUsesID(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsNextSavedViews(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill North",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Slide",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	internal := auth.WithInternal(context.Background())
+	const payload = `{"state":{"scope":"portfolio","query":"","layout":"force","density":1,"hideIsolated":false,"focusDepth":0,"changedSinceReview":false}}`
+	save := func(owner *ent.User, kind, name string) {
+		t.Helper()
+		if _, err := f.client.ConsoleResource.Create().
+			SetWorkspace(ws).SetUser(owner).
+			SetKind(kind).SetName(name).SetNameKey(name).
+			SetPayloadJSON(payload).SetSortOrder(0).
+			Save(internal); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := 1; i <= consoleResourcePage; i++ {
+		save(f.user, "graph_saved_view", fmt.Sprintf("Kept View %03d", i))
+	}
+	save(f.user, "note_favorite", "A favorite")
+	other := newUser(t, f.client, "views@example.com", "user_saved_views")
+	save(other, "graph_saved_view", "Someone else's view")
+	exact, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Show the next saved views"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if exact.HasMore || len(exact.Relationships) != 0 {
+		t.Fatalf("full page = %v hasMore=%v", namesOf(exact.Relationships), exact.HasMore)
+	}
+	for _, query := range []string{"show", "next", "saved", "views", "show the next"} {
+		miss, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if miss.HasMore || len(miss.Relationships) != 0 {
+			t.Fatalf("%q = %v", query, namesOf(miss.Relationships))
+		}
+	}
+	save(f.user, "graph_saved_view", "Past View")
+	found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Show the next saved views"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if found.HasMore || len(found.Relationships) != 2 {
+		t.Fatalf("next views = %v hasMore=%v", namesOf(found.Relationships), found.HasMore)
+	}
+	got := map[string]bool{}
+	for _, rel := range found.Relationships {
+		got[rel.DisplayName] = true
+	}
+	if !got["Quill North"] || !got["Cedar Slide"] {
+		t.Fatalf("next views = %v", namesOf(found.Relationships))
+	}
+}
+
 func namesOf(rows []*ent.Relationship) []string {
 	names := make([]string, 0, len(rows))
 	for _, row := range rows {

@@ -18,6 +18,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
@@ -806,6 +807,11 @@ func (s *Service) ListRelationshipsFiltered(
 			))
 		}
 		needle := normalizePersonSearch(value)
+		// The graph button is "Show the next saved views" only when this person
+		// has another saved view past the first page of 100.
+		if labelPhraseMatches("show the next saved views", needle) {
+			parts = append(parts, relationshipHasAnotherSavedViewPage(u.ID))
+		}
 		if labelPhraseMatches("no activity", needle) {
 			parts = append(parts, relationship.LastTouchAtIsNil())
 		}
@@ -994,6 +1000,33 @@ func (s *Service) ListRelationshipsFiltered(
 		rows = rows[:relationshipListLimit]
 	}
 	return &RelationshipListPage{Relationships: rows, HasMore: hasMore}, nil
+}
+
+// consoleResourcePage is the saved-view page the graph requests. A full page
+// is the end of the list, so the button stays hidden at 100.
+const consoleResourcePage = 100
+
+func relationshipHasAnotherSavedViewPage(userID uuid.UUID) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(consoleresource.Table)
+			b.WriteString(" AS saved WHERE saved.")
+			b.WriteString(consoleresource.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND saved.")
+			b.WriteString(consoleresource.UserColumn)
+			b.WriteString(" = ")
+			b.Arg(userID.String())
+			b.WriteString(" AND saved.")
+			b.WriteString(consoleresource.FieldKind)
+			b.WriteString(" = ")
+			b.Arg("graph_saved_view")
+			b.WriteString(") > ")
+			b.Arg(consoleResourcePage)
+		}))
+	})
 }
 
 // relationshipNormalizedContains matches the words a teammate sees. A domain
