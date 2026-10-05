@@ -7,6 +7,7 @@ import {
   helpDestination,
   preferenceFormIsHidden,
   preferenceRefreshCopy,
+  sessionRoleCopy,
   sessionWorkspaceCopy,
 } from "@/components/features/settings/app-settings/app-settings";
 
@@ -80,7 +81,20 @@ describe("SettingsView", () => {
     expect(source).not.toContain('title="Authorized workspace"');
     expect(source).not.toContain("Effective permissions");
     expect(source).not.toContain("authorized services");
-    expect(source).toContain('empty="Member"');
+    expect(source).toContain('empty="No role is attached to this session."');
+    expect(source).toContain("sessionRoleCopy(session.user.role, session.user.permissions)");
+    expect(source).not.toContain('empty="Member"');
+    expect(source).not.toContain('session.user.role || "Member"');
+    expect(sessionRoleCopy(undefined, [])).toBe(
+      "No role is attached to this session. Standard workspace access",
+    );
+    expect(sessionRoleCopy("  ", ["billing:read"])).toBe(
+      "No role is attached to this session. billing:read",
+    );
+    expect(sessionRoleCopy("owner", [])).toBe("owner · Standard workspace access");
+    expect(sessionRoleCopy("admin", ["billing:read", "workspace:write"])).toBe(
+      "admin · billing:read, workspace:write",
+    );
     expect(source).toContain('fetch("/readyz"');
     expect(source).toContain("Check again");
     expect(source).toContain("Browser address");
