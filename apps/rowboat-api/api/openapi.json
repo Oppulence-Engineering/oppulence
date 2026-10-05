@@ -767,8 +767,8 @@
             "type": "string"
           },
           "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Id of this history row.",
+            "example": "223e4567-e89b-12d3-a456-426614174000",
             "format": "uuid",
             "type": "string"
           },
@@ -7568,8 +7568,8 @@
             "type": "string"
           },
           "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Id of this history row.",
+            "example": "223e4567-e89b-12d3-a456-426614174000",
             "format": "uuid",
             "type": "string"
           },
@@ -7792,8 +7792,8 @@
             "type": "string"
           },
           "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Id of this history row.",
+            "example": "223e4567-e89b-12d3-a456-426614174000",
             "format": "uuid",
             "type": "string"
           },
@@ -8696,8 +8696,8 @@
             "type": "string"
           },
           "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Id of this history row.",
+            "example": "223e4567-e89b-12d3-a456-426614174000",
             "format": "uuid",
             "type": "string"
           },
@@ -13996,8 +13996,8 @@
             "type": "string"
           },
           "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Id of this history row.",
+            "example": "223e4567-e89b-12d3-a456-426614174000",
             "format": "uuid",
             "type": "string"
           },
@@ -14648,8 +14648,8 @@
             "type": "string"
           },
           "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Id of this history row.",
+            "example": "223e4567-e89b-12d3-a456-426614174000",
             "format": "uuid",
             "type": "string"
           },

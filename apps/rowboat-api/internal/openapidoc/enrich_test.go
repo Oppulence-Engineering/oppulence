@@ -336,6 +336,55 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
+	assertHistoryRowIDs(t, schemas)
+}
+
+func TestHistoryRowIDIsNotTheSourceRow(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{
+		"User": obj{"type": "object", "properties": obj{
+			"id": obj{"type": "string", "format": "uuid"},
+		}},
+		"UserHistory": obj{"type": "object", "properties": obj{
+			"id":  obj{"type": "string", "format": "uuid"},
+			"ref": obj{"type": "string", "format": "uuid"},
+		}},
+	}}}
+	Enrich(spec)
+	assertHistoryRowIDs(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertHistoryRowIDs(t *testing.T, schemas obj) {
+	t.Helper()
+	const historyID = "223e4567-e89b-12d3-a456-426614174000"
+	const sourceID = "123e4567-e89b-12d3-a456-426614174000"
+	for _, name := range []string{
+		"AgentDefinitionHistory",
+		"LLMUsageHistory",
+		"MCPConnectionHistory",
+		"OAuthConnectionHistory",
+		"SubscriptionHistory",
+		"UserHistory",
+	} {
+		schema := asObj(schemas[name])
+		if schema == nil {
+			continue
+		}
+		props := asObj(schema["properties"])
+		id := asObj(props["id"])
+		ref := asObj(props["ref"])
+		if id["example"] != historyID || id["description"] != "Id of this history row." {
+			t.Fatalf("%s.id still samples the source row: %#v", name, id)
+		}
+		if ref["example"] != sourceID || ref["description"] != "UUID of the source row represented by a history row." {
+			t.Fatalf("%s.ref should stay the source row: %#v", name, ref)
+		}
+	}
+	user := asObj(schemas["User"])
+	if user != nil {
+		if id := asObj(asObj(user["properties"])["id"]); id["example"] != sourceID {
+			t.Fatalf("source user id changed: %#v", id)
+		}
+	}
 }
 
 func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {
