@@ -58,6 +58,8 @@ import { Textarea } from "@oppulence/ui/components/textarea";
 import { WorkspaceEmptyState } from "@/components/features/revenue/shared/shared";
 import { VisualWorkflowBuilder } from "@/components/features/workflows/visual-workflow-builder/visual-workflow-builder";
 import { subscribeWorkflowLibrary } from "@/lib/dashboard/workflow-library-request";
+import { useConnectors } from "@/hooks/queries/use-connectors";
+import { useGoogleConnectionStatus } from "@/hooks/queries/use-google-oauth";
 import {
   useWorkflowRuns,
   useWorkflowTasks,
@@ -603,6 +605,57 @@ export function createWorkflowIntro(): string {
   return "Name the workflow and what it should accomplish. The schedule and the steps come next.";
 }
 
+function templateConnectorName(slug: string): string {
+  switch (slug) {
+    case "google":
+      return "Gmail and Calendar";
+    case "slack":
+      return "Slack";
+    case "hubspot":
+      return "HubSpot";
+    default: {
+      const words = slug.replace(/[_-]+/g, " ").trim();
+      if (!words) return slug;
+      return words.charAt(0).toUpperCase() + words.slice(1);
+    }
+  }
+}
+
+/**
+ * A template can require a connection the workspace does not have. The row
+ * used to describe the job and offer Use without saying the connection is missing.
+ */
+export function templateRequirementCopy(
+  required: readonly string[] | undefined,
+  state: { connected: ReadonlySet<string> | null; failed: boolean },
+): string | null {
+  const slugs = (required ?? []).map((slug) => slug.trim()).filter(Boolean);
+  if (slugs.length === 0) return null;
+  if (state.failed) return "Could not check whether this template's connections are set up.";
+  if (state.connected == null) return "Checking whether this template's connections are set up.";
+  const missing = slugs.filter((slug) => !state.connected?.has(slug));
+  if (missing.length === 0) return null;
+  const names = missing.map(templateConnectorName);
+  const list =
+    names.length === 1
+      ? names[0]
+      : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  return `Connect ${list} before this template can run.`;
+}
+
+function useTemplateConnectionState(): { connected: Set<string> | null; failed: boolean } {
+  const google = useGoogleConnectionStatus();
+  const connectors = useConnectors();
+  const failed =
+    (google.isError && google.data == null) || (connectors.isError && connectors.data == null);
+  if (failed || google.data == null || connectors.data == null) return { connected: null, failed };
+  const connected = new Set(
+    connectors.data.filter((connector) => connector.connected).map((connector) => connector.name),
+  );
+  if (google.data.connected) connected.add("google");
+  return { connected, failed: false };
+}
+
 /** A workspace workflow can be removed. A maintained one can only be paused. */
 export function deleteWorkflowConfirmCopy(name: string): string {
   const title = name.trim() || "this workflow";
@@ -665,6 +718,7 @@ function CreateWorkflowDialog({
   const [objective, setObjective] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const connectionState = useTemplateConnectionState();
 
   const create = async () => {
     setBusy(true);
@@ -774,6 +828,10 @@ function CreateWorkflowDialog({
                   .filter((template) => !template.firstParty)
                   .map((template) => {
                     const name = workflowProductName(template.slug, template.name);
+                    const requirement = templateRequirementCopy(
+                      template.requiredConnectors,
+                      connectionState,
+                    );
                     return (
                       <div
                         className="flex items-start justify-between gap-4 p-3"
@@ -784,6 +842,11 @@ function CreateWorkflowDialog({
                           <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
                             {workflowProductDescription(template.slug, template.description)}
                           </p>
+                          {requirement ? (
+                            <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
+                              {requirement}
+                            </p>
+                          ) : null}
                         </div>
                         <Button
                           aria-label={`Use ${name}`}

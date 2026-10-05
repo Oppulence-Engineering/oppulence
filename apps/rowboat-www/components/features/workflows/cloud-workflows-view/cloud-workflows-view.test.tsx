@@ -24,6 +24,7 @@ import {
   maintainedWorkflowNotice,
   workflowSettingsIntro,
   createWorkflowIntro,
+  templateRequirementCopy,
   deleteWorkflowConfirmCopy,
   workflowLibrarySearchText,
   workflowStepLabel,
@@ -540,6 +541,27 @@ describe("CloudWorkflowsView", () => {
     expect(createWorkflowIntro()).toBe(
       "Name the workflow and what it should accomplish. The schedule and the steps come next.",
     );
+    expect(
+      templateRequirementCopy(["google"], { connected: new Set(), failed: false }),
+    ).toBe("Connect Gmail and Calendar before this template can run.");
+    expect(
+      templateRequirementCopy(["google", "slack"], { connected: new Set(["google"]), failed: false }),
+    ).toBe("Connect Slack before this template can run.");
+    expect(
+      templateRequirementCopy(["google", "hubspot"], { connected: new Set(), failed: false }),
+    ).toBe("Connect Gmail and Calendar and HubSpot before this template can run.");
+    expect(
+      templateRequirementCopy(["google"], { connected: new Set(["google"]), failed: false }),
+    ).toBeNull();
+    expect(templateRequirementCopy([], { connected: null, failed: false })).toBeNull();
+    expect(templateRequirementCopy(["google"], { connected: null, failed: false })).toBe(
+      "Checking whether this template's connections are set up.",
+    );
+    expect(templateRequirementCopy(["google"], { connected: null, failed: true })).toBe(
+      "Could not check whether this template's connections are set up.",
+    );
+    expect(source).toContain("templateRequirementCopy(");
+    expect(source).toContain("{requirement}");
     expect(deleteWorkflowConfirmCopy("Follow up")).toBe(
       "Remove Follow up and its runs? This cannot be undone.",
     );
