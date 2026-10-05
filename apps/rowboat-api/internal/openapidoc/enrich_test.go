@@ -231,6 +231,8 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if delta["description"] == nil || delta["example"] == nil {
 		t.Fatal("CreditLedger.delta should have a detailed description and example")
 	}
+	assertDependencyEnds(t, schemas)
+	assertDependencyRequest(t, spec)
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
@@ -325,6 +327,8 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if schemas["ConnectorCredentialCleanupJob"] != nil || schemas["ConnectorCredentialRecovery"] != nil {
 		t.Fatal("checked-in openapi json exposes internal credential cleanup or recovery state")
 	}
+	assertDependencyEnds(t, schemas)
+	assertDependencyRequest(t, spec)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -335,6 +339,41 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	entityProperties := asObj(asObj(schemas["EntityProjection"])["properties"])
 	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
+	}
+}
+
+func assertDependencyRequest(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	operation := asObj(asObj(paths["/v1/relationships/{relationshipId}/commitment-dependencies"])["post"])
+	content := asObj(asObj(asObj(operation["requestBody"])["content"])["application/json"])
+	properties := asObj(asObj(content["schema"])["properties"])
+	from := asObj(properties["fromCommitmentId"])["example"]
+	to := asObj(properties["toCommitmentId"])["example"]
+	if from != "8b8dfa9b-a7b2-46ea-982c-622a914c00e5" || to != "26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51" || from == to {
+		t.Fatalf("dependency request sampled one commitment: from=%#v to=%#v", from, to)
+	}
+	example := asObj(content["example"])
+	if example != nil && example["toCommitmentId"] != "26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51" {
+		t.Fatalf("dependency request body changed: %#v", example["toCommitmentId"])
+	}
+}
+
+func assertDependencyEnds(t *testing.T, schemas obj) {
+	t.Helper()
+	properties := asObj(asObj(schemas["CommitmentDependency"])["properties"])
+	dependency := asObj(properties["dependencyId"])["example"]
+	relationship := asObj(properties["relationshipId"])["example"]
+	from := asObj(properties["fromCommitmentId"])["example"]
+	to := asObj(properties["toCommitmentId"])["example"]
+	if from != "8b8dfa9b-a7b2-46ea-982c-622a914c00e5" || to != "26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51" || from == to {
+		t.Fatalf("dependency ends sampled one commitment: from=%#v to=%#v", from, to)
+	}
+	if relationship != "9c8dfa9b-a7b2-46ea-982c-622a914c00e5" || relationship == from || relationship == to {
+		t.Fatalf("dependency relationship sampled a commitment: %#v", relationship)
+	}
+	if dependency == from || dependency == to || dependency == relationship || dependency != "3b8dfa9b-a7b2-46ea-982c-622a914c00e5" {
+		t.Fatalf("dependency id sampled an endpoint: %#v", dependency)
 	}
 }
 

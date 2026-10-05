@@ -92,10 +92,10 @@ func addRevenueSchemas(schemas obj) {
 		},
 	}
 	schemas["CommitmentDependency"] = objectSchema("An evidence-backed directed edge between two commitments.", obj{
-		"dependencyId":     uuidSchema("Dependency id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-		"relationshipId":   uuidSchema("Relationship id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"dependencyId":     uuidSchema("Dependency id.", "3b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"relationshipId":   uuidSchema("Relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"fromCommitmentId": uuidSchema("Origin commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-		"toCommitmentId":   uuidSchema("Target commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"toCommitmentId":   uuidSchema("Target commitment id.", "26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51"),
 		"kind":             stringEnum("Dependency semantics.", "blocks", "blocks", "requires", "supersedes"),
 		"evidenceRefs":     arraySchema("Evidence references.", stringSchema("Reference.", "relationship-observation:ab12")),
 		"createdAt":        stringSchema("Creation time.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
@@ -962,7 +962,7 @@ func addRevenuePaths(paths obj) {
 	})}
 	paths["/v1/relationships/{relationshipId}/commitment-dependencies"] = obj{"post": operation("Relationship Intelligence", "Create a commitment dependency", "Creates an evidence-backed dependency after enforcing tenant and relationship scope and rejecting graph cycles.", "createCommitmentDependency", bearer(), relationshipParam, jsonRequest("Dependency.", objectSchema("Commitment dependency request.", obj{
 		"fromCommitmentId": uuidSchema("Origin commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-		"toCommitmentId":   uuidSchema("Target commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"toCommitmentId":   uuidSchema("Target commitment id.", "26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51"),
 		"kind":             stringEnum("Dependency semantics.", "blocks", "blocks", "requires", "supersedes"),
 		"evidenceRefs":     arraySchema("Evidence references.", stringSchema("Reference.", "relationship-observation:ab12")),
 	}, "fromCommitmentId", "toCommitmentId", "kind", "evidenceRefs"), obj{"fromCommitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5", "toCommitmentId": "26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51", "kind": "blocks", "evidenceRefs": []any{"relationship-observation:ab12"}}), obj{
