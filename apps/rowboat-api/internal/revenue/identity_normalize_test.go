@@ -1234,6 +1234,101 @@ func TestRelationshipSearchFindsTheAttentionBadge(t *testing.T) {
 	assertCompanyQuery("Stable", "Harbor Calm")
 }
 
+func TestRelationshipSearchFindsPromisesToKeepLooking(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	quill, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill North",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cedar, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Slide",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pageDue := now.Add(10 * 24 * time.Hour)
+	for i := 1; i <= promiseRegisterPage; i++ {
+		seedCommitment(t, f, quill, "promised_by_me", fmt.Sprintf("Directory leaf %03d", i), "", &pageDue)
+	}
+	seedCommitment(t, f, quill, "promised_by_them", "Their leaf", "", &pageDue)
+	candidate := seedCommitment(t, f, quill, "promised_by_me", "Candidate leaf", "", &pageDue)
+	if _, err := f.client.Commitment.UpdateOneID(candidate.ID).SetAcceptance("candidate").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	disputed := seedCommitment(t, f, quill, "promised_by_me", "Disputed leaf", "", &pageDue)
+	if _, err := f.client.Commitment.UpdateOneID(disputed.ID).SetAcceptance("disputed").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	finished := seedCommitment(t, f, quill, "promised_by_me", "Finished leaf", "", &pageDue)
+	if _, err := f.client.Commitment.UpdateOneID(finished.ID).SetStatus("fulfilled").Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	for _, query := range []string{
+		"Show the next promises to keep looking.",
+		"Show the next promises",
+		"show", "next", "to keep looking", "keep looking", "show the next",
+	} {
+		assertCompanyQuery(query)
+	}
+	later := now.Add(40 * 24 * time.Hour)
+	seedCommitment(t, f, cedar, "promised_by_me", "Past leaf", "", &later)
+	assertCompanyQuery("Show the next promises to keep looking.", "Quill North", "Cedar Slide")
+	assertCompanyQuery("Please show the next promises to keep looking.", "Quill North", "Cedar Slide")
+	assertCompanyQuery("Show the next promises")
+	assertCompanyQuery("to keep looking")
+
+	filter := CommitmentFilter{
+		Direction: "promised_by_me",
+		States:    []string{"open", "at_risk"},
+		Limit:     promiseRegisterPage,
+	}
+	first, err := f.svc.ListCommitmentPage(f.ctx, f.user, filter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !first.HasMore || len(first.Commitments) != promiseRegisterPage {
+		t.Fatalf("first promise page = %d hasMore=%v", len(first.Commitments), first.HasMore)
+	}
+	for _, row := range first.Commitments {
+		if row.Text == "Past leaf" {
+			t.Fatal("the later promise was on the first page")
+		}
+	}
+	filter.Offset = promiseRegisterPage
+	rest, err := f.svc.ListCommitmentPage(f.ctx, f.user, filter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rest.HasMore || len(rest.Commitments) != 1 || rest.Commitments[0].Text != "Past leaf" {
+		got := make([]string, 0, len(rest.Commitments))
+		for _, row := range rest.Commitments {
+			got = append(got, row.Text)
+		}
+		t.Fatalf("next promise page = %v hasMore=%v", got, rest.HasMore)
+	}
+}
+
 func TestRelationshipSearchFindsThePeopleOnTheCompany(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

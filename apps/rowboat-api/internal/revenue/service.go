@@ -711,6 +711,11 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 // is the same filters with Offset set to how many rows are already on screen.
 const relationshipListLimit = 200
 
+// promiseRegisterPage is the promise list What we owe asks for. The register
+// prints "Show the next promises to keep looking." when a search misses that
+// page and another promise is still past it.
+const promiseRegisterPage = 200
+
 // ListRelationships returns the workspace's relationships, most recent
 // interaction first. A company with no interaction follows those, newest
 // edit first. Each row includes its open queue actions so the caller can
@@ -806,6 +811,9 @@ func (s *Service) ListRelationshipsFiltered(
 			))
 		}
 		needle := normalizePersonSearch(value)
+		if labelPhraseMatches("show the next promises to keep looking.", needle) {
+			parts = append(parts, relationshipHasAnotherPromisePage())
+		}
 		if labelPhraseMatches("no activity", needle) {
 			parts = append(parts, relationship.LastTouchAtIsNil())
 		}
@@ -5149,6 +5157,39 @@ func writeDependentSource(b *sql.Builder, s *sql.Selector, alias string) {
 	b.WriteString(") IN ('hubspot', 'crm') AND ")
 	writeRelationshipDependsOn(b, s, []string{"hubspot", "crm"}, []string{"hubspot", "crm", "crm_task", "task"})
 	b.WriteString("))")
+}
+
+// relationshipHasAnotherPromisePage is true when What we owe has another
+// page. That view is open promises we made, other than a candidate or a
+// disputed one. The register prints "Show the next promises to keep looking."
+// when a search misses the loaded page in that case.
+func relationshipHasAnotherPromisePage() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(commitment.Table)
+			b.WriteString(" AS register WHERE register.")
+			b.WriteString(commitment.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND register.")
+			b.WriteString(commitment.FieldDirection)
+			b.WriteString(" = ")
+			b.Arg("promised_by_me")
+			b.WriteString(" AND register.")
+			b.WriteString(commitment.FieldStatus)
+			b.WriteString(" = ")
+			b.Arg("open")
+			b.WriteString(" AND register.")
+			b.WriteString(commitment.FieldAcceptance)
+			b.WriteString(" NOT IN (")
+			b.Arg("candidate")
+			b.WriteString(", ")
+			b.Arg("disputed")
+			b.WriteString(")) > ")
+			b.Arg(promiseRegisterPage)
+		}))
+	})
 }
 
 // labelPhraseMatches is the sentence on the company row, or a longer question
