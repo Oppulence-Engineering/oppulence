@@ -29,7 +29,8 @@ export const AGENT_TOOL_CATALOG = [
   {
     name: "source.retry_sync",
     label: "Sync a source again",
-    description: "Try reading a connected source again. This does not reconnect the account.",
+    description:
+      "Try reading a source again after it is connected. This does not reconnect the account.",
   },
   {
     name: "task.create",
@@ -84,7 +85,7 @@ export const AGENT_TOOL_CATALOG = [
   {
     name: "connector.read.gmail",
     label: "Read Gmail",
-    description: "Read connected Gmail messages.",
+    description: "Read Gmail messages after a mailbox is connected.",
   },
   {
     name: "connector.write.gmail_draft",
@@ -99,7 +100,7 @@ export const AGENT_TOOL_CATALOG = [
   {
     name: "connector.read.calendar",
     label: "Read calendar",
-    description: "Read connected calendar events.",
+    description: "Read calendar events after a calendar is connected.",
   },
   {
     name: "connector.write.calendar_create",
@@ -111,16 +112,20 @@ export const AGENT_TOOL_CATALOG = [
     label: "Update event",
     description: "Update an existing calendar event.",
   },
-  { name: "connector.read.drive", label: "Read Drive", description: "Read connected Drive files." },
+  {
+    name: "connector.read.drive",
+    label: "Read Drive",
+    description: "Read Drive files after Drive is connected.",
+  },
   {
     name: "connector.write.drive_update",
     label: "Update Drive",
-    description: "Update connected Drive files.",
+    description: "Update Drive files after Drive is connected.",
   },
   {
     name: "connector.read.hubspot_search",
     label: "Search HubSpot",
-    description: "Find records in the connected HubSpot account.",
+    description: "Find HubSpot records after HubSpot is connected.",
   },
   {
     name: "connector.write.hubspot_note",

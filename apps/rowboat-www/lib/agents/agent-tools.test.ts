@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { agentToolLabel, approvalTrustCopy } from "@/lib/agents/agent-tools";
+import { AGENT_TOOL_CATALOG, agentToolLabel, approvalTrustCopy } from "@/lib/agents/agent-tools";
+
+function toolDescription(name: string): string | undefined {
+  return AGENT_TOOL_CATALOG.find((tool) => tool.name === name)?.description;
+}
 
 describe("agent tool labels", () => {
   it("names granted tools the way the product talks", () => {
@@ -41,5 +45,31 @@ describe("agent tool labels", () => {
     );
     expect(approvalTrustCopy("custom_tier")).toBe("This needs your approval before it runs.");
     expect(approvalTrustCopy("money-moving")).not.toContain("money-moving");
+  });
+
+  it("describes mailbox and CRM tools as available after a connection", () => {
+    expect(toolDescription("source.retry_sync")).toBe(
+      "Try reading a source again after it is connected. This does not reconnect the account.",
+    );
+    expect(toolDescription("connector.read.gmail")).toBe(
+      "Read Gmail messages after a mailbox is connected.",
+    );
+    expect(toolDescription("connector.read.calendar")).toBe(
+      "Read calendar events after a calendar is connected.",
+    );
+    expect(toolDescription("connector.read.drive")).toBe("Read Drive files after Drive is connected.");
+    expect(toolDescription("connector.write.drive_update")).toBe(
+      "Update Drive files after Drive is connected.",
+    );
+    expect(toolDescription("connector.read.hubspot_search")).toBe(
+      "Find HubSpot records after HubSpot is connected.",
+    );
+    expect(agentToolLabel("connector.read.gmail")).toBe("Read Gmail");
+    expect(agentToolLabel("connector.read.hubspot_search")).toBe("Search HubSpot");
+    expect(agentToolLabel("echo")).toBe("Echo");
+    const descriptions = AGENT_TOOL_CATALOG.map((tool) => tool.description).join("\n");
+    expect(descriptions).not.toContain("Read connected Gmail");
+    expect(descriptions).not.toContain("the connected HubSpot account");
+    expect(descriptions).not.toContain("Try reading a connected source");
   });
 });
