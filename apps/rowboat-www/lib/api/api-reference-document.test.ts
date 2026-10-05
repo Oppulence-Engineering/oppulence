@@ -302,4 +302,17 @@ describe("API reference document", () => {
     expect(page).toContain("The API reference could not be loaded.");
     expect(page).not.toContain("unpkg.com");
   });
+
+  it("does not describe a relationship change as a credit balance", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const delta = presented.components.schemas.RelationshipIntelligence.properties.delta;
+    expect(delta.description).toBe(
+      "Exact before/after values, uncertain claim ids, contradictions, and recommendation reason.",
+    );
+    expect(delta.type).toBe("object");
+    expect(delta.example).toBeUndefined();
+    const ledger = presented.components.schemas.CreditLedger.properties.delta;
+    expect(ledger.description).toContain("Credit delta.");
+    expect(ledger.example).toBe(-42);
+  });
 });

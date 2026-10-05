@@ -1883,7 +1883,6 @@ func enrichEntitySchemas(schemas obj) {
 		"sanctioned_credits":      {"description": "Credits granted by the current subscription.", "example": 10000},
 		"stripe_customer_id":      {"description": "Stripe customer id when billing is backed by Stripe.", "example": "cus_123"},
 		"stripe_subscription_id":  {"description": "Stripe subscription id when billing is backed by Stripe.", "example": "sub_123"},
-		"delta":                   {"description": "Credit delta. Negative values consume/reserve credits; positive values grant or refund credits.", "example": -42},
 		"reason":                  {"description": "Reason code for the ledger entry.", "enum": []any{"llm_call", "llm_call_reserve", "llm_settle", "voice_tts", "exa_search", "grant", "refund"}, "example": "llm_settle"},
 		"request_id":              {"description": "Idempotency and trace anchor for a metered request.", "example": "9e2fb15a-936d-4f39-9372-73cfe0476ca8"},
 		"ts":                      {"description": "Usage or ledger event timestamp.", "example": "2026-06-04T20:38:00Z"},
@@ -1932,6 +1931,16 @@ func enrichEntitySchemas(schemas obj) {
 				for k, v := range doc {
 					p[k] = v
 				}
+			}
+		}
+	}
+	// delta is a credit change only on the ledger. Relationship intelligence
+	// reuses the name for the before-and-after of a projected account.
+	if ledger := asObj(schemas["CreditLedger"]); ledger != nil {
+		if props := asObj(ledger["properties"]); props != nil {
+			if delta := asObj(props["delta"]); delta != nil {
+				delta["description"] = "Credit delta. Negative values consume/reserve credits; positive values grant or refund credits."
+				delta["example"] = -42
 			}
 		}
 	}

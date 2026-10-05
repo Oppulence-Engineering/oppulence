@@ -632,17 +632,23 @@ func addRevenueSchemas(schemas obj) {
 // overlay. Runtime schemas may reuse names such as status and reason with
 // domain-specific semantics, so their contract must win over entity defaults.
 func restoreRevenueSchemaOverrides(schemas obj) {
-	evidence := asObj(schemas["MissionControlDimensionEvidence"])
-	if evidence == nil {
-		return
+	if evidence := asObj(schemas["MissionControlDimensionEvidence"]); evidence != nil {
+		properties := asObj(evidence["properties"])
+		if properties != nil {
+			properties["reason"] = stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won.")
+			properties["status"] = stringEnum(
+				"Assertion lifecycle state.",
+				"accepted",
+				"proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active",
+			)
+		}
 	}
-	properties := asObj(evidence["properties"])
-	properties["reason"] = stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won.")
-	properties["status"] = stringEnum(
-		"Assertion lifecycle state.",
-		"accepted",
-		"proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active",
-	)
+	// The generic overlay used to describe this object as a credit balance change.
+	if intelligence := asObj(schemas["RelationshipIntelligence"]); intelligence != nil {
+		if properties := asObj(intelligence["properties"]); properties != nil && properties["delta"] != nil {
+			properties["delta"] = freeFormSchema("Exact before/after values, uncertain claim ids, contradictions, and recommendation reason.")
+		}
+	}
 }
 
 func addRevenuePaths(paths obj) {
