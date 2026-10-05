@@ -1935,6 +1935,15 @@ func enrichEntitySchemas(schemas obj) {
 			}
 		}
 	}
+	// A lineage row cites the relationship identity it moved. The shared primary
+	// key sample would make that citation the lineage row's own id.
+	if identity := asObj(schemas["RelationshipIdentity"]); identity != nil {
+		if props := asObj(identity["properties"]); props != nil {
+			if id := asObj(props["id"]); id != nil {
+				id["example"] = "1b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+			}
+		}
+	}
 
 	backgroundPropDocs := map[string]obj{
 		"slug":                 {"description": "Stable per-user background task slug matching bg-tasks/<slug> locally.", "example": "daily-summary"},
