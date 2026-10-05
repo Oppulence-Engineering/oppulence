@@ -1,5 +1,12 @@
 package openapidoc
 
+// The identity inbox sends a new UUID for each decision and this reason when
+// the review box is empty.
+const (
+	documentedIdentityDecisionKey    = "cb8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedIdentityDecisionReason = "Reviewed in the identity inbox: merge."
+)
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
@@ -1112,8 +1119,8 @@ func addRevenuePaths(paths obj) {
 	candidateParam := []any{obj{"name": "candidateId", "in": "path", "required": true, "description": "Identity candidate id.", "schema": obj{"type": "string", "format": "uuid"}}}
 	paths["/v1/relationship-identity-candidates/{candidateId}"] = obj{"get": operation("Relationship Intelligence", "Inspect identity candidate", "Returns exact anchors, provider records, evidence range, impact, advisory confidence, immutable decisions, and lineage.", "getRelationshipIdentityCandidate", bearer(), candidateParam, nil, obj{"200": jsonResponse("Identity candidate.", ref("RelationshipIdentityCandidate"), nil), "401": responseRef("401"), "404": responseRef("404")})}
 	paths["/v1/relationship-identity-candidates/{candidateId}/decisions"] = obj{"post": operation("Relationship Intelligence", "Decide identity candidate", "Applies merge, keep-separate, move-evidence, split, defer, or compensating undo once at the expected optimistic version.", "decideRelationshipIdentityCandidate", bearer(), candidateParam, jsonRequest("Identity decision.", objectSchema("Identity decision request.", obj{
-		"decision": stringEnum("Decision.", "merge", "merge", "keep_separate", "move_evidence", "split", "defer", "undo"), "reason": stringSchema("Actor reason.", "Confirmed provider records are the same account."), "expectedVersion": intSchema("Expected candidate version.", 1), "idempotencyKey": stringSchema("Stable client idempotency key.", "identity-review:123"),
-	}, "decision", "expectedVersion", "idempotencyKey"), obj{"decision": "merge", "expectedVersion": 1, "idempotencyKey": "identity-review:123"}), obj{"200": jsonResponse("Resolved candidate.", ref("RelationshipIdentityCandidate"), nil), "400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409")})}
+		"decision": stringEnum("Decision.", "merge", "merge", "keep_separate", "move_evidence", "split", "defer", "undo"), "reason": stringSchema("Actor reason.", documentedIdentityDecisionReason), "expectedVersion": intSchema("Expected candidate version.", 1), "idempotencyKey": stringSchema("Stable client idempotency key.", documentedIdentityDecisionKey, obj{"format": "uuid"}),
+	}, "decision", "expectedVersion", "idempotencyKey"), obj{"decision": "merge", "expectedVersion": 1, "reason": documentedIdentityDecisionReason, "idempotencyKey": documentedIdentityDecisionKey}), obj{"200": jsonResponse("Resolved candidate.", ref("RelationshipIdentityCandidate"), nil), "400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409")})}
 
 	paths["/v1/relationship-attention"] = obj{"get": operation("Relationship Intelligence", "List portfolio attention", "Returns deterministic relationship-native attention ordered by explicit factor contributions. A full page is the end of the queue when hasMore is false.", "listRelationshipAttention", bearer(), []any{
 		obj{"name": "status", "in": "query", "required": false, "schema": obj{"type": "string", "enum": []any{"open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved", "all"}}},

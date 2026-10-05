@@ -315,6 +315,25 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the decision key the identity inbox sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const body =
+      presented.paths["/v1/relationship-identity-candidates/{candidateId}/decisions"].post.requestBody
+        .content["application/json"];
+    const key = "cb8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    expect(body.example).toMatchObject({
+      decision: "merge",
+      expectedVersion: 1,
+      idempotencyKey: key,
+      reason: "Reviewed in the identity inbox: merge.",
+    });
+    expect(body.schema.properties.idempotencyKey).toMatchObject({
+      example: key,
+      format: "uuid",
+    });
+    expect(JSON.stringify(body)).not.toContain("identity-review:123");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

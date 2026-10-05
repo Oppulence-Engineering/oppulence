@@ -22676,7 +22676,8 @@
               "example": {
                 "decision": "merge",
                 "expectedVersion": 1,
-                "idempotencyKey": "identity-review:123"
+                "idempotencyKey": "cb8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                "reason": "Reviewed in the identity inbox: merge."
               },
               "schema": {
                 "description": "Identity decision request.",
@@ -22694,12 +22695,13 @@
                   },
                   "idempotencyKey": {
                     "description": "Stable client idempotency key.",
-                    "example": "identity-review:123",
+                    "example": "cb8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "format": "uuid",
                     "type": "string"
                   },
                   "reason": {
                     "description": "Actor reason.",
-                    "example": "Confirmed provider records are the same account.",
+                    "example": "Reviewed in the identity inbox: merge.",
                     "type": "string"
                   }
                 },
