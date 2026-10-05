@@ -14732,8 +14732,8 @@
             "type": "string"
           },
           "expires_at": {
-            "description": "Credential or one-time ticket expiry timestamp.",
-            "example": "2026-06-04T20:48:00Z",
+            "description": "Expiry time.",
+            "example": "2026-09-20T23:00:00Z",
             "nullable": true,
             "type": "string"
           },
@@ -14755,8 +14755,8 @@
             "type": "string"
           },
           "last_used_at": {
-            "description": "Timestamp when the connector credential was last minted or used.",
-            "example": "2026-06-04T20:45:00Z",
+            "description": "Last-use time.",
+            "example": "2026-08-21T23:00:00Z",
             "nullable": true,
             "type": "string"
           },
