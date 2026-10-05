@@ -1677,6 +1677,54 @@ export function sourceListedOnConnectionsPage(source: string): boolean {
   return source === "google" || source === "hubspot";
 }
 
+function sourceAccountIsLinked(status: string): boolean {
+  switch (status) {
+    case "connected":
+    case "backfilling":
+    case "live":
+    case "stale":
+    case "rebuilding":
+    case "degraded":
+      return true;
+    default:
+      return false;
+  }
+}
+
+/**
+ * The card list mixes a mailbox that is already connected with sources that
+ * are not. "Sources to connect" and "Connect Gmail" described the whole list
+ * while Gmail was only out of date.
+ */
+export function sourceConnectionSectionCopy(
+  items: readonly { accounts: readonly { status: string }[] }[],
+): { title: string; body: string } {
+  const linked = items.some((item) =>
+    item.accounts.some((account) => sourceAccountIsLinked(account.status)),
+  );
+  const unlinked = items.some(
+    (item) =>
+      item.accounts.length === 0 ||
+      item.accounts.some((account) => !sourceAccountIsLinked(account.status)),
+  );
+  if (linked && unlinked) {
+    return {
+      title: "Sources that need a look",
+      body: "Refresh a source that is already connected, or connect one that is not. Reading builds company history. Anything that writes waits for your approval.",
+    };
+  }
+  if (linked) {
+    return {
+      title: "Sources that need a look",
+      body: "These sources are already connected. Refresh one that is out of date. Anything that writes waits for your approval.",
+    };
+  }
+  return {
+    title: "Sources to connect",
+    body: "Connect Gmail or HubSpot. Reading builds company history. Anything that writes waits for your approval.",
+  };
+}
+
 function SourceConnectionCards({
   inventory,
   onOpenConnectors,
@@ -1697,6 +1745,7 @@ function SourceConnectionCards({
       ),
   );
   if (needsAttention.length === 0) return null;
+  const section = sourceConnectionSectionCopy(needsAttention);
 
   const mutate = async (key: string, operation: () => Promise<unknown>) => {
     setBusy(key);
@@ -1718,12 +1767,9 @@ function SourceConnectionCards({
     >
       <div>
         <h3 id="source-connections-heading" className="text-sm font-medium text-primary">
-          Sources to connect
+          {section.title}
         </h3>
-        <p className="mt-0.5 text-xs text-primary/55">
-          Connect Gmail or HubSpot. Reading builds company history. Anything that writes
-          waits for your approval.
-        </p>
+        <p className="mt-0.5 text-xs text-primary/55">{section.body}</p>
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
         {needsAttention.map((item) => {
