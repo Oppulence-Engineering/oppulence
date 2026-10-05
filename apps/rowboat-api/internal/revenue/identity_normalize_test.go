@@ -447,6 +447,78 @@ func TestListRelationshipsTiedUpdatedAtUsesID(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsNextCompanies(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	touched := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	create := func(i int, name string) {
+		t.Helper()
+		if _, err := f.client.Relationship.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("a116c000-0000-4000-8000-%012x", i))).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetKind("company").
+			SetDisplayName(name).
+			SetResourceRefs([]string{}).
+			SetRisks([]string{}).
+			SetMilestones([]string{}).
+			SetCreatedAt(touched).
+			SetUpdatedAt(touched).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := 1; i <= relationshipListLimit; i++ {
+		name := "Directory Leaf"
+		if i == 1 {
+			name = "Past Directory"
+		}
+		create(i, name)
+	}
+	exact, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Show the next companies"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if exact.HasMore || len(exact.Relationships) != 0 {
+		t.Fatalf("full page = %d hasMore=%v", len(exact.Relationships), exact.HasMore)
+	}
+	for _, query := range []string{"show", "next", "companies", "the next", "show the next"} {
+		miss, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if miss.HasMore || len(miss.Relationships) != 0 {
+			t.Fatalf("%q = %d hasMore=%v", query, len(miss.Relationships), miss.HasMore)
+		}
+	}
+	create(relationshipListLimit+1, "Directory Leaf")
+	found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Show the next companies"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !found.HasMore || len(found.Relationships) != relationshipListLimit {
+		t.Fatalf("next page search = %d hasMore=%v", len(found.Relationships), found.HasMore)
+	}
+	for _, rel := range found.Relationships {
+		if rel.DisplayName == "Past Directory" {
+			t.Fatal("the company behind the button was already on the first page")
+		}
+	}
+	hidden, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{
+		Query:  "Show the next companies",
+		Offset: relationshipListLimit,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hidden.HasMore || len(hidden.Relationships) != 1 || hidden.Relationships[0].DisplayName != "Past Directory" {
+		t.Fatalf("hidden company = %v hasMore=%v", namesOf(hidden.Relationships), hidden.HasMore)
+	}
+}
+
 func namesOf(rows []*ent.Relationship) []string {
 	names := make([]string, 0, len(rows))
 	for _, row := range rows {

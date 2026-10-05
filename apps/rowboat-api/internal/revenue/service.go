@@ -806,6 +806,11 @@ func (s *Service) ListRelationshipsFiltered(
 			))
 		}
 		needle := normalizePersonSearch(value)
+		// The directory button is "Show the next companies" only when another
+		// company sits past this page. A full page of 200 is the whole list.
+		if labelPhraseMatches("show the next companies", needle) {
+			parts = append(parts, relationshipDirectoryHasAnotherPage())
+		}
 		if labelPhraseMatches("no activity", needle) {
 			parts = append(parts, relationship.LastTouchAtIsNil())
 		}
@@ -994,6 +999,23 @@ func (s *Service) ListRelationshipsFiltered(
 		rows = rows[:relationshipListLimit]
 	}
 	return &RelationshipListPage{Relationships: rows, HasMore: hasMore}, nil
+}
+
+// relationshipDirectoryHasAnotherPage is the companies the first directory
+// page leaves behind. The button is hidden when the page is exact.
+func relationshipDirectoryHasAnotherPage() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(relationship.Table)
+			b.WriteString(" AS directory WHERE directory.")
+			b.WriteString(relationship.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(") > ")
+			b.Arg(relationshipListLimit)
+		}))
+	})
 }
 
 // relationshipNormalizedContains matches the words a teammate sees. A domain
