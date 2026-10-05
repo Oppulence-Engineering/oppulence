@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { listNeverLoaded } from "@/components/features/revenue/shared/shared";
 import {
   gmailDraftsAvailable,
+  linkUnavailableCopy,
   localModeNotice,
   sendingCheckLabel,
   sourceConnectionLabel,
@@ -19,7 +20,7 @@ import {
 } from "@/components/features/revenue/workspace-view/workspace-view";
 import { fetchRelationshipSourceStatuses } from "@/hooks/queries/utils/fetch-relationship-sources";
 import { fetchRelationshipRefreshBlocker } from "@/hooks/queries/utils/fetch-workflows";
-import { resyncRelationshipSource } from "@/lib/revenue/revenue";
+import { linkWorkspace, resyncRelationshipSource, RevenueAPIError } from "@/lib/revenue/revenue";
 import type { RelationshipSourceStatus } from "@/lib/revenue/types";
 
 vi.mock("@/components/features/connectors/connector-settings/connector-settings", () => ({
@@ -35,7 +36,15 @@ vi.mock("@/lib/revenue/revenue", () => ({
   linkWorkspace: vi.fn(),
   relativeTime: vi.fn(),
   resyncRelationshipSource: vi.fn(),
-  RevenueAPIError: class RevenueAPIError extends Error {},
+  RevenueAPIError: class RevenueAPIError extends Error {
+    status: number;
+    code?: string;
+    constructor(message: string, status: number, code?: string) {
+      super(message);
+      this.status = status;
+      this.code = code;
+    }
+  },
 }));
 
 vi.mock("@/hooks/queries/utils/fetch-workflows", () => ({
@@ -277,6 +286,33 @@ describe("WorkspaceView", () => {
     expect(screen.queryByText("Couldn't load")).not.toBeInTheDocument();
     expect(listNeverLoaded(true, undefined)).toBe(true);
     expect(listNeverLoaded(true, [])).toBe(false);
+  });
+
+  it("does not say drafts still work when linking is unavailable", async () => {
+    expect(linkUnavailableCopy("missing")).toBe(
+      "Checked sending isn't configured on the server yet, so linking can't be completed. Connect Gmail before a draft can land in your mailbox.",
+    );
+    expect(linkUnavailableCopy("connected")).toBe(
+      "Checked sending isn't configured on the server yet, so linking can't be completed. Drafts still land in your Gmail so you can send them yourself.",
+    );
+    expect(linkUnavailableCopy("unknown")).toBe(
+      "Checked sending isn't configured on the server yet, so linking can't be completed.",
+    );
+    expect(linkUnavailableCopy("missing")).not.toContain("Drafts still work");
+    expect(linkUnavailableCopy("unknown")).not.toContain("Drafts still work");
+
+    vi.mocked(fetchRelationshipSourceStatuses).mockResolvedValue([]);
+    vi.mocked(linkWorkspace).mockRejectedValue(
+      new RevenueAPIError("policy preflight unavailable", 503, "facade_unavailable"),
+    );
+    const onError = vi.fn();
+    renderWorkspace({ onError });
+    expect(await screen.findByText(/Nothing is connected yet/)).toBeVisible();
+    await userEvent.type(screen.getByRole("textbox", { name: "Sending workspace ID" }), "ws_test");
+    await userEvent.click(screen.getByRole("button", { name: "Link workspace" }));
+    await waitFor(() => {
+      expect(onError).toHaveBeenCalledWith(linkUnavailableCopy("missing"));
+    });
   });
 
   it("keeps the Gmail draft sentence once Google is connected", () => {
