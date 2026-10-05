@@ -1234,6 +1234,125 @@ func TestRelationshipSearchFindsTheAttentionBadge(t *testing.T) {
 	assertCompanyQuery("Stable", "Harbor Calm")
 }
 
+func TestRelationshipSearchFindsNextQueueCompanies(t *testing.T) {
+	f := newFixture(t)
+	quill, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill North",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Slide",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for i := 1; i <= attentionQueuePage; i++ {
+		if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+			RelationshipID: quill.ID,
+			ActionType:     "warm_follow_up",
+			Channel:        "email",
+			Reason:         fmt.Sprintf("Directory Leaf %03d", i),
+			PriorityScore:  40,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	task, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: quill.ID,
+		ActionType:     "follow_up_task",
+		Channel:        "task",
+		Reason:         "Task Quiet",
+		PriorityScore:  40,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dismissed, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: quill.ID,
+		ActionType:     "warm_follow_up",
+		Channel:        "email",
+		Reason:         "Dismissed Quiet",
+		PriorityScore:  40,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.Dismiss(f.ctx, f.user, dismissed.ID, "already_handled"); err != nil {
+		t.Fatal(err)
+	}
+	full, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", attentionQueuePage, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if full.HasMore || len(full.Items) != attentionQueuePage {
+		t.Fatalf("full queue = %d hasMore=%v", len(full.Items), full.HasMore)
+	}
+	for _, item := range full.Items {
+		if item.Explanation == "Task Quiet" || item.Explanation == "Dismissed Quiet" {
+			t.Fatalf("queue included %q", item.Explanation)
+		}
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	for _, query := range []string{
+		"Show the next companies in the queue",
+		"show", "next", "queue", "companies", "the next", "show the next", "in the queue",
+	} {
+		assertCompanyQuery(query)
+	}
+	if task.QueueStatus != QueueOpen {
+		t.Fatalf("task status = %s", task.QueueStatus)
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: quill.ID,
+		ActionType:     "warm_follow_up",
+		Channel:        "email",
+		Reason:         "Zed Hidden",
+		PriorityScore:  1,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	assertCompanyQuery("Show the next companies in the queue", "Quill North", "Cedar Slide")
+	first, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", attentionQueuePage, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !first.HasMore || len(first.Items) != attentionQueuePage {
+		t.Fatalf("first queue page = %d hasMore=%v", len(first.Items), first.HasMore)
+	}
+	for _, item := range first.Items {
+		if item.Explanation == "Zed Hidden" {
+			t.Fatal("the later follow-up was on the first queue page")
+		}
+	}
+	second, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", attentionQueuePage, attentionQueuePage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.HasMore || len(second.Items) != 1 || second.Items[0].Explanation != "Zed Hidden" {
+		got := make([]string, 0, len(second.Items))
+		for _, item := range second.Items {
+			got = append(got, item.Explanation)
+		}
+		t.Fatalf("next queue page = %v hasMore=%v", got, second.HasMore)
+	}
+}
+
 func TestRelationshipSearchFindsThePeopleOnTheCompany(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
