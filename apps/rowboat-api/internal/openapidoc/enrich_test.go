@@ -231,6 +231,7 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if delta["description"] == nil || delta["example"] == nil {
 		t.Fatal("CreditLedger.delta should have a detailed description and example")
 	}
+	assertPreviousRunID(t, schemas)
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
@@ -325,6 +326,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if schemas["ConnectorCredentialCleanupJob"] != nil || schemas["ConnectorCredentialRecovery"] != nil {
 		t.Fatal("checked-in openapi json exposes internal credential cleanup or recovery state")
 	}
+	assertPreviousRunID(t, schemas)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -335,6 +337,30 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	entityProperties := asObj(asObj(schemas["EntityProjection"])["properties"])
 	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
+	}
+}
+
+func assertPreviousRunID(t *testing.T, schemas obj) {
+	t.Helper()
+	run := asObj(asObj(schemas["BackgroundTaskRun"])["properties"])
+	previous := asObj(run["previousRunId"])
+	current := asObj(run["runId"])
+	if previous["example"] != "run-20260604-205000" || current["example"] != "run-20260604-210000" {
+		t.Fatalf("previous run id sampled this run: previous=%#v run=%#v", previous["example"], current["example"])
+	}
+	for _, name := range []string{"BackgroundTaskRunCreateRequest", "BackgroundTaskRunPatchRequest"} {
+		record := asObj(schemas[name])
+		if record == nil {
+			continue
+		}
+		properties := asObj(record["properties"])
+		if properties == nil {
+			continue
+		}
+		field := asObj(properties["previousRunId"])
+		if field != nil && field["example"] != "run-20260604-205000" {
+			t.Fatalf("%s.previousRunId changed: %#v", name, field["example"])
+		}
 	}
 }
 
