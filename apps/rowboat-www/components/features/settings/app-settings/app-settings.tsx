@@ -1232,7 +1232,12 @@ function AccountSection({ session }: { session: SessionShape }) {
             Sign out
           </Button>
         </div>
-        <DeleteAccountRow />
+        <DeleteAccountRow
+          billingStatus={session.billing?.status}
+          plan={session.billing?.plan}
+          userId={session.user.id}
+          watchMembers
+        />
       </SettingsRow>
     </>
   );

@@ -3,6 +3,7 @@
 import "@testing-library/jest-dom/vitest";
 
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -11,7 +12,13 @@ vi.mock("@/lib/auth/client", () => ({
   dashboardFetch: (...args: unknown[]) => dashboardFetch(...args),
 }));
 
-import { DeleteAccountRow } from "./delete-account-row";
+import {
+  DeleteAccountRow,
+  deletionRowDescription,
+  deletionSubscriptionCopy,
+  deletionWorkspaceCopy,
+  workspaceShareFromMembers,
+} from "./delete-account-row";
 
 const assign = vi.fn();
 const SUBMIT = "Permanently delete account";
@@ -68,9 +75,9 @@ afterEach(() => {
   window.sessionStorage.clear();
 });
 
-async function openSheet() {
+async function openSheet(props?: ComponentProps<typeof DeleteAccountRow>) {
   const user = userEvent.setup();
-  render(<DeleteAccountRow />);
+  render(<DeleteAccountRow {...props} />);
   await user.click(screen.getByRole("button", { name: "Delete account" }));
   return user;
 }
@@ -81,6 +88,47 @@ async function confirmAndSubmit(user: ReturnType<typeof userEvent.setup>) {
   await user.type(await screen.findByLabelText("Verification code"), "123456");
   await user.click(screen.getByRole("button", { name: VERIFY }));
 }
+
+describe("deletion consequence copy", () => {
+  it("does not invent a charge or a teammate", () => {
+    expect(deletionSubscriptionCopy("free", "active")).toBe(
+      "This account is on the Free plan. Nothing is billed, so there is no subscription to cancel.",
+    );
+    expect(deletionSubscriptionCopy(null, null)).toBe(
+      "This account is on the Free plan. Nothing is billed, so there is no subscription to cancel.",
+    );
+    expect(deletionSubscriptionCopy("pro", "canceled")).toMatch(/cancel your subscription immediately/i);
+    expect(deletionSubscriptionCopy("free", "past_due")).toMatch(/cancel your subscription immediately/i);
+    expect(deletionRowDescription("free", "active")).toBe(
+      "Permanently delete your account and your data.",
+    );
+    expect(deletionWorkspaceCopy(0)).toMatch(/only yours/i);
+    expect(deletionWorkspaceCopy(2)).toMatch(/another member/i);
+    expect(deletionWorkspaceCopy("loading")).not.toMatch(/another member|only yours/i);
+    expect(deletionWorkspaceCopy("unknown")).not.toMatch(/another member|only yours/i);
+    expect(workspaceShareFromMembers([{ status: "active", userId: "self" }], "self")).toBe(0);
+    expect(
+      workspaceShareFromMembers(
+        [
+          { status: "active", userId: "self" },
+          { status: "removed", userId: "them" },
+        ],
+        "self",
+      ),
+    ).toBe(0);
+    expect(
+      workspaceShareFromMembers(
+        [
+          { status: "active", userId: "self" },
+          { status: "active", userId: "them" },
+        ],
+        "self",
+      ),
+    ).toBe(1);
+    expect(workspaceShareFromMembers([{ status: "active", userId: "them" }], "")).toBe("unknown");
+    expect(workspaceShareFromMembers(null, "self")).toBe("unknown");
+  });
+});
 
 describe("DeleteAccountRow", () => {
   describe("before the sheet opens", () => {
@@ -99,16 +147,23 @@ describe("DeleteAccountRow", () => {
   });
 
   describe("the confirmation sheet", () => {
-    it("explains every consequence before the user confirms", async () => {
-      await openSheet();
+    it("explains a free account that nobody else shares", async () => {
+      await openSheet({ plan: "free", billingStatus: "active", workspaceShare: 0 });
       const dialog = screen.getByRole("dialog");
       expect(within(dialog).getByText("Delete your account")).toBeInTheDocument();
       expect(within(dialog).getByText("You cannot undo this.")).toBeInTheDocument();
-      expect(within(dialog).getByText(/cancel your subscription immediately/i)).toBeInTheDocument();
+      expect(
+        within(dialog).getByText(
+          "This account is on the Free plan. Nothing is billed, so there is no subscription to cancel.",
+        ),
+      ).toBeInTheDocument();
+      expect(within(dialog).queryByText(/cancel your subscription immediately/i)).not.toBeInTheDocument();
+      expect(within(dialog).queryByText(/not charged again/i)).not.toBeInTheDocument();
       expect(within(dialog).getByText(/disconnect your connected accounts/i)).toBeInTheDocument();
       expect(
-        within(dialog).getByText(/shared workspace goes to another member/i),
+        within(dialog).getByText("This workspace is only yours. Deleting the account deletes it."),
       ).toBeInTheDocument();
+      expect(within(dialog).queryByText(/another member/i)).not.toBeInTheDocument();
       expect(within(dialog).getByText(/cannot sign in to this account again/i)).toBeInTheDocument();
       expect(
         within(dialog).getByText(
@@ -116,6 +171,108 @@ describe("DeleteAccountRow", () => {
         ),
       ).toBeInTheDocument();
       expect(within(dialog).queryByText(/Google/)).not.toBeInTheDocument();
+      expect(screen.getByText("Permanently delete your account and your data.")).toBeInTheDocument();
+      expect(screen.queryByText(/and your subscription/i)).not.toBeInTheDocument();
+      expect(dashboardFetch).not.toHaveBeenCalled();
+    });
+
+    it("keeps the cancellation and transfer lines for a paid shared workspace", async () => {
+      await openSheet({ plan: "pro", billingStatus: "active", workspaceShare: 1 });
+      const dialog = screen.getByRole("dialog");
+      expect(within(dialog).getByText(/cancel your subscription immediately/i)).toBeInTheDocument();
+      expect(
+        within(dialog).getByText(/shared workspace goes to another member/i),
+      ).toBeInTheDocument();
+      expect(within(dialog).queryByText(/only yours/i)).not.toBeInTheDocument();
+      expect(within(dialog).queryByText(/nothing is billed/i)).not.toBeInTheDocument();
+      expect(
+        screen.getByText("Permanently delete your account, your data, and your subscription."),
+      ).toBeInTheDocument();
+      expect(dashboardFetch).not.toHaveBeenCalled();
+    });
+
+    it("still names a trial as a subscription on the free plan", async () => {
+      await openSheet({ plan: "free", billingStatus: "trialing", workspaceShare: 0 });
+      const dialog = screen.getByRole("dialog");
+      expect(within(dialog).getByText(/cancel your subscription immediately/i)).toBeInTheDocument();
+      expect(within(dialog).getByText(/only yours/i)).toBeInTheDocument();
+    });
+
+    it("does not claim a transfer while membership is unread", async () => {
+      await openSheet({ workspaceShare: "loading" });
+      const dialog = screen.getByRole("dialog");
+      expect(
+        within(dialog).getByText("Checking whether anyone else shares this workspace."),
+      ).toBeInTheDocument();
+      expect(within(dialog).queryByText(/another member/i)).not.toBeInTheDocument();
+      expect(within(dialog).queryByText(/only yours/i)).not.toBeInTheDocument();
+    });
+
+    it("does not claim a transfer when the member list cannot be read", async () => {
+      await openSheet({ workspaceShare: "unknown" });
+      const dialog = screen.getByRole("dialog");
+      expect(
+        within(dialog).getByText("We could not check whether anyone else shares this workspace."),
+      ).toBeInTheDocument();
+      expect(within(dialog).queryByText(/another member/i)).not.toBeInTheDocument();
+      expect(within(dialog).queryByText(/only yours/i)).not.toBeInTheDocument();
+    });
+
+    it("counts only other active members from the workspace", async () => {
+      const user = userEvent.setup();
+      dashboardFetch.mockResolvedValue(
+        json(200, {
+          members: [
+            { status: "active", userId: "user-1" },
+            { status: "removed", userId: "user-2" },
+            { status: "active", userId: "  " },
+          ],
+        }),
+      );
+      render(
+        <DeleteAccountRow
+          billingStatus="active"
+          plan="free"
+          userId="user-1"
+          watchMembers
+        />,
+      );
+      await user.click(screen.getByRole("button", { name: "Delete account" }));
+      expect(
+        await screen.findByText("This workspace is only yours. Deleting the account deletes it."),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/another member/i)).not.toBeInTheDocument();
+      expect(dashboardFetch).toHaveBeenCalledWith(expect.stringContaining("/current/members"));
+    });
+
+    it("names a transfer when another active member is on the list", async () => {
+      const user = userEvent.setup();
+      dashboardFetch.mockResolvedValue(
+        json(200, {
+          members: [
+            { status: "active", userId: "user-1" },
+            { status: "active", userId: "user-2" },
+          ],
+        }),
+      );
+      render(<DeleteAccountRow plan="starter" billingStatus="active" userId="user-1" watchMembers />);
+      await user.click(screen.getByRole("button", { name: "Delete account" }));
+      expect(
+        await screen.findByText("A shared workspace goes to another member. Their data stays."),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/cancel your subscription immediately/i)).toBeInTheDocument();
+    });
+
+    it("stays quiet about ownership when the member list fails", async () => {
+      const user = userEvent.setup();
+      dashboardFetch.mockResolvedValue(json(503, { code: "unavailable" }));
+      render(<DeleteAccountRow plan="free" billingStatus="active" userId="user-1" watchMembers />);
+      await user.click(screen.getByRole("button", { name: "Delete account" }));
+      expect(
+        await screen.findByText("We could not check whether anyone else shares this workspace."),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/another member/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/only yours/i)).not.toBeInTheDocument();
     });
 
     it("starts with an empty confirmation and no deletion request", async () => {
