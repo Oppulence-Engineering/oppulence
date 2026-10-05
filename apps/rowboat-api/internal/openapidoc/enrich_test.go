@@ -231,6 +231,7 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if delta["description"] == nil || delta["example"] == nil {
 		t.Fatal("CreditLedger.delta should have a detailed description and example")
 	}
+	assertNonUUIDIdentifiers(t, schemas)
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
@@ -325,6 +326,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if schemas["ConnectorCredentialCleanupJob"] != nil || schemas["ConnectorCredentialRecovery"] != nil {
 		t.Fatal("checked-in openapi json exposes internal credential cleanup or recovery state")
 	}
+	assertNonUUIDIdentifiers(t, schemas)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -335,6 +337,32 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	entityProperties := asObj(asObj(schemas["EntityProjection"])["properties"])
 	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
+	}
+}
+
+func assertNonUUIDIdentifiers(t *testing.T, schemas obj) {
+	t.Helper()
+	for _, item := range []struct {
+		schema, description, example string
+	}{
+		{"LLMModel", "Model id accepted by the model gateway.", "openai/gpt-4.1-mini"},
+		{"IntegrationTemplateBlock", "Stable block id within the connector.", "invoice-context"},
+		{"HubSpotSearchObject", "HubSpot record id.", "101"},
+		{"ConsentClientIdentity", "Hydra client id.", "rowboat-desktop"},
+		{"ConsentConnectorIdentity", "Connector slug.", "canvas"},
+		{"ConversationClaim", "Stable claim id.", "claim:ab12"},
+		{"ConversationReviewItem", "Stable review item id.", "review:ab12"},
+		{"RelationshipGraphNode", "Stable node id.", "relationship:9c8dfa9b-a7b2-46ea-982c-622a914c00e5"},
+		{"RelationshipGraphEdge", "Stable edge id.", "edge:ab12cd34"},
+	} {
+		id := asObj(asObj(asObj(schemas[item.schema])["properties"])["id"])
+		if id["description"] != item.description || id["example"] != item.example {
+			t.Fatalf("%s.id sampled a UUID: %#v", item.schema, id)
+		}
+	}
+	taskID := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["id"])
+	if taskID["example"] != "123e4567-e89b-12d3-a456-426614174000" || taskID["format"] != "uuid" {
+		t.Fatalf("BackgroundTask.id lost its UUID: %#v", taskID)
 	}
 }
 

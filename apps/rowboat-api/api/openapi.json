@@ -5074,8 +5074,8 @@
             "type": "string"
           },
           "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Hydra client id.",
+            "example": "rowboat-desktop",
             "type": "string"
           }
         },
@@ -5096,8 +5096,8 @@
             "type": "string"
           },
           "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Connector slug.",
+            "example": "canvas",
             "type": "string"
           }
         },
@@ -5613,8 +5613,8 @@
             "type": "string"
           },
           "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Stable claim id.",
+            "example": "claim:ab12",
             "type": "string"
           },
           "kind": {
@@ -5984,8 +5984,8 @@
             "type": "string"
           },
           "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Stable review item id.",
+            "example": "review:ab12",
             "type": "string"
           },
           "kind": {
@@ -7007,8 +7007,8 @@
             "type": "string"
           },
           "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "HubSpot record id.",
+            "example": "101",
             "type": "string"
           },
           "properties": {
@@ -7090,8 +7090,8 @@
             "type": "string"
           },
           "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Stable block id within the connector.",
+            "example": "invoice-context",
             "type": "string"
           },
           "mcpTools": {
@@ -7453,8 +7453,8 @@
         "description": "Routable model id exposed to the desktop.",
         "properties": {
           "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Model id accepted by the model gateway.",
+            "example": "openai/gpt-4.1-mini",
             "type": "string"
           }
         },
@@ -10612,8 +10612,8 @@
             "type": "array"
           },
           "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Stable edge id.",
+            "example": "edge:ab12cd34",
             "type": "string"
           },
           "kind": {
@@ -10721,8 +10721,8 @@
             "type": "string"
           },
           "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Stable node id.",
+            "example": "relationship:9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "type": "string"
           },
           "kind": {

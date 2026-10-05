@@ -297,6 +297,25 @@ describe("API reference document", () => {
     );
   });
 
+  it("does not sample a UUID for an id that is not a UUID", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const model = presented.components.schemas.LLMModel.properties.id;
+    expect(model.description).toBe("Model id accepted by the model gateway.");
+    expect(model.example).toBe("openai/gpt-4.1-mini");
+    const edge = presented.components.schemas.RelationshipGraphEdge.properties.id;
+    expect(edge.description).toBe("Stable edge id.");
+    expect(edge.example).toBe("edge:ab12cd34");
+    const record = presented.components.schemas.HubSpotSearchObject.properties.id;
+    expect(record.description).toBe("HubSpot record id.");
+    expect(record.example).toBe("101");
+    const connector = presented.components.schemas.ConsentConnectorIdentity.properties.id;
+    expect(connector.description).toBe("Connection name.");
+    expect(connector.example).toBe("canvas");
+    const task = presented.components.schemas.BackgroundTask.properties.id;
+    expect(task.description).toBe("Id.");
+    expect(task.example).toBe("123e4567-e89b-12d3-a456-426614174000");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
