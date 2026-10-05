@@ -429,8 +429,8 @@ func addRevenueSchemas(schemas obj) {
 
 	schemas["RelationshipGraphEdge"] = objectSchema("A typed graph edge whose source-to-target direction is semantically meaningful.", obj{
 		"id":           stringSchema("Stable edge id.", "edge:ab12cd34"),
-		"source":       stringSchema("Source node id.", "commitment:1"),
-		"target":       stringSchema("Target node id.", "commitment:2"),
+		"source":       stringSchema("Source node id.", "commitment:8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"target":       stringSchema("Target node id.", "commitment:26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51"),
 		"kind":         stringEnum("Edge kind.", "requires", "participant_of", "owns", "has_commitment", "blocks", "requires", "supersedes", "has_risk", "has_milestone", "recommended_for", "supports", "contradicts", "observed_from", "linked_note"),
 		"label":        stringSchema("Human-readable edge label.", "requires"),
 		"directed":     boolSchema("Whether the source-to-target direction is meaningful.", true),
