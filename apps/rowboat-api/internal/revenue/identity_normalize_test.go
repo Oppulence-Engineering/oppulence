@@ -1234,6 +1234,122 @@ func TestRelationshipSearchFindsTheAttentionBadge(t *testing.T) {
 	assertCompanyQuery("Stable", "Harbor Calm")
 }
 
+func TestRelationshipSearchFindsHiddenAttentionCompanies(t *testing.T) {
+	f := newFixture(t)
+	quill, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill North",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cedar, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Slide",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	harbor, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Lane",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	followUp := func(rel *ent.Relationship, reason string, score int) *ent.RevenueAction {
+		t.Helper()
+		action, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+			RelationshipID: rel.ID,
+			ActionType:     "warm_follow_up",
+			Channel:        "email",
+			Reason:         reason,
+			PriorityScore:  score,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return action
+	}
+	for i := 1; i <= attentionQueueScreen; i++ {
+		followUp(quill, fmt.Sprintf("Directory Leaf %02d", i), 40)
+	}
+	if _, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: quill.ID,
+		ActionType:     "follow_up_task",
+		Channel:        "task",
+		Reason:         "Task Quiet",
+		PriorityScore:  40,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	dismissed := followUp(quill, "Dismissed Quiet", 40)
+	if _, err := f.svc.Dismiss(f.ctx, f.user, dismissed.ID, "already_handled"); err != nil {
+		t.Fatal(err)
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertQueue := func(want int, last string) {
+		t.Helper()
+		page, err := f.svc.ListRelationshipAttention(f.ctx, f.user, "open", attentionQueuePage, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if page.HasMore || len(page.Items) != want {
+			t.Fatalf("queue = %d hasMore=%v, want %d", len(page.Items), page.HasMore, want)
+		}
+		for _, item := range page.Items {
+			if item.Explanation == "Task Quiet" || item.Explanation == "Dismissed Quiet" {
+				t.Fatalf("queue included %q", item.Explanation)
+			}
+		}
+		if last != "" && page.Items[len(page.Items)-1].Explanation != last {
+			t.Fatalf("last reason = %q, want %q", page.Items[len(page.Items)-1].Explanation, last)
+		}
+	}
+	assertQueue(attentionQueueScreen, "")
+	for _, query := range []string{
+		"Show the other 1 company",
+		"Show the other 2 companies",
+		"Show the other 1 companies",
+		"Show the other 2 company",
+		"show", "other", "company", "companies", "the other", "show the other",
+	} {
+		assertCompanyQuery(query)
+	}
+	followUp(quill, "Zed Hidden", 20)
+	assertQueue(attentionQueueScreen+1, "Zed Hidden")
+	assertCompanyQuery("Show the other 1 company")
+	cedarAction := followUp(cedar, "Cedar Quiet", 10)
+	assertQueue(attentionQueueScreen+2, "Cedar Quiet")
+	assertCompanyQuery("Show the other 1 company", "Quill North", "Cedar Slide", "Harbor Lane")
+	assertCompanyQuery("Show the other 2 companies")
+	harborAction := followUp(harbor, "Harbor Quiet", 5)
+	assertQueue(attentionQueueScreen+3, "Harbor Quiet")
+	assertCompanyQuery("Show the other 2 companies", "Quill North", "Cedar Slide", "Harbor Lane")
+	assertCompanyQuery("Show the other 1 company")
+	if _, err := f.svc.Dismiss(f.ctx, f.user, cedarAction.ID, "already_handled"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.Dismiss(f.ctx, f.user, harborAction.ID, "already_handled"); err != nil {
+		t.Fatal(err)
+	}
+	assertQueue(attentionQueueScreen+1, "Zed Hidden")
+	assertCompanyQuery("Show the other 1 company")
+	assertCompanyQuery("Show the other 2 companies")
+}
+
 func TestRelationshipSearchFindsThePeopleOnTheCompany(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
