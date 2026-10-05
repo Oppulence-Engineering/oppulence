@@ -338,6 +338,34 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertQueueAcceptTransition(t, spec)
+}
+
+func TestQueueAcceptUsesTheRegisterKey(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertQueueAcceptTransition(t, spec)
+}
+
+func assertQueueAcceptTransition(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions"])["post"])
+	content := asObj(asObj(asObj(operation["requestBody"])["content"])["application/json"])
+	example := asObj(content["example"])
+	if example["idempotencyKey"] != documentedQueueAcceptKey || example["kind"] != "accepted" || example["reason"] != documentedQueueAcceptReason {
+		t.Fatalf("queue accept example: %#v", example)
+	}
+	if example["evidenceRefs"] != nil {
+		t.Fatalf("queue accept sent evidence the register omits: %#v", example["evidenceRefs"])
+	}
+	props := asObj(asObj(content["schema"])["properties"])
+	if asObj(props["idempotencyKey"])["example"] != documentedQueueAcceptKey {
+		t.Fatalf("idempotency key: %#v", props["idempotencyKey"])
+	}
+	items := asObj(asObj(props["evidenceRefs"])["items"])
+	if items["example"] != documentedQueueAcceptEvidence {
+		t.Fatalf("stored transition evidence: %#v", items["example"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

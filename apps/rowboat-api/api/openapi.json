@@ -24358,9 +24358,9 @@
           "content": {
             "application/json": {
               "example": {
-                "evidenceRefs": ["counterparty:accepted"],
-                "idempotencyKey": "ui:accept:ab12",
-                "kind": "accepted"
+                "idempotencyKey": "commitment-queue:accepted:8b8dfa9b-a7b2-46ea-982c-622a914c00e5:v3",
+                "kind": "accepted",
+                "reason": "Reviewed from the Commitment Queue (accepted)."
               },
               "schema": {
                 "description": "Commitment transition.",
@@ -24382,17 +24382,17 @@
                     "type": "string"
                   },
                   "evidenceRefs": {
-                    "description": "Evidence references.",
+                    "description": "Evidence references. An omitted list is stored as this transition.",
                     "items": {
                       "description": "Reference.",
-                      "example": "relationship-observation:ab12",
+                      "example": "user-transition:commitment-queue:accepted:8b8dfa9b-a7b2-46ea-982c-622a914c00e5:v3",
                       "type": "string"
                     },
                     "type": "array"
                   },
                   "idempotencyKey": {
                     "description": "Stable source event id.",
-                    "example": "ui:accept:ab12",
+                    "example": "commitment-queue:accepted:8b8dfa9b-a7b2-46ea-982c-622a914c00e5:v3",
                     "type": "string"
                   },
                   "kind": {
@@ -24418,7 +24418,7 @@
                   },
                   "reason": {
                     "description": "Optional reason.",
-                    "example": "Counterparty accepted in writing.",
+                    "example": "Reviewed from the Commitment Queue (accepted).",
                     "type": "string"
                   }
                 },

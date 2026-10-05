@@ -315,6 +315,25 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the acceptance key the commitment register sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const body =
+      presented.paths["/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions"].post
+        .requestBody.content["application/json"];
+    const key = "commitment-queue:accepted:8b8dfa9b-a7b2-46ea-982c-622a914c00e5:v3";
+    expect(body.example).toMatchObject({
+      kind: "accepted",
+      idempotencyKey: key,
+      reason: "Reviewed from the Commitment Queue (accepted).",
+    });
+    expect(body.example.evidenceRefs).toBeUndefined();
+    expect(body.schema.properties.idempotencyKey.example).toBe(key);
+    expect(body.schema.properties.evidenceRefs.items.example).toBe(`user-transition:${key}`);
+    expect(body.schema.properties.evidenceRefs.description).toBe(
+      "Evidence references. An omitted list is stored as this transition.",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
