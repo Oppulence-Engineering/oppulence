@@ -1,8 +1,34 @@
 package openapidoc
 
+import (
+	"crypto/sha256"
+	"encoding/hex"
+)
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
+
+const (
+	conversationObservationID = "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	conversationClaimID       = "claim-risk"
+	conversationExternalID    = "oppulence:session-42"
+	conversationSourceVersion = "fingerprint-1"
+)
+
+// conversationReviewItemID matches reviewItemID: review: plus the first 8 bytes
+// of sha256(observationID:claimID:kind).
+func conversationReviewItemID(observationID, claimID, kind string) string {
+	sum := sha256.Sum256([]byte(observationID + ":" + claimID + ":" + kind))
+	return "review:" + hex.EncodeToString(sum[:8])
+}
+
+// conversationReviewBatchID matches the review batch: review: plus the first 12
+// bytes of sha256(externalID:sourceVersion:conversation-review-v1).
+func conversationReviewBatchID(externalID, sourceVersion string) string {
+	sum := sha256.Sum256([]byte(externalID + ":" + sourceVersion + ":conversation-review-v1"))
+	return "review:" + hex.EncodeToString(sum[:12])
+}
 
 func addRevenueSchemas(schemas obj) {
 	schemas["RevenueWorkspace"] = objectSchema("Mapping between the Rowboat tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.", obj{
@@ -307,7 +333,7 @@ func addRevenueSchemas(schemas obj) {
 	}, "schemaVersion", "generatedAt", "workspaceRef", "features", "sources", "counts", "trustFunnel", "checks")
 
 	schemas["ConversationClaim"] = objectSchema("A material conversation claim anchored to exact words, time, speaker confidence, and capture caveats.", obj{
-		"id":                stringSchema("Stable claim id.", "claim:ab12"),
+		"id":                stringSchema("Stable claim id.", conversationClaimID),
 		"kind":              stringEnum("Claim kind.", "risk", "risk", "objection", "decision", "milestone", "sentiment", "stakeholder", "lifecycle", "commitment"),
 		"value":             stringSchema("Normalized claim value.", "Security review may delay renewal."),
 		"exactQuote":        stringSchema("Exact supporting transcript words.", "We are concerned security could delay the renewal."),
@@ -324,16 +350,16 @@ func addRevenueSchemas(schemas obj) {
 	}, "id", "kind", "value", "exactQuote", "startMs", "endMs", "speakerId", "speakerLabel", "speakerConfidence", "confidence", "captureCaveats", "material")
 
 	schemas["ConversationReviewItem"] = objectSchema("One evidence-backed proposed change requiring approve, correct, reject, or defer review.", obj{
-		"id":                 stringSchema("Stable review item id.", "review:ab12"),
+		"id":                 stringSchema("Stable review item id.", conversationReviewItemID(conversationObservationID, conversationClaimID, "speaker")),
 		"kind":               stringEnum("Review kind.", "speaker", "word", "speaker", "entity", "claim", "capture"),
 		"label":              stringSchema("Review prompt.", "Resolve the speaker for a material statement."),
 		"currentValue":       stringSchema("Current inferred value.", "Other"),
 		"confidence":         numberSchema("Current confidence.", 0.55),
 		"observationId":      uuidSchema("Supporting observation.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-		"claimId":            stringSchema("Material claim id.", "claim:ab12"),
+		"claimId":            stringSchema("Material claim id.", conversationClaimID),
 		"stateDimension":     stringSchema("Canonical state dimension affected by correction.", "risk"),
 		"exactQuote":         stringSchema("Exact words under review.", "We are concerned."),
-		"batchId":            stringSchema("Idempotent review batch id.", "review:ab12"),
+		"batchId":            stringSchema("Idempotent review batch id.", conversationReviewBatchID(conversationExternalID, conversationSourceVersion)),
 		"status":             stringEnum("Review state.", "pending_review", "pending_review", "accepted", "corrected", "rejected", "deferred"),
 		"before":             freeFormSchema("State pinned before conversation processing."),
 		"proposedAfter":      freeFormSchema("Typed proposed value after this item."),
@@ -635,6 +661,7 @@ func addRevenueSchemas(schemas obj) {
 // overlay. Runtime schemas may reuse names such as status and reason with
 // domain-specific semantics, so their contract must win over entity defaults.
 func restoreRevenueSchemaOverrides(schemas obj) {
+	restoreConversationReviewIdentifiers(schemas)
 	evidence := asObj(schemas["MissionControlDimensionEvidence"])
 	if evidence == nil {
 		return
@@ -646,6 +673,23 @@ func restoreRevenueSchemaOverrides(schemas obj) {
 		"accepted",
 		"proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active",
 	)
+}
+
+func restoreConversationReviewIdentifiers(schemas obj) {
+	itemID := conversationReviewItemID(conversationObservationID, conversationClaimID, "speaker")
+	batchID := conversationReviewBatchID(conversationExternalID, conversationSourceVersion)
+	if claim := asObj(schemas["ConversationClaim"]); claim != nil {
+		if properties := asObj(claim["properties"]); properties != nil {
+			properties["id"] = stringSchema("Stable claim id.", conversationClaimID)
+		}
+	}
+	if review := asObj(schemas["ConversationReviewItem"]); review != nil {
+		if properties := asObj(review["properties"]); properties != nil {
+			properties["id"] = stringSchema("Stable review item id.", itemID)
+			properties["claimId"] = stringSchema("Material claim id.", conversationClaimID)
+			properties["batchId"] = stringSchema("Idempotent review batch id.", batchID)
+		}
+	}
 }
 
 func addRevenuePaths(paths obj) {
@@ -908,22 +952,22 @@ func addRevenuePaths(paths obj) {
 		"409": responseRef("409"),
 	})}
 	paths["/v1/relationships/{relationshipId}/conversation-corrections"] = obj{"post": operation("Relationship Intelligence", "Correct reviewed conversation evidence", "Resolves a focused word, speaker, entity, or material-claim review item. State-affecting corrections append a top-precedence user assertion and reproject deterministically.", "correctConversationEvidence", bearer(), relationshipParam, jsonRequest("Focused correction.", objectSchema("Conversation correction.", obj{
-		"reviewItemId":   stringSchema("Focused review item id.", "review:ab12"),
+		"reviewItemId":   stringSchema("Focused review item id.", conversationReviewItemID(conversationObservationID, conversationClaimID, "speaker")),
 		"correctedValue": stringSchema("Human-corrected value.", "Avery Chen"),
 		"reason":         stringSchema("Correction reason.", "Avery was the speaker."),
-	}, "reviewItemId", "correctedValue", "reason"), obj{"reviewItemId": "review:ab12", "correctedValue": "Avery Chen", "reason": "Avery was the speaker."}), obj{
+	}, "reviewItemId", "correctedValue", "reason"), obj{"reviewItemId": conversationReviewItemID(conversationObservationID, conversationClaimID, "speaker"), "correctedValue": "Avery Chen", "reason": "Avery was the speaker."}), obj{
 		"201": jsonResponse("Corrected relationship and refreshed intelligence.", objectSchema("Correction result.", obj{"relationship": ref("RevenueRelationship"), "intelligence": ref("RelationshipIntelligence")}, "relationship", "intelligence"), nil),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
 	paths["/v1/relationships/{relationshipId}/conversation-decisions"] = obj{"post": operation("Relationship Intelligence", "Decide a proposed conversation change", "Approves, corrects, rejects, or defers one evidence-backed semantic candidate. A stale baseline returns 409 and no state mutation.", "decideConversationChange", bearer(), relationshipParam, jsonRequest("Review decision.", objectSchema("Conversation review decision.", obj{
-		"reviewItemId":   stringSchema("Review item id.", "review:ab12"),
+		"reviewItemId":   stringSchema("Review item id.", conversationReviewItemID(conversationObservationID, conversationClaimID, "speaker")),
 		"kind":           stringEnum("Decision kind.", "approve", "approve", "correct", "reject", "defer"),
 		"correctedValue": stringSchema("Required replacement for correct.", "Security review is complete."),
 		"reason":         stringSchema("Decision reason.", "Customer clarified this in the meeting."),
 		"deferUntil":     stringSchema("Future reminder for defer.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
-	}, "reviewItemId", "kind"), obj{"reviewItemId": "review:ab12", "kind": "approve", "reason": "Customer stated this directly."}), obj{
+	}, "reviewItemId", "kind"), obj{"reviewItemId": conversationReviewItemID(conversationObservationID, conversationClaimID, "speaker"), "kind": "approve", "reason": "Customer stated this directly."}), obj{
 		"201": jsonResponse("Updated relationship and refreshed review queue.", objectSchema("Decision result.", obj{"relationship": ref("RevenueRelationship"), "intelligence": ref("RelationshipIntelligence")}, "relationship", "intelligence"), nil),
 		"400": responseRef("400"),
 		"401": responseRef("401"),

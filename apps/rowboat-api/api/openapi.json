@@ -5616,8 +5616,8 @@
             "type": "string"
           },
           "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Stable claim id.",
+            "example": "claim-risk",
             "type": "string"
           },
           "kind": {
@@ -5940,7 +5940,7 @@
           },
           "batchId": {
             "description": "Idempotent review batch id.",
-            "example": "review:ab12",
+            "example": "review:8aafa89c553bd3f9b65e0bee",
             "type": "string"
           },
           "before": {
@@ -5959,7 +5959,7 @@
           },
           "claimId": {
             "description": "Material claim id.",
-            "example": "claim:ab12",
+            "example": "claim-risk",
             "type": "string"
           },
           "confidence": {
@@ -5987,8 +5987,8 @@
             "type": "string"
           },
           "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "description": "Stable review item id.",
+            "example": "review:9abf3ca4a5e5eff1",
             "type": "string"
           },
           "kind": {
@@ -24648,7 +24648,7 @@
               "example": {
                 "correctedValue": "Avery Chen",
                 "reason": "Avery was the speaker.",
-                "reviewItemId": "review:ab12"
+                "reviewItemId": "review:9abf3ca4a5e5eff1"
               },
               "schema": {
                 "description": "Conversation correction.",
@@ -24665,7 +24665,7 @@
                   },
                   "reviewItemId": {
                     "description": "Focused review item id.",
-                    "example": "review:ab12",
+                    "example": "review:9abf3ca4a5e5eff1",
                     "type": "string"
                   }
                 },
@@ -24739,7 +24739,7 @@
               "example": {
                 "kind": "approve",
                 "reason": "Customer stated this directly.",
-                "reviewItemId": "review:ab12"
+                "reviewItemId": "review:9abf3ca4a5e5eff1"
               },
               "schema": {
                 "description": "Conversation review decision.",
@@ -24768,7 +24768,7 @@
                   },
                   "reviewItemId": {
                     "description": "Review item id.",
-                    "example": "review:ab12",
+                    "example": "review:9abf3ca4a5e5eff1",
                     "type": "string"
                   }
                 },
