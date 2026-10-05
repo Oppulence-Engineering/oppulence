@@ -1935,6 +1935,12 @@ func enrichEntitySchemas(schemas obj) {
 			}
 		}
 	}
+	// The shared model note samples a chat model. An embeddings request uses an embedding model.
+	if embeddings := asObj(schemas["LLMEmbeddingsRequest"]); embeddings != nil {
+		if properties := asObj(embeddings["properties"]); properties != nil && properties["model"] != nil {
+			properties["model"] = stringSchema("Desktop-facing embedding model id.", "openai/text-embedding-3-small")
+		}
+	}
 
 	backgroundPropDocs := map[string]obj{
 		"slug":                 {"description": "Stable per-user background task slug matching bg-tasks/<slug> locally.", "example": "daily-summary"},
