@@ -508,6 +508,102 @@ func TestRelationshipSearchFindsTheRowFacts(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsNextTasks(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	quill, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill North", AccountDomain: "quill-north.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Slide", AccountDomain: "cedar-slide.example",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	touched := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	create := func(i int, reason, actionType, channel, status string) {
+		t.Helper()
+		if _, err := f.client.RevenueAction.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("37000001-0000-4000-8000-%012x", i))).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetRelationship(quill).
+			SetActionType(actionType).
+			SetChannel(channel).
+			SetDetector("manual").
+			SetDedupeKey(fmt.Sprintf("next-task-%03d", i)).
+			SetRevisionHash(fmt.Sprintf("next-task-hash-%03d", i)).
+			SetReason(reason).
+			SetPriorityScore(40).
+			SetQueueStatus(status).
+			SetCreatedAt(touched).
+			SetUpdatedAt(touched).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := 1; i <= taskQueuePage; i++ {
+		create(i, fmt.Sprintf("Directory Leaf %03d", i), "follow_up_task", "task", "open")
+	}
+	create(taskQueuePage+2, "Follow Quiet", "warm_follow_up", "email", "open")
+	create(taskQueuePage+3, "Dismissed Quiet", "follow_up_task", "task", "dismissed")
+	for _, query := range []string{
+		"Show the next tasks",
+		"show",
+		"next",
+		"task",
+		"tasks",
+		"the next",
+		"show the next",
+	} {
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		names := []string{}
+		if found != nil {
+			names = namesOf(found.Relationships)
+		}
+		if err != nil || len(names) != 0 {
+			t.Fatalf("query %q = %v err=%v", query, names, err)
+		}
+	}
+	create(taskQueuePage+1, "Zed Hidden", "follow_up_task", "task", "open")
+	found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Show the next tasks"})
+	names := map[string]bool{}
+	if found != nil {
+		for _, name := range namesOf(found.Relationships) {
+			names[name] = true
+		}
+	}
+	if err != nil || len(names) != 2 || !names["Quill North"] || !names["Cedar Slide"] {
+		t.Fatalf("next tasks = %v err=%v", names, err)
+	}
+	page, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{
+		QueueStatus: QueueOpen, Limit: taskQueuePage, Surface: "task", DueOrder: "asc",
+	})
+	if err != nil || page == nil || len(page.Actions) != taskQueuePage || !page.HasMore {
+		t.Fatalf("task page = %d hasMore=%v err=%v", len(page.Actions), page != nil && page.HasMore, err)
+	}
+	for _, action := range page.Actions {
+		if action.Reason == "Zed Hidden" {
+			t.Fatal("hidden task is on the first page")
+		}
+	}
+	rest, err := f.svc.ListActionPage(f.ctx, f.user, ListFilter{
+		QueueStatus: QueueOpen, Limit: taskQueuePage, Offset: taskQueuePage, Surface: "task", DueOrder: "asc",
+	})
+	if err != nil || rest == nil || rest.HasMore || len(rest.Actions) != 1 || rest.Actions[0].Reason != "Zed Hidden" {
+		got := ""
+		if rest != nil && len(rest.Actions) == 1 {
+			got = rest.Actions[0].Reason
+		}
+		t.Fatalf("next page = %q hasMore=%v err=%v", got, rest != nil && rest.HasMore, err)
+	}
+}
+
 func TestRelationshipSearchFindsTheLinkedInLabel(t *testing.T) {
 	f := newFixture(t)
 	saved, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
