@@ -447,6 +447,119 @@ func TestListRelationshipsTiedUpdatedAtUsesID(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsHiddenConnections(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	company := func(name string) *ent.Relationship {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return rel
+	}
+	people := func(rel *ent.Relationship, n int) {
+		t.Helper()
+		for i := 1; i <= n; i++ {
+			if _, err := f.client.RelationshipParticipant.Create().
+				SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+				SetDisplayName(fmt.Sprintf("%s person %d", rel.DisplayName, i)).
+				SetRole("contact").
+				Save(f.ctx); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	quill := company("Quill North")
+	people(quill, graphConnectionPage+1)
+	cedar := company("Cedar Slide")
+	people(cedar, graphConnectionPage)
+	aspen := company("Aspen Ridge")
+	people(aspen, graphConnectionPage+2)
+	birch := company("Birch Quiet")
+	people(birch, graphConnectionPage)
+	at := time.Date(2026, 10, 2, 12, 0, 0, 0, time.UTC)
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(birch).
+		SetSource("user").SetExternalID("birch-note").
+		SetEventType("note").SetOccurredAt(at).SetReceivedAt(at).
+		SetSummary("A note").SetContentHash("birch-note").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	risks := make([]string, graphConnectionPage+1)
+	for i := range risks {
+		risks[i] = fmt.Sprintf("slip %d", i+1)
+	}
+	maple := company("Maple Kept")
+	if _, err := f.client.Relationship.UpdateOne(maple).SetRisks(risks).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	company("Harbor Quiet")
+
+	want := func(query string, names ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if found.HasMore {
+			t.Fatalf("%q has more pages", query)
+		}
+		got := map[string]bool{}
+		for _, rel := range found.Relationships {
+			got[rel.DisplayName] = true
+		}
+		if len(got) != len(names) {
+			t.Fatalf("%q = %v, want %v", query, namesOf(found.Relationships), names)
+		}
+		for _, name := range names {
+			if !got[name] {
+				t.Fatalf("%q = %v, missing %s", query, namesOf(found.Relationships), name)
+			}
+		}
+	}
+	want("Show the other 1 connection", "Quill North", "Birch Quiet", "Maple Kept")
+	want("Show the other 2 connections", "Aspen Ridge")
+	for _, query := range []string{
+		"Show the other 1 connections",
+		"show the other",
+		"connection",
+		"connections",
+	} {
+		want(query)
+	}
+
+	raw, err := f.svc.RelationshipGraphPayload(f.ctx, f.user, RelationshipGraphFilter{Scope: "portfolio", Depth: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var graph struct {
+		Edges []struct {
+			Source string `json:"source"`
+			Target string `json:"target"`
+		} `json:"edges"`
+	}
+	if err := json.Unmarshal(raw, &graph); err != nil {
+		t.Fatal(err)
+	}
+	node := "relationship:" + quill.ID.String()
+	touches := 0
+	for _, edge := range graph.Edges {
+		if edge.Source == node || edge.Target == node {
+			touches++
+		}
+	}
+	if touches != graphConnectionPage+1 {
+		t.Fatalf("quill graph connections = %d", touches)
+	}
+}
+
 func namesOf(rows []*ent.Relationship) []string {
 	names := make([]string, 0, len(rows))
 	for _, row := range rows {
