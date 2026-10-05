@@ -297,6 +297,22 @@ describe("API reference document", () => {
     );
   });
 
+  it("names the evidence behind an overdue promise", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const item = presented.components.schemas.RelationshipAttentionItem.properties;
+    const evidenceRef = "revenue-evidence:4b8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    expect(item.evidenceRefs).toMatchObject({
+      description: "Evidence refs.",
+      example: [evidenceRef],
+    });
+    expect(item.evidenceRefs.items.example).toBe(evidenceRef);
+    expect(JSON.stringify(item.evidenceRefs)).not.toContain("relationship-observation:1");
+    expect(item.reasonCode.example).toBe("overdue_commitment");
+    expect(presented.components.schemas.RevenueAction.properties.evidence.items.properties.id.example).toBe(
+      "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

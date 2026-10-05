@@ -10225,9 +10225,12 @@
           },
           "evidenceRefs": {
             "description": "Evidence refs.",
+            "example": [
+              "revenue-evidence:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+            ],
             "items": {
               "description": "Evidence ref.",
-              "example": "relationship-observation:1",
+              "example": "revenue-evidence:4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "type": "string"
             },
             "type": "array"
