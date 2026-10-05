@@ -3672,9 +3672,12 @@
           },
           "evidenceRefs": {
             "description": "Exact evidence references.",
+            "example": [
+              "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+            ],
             "items": {
               "description": "Reference.",
-              "example": "relationship-observation:ab12",
+              "example": "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "type": "string"
             },
             "type": "array"
@@ -3733,7 +3736,7 @@
           },
           "sourceObservationId": {
             "description": "Source observation id.",
-            "example": "relationship-observation:ab12",
+            "example": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "type": "string"
           },
           "supersedesCommitmentId": {

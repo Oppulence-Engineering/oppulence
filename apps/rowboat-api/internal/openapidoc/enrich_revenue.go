@@ -100,6 +100,9 @@ func addRevenueSchemas(schemas obj) {
 		"evidenceRefs":     arraySchema("Evidence references.", stringSchema("Reference.", "relationship-observation:ab12")),
 		"createdAt":        stringSchema("Creation time.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
 	}, "dependencyId", "relationshipId", "fromCommitmentId", "toCommitmentId", "kind", "evidenceRefs", "createdAt")
+	eventObservationID := "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	eventEvidence := arraySchema("Exact evidence references.", stringSchema("Reference.", "relationship-observation:"+eventObservationID))
+	eventEvidence["example"] = []any{"relationship-observation:" + eventObservationID}
 	schemas["CommitmentEvent"] = objectSchema("One immutable event in a commitment transition stream.", obj{
 		"eventId":                    uuidSchema("Event id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"commitmentId":               uuidSchema("Commitment id.", "26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51"),
@@ -109,8 +112,8 @@ func addRevenueSchemas(schemas obj) {
 		"actorType":                  stringEnum("Transition authority.", "user", "user", "source_fact", "deterministic_rule", "ai_candidate"),
 		"actorRef":                   stringSchema("Actor reference.", "participant:owner"),
 		"occurredAt":                 stringSchema("Event time.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
-		"sourceObservationId":        stringSchema("Source observation id.", "relationship-observation:ab12"),
-		"evidenceRefs":               arraySchema("Exact evidence references.", stringSchema("Reference.", "relationship-observation:ab12")),
+		"sourceObservationId":        stringSchema("Source observation id.", eventObservationID),
+		"evidenceRefs":               eventEvidence,
 		"ownerParticipantRef":        stringSchema("Promise owner.", "participant:owner"),
 		"counterpartyParticipantRef": stringSchema("Promise counterparty.", "participant:customer"),
 		"beneficiaryParticipantRef":  stringSchema("Promise beneficiary.", "participant:beneficiary"),
