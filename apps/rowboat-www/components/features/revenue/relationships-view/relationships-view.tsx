@@ -1682,7 +1682,7 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
       ))}
       {needsRepair > 0 ? (
         <Badge className="gap-1 font-normal text-amber-600 dark:text-amber-400" variant="outline">
-          <Warning /> {needsRepair} need attention
+          <Warning /> {sourcesAttentionLabel(needsRepair)}
         </Badge>
       ) : null}
     </div>
@@ -1702,6 +1702,11 @@ export function sourcesNeedingRepair(statuses: readonly { status: string }[]): n
   return statuses.filter(
     (source) => !["connected", "backfilling", "live"].includes(source.status),
   ).length;
+}
+
+export function sourcesAttentionLabel(count: number): string {
+  const total = Number.isFinite(count) ? Math.max(0, Math.round(count)) : 0;
+  return total === 1 ? "1 needs attention" : `${total} need attention`;
 }
 
 export function sourceListedOnConnectionsPage(source: string): boolean {

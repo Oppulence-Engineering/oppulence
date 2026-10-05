@@ -27,6 +27,7 @@ import {
   companyListFailureCopy,
   companyDirectoryHasConnectedSource,
   companySourceCountsAsConnected,
+  sourcesAttentionLabel,
   companyStageFilterName,
   companySheetPositionLabel,
   companyReviewCopy,
@@ -227,6 +228,9 @@ describe("RelationshipsView", () => {
     expect(companyDirectoryHasConnectedSource([], [])).toBe(false);
     expect(companyDirectoryHasConnectedSource([{ status: "live" }], [])).toBe(true);
     expect(source).toContain("companyDirectoryHasConnectedSource(sources, sourceInventory)");
+    expect(sourcesAttentionLabel(1)).toBe("1 needs attention");
+    expect(sourcesAttentionLabel(2)).toBe("2 need attention");
+    expect(source).toContain("sourcesAttentionLabel(needsRepair)");
     expect(source).toContain("companyListEmptyCopy({");
     expect(companyListFailureCopy()).toBe("Companies could not load. Try again.");
     expect(source).toContain(
