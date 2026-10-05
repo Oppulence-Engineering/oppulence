@@ -17,6 +17,7 @@ import {
   acceptanceLabel,
   evidenceGapFact,
   formatMissingEvidence,
+  googleAccountCanBeRead,
   missingEvidenceLabel,
   REGISTER_VIEWS,
   registerConfidenceLabel,
@@ -509,6 +510,75 @@ describe("CommitmentQueue", () => {
 
     const source = fs.readFileSync(path.join(import.meta.dirname, "commitment-queue.tsx"), "utf8");
     expect(source).toContain("sourceWatchCopy({ connected: googleConnected, needsReconnect: googleNeedsReconnect })");
+  });
+
+  it("does not offer an audit for a synthetic Google account", () => {
+    expect(
+      googleAccountCanBeRead({
+        status: "stale",
+        missingScopes: [],
+        sourceAccountId: "default",
+        grantedScopes: [],
+      }),
+    ).toBe(false);
+    expect(
+      googleAccountCanBeRead({
+        status: "stale",
+        missingScopes: [],
+        sourceAccountId: "me@gmail.com",
+        grantedScopes: [],
+      }),
+    ).toBe(true);
+    expect(
+      googleAccountCanBeRead({
+        status: "live",
+        missingScopes: [],
+        sourceAccountId: "default",
+        grantedScopes: ["https://www.googleapis.com/auth/gmail.readonly"],
+      }),
+    ).toBe(true);
+
+    render(
+      <CommitmentQueue
+        {...props({
+          entries: [],
+          sources: [
+            {
+              ...sources[0],
+              accounts: [
+                {
+                  connectionId: "google-1",
+                  source: "google",
+                  sourceAccountId: "default",
+                  status: "stale",
+                  backfillPhase: "idle",
+                  backfillCompleted: 0,
+                  backfillTotal: 0,
+                  completeness: "stale",
+                  expectedCadenceSeconds: 900,
+                  lagSeconds: 1_801,
+                  retryCount: 1,
+                  requiredScopes: [],
+                  grantedScopes: [],
+                  missingScopes: [],
+                },
+              ],
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        "Connect Gmail and Calendar to find who promised what, when it is due, and the message it came from.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Connect Gmail & Calendar/ }).length).toBeGreaterThan(0);
+    expect(
+      screen.queryByRole("button", { name: /Run 6-month Promise Leak Audit/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/No explicit promises were found/)).not.toBeInTheDocument();
   });
 
   it("does not send a stale Google source through OAuth", () => {

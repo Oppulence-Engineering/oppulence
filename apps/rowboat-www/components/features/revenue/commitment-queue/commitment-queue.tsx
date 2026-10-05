@@ -553,13 +553,28 @@ function sourceNeedsReconnect(source: RelationshipSourceInventoryItem | undefine
   );
 }
 
+/**
+ * A live or stale row is not a mailbox by itself. Saving a Google observation
+ * creates a synthetic "default" account with no granted scopes, and an audit
+ * cannot read that row. A named account, or any account that was actually
+ * granted a scope, can.
+ */
+export function googleAccountCanBeRead(account: {
+  status: string;
+  missingScopes: readonly string[];
+  sourceAccountId?: string;
+  grantedScopes?: readonly string[];
+}): boolean {
+  if (!ACTIVE_SOURCE_STATES.has(account.status) || account.missingScopes.length > 0) return false;
+  const accountID = account.sourceAccountId?.trim() ?? "";
+  const granted = account.grantedScopes ?? [];
+  if ((accountID === "" || accountID === "default") && granted.length === 0) return false;
+  return true;
+}
+
 function sourceConnected(source: RelationshipSourceInventoryItem | undefined) {
   if (sourceNeedsReconnect(source)) return false;
-  return Boolean(
-    source?.accounts.some(
-      (account) => ACTIVE_SOURCE_STATES.has(account.status) && account.missingScopes.length === 0,
-    ),
-  );
+  return Boolean(source?.accounts.some((account) => googleAccountCanBeRead(account)));
 }
 
 function statusLabel(value: string) {
