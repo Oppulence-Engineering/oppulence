@@ -105,6 +105,7 @@ import {
   detailEvidenceCopy,
   detailSourceLabel,
   enrichmentAvailabilityCopy,
+  researchPanelTitle,
   enrichConfirmCopy,
   identityAnchorKindLabel,
   identityDecisionLabel,
@@ -333,6 +334,10 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain('aria-label="Show relationship graph"');
     expect(source).toContain("Public research");
     expect(source).not.toContain("Profile enrichment");
+    expect(researchPanelTitle()).toBe("Know who works at a company");
+    expect(researchPanelTitle()).not.toContain("inbox");
+    expect(source).toContain("{researchPanelTitle()}");
+    expect(source).not.toContain("Know who is behind the inbox");
     expect(source).toContain(">Any health</SelectItem>");
     expect(companyHealthFilterName("all")).toBe("Health, Any health");
     expect(companyHealthFilterName("needs_attention")).toBe("Health, Needs attention");
