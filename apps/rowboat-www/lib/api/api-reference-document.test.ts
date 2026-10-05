@@ -302,4 +302,19 @@ describe("API reference document", () => {
     expect(page).toContain("The API reference could not be loaded.");
     expect(page).not.toContain("unpkg.com");
   });
+
+  it("does not call a relationship snapshot an OAuth ticket", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const snapshot = presented.components.schemas.RelationshipStateSnapshot.properties.state;
+    expect(snapshot.description).toBe("Projected state at this version.");
+    expect(snapshot.type).toBe("object");
+    expect(snapshot.example).toBeUndefined();
+    const graph = presented.components.schemas.ConsoleGraphSavedViewPayload.properties.state;
+    expect(graph.$ref).toBe("#/components/schemas/ConsoleGraphSavedViewState");
+    expect(graph.description).toBeUndefined();
+    expect(graph.example).toBeUndefined();
+    const oauth = presented.components.schemas.OAuthPending.properties.state;
+    expect(oauth.description).toBe("Opaque one-time OAuth state/session ticket.");
+    expect(oauth.example).toBe("state_abc123");
+  });
 });

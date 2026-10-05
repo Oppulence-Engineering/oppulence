@@ -5204,9 +5204,7 @@
         "description": "Saved graph view payload.",
         "properties": {
           "state": {
-            "$ref": "#/components/schemas/ConsoleGraphSavedViewState",
-            "description": "Opaque one-time OAuth state/session ticket.",
-            "example": "state_abc123"
+            "$ref": "#/components/schemas/ConsoleGraphSavedViewState"
           }
         },
         "required": ["state"],
@@ -12085,8 +12083,7 @@
           },
           "state": {
             "additionalProperties": true,
-            "description": "Opaque one-time OAuth state/session ticket.",
-            "example": "state_abc123",
+            "description": "Projected state at this version.",
             "type": "object"
           },
           "stateHash": {

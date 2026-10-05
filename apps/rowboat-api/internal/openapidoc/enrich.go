@@ -1895,7 +1895,6 @@ func enrichEntitySchemas(schemas obj) {
 		"output_tokens":           {"description": "Output tokens reported by the upstream.", "example": 210},
 		"cost_units":              {"description": "Settled credit cost for the request.", "example": 8},
 		"provider":                {"description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.", "example": "openai"},
-		"state":                   {"description": "Opaque one-time OAuth state/session ticket.", "example": "state_abc123"},
 		"payload_encrypted":       {"description": "AES-GCM sealed OAuth handoff payload. Internal storage field.", "format": "byte", "writeOnly": true},
 		"expires_at":              {"description": "Credential or one-time ticket expiry timestamp.", "example": "2026-06-04T20:48:00Z"},
 		"connector":               {"description": "Connector slug.", "example": "canvas"},
@@ -1934,6 +1933,24 @@ func enrichEntitySchemas(schemas obj) {
 				}
 			}
 		}
+	}
+	// state is an OAuth ticket only on the handoff schemas. A saved graph view
+	// and a relationship snapshot reuse the name for their own state objects.
+	for _, schemaName := range []string{"OAuthPending", "ConnectionClaimRequest", "ConsentContextRequest"} {
+		schema := asObj(schemas[schemaName])
+		if schema == nil {
+			continue
+		}
+		props := asObj(schema["properties"])
+		if props == nil {
+			continue
+		}
+		state := asObj(props["state"])
+		if state == nil || (state["type"] != nil && state["type"] != "string") || state["$ref"] != nil {
+			continue
+		}
+		state["description"] = "Opaque one-time OAuth state/session ticket."
+		state["example"] = "state_abc123"
 	}
 
 	backgroundPropDocs := map[string]obj{

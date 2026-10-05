@@ -632,17 +632,28 @@ func addRevenueSchemas(schemas obj) {
 // overlay. Runtime schemas may reuse names such as status and reason with
 // domain-specific semantics, so their contract must win over entity defaults.
 func restoreRevenueSchemaOverrides(schemas obj) {
-	evidence := asObj(schemas["MissionControlDimensionEvidence"])
-	if evidence == nil {
-		return
+	if evidence := asObj(schemas["MissionControlDimensionEvidence"]); evidence != nil {
+		properties := asObj(evidence["properties"])
+		if properties != nil {
+			properties["reason"] = stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won.")
+			properties["status"] = stringEnum(
+				"Assertion lifecycle state.",
+				"accepted",
+				"proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active",
+			)
+		}
 	}
-	properties := asObj(evidence["properties"])
-	properties["reason"] = stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won.")
-	properties["status"] = stringEnum(
-		"Assertion lifecycle state.",
-		"accepted",
-		"proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active",
-	)
+	// The generic overlay used to call every state field a one-time OAuth ticket.
+	if snapshot := asObj(schemas["RelationshipStateSnapshot"]); snapshot != nil {
+		if properties := asObj(snapshot["properties"]); properties != nil && properties["state"] != nil {
+			properties["state"] = freeFormSchema("Projected state at this version.")
+		}
+	}
+	if payload := asObj(schemas["ConsoleGraphSavedViewPayload"]); payload != nil {
+		if properties := asObj(payload["properties"]); properties != nil && properties["state"] != nil {
+			properties["state"] = ref("ConsoleGraphSavedViewState")
+		}
+	}
 }
 
 func addRevenuePaths(paths obj) {
