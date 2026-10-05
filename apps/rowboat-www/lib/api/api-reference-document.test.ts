@@ -315,6 +315,29 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the response id the shared plan page sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const body =
+      presented.paths["/v1/public/mutual-action-plan/responses"].post.requestBody.content[
+        "application/json"
+      ];
+    const responseID = "db8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    expect(body.example).toMatchObject({
+      kind: "confirm",
+      responseId: responseID,
+      comment: "",
+    });
+    expect(body.schema.properties.responseId).toMatchObject({
+      example: responseID,
+      format: "uuid",
+    });
+    expect(body.schema.properties.itemId.example).toBe(
+      "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+    );
+    expect(JSON.stringify(body)).not.toContain("response:ab12");
+    expect(JSON.stringify(body)).not.toContain("item:ab12");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

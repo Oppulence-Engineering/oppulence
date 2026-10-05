@@ -1,5 +1,12 @@
 package openapidoc
 
+// The shared plan page sends a new UUID for each response. A plan item id is
+// the accepted commitment id with an item prefix.
+const (
+	documentedPlanResponseID = "db8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedPlanItemID     = "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+)
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
@@ -1066,12 +1073,12 @@ func addRevenuePaths(paths obj) {
 		"200": jsonResponse("Scoped public plan.", freeFormSchema("Public mutual action plan."), nil), "404": responseRef("404"),
 	})}
 	paths["/v1/public/mutual-action-plan/responses"] = obj{"post": operation("Relationship Intelligence", "Respond to a scoped plan", "Appends an idempotent external response for internal review; it never directly changes canonical commitments.", "respondPublicMutualActionPlan", nil, planTokenParam, jsonRequest("External response.", objectSchema("Plan response.", obj{
-		"responseId":    stringSchema("Counterparty-generated idempotency key.", "response:ab12"),
+		"responseId":    stringSchema("Counterparty-generated idempotency key.", documentedPlanResponseID, obj{"format": "uuid"}),
 		"kind":          stringEnum("Response kind.", "confirm", "confirm", "correct", "blocked", "completed", "comment"),
-		"itemId":        stringSchema("Plan item id when applicable.", "item:ab12"),
+		"itemId":        stringSchema("Plan item id when applicable.", documentedPlanItemID),
 		"proposedValue": stringSchema("Proposed correction.", "Move due date to Friday."),
 		"comment":       stringSchema("Counterparty comment.", "Waiting on legal."),
-	}, "responseId", "kind"), obj{"responseId": "response:ab12", "kind": "confirm"}), obj{
+	}, "responseId", "kind"), obj{"responseId": documentedPlanResponseID, "kind": "confirm", "comment": ""}), obj{
 		"201": jsonResponse("Recorded response.", freeFormSchema("Response receipt."), nil), "400": responseRef("400"), "404": responseRef("404"),
 	})}
 	paths["/v1/relationship-sources"] = obj{"get": operation("Relationship Intelligence", "List guided source connections", "Returns Google, Slack, and HubSpot capability/scopes plus durable account lifecycle state. No token, secret, or raw cursor is exposed.", "getRelationshipSourceInventory", bearer(), nil, nil, obj{

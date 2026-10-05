@@ -33,6 +33,9 @@ func TestMutualActionPlanBindsAcceptedEvidenceAndExactShareRevision(t *testing.T
 		len(plan.CurrentRevision.Items[0].EvidenceRefs) == 0 {
 		t.Fatalf("unexpected evidence-backed plan: %#v", plan)
 	}
+	if plan.CurrentRevision.Items[0].ItemID != "item:"+row.ID.String() {
+		t.Fatalf("plan item id: %q", plan.CurrentRevision.Items[0].ItemID)
+	}
 	items := append([]MutualActionPlanItem(nil), plan.CurrentRevision.Items...)
 	items[0].Title = "Send the final security packet to owner@example.com"
 	plan, err = f.svc.ReviseMutualActionPlan(f.ctx, f.user, rel.ID, plan.PlanID, items)

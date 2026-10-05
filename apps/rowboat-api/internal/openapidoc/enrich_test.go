@@ -338,6 +338,34 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertPlanResponseRequest(t, spec)
+}
+
+func TestSharedPlanResponseUsesAUUID(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertPlanResponseRequest(t, spec)
+}
+
+func assertPlanResponseRequest(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/public/mutual-action-plan/responses"])["post"])
+	content := asObj(asObj(asObj(operation["requestBody"])["content"])["application/json"])
+	example := asObj(content["example"])
+	if example["kind"] != "confirm" || example["responseId"] != documentedPlanResponseID || example["comment"] != "" {
+		t.Fatalf("plan response example: %#v", example)
+	}
+	props := asObj(asObj(content["schema"])["properties"])
+	responseID := asObj(props["responseId"])
+	if responseID["example"] != documentedPlanResponseID || responseID["format"] != "uuid" {
+		t.Fatalf("response id: %#v", responseID)
+	}
+	if asObj(props["itemId"])["example"] != documentedPlanItemID {
+		t.Fatalf("item id: %#v", props["itemId"])
+	}
+	if responseID["example"] == "response:ab12" || asObj(props["itemId"])["example"] == "item:ab12" {
+		t.Fatal("plan response still shortens an id")
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

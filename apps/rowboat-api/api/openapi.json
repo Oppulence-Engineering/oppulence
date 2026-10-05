@@ -22239,8 +22239,9 @@
           "content": {
             "application/json": {
               "example": {
+                "comment": "",
                 "kind": "confirm",
-                "responseId": "response:ab12"
+                "responseId": "db8dfa9b-a7b2-46ea-982c-622a914c00e5"
               },
               "schema": {
                 "description": "Plan response.",
@@ -22252,7 +22253,7 @@
                   },
                   "itemId": {
                     "description": "Plan item id when applicable.",
-                    "example": "item:ab12",
+                    "example": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
                     "type": "string"
                   },
                   "kind": {
@@ -22268,7 +22269,8 @@
                   },
                   "responseId": {
                     "description": "Counterparty-generated idempotency key.",
-                    "example": "response:ab12",
+                    "example": "db8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "format": "uuid",
                     "type": "string"
                   }
                 },
