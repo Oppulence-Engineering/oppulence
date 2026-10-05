@@ -1935,6 +1935,54 @@ func enrichEntitySchemas(schemas obj) {
 			}
 		}
 	}
+	// The shared scopes note samples invoices:read. These fields store a
+	// different scope, and their endpoints already example that scope.
+	for _, item := range []struct {
+		schema, description string
+		example             []any
+	}{
+		{"GoogleConnectionAccount", "Granted Google OAuth scopes.", []any{"https://www.googleapis.com/auth/gmail.readonly"}},
+		{"OAuthConnection", "Scopes granted on this connection.", []any{"https://www.googleapis.com/auth/gmail.readonly"}},
+		{"OAuthConnectionHistory", "Scopes recorded for this connection.", []any{"https://www.googleapis.com/auth/gmail.readonly"}},
+		{"SlackWorkspace", "Granted bot scopes.", []any{"channels:history", "chat:write"}},
+		{"VoiceAPIKey", "Granted scopes.", []any{"notes:read"}},
+		{"VoiceAPIKeyCreateRequest", "Granted scopes.", []any{"notes:read"}},
+		{"ConnectionConnectedResponse", "Scopes granted by the completed consent flow.", []any{"canvas:invoices.read"}},
+		{"MCPTokenResponse", "Validated minted scope subset.", []any{"canvas:invoices.read"}},
+		{"ConsentAuditRequest", "Shown or granted scope set.", []any{"canvas:invoices.read"}},
+		{"MCPConnection", "Scopes granted for this connector.", []any{"canvas:invoices.read"}},
+		{"MCPConnectionHistory", "Scopes recorded for this connector.", []any{"canvas:invoices.read"}},
+	} {
+		schema := asObj(schemas[item.schema])
+		if schema == nil {
+			continue
+		}
+		properties := asObj(schema["properties"])
+		if properties == nil {
+			continue
+		}
+		scopes := asObj(properties["scopes"])
+		if scopes == nil {
+			continue
+		}
+		scopes["description"] = item.description
+		scopes["example"] = item.example
+	}
+	if pre := asObj(schemas["PreConsentResponse"]); pre != nil {
+		if properties := asObj(pre["properties"]); properties != nil {
+			if scopes := asObj(properties["scopes"]); scopes != nil {
+				scopes["description"] = "Exact catalog scope definitions."
+				scopes["example"] = []any{obj{
+					"name":             "canvas:invoices.read",
+					"display_name":     "Read invoices",
+					"description":      "Read invoice records.",
+					"tier":             "low",
+					"required":         true,
+					"requires_step_up": false,
+				}}
+			}
+		}
+	}
 
 	backgroundPropDocs := map[string]obj{
 		"slug":                 {"description": "Stable per-user background task slug matching bg-tasks/<slug> locally.", "example": "daily-summary"},

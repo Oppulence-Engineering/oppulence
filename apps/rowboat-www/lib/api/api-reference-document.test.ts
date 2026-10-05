@@ -297,6 +297,30 @@ describe("API reference document", () => {
     );
   });
 
+  it("does not sample invoice scopes for a Google account", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const schemas = presented.components.schemas as Record<
+      string,
+      { properties?: Record<string, { example?: unknown; description?: string }> }
+    >;
+    const google = schemas.GoogleConnectionAccount?.properties?.scopes;
+    expect(google?.description).toBe("Granted Google OAuth scopes.");
+    expect(google?.example).toEqual(["https://www.googleapis.com/auth/gmail.readonly"]);
+    expect(schemas.SlackWorkspace?.properties?.scopes?.example).toEqual(["channels:history", "chat:write"]);
+    expect(schemas.VoiceAPIKey?.properties?.scopes?.example).toEqual(["notes:read"]);
+    expect(schemas.MCPTokenResponse?.properties?.scopes?.example).toEqual(["canvas:invoices.read"]);
+    expect(schemas.PreConsentResponse?.properties?.scopes?.example).toEqual([
+      {
+        name: "canvas:invoices.read",
+        display_name: "Read invoices",
+        description: "Read invoice records.",
+        tier: "low",
+        required: true,
+        requires_step_up: false,
+      },
+    ]);
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

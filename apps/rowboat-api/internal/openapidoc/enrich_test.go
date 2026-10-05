@@ -198,8 +198,12 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	spec := obj{
 		"components": obj{
 			"schemas": obj{
-				"CreditLedger": obj{"type": "object", "properties": obj{"delta": obj{"type": "integer"}, "reason": obj{"type": "string"}}},
-				"User":         obj{"type": "object", "properties": obj{"workos_user_id": obj{"type": "string"}}},
+				"CreditLedger":           obj{"type": "object", "properties": obj{"delta": obj{"type": "integer"}, "reason": obj{"type": "string"}}},
+				"User":                   obj{"type": "object", "properties": obj{"workos_user_id": obj{"type": "string"}}},
+				"OAuthConnection":        obj{"type": "object", "properties": obj{"scopes": obj{"type": "array", "items": obj{"type": "string"}}}},
+				"OAuthConnectionHistory": obj{"type": "object", "properties": obj{"scopes": obj{"type": "array", "items": obj{"type": "string"}}}},
+				"MCPConnection":          obj{"type": "object", "properties": obj{"scopes": obj{"type": "array", "items": obj{"type": "string"}}}},
+				"MCPConnectionHistory":   obj{"type": "object", "properties": obj{"scopes": obj{"type": "array", "items": obj{"type": "string"}}}},
 			},
 		},
 	}
@@ -231,6 +235,7 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if delta["description"] == nil || delta["example"] == nil {
 		t.Fatal("CreditLedger.delta should have a detailed description and example")
 	}
+	assertGrantedScopes(t, schemas)
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
@@ -325,6 +330,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if schemas["ConnectorCredentialCleanupJob"] != nil || schemas["ConnectorCredentialRecovery"] != nil {
 		t.Fatal("checked-in openapi json exposes internal credential cleanup or recovery state")
 	}
+	assertGrantedScopes(t, schemas)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -335,6 +341,68 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	entityProperties := asObj(asObj(schemas["EntityProjection"])["properties"])
 	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
+	}
+}
+
+func scopeExamples(value any) []string {
+	items, ok := value.([]any)
+	if !ok {
+		return nil
+	}
+	out := make([]string, 0, len(items))
+	for _, item := range items {
+		text, ok := item.(string)
+		if !ok {
+			return nil
+		}
+		out = append(out, text)
+	}
+	return out
+}
+
+func sameStrings(got, want []string) bool {
+	if len(got) != len(want) {
+		return false
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func assertGrantedScopes(t *testing.T, schemas obj) {
+	t.Helper()
+	want := map[string]struct {
+		description string
+		example     []string
+	}{
+		"GoogleConnectionAccount":     {"Granted Google OAuth scopes.", []string{"https://www.googleapis.com/auth/gmail.readonly"}},
+		"OAuthConnection":             {"Scopes granted on this connection.", []string{"https://www.googleapis.com/auth/gmail.readonly"}},
+		"OAuthConnectionHistory":      {"Scopes recorded for this connection.", []string{"https://www.googleapis.com/auth/gmail.readonly"}},
+		"SlackWorkspace":              {"Granted bot scopes.", []string{"channels:history", "chat:write"}},
+		"VoiceAPIKey":                 {"Granted scopes.", []string{"notes:read"}},
+		"VoiceAPIKeyCreateRequest":    {"Granted scopes.", []string{"notes:read"}},
+		"ConnectionConnectedResponse": {"Scopes granted by the completed consent flow.", []string{"canvas:invoices.read"}},
+		"MCPTokenResponse":            {"Validated minted scope subset.", []string{"canvas:invoices.read"}},
+		"ConsentAuditRequest":         {"Shown or granted scope set.", []string{"canvas:invoices.read"}},
+		"MCPConnection":               {"Scopes granted for this connector.", []string{"canvas:invoices.read"}},
+		"MCPConnectionHistory":        {"Scopes recorded for this connector.", []string{"canvas:invoices.read"}},
+	}
+	for name, item := range want {
+		scopes := asObj(asObj(asObj(schemas[name])["properties"])["scopes"])
+		if scopes["description"] != item.description || !sameStrings(scopeExamples(scopes["example"]), item.example) {
+			t.Fatalf("%s.scopes sampled invoice scopes: %#v", name, scopes)
+		}
+	}
+	pre := asObj(asObj(asObj(schemas["PreConsentResponse"])["properties"])["scopes"])
+	if pre["description"] != "Exact catalog scope definitions." {
+		t.Fatalf("PreConsentResponse.scopes description: %#v", pre)
+	}
+	examples, _ := pre["example"].([]any)
+	if len(examples) != 1 || asObj(examples[0])["name"] != "canvas:invoices.read" {
+		t.Fatalf("PreConsentResponse.scopes sampled strings: %#v", pre["example"])
 	}
 }
 
