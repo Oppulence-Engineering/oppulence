@@ -711,6 +711,12 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 // is the same filters with Offset set to how many rows are already on screen.
 const relationshipListLimit = 200
 
+// promiseRegisterPage is the promise list the commitment register asks for.
+// The button is "Show the next promises" on What we owe when another open
+// promise we made sits past that page. A candidate and a disputed promise
+// stay out of that list.
+const promiseRegisterPage = 200
+
 // ListRelationships returns the workspace's relationships, most recent
 // interaction first. A company with no interaction follows those, newest
 // edit first. Each row includes its open queue actions so the caller can
@@ -806,6 +812,11 @@ func (s *Service) ListRelationshipsFiltered(
 			))
 		}
 		needle := normalizePersonSearch(value)
+		// What we owe prints "Show the next promises" when another open promise
+		// we made sits past the first page. A full page of 200 is the whole list.
+		if labelPhraseMatches("show the next promises", needle) {
+			parts = append(parts, relationshipHasAnotherPromisePage())
+		}
 		if labelPhraseMatches("no activity", needle) {
 			parts = append(parts, relationship.LastTouchAtIsNil())
 		}
@@ -5155,6 +5166,40 @@ func writeDependentSource(b *sql.Builder, s *sql.Selector, alias string) {
 // that still contains that sentence. A word from the middle is not the
 // sentence. "email" sits inside both "1 email thread" and "email threads",
 // and treating it as both used to return every company.
+// relationshipHasAnotherPromisePage is the What we owe button. The count is
+// every open promise this workspace made, except a candidate and a dispute.
+// A promise they made is a different view.
+func relationshipHasAnotherPromisePage() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(commitment.Table)
+			b.WriteString(" AS directory WHERE directory.")
+			b.WriteString(commitment.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND directory.")
+			b.WriteString(commitment.FieldDirection)
+			b.WriteString(" = ")
+			b.Arg("promised_by_me")
+			b.WriteString(" AND directory.")
+			b.WriteString(commitment.FieldStatus)
+			b.WriteString(" = ")
+			b.Arg("open")
+			b.WriteString(" AND directory.")
+			b.WriteString(commitment.FieldAcceptance)
+			b.WriteString(" <> ")
+			b.Arg("candidate")
+			b.WriteString(" AND directory.")
+			b.WriteString(commitment.FieldAcceptance)
+			b.WriteString(" <> ")
+			b.Arg("disputed")
+			b.WriteString(") > ")
+			b.Arg(promiseRegisterPage)
+		}))
+	})
+}
+
 func labelPhraseMatches(phrase, needle string) bool {
 	phrase = normalizePersonSearch(phrase)
 	needle = normalizePersonSearch(needle)
