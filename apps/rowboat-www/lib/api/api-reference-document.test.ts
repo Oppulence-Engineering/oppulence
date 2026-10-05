@@ -162,6 +162,21 @@ describe("API reference document", () => {
     expect(schema.description).toBe(
       "Mapping between the Oppulence workspace and the canonical sending workspace. Local mode has no link.",
     );
+    const linked = presentApiReferenceDocument({
+      components: {
+        schemas: {
+          RevenueWorkspace: {
+            description:
+              "Mapping between the Oppulence workspace and the canonical sending workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.",
+          },
+        },
+      },
+    });
+    const sending = linked.components.schemas.RevenueWorkspace.description;
+    expect(sending).toBe(
+      "Mapping between the Oppulence workspace and the sending workspace. Without a link, sending stays off. A draft can land only after Gmail is connected.",
+    );
+    expect(sending).not.toContain("drafts still work");
     expect(schema.properties.outboundOrganizationId.description).toBe("Sending organization id.");
     expect(schema.properties.outboundWorkspaceId.description).toBe("Sending workspace id.");
     expect(schema.properties.completedAt.description).toBe(
