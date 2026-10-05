@@ -302,4 +302,17 @@ describe("API reference document", () => {
     expect(page).toContain("The API reference could not be loaded.");
     expect(page).not.toContain("unpkg.com");
   });
+
+  it("does not call a participant the signed-in person's email", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const participant = presented.components.schemas.RelationshipParticipant.properties.email;
+    expect(participant.description).toBe("Normalized email.");
+    expect(participant.example).toBe("avery@acme.com");
+    const message = presented.components.schemas.CommunicationParticipant.properties.email;
+    expect(message.description).toBe("Address of someone on this message.");
+    expect(message.example).toBe("avery@acme.com");
+    const user = presented.components.schemas.User.properties.email;
+    expect(user.description).toBe("Best-known WorkOS primary email for the user.");
+    expect(user.example).toBe("user@example.com");
+  });
 });

@@ -198,8 +198,9 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	spec := obj{
 		"components": obj{
 			"schemas": obj{
-				"CreditLedger": obj{"type": "object", "properties": obj{"delta": obj{"type": "integer"}, "reason": obj{"type": "string"}}},
-				"User":         obj{"type": "object", "properties": obj{"workos_user_id": obj{"type": "string"}}},
+				"CreditLedger":             obj{"type": "object", "properties": obj{"delta": obj{"type": "integer"}, "reason": obj{"type": "string"}}},
+				"User":                     obj{"type": "object", "properties": obj{"workos_user_id": obj{"type": "string"}, "email": obj{"type": "string"}}},
+				"CommunicationParticipant": obj{"type": "object", "properties": obj{"email": obj{"type": "string"}}},
 			},
 		},
 	}
@@ -230,6 +231,18 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	delta := asObj(asObj(creditLedger["properties"])["delta"])
 	if delta["description"] == nil || delta["example"] == nil {
 		t.Fatal("CreditLedger.delta should have a detailed description and example")
+	}
+	participantEmail := asObj(asObj(asObj(schemas["RelationshipParticipant"])["properties"])["email"])
+	if participantEmail["description"] != "Normalized email." || participantEmail["example"] != "avery@acme.com" {
+		t.Fatalf("RelationshipParticipant.email was rewritten as the signed-in user: %#v", participantEmail)
+	}
+	messageEmail := asObj(asObj(asObj(schemas["CommunicationParticipant"])["properties"])["email"])
+	if messageEmail["description"] != "Address of someone on this message." || messageEmail["example"] != "avery@acme.com" {
+		t.Fatalf("CommunicationParticipant.email was rewritten as the signed-in user: %#v", messageEmail)
+	}
+	userEmail := asObj(asObj(asObj(schemas["User"])["properties"])["email"])
+	if userEmail["description"] != "Best-known WorkOS primary email for the user." || userEmail["example"] != "user@example.com" {
+		t.Fatalf("User.email lost the signed-in address: %#v", userEmail)
 	}
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
@@ -328,6 +341,17 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
+	}
+	participantEmail := asObj(asObj(asObj(schemas["RelationshipParticipant"])["properties"])["email"])
+	if participantEmail["example"] != "avery@acme.com" || participantEmail["description"] != "Normalized email." {
+		t.Fatalf("checked-in RelationshipParticipant.email is the signed-in user: %#v", participantEmail)
+	}
+	messageEmail := asObj(asObj(asObj(schemas["CommunicationParticipant"])["properties"])["email"])
+	if messageEmail["example"] != "avery@acme.com" || messageEmail["description"] != "Address of someone on this message." {
+		t.Fatalf("checked-in CommunicationParticipant.email is the signed-in user: %#v", messageEmail)
+	}
+	if userEmail := asObj(asObj(asObj(schemas["User"])["properties"])["email"]); userEmail["example"] != "user@example.com" {
+		t.Fatalf("checked-in User.email lost the signed-in address: %#v", userEmail)
 	}
 	if value := asObj(evidenceProperties["value"]); value["oneOf"] == nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.value is invalid: %#v", value)

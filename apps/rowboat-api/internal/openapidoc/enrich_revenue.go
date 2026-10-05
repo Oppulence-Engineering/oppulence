@@ -632,17 +632,32 @@ func addRevenueSchemas(schemas obj) {
 // overlay. Runtime schemas may reuse names such as status and reason with
 // domain-specific semantics, so their contract must win over entity defaults.
 func restoreRevenueSchemaOverrides(schemas obj) {
-	evidence := asObj(schemas["MissionControlDimensionEvidence"])
-	if evidence == nil {
-		return
+	if evidence := asObj(schemas["MissionControlDimensionEvidence"]); evidence != nil {
+		properties := asObj(evidence["properties"])
+		if properties != nil {
+			properties["reason"] = stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won.")
+			properties["status"] = stringEnum(
+				"Assertion lifecycle state.",
+				"accepted",
+				"proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active",
+			)
+		}
 	}
-	properties := asObj(evidence["properties"])
-	properties["reason"] = stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won.")
-	properties["status"] = stringEnum(
-		"Assertion lifecycle state.",
-		"accepted",
-		"proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active",
-	)
+	// The generic overlay calls every email the signed-in person's WorkOS address.
+	// These rows are someone on a relationship or a message.
+	setEmail := func(name string, description, example string) {
+		schema := asObj(schemas[name])
+		if schema == nil {
+			return
+		}
+		properties := asObj(schema["properties"])
+		if properties == nil || properties["email"] == nil {
+			return
+		}
+		properties["email"] = stringSchema(description, example)
+	}
+	setEmail("RelationshipParticipant", "Normalized email.", "avery@acme.com")
+	setEmail("CommunicationParticipant", "Address of someone on this message.", "avery@acme.com")
 }
 
 func addRevenuePaths(paths obj) {
