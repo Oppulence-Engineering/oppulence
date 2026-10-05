@@ -1677,6 +1677,42 @@ export function sourceListedOnConnectionsPage(source: string): boolean {
   return source === "google" || source === "hubspot";
 }
 
+const READABLE_SOURCE_STATUSES = new Set([
+  "connected",
+  "backfilling",
+  "live",
+  "stale",
+  "rebuilding",
+  "degraded",
+]);
+
+/**
+ * A saved Google observation can mark a synthetic default account as live
+ * without a grant. Resync cannot read that row. A named account, or any
+ * account that was granted a scope, can.
+ */
+export function googleAccountCanBeRead(account: {
+  status: string;
+  missingScopes?: readonly string[];
+  sourceAccountId?: string;
+  grantedScopes?: readonly string[];
+}): boolean {
+  if (!READABLE_SOURCE_STATUSES.has(account.status) || (account.missingScopes?.length ?? 0) > 0) {
+    return false;
+  }
+  const accountID = account.sourceAccountId?.trim() ?? "";
+  const granted = account.grantedScopes ?? [];
+  if ((accountID === "" || accountID === "default") && granted.length === 0) return false;
+  return true;
+}
+
+function sourceCardAccount(item: RelationshipSourceInventoryItem) {
+  const account = item.accounts[0];
+  if (!account) return undefined;
+  if (item.source === "google" && !googleAccountCanBeRead(account)) return undefined;
+  return account;
+}
+
 function SourceConnectionCards({
   inventory,
   onOpenConnectors,
@@ -1727,7 +1763,7 @@ function SourceConnectionCards({
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
         {needsAttention.map((item) => {
-          const account = item.accounts[0];
+          const account = sourceCardAccount(item);
           const copy = sourceProductCopy(item.source, item.scopeExplanation);
           const progress =
             account && account.backfillTotal > 0
