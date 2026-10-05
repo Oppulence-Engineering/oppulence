@@ -8589,7 +8589,7 @@
           },
           "stateHash": {
             "description": "Stable state hash.",
-            "example": "sha256:ab12",
+            "example": "sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1",
             "type": "string"
           },
           "stateVersion": {
@@ -12094,7 +12094,7 @@
           },
           "stateHash": {
             "description": "Stable hash of canonical state and winning assertions.",
-            "example": "sha256:ab12cd34",
+            "example": "sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1",
             "type": "string"
           },
           "version": {
@@ -13419,7 +13419,7 @@
           },
           "stateHash": {
             "description": "Stable hash of canonical projected values and winning assertions.",
-            "example": "sha256:ab12cd34",
+            "example": "sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1",
             "type": "string"
           },
           "stateReason": {
@@ -23859,7 +23859,7 @@
           "content": {
             "application/json": {
               "example": {
-                "stateHash": "sha256:ab12",
+                "stateHash": "sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1",
                 "stateVersion": 4
               },
               "schema": {
@@ -23867,7 +23867,7 @@
                 "properties": {
                   "stateHash": {
                     "description": "Reviewed state hash.",
-                    "example": "sha256:ab12",
+                    "example": "sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1",
                     "type": "string"
                   },
                   "stateVersion": {
@@ -23905,7 +23905,7 @@
                     },
                     "stateHash": {
                       "description": "Reviewed hash.",
-                      "example": "sha256:ab12",
+                      "example": "sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1",
                       "type": "string"
                     },
                     "stateVersion": {

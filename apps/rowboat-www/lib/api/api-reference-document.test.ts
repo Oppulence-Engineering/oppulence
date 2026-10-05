@@ -315,6 +315,27 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the hash a relationship acknowledgement must match", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const stateHash =
+      "sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1";
+    expect(presented.components.schemas.RevenueRelationship.properties.stateHash.example).toBe(stateHash);
+    expect(presented.components.schemas.RelationshipStateSnapshot.properties.stateHash.example).toBe(stateHash);
+    expect(presented.components.schemas.MissionControlReadModel.properties.stateHash.example).toBe(stateHash);
+    expect(presented.components.schemas.MissionControlReadModel.properties.aggregateHash.example).toBe(
+      "sha256:cd34",
+    );
+    const acknowledgement =
+      presented.paths["/v1/relationships/{relationshipId}/acknowledgements"].post;
+    expect(acknowledgement.requestBody.content["application/json"].example.stateHash).toBe(stateHash);
+    expect(acknowledgement.requestBody.content["application/json"].schema.properties.stateHash.example).toBe(
+      stateHash,
+    );
+    expect(acknowledgement.responses["201"].content["application/json"].schema.properties.stateHash.example).toBe(
+      stateHash,
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

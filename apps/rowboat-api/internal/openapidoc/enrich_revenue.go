@@ -4,6 +4,11 @@ package openapidoc
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
 
+// documentedRelationshipStateHash is the projector digest of the
+// RevenueRelationship sample: projector version 2 and no winning assertions.
+// A review acknowledgement is stored only when this value matches.
+const documentedRelationshipStateHash = "sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1"
+
 func addRevenueSchemas(schemas obj) {
 	schemas["RevenueWorkspace"] = objectSchema("Mapping between the Rowboat tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.", obj{
 		"id":                     uuidSchema("Workspace id.", "0b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
@@ -36,7 +41,7 @@ func addRevenueSchemas(schemas obj) {
 		"health":                stringEnum("Explainable health state; never a magic score.", "needs_attention", "unknown", "healthy", "needs_attention", "critical"),
 		"stateReason":           stringSchema("Evidence-backed explanation of the projected state.", "Security review was promised, but no owner or meeting exists."),
 		"stateVersion":          intSchema("Monotonic projection version.", 4),
-		"stateHash":             stringSchema("Stable hash of canonical projected values and winning assertions.", "sha256:ab12cd34"),
+		"stateHash":             stringSchema("Stable hash of canonical projected values and winning assertions.", documentedRelationshipStateHash),
 		"projectorVersion":      intSchema("Deterministic projector version.", 2),
 		"projectedAt":           stringSchema("Explicit evaluation time used by the projector.", "2026-07-25T16:00:00Z", obj{"format": "date-time"}, nullable()),
 		"lastChangedAt":         stringSchema("Last material state change.", "2026-07-25T16:00:00Z", obj{"format": "date-time"}, nullable()),
@@ -144,7 +149,7 @@ func addRevenueSchemas(schemas obj) {
 		"id":                uuidSchema("Snapshot id.", "5b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"version":           intSchema("Relationship state version.", 4),
 		"state":             freeFormSchema("Projected state at this version."),
-		"stateHash":         stringSchema("Stable hash of canonical state and winning assertions.", "sha256:ab12cd34"),
+		"stateHash":         stringSchema("Stable hash of canonical state and winning assertions.", documentedRelationshipStateHash),
 		"projectorVersion":  intSchema("Projector version used for this snapshot.", 1),
 		"evaluatedAt":       stringSchema("Explicit evaluation time used by the projector.", "2026-07-25T16:00:00Z", obj{"format": "date-time"}),
 		"changedDimensions": arraySchema("Material dimensions that changed.", stringSchema("Dimension.", "health")),
@@ -274,7 +279,7 @@ func addRevenueSchemas(schemas obj) {
 
 	schemas["MissionControlReadModel"] = objectSchema("One server-owned, version-consistent answer to state, change, evidence, action, completeness, and control.", obj{
 		"contractVersion": stringSchema("Read-contract version.", "tfa-r1.1-2026-08-26"), "aggregateHash": stringSchema("Stable hash of every material answer in this aggregate.", "sha256:cd34"), "asOf": stringSchema("Explicit response boundary.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
-		"stateVersion": intSchema("Relationship state version.", 4), "stateHash": stringSchema("Stable state hash.", "sha256:ab12"), "projectorVersion": intSchema("Projector version.", 1), "detectorVersion": intSchema("Detector version.", 1),
+		"stateVersion": intSchema("Relationship state version.", 4), "stateHash": stringSchema("Stable state hash.", documentedRelationshipStateHash), "projectorVersion": intSchema("Projector version.", 1), "detectorVersion": intSchema("Detector version.", 1),
 		"freshnessBoundary": stringSchema("Earliest source freshness boundary.", "2026-07-31T14:30:00Z", obj{"format": "date-time"}, nullable()), "previousReviewedStateVersion": intSchema("Last acknowledged version.", 3), "changedSinceReview": boolSchema("Whether material state changed.", true),
 		"changes": arraySchema("Dimension-level changes.", freeFormSchema("Mission Control change.")), "evidence": obj{"type": "object", "description": "Dimension-keyed winning typed assertions and evidence references.", "additionalProperties": ref("MissionControlDimensionEvidence")},
 		"completeness": freeFormSchema("Source coverage, missing dimensions, ambiguity, and external-action safety."), "activeRecommendation": freeFormSchema("Active revision-bound recommendation and factors."),
@@ -873,9 +878,9 @@ func addRevenuePaths(paths obj) {
 		"404": responseRef("404"),
 	})}
 	paths["/v1/relationships/{relationshipId}/acknowledgements"] = obj{"post": operation("Relationship Intelligence", "Acknowledge Mission Control state", "Records the exact state version and hash the actor reviewed. A stale acknowledgement fails with 409.", "acknowledgeMissionControl", bearer(), relationshipParam, jsonRequest("Review boundary.", objectSchema("Mission Control acknowledgement.", obj{
-		"stateVersion": intSchema("Reviewed state version.", 4), "stateHash": stringSchema("Reviewed state hash.", "sha256:ab12"),
-	}, "stateVersion", "stateHash"), obj{"stateVersion": 4, "stateHash": "sha256:ab12"}), obj{
-		"201": jsonResponse("Acknowledgement.", objectSchema("Mission Control acknowledgement result.", obj{"id": uuidSchema("Acknowledgement id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "stateVersion": intSchema("Reviewed state version.", 4), "stateHash": stringSchema("Reviewed hash.", "sha256:ab12"), "acknowledgedAt": stringSchema("Review time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"})}, "id", "stateVersion", "stateHash", "acknowledgedAt"), nil),
+		"stateVersion": intSchema("Reviewed state version.", 4), "stateHash": stringSchema("Reviewed state hash.", documentedRelationshipStateHash),
+	}, "stateVersion", "stateHash"), obj{"stateVersion": 4, "stateHash": documentedRelationshipStateHash}), obj{
+		"201": jsonResponse("Acknowledgement.", objectSchema("Mission Control acknowledgement result.", obj{"id": uuidSchema("Acknowledgement id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "stateVersion": intSchema("Reviewed state version.", 4), "stateHash": stringSchema("Reviewed hash.", documentedRelationshipStateHash), "acknowledgedAt": stringSchema("Review time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"})}, "id", "stateVersion", "stateHash", "acknowledgedAt"), nil),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
 	paths["/v1/relationships/{relationshipId}/evidence/{evidenceId}"] = obj{"get": operation("Relationship Intelligence", "Open source evidence", "Returns one observation plus its decrypted raw payload. Tenant ownership is enforced before decryption.", "getRelationshipEvidence", bearer(), append(relationshipParam, obj{"name": "evidenceId", "in": "path", "required": true, "description": "Observation id.", "schema": obj{"type": "string", "format": "uuid"}}), nil, obj{
