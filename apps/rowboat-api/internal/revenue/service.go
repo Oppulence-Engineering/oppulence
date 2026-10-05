@@ -18,6 +18,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
@@ -711,6 +712,11 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 // is the same filters with Offset set to how many rows are already on screen.
 const relationshipListLimit = 200
 
+// noteFavoritePage is the favorite list the notes page asks for. The button
+// is "Show the next favorites" when another favorite this person saved sits
+// past that page. A template is a different list.
+const noteFavoritePage = 100
+
 // ListRelationships returns the workspace's relationships, most recent
 // interaction first. A company with no interaction follows those, newest
 // edit first. Each row includes its open queue actions so the caller can
@@ -806,6 +812,9 @@ func (s *Service) ListRelationshipsFiltered(
 			))
 		}
 		needle := normalizePersonSearch(value)
+		if labelPhraseMatches("show the next favorites", needle) {
+			parts = append(parts, relationshipHasAnotherFavoritePage(u.ID))
+		}
 		if labelPhraseMatches("no activity", needle) {
 			parts = append(parts, relationship.LastTouchAtIsNil())
 		}
@@ -5149,6 +5158,32 @@ func writeDependentSource(b *sql.Builder, s *sql.Selector, alias string) {
 	b.WriteString(") IN ('hubspot', 'crm') AND ")
 	writeRelationshipDependsOn(b, s, []string{"hubspot", "crm"}, []string{"hubspot", "crm", "crm_task", "task"})
 	b.WriteString("))")
+}
+
+// relationshipHasAnotherFavoritePage is true when this person has another
+// page of note favorites in the same workspace. The notes page prints
+// "Show the next favorites" in that case.
+func relationshipHasAnotherFavoritePage(userID uuid.UUID) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(consoleresource.Table)
+			b.WriteString(" AS directory WHERE directory.")
+			b.WriteString(consoleresource.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND directory.")
+			b.WriteString(consoleresource.UserColumn)
+			b.WriteString(" = ")
+			b.Arg(userID.String())
+			b.WriteString(" AND directory.")
+			b.WriteString(consoleresource.FieldKind)
+			b.WriteString(" = ")
+			b.Arg("note_favorite")
+			b.WriteString(") > ")
+			b.Arg(noteFavoritePage)
+		}))
+	})
 }
 
 // labelPhraseMatches is the sentence on the company row, or a longer question

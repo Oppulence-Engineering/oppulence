@@ -16,9 +16,11 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 )
 
@@ -1232,6 +1234,148 @@ func TestRelationshipSearchFindsTheAttentionBadge(t *testing.T) {
 	assertCompanyQuery("At risk promise", "Harbor Soon")
 	assertCompanyQuery("Watch", "Harbor Glance")
 	assertCompanyQuery("Stable", "Harbor Calm")
+}
+
+func TestRelationshipSearchFindsNextFavorites(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill North",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Slide",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	stamp := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	for i := 1; i <= noteFavoritePage; i++ {
+		noteID := fmt.Sprintf("leaf-%03d", i)
+		if _, err := f.client.ConsoleResource.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("43000001-0000-4000-8000-%012x", i))).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetKind("note_favorite").
+			SetNoteID(noteID).
+			SetPayloadJSON(fmt.Sprintf(`{"noteId":%q}`, noteID)).
+			SetSortOrder(0).
+			SetCreatedAt(stamp).
+			SetUpdatedAt(stamp).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.client.ConsoleResource.Create().
+		SetID(uuid.MustParse("43000001-0000-4000-8000-0000000000c8")).
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetKind("note_template").
+		SetName("Directory Leaf").
+		SetNameKey("directory leaf").
+		SetPayloadJSON(`{"title":"Directory Leaf","body":"note"}`).
+		SetSortOrder(0).
+		SetCreatedAt(stamp).
+		SetUpdatedAt(stamp).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	other := newUser(t, f.client, "other-fav@x.co", "user_other_fav")
+	if _, err := f.client.ConsoleResource.Create().
+		SetID(uuid.MustParse("43000001-0000-4000-8000-0000000000c9")).
+		SetWorkspace(ws).
+		SetUser(other).
+		SetKind("note_favorite").
+		SetNoteID("other-leaf").
+		SetPayloadJSON(`{"noteId":"other-leaf"}`).
+		SetSortOrder(0).
+		SetCreatedAt(stamp).
+		SetUpdatedAt(stamp).
+		Save(auth.WithInternal(context.Background())); err != nil {
+		t.Fatal(err)
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	favoriteNotes := func(offset, limit int) []string {
+		t.Helper()
+		rows, err := f.client.ConsoleResource.Query().
+			Where(
+				consoleresource.KindEQ("note_favorite"),
+				consoleresource.HasUserWith(user.IDEQ(f.user.ID)),
+			).
+			Order(
+				ent.Asc(consoleresource.FieldSortOrder),
+				ent.Desc(consoleresource.FieldCreatedAt),
+				ent.Asc(consoleresource.FieldID),
+			).
+			Limit(limit).
+			Offset(offset).
+			All(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		notes := make([]string, 0, len(rows))
+		for _, row := range rows {
+			if row.NoteID == nil {
+				t.Fatal("favorite is missing a note")
+			}
+			notes = append(notes, *row.NoteID)
+		}
+		return notes
+	}
+	for _, query := range []string{
+		"Show the next favorites",
+		"show", "next", "favorite", "favorites", "the next", "show the next",
+		"Show the next favorite",
+	} {
+		assertCompanyQuery(query)
+	}
+	if _, err := f.client.ConsoleResource.Create().
+		SetID(uuid.MustParse("43000001-0000-4000-8000-000000000065")).
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetKind("note_favorite").
+		SetNoteID("past-leaf").
+		SetPayloadJSON(`{"noteId":"past-leaf"}`).
+		SetSortOrder(0).
+		SetCreatedAt(stamp.Add(-time.Hour)).
+		SetUpdatedAt(stamp).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	assertCompanyQuery("Show the next favorites", "Quill North", "Cedar Slide")
+	assertCompanyQuery("Please show the next favorites now", "Quill North", "Cedar Slide")
+	assertCompanyQuery("Show the next favorite")
+	first := favoriteNotes(0, noteFavoritePage+1)
+	if len(first) != noteFavoritePage+1 || first[len(first)-1] != "past-leaf" {
+		t.Fatalf("favorite order tail = %v", first[len(first)-10:])
+	}
+	for _, noteID := range first[:noteFavoritePage] {
+		if noteID == "past-leaf" {
+			t.Fatal("the older favorite was on the first page")
+		}
+	}
+	rest := favoriteNotes(noteFavoritePage, noteFavoritePage)
+	if len(rest) != 1 || rest[0] != "past-leaf" {
+		t.Fatalf("next favorite page = %v", rest)
+	}
 }
 
 func TestRelationshipSearchFindsThePeopleOnTheCompany(t *testing.T) {
