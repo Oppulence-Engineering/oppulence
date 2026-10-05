@@ -822,6 +822,13 @@ func (s *Service) ListRelationshipsFiltered(
 				relationshipCategoriesBlank(),
 			))
 		}
+		// The Sources panel prints one of these two sentences for every
+		// company while public research is not configured. A person is not
+		// in that list. A shorter fragment of either sentence is not the
+		// sentence the panel is showing.
+		if research := s.publicResearchCompanyMatch(ctx, u, needle); research != nil {
+			parts = append(parts, research)
+		}
 		// A blank name with no domain is "Unknown company" on the row. A blank
 		// name that still has a domain uses that host's title instead.
 		if sheetPhraseMatches("unknown company", needle) {
@@ -5149,6 +5156,33 @@ func writeDependentSource(b *sql.Builder, s *sql.Selector, alias string) {
 	b.WriteString(") IN ('hubspot', 'crm') AND ")
 	writeRelationshipDependsOn(b, s, []string{"hubspot", "crm"}, []string{"hubspot", "crm", "crm_task", "task"})
 	b.WriteString("))")
+}
+
+// publicResearchCompanyMatch finds every company when the Sources panel is
+// showing that exact research sentence. The panel is workspace-wide: the
+// plan gate decides the sentence, and the company list is who it describes.
+// Configuring the vendor changes the sentence, so those searches stay empty.
+func (s *Service) publicResearchCompanyMatch(ctx context.Context, u *ent.User, needle string) predicate.Relationship {
+	intelligence := labelPhraseMatches(
+		"Public research is part of the Intelligence plan. This workspace does not include it.",
+		needle,
+	)
+	unavailable := labelPhraseMatches(
+		"Public research is not available in this workspace.",
+		needle,
+	)
+	if !intelligence && !unavailable {
+		return nil
+	}
+	if s.ResearchAvailable() {
+		return nil
+	}
+	err := s.CloudResearchAdmission(ctx, u)
+	showsIntelligencePlan := errors.Is(err, ErrResearchPlanRequired)
+	if (showsIntelligencePlan && intelligence) || (!showsIntelligencePlan && unavailable) {
+		return relationship.KindEQ("company")
+	}
+	return nil
 }
 
 // labelPhraseMatches is the sentence on the company row, or a longer question

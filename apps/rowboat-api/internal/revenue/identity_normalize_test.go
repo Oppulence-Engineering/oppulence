@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
@@ -20,6 +21,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/parallel"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
 )
 
 func TestNormalizeEmailKeepsTheAddress(t *testing.T) {
@@ -3459,6 +3462,85 @@ func TestRelationshipSearchFindsTheChosenContradictionValue(t *testing.T) {
 	assertCompanyQuery("you chose")
 	assertCompanyQuery("a note")
 	assertCompanyQuery("gmail")
+}
+
+func TestRelationshipSearchFindsTheIntelligencePlanSentence(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	save := func(kind, name string) {
+		t.Helper()
+		if _, err := f.client.Relationship.Create().
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetKind(kind).
+			SetDisplayName(name).
+			SetResourceRefs([]string{}).
+			SetRisks([]string{}).
+			SetMilestones([]string{}).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save("company", "Quill North")
+	save("company", "Cedar Slide")
+	save("person", "Harbor Leaf")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	intelligence := "Public research is part of the Intelligence plan. This workspace does not include it."
+	unavailable := "Public research is not available in this workspace."
+	assertCompanyQuery(intelligence, "Quill North", "Cedar Slide")
+	assertCompanyQuery("Please find "+intelligence, "Quill North", "Cedar Slide")
+	assertCompanyQuery(unavailable)
+	assertCompanyQuery("public research")
+	assertCompanyQuery("intelligence plan")
+	assertCompanyQuery("does not include")
+
+	f.svc.SetResearch(ResearchConfig{
+		Client: parallel.New(parallel.Config{APIKey: "test-key"}),
+		Gate:   quota.New(f.client, zap.NewNop()),
+	})
+	assertCompanyQuery(intelligence)
+	assertCompanyQuery(unavailable)
+	f.svc.SetResearch(ResearchConfig{})
+
+	if _, err := f.svc.SetWorkspaceFeatureControl(
+		f.ctx, f.user, CapabilityCloudResearch, false, "beta", "vendor_incident",
+	); err != nil {
+		t.Fatal(err)
+	}
+	assertCompanyQuery(intelligence)
+	assertCompanyQuery(unavailable, "Quill North", "Cedar Slide")
+	assertCompanyQuery("Please find "+unavailable, "Quill North", "Cedar Slide")
+
+	enableCloudResearch(t, f)
+	grantSub(t, f, ResearchPlan, "active")
+	assertCompanyQuery(intelligence)
+	assertCompanyQuery(unavailable, "Quill North", "Cedar Slide")
+
+	f.svc.SetResearch(ResearchConfig{
+		Client: parallel.New(parallel.Config{APIKey: "test-key"}),
+		Gate:   quota.New(f.client, zap.NewNop()),
+	})
+	assertCompanyQuery(intelligence)
+	assertCompanyQuery(unavailable)
 }
 
 func TestRelationshipSearchFindsSuggestionTitles(t *testing.T) {
