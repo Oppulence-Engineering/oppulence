@@ -884,7 +884,7 @@
             "type": "string"
           },
           "cost_units": {
-            "description": "Settled credit cost for the request.",
+            "description": "Credits used across this session.",
             "example": 8,
             "type": "integer"
           },
@@ -1214,7 +1214,7 @@
             "type": "string"
           },
           "cost_units": {
-            "description": "Settled credit cost for the request.",
+            "description": "Credits used during this turn.",
             "example": 8,
             "type": "integer"
           },

@@ -1935,6 +1935,29 @@ func enrichEntitySchemas(schemas obj) {
 			}
 		}
 	}
+	// The shared cost note is one metered model call. A session and a turn
+	// accumulate credits across every call they contain.
+	for _, restore := range []struct {
+		schema, description string
+	}{
+		{"AgentSession", "Credits used across this session."},
+		{"AgentTurn", "Credits used during this turn."},
+	} {
+		record := asObj(schemas[restore.schema])
+		if record == nil {
+			continue
+		}
+		properties := asObj(record["properties"])
+		if properties == nil {
+			continue
+		}
+		cost := asObj(properties["cost_units"])
+		if cost == nil {
+			continue
+		}
+		cost["description"] = restore.description
+		cost["example"] = 8
+	}
 
 	backgroundPropDocs := map[string]obj{
 		"slug":                 {"description": "Stable per-user background task slug matching bg-tasks/<slug> locally.", "example": "daily-summary"},

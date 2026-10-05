@@ -297,6 +297,24 @@ describe("API reference document", () => {
     );
   });
 
+  it("does not describe a session total as one model request", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const schemas = presented.components.schemas as Record<
+      string,
+      { properties?: Record<string, { example?: unknown; description?: string }> }
+    >;
+    expect(schemas.AgentSession?.properties?.cost_units?.description).toBe(
+      "Credits used across this session.",
+    );
+    expect(schemas.AgentSession?.properties?.cost_units?.example).toBe(8);
+    expect(schemas.AgentTurn?.properties?.cost_units?.description).toBe(
+      "Credits used during this turn.",
+    );
+    expect(schemas.LLMUsage?.properties?.cost_units?.description).toBe(
+      "Settled credit cost for the request.",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

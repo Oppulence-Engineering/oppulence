@@ -198,8 +198,12 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	spec := obj{
 		"components": obj{
 			"schemas": obj{
-				"CreditLedger": obj{"type": "object", "properties": obj{"delta": obj{"type": "integer"}, "reason": obj{"type": "string"}}},
-				"User":         obj{"type": "object", "properties": obj{"workos_user_id": obj{"type": "string"}}},
+				"CreditLedger":    obj{"type": "object", "properties": obj{"delta": obj{"type": "integer"}, "reason": obj{"type": "string"}}},
+				"User":            obj{"type": "object", "properties": obj{"workos_user_id": obj{"type": "string"}}},
+				"AgentSession":    obj{"type": "object", "properties": obj{"cost_units": obj{"type": "integer"}}},
+				"AgentTurn":       obj{"type": "object", "properties": obj{"cost_units": obj{"type": "integer"}}},
+				"LLMUsage":        obj{"type": "object", "properties": obj{"cost_units": obj{"type": "integer"}}},
+				"LLMUsageHistory": obj{"type": "object", "properties": obj{"cost_units": obj{"type": "integer"}}},
 			},
 		},
 	}
@@ -231,6 +235,7 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if delta["description"] == nil || delta["example"] == nil {
 		t.Fatal("CreditLedger.delta should have a detailed description and example")
 	}
+	assertSessionCost(t, schemas)
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
@@ -325,6 +330,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if schemas["ConnectorCredentialCleanupJob"] != nil || schemas["ConnectorCredentialRecovery"] != nil {
 		t.Fatal("checked-in openapi json exposes internal credential cleanup or recovery state")
 	}
+	assertSessionCost(t, schemas)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -335,6 +341,48 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	entityProperties := asObj(asObj(schemas["EntityProjection"])["properties"])
 	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
+	}
+}
+
+func assertSessionCost(t *testing.T, schemas obj) {
+	t.Helper()
+	sessionCost := asObj(asObj(asObj(schemas["AgentSession"])["properties"])["cost_units"])
+	if sessionCost["description"] != "Credits used across this session." || !sameNumber(sessionCost["example"], 8) {
+		t.Fatalf("AgentSession.cost_units sampled a single request: %#v", sessionCost)
+	}
+	turnCost := asObj(asObj(asObj(schemas["AgentTurn"])["properties"])["cost_units"])
+	if turnCost["description"] != "Credits used during this turn." || !sameNumber(turnCost["example"], 8) {
+		t.Fatalf("AgentTurn.cost_units sampled a single request: %#v", turnCost)
+	}
+	for _, name := range []string{"LLMUsage", "LLMUsageHistory"} {
+		record := asObj(schemas[name])
+		if record == nil {
+			continue
+		}
+		properties := asObj(record["properties"])
+		if properties == nil {
+			continue
+		}
+		usageCost := asObj(properties["cost_units"])
+		if usageCost == nil {
+			continue
+		}
+		if usageCost["description"] != "Settled credit cost for the request." || !sameNumber(usageCost["example"], 8) {
+			t.Fatalf("%s.cost_units changed: %#v", name, usageCost)
+		}
+	}
+}
+
+func sameNumber(value any, want int) bool {
+	switch n := value.(type) {
+	case int:
+		return n == want
+	case int64:
+		return n == int64(want)
+	case float64:
+		return n == float64(want)
+	default:
+		return false
 	}
 }
 
