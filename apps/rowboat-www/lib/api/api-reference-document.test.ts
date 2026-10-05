@@ -315,6 +315,17 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the verification hash stored for a deletion target", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const receipt = presented.components.schemas.ConversationDeletionReceipt.properties;
+    expect(receipt.receiptId.example).toBe("delete:ab12");
+    const target = receipt.targets.items.properties;
+    expect(target.target.example).toBe("api_evidence");
+    expect(target.verificationHash.example).toBe(
+      "sha256:5c15791fbeefd579cf530b240c1a3d5eec1d94058e045c8a4eadf0d1385ebfbf",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

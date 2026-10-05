@@ -5767,7 +5767,7 @@
                 },
                 "verificationHash": {
                   "description": "Content-free verification hash.",
-                  "example": "sha256:ab12",
+                  "example": "sha256:5c15791fbeefd579cf530b240c1a3d5eec1d94058e045c8a4eadf0d1385ebfbf",
                   "type": "string"
                 }
               },
