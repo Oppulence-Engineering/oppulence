@@ -302,4 +302,15 @@ describe("API reference document", () => {
     expect(page).toContain("The API reference could not be loaded.");
     expect(page).not.toContain("unpkg.com");
   });
+
+  it("does not call an external record a history row", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const ref = presented.components.schemas.EntityResourceRef.properties.ref;
+    expect(ref.description).toBe("External record this row points at.");
+    expect(ref.example).toBe("hubspot:company:acme");
+    expect(ref.description).not.toContain("history");
+    const history = presented.components.schemas.UserHistory.properties.ref;
+    expect(history.description).toBe("UUID of the source row represented by a history row.");
+    expect(history.example).toBe("123e4567-e89b-12d3-a456-426614174000");
+  });
 });

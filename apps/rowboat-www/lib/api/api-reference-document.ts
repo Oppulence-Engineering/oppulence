@@ -525,6 +525,17 @@ function presentReferenceProse(value: string): string {
 }
 
 /**
+ * The history-row sentence is copied onto every field named ref. A history
+ * row points at the source row's id. An external record points at a company
+ * or thread in another tool, and that value is not a UUID.
+ */
+const GENERIC_HISTORY_REF_DESCRIPTION = "UUID of the source row represented by a history row.";
+
+const EXTERNAL_RECORD_REF = "External record this row points at.";
+
+const EXTERNAL_RECORD_EXAMPLE = "hubspot:company:acme";
+
+/**
  * Field descriptions live on schemas, request bodies, and responses. Parameter
  * descriptions stay as published so a path parameter does not change under a
  * generated client.
@@ -537,7 +548,12 @@ function presentDescriptions(node: unknown): void {
   }
   const record = node as Record<string, unknown>;
   if (typeof record.description === "string") {
-    record.description = presentReferenceProse(record.description);
+    if (record.description === GENERIC_HISTORY_REF_DESCRIPTION && record.format !== "uuid") {
+      record.description = EXTERNAL_RECORD_REF;
+      record.example = EXTERNAL_RECORD_EXAMPLE;
+    } else {
+      record.description = presentReferenceProse(record.description);
+    }
   }
   // Sample values render beside the field. Identifiers such as rowboat-desktop
   // do not match these phrases and stay as the API published them.
