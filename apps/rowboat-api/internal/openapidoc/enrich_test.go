@@ -336,6 +336,31 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
+	assertSelectedGraphNode(t, schemas)
+}
+
+func TestSavedGraphNodeUsesTheRelationshipID(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSelectedGraphNode(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertSelectedGraphNode(t *testing.T, schemas obj) {
+	t.Helper()
+	state := asObj(schemas["ConsoleGraphSavedViewState"])
+	if state == nil {
+		return
+	}
+	props := asObj(state["properties"])
+	selected := asObj(props["selectedNodeId"])
+	relationship := asObj(props["relationshipId"])
+	const relationshipID = "3a196c5e-b10e-46cb-a177-7c001f7be573"
+	if selected["example"] != "relationship:"+relationshipID || selected["description"] != "Optional selected graph node." {
+		t.Fatalf("selected graph node is not that relationship: %#v", selected)
+	}
+	if relationship["example"] != relationshipID {
+		t.Fatalf("saved view relationship id changed: %#v", relationship)
+	}
 }
 
 func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {

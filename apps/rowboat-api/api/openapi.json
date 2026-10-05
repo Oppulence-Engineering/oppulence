@@ -5273,7 +5273,7 @@
           },
           "selectedNodeId": {
             "description": "Optional selected graph node.",
-            "example": "relationship:123",
+            "example": "relationship:3a196c5e-b10e-46cb-a177-7c001f7be573",
             "maxLength": 512,
             "nullable": true,
             "type": "string"

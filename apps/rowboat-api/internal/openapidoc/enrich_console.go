@@ -48,7 +48,7 @@ func addConsoleSchemas(schemas obj) {
 		"layout":             stringEnum("Graph layout.", "force", "force", "radial", "timeline"),
 		"density":            obj{"type": "number", "minimum": 0.25, "maximum": 1, "example": 0.72},
 		"hideIsolated":       boolSchema("Hide nodes without visible edges.", false),
-		"selectedNodeId":     stringSchema("Optional selected graph node.", "relationship:123", nullable(), obj{"maxLength": 512}),
+		"selectedNodeId":     stringSchema("Optional selected graph node.", "relationship:3a196c5e-b10e-46cb-a177-7c001f7be573", nullable(), obj{"maxLength": 512}),
 		"focusDepth":         intSchema("Neighborhood depth.", 0, obj{"minimum": 0, "maximum": 2}),
 		"asOf":               stringSchema("Optional historical boundary.", "2026-09-17T20:00:00Z", obj{"format": "date-time"}, nullable()),
 		"changedSinceReview": boolSchema("Show relationships changed since review.", false),
