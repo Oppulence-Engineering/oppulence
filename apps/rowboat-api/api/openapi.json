@@ -3629,7 +3629,7 @@
           },
           "beneficiaryParticipantRef": {
             "description": "Promise beneficiary.",
-            "example": "participant:beneficiary",
+            "example": "customer:acme",
             "type": "string"
           },
           "blocker": {
@@ -3645,7 +3645,7 @@
           },
           "counterpartyParticipantRef": {
             "description": "Promise counterparty.",
-            "example": "participant:customer",
+            "example": "jordan@example.com",
             "type": "string"
           },
           "dueAt": {
@@ -3712,7 +3712,7 @@
           },
           "ownerParticipantRef": {
             "description": "Promise owner.",
-            "example": "participant:owner",
+            "example": "alex@example.com",
             "type": "string"
           },
           "reason": {
