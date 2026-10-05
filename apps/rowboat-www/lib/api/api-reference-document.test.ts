@@ -302,4 +302,22 @@ describe("API reference document", () => {
     expect(page).toContain("The API reference could not be loaded.");
     expect(page).not.toContain("unpkg.com");
   });
+
+  it("does not describe a person removal as a credit-ledger reason", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const removal = presented.components.schemas.PersonSuppression.properties.reason;
+    expect(removal.description).toBe(
+      "Why this person was removed. subject_request means they asked. user_action means the account holder removed them.",
+    );
+    expect(removal.enum).toEqual(["user_action", "subject_request"]);
+    expect(removal.example).toBe("user_action");
+    expect(removal.description).not.toContain("ledger");
+    const transition = presented.components.schemas.CommitmentEvent.properties.reason;
+    expect(transition.description).toBe("Transition rationale.");
+    expect(transition.example).toBe("Counterparty accepted in writing.");
+    expect(transition.enum).toBeUndefined();
+    const ledger = presented.components.schemas.CreditLedger.properties.reason;
+    expect(ledger.example).toBe("llm_settle");
+    expect(ledger.enum).toContain("llm_settle");
+  });
 });

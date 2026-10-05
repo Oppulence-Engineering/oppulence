@@ -632,17 +632,46 @@ func addRevenueSchemas(schemas obj) {
 // overlay. Runtime schemas may reuse names such as status and reason with
 // domain-specific semantics, so their contract must win over entity defaults.
 func restoreRevenueSchemaOverrides(schemas obj) {
-	evidence := asObj(schemas["MissionControlDimensionEvidence"])
-	if evidence == nil {
+	if evidence := asObj(schemas["MissionControlDimensionEvidence"]); evidence != nil {
+		properties := asObj(evidence["properties"])
+		properties["reason"] = stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won.")
+		properties["status"] = stringEnum(
+			"Assertion lifecycle state.",
+			"accepted",
+			"proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active",
+		)
+	}
+	// The generic overlay used to stamp the credit-ledger enum onto every
+	// property named reason. These fields are not ledger entries.
+	setSchemaReason(schemas, "ActionProposal", stringSchema("Reason recorded when this proposal is rejected or fails.", "The invoice was already paid."))
+	setSchemaReason(schemas, "CommitmentEvent", stringSchema("Transition rationale.", "Counterparty accepted in writing."))
+	setSchemaReason(schemas, "CommunicationAccess", stringSchema("Decision reason.", "owner_default"))
+	setSchemaReason(schemas, "CommunicationShareGrant", stringSchema("Why this content was shared.", "The account owner asked for the thread."))
+	setSchemaReason(schemas, "ConnectorAuditEvent", stringSchema("Why this connector decision was recorded.", "subscription_ended"))
+	setSchemaReason(schemas, "ConsentEntitlement", stringSchema("Machine-readable denial reason.", "scope_not_in_plan", nullable()))
+	setSchemaReason(schemas, "InternalInvalidateRequest", stringSchema("Semantic revocation reason.", "subscription_ended", nullable()))
+	setSchemaReason(schemas, "PersonAttribute", stringSchema("Why this detail was recorded.", "The title was in the email signature."))
+	setSchemaReason(schemas, "PersonSuppression", stringEnum(
+		"Why this person was removed. subject_request means they asked. user_action means the account holder removed them.",
+		"user_action",
+		"user_action", "subject_request",
+	))
+	setSchemaReason(schemas, "RelationshipAssertion", stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won."))
+	setSchemaReason(schemas, "RelationshipIdentityDecision", stringSchema("Decision reason.", "Confirmed the provider records are the same account."))
+	setSchemaReason(schemas, "RelationshipIdentityLineage", stringSchema("Reason.", "Confirmed duplicate."))
+	setSchemaReason(schemas, "RelationshipLineageEvent", stringSchema("Why this identity change was recorded.", "Confirmed the provider records are the same account."))
+}
+
+func setSchemaReason(schemas obj, name string, field obj) {
+	schema := asObj(schemas[name])
+	if schema == nil {
 		return
 	}
-	properties := asObj(evidence["properties"])
-	properties["reason"] = stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won.")
-	properties["status"] = stringEnum(
-		"Assertion lifecycle state.",
-		"accepted",
-		"proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active",
-	)
+	properties := asObj(schema["properties"])
+	if properties == nil || properties["reason"] == nil {
+		return
+	}
+	properties["reason"] = field
 }
 
 func addRevenuePaths(paths obj) {

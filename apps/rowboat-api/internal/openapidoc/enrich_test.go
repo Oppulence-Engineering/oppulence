@@ -198,8 +198,10 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	spec := obj{
 		"components": obj{
 			"schemas": obj{
-				"CreditLedger": obj{"type": "object", "properties": obj{"delta": obj{"type": "integer"}, "reason": obj{"type": "string"}}},
-				"User":         obj{"type": "object", "properties": obj{"workos_user_id": obj{"type": "string"}}},
+				"CreditLedger":      obj{"type": "object", "properties": obj{"delta": obj{"type": "integer"}, "reason": obj{"type": "string"}}},
+				"User":              obj{"type": "object", "properties": obj{"workos_user_id": obj{"type": "string"}}},
+				"PersonSuppression": obj{"type": "object", "properties": obj{"reason": obj{"type": "string", "description": "Reason code for the ledger entry.", "enum": []any{"llm_settle"}, "example": "llm_settle"}}},
+				"ActionProposal":    obj{"type": "object", "properties": obj{"reason": obj{"type": "string", "enum": []any{"llm_settle"}}}},
 			},
 		},
 	}
@@ -230,6 +232,27 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	delta := asObj(asObj(creditLedger["properties"])["delta"])
 	if delta["description"] == nil || delta["example"] == nil {
 		t.Fatal("CreditLedger.delta should have a detailed description and example")
+	}
+	ledgerReason := asObj(asObj(creditLedger["properties"])["reason"])
+	if ledgerReason["description"] != "Reason code for the ledger entry." || ledgerReason["example"] != "llm_settle" {
+		t.Fatalf("CreditLedger.reason lost its ledger contract: %#v", ledgerReason)
+	}
+	ledgerEnum, _ := ledgerReason["enum"].([]any)
+	if len(ledgerEnum) != 7 || ledgerEnum[2] != "llm_settle" {
+		t.Fatalf("CreditLedger.reason enum is invalid: %#v", ledgerReason["enum"])
+	}
+	commitmentReason := asObj(asObj(asObj(schemas["CommitmentEvent"])["properties"])["reason"])
+	if commitmentReason["description"] != "Transition rationale." || commitmentReason["example"] != "Counterparty accepted in writing." || commitmentReason["enum"] != nil {
+		t.Fatalf("CommitmentEvent.reason was stamped with the credit ledger: %#v", commitmentReason)
+	}
+	removalReason := asObj(asObj(asObj(schemas["PersonSuppression"])["properties"])["reason"])
+	removalEnum, _ := removalReason["enum"].([]any)
+	if removalReason["description"] != "Why this person was removed. subject_request means they asked. user_action means the account holder removed them." || removalReason["example"] != "user_action" || len(removalEnum) != 2 || removalEnum[0] != "user_action" || removalEnum[1] != "subject_request" {
+		t.Fatalf("PersonSuppression.reason was stamped with the credit ledger: %#v", removalReason)
+	}
+	proposalReason := asObj(asObj(asObj(schemas["ActionProposal"])["properties"])["reason"])
+	if proposalReason["enum"] != nil || proposalReason["description"] != "Reason recorded when this proposal is rejected or fails." {
+		t.Fatalf("ActionProposal.reason was stamped with the credit ledger: %#v", proposalReason)
 	}
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
@@ -328,6 +351,18 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
+	}
+	removal := asObj(asObj(asObj(schemas["PersonSuppression"])["properties"])["reason"])
+	removalEnum, _ := removal["enum"].([]any)
+	if removal["example"] != "user_action" || len(removalEnum) != 2 || removalEnum[0] != "user_action" || removalEnum[1] != "subject_request" {
+		t.Fatalf("checked-in PersonSuppression.reason is a credit-ledger code: %#v", removal)
+	}
+	commitment := asObj(asObj(asObj(schemas["CommitmentEvent"])["properties"])["reason"])
+	if commitment["description"] != "Transition rationale." || commitment["enum"] != nil {
+		t.Fatalf("checked-in CommitmentEvent.reason is a credit-ledger code: %#v", commitment)
+	}
+	if ledger := asObj(asObj(asObj(schemas["CreditLedger"])["properties"])["reason"]); ledger["example"] != "llm_settle" {
+		t.Fatalf("checked-in CreditLedger.reason lost its ledger code: %#v", ledger)
 	}
 	if value := asObj(evidenceProperties["value"]); value["oneOf"] == nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.value is invalid: %#v", value)
