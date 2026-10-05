@@ -315,6 +315,18 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the hash stored on a Gmail observation", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const contentHash = "c649f448e463924ae2a0923fcc6d409bc5a808004027b16bfbea961336650984";
+    const observation = presented.components.schemas.RelationshipObservation.properties;
+    expect(observation.contentHash.example).toBe(contentHash);
+    expect(observation.normalizedFacts.example).toEqual({ adapter: "gmail" });
+    expect(observation.summary.example).toBe("We promised to send the security packet.");
+    expect(
+      presented.components.schemas.MissionControlEvidenceReference.properties.contentHash.example,
+    ).toBe(contentHash);
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

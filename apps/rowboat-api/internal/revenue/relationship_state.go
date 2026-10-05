@@ -430,8 +430,6 @@ func (s *Service) ingestRelationshipObservation(
 	if err != nil {
 		return RelationshipObservationResult{}, fmt.Errorf("%w: normalized facts: %w", ErrInvalidInput, err)
 	}
-	hashInput := append(append([]byte(input.Summary), factsJSON...), input.Payload...)
-	sum := sha256.Sum256(hashInput)
 	create := client.RelationshipObservation.Create().
 		SetWorkspace(ws).
 		SetRelationship(rel).
@@ -445,7 +443,7 @@ func (s *Service) ingestRelationshipObservation(
 		SetReceivedAt(input.ReceivedAt.UTC()).
 		SetSummary(input.Summary).
 		SetNormalizedFactsJSON(string(factsJSON)).
-		SetContentHash(hex.EncodeToString(sum[:]))
+		SetContentHash(observationContentHash(input.Summary, factsJSON, input.Payload))
 	if len(input.Payload) > 0 {
 		if s.evidenceKeys == nil {
 			return RelationshipObservationResult{}, ErrEvidenceEncryptionUnavailable
@@ -2025,6 +2023,11 @@ func relationshipStateChangedDimensions(current, next RelationshipState) []strin
 		changed = append(changed, "milestones")
 	}
 	return changed
+}
+
+func observationContentHash(summary string, factsJSON, payload []byte) string {
+	sum := sha256.Sum256(append(append([]byte(summary), factsJSON...), payload...))
+	return hex.EncodeToString(sum[:])
 }
 
 func relationshipProjectionHash(

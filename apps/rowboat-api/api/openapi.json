@@ -8476,7 +8476,7 @@
         "properties": {
           "contentHash": {
             "description": "Immutable observation content hash.",
-            "example": "sha256:ab12",
+            "example": "c649f448e463924ae2a0923fcc6d409bc5a808004027b16bfbea961336650984",
             "type": "string"
           },
           "evidencePath": {
@@ -11455,7 +11455,7 @@
         "properties": {
           "contentHash": {
             "description": "Hash of summary, facts, and sealed payload.",
-            "example": "ab12cd34",
+            "example": "c649f448e463924ae2a0923fcc6d409bc5a808004027b16bfbea961336650984",
             "type": "string"
           },
           "eventType": {
@@ -11477,6 +11477,9 @@
           "normalizedFacts": {
             "additionalProperties": true,
             "description": "Provider-neutral normalized facts.",
+            "example": {
+              "adapter": "gmail"
+            },
             "type": "object"
           },
           "occurredAt": {
