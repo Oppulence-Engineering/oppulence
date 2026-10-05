@@ -3,6 +3,7 @@ package openapidoc
 import (
 	"encoding/json"
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -335,6 +336,36 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	entityProperties := asObj(asObj(schemas["EntityProjection"])["properties"])
 	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
+	}
+	assertSnapshotAssertionID(t, schemas)
+}
+
+func TestSnapshotNamesTheWinningAssertion(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSnapshotAssertionID(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertSnapshotAssertionID(t *testing.T, schemas obj) {
+	t.Helper()
+	snapshot := asObj(schemas["RelationshipStateSnapshot"])
+	if snapshot == nil {
+		return
+	}
+	props := asObj(snapshot["properties"])
+	const assertionID = "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	ids := asObj(props["assertionIds"])
+	if !reflect.DeepEqual(ids["example"], []any{assertionID}) {
+		t.Fatalf("snapshot assertion ids: %#v", ids["example"])
+	}
+	if asObj(ids["items"])["example"] != assertionID {
+		t.Fatalf("assertion id item: %#v", ids["items"])
+	}
+	if ids["description"] != "Assertions selected by deterministic precedence." {
+		t.Fatalf("assertion description changed: %#v", ids["description"])
+	}
+	if id := asObj(props["id"]); id["example"] == assertionID {
+		t.Fatalf("snapshot id reused the assertion id: %#v", id["example"])
 	}
 }
 

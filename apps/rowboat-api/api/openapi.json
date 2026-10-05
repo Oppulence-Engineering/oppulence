@@ -12044,9 +12044,12 @@
         "properties": {
           "assertionIds": {
             "description": "Assertions selected by deterministic precedence.",
+            "example": [
+              "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+            ],
             "items": {
               "description": "Assertion id.",
-              "example": "assertion-123",
+              "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "type": "string"
             },
             "type": "array"

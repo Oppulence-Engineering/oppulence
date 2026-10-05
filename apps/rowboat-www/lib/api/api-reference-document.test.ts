@@ -297,6 +297,18 @@ describe("API reference document", () => {
     );
   });
 
+  it("names the assertion a snapshot selected", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const snapshot = presented.components.schemas.RelationshipStateSnapshot.properties;
+    expect(snapshot.assertionIds).toMatchObject({
+      description: "Assertions selected by deterministic precedence.",
+      example: ["7b8dfa9b-a7b2-46ea-982c-622a914c00e5"],
+    });
+    expect(snapshot.assertionIds.items.example).toBe("7b8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    expect(JSON.stringify(snapshot.assertionIds)).not.toContain("assertion-123");
+    expect(snapshot.id.example).not.toBe("7b8dfa9b-a7b2-46ea-982c-622a914c00e5");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
