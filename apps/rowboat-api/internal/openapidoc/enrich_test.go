@@ -338,6 +338,28 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertActionRevisionHash(t, schemas)
+}
+
+func TestActionRevisionHashMatchesThePublishedDraft(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertActionRevisionHash(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertActionRevisionHash(t *testing.T, schemas obj) {
+	t.Helper()
+	action := asObj(asObj(schemas["RevenueAction"])["properties"])
+	if asObj(action["revisionHash"])["example"] != documentedActionRevisionHash {
+		t.Fatalf("action revision hash: %#v", action["revisionHash"])
+	}
+	if asObj(action["actionType"])["example"] != "warm_follow_up" || asObj(action["executionMode"])["example"] != "draft" {
+		t.Fatalf("action draft fields: %#v", action)
+	}
+	decision := asObj(asObj(schemas["RevenuePolicyDecision"])["properties"])
+	if asObj(decision["revisionHash"])["example"] != documentedActionRevisionHash {
+		t.Fatalf("decision revision hash: %#v", decision["revisionHash"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

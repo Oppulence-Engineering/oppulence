@@ -12456,7 +12456,7 @@
           },
           "revisionHash": {
             "description": "Canonical hash of the revision content.",
-            "example": "sha256:ab12...",
+            "example": "sha256:746c1d9cd3925b8e632fc1b4bd539758514cb1aefdf31948fe8d1b45ce74c29d",
             "type": "string"
           },
           "senderAccountRef": {
@@ -13210,7 +13210,7 @@
           },
           "revisionHash": {
             "description": "Revision hash the decision is bound to.",
-            "example": "sha256:ab12...",
+            "example": "sha256:746c1d9cd3925b8e632fc1b4bd539758514cb1aefdf31948fe8d1b45ce74c29d",
             "type": "string"
           },
           "status": {

@@ -1,5 +1,9 @@
 package openapidoc
 
+// documentedActionRevisionHash is RevisionContent.Hash for the published warm
+// follow-up draft, assigned to the documented signed-in user.
+const documentedActionRevisionHash = "sha256:746c1d9cd3925b8e632fc1b4bd539758514cb1aefdf31948fe8d1b45ce74c29d"
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
@@ -470,7 +474,7 @@ func addRevenueSchemas(schemas obj) {
 		"channel":                 stringEnum("Delivery channel.", "email", "email", "slack", "call", "crm_task", "crm", "task", "calendar"),
 		"detector":                stringEnum("Detector that produced the action.", "manual", "requested_follow_up_due", "unanswered_proposal", "waiting_on_me", "dormant_warm_opportunity", "neglected_referral", "former_customer_reconnect", "conversation_action_pack", "commitment_due", "manual"),
 		"revision":                intSchema("Current revision number.", 1),
-		"revisionHash":            stringSchema("Canonical hash of the revision content.", "sha256:ab12..."),
+		"revisionHash":            stringSchema("Canonical hash of the revision content.", documentedActionRevisionHash),
 		"reason":                  stringSchema("Human-readable evidence-backed reason.", "They asked for a follow-up in July."),
 		"recipientEmail":          stringSchema("Recipient email address.", "buyer@example.com"),
 		"proposedSubject":         stringSchema("Proposed email subject.", "Following up as promised"),
@@ -513,7 +517,7 @@ func addRevenueSchemas(schemas obj) {
 	schemas["RevenuePolicyDecision"] = objectSchema("Immutable OutboundConsole preflight decision for one exact action revision. Rowboat snapshots the decision; it never composes one.", obj{
 		"id":           uuidSchema("Decision snapshot id.", "2b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"revision":     intSchema("Action revision the decision is about.", 1),
-		"revisionHash": stringSchema("Revision hash the decision is bound to.", "sha256:ab12..."),
+		"revisionHash": stringSchema("Revision hash the decision is bound to.", documentedActionRevisionHash),
 		"status":       stringEnum("Decision status.", "passed", "passed", "review_required", "blocked"),
 		"reasonCodes":  arraySchema("Bounded reason codes.", stringSchema("Reason code.", "suppression.opted_out")),
 		"verification": freeFormSchema("Verification sub-result snapshot."),
