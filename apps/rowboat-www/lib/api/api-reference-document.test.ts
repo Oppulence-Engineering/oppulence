@@ -297,6 +297,24 @@ describe("API reference document", () => {
     );
   });
 
+  it("names the observation a commitment event recorded", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const event = presented.components.schemas.CommitmentEvent.properties;
+    const observationID = "6b8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    expect(event.sourceObservationId).toMatchObject({
+      description: "Source observation id.",
+      example: observationID,
+    });
+    expect(event.evidenceRefs).toMatchObject({
+      description: "Exact evidence references.",
+      example: [`relationship-observation:${observationID}`],
+    });
+    expect(JSON.stringify(event.sourceObservationId)).not.toContain("relationship-observation:ab12");
+    expect(presented.components.schemas.MissionControlEvidenceReference.properties.observationId.example).toBe(
+      observationID,
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

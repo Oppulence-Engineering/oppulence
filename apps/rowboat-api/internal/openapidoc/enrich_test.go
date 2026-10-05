@@ -3,6 +3,7 @@ package openapidoc
 import (
 	"encoding/json"
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -335,6 +336,39 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	entityProperties := asObj(asObj(schemas["EntityProjection"])["properties"])
 	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
+	}
+	assertEventObservation(t, schemas)
+}
+
+func TestCommitmentEventNamesTheObservation(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertEventObservation(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertEventObservation(t *testing.T, schemas obj) {
+	t.Helper()
+	event := asObj(schemas["CommitmentEvent"])
+	if event == nil {
+		return
+	}
+	const observationID = "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	const evidenceRef = "relationship-observation:" + observationID
+	props := asObj(event["properties"])
+	source := asObj(props["sourceObservationId"])
+	if source["example"] != observationID || source["description"] != "Source observation id." {
+		t.Fatalf("source observation: %#v", source)
+	}
+	refs := asObj(props["evidenceRefs"])
+	if !reflect.DeepEqual(refs["example"], []any{evidenceRef}) || refs["description"] != "Exact evidence references." {
+		t.Fatalf("event evidence refs: %#v", refs)
+	}
+	if asObj(refs["items"])["example"] != evidenceRef {
+		t.Fatalf("event evidence item: %#v", refs["items"])
+	}
+	evidence := asObj(asObj(schemas["MissionControlEvidenceReference"])["properties"])
+	if asObj(evidence["observationId"])["example"] != observationID {
+		t.Fatalf("mission control observation id changed: %#v", evidence["observationId"])
 	}
 }
 
