@@ -297,6 +297,19 @@ describe("API reference document", () => {
     );
   });
 
+  it("does not sample a chat default for a workflow template model", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const template = presented.components.schemas.BackgroundTaskTemplate.properties.model;
+    expect(template.description).toBe("Default model id for runs.");
+    expect(template.example).toBe("anthropic/claude-sonnet-4-5");
+    const request =
+      presented.components.schemas.BackgroundTaskTemplateInstantiateRequest.properties.model;
+    expect(request.description).toBe("Model override.");
+    expect(request.example).toBe("anthropic/claude-sonnet-4-5");
+    const chat = presented.components.schemas.LLMChatCompletionsRequest.properties.model;
+    expect(chat.example).toBe("openai/gpt-4.1-mini");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
