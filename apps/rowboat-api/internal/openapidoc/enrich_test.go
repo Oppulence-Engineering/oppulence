@@ -336,6 +336,37 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
+	assertCommitmentEventActor(t, schemas)
+}
+
+func TestCommitmentEventActorIsNotTheOwner(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertCommitmentEventActor(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertCommitmentEventActor(t *testing.T, schemas obj) {
+	t.Helper()
+	const userID = "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"
+	event := asObj(schemas["CommitmentEvent"])
+	if event == nil {
+		return
+	}
+	props := asObj(event["properties"])
+	actor := asObj(props["actorRef"])
+	owner := asObj(props["ownerParticipantRef"])
+	counterparty := asObj(props["counterpartyParticipantRef"])
+	beneficiary := asObj(props["beneficiaryParticipantRef"])
+	if actor["example"] != userID || actor["description"] != "User who recorded this change." {
+		t.Fatalf("commitment event actor sampled the promise owner: %#v", actor)
+	}
+	if owner["example"] != "alex@example.com" || counterparty["example"] != "jordan@example.com" || beneficiary["example"] != "customer:acme" {
+		t.Fatalf("commitment event participants drifted: owner %#v counterparty %#v beneficiary %#v", owner, counterparty, beneficiary)
+	}
+	commitment := asObj(asObj(asObj(schemas["RelationshipCommitment"])["properties"])["ownerParticipantRef"])
+	if commitment["example"] != "alex@example.com" {
+		t.Fatalf("promise owner changed: %#v", commitment)
+	}
 }
 
 func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {

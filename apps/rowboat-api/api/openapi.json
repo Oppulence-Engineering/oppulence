@@ -3617,8 +3617,8 @@
             "type": "string"
           },
           "actorRef": {
-            "description": "Actor reference.",
-            "example": "participant:owner",
+            "description": "User who recorded this change.",
+            "example": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
             "type": "string"
           },
           "actorType": {
@@ -3629,7 +3629,7 @@
           },
           "beneficiaryParticipantRef": {
             "description": "Promise beneficiary.",
-            "example": "participant:beneficiary",
+            "example": "customer:acme",
             "type": "string"
           },
           "blocker": {
@@ -3645,7 +3645,7 @@
           },
           "counterpartyParticipantRef": {
             "description": "Promise counterparty.",
-            "example": "participant:customer",
+            "example": "jordan@example.com",
             "type": "string"
           },
           "dueAt": {
@@ -3709,7 +3709,7 @@
           },
           "ownerParticipantRef": {
             "description": "Promise owner.",
-            "example": "participant:owner",
+            "example": "alex@example.com",
             "type": "string"
           },
           "reason": {
@@ -18674,8 +18674,8 @@
                         "description": "Transition.",
                         "properties": {
                           "actorRef": {
-                            "description": "Actor reference.",
-                            "example": "alex@example.com",
+                            "description": "User who recorded this change.",
+                            "example": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
                             "type": "string"
                           },
                           "actorType": {
