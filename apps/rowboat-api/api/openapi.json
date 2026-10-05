@@ -12138,12 +12138,12 @@
           "modelRoute": {
             "description": "Most permissive model route allowed.",
             "enum": ["local_only", "region_restricted", "hosted_allowed"],
-            "example": "local_only",
+            "example": "hosted_allowed",
             "type": "string"
           },
           "policyVersion": {
             "description": "Hash-bound effective policy version.",
-            "example": "policy:ab12",
+            "example": "policy:9373cc30008dcb712c236fc9",
             "type": "string"
           },
           "publishEvidence": {
@@ -12175,7 +12175,7 @@
             "description": "Policy layers that contributed.",
             "items": {
               "description": "Layer id.",
-              "example": "workspace:default",
+              "example": "builtin:conversation-policy-v1",
               "type": "string"
             },
             "type": "array"

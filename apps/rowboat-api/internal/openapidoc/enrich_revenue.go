@@ -1,8 +1,40 @@
 package openapidoc
 
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+)
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
+
+// conversationPolicyLayerExample matches the builtin layer hashed by
+// resolveConversationPolicyLayers. Field order is the stored JSON order.
+type conversationPolicyLayerExample struct {
+	LayerID          string   `json:"layerId"`
+	Scope            string   `json:"scope"`
+	Enforced         bool     `json:"enforced"`
+	Capture          string   `json:"capture"`
+	ModelRoute       string   `json:"modelRoute"`
+	PublishEvidence  bool     `json:"publishEvidence"`
+	ExternalShare    bool     `json:"externalShare"`
+	RetentionDays    int      `json:"retentionDays"`
+	RedactionClasses []string `json:"redactionClasses"`
+	LegalHold        bool     `json:"legalHold"`
+}
+
+func builtinConversationPolicyVersion() string {
+	payload, _ := json.Marshal([]conversationPolicyLayerExample{{
+		LayerID: "builtin:conversation-policy-v1", Scope: "organization", Enforced: true,
+		Capture: "require_consent", ModelRoute: "hosted_allowed", PublishEvidence: true,
+		ExternalShare: true, RetentionDays: 30,
+		RedactionClasses: []string{"credentials", "financial", "health", "personal_identifier"},
+	}})
+	sum := sha256.Sum256(payload)
+	return "policy:" + hex.EncodeToString(sum[:12])
+}
 
 func addRevenueSchemas(schemas obj) {
 	schemas["RevenueWorkspace"] = objectSchema("Mapping between the Rowboat tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.", obj{
@@ -357,14 +389,14 @@ func addRevenueSchemas(schemas obj) {
 
 	schemas["ResolvedConversationPolicy"] = objectSchema("Monotonically resolved conversation policy with every contributing layer recorded.", obj{
 		"capture":          stringEnum("Capture rule.", "require_consent", "deny", "require_consent", "allow"),
-		"modelRoute":       stringEnum("Most permissive model route allowed.", "local_only", "local_only", "region_restricted", "hosted_allowed"),
+		"modelRoute":       stringEnum("Most permissive model route allowed.", "hosted_allowed", "local_only", "region_restricted", "hosted_allowed"),
 		"publishEvidence":  boolSchema("Whether shared evidence publication is allowed.", true),
 		"externalShare":    boolSchema("Whether externally scoped plan sharing is allowed.", true),
 		"retentionDays":    intSchema("Maximum retention in days.", 30),
 		"redactionClasses": arraySchema("Classes removed at outbound boundaries.", stringSchema("Redaction class.", "personal_identifier")),
 		"legalHold":        boolSchema("Whether required deletion is blocked.", false),
-		"policyVersion":    stringSchema("Hash-bound effective policy version.", "policy:ab12"),
-		"sourceLayerIds":   arraySchema("Policy layers that contributed.", stringSchema("Layer id.", "workspace:default")),
+		"policyVersion":    stringSchema("Hash-bound effective policy version.", builtinConversationPolicyVersion()),
+		"sourceLayerIds":   arraySchema("Policy layers that contributed.", stringSchema("Layer id.", "builtin:conversation-policy-v1")),
 		"resolvedAt":       stringSchema("Resolution time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
 	}, "capture", "modelRoute", "publishEvidence", "externalShare", "retentionDays", "redactionClasses", "legalHold", "policyVersion", "sourceLayerIds", "resolvedAt")
 
