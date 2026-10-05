@@ -22,8 +22,10 @@ vi.mock("@/lib/revenue/revenue", () => ({
 import {
   checkoutFailureCopy,
   PlanSection,
+  usageEntries,
   usageMeterLabel,
   usageMeterValue,
+  usageSectionCopy,
 } from "@/components/features/settings/app-settings/app-settings";
 
 const session = (plan: string) => ({
@@ -107,6 +109,56 @@ describe("settings billing upgrade", () => {
     expect(screen.queryByText("10000")).not.toBeInTheDocument();
     expect(screen.queryByText("sanctionedCredits")).not.toBeInTheDocument();
     expect(screen.queryByText("SanctionedCredits")).not.toBeInTheDocument();
+  });
+
+  it("shows the credit balance and the month and day totals separately", () => {
+    const rows = usageEntries({
+      sanctionedCredits: 10000,
+      usedCredits: 4,
+      availableCredits: 9996,
+      monthly: { sanctionedCredits: 10000, usedCredits: 3, availableCredits: 9997 },
+      daily: { sanctionedCredits: 10000, usedCredits: 1, availableCredits: 9999, usageDay: "2026-10-05" },
+    });
+    expect(rows.map(([key]) => key)).toEqual([
+      "sanctionedCredits",
+      "usedCredits",
+      "availableCredits",
+      "monthlyUsedCredits",
+      "dailyUsedCredits",
+    ]);
+    expect(usageMeterLabel("monthlyUsedCredits")).toBe("Credits used this month");
+    expect(usageMeterLabel("dailyUsedCredits")).toBe("Credits used today");
+    expect(usageMeterValue("monthlyUsedCredits", 3)).toBe("3");
+    expect(usageSectionCopy(rows)).toBe(
+      "The credit balance, plus credits used this month and today.",
+    );
+    expect(usageSectionCopy(usageEntries({ sanctionedCredits: 10000 }))).toBe(
+      "The credit balance on this plan.",
+    );
+    render(
+      <PlanSection
+        session={{
+          billing: {
+            plan: "free",
+            status: "active",
+            usage: {
+              sanctionedCredits: 10000,
+              usedCredits: 0,
+              availableCredits: 10000,
+              monthly: { usedCredits: 0 },
+              daily: { usedCredits: 0 },
+            },
+          },
+          user: { permissions: [] },
+        }}
+      />,
+    );
+    expect(screen.getByText("The credit balance, plus credits used this month and today.")).toBeVisible();
+    expect(screen.getByText("Included credits")).toBeVisible();
+    expect(screen.getByText("Credits used this month")).toBeVisible();
+    expect(screen.getByText("Credits used today")).toBeVisible();
+    expect(screen.queryByText(/current billing period/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("No usage recorded yet.")).not.toBeInTheDocument();
   });
 
   it("does not upsell a workspace that is already on Pro", () => {

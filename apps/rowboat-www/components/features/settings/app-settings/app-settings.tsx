@@ -727,6 +727,8 @@ const USAGE_METER_LABELS: Record<string, string> = {
   usedCredits: "Credits used",
   availableCredits: "Credits remaining",
   usageDay: "Usage day",
+  monthlyUsedCredits: "Credits used this month",
+  dailyUsedCredits: "Credits used today",
 };
 
 export function usageMeterLabel(key: string): string {
@@ -740,7 +742,48 @@ export function usageMeterLabel(key: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-const GROUPED_USAGE_KEYS = new Set(["sanctionedCredits", "usedCredits", "availableCredits"]);
+const GROUPED_USAGE_KEYS = new Set([
+  "sanctionedCredits",
+  "usedCredits",
+  "availableCredits",
+  "monthlyUsedCredits",
+  "dailyUsedCredits",
+]);
+
+function nestedUsedCredits(value: unknown): number | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const used = (value as Record<string, unknown>).usedCredits;
+  return typeof used === "number" && Number.isFinite(used) ? used : null;
+}
+
+/**
+ * The balance is the top-level credit totals. Month and day totals are nested,
+ * so a filter that keeps only top-level numbers hides the period the heading
+ * used to claim.
+ */
+export function usageEntries(usage: unknown): [string, string | number][] {
+  if (!usage || typeof usage !== "object" || Array.isArray(usage)) return [];
+  const record = usage as Record<string, unknown>;
+  const rows: [string, string | number][] = [];
+  for (const [key, value] of Object.entries(record)) {
+    if (typeof value === "string" || typeof value === "number") rows.push([key, value]);
+  }
+  const monthlyUsed = nestedUsedCredits(record.monthly);
+  if (monthlyUsed != null) rows.push(["monthlyUsedCredits", monthlyUsed]);
+  const dailyUsed = nestedUsedCredits(record.daily);
+  if (dailyUsed != null) rows.push(["dailyUsedCredits", dailyUsed]);
+  return rows;
+}
+
+/** The heading matches the rows. A grant is not activity counted in a period. */
+export function usageSectionCopy(rows: readonly (readonly [string, string | number])[]): string {
+  const month = rows.some(([key]) => key === "monthlyUsedCredits");
+  const day = rows.some(([key]) => key === "dailyUsedCredits");
+  if (month && day) return "The credit balance, plus credits used this month and today.";
+  if (month) return "The credit balance, plus credits used this month.";
+  if (day) return "The credit balance, plus credits used today.";
+  return "The credit balance on this plan.";
+}
 
 /** Credit totals are counts a person scans. Group them; leave dates and day indexes alone. */
 export function usageMeterValue(key: string, value: string | number): string {
@@ -768,12 +811,7 @@ export function PlanSection({ session }: { session: SessionShape }) {
   const [upgrading, setUpgrading] = React.useState(false);
   const [upgradeError, setUpgradeError] = React.useState<string | null>(null);
   const canUpgrade = billing?.plan !== "pro";
-  const usage =
-    billing?.usage && typeof billing.usage === "object" && !Array.isArray(billing.usage)
-      ? Object.entries(billing.usage as Record<string, unknown>).filter(
-          ([, value]) => typeof value === "string" || typeof value === "number",
-        )
-      : [];
+  const usage = usageEntries(billing?.usage);
 
   const upgrade = async () => {
     if (upgrading) return;
@@ -821,7 +859,7 @@ export function PlanSection({ session }: { session: SessionShape }) {
           </p>
         ) : null}
       </SettingsRow>
-      <SettingsRow description="Activity counted in the current billing period." title="Usage">
+      <SettingsRow description={usageSectionCopy(usage)} title="Usage">
         {usage.length === 0 ? (
           <EmptyCardState>No usage recorded yet.</EmptyCardState>
         ) : (
