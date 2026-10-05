@@ -5710,7 +5710,8 @@
           },
           "receiptId": {
             "description": "Idempotent request id.",
-            "example": "delete:ab12",
+            "example": "eb8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
             "type": "string"
           },
           "requestedAt": {
@@ -24843,14 +24844,15 @@
           "content": {
             "application/json": {
               "example": {
-                "requestId": "delete:ab12"
+                "requestId": "eb8dfa9b-a7b2-46ea-982c-622a914c00e5"
               },
               "schema": {
                 "description": "Deletion request.",
                 "properties": {
                   "requestId": {
                     "description": "Idempotency key.",
-                    "example": "delete:ab12",
+                    "example": "eb8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "format": "uuid",
                     "type": "string"
                   }
                 },

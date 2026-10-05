@@ -338,6 +338,35 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertDeletionRequest(t, spec)
+}
+
+func TestDeletionRequestUsesThePageUUID(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertDeletionRequest(t, spec)
+}
+
+func assertDeletionRequest(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/conversation-deletion"])["post"])
+	content := asObj(asObj(asObj(operation["requestBody"])["content"])["application/json"])
+	example := asObj(content["example"])
+	if example["requestId"] != documentedDeletionRequestID {
+		t.Fatalf("deletion request example: %#v", example)
+	}
+	requestID := asObj(asObj(asObj(content["schema"])["properties"])["requestId"])
+	if requestID["example"] != documentedDeletionRequestID || requestID["format"] != "uuid" {
+		t.Fatalf("request id: %#v", requestID)
+	}
+	receipt := asObj(asObj(asObj(asObj(spec["components"])["schemas"])["ConversationDeletionReceipt"])["properties"])
+	stored := asObj(receipt["receiptId"])
+	if stored["example"] != documentedDeletionRequestID || stored["format"] != "uuid" {
+		t.Fatalf("receipt id: %#v", stored)
+	}
+	if requestID["example"] == "delete:ab12" || stored["example"] == "delete:ab12" {
+		t.Fatal("deletion still samples delete:ab12")
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

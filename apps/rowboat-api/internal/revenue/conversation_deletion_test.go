@@ -56,7 +56,7 @@ func TestConversationDeletionHonorsLegalHoldThenRemovesServerContentIdempotently
 		t.Fatal(err)
 	}
 	receipt, err := f.svc.RequestConversationDeletion(f.ctx, f.user, rel.ID, "delete-released-1")
-	if err != nil || receipt.Status != "partial" || receipt.LegalHold {
+	if err != nil || receipt.Status != "partial" || receipt.LegalHold || receipt.ReceiptID != "delete-released-1" {
 		t.Fatalf("released deletion failed: %#v err=%v", receipt, err)
 	}
 	replay, err := f.svc.RequestConversationDeletion(f.ctx, f.user, rel.ID, "delete-released-1")
