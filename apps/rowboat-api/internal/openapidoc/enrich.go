@@ -1935,6 +1935,25 @@ func enrichEntitySchemas(schemas obj) {
 			}
 		}
 	}
+	// The shared expires_at note samples an RFC3339 string. These token
+	// bundles store a Unix timestamp in seconds, matching their endpoints.
+	for _, item := range []struct {
+		schema, description string
+	}{
+		{"WorkOSTokenBundle", "Unix timestamp in seconds when the access token expires."},
+		{"OAuthTokenBundle", "Unix timestamp in seconds when the access token expires."},
+		{"MCPTokenResponse", "Unix expiry timestamp in seconds."},
+	} {
+		schema := asObj(schemas[item.schema])
+		if schema == nil {
+			continue
+		}
+		properties := asObj(schema["properties"])
+		if properties == nil || properties["expires_at"] == nil {
+			continue
+		}
+		properties["expires_at"] = int64Schema(item.description, 1790784000)
+	}
 
 	backgroundPropDocs := map[string]obj{
 		"slug":                 {"description": "Stable per-user background task slug matching bg-tasks/<slug> locally.", "example": "daily-summary"},
