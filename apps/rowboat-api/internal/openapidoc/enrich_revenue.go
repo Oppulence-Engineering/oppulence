@@ -632,17 +632,30 @@ func addRevenueSchemas(schemas obj) {
 // overlay. Runtime schemas may reuse names such as status and reason with
 // domain-specific semantics, so their contract must win over entity defaults.
 func restoreRevenueSchemaOverrides(schemas obj) {
-	evidence := asObj(schemas["MissionControlDimensionEvidence"])
-	if evidence == nil {
-		return
+	if evidence := asObj(schemas["MissionControlDimensionEvidence"]); evidence != nil {
+		properties := asObj(evidence["properties"])
+		if properties != nil {
+			properties["reason"] = stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won.")
+			properties["status"] = stringEnum(
+				"Assertion lifecycle state.",
+				"accepted",
+				"proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active",
+			)
+		}
 	}
-	properties := asObj(evidence["properties"])
-	properties["reason"] = stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won.")
-	properties["status"] = stringEnum(
-		"Assertion lifecycle state.",
-		"accepted",
-		"proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active",
-	)
+	// The generic overlay calls every provider an LLM vendor and samples openai.
+	// A stored mail thread or body can only come from Gmail.
+	for _, name := range []string{"MailThread", "MailBodyCache"} {
+		schema := asObj(schemas[name])
+		if schema == nil {
+			continue
+		}
+		properties := asObj(schema["properties"])
+		if properties == nil || properties["provider"] == nil {
+			continue
+		}
+		properties["provider"] = stringEnum("Mailbox this row came from. Only Gmail is stored.", "gmail", "gmail")
+	}
 }
 
 func addRevenuePaths(paths obj) {

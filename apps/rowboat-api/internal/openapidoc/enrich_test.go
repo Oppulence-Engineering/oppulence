@@ -198,8 +198,10 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	spec := obj{
 		"components": obj{
 			"schemas": obj{
-				"CreditLedger": obj{"type": "object", "properties": obj{"delta": obj{"type": "integer"}, "reason": obj{"type": "string"}}},
-				"User":         obj{"type": "object", "properties": obj{"workos_user_id": obj{"type": "string"}}},
+				"CreditLedger":  obj{"type": "object", "properties": obj{"delta": obj{"type": "integer"}, "reason": obj{"type": "string"}}},
+				"User":          obj{"type": "object", "properties": obj{"workos_user_id": obj{"type": "string"}}},
+				"MailThread":    obj{"type": "object", "properties": obj{"provider": obj{"type": "string"}}},
+				"MailBodyCache": obj{"type": "object", "properties": obj{"provider": obj{"type": "string"}}},
 			},
 		},
 	}
@@ -230,6 +232,16 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	delta := asObj(asObj(creditLedger["properties"])["delta"])
 	if delta["description"] == nil || delta["example"] == nil {
 		t.Fatal("CreditLedger.delta should have a detailed description and example")
+	}
+	for _, name := range []string{"MailThread", "MailBodyCache"} {
+		provider := asObj(asObj(asObj(schemas[name])["properties"])["provider"])
+		enum, _ := provider["enum"].([]any)
+		if provider["description"] != "Mailbox this row came from. Only Gmail is stored." || provider["example"] != "gmail" || len(enum) != 1 || enum[0] != "gmail" {
+			t.Fatalf("%s.provider was stamped as an LLM vendor: %#v", name, provider)
+		}
+	}
+	if taskProvider := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["provider"]); taskProvider["example"] != "openai" {
+		t.Fatalf("BackgroundTask.provider lost its model example: %#v", taskProvider)
 	}
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
@@ -328,6 +340,13 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
+	}
+	for _, name := range []string{"MailThread", "MailBodyCache"} {
+		provider := asObj(asObj(asObj(schemas[name])["properties"])["provider"])
+		enum, _ := provider["enum"].([]any)
+		if provider["example"] != "gmail" || len(enum) != 1 || enum[0] != "gmail" {
+			t.Fatalf("checked-in %s.provider is not Gmail: %#v", name, provider)
+		}
 	}
 	if value := asObj(evidenceProperties["value"]); value["oneOf"] == nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.value is invalid: %#v", value)
