@@ -338,6 +338,32 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertSupportRefs(t, schemas)
+}
+
+func TestSupportRefsMatchThePublishedWorkspace(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSupportRefs(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertSupportRefs(t *testing.T, schemas obj) {
+	t.Helper()
+	diagnostics := asObj(asObj(schemas["BetaDiagnostics"])["properties"])
+	if asObj(diagnostics["workspaceRef"])["example"] != documentedWorkspaceSupportRef {
+		t.Fatalf("workspace ref: %#v", diagnostics["workspaceRef"])
+	}
+	source := asObj(asObj(diagnostics["sources"])["items"])
+	props := asObj(source["properties"])
+	if asObj(props["connectionRef"])["example"] != documentedConnectionSupportRef {
+		t.Fatalf("connection ref: %#v", props["connectionRef"])
+	}
+	if asObj(props["sourceAccountRef"])["example"] != documentedSourceAccountSupportRef {
+		t.Fatalf("source account ref: %#v", props["sourceAccountRef"])
+	}
+	if asObj(props["source"])["example"] != "google" {
+		t.Fatalf("source: %#v", props["source"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
