@@ -14745,12 +14745,12 @@
           },
           "key": {
             "description": "One-time bearer secret.",
-            "example": "opv_live_example",
+            "example": "opv_live_exampleAbCdEfGhIjKlMnOpQrStUvWxYz0123456789",
             "nullable": true,
             "type": "string"
           },
           "key_prefix": {
-            "description": "Safe display prefix.",
+            "description": "First 16 characters of the secret. Safe to display.",
             "example": "opv_live_example",
             "type": "string"
           },
@@ -15305,7 +15305,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "key": "opv_live_example"
+                    "key": "opv_live_exampleAbCdEfGhIjKlMnOpQrStUvWxYz0123456789"
                   }
                 },
                 "schema": {

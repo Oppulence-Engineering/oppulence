@@ -231,6 +231,8 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if delta["description"] == nil || delta["example"] == nil {
 		t.Fatal("CreditLedger.delta should have a detailed description and example")
 	}
+	assertVoiceKeyPrefix(t, schemas)
+	assertVoiceKeyCreateExample(t, spec)
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
@@ -325,6 +327,8 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if schemas["ConnectorCredentialCleanupJob"] != nil || schemas["ConnectorCredentialRecovery"] != nil {
 		t.Fatal("checked-in openapi json exposes internal credential cleanup or recovery state")
 	}
+	assertVoiceKeyPrefix(t, schemas)
+	assertVoiceKeyCreateExample(t, spec)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -335,6 +339,33 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	entityProperties := asObj(asObj(schemas["EntityProjection"])["properties"])
 	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
+	}
+}
+
+func assertVoiceKeyPrefix(t *testing.T, schemas obj) {
+	t.Helper()
+	properties := asObj(asObj(schemas["VoiceAPIKey"])["properties"])
+	secret := asObj(properties["key"])
+	prefix := asObj(properties["key_prefix"])
+	secretExample, _ := secret["example"].(string)
+	prefixExample, _ := prefix["example"].(string)
+	if prefixExample != "opv_live_example" || len(prefixExample) != 16 || secretExample == prefixExample || len(secretExample) < 17 || secretExample[:16] != prefixExample {
+		t.Fatalf("voice key prefix sampled the whole secret: prefix=%#v secret=%#v", prefix["example"], secret["example"])
+	}
+	if prefix["description"] != "First 16 characters of the secret. Safe to display." {
+		t.Fatalf("voice key prefix description: %#v", prefix["description"])
+	}
+}
+
+func assertVoiceKeyCreateExample(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	operation := asObj(asObj(paths["/api/v1/keys/create"])["post"])
+	response := asObj(asObj(operation["responses"])["201"])
+	body := asObj(asObj(asObj(response["content"])["application/json"])["example"])
+	data := asObj(body["data"])
+	if data["key"] != "opv_live_exampleAbCdEfGhIjKlMnOpQrStUvWxYz0123456789" {
+		t.Fatalf("created voice key sampled the display prefix: %#v", data["key"])
 	}
 }
 
