@@ -711,6 +711,14 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 // is the same filters with Offset set to how many rows are already on screen.
 const relationshipListLimit = 200
 
+// attentionQueuePage is the open queue the companies page loads. The table
+// under it starts with attentionQueueScreen rows. "Show the other reasons"
+// is the extra rows on that loaded page about companies already on screen.
+const (
+	attentionQueuePage   = 50
+	attentionQueueScreen = 10
+)
+
 // ListRelationships returns the workspace's relationships, most recent
 // interaction first. A company with no interaction follows those, newest
 // edit first. Each row includes its open queue actions so the caller can
@@ -806,6 +814,9 @@ func (s *Service) ListRelationshipsFiltered(
 			))
 		}
 		needle := normalizePersonSearch(value)
+		if labelPhraseMatches("show the other reasons", needle) {
+			parts = append(parts, relationshipHasHiddenAttentionReasons())
+		}
 		if labelPhraseMatches("no activity", needle) {
 			parts = append(parts, relationship.LastTouchAtIsNil())
 		}
@@ -5149,6 +5160,66 @@ func writeDependentSource(b *sql.Builder, s *sql.Selector, alias string) {
 	b.WriteString(") IN ('hubspot', 'crm') AND ")
 	writeRelationshipDependsOn(b, s, []string{"hubspot", "crm"}, []string{"hubspot", "crm", "crm_task", "task"})
 	b.WriteString("))")
+}
+
+// relationshipHasHiddenAttentionReasons is true when the loaded attention
+// page has more rows than its first screen, and every one of those rows is
+// about a company already on that screen. A company that first appears past
+// the screen is "Show the other N companies" instead.
+func relationshipHasHiddenAttentionReasons() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("((SELECT COUNT(*) FROM (SELECT directory.")
+			b.WriteString(relationshipattentionitem.FieldID)
+			b.WriteString(" FROM ")
+			writeOpenCompanyAttention(b, s)
+			writeAttentionRankOrder(b)
+			b.WriteString(fmt.Sprintf(" LIMIT %d) AS loaded) > %d", attentionQueuePage, attentionQueueScreen))
+			b.WriteString(" AND NOT EXISTS (SELECT 1 FROM (SELECT directory.")
+			b.WriteString(relationshipattentionitem.RelationshipColumn)
+			b.WriteString(" AS company_id FROM ")
+			writeOpenCompanyAttention(b, s)
+			writeAttentionRankOrder(b)
+			b.WriteString(fmt.Sprintf(" LIMIT %d) AS loaded WHERE loaded.company_id NOT IN (SELECT shown.company_id FROM (SELECT directory.", attentionQueuePage))
+			b.WriteString(relationshipattentionitem.RelationshipColumn)
+			b.WriteString(" AS company_id FROM ")
+			writeOpenCompanyAttention(b, s)
+			writeAttentionRankOrder(b)
+			b.WriteString(fmt.Sprintf(" LIMIT %d) AS shown)))", attentionQueueScreen))
+		}))
+	})
+}
+
+func writeOpenCompanyAttention(b *sql.Builder, s *sql.Selector) {
+	b.WriteString(relationshipattentionitem.Table)
+	b.WriteString(" AS directory INNER JOIN ")
+	b.WriteString(relationship.Table)
+	b.WriteString(" AS company ON company.")
+	b.WriteString(relationship.FieldID)
+	b.WriteString(" = directory.")
+	b.WriteString(relationshipattentionitem.RelationshipColumn)
+	b.WriteString(" WHERE directory.")
+	b.WriteString(relationshipattentionitem.WorkspaceColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.WorkspaceColumn))
+	b.WriteString(" AND directory.")
+	b.WriteString(relationshipattentionitem.FieldStatus)
+	b.WriteString(" = ")
+	b.Arg("open")
+	b.WriteString(" AND company.")
+	b.WriteString(relationship.FieldKind)
+	b.WriteString(" <> ")
+	b.Arg("person")
+}
+
+func writeAttentionRankOrder(b *sql.Builder) {
+	b.WriteString(" ORDER BY directory.")
+	b.WriteString(relationshipattentionitem.FieldRankScore)
+	b.WriteString(" DESC, directory.")
+	b.WriteString(relationshipattentionitem.FieldCreatedAt)
+	b.WriteString(" ASC, directory.")
+	b.WriteString(relationshipattentionitem.FieldID)
+	b.WriteString(" ASC")
 }
 
 // labelPhraseMatches is the sentence on the company row, or a longer question
