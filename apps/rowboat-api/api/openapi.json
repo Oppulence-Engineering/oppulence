@@ -13737,13 +13737,13 @@
             "type": "string"
           },
           "ts": {
-            "description": "Usage or ledger event timestamp.",
-            "example": "2026-06-04T20:38:00Z",
+            "description": "Slack message timestamp.",
+            "example": "1700000000.000100",
             "nullable": true,
             "type": "string"
           },
           "user": {
-            "description": "User that owns this row.",
+            "description": "Slack user id when present.",
             "example": "U01234567",
             "nullable": true,
             "type": "string"

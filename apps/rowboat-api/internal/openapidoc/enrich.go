@@ -1935,6 +1935,18 @@ func enrichEntitySchemas(schemas obj) {
 			}
 		}
 	}
+	// The shared ts note is a credit-ledger time, and the shared user note is
+	// the row owner. A Slack message uses Slack's own timestamp and user id.
+	if message := asObj(schemas["SlackThreadMessage"]); message != nil {
+		if properties := asObj(message["properties"]); properties != nil {
+			if properties["ts"] != nil {
+				properties["ts"] = stringSchema("Slack message timestamp.", "1700000000.000100", nullable())
+			}
+			if properties["user"] != nil {
+				properties["user"] = stringSchema("Slack user id when present.", "U01234567", nullable())
+			}
+		}
+	}
 
 	backgroundPropDocs := map[string]obj{
 		"slug":                 {"description": "Stable per-user background task slug matching bg-tasks/<slug> locally.", "example": "daily-summary"},

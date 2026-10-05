@@ -297,6 +297,20 @@ describe("API reference document", () => {
     );
   });
 
+  it("does not sample a ledger time for a Slack message", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const schemas = presented.components.schemas as Record<
+      string,
+      { properties?: Record<string, { example?: unknown; description?: string; nullable?: boolean }> }
+    >;
+    const ts = schemas.SlackThreadMessage?.properties?.ts;
+    expect(ts?.description).toBe("Slack message timestamp.");
+    expect(ts?.example).toBe("1700000000.000100");
+    expect(ts?.nullable).toBe(true);
+    expect(schemas.SlackThreadMessage?.properties?.user?.description).toBe("Slack user id when present.");
+    expect(schemas.CreditLedger?.properties?.ts?.example).toBe("2026-06-04T20:38:00Z");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
