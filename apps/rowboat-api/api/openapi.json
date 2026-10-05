@@ -8636,8 +8636,8 @@
             "type": "string"
           },
           "provider": {
-            "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
-            "example": "openai",
+            "description": "Sign-in service for this connection.",
+            "example": "google",
             "type": "string"
           },
           "refresh_token_present": {
@@ -8708,8 +8708,8 @@
             "type": "string"
           },
           "provider": {
-            "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
-            "example": "openai",
+            "description": "Sign-in service recorded for this connection.",
+            "example": "google",
             "type": "string"
           },
           "ref": {
@@ -8816,8 +8816,8 @@
             "writeOnly": true
           },
           "provider": {
-            "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
-            "example": "openai",
+            "description": "Sign-in service for this handoff. google, canvas, corinthian, or wispr.",
+            "example": "google",
             "type": "string"
           },
           "redirect_target": {
