@@ -9672,16 +9672,14 @@
             "$ref": "#/components/schemas/ConsentClientIdentity"
           },
           "connector": {
-            "$ref": "#/components/schemas/ConsentConnectorIdentity",
-            "description": "Connector slug.",
-            "example": "canvas"
+            "$ref": "#/components/schemas/ConsentConnectorIdentity"
           },
           "entitlement": {
             "$ref": "#/components/schemas/ConsentEntitlement"
           },
           "request_id": {
-            "description": "Idempotency and trace anchor for a metered request.",
-            "example": "9e2fb15a-936d-4f39-9372-73cfe0476ca8",
+            "description": "Deterministic context request id bound to the challenge.",
+            "example": "ctx_01HABCDEF",
             "type": "string"
           },
           "scopes": {

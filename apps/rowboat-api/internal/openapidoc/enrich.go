@@ -1935,6 +1935,18 @@ func enrichEntitySchemas(schemas obj) {
 			}
 		}
 	}
+	// The shared request_id note samples a metered credit charge. A consent
+	// context id is bound to the challenge, and the connector is an object.
+	if pre := asObj(schemas["PreConsentResponse"]); pre != nil {
+		if properties := asObj(pre["properties"]); properties != nil {
+			if properties["request_id"] != nil {
+				properties["request_id"] = stringSchema("Deterministic context request id bound to the challenge.", "ctx_01HABCDEF")
+			}
+			if properties["connector"] != nil {
+				properties["connector"] = ref("ConsentConnectorIdentity")
+			}
+		}
+	}
 
 	backgroundPropDocs := map[string]obj{
 		"slug":                 {"description": "Stable per-user background task slug matching bg-tasks/<slug> locally.", "example": "daily-summary"},
