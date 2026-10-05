@@ -101,6 +101,7 @@ import {
   deleteConversationConfirmCopy,
   completenessHeading,
   completenessProductLabel,
+  sourceLagLabel,
   identityReviewBlockCopy,
   detailEvidenceCopy,
   detailSourceLabel,
@@ -983,6 +984,13 @@ describe("RelationshipsView", () => {
     expect(completenessHeading("partial", 1)).toBe("Some details are still missing");
     expect(completenessHeading("complete", 0)).toBe("Details are current");
     expect(source).toContain("completenessHeading(model.completeness.status, supported)");
+    expect(sourceLagLabel(0)).toBe("");
+    expect(sourceLagLabel(24)).toBe("1 minute behind");
+    expect(sourceLagLabel(12 * 60)).toBe("12 minutes behind");
+    expect(sourceLagLabel(21 * 60 * 60 + 12 * 60)).toBe("21 hours behind");
+    expect(sourceLagLabel(36 * 60 * 60)).toBe("2 days behind");
+    expect(source).toContain("sourceLagLabel(account.lagSeconds)");
+    expect(source).not.toContain("m lag");
     expect(completenessProductLabel("partial")).toBe("Some details are still missing");
     expect(completenessProductLabel("complete")).toBe("Details are current");
     expect(completenessProductLabel("custom_status")).toBe("Custom Status");
