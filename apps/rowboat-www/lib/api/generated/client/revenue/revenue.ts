@@ -246,8 +246,8 @@ export const getApproveRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Approves the current revision. Send-mode actions require a passed (or explicitly risk-accepted review_required) unexpired decision bound to the exact revision; blocked actions can never be approved.
- * @summary Approve an action
+ * Approve posts acceptRisk false. The stored action is approved for its current revision, and the approval time is recorded. Approve send uses this same call when the action is in send mode. A blocked action cannot be approved.
+ * @summary Approve
  */
 export const approveRevenueAction = async (
   actionId: string,
