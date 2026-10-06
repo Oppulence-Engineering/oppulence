@@ -8,16 +8,22 @@
 import { HttpResponse, http } from "msw";
 import type { RequestHandlerOptions } from "msw";
 
-import type { AgentSessionEventsResponse, AgentSessionListResponse } from "../model";
+import type {
+  AgentSessionEventsResponse,
+  AgentSessionListResponse,
+  MintAgentApprovalToken200,
+} from "../model";
 
 import {
   getListAgentSessionEventsResponseMock,
   getListAgentSessionsResponseMock,
+  getMintAgentApprovalTokenResponseMock,
 } from "./agent-sessions.faker";
 
 export {
   getListAgentSessionsResponseMock,
   getListAgentSessionEventsResponseMock,
+  getMintAgentApprovalTokenResponseMock,
 } from "./agent-sessions.faker";
 
 export const getListAgentSessionsMockHandler = (
@@ -67,7 +73,32 @@ export const getListAgentSessionEventsMockHandler = (
     options,
   );
 };
+
+export const getMintAgentApprovalTokenMockHandler = (
+  overrideResponse?:
+    | MintAgentApprovalToken200
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<MintAgentApprovalToken200> | MintAgentApprovalToken200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/agent-sessions/:id/approvals/:approvalId/token",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getMintAgentApprovalTokenResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 export const getAgentSessionsMock = () => [
   getListAgentSessionsMockHandler(),
   getListAgentSessionEventsMockHandler(),
+  getMintAgentApprovalTokenMockHandler(),
 ];

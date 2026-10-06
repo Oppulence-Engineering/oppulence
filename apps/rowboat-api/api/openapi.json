@@ -16010,6 +16010,100 @@
         "tags": ["Agent Sessions"]
       }
     },
+    "/v1/agent-sessions/{id}/approvals/{approvalId}/token": {
+      "post": {
+        "description": "Approve on a payment request posts no body. The API returns the approval token for that pending payment, valid until 2026-09-02T15:10:00Z, with no extra sign-in check.",
+        "operationId": "mintAgentApprovalToken",
+        "parameters": [
+          {
+            "description": "Stable session id.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session id.",
+              "example": "session_abc123",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Pending approval id.",
+            "in": "path",
+            "name": "approvalId",
+            "required": true,
+            "schema": {
+              "description": "Approval id.",
+              "example": "session_abc123/turn/0/approval/0",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "approvalToken": "agt_example.signature",
+                  "expiresAt": "2026-09-02T15:10:00Z",
+                  "mfa": false
+                },
+                "schema": {
+                  "description": "Short-lived approval token.",
+                  "properties": {
+                    "approvalToken": {
+                      "description": "Token the chat sends with the granted decision.",
+                      "example": "agt_example.signature",
+                      "type": "string"
+                    },
+                    "expiresAt": {
+                      "description": "When this token stops working.",
+                      "example": "2026-09-02T15:10:00Z",
+                      "type": "string"
+                    },
+                    "mfa": {
+                      "description": "Whether an extra sign-in check backed this approval.",
+                      "example": false,
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "approvalToken",
+                    "expiresAt",
+                    "mfa"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Approval token."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Approve payment",
+        "tags": [
+          "Agent Sessions"
+        ]
+      }
+    },
     "/v1/auth/workos/exchange": {
       "post": {
         "description": "Completes the authorization-code exchange server-side with the WorkOS API key, then returns the desktop token bundle.",

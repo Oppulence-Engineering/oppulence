@@ -1070,6 +1070,29 @@ func addAgentSessionPaths(paths obj) {
 		"404": responseRef("404"),
 		"500": responseRef("500"),
 	})}
+	paths["/v1/agent-sessions/{id}/approvals/{approvalId}/token"] = obj{"post": operation("Agent Sessions", "Approve payment", "Approve on a payment request posts no body. The API returns the approval token for that pending payment, valid until 2026-09-02T15:10:00Z, with no extra sign-in check.", "mintAgentApprovalToken", bearer(), []any{
+		pathParam("id", "Stable session id.", stringSchema("Session id.", "session_abc123")),
+		pathParam("approvalId", "Pending approval id.", stringSchema("Approval id.", "session_abc123/turn/0/approval/0")),
+	}, nil, obj{
+		"200": jsonResponse("Approval token.", objectSchema("Short-lived approval token.", obj{
+			"approvalToken": stringSchema("Token the chat sends with the granted decision.", "agt_example.signature"),
+			"expiresAt":     stringSchema("When this token stops working.", "2026-09-02T15:10:00Z"),
+			"mfa":           boolSchema("Whether an extra sign-in check backed this approval.", false),
+		}, "approvalToken", "expiresAt", "mfa"), documentedApprovalToken()),
+		"401": responseRef("401"),
+		"403": responseRef("403"),
+		"404": responseRef("404"),
+		"409": responseRef("409"),
+		"500": responseRef("500"),
+	})}
+}
+
+func documentedApprovalToken() obj {
+	return obj{
+		"approvalToken": "agt_example.signature",
+		"expiresAt":     "2026-09-02T15:10:00Z",
+		"mfa":           false,
+	}
 }
 
 func addVoiceCloudSchemas(schemas obj) {

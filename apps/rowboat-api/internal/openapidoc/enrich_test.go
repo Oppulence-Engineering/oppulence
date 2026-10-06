@@ -52,6 +52,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/background-tasks/{slug}/runs/{runId}/events",
 		"/v1/background-tasks/{slug}/runs/{runId}/events/stream",
 		"/v1/background-tasks/{slug}/trigger",
+		"/v1/agent-sessions/{id}/approvals/{approvalId}/token",
 		"/v1/llm/models",
 		"/v1/llm/chat/completions",
 		"/v1/llm/completions",
@@ -338,6 +339,44 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertApprovalToken(t, spec)
+}
+
+func TestApprovePaymentReturnsTheToken(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertApprovalToken(t, spec)
+}
+
+func assertApprovalToken(t *testing.T, spec obj) {
+	t.Helper()
+	post := asObj(asObj(asObj(spec["paths"])["/v1/agent-sessions/{id}/approvals/{approvalId}/token"])["post"])
+	if post["summary"] != "Approve payment" || post["operationId"] != "mintAgentApprovalToken" {
+		t.Fatalf("approval token operation = %#v", post["summary"])
+	}
+	if post["requestBody"] != nil {
+		t.Fatal("approve payment should have no body")
+	}
+	example := asObj(asObj(asObj(asObj(asObj(post["responses"])["200"])["content"])["application/json"])["example"])
+	if mustJSON(example) != mustJSON(documentedApprovalToken()) {
+		t.Fatalf("approval token example = %s", mustJSON(example))
+	}
+	if example["mfa"] != false || example["approvalToken"] != "agt_example.signature" || example["expiresAt"] != "2026-09-02T15:10:00Z" {
+		t.Fatalf("approval token = %s", mustJSON(example))
+	}
+	history := asObj(asObj(asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/agent-sessions"])["get"])["responses"])["200"])["content"])["application/json"])["example"])
+	sessions, _ := history["sessions"].([]any)
+	if len(sessions) == 0 || asObj(sessions[0])["title"] != "Review the Acme renewal" {
+		t.Fatal("history list example changed")
+	}
+}
+
+func mustJSON(v any) string {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(raw)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -400,3 +439,4 @@ func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) 
 		}
 	}
 }
+

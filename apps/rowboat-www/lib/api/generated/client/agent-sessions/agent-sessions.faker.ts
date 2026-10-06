@@ -7,7 +7,11 @@
  */
 import { faker } from "@faker-js/faker";
 
-import type { AgentSessionEventsResponse, AgentSessionListResponse } from "../model";
+import type {
+  AgentSessionEventsResponse,
+  AgentSessionListResponse,
+  MintAgentApprovalToken200,
+} from "../model";
 
 export const getListAgentSessionsResponseMock = (
   overrideResponse: Partial<Extract<AgentSessionListResponse, object>> = {},
@@ -77,5 +81,14 @@ export const getListAgentSessionEventsResponseMock = (
     faker.helpers.arrayElement([faker.number.int(), null]),
     undefined,
   ]),
+  ...overrideResponse,
+});
+
+export const getMintAgentApprovalTokenResponseMock = (
+  overrideResponse: Partial<Extract<MintAgentApprovalToken200, object>> = {},
+): MintAgentApprovalToken200 => ({
+  approvalToken: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  expiresAt: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  mfa: faker.datatype.boolean(),
   ...overrideResponse,
 });

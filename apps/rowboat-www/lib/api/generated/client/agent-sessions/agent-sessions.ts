@@ -10,9 +10,12 @@ import type {
   AgentSessionListResponse,
   ListAgentSessionEventsParams,
   ListAgentSessionsParams,
+  MintAgentApprovalToken200,
   N400Response,
   N401Response,
+  N403Response,
   N404Response,
+  N409Response,
   N500Response,
 } from "../model";
 
@@ -152,4 +155,74 @@ export const listAgentSessionEvents = async (
 
   const data: listAgentSessionEventsResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as listAgentSessionEventsResponse;
+};
+
+export type mintAgentApprovalTokenResponse200 = {
+  data: MintAgentApprovalToken200;
+  status: 200;
+};
+
+export type mintAgentApprovalTokenResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type mintAgentApprovalTokenResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type mintAgentApprovalTokenResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type mintAgentApprovalTokenResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type mintAgentApprovalTokenResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type mintAgentApprovalTokenResponseSuccess = mintAgentApprovalTokenResponse200 & {
+  headers: Headers;
+};
+export type mintAgentApprovalTokenResponseError = (
+  | mintAgentApprovalTokenResponse401
+  | mintAgentApprovalTokenResponse403
+  | mintAgentApprovalTokenResponse404
+  | mintAgentApprovalTokenResponse409
+  | mintAgentApprovalTokenResponse500
+) & {
+  headers: Headers;
+};
+
+export type mintAgentApprovalTokenResponse =
+  mintAgentApprovalTokenResponseSuccess | mintAgentApprovalTokenResponseError;
+
+export const getMintAgentApprovalTokenUrl = (id: string, approvalId: string) => {
+  return `/v1/agent-sessions/${id}/approvals/${approvalId}/token`;
+};
+
+/**
+ * Approve on a payment request posts no body. The API returns the approval token for that pending payment, valid until 2026-09-02T15:10:00Z, with no extra sign-in check.
+ * @summary Approve payment
+ */
+export const mintAgentApprovalToken = async (
+  id: string,
+  approvalId: string,
+  options?: RequestInit,
+): Promise<mintAgentApprovalTokenResponse> => {
+  const res = await fetch(getMintAgentApprovalTokenUrl(id, approvalId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: mintAgentApprovalTokenResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as mintAgentApprovalTokenResponse;
 };
