@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,13 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertSnoozeAction(t, spec)
+}
+
+func TestSnoozeActionStoresSevenDays(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSnoozeAction(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -369,6 +377,34 @@ func assertEventObservation(t *testing.T, schemas obj) {
 	evidence := asObj(asObj(schemas["MissionControlEvidenceReference"])["properties"])
 	if asObj(evidence["observationId"])["example"] != observationID {
 		t.Fatalf("mission control observation id changed: %#v", evidence["observationId"])
+	}
+}
+
+func assertSnoozeAction(t *testing.T, spec obj) {
+	t.Helper()
+	const wake = "2026-08-07T14:00:00Z"
+	op := asObj(asObj(asObj(spec["paths"])["/v1/revenue-actions/{actionId}/snooze"])["post"])
+	if op["summary"] != "Snooze" || op["operationId"] != "snoozeRevenueAction" {
+		t.Fatalf("snooze operation: summary=%#v id=%#v", op["summary"], op["operationId"])
+	}
+	description, _ := op["description"].(string)
+	if !strings.Contains(description, "seven days") {
+		t.Fatalf("snooze description: %q", description)
+	}
+	request := asObj(asObj(asObj(op["requestBody"])["content"])["application/json"])
+	if asObj(request["example"])["until"] != wake {
+		t.Fatalf("snooze request: %#v", request["example"])
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	if example["queueStatus"] != "snoozed" || example["snoozedUntil"] != wake || example["id"] != "1a8dfa9b-a7b2-46ea-982c-622a914c00e5" {
+		t.Fatalf("snoozed action: %#v", example)
+	}
+	if _, ok := example["dismissReason"]; ok {
+		t.Fatalf("snooze stores no dismiss reason: %#v", example["dismissReason"])
+	}
+	queue := asObj(asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueAction"])["properties"])["queueStatus"])
+	if queue["example"] != "open" {
+		t.Fatalf("queue status example changed: %#v", queue)
 	}
 }
 

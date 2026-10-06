@@ -315,6 +315,21 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the seven-day wake time Snooze stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-actions/{actionId}/snooze"].post;
+    const wake = "2026-08-07T14:00:00Z";
+    expect(operation.summary).toBe("Snooze");
+    expect(operation.operationId).toBe("snoozeRevenueAction");
+    expect(operation.requestBody.content["application/json"].example).toEqual({ until: wake });
+    expect(operation.responses["200"].content["application/json"].example).toMatchObject({
+      id: "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      queueStatus: "snoozed",
+      snoozedUntil: wake,
+    });
+    expect(presented.components.schemas.RevenueAction.properties.queueStatus.example).toBe("open");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

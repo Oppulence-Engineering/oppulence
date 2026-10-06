@@ -1947,8 +1947,8 @@ export const RejectRevenueAction409Response = zod
   );
 
 /**
- * Parks the action until a bounded future timestamp (at most 90 days).
- * @summary Snooze an action
+ * Snooze posts a wake time seven days out. The stored action is snoozed until that time. The wake time has to be in the future and within 90 days.
+ * @summary Snooze
  */
 export const SnoozeRevenueActionParams = zod.object({
   actionId: zod.uuid().describe("Action id."),
@@ -1956,7 +1956,7 @@ export const SnoozeRevenueActionParams = zod.object({
 
 export const SnoozeRevenueActionBody = zod
   .strictObject({
-    until: zod.iso.datetime({ offset: true }).describe("Wake time."),
+    until: zod.iso.datetime({ offset: true }).describe("Wake time seven days out."),
   })
   .describe("Snooze request.");
 

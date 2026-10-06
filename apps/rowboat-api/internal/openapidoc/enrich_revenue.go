@@ -648,6 +648,37 @@ func restoreRevenueSchemaOverrides(schemas obj) {
 	)
 }
 
+const (
+	documentedSnoozeActionID = "1a8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedSnoozeWake     = "2026-08-07T14:00:00Z"
+)
+
+func documentedSnoozedAction() obj {
+	return obj{
+		"id":               documentedSnoozeActionID,
+		"relationshipId":   "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+		"relationshipName": "Acme",
+		"actionType":       "warm_follow_up",
+		"channel":          "email",
+		"detector":         "requested_follow_up_due",
+		"revision":         1,
+		"revisionHash":     "sha256:ab12...",
+		"reason":           "They asked for a follow-up in July.",
+		"recipientEmail":   "buyer@example.com",
+		"priorityScore":    82,
+		"queueStatus":      "snoozed",
+		"policyStatus":     "pending",
+		"approvalStatus":   "pending",
+		"executionStatus":  "pending",
+		"executionOwner":   "rowboat",
+		"executionMode":    "draft",
+		"snoozedUntil":     documentedSnoozeWake,
+		"createdAt":        "2026-07-12T12:00:00Z",
+		"updatedAt":        "2026-07-31T14:00:00Z",
+		"evidence":         []any{},
+	}
+}
+
 func addRevenuePaths(paths obj) {
 	actionParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Action id.", "schema": obj{"type": "string", "format": "uuid"}}}
 
@@ -1212,10 +1243,11 @@ func addRevenuePaths(paths obj) {
 		"404": responseRef("404"),
 		"409": problemResponse("Execution already started; the action is immutable.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "execution already started; the action is immutable", "not_editable")),
 	})}
-	paths["/v1/revenue-actions/{actionId}/snooze"] = obj{"post": operation("Revenue", "Snooze an action", "Parks the action until a bounded future timestamp (at most 90 days).", "snoozeRevenueAction", bearer(), actionParam, jsonRequest("Wake time.", objectSchema("Snooze request.", obj{
-		"until": stringSchema("Wake time.", "2026-07-20T09:00:00Z", obj{"format": "date-time"}),
-	}, "until"), obj{"until": "2026-07-20T09:00:00Z"}), obj{
-		"200": jsonResponse("Snoozed action.", ref("RevenueAction"), nil),
+	snoozeActionParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Action id.", "schema": obj{"type": "string", "format": "uuid", "example": documentedSnoozeActionID}}}
+	paths["/v1/revenue-actions/{actionId}/snooze"] = obj{"post": operation("Revenue", "Snooze", "Snooze posts a wake time seven days out. The stored action is snoozed until that time. The wake time has to be in the future and within 90 days.", "snoozeRevenueAction", bearer(), snoozeActionParam, jsonRequest("Wake time.", objectSchema("Snooze request.", obj{
+		"until": stringSchema("Wake time seven days out.", documentedSnoozeWake, obj{"format": "date-time"}),
+	}, "until"), obj{"until": documentedSnoozeWake}), obj{
+		"200": jsonResponse("Snoozed action.", ref("RevenueAction"), documentedSnoozedAction()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),

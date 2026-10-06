@@ -7,9 +7,6 @@
  */
 
 /**
- * Snooze request.
+ * Editor document, when one was saved.
  */
-export type SnoozeRevenueActionBody = {
-  /** Wake time seven days out. */
-  until: string;
-};
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };
