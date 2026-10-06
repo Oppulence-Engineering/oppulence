@@ -315,6 +315,26 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the disconnected source Disconnect stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation =
+      presented.paths["/v1/relationship-sources/{source}/{sourceAccountId}/disconnect"].post;
+    expect(operation.summary).toBe("Disconnect");
+    expect(operation.operationId).toBe("disconnectRelationshipSource");
+    expect(operation.requestBody).toBeUndefined();
+    expect(operation.responses["200"].content["application/json"].example).toMatchObject({
+      source: "google",
+      sourceAccountId: "me@company.com",
+      status: "disconnected",
+      backfillPhase: "idle",
+      completeness: "disconnected",
+      lagSeconds: 0,
+      disconnectedAt: "2026-07-31T14:00:00Z",
+    });
+    expect(operation.responses["200"].content["application/json"].example.nextRetryAt).toBeUndefined();
+    expect(presented.components.schemas.RelationshipSourceStatus.properties.status.example).toBe("live");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
