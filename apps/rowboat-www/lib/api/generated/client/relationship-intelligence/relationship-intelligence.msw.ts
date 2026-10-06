@@ -28,6 +28,7 @@ import type {
   GetRelationshipChanges200,
   GetRelationshipConversationReview200,
   GetRelationshipEvidence200,
+  GetRelationshipPersonAttributes200,
   GetRelationshipSourceInventory200,
   GetRelationshipSourceStatuses200,
   GetRelationshipTimeline200,
@@ -36,6 +37,7 @@ import type {
   ListRelationshipAttention200,
   ListRelationshipIdentityCandidates200,
   ListRelationships200,
+  ListWorkspaceNotes200,
   PutConversationPolicy201,
   RelationshipAttentionItem,
   RelationshipCommitment,
@@ -78,6 +80,7 @@ import {
   getGetRelationshipEvidenceResponseMock,
   getGetRelationshipGraphResponseMock,
   getGetRelationshipIdentityCandidateResponseMock,
+  getGetRelationshipPersonAttributesResponseMock,
   getGetRelationshipResponseMock,
   getGetRelationshipSourceInventoryResponseMock,
   getGetRelationshipSourceStatusesResponseMock,
@@ -87,6 +90,7 @@ import {
   getListRelationshipAttentionResponseMock,
   getListRelationshipIdentityCandidatesResponseMock,
   getListRelationshipsResponseMock,
+  getListWorkspaceNotesResponseMock,
   getPutConversationPolicyResponseMock,
   getRejectRelationshipRecommendationResponseMock,
   getReportRelationshipSourceAuthorizationResponseMock,
@@ -112,6 +116,7 @@ export {
   getGetRelationshipIdentityCandidateResponseMock,
   getDecideRelationshipIdentityCandidateResponseMock,
   getIngestRelationshipObservationsResponseMock,
+  getGetRelationshipPersonAttributesResponseMock,
   getApproveRelationshipRecommendationResponseMock,
   getRejectRelationshipRecommendationResponseMock,
   getGetRelationshipSourceInventoryResponseMock,
@@ -147,6 +152,7 @@ export {
   getGetRelationshipTimelineResponseMock,
   getGetCommunicationAttachmentContentResponseMock,
   getGetCommunicationInteractionBodyResponseMock,
+  getListWorkspaceNotesResponseMock,
 } from "./relationship-intelligence.faker";
 
 export const getListCommitmentsMockHandler = (
@@ -412,6 +418,30 @@ export const getIngestRelationshipObservationsMockHandler = (
             : overrideResponse
           : getIngestRelationshipObservationsResponseMock(),
         { status: 201 },
+      );
+    },
+    options,
+  );
+};
+
+export const getGetRelationshipPersonAttributesMockHandler = (
+  overrideResponse?:
+    | GetRelationshipPersonAttributes200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<GetRelationshipPersonAttributes200> | GetRelationshipPersonAttributes200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/relationship-persons/:personId/attributes",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetRelationshipPersonAttributesResponseMock(),
+        { status: 200 },
       );
     },
     options,
@@ -1257,6 +1287,30 @@ export const getGetCommunicationInteractionBodyMockHandler = (
     options,
   );
 };
+
+export const getListWorkspaceNotesMockHandler = (
+  overrideResponse?:
+    | ListWorkspaceNotes200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListWorkspaceNotes200> | ListWorkspaceNotes200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/workspace-notes",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListWorkspaceNotesResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 export const getRelationshipIntelligenceMock = () => [
   getListCommitmentsMockHandler(),
   getExportCommitmentMockHandler(),
@@ -1269,6 +1323,7 @@ export const getRelationshipIntelligenceMock = () => [
   getGetRelationshipIdentityCandidateMockHandler(),
   getDecideRelationshipIdentityCandidateMockHandler(),
   getIngestRelationshipObservationsMockHandler(),
+  getGetRelationshipPersonAttributesMockHandler(),
   getApproveRelationshipRecommendationMockHandler(),
   getRejectRelationshipRecommendationMockHandler(),
   getGetRelationshipSourceInventoryMockHandler(),
@@ -1304,4 +1359,5 @@ export const getRelationshipIntelligenceMock = () => [
   getGetRelationshipTimelineMockHandler(),
   getGetCommunicationAttachmentContentMockHandler(),
   getGetCommunicationInteractionBodyMockHandler(),
+  getListWorkspaceNotesMockHandler(),
 ];

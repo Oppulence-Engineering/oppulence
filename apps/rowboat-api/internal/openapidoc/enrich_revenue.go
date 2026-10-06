@@ -1061,6 +1061,28 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"409": responseRef("409"),
 	})}
+	paths["/v1/relationship-persons/{personId}/attributes"] = obj{"get": operation("Relationship Intelligence", "Open person", "Open person loads the profile behind a name in the directory. The request sends only the person id. The answer is each stored detail: the value, where it came from, and why it is there.", "getRelationshipPersonAttributes", bearer(), []any{
+		obj{"name": "personId", "in": "path", "required": true, "description": "Person id.", "schema": uuidSchema("Person id.", openPersonID)},
+	}, nil, obj{
+		"200": jsonResponse("The profile details Open person loads.", objectSchema("Person profile.", obj{
+			"attributes": arraySchema("Stored details, newest first.", objectSchema("One stored detail.", obj{
+				"id":         uuidSchema("Detail id.", openPersonTitleID),
+				"dimension":  stringSchema("Which detail this is.", "title"),
+				"value":      stringSchema("The stored detail.", "VP Engineering"),
+				"sourceType": stringSchema("How this detail was established.", "source_fact"),
+				"source":     stringSchema("Where this detail came from.", "hubspot"),
+				"extractor":  stringSchema("How it was read.", "crm_field"),
+				"status":     stringSchema("Whether this detail is current.", "active"),
+				"confidence": numberSchema("How strongly this detail is held.", 0.7),
+				"reason":     stringSchema("Why this detail is here.", "Title supplied by the source record."),
+				"observedAt": stringSchema("When it was seen.", "2026-08-04T12:00:00Z", obj{"format": "date-time"}),
+				"validFrom":  stringSchema("When it started counting.", "2026-08-04T12:00:00Z", obj{"format": "date-time"}),
+			}, "id", "dimension", "value", "sourceType", "source", "extractor", "status", "confidence", "observedAt", "validFrom")),
+		}, "attributes"), openPersonProfile()),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+	})}
 	planTokenParam := []any{obj{"name": "X-Oppulence-Plan-Token", "in": "header", "required": true, "description": "Scoped plan response token. Never put this token in a URL or query parameter.", "schema": obj{"type": "string"}}}
 	paths["/v1/public/mutual-action-plan"] = obj{"get": operation("Relationship Intelligence", "Open a scoped mutual action plan", "Returns only the externally authorized plan revision with internal evidence references removed and policy redactions applied.", "getPublicMutualActionPlan", nil, planTokenParam, nil, obj{
 		"200": jsonResponse("Scoped public plan.", freeFormSchema("Public mutual action plan."), nil), "404": responseRef("404"),
@@ -1311,4 +1333,39 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
+}
+
+const (
+	openPersonID       = "ab8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	openPersonAliasID  = "b18dfa9b-a7b2-46ea-982c-622a914c00e5"
+	openPersonNameID   = "b28dfa9b-a7b2-46ea-982c-622a914c00e5"
+	openPersonDomainID = "b38dfa9b-a7b2-46ea-982c-622a914c00e5"
+	openPersonOrgID    = "b48dfa9b-a7b2-46ea-982c-622a914c00e5"
+	openPersonTitleID  = "b58dfa9b-a7b2-46ea-982c-622a914c00e5"
+)
+
+func openPersonProfile() obj {
+	return obj{"attributes": []any{
+		openPersonDetail(openPersonAliasID, "alias", "Sarah Chen", "deterministic", "display_name_header", 0.5, "Every name we have seen for this person."),
+		openPersonDetail(openPersonNameID, "display_name", "Sarah Chen", "source_fact", "display_name_header", 0.8, "Name as it appeared on the source record."),
+		openPersonDetail(openPersonDomainID, "org_domain", "acme.example", "deterministic", "email_header", 0.6, "Derived from the participant's email domain."),
+		openPersonDetail(openPersonOrgID, "org_name", "Acme", "deterministic", "display_name_header", 0.65, "Name of the company that owns this domain."),
+		openPersonDetail(openPersonTitleID, "title", "VP Engineering", "source_fact", "crm_field", 0.7, "Title supplied by the source record."),
+	}}
+}
+
+func openPersonDetail(id, dimension, value, sourceType, extractor string, confidence float64, reason string) obj {
+	return obj{
+		"id":         id,
+		"dimension":  dimension,
+		"value":      value,
+		"sourceType": sourceType,
+		"source":     "hubspot",
+		"extractor":  extractor,
+		"status":     "active",
+		"confidence": confidence,
+		"reason":     reason,
+		"observedAt": "2026-08-04T12:00:00Z",
+		"validFrom":  "2026-08-04T12:00:00Z",
+	}
 }

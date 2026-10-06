@@ -42,6 +42,7 @@ import type {
   GetRelationshipConversationReviewParams,
   GetRelationshipEvidence200,
   GetRelationshipGraphParams,
+  GetRelationshipPersonAttributes200,
   GetRelationshipSourceInventory200,
   GetRelationshipSourceStatuses200,
   GetRelationshipTimeline200,
@@ -56,6 +57,8 @@ import type {
   ListRelationshipIdentityCandidatesParams,
   ListRelationships200,
   ListRelationshipsParams,
+  ListWorkspaceNotes200,
+  ListWorkspaceNotesParams,
   N400Response,
   N401Response,
   N403Response,
@@ -754,6 +757,68 @@ export const ingestRelationshipObservations = async (
     status: res.status,
     headers: res.headers,
   } as ingestRelationshipObservationsResponse;
+};
+
+export type getRelationshipPersonAttributesResponse200 = {
+  data: GetRelationshipPersonAttributes200;
+  status: 200;
+};
+
+export type getRelationshipPersonAttributesResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type getRelationshipPersonAttributesResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getRelationshipPersonAttributesResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type getRelationshipPersonAttributesResponseSuccess =
+  getRelationshipPersonAttributesResponse200 & {
+    headers: Headers;
+  };
+export type getRelationshipPersonAttributesResponseError = (
+  | getRelationshipPersonAttributesResponse400
+  | getRelationshipPersonAttributesResponse401
+  | getRelationshipPersonAttributesResponse404
+) & {
+  headers: Headers;
+};
+
+export type getRelationshipPersonAttributesResponse =
+  getRelationshipPersonAttributesResponseSuccess | getRelationshipPersonAttributesResponseError;
+
+export const getGetRelationshipPersonAttributesUrl = (personId: string) => {
+  return `/v1/relationship-persons/${personId}/attributes`;
+};
+
+/**
+ * Open person loads the profile behind a name in the directory. The request sends only the person id. The answer is each stored detail: the value, where it came from, and why it is there.
+ * @summary Open person
+ */
+export const getRelationshipPersonAttributes = async (
+  personId: string,
+  options?: RequestInit,
+): Promise<getRelationshipPersonAttributesResponse> => {
+  const res = await fetch(getGetRelationshipPersonAttributesUrl(personId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getRelationshipPersonAttributesResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getRelationshipPersonAttributesResponse;
 };
 
 export type approveRelationshipRecommendationResponse200 = {
@@ -2924,4 +2989,66 @@ export const getCommunicationInteractionBody = async (
     status: res.status,
     headers: res.headers,
   } as getCommunicationInteractionBodyResponse;
+};
+
+export type listWorkspaceNotesResponse200 = {
+  data: ListWorkspaceNotes200;
+  status: 200;
+};
+
+export type listWorkspaceNotesResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type listWorkspaceNotesResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listWorkspaceNotesResponseSuccess = listWorkspaceNotesResponse200 & {
+  headers: Headers;
+};
+export type listWorkspaceNotesResponseError = (
+  listWorkspaceNotesResponse400 | listWorkspaceNotesResponse401
+) & {
+  headers: Headers;
+};
+
+export type listWorkspaceNotesResponse =
+  listWorkspaceNotesResponseSuccess | listWorkspaceNotesResponseError;
+
+export const getListWorkspaceNotesUrl = (params?: ListWorkspaceNotesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/workspace-notes?${stringifiedParams}`
+    : `/v1/workspace-notes`;
+};
+
+/**
+ * Returns the latest copy of each company note in this workspace. One request reads every company, so the notes page does not ask for each company timeline. A newer edit replaces the previous copy, and a later deletion removes the note.
+ * @summary List workspace notes
+ */
+export const listWorkspaceNotes = async (
+  params?: ListWorkspaceNotesParams,
+  options?: RequestInit,
+): Promise<listWorkspaceNotesResponse> => {
+  const res = await fetch(getListWorkspaceNotesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listWorkspaceNotesResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listWorkspaceNotesResponse;
 };
