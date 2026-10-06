@@ -151,8 +151,8 @@ export const getPatchConsolePreferencesUrl = () => {
 };
 
 /**
- * Strictly merges supplied typed fields into the caller's durable preference document.
- * @summary Patch console preferences
+ * Save profile posts the display name. The name is Ada Lovelace. The stored preferences keep that name, an empty default agent, usage sharing off, notifications off, model reasoning hidden, and the system theme.
+ * @summary Save profile
  */
 export const patchConsolePreferences = async (
   consolePreferencesPatch: ConsolePreferencesPatch,

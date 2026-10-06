@@ -315,6 +315,32 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the display name Save profile stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const patch = presented.paths["/v1/console/preferences"].patch;
+    expect(patch.summary).toBe("Save profile");
+    expect(patch.description).toBe(
+      "Save profile posts the display name. The name is Ada Lovelace. The stored preferences keep that name, an empty default agent, usage sharing off, notifications off, model reasoning hidden, and the system theme.",
+    );
+    expect(patch.requestBody.content["application/json"].example).toEqual({
+      displayName: "Ada Lovelace",
+    });
+    expect(patch.responses["200"].description).toBe("Stored profile.");
+    expect(patch.responses["200"].content["application/json"].example).toEqual({
+      displayName: "Ada Lovelace",
+      defaultAgentSlug: "",
+      shareUsageData: false,
+      notificationLevel: "off",
+      showModelReasoning: false,
+      theme: "system",
+    });
+    expect(presented.paths["/v1/console/preferences"].get.responses["200"].content["application/json"].example).toBeUndefined();
+    const fields = presented.components.schemas.ConsolePreferences.properties;
+    expect(fields.defaultAgentSlug.example).toBe("assistant");
+    expect(fields.shareUsageData.example).toBe(true);
+    expect(fields.notificationLevel.example).toBe("attention");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
