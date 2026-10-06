@@ -315,6 +315,28 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the first line Follow the chat reads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const stream = presented.paths["/v1/agent-sessions/{id}/stream"].get;
+    expect(stream.summary).toBe("Follow the chat");
+    expect(stream.description).toContain("sequence 0");
+    expect(stream.description).toContain("Assistant");
+    expect(stream.requestBody).toBeUndefined();
+    const cursor = stream.parameters.find((param: { name?: string }) => param.name === "afterSeq");
+    expect(cursor.required).toBe(false);
+    expect(cursor.schema.example).toBeUndefined();
+    const line = stream.responses["200"].content["application/x-ndjson"].example;
+    expect(line).toMatchObject({
+      seq: 0,
+      type: "agent.session_started",
+      data: { agent: "assistant", sessionId: "session_abc123" },
+    });
+    expect(line.turnSeq).toBeUndefined();
+    const history = presented.paths["/v1/agent-sessions"].get.responses["200"].content["application/json"].example
+      .sessions[0];
+    expect(history.title).toBe("Review the Acme renewal");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

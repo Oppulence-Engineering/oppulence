@@ -7,7 +7,11 @@
  */
 import { faker } from "@faker-js/faker";
 
-import type { AgentSessionEventsResponse, AgentSessionListResponse } from "../model";
+import type {
+  AgentSessionEventsResponse,
+  AgentSessionListResponse,
+  DurableAgentSessionEvent,
+} from "../model";
 
 export const getListAgentSessionsResponseMock = (
   overrideResponse: Partial<Extract<AgentSessionListResponse, object>> = {},
@@ -77,5 +81,18 @@ export const getListAgentSessionEventsResponseMock = (
     faker.helpers.arrayElement([faker.number.int(), null]),
     undefined,
   ]),
+  ...overrideResponse,
+});
+
+export const getStreamAgentSessionResponseMock = (
+  overrideResponse: Partial<Extract<DurableAgentSessionEvent, object>> = {},
+): DurableAgentSessionEvent => ({
+  data: {},
+  seq: faker.number.int(),
+  turnSeq: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.number.int(), null]),
+    undefined,
+  ]),
+  type: faker.string.alpha({ length: { min: 10, max: 20 } }),
   ...overrideResponse,
 });

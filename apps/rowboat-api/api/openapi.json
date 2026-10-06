@@ -16010,6 +16010,84 @@
         "tags": ["Agent Sessions"]
       }
     },
+    "/v1/agent-sessions/{id}/stream": {
+      "get": {
+        "description": "Follow the chat reads the open conversation. The first line is sequence 0, the session start for Assistant, with no turn yet.",
+        "operationId": "streamAgentSession",
+        "parameters": [
+          {
+            "description": "Stable session id.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session id.",
+              "example": "session_abc123",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Send the last sequence already shown when reconnecting. The first read omits this.",
+            "in": "query",
+            "name": "afterSeq",
+            "required": false,
+            "schema": {
+              "description": "Last sequence already shown.",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Ask for one event per line.",
+            "in": "header",
+            "name": "Accept",
+            "required": false,
+            "schema": {
+              "example": "application/x-ndjson",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/x-ndjson": {
+                "example": {
+                  "data": {
+                    "agent": "assistant",
+                    "sessionId": "session_abc123"
+                  },
+                  "seq": 0,
+                  "type": "agent.session_started"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/DurableAgentSessionEvent"
+                }
+              }
+            },
+            "description": "Session started."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Follow the chat",
+        "tags": [
+          "Agent Sessions"
+        ]
+      }
+    },
     "/v1/auth/workos/exchange": {
       "post": {
         "description": "Completes the authorization-code exchange server-side with the WorkOS API key, then returns the desktop token bundle.",

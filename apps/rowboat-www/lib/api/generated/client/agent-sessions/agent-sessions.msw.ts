@@ -8,16 +8,22 @@
 import { HttpResponse, http } from "msw";
 import type { RequestHandlerOptions } from "msw";
 
-import type { AgentSessionEventsResponse, AgentSessionListResponse } from "../model";
+import type {
+  AgentSessionEventsResponse,
+  AgentSessionListResponse,
+  DurableAgentSessionEvent,
+} from "../model";
 
 import {
   getListAgentSessionEventsResponseMock,
   getListAgentSessionsResponseMock,
+  getStreamAgentSessionResponseMock,
 } from "./agent-sessions.faker";
 
 export {
   getListAgentSessionsResponseMock,
   getListAgentSessionEventsResponseMock,
+  getStreamAgentSessionResponseMock,
 } from "./agent-sessions.faker";
 
 export const getListAgentSessionsMockHandler = (
@@ -67,7 +73,32 @@ export const getListAgentSessionEventsMockHandler = (
     options,
   );
 };
+
+export const getStreamAgentSessionMockHandler = (
+  overrideResponse?:
+    | DurableAgentSessionEvent
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<DurableAgentSessionEvent> | DurableAgentSessionEvent),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/agent-sessions/:id/stream",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getStreamAgentSessionResponseMock(),
+        { status: 200, headers: { "Content-Type": "application/x-ndjson" } },
+      );
+    },
+    options,
+  );
+};
 export const getAgentSessionsMock = () => [
   getListAgentSessionsMockHandler(),
   getListAgentSessionEventsMockHandler(),
+  getStreamAgentSessionMockHandler(),
 ];

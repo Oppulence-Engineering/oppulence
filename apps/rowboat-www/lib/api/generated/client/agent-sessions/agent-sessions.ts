@@ -8,13 +8,19 @@
 import type {
   AgentSessionEventsResponse,
   AgentSessionListResponse,
+  DurableAgentSessionEvent,
   ListAgentSessionEventsParams,
   ListAgentSessionsParams,
   N400Response,
   N401Response,
   N404Response,
   N500Response,
+  StreamAgentSessionParams,
 } from "../model";
+
+interface TypedResponse<T> extends Response {
+  json(): Promise<T>;
+}
 
 export type listAgentSessionsResponse200 = {
   data: AgentSessionListResponse;
@@ -152,4 +158,69 @@ export const listAgentSessionEvents = async (
 
   const data: listAgentSessionEventsResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as listAgentSessionEventsResponse;
+};
+
+export type streamAgentSessionResponse200 = {
+  stream: TypedResponse<DurableAgentSessionEvent>;
+  status: 200;
+};
+
+export type streamAgentSessionResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type streamAgentSessionResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type streamAgentSessionResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type streamAgentSessionResponseSuccess = streamAgentSessionResponse200 & {
+  headers: Headers;
+};
+export type streamAgentSessionResponseError = (
+  streamAgentSessionResponse401 | streamAgentSessionResponse404 | streamAgentSessionResponse500
+) & {
+  headers: Headers;
+};
+
+export type streamAgentSessionResponse =
+  streamAgentSessionResponseSuccess | streamAgentSessionResponseError;
+
+export const getStreamAgentSessionUrl = (id: string, params?: StreamAgentSessionParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/agent-sessions/${id}/stream?${stringifiedParams}`
+    : `/v1/agent-sessions/${id}/stream`;
+};
+
+/**
+ * Follow the chat reads the open conversation. The first line is sequence 0, the session start for Assistant, with no turn yet.
+ * @summary Follow the chat
+ */
+export const streamAgentSession = async (
+  id: string,
+  params?: StreamAgentSessionParams,
+  options?: RequestInit,
+): Promise<streamAgentSessionResponse> => {
+  const stream = await fetch(getStreamAgentSessionUrl(id, params), {
+    ...options,
+    method: "GET",
+  });
+
+  return { status: stream.status, stream, headers: stream.headers } as streamAgentSessionResponse;
 };

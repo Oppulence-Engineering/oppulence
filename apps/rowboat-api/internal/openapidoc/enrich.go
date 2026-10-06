@@ -1070,6 +1070,24 @@ func addAgentSessionPaths(paths obj) {
 		"404": responseRef("404"),
 		"500": responseRef("500"),
 	})}
+	paths["/v1/agent-sessions/{id}/stream"] = obj{"get": operation("Agent Sessions", "Follow the chat", "Follow the chat reads the open conversation. The first line is sequence 0, the session start for Assistant, with no turn yet.", "streamAgentSession", bearer(), []any{
+		pathParam("id", "Stable session id.", stringSchema("Session id.", "session_abc123")),
+		queryParam("afterSeq", "Send the last sequence already shown when reconnecting. The first read omits this.", false, obj{"type": "integer", "minimum": 0, "description": "Last sequence already shown."}),
+		obj{"name": "Accept", "in": "header", "required": false, "description": "Ask for one event per line.", "schema": obj{"type": "string", "example": "application/x-ndjson"}},
+	}, nil, obj{
+		"200": ndjsonResponse("Session started.", ref("DurableAgentSessionEvent"), documentedChatStreamEvent()),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+		"500": responseRef("500"),
+	})}
+}
+
+func documentedChatStreamEvent() obj {
+	return obj{
+		"seq":  0,
+		"type": "agent.session_started",
+		"data": obj{"agent": "assistant", "sessionId": "session_abc123"},
+	}
 }
 
 func addVoiceCloudSchemas(schemas obj) {
