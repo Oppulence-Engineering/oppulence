@@ -338,6 +338,30 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertQueueDismissReason(t, spec)
+}
+
+func TestQueueDismissSendsNotRelevant(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertQueueDismissReason(t, spec)
+}
+
+func assertQueueDismissReason(t *testing.T, spec obj) {
+	t.Helper()
+	content := asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/revenue-actions/{actionId}/dismiss"])["post"])["requestBody"])["content"])["application/json"])
+	example := asObj(content["example"])
+	reason := asObj(asObj(asObj(content["schema"])["properties"])["reason"])
+	if example["reason"] != documentedQueueDismissReason || reason["example"] != documentedQueueDismissReason {
+		t.Fatalf("dismiss request: %#v %#v", example, reason)
+	}
+	stored := asObj(asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueAction"])["properties"])["dismissReason"])
+	if stored["example"] != documentedQueueDismissReason {
+		t.Fatalf("stored dismiss reason: %#v", stored)
+	}
+	if example["reason"] == "already_handled" || stored["example"] == "already_handled" {
+		t.Fatal("dismiss still samples already_handled")
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

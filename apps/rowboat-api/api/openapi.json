@@ -12263,7 +12263,7 @@
           },
           "dismissReason": {
             "description": "Dismissal reason label.",
-            "example": "already_handled",
+            "example": "not_relevant",
             "type": "string"
           },
           "dueAt": {
@@ -26112,14 +26112,14 @@
           "content": {
             "application/json": {
               "example": {
-                "reason": "already_handled"
+                "reason": "not_relevant"
               },
               "schema": {
                 "description": "Dismiss request.",
                 "properties": {
                   "reason": {
                     "description": "Reason label.",
-                    "example": "already_handled",
+                    "example": "not_relevant",
                     "type": "string"
                   }
                 },
