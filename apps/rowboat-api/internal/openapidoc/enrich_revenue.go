@@ -648,6 +648,78 @@ func restoreRevenueSchemaOverrides(schemas obj) {
 	)
 }
 
+const (
+	documentedDraftPlanID         = "plan:eb8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedDraftRevisionID     = "revision:0c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedDraftRevisionHash   = "sha256:b718e82644ea4d98cb7a1f3ee6503cd6d3463df9c211e85051737f7654067f4d"
+	documentedDraftCommitmentID   = "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedDraftRelationshipID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedDraftOwnerID        = "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+)
+
+func documentedDraftPlanItem() obj {
+	return obj{
+		"itemId":              "item:" + documentedDraftCommitmentID,
+		"commitmentId":        documentedDraftCommitmentID,
+		"title":               "Send the security packet.",
+		"ownerParticipantRef": "alex@example.com",
+		"dependencyItemIds":   []any{},
+		"dueAt":               "2026-07-22T17:00:00Z",
+		"status":              "open",
+		"evidenceRefs":        []any{"revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"},
+	}
+}
+
+func documentedDraftPlan() obj {
+	return obj{
+		"planId":           documentedDraftPlanID,
+		"relationshipId":   documentedDraftRelationshipID,
+		"internalOwnerRef": documentedDraftOwnerID,
+		"counterpartyRef":  "jordan@example.com",
+		"status":           "draft",
+		"currentRevision": obj{
+			"revisionId":   documentedDraftRevisionID,
+			"planId":       documentedDraftPlanID,
+			"version":      1,
+			"revisionHash": documentedDraftRevisionHash,
+			"createdAt":    "2026-07-18T17:30:00Z",
+			"createdBy":    documentedDraftOwnerID,
+			"items":        []any{documentedDraftPlanItem()},
+		},
+		"tokenState": "not_issued",
+	}
+}
+
+func draftPlanSchema() obj {
+	return objectSchema("The draft plan the company sheet reads.", obj{
+		"planId":           stringSchema("Plan id.", documentedDraftPlanID),
+		"relationshipId":   uuidSchema("Company id.", documentedDraftRelationshipID),
+		"internalOwnerRef": uuidSchema("Person who owns the plan inside this workspace.", documentedDraftOwnerID),
+		"counterpartyRef":  stringSchema("The other party.", "jordan@example.com"),
+		"status": stringEnum("Plan status.", "draft",
+			"draft", "revised", "internally_approved", "shared", "counterparty_responded", "completed", "cancelled"),
+		"currentRevision": objectSchema("The first revision.", obj{
+			"revisionId":   stringSchema("Revision id.", documentedDraftRevisionID),
+			"planId":       stringSchema("Plan id.", documentedDraftPlanID),
+			"version":      intSchema("Revision number.", 1),
+			"revisionHash": stringSchema("Hash of the steps.", documentedDraftRevisionHash),
+			"createdAt":    stringSchema("When this revision was written.", "2026-07-18T17:30:00Z", obj{"format": "date-time"}),
+			"createdBy":    uuidSchema("Who wrote this revision.", documentedDraftOwnerID),
+			"items": arraySchema("Plan steps.", objectSchema("One step on the plan.", obj{
+				"itemId":              stringSchema("Step id.", "item:"+documentedDraftCommitmentID),
+				"commitmentId":        uuidSchema("Commitment this step came from.", documentedDraftCommitmentID),
+				"title":               stringSchema("Step title.", "Send the security packet."),
+				"ownerParticipantRef": stringSchema("Who owns the step.", "alex@example.com"),
+				"dependencyItemIds":   arraySchema("Steps this one waits on.", stringSchema("Step id.", "item:"+documentedDraftCommitmentID)),
+				"dueAt":               stringSchema("When the step is due.", "2026-07-22T17:00:00Z", obj{"format": "date-time"}),
+				"status":              stringSchema("Step status.", "open"),
+				"evidenceRefs":        arraySchema("Evidence for the step.", stringSchema("Evidence reference.", "revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5")),
+			}, "itemId", "title", "ownerParticipantRef", "dependencyItemIds", "status", "evidenceRefs")),
+		}, "revisionId", "planId", "version", "revisionHash", "createdAt", "createdBy", "items"),
+		"tokenState": stringEnum("Share token state.", "not_issued", "not_issued", "active"),
+	}, "planId", "relationshipId", "internalOwnerRef", "counterpartyRef", "status", "currentRevision", "tokenState")
+}
+
 func addRevenuePaths(paths obj) {
 	actionParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Action id.", "schema": obj{"type": "string", "format": "uuid"}}}
 
@@ -972,10 +1044,10 @@ func addRevenuePaths(paths obj) {
 		"201": jsonResponse("Created dependency.", ref("CommitmentDependency"), nil),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
-	paths["/v1/relationships/{relationshipId}/mutual-action-plans"] = obj{"post": operation("Relationship Intelligence", "Create a mutual action plan", "Creates an evidence-backed plan only from accepted or open commitments.", "createMutualActionPlan", bearer(), relationshipParam, jsonRequest("Accepted commitments.", objectSchema("Plan create request.", obj{
-		"commitmentIds": arraySchema("Commitment ids.", uuidSchema("Commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5")),
-	}, "commitmentIds"), obj{"commitmentIds": []any{"8b8dfa9b-a7b2-46ea-982c-622a914c00e5"}}), obj{
-		"201": jsonResponse("Draft plan.", freeFormSchema("Mutual action plan."), nil),
+	paths["/v1/relationships/{relationshipId}/mutual-action-plans"] = obj{"post": operation("Relationship Intelligence", "Create from promises they accepted", "Create from promises they accepted posts the ids of promises they accepted that are still open. The stored plan status is draft.", "createMutualActionPlan", bearer(), relationshipParam, jsonRequest("Accepted commitments.", objectSchema("Plan create request.", obj{
+		"commitmentIds": arraySchema("Commitment ids.", uuidSchema("Commitment id.", documentedDraftCommitmentID)),
+	}, "commitmentIds"), obj{"commitmentIds": []any{documentedDraftCommitmentID}}), obj{
+		"201": jsonResponse("Draft plan.", draftPlanSchema(), documentedDraftPlan()),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
 	planParam := make([]any, len(relationshipParam), len(relationshipParam)+1)
