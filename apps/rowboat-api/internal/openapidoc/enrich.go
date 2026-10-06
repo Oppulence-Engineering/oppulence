@@ -69,6 +69,7 @@ func Enrich(spec obj) {
 		obj{"name": "Entities", "description": "Org-scoped minimal entity identity spine (RFC 022)."},
 		obj{"name": "Internal", "description": "Server-to-server APIs. Most use X-Internal-Secret; connector invalidation uses individually scoped HMAC/JWT service principals."},
 		obj{"name": "GraphQL", "description": "Internal admin GraphQL over the ent graph."},
+		obj{"name": "Agents", "description": "Agents you create and reuse in chat."},
 	}
 
 	components := ensureObj(spec, "components")
@@ -1041,6 +1042,7 @@ func addRuntimePaths(paths obj) {
 	addAuthPaths(paths)
 	addBillingPaths(paths)
 	addBackgroundTaskPaths(paths)
+	addAgentPaths(paths)
 	addAgentSessionPaths(paths)
 	addLLMPaths(paths)
 	addVendorProxyPaths(paths)
@@ -1051,6 +1053,19 @@ func addRuntimePaths(paths obj) {
 	addRevenuePaths(paths)
 	addInternalPaths(paths)
 	addVoiceCloudPaths(paths)
+}
+
+func addAgentPaths(paths obj) {
+	paths["/v1/agents/{slug}"] = obj{
+		"delete": operation("Agents", "Confirm delete", "Confirm delete removes the agent named customer-concierge. Only an agent created in this workspace can be removed.", "deleteAgent", bearer(), []any{
+			pathParam("slug", "Agent to remove.", stringSchema("Short name.", "customer-concierge")),
+		}, nil, obj{
+			"204": obj{"description": "Agent removed."},
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"500": responseRef("500"),
+		}),
+	}
 }
 
 func addAgentSessionPaths(paths obj) {

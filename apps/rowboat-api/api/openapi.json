@@ -15866,6 +15866,48 @@
         "tags": ["System"]
       }
     },
+    "/v1/agents/{slug}": {
+      "delete": {
+        "description": "Confirm delete removes the agent named customer-concierge. Only an agent created in this workspace can be removed.",
+        "operationId": "deleteAgent",
+        "parameters": [
+          {
+            "description": "Agent to remove.",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "description": "Short name.",
+              "example": "customer-concierge",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Agent removed."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Confirm delete",
+        "tags": [
+          "Agents"
+        ]
+      }
+    },
     "/v1/agent-sessions": {
       "get": {
         "description": "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.",
@@ -28588,6 +28630,10 @@
     {
       "description": "Internal admin GraphQL over the ent graph.",
       "name": "GraphQL"
+    },
+    {
+      "description": "Agents you create and reuse in chat.",
+      "name": "Agents"
     }
   ]
 }
