@@ -8,15 +8,21 @@
 import { HttpResponse, http } from "msw";
 import type { RequestHandlerOptions } from "msw";
 
-import type { AgentSessionEventsResponse, AgentSessionListResponse } from "../model";
+import type {
+  AgentSessionEventsResponse,
+  AgentSessionListResponse,
+  DurableAgentSessionView,
+} from "../model";
 
 import {
+  getCreateAgentSessionResponseMock,
   getListAgentSessionEventsResponseMock,
   getListAgentSessionsResponseMock,
 } from "./agent-sessions.faker";
 
 export {
   getListAgentSessionsResponseMock,
+  getCreateAgentSessionResponseMock,
   getListAgentSessionEventsResponseMock,
 } from "./agent-sessions.faker";
 
@@ -38,6 +44,30 @@ export const getListAgentSessionsMockHandler = (
             : overrideResponse
           : getListAgentSessionsResponseMock(),
         { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getCreateAgentSessionMockHandler = (
+  overrideResponse?:
+    | DurableAgentSessionView
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<DurableAgentSessionView> | DurableAgentSessionView),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/agent-sessions",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getCreateAgentSessionResponseMock(),
+        { status: 201 },
       );
     },
     options,
@@ -69,5 +99,6 @@ export const getListAgentSessionEventsMockHandler = (
 };
 export const getAgentSessionsMock = () => [
   getListAgentSessionsMockHandler(),
+  getCreateAgentSessionMockHandler(),
   getListAgentSessionEventsMockHandler(),
 ];

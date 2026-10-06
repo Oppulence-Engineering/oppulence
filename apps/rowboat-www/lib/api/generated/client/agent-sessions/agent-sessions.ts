@@ -8,12 +8,15 @@
 import type {
   AgentSessionEventsResponse,
   AgentSessionListResponse,
+  CreateAgentSessionBody,
+  DurableAgentSessionView,
   ListAgentSessionEventsParams,
   ListAgentSessionsParams,
   N400Response,
   N401Response,
   N404Response,
   N500Response,
+  N502Response,
 } from "../model";
 
 export type listAgentSessionsResponse200 = {
@@ -76,6 +79,63 @@ export const listAgentSessions = async (
 
   const data: listAgentSessionsResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as listAgentSessionsResponse;
+};
+
+export type createAgentSessionResponse201 = {
+  data: DurableAgentSessionView;
+  status: 201;
+};
+
+export type createAgentSessionResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type createAgentSessionResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type createAgentSessionResponse502 = {
+  data: N502Response;
+  status: 502;
+};
+
+export type createAgentSessionResponseSuccess = createAgentSessionResponse201 & {
+  headers: Headers;
+};
+export type createAgentSessionResponseError = (
+  createAgentSessionResponse400 | createAgentSessionResponse401 | createAgentSessionResponse502
+) & {
+  headers: Headers;
+};
+
+export type createAgentSessionResponse =
+  createAgentSessionResponseSuccess | createAgentSessionResponseError;
+
+export const getCreateAgentSessionUrl = () => {
+  return `/v1/agent-sessions`;
+};
+
+/**
+ * Submit sends the first chat message. It posts agent assistant, channel web, and "Ask about a company, a promise, or the next step." as both the message and the title. The stored session is active, with no completed turns yet.
+ * @summary Submit
+ */
+export const createAgentSession = async (
+  createAgentSessionBody: CreateAgentSessionBody,
+  options?: RequestInit,
+): Promise<createAgentSessionResponse> => {
+  const res = await fetch(getCreateAgentSessionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createAgentSessionBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createAgentSessionResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as createAgentSessionResponse;
 };
 
 export type listAgentSessionEventsResponse200 = {

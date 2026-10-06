@@ -15924,6 +15924,97 @@
         ],
         "summary": "List agent sessions",
         "tags": ["Agent Sessions"]
+      },
+      "post": {
+        "description": "Submit sends the first chat message. It posts agent assistant, channel web, and \"Ask about a company, a promise, or the next step.\" as both the message and the title. The stored session is active, with no completed turns yet.",
+        "operationId": "createAgentSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "agent": "assistant",
+                "channel": "web",
+                "input": "Ask about a company, a promise, or the next step.",
+                "title": "Ask about a company, a promise, or the next step."
+              },
+              "schema": {
+                "description": "First chat message.",
+                "properties": {
+                  "agent": {
+                    "description": "Selected agent.",
+                    "example": "assistant",
+                    "type": "string"
+                  },
+                  "channel": {
+                    "description": "Composer channel.",
+                    "example": "web",
+                    "type": "string"
+                  },
+                  "input": {
+                    "description": "Message text.",
+                    "example": "Ask about a company, a promise, or the next step.",
+                    "type": "string"
+                  },
+                  "title": {
+                    "description": "Conversation title.",
+                    "example": "Ask about a company, a promise, or the next step.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "agent"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "description": "First chat message.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "agent": "assistant",
+                  "agentSource": "builtin",
+                  "channel": "web",
+                  "continuationToken": "agt_example",
+                  "costUnits": 0,
+                  "createdAt": "2026-09-02T15:00:00Z",
+                  "llmCalls": 0,
+                  "sessionId": "f8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+                  "status": "active",
+                  "title": "Ask about a company, a promise, or the next step.",
+                  "toolCalls": 0,
+                  "turns": 0
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/DurableAgentSessionView"
+                }
+              }
+            },
+            "description": "Stored session."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Submit",
+        "tags": [
+          "Agent Sessions"
+        ]
       }
     },
     "/v1/agent-sessions/{id}/events": {

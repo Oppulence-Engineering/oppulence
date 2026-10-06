@@ -1053,12 +1053,57 @@ func addRuntimePaths(paths obj) {
 	addVoiceCloudPaths(paths)
 }
 
+const firstChatMessage = "Ask about a company, a promise, or the next step."
+
+func documentedStartedChatRequest() obj {
+	return obj{
+		"agent":   "assistant",
+		"input":   firstChatMessage,
+		"title":   firstChatMessage,
+		"channel": "web",
+	}
+}
+
+func documentedStartedChat() obj {
+	return obj{
+		"sessionId":         "f8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+		"agent":             "assistant",
+		"agentSource":       "builtin",
+		"status":            "active",
+		"channel":           "web",
+		"title":             firstChatMessage,
+		"turns":             0,
+		"llmCalls":          0,
+		"toolCalls":         0,
+		"costUnits":         0,
+		"continuationToken": "agt_example",
+		"createdAt":         "2026-09-02T15:00:00Z",
+	}
+}
+
+func documentedStartedChatRequestSchema() obj {
+	return objectSchema("First chat message.", obj{
+		"agent":   stringSchema("Selected agent.", "assistant"),
+		"input":   stringSchema("Message text.", firstChatMessage),
+		"title":   stringSchema("Conversation title.", firstChatMessage),
+		"channel": stringSchema("Composer channel.", "web"),
+	}, "agent")
+}
+
 func addAgentSessionPaths(paths obj) {
-	paths["/v1/agent-sessions"] = obj{"get": operation("Agent Sessions", "List agent sessions", "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.", "listAgentSessions", bearer(), nil, nil, obj{
-		"200": jsonResponse("Recent agent conversations.", ref("AgentSessionListResponse"), obj{"sessions": []any{obj{"sessionId": "session_abc123", "agent": "assistant", "status": "active", "channel": "web", "title": "Review the Acme renewal", "turns": 2, "llmCalls": 3, "toolCalls": 1, "costUnits": 45, "continuationToken": "agt_example", "createdAt": "2026-09-02T15:00:00Z"}}}),
-		"401": responseRef("401"),
-		"500": responseRef("500"),
-	})}
+	paths["/v1/agent-sessions"] = obj{
+		"get": operation("Agent Sessions", "List agent sessions", "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.", "listAgentSessions", bearer(), nil, nil, obj{
+			"200": jsonResponse("Recent agent conversations.", ref("AgentSessionListResponse"), obj{"sessions": []any{obj{"sessionId": "session_abc123", "agent": "assistant", "status": "active", "channel": "web", "title": "Review the Acme renewal", "turns": 2, "llmCalls": 3, "toolCalls": 1, "costUnits": 45, "continuationToken": "agt_example", "createdAt": "2026-09-02T15:00:00Z"}}}),
+			"401": responseRef("401"),
+			"500": responseRef("500"),
+		}),
+		"post": operation("Agent Sessions", "Submit", "Submit sends the first chat message. It posts agent assistant, channel web, and \"Ask about a company, a promise, or the next step.\" as both the message and the title. The stored session is active, with no completed turns yet.", "createAgentSession", bearer(), nil, jsonRequest("First chat message.", documentedStartedChatRequestSchema(), documentedStartedChatRequest()), obj{
+			"201": jsonResponse("Stored session.", ref("DurableAgentSessionView"), documentedStartedChat()),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"502": responseRef("502"),
+		}),
+	}
 	paths["/v1/agent-sessions/{id}/events"] = obj{"get": operation("Agent Sessions", "List agent session events", "Returns ordered durable events used to reconstruct a conversation after navigation or reload.", "listAgentSessionEvents", bearer(), []any{
 		pathParam("id", "Stable session id.", stringSchema("Session id.", "session_abc123")),
 		queryParam("afterSeq", "Return events after this sequence.", false, intSchema("Sequence cursor.", 10)),
