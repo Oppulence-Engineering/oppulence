@@ -68,6 +68,7 @@ export const ListBackgroundTaskRunsForAccount200Response = zod
               .string()
               .nullish()
               .describe("Previous run id when this run was created by retry."),
+            retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
             progressMessage: zod
               .string()
               .nullish()
@@ -128,7 +129,7 @@ export const ListBackgroundTaskRunsForAccount200Response = zod
               .nullish()
               .describe("Temporal workflow id for API-worker runs."),
             trigger: zod
-              .enum(["manual", "cron", "window", "event"])
+              .enum(["manual", "cron", "window", "event", "retry"])
               .describe("Trigger source for a task run."),
             updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
             useCase: zod
@@ -1703,6 +1704,7 @@ export const ListBackgroundTaskRuns200Response = zod
               .string()
               .nullish()
               .describe("Previous run id when this run was created by retry."),
+            retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
             progressMessage: zod
               .string()
               .nullish()
@@ -1763,7 +1765,7 @@ export const ListBackgroundTaskRuns200Response = zod
               .nullish()
               .describe("Temporal workflow id for API-worker runs."),
             trigger: zod
-              .enum(["manual", "cron", "window", "event"])
+              .enum(["manual", "cron", "window", "event", "retry"])
               .describe("Trigger source for a task run."),
             updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
             useCase: zod
@@ -1891,7 +1893,7 @@ export const CreateBackgroundTaskRunBody = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .optional()
       .describe("Trigger source. Defaults to manual."),
     useCase: zod.string().nullish().describe("High-level usage label."),
@@ -1925,6 +1927,7 @@ export const CreateBackgroundTaskRun201Response = zod
       .string()
       .nullish()
       .describe("Previous run id when this run was created by retry."),
+    retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
     progressMessage: zod
       .string()
       .nullish()
@@ -1982,7 +1985,7 @@ export const CreateBackgroundTaskRun201Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -2100,6 +2103,7 @@ export const GetBackgroundTaskRun200Response = zod
       .string()
       .nullish()
       .describe("Previous run id when this run was created by retry."),
+    retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
     progressMessage: zod
       .string()
       .nullish()
@@ -2157,7 +2161,7 @@ export const GetBackgroundTaskRun200Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -2268,7 +2272,10 @@ export const PatchBackgroundTaskRunBody = zod
       .string()
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
-    trigger: zod.enum(["manual", "cron", "window", "event"]).optional().describe("Trigger source."),
+    trigger: zod
+      .enum(["manual", "cron", "window", "event", "retry"])
+      .optional()
+      .describe("Trigger source."),
     useCase: zod.string().nullish().describe("High-level usage label."),
   })
   .describe("Revision-checked update for mirrored run state.");
@@ -2298,6 +2305,7 @@ export const PatchBackgroundTaskRun200Response = zod
       .string()
       .nullish()
       .describe("Previous run id when this run was created by retry."),
+    retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
     progressMessage: zod
       .string()
       .nullish()
@@ -2355,7 +2363,7 @@ export const PatchBackgroundTaskRun200Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -2475,6 +2483,7 @@ export const CancelBackgroundTaskRun202Response = zod
       .string()
       .nullish()
       .describe("Previous run id when this run was created by retry."),
+    retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
     progressMessage: zod
       .string()
       .nullish()
@@ -2532,7 +2541,7 @@ export const CancelBackgroundTaskRun202Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -2888,13 +2897,15 @@ export const StreamBackgroundTaskRunEvents500Response = zod
   );
 
 /**
- * Creates a new API-worker run linked by previousRunId and starts a fresh Temporal workflow using the previous trigger/context.
- * @summary Retry API-worker run
+ * Retry posts an empty body. The stored cloud run is a new queued attempt of the stopped run, keeps the editor note, and records attempt 2.
+ * @summary Retry
  */
 export const RetryBackgroundTaskRunParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
-  runId: zod.string().describe("Cloud-visible run id for a background task run."),
+  slug: zod.string().describe("Workflow to retry."),
+  runId: zod.string().describe("Stopped run to retry."),
 });
+
+export const RetryBackgroundTaskRunBody = zod.looseObject({});
 
 export const RetryBackgroundTaskRun202Response = zod
   .strictObject({
@@ -2921,6 +2932,7 @@ export const RetryBackgroundTaskRun202Response = zod
       .string()
       .nullish()
       .describe("Previous run id when this run was created by retry."),
+    retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
     progressMessage: zod
       .string()
       .nullish()
@@ -2978,7 +2990,7 @@ export const RetryBackgroundTaskRun202Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -3108,6 +3120,7 @@ export const SignalBackgroundTaskRun202Response = zod
       .string()
       .nullish()
       .describe("Previous run id when this run was created by retry."),
+    retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
     progressMessage: zod
       .string()
       .nullish()
@@ -3165,7 +3178,7 @@ export const SignalBackgroundTaskRun202Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -3382,6 +3395,7 @@ export const TriggerBackgroundTask202Response = zod
       .string()
       .nullish()
       .describe("Previous run id when this run was created by retry."),
+    retryOfRunId: zod.string().nullish().describe("Run id this attempt retries."),
     progressMessage: zod
       .string()
       .nullish()
@@ -3439,7 +3453,7 @@ export const TriggerBackgroundTask202Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),

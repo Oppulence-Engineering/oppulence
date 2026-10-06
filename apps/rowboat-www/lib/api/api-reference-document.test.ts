@@ -315,6 +315,38 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the cloud run Retry stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const post = presented.paths["/v1/background-tasks/{slug}/runs/{runId}/retry"].post;
+    expect(post.summary).toBe("Retry");
+    expect(post.description).toBe(
+      "Retry posts an empty body. The stored cloud run is a new queued attempt of the stopped run, keeps the editor note, and records attempt 2.",
+    );
+    expect(post.requestBody.content["application/json"].example).toEqual({});
+    expect(post.parameters[1].schema.example).toBe("api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b");
+    expect(post.responses["202"].description).toBe("Stored retry.");
+    expect(post.responses["202"].content["application/json"].example).toMatchObject({
+      runId: "retry-6c41958c-3a0a-4cb2-9361-ea563cd0477b",
+      previousRunId: "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b",
+      retryOfRunId: "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b",
+      slug: "follow-up-when-a-promise-slips",
+      trigger: "retry",
+      status: "queued",
+      executor: "api",
+      attempt: 2,
+      requestedContext: "Started from the visual workflow editor.",
+      progressMessage: "Queued retry for API worker.",
+      revision: 2,
+    });
+    expect(presented.components.schemas.BackgroundTaskRun.properties.trigger.example).toBe("manual");
+    expect(presented.components.schemas.BackgroundTaskRun.properties.trigger.enum).toContain("retry");
+    expect(
+      presented.paths["/v1/background-tasks/{slug}/runs/{runId}/cancel"].post.responses["202"].content[
+        "application/json"
+      ].example.status,
+    ).toBe("queued");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

@@ -6,16 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * Trigger source. Defaults to manual.
- */
-export type BackgroundTaskRunCreateRequestTrigger =
-  (typeof BackgroundTaskRunCreateRequestTrigger)[keyof typeof BackgroundTaskRunCreateRequestTrigger];
-
-export const BackgroundTaskRunCreateRequestTrigger = {
-  manual: "manual",
-  cron: "cron",
-  window: "window",
-  event: "event",
-  retry: "retry",
-} as const;
+export type RetryBackgroundTaskRunBody = { [key: string]: unknown };

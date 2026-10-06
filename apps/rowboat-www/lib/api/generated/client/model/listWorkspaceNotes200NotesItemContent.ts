@@ -7,15 +7,6 @@
  */
 
 /**
- * Trigger source. Defaults to manual.
+ * Editor document, when one was saved.
  */
-export type BackgroundTaskRunCreateRequestTrigger =
-  (typeof BackgroundTaskRunCreateRequestTrigger)[keyof typeof BackgroundTaskRunCreateRequestTrigger];
-
-export const BackgroundTaskRunCreateRequestTrigger = {
-  manual: "manual",
-  cron: "cron",
-  window: "window",
-  event: "event",
-  retry: "retry",
-} as const;
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };

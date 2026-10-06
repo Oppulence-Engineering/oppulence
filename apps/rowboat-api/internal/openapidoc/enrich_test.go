@@ -338,6 +338,68 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertRetriedRun(t, spec)
+}
+
+func TestRetryStoresTheNextAttempt(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertRetriedRun(t, spec)
+}
+
+func assertRetriedRun(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	post := asObj(asObj(paths["/v1/background-tasks/{slug}/runs/{runId}/retry"])["post"])
+	if post["summary"] != "Retry" {
+		t.Fatalf("summary: %#v", post["summary"])
+	}
+	const description = "Retry posts an empty body. The stored cloud run is a new queued attempt of the stopped run, keeps the editor note, and records attempt 2."
+	if post["description"] != description {
+		t.Fatalf("description: %#v", post["description"])
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
+	if mustJSON(request["example"]) != mustJSON(documentedRetriedRunRequest()) {
+		t.Fatalf("request example: %s", mustJSON(request["example"]))
+	}
+	response := asObj(asObj(post["responses"])["202"])
+	if response["description"] != "Stored retry." {
+		t.Fatalf("response description: %#v", response["description"])
+	}
+	body := asObj(asObj(response["content"])["application/json"])
+	if mustJSON(body["example"]) != mustJSON(documentedRetriedRun()) {
+		t.Fatalf("response example: %s", mustJSON(body["example"]))
+	}
+	params, ok := post["parameters"].([]any)
+	if !ok || len(params) != 2 {
+		t.Fatalf("path params: %#v", post["parameters"])
+	}
+	if asObj(asObj(params[0])["schema"])["example"] != "follow-up-when-a-promise-slips" || asObj(asObj(params[1])["schema"])["example"] != "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b" {
+		t.Fatalf("path examples: %#v", post["parameters"])
+	}
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	triggerProp := asObj(asObj(asObj(schemas["BackgroundTaskRun"])["properties"])["trigger"])
+	if triggerProp["example"] != "manual" {
+		t.Fatalf("shared trigger example changed: %#v", triggerProp["example"])
+	}
+	signal := asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks/{slug}/runs/{runId}/signal"])["post"])["responses"])["202"])["content"])
+	signalExample := asObj(asObj(signal["application/json"])["example"])
+	if signalExample["runId"] != "api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b" || signalExample["trigger"] != "manual" {
+		t.Fatalf("signal example changed: %s", mustJSON(signalExample))
+	}
+	cancel := asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks/{slug}/runs/{runId}/cancel"])["post"])["responses"])["202"])["content"])
+	cancelExample := asObj(asObj(cancel["application/json"])["example"])
+	if cancelExample["status"] != "queued" || cancelExample["executor"] != "desktop" {
+		t.Fatalf("cancel example changed: %s", mustJSON(cancelExample))
+	}
+}
+
+func mustJSON(v any) string {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(raw)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
