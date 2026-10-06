@@ -648,6 +648,39 @@ func restoreRevenueSchemaOverrides(schemas obj) {
 	)
 }
 
+const (
+	documentedRejectedRecommendationID   = "1a8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedRecommendationRejectReason = "Not the right next move"
+)
+
+func documentedRejectedRecommendation() obj {
+	return obj{
+		"id":               documentedRejectedRecommendationID,
+		"relationshipId":   "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+		"relationshipName": "Acme",
+		"actionType":       "warm_follow_up",
+		"channel":          "email",
+		"detector":         "requested_follow_up_due",
+		"revision":         1,
+		"revisionHash":     "sha256:ab12...",
+		"reason":           "They asked for a follow-up in July.",
+		"recipientEmail":   "buyer@example.com",
+		"proposedSubject":  "Following up as promised",
+		"proposedMessage":  "Hi Jordan — you asked me to circle back this month...",
+		"senderAccountRef": "gmail:me@company.com",
+		"priorityScore":    82,
+		"queueStatus":      "open",
+		"policyStatus":     "pending",
+		"approvalStatus":   "rejected",
+		"executionStatus":  "pending",
+		"executionOwner":   "rowboat",
+		"executionMode":    "draft",
+		"createdAt":        "2026-07-12T12:00:00Z",
+		"updatedAt":        "2026-07-12T12:04:00Z",
+		"evidence":         []any{},
+	}
+}
+
 func addRevenuePaths(paths obj) {
 	actionParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Action id.", "schema": obj{"type": "string", "format": "uuid"}}}
 
@@ -1135,8 +1168,9 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"409": responseRef("409"),
 	})}
-	paths["/v1/relationship-recommendations/{actionId}/reject"] = obj{"post": operation("Relationship Intelligence", "Reject a recommendation", "Relationship-intelligence alias for rejecting the current action revision.", "rejectRelationshipRecommendation", bearer(), recommendationParam, jsonRequest("Rejection.", objectSchema("Reject request.", obj{"reason": stringSchema("Rejection reason.", "Not the right next move.")}, "reason"), obj{"reason": "Not the right next move."}), obj{
-		"200": jsonResponse("Rejected recommendation.", ref("RevenueAction"), nil),
+	rejectRecommendationParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Recommendation/action id.", "schema": obj{"type": "string", "format": "uuid", "example": documentedRejectedRecommendationID}}}
+	paths["/v1/relationship-recommendations/{actionId}/reject"] = obj{"post": operation("Relationship Intelligence", "Reject", "Reject posts Not the right next move. The stored recommendation is rejected, and it stays open in the queue.", "rejectRelationshipRecommendation", bearer(), rejectRecommendationParam, jsonRequest("Rejection.", objectSchema("Reject request.", obj{"reason": stringSchema("Rejection reason.", documentedRecommendationRejectReason)}, "reason"), obj{"reason": documentedRecommendationRejectReason}), obj{
+		"200": jsonResponse("Rejected recommendation.", ref("RevenueAction"), documentedRejectedRecommendation()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"409": responseRef("409"),

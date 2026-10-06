@@ -23122,7 +23122,7 @@
     },
     "/v1/relationship-recommendations/{actionId}/reject": {
       "post": {
-        "description": "Relationship-intelligence alias for rejecting the current action revision.",
+        "description": "Reject posts Not the right next move. The stored recommendation is rejected, and it stays open in the queue.",
         "operationId": "rejectRelationshipRecommendation",
         "parameters": [
           {
@@ -23131,6 +23131,7 @@
             "name": "actionId",
             "required": true,
             "schema": {
+              "example": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -23140,18 +23141,20 @@
           "content": {
             "application/json": {
               "example": {
-                "reason": "Not the right next move."
+                "reason": "Not the right next move"
               },
               "schema": {
                 "description": "Reject request.",
                 "properties": {
                   "reason": {
                     "description": "Rejection reason.",
-                    "example": "Not the right next move.",
+                    "example": "Not the right next move",
                     "type": "string"
                   }
                 },
-                "required": ["reason"],
+                "required": [
+                  "reason"
+                ],
                 "type": "object"
               }
             }
@@ -23163,6 +23166,31 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "actionType": "warm_follow_up",
+                  "approvalStatus": "rejected",
+                  "channel": "email",
+                  "createdAt": "2026-07-12T12:00:00Z",
+                  "detector": "requested_follow_up_due",
+                  "evidence": [],
+                  "executionMode": "draft",
+                  "executionOwner": "rowboat",
+                  "executionStatus": "pending",
+                  "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "policyStatus": "pending",
+                  "priorityScore": 82,
+                  "proposedMessage": "Hi Jordan — you asked me to circle back this month...",
+                  "proposedSubject": "Following up as promised",
+                  "queueStatus": "open",
+                  "reason": "They asked for a follow-up in July.",
+                  "recipientEmail": "buyer@example.com",
+                  "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "relationshipName": "Acme",
+                  "revision": 1,
+                  "revisionHash": "sha256:ab12...",
+                  "senderAccountRef": "gmail:me@company.com",
+                  "updatedAt": "2026-07-12T12:04:00Z"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueAction"
                 }
@@ -23185,8 +23213,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Reject a recommendation",
-        "tags": ["Relationship Intelligence"]
+        "summary": "Reject",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-sources": {
