@@ -338,6 +338,23 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertUpgradePlan(t, spec)
+}
+
+func TestUpgradeToProSendsPlanPro(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertUpgradePlan(t, spec)
+}
+
+func assertUpgradePlan(t *testing.T, spec obj) {
+	t.Helper()
+	content := asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/billing/checkout-session"])["post"])["requestBody"])["content"])["application/json"])
+	example := asObj(content["example"])
+	plan := asObj(asObj(asObj(content["schema"])["properties"])["plan"])
+	if example["plan"] != "pro" || plan["example"] != "pro" {
+		t.Fatalf("checkout plan: %#v %#v", example, plan)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

@@ -21815,6 +21815,66 @@
         "tags": ["LLM"]
       }
     },
+    "/v1/billing/checkout-session": {
+      "post": {
+        "description": "Upgrade to Pro sends plan pro. The server opens a Stripe Checkout session for starter, pro, or intelligence and returns the redirect URL.",
+        "operationId": "createBillingCheckoutSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "plan": "pro"
+              },
+              "schema": {
+                "description": "Checkout plan.",
+                "properties": {
+                  "plan": {
+                    "description": "Plan to purchase.",
+                    "enum": ["starter", "pro", "intelligence"],
+                    "example": "pro",
+                    "type": "string"
+                  }
+                },
+                "required": ["plan"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Checkout plan.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "url": "https://checkout.stripe.com/c/pay/cs_test_a1b2"
+                },
+                "schema": {
+                  "description": "Checkout redirect.",
+                  "properties": {
+                    "url": {
+                      "description": "Stripe Checkout URL.",
+                      "example": "https://checkout.stripe.com/c/pay/cs_test_a1b2",
+                      "type": "string"
+                    }
+                  },
+                  "required": ["url"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Stripe Checkout URL."
+          },
+          "400": { "$ref": "#/components/responses/400" },
+          "401": { "$ref": "#/components/responses/401" },
+          "502": { "$ref": "#/components/responses/502" }
+        },
+        "security": [{ "BearerAuth": [] }],
+        "summary": "Upgrade to Pro",
+        "tags": ["Billing"]
+      }
+    },
     "/v1/me": {
       "delete": {
         "description": "Permanently deletes the authenticated account. An existing session is not sufficient: the caller must present a single-use step-up token from a fresh re-authentication or email code. The API then cancels every live Stripe subscription (an account that Stripe can still charge is never deleted), revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, revokes identity-provider sessions, and deletes the WorkOS identity.",

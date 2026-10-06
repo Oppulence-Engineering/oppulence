@@ -1284,6 +1284,16 @@ func addBillingPaths(paths obj) {
 			"500": responseRef("500"),
 			"502": problemResponse("Stripe did not cancel the subscription, so nothing was deleted.", ref("ErrorEnvelope"), problemExample(502, "Bad Gateway", "could not cancel the subscription, so the account was not deleted", "billing_cancellation_failed")),
 		})
+	paths["/v1/billing/checkout-session"] = obj{"post": operation("Billing", "Upgrade to Pro", "Upgrade to Pro sends plan pro. The server opens a Stripe Checkout session for starter, pro, or intelligence and returns the redirect URL.", "createBillingCheckoutSession", bearer(), nil, jsonRequest("Checkout plan.", objectSchema("Checkout plan.", obj{
+		"plan": stringEnum("Plan to purchase.", "pro", "starter", "pro", "intelligence"),
+	}, "plan"), obj{"plan": "pro"}), obj{
+		"200": jsonResponse("Stripe Checkout URL.", objectSchema("Checkout redirect.", obj{
+			"url": stringSchema("Stripe Checkout URL.", "https://checkout.stripe.com/c/pay/cs_test_a1b2"),
+		}, "url"), obj{"url": "https://checkout.stripe.com/c/pay/cs_test_a1b2"}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"502": responseRef("502"),
+	})}
 	paths["/v1/me/deletion-challenges"] = obj{"post": operation("Billing", "Start account-deletion step-up", "Starts a short-lived challenge for account deletion. oauth_reauth requires a later sign-in whose auth_time is newer than this challenge. email_otp sends a one-time code to the account email and is refused when a second factor is enrolled. The code itself is never returned.", "startAccountDeletionChallenge", bearer(), nil,
 		jsonRequest("Which fresh factor to use.", ref("AccountDeletionChallengeStart"), obj{"method": "oauth_reauth"}),
 		obj{
