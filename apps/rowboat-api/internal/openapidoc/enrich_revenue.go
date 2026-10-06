@@ -1311,4 +1311,55 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
+	paths["/v1/revenue-workspaces/current/communication-policy/{sourceAccountId}"] = obj{"put": operation("Relationship Intelligence", "Save mailbox policy", "Save mailbox policy sends the sharing choices already on screen and leaves out the policy id, the mailbox account, and the current version. The stored policy keeps those choices and advances the version.", "putCommunicationPolicy", bearer(), []any{obj{
+		"name": "sourceAccountId", "in": "path", "required": true, "description": "Mailbox account email.",
+		"schema": stringSchema("Mailbox account email.", "you@company.com"),
+	}}, jsonRequest("Mailbox sharing choices.", objectSchema("Mailbox policy save.", obj{
+		"metadataVisibility":     stringEnum("Who can see mailbox metadata.", "workspace", "private", "workspace"),
+		"shareSubject":           boolSchema("Share subject lines by default.", true),
+		"shareBody":              boolSchema("Share bodies by default.", false),
+		"shareAttachments":       boolSchema("Share attachments by default.", false),
+		"signatureEnrichment":    boolSchema("Read email signatures.", true),
+		"modelContactExtraction": boolSchema("Extract contacts from mail.", true),
+		"retentionDays":          intSchema("Days mailbox content is kept.", 540),
+	}, "metadataVisibility", "shareSubject", "shareBody", "shareAttachments", "signatureEnrichment", "modelContactExtraction", "retentionDays"), savedMailboxPolicyRequest()), obj{
+		"200": jsonResponse("Saved mailbox policy.", objectSchema("Saved mailbox policy.", obj{
+			"id":                     uuidSchema("Policy id.", savedMailboxPolicyID),
+			"sourceAccountId":        stringSchema("Mailbox account email.", "you@company.com"),
+			"metadataVisibility":     stringEnum("Who can see mailbox metadata.", "workspace", "private", "workspace"),
+			"shareSubject":           boolSchema("Share subject lines by default.", true),
+			"shareBody":              boolSchema("Share bodies by default.", false),
+			"shareAttachments":       boolSchema("Share attachments by default.", false),
+			"signatureEnrichment":    boolSchema("Read email signatures.", true),
+			"modelContactExtraction": boolSchema("Extract contacts from mail.", true),
+			"retentionDays":          intSchema("Days mailbox content is kept.", 540),
+			"version":                intSchema("Policy version.", 2),
+		}, "id", "sourceAccountId", "metadataVisibility", "shareSubject", "shareBody", "shareAttachments", "signatureEnrichment", "modelContactExtraction", "retentionDays", "version"), savedMailboxPolicy()),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"403": responseRef("403"),
+		"404": responseRef("404"),
+	})}
+}
+
+const savedMailboxPolicyID = "db8dfa9b-a7b2-46ea-982c-622a914c00e5"
+
+func savedMailboxPolicyRequest() obj {
+	return obj{
+		"metadataVisibility":     "workspace",
+		"shareSubject":           true,
+		"shareBody":              false,
+		"shareAttachments":       false,
+		"signatureEnrichment":    true,
+		"modelContactExtraction": true,
+		"retentionDays":          540,
+	}
+}
+
+func savedMailboxPolicy() obj {
+	saved := savedMailboxPolicyRequest()
+	saved["id"] = savedMailboxPolicyID
+	saved["sourceAccountId"] = "you@company.com"
+	saved["version"] = 2
+	return saved
 }

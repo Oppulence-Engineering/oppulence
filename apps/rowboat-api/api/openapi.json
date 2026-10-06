@@ -27259,6 +27259,211 @@
         "tags": ["Revenue"]
       }
     },
+    "/v1/revenue-workspaces/current/communication-policy/{sourceAccountId}": {
+      "put": {
+        "description": "Save mailbox policy sends the sharing choices already on screen and leaves out the policy id, the mailbox account, and the current version. The stored policy keeps those choices and advances the version.",
+        "operationId": "putCommunicationPolicy",
+        "parameters": [
+          {
+            "description": "Mailbox account email.",
+            "in": "path",
+            "name": "sourceAccountId",
+            "required": true,
+            "schema": {
+              "description": "Mailbox account email.",
+              "example": "you@company.com",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "metadataVisibility": "workspace",
+                "modelContactExtraction": true,
+                "retentionDays": 540,
+                "shareAttachments": false,
+                "shareBody": false,
+                "shareSubject": true,
+                "signatureEnrichment": true
+              },
+              "schema": {
+                "description": "Mailbox policy save.",
+                "properties": {
+                  "metadataVisibility": {
+                    "description": "Who can see mailbox metadata.",
+                    "enum": [
+                      "private",
+                      "workspace"
+                    ],
+                    "example": "workspace",
+                    "type": "string"
+                  },
+                  "modelContactExtraction": {
+                    "description": "Extract contacts from mail.",
+                    "example": true,
+                    "type": "boolean"
+                  },
+                  "retentionDays": {
+                    "description": "Days mailbox content is kept.",
+                    "example": 540,
+                    "type": "integer"
+                  },
+                  "shareAttachments": {
+                    "description": "Share attachments by default.",
+                    "example": false,
+                    "type": "boolean"
+                  },
+                  "shareBody": {
+                    "description": "Share bodies by default.",
+                    "example": false,
+                    "type": "boolean"
+                  },
+                  "shareSubject": {
+                    "description": "Share subject lines by default.",
+                    "example": true,
+                    "type": "boolean"
+                  },
+                  "signatureEnrichment": {
+                    "description": "Read email signatures.",
+                    "example": true,
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "metadataVisibility",
+                  "shareSubject",
+                  "shareBody",
+                  "shareAttachments",
+                  "signatureEnrichment",
+                  "modelContactExtraction",
+                  "retentionDays"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Mailbox sharing choices.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "id": "db8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "metadataVisibility": "workspace",
+                  "modelContactExtraction": true,
+                  "retentionDays": 540,
+                  "shareAttachments": false,
+                  "shareBody": false,
+                  "shareSubject": true,
+                  "signatureEnrichment": true,
+                  "sourceAccountId": "you@company.com",
+                  "version": 2
+                },
+                "schema": {
+                  "description": "Saved mailbox policy.",
+                  "properties": {
+                    "id": {
+                      "description": "Policy id.",
+                      "example": "db8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "metadataVisibility": {
+                      "description": "Who can see mailbox metadata.",
+                      "enum": [
+                        "private",
+                        "workspace"
+                      ],
+                      "example": "workspace",
+                      "type": "string"
+                    },
+                    "modelContactExtraction": {
+                      "description": "Extract contacts from mail.",
+                      "example": true,
+                      "type": "boolean"
+                    },
+                    "retentionDays": {
+                      "description": "Days mailbox content is kept.",
+                      "example": 540,
+                      "type": "integer"
+                    },
+                    "shareAttachments": {
+                      "description": "Share attachments by default.",
+                      "example": false,
+                      "type": "boolean"
+                    },
+                    "shareBody": {
+                      "description": "Share bodies by default.",
+                      "example": false,
+                      "type": "boolean"
+                    },
+                    "shareSubject": {
+                      "description": "Share subject lines by default.",
+                      "example": true,
+                      "type": "boolean"
+                    },
+                    "signatureEnrichment": {
+                      "description": "Read email signatures.",
+                      "example": true,
+                      "type": "boolean"
+                    },
+                    "sourceAccountId": {
+                      "description": "Mailbox account email.",
+                      "example": "you@company.com",
+                      "type": "string"
+                    },
+                    "version": {
+                      "description": "Policy version.",
+                      "example": 2,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "sourceAccountId",
+                    "metadataVisibility",
+                    "shareSubject",
+                    "shareBody",
+                    "shareAttachments",
+                    "signatureEnrichment",
+                    "modelContactExtraction",
+                    "retentionDays",
+                    "version"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Saved mailbox policy."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Save mailbox policy",
+        "tags": [
+          "Relationship Intelligence"
+        ]
+      }
+    },
     "/v1/revenue-workspaces/current/communications/attachments/{attachmentId}/content": {
       "get": {
         "description": "Returns one scanned text attachment when policy and grants allow it.",

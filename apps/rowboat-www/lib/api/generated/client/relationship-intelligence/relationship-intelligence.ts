@@ -56,11 +56,15 @@ import type {
   ListRelationshipIdentityCandidatesParams,
   ListRelationships200,
   ListRelationshipsParams,
+  ListWorkspaceNotes200,
+  ListWorkspaceNotesParams,
   N400Response,
   N401Response,
   N403Response,
   N404Response,
   N409Response,
+  PutCommunicationPolicy200,
+  PutCommunicationPolicyBody,
   PutConversationPolicy201,
   PutConversationPolicyBody,
   RejectRelationshipRecommendationBody,
@@ -2802,6 +2806,72 @@ export const getRelationshipTimeline = async (
   return { data, status: res.status, headers: res.headers } as getRelationshipTimelineResponse;
 };
 
+export type putCommunicationPolicyResponse200 = {
+  data: PutCommunicationPolicy200;
+  status: 200;
+};
+
+export type putCommunicationPolicyResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type putCommunicationPolicyResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type putCommunicationPolicyResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type putCommunicationPolicyResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type putCommunicationPolicyResponseSuccess = putCommunicationPolicyResponse200 & {
+  headers: Headers;
+};
+export type putCommunicationPolicyResponseError = (
+  | putCommunicationPolicyResponse400
+  | putCommunicationPolicyResponse401
+  | putCommunicationPolicyResponse403
+  | putCommunicationPolicyResponse404
+) & {
+  headers: Headers;
+};
+
+export type putCommunicationPolicyResponse =
+  putCommunicationPolicyResponseSuccess | putCommunicationPolicyResponseError;
+
+export const getPutCommunicationPolicyUrl = (sourceAccountId: string) => {
+  return `/v1/revenue-workspaces/current/communication-policy/${sourceAccountId}`;
+};
+
+/**
+ * Save mailbox policy sends the sharing choices already on screen and leaves out the policy id, the mailbox account, and the current version. The stored policy keeps those choices and advances the version.
+ * @summary Save mailbox policy
+ */
+export const putCommunicationPolicy = async (
+  sourceAccountId: string,
+  putCommunicationPolicyBody: PutCommunicationPolicyBody,
+  options?: RequestInit,
+): Promise<putCommunicationPolicyResponse> => {
+  const res = await fetch(getPutCommunicationPolicyUrl(sourceAccountId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(putCommunicationPolicyBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: putCommunicationPolicyResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as putCommunicationPolicyResponse;
+};
+
 export type getCommunicationAttachmentContentResponse200 = {
   data: GetCommunicationAttachmentContent200;
   status: 200;
@@ -2924,4 +2994,66 @@ export const getCommunicationInteractionBody = async (
     status: res.status,
     headers: res.headers,
   } as getCommunicationInteractionBodyResponse;
+};
+
+export type listWorkspaceNotesResponse200 = {
+  data: ListWorkspaceNotes200;
+  status: 200;
+};
+
+export type listWorkspaceNotesResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type listWorkspaceNotesResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listWorkspaceNotesResponseSuccess = listWorkspaceNotesResponse200 & {
+  headers: Headers;
+};
+export type listWorkspaceNotesResponseError = (
+  listWorkspaceNotesResponse400 | listWorkspaceNotesResponse401
+) & {
+  headers: Headers;
+};
+
+export type listWorkspaceNotesResponse =
+  listWorkspaceNotesResponseSuccess | listWorkspaceNotesResponseError;
+
+export const getListWorkspaceNotesUrl = (params?: ListWorkspaceNotesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/workspace-notes?${stringifiedParams}`
+    : `/v1/workspace-notes`;
+};
+
+/**
+ * Returns the latest copy of each company note in this workspace. One request reads every company, so the notes page does not ask for each company timeline. A newer edit replaces the previous copy, and a later deletion removes the note.
+ * @summary List workspace notes
+ */
+export const listWorkspaceNotes = async (
+  params?: ListWorkspaceNotesParams,
+  options?: RequestInit,
+): Promise<listWorkspaceNotesResponse> => {
+  const res = await fetch(getListWorkspaceNotesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listWorkspaceNotesResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listWorkspaceNotesResponse;
 };

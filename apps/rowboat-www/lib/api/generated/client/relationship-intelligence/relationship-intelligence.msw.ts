@@ -36,6 +36,8 @@ import type {
   ListRelationshipAttention200,
   ListRelationshipIdentityCandidates200,
   ListRelationships200,
+  ListWorkspaceNotes200,
+  PutCommunicationPolicy200,
   PutConversationPolicy201,
   RelationshipAttentionItem,
   RelationshipCommitment,
@@ -87,6 +89,8 @@ import {
   getListRelationshipAttentionResponseMock,
   getListRelationshipIdentityCandidatesResponseMock,
   getListRelationshipsResponseMock,
+  getListWorkspaceNotesResponseMock,
+  getPutCommunicationPolicyResponseMock,
   getPutConversationPolicyResponseMock,
   getRejectRelationshipRecommendationResponseMock,
   getReportRelationshipSourceAuthorizationResponseMock,
@@ -145,8 +149,10 @@ export {
   getApproveMutualActionPlanResponseMock,
   getShareMutualActionPlanResponseMock,
   getGetRelationshipTimelineResponseMock,
+  getPutCommunicationPolicyResponseMock,
   getGetCommunicationAttachmentContentResponseMock,
   getGetCommunicationInteractionBodyResponseMock,
+  getListWorkspaceNotesResponseMock,
 } from "./relationship-intelligence.faker";
 
 export const getListCommitmentsMockHandler = (
@@ -1210,6 +1216,30 @@ export const getGetRelationshipTimelineMockHandler = (
   );
 };
 
+export const getPutCommunicationPolicyMockHandler = (
+  overrideResponse?:
+    | PutCommunicationPolicy200
+    | ((
+        info: Parameters<Parameters<typeof http.put>[1]>[0],
+      ) => Promise<PutCommunicationPolicy200> | PutCommunicationPolicy200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.put(
+    "*/v1/revenue-workspaces/current/communication-policy/:sourceAccountId",
+    async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getPutCommunicationPolicyResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
 export const getGetCommunicationAttachmentContentMockHandler = (
   overrideResponse?:
     | GetCommunicationAttachmentContent200
@@ -1251,6 +1281,30 @@ export const getGetCommunicationInteractionBodyMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getGetCommunicationInteractionBodyResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getListWorkspaceNotesMockHandler = (
+  overrideResponse?:
+    | ListWorkspaceNotes200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListWorkspaceNotes200> | ListWorkspaceNotes200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/workspace-notes",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListWorkspaceNotesResponseMock(),
         { status: 200 },
       );
     },
@@ -1302,6 +1356,8 @@ export const getRelationshipIntelligenceMock = () => [
   getApproveMutualActionPlanMockHandler(),
   getShareMutualActionPlanMockHandler(),
   getGetRelationshipTimelineMockHandler(),
+  getPutCommunicationPolicyMockHandler(),
   getGetCommunicationAttachmentContentMockHandler(),
   getGetCommunicationInteractionBodyMockHandler(),
+  getListWorkspaceNotesMockHandler(),
 ];

@@ -315,6 +315,37 @@ describe("API reference document", () => {
     );
   });
 
+  it("shows the mailbox policy Save sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation =
+      presented.paths["/v1/revenue-workspaces/current/communication-policy/{sourceAccountId}"].put;
+    expect(operation.summary).toBe("Save mailbox policy");
+    expect(operation.description).toContain("leaves out the policy id");
+    expect(operation.description).not.toMatch(/\bslug\b|Temporal/);
+    expect(operation.parameters[0].schema.example).toBe("you@company.com");
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      metadataVisibility: "workspace",
+      shareSubject: true,
+      shareBody: false,
+      shareAttachments: false,
+      signatureEnrichment: true,
+      modelContactExtraction: true,
+      retentionDays: 540,
+    });
+    expect(operation.responses["200"].content["application/json"].example).toEqual({
+      id: "db8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      sourceAccountId: "you@company.com",
+      metadataVisibility: "workspace",
+      shareSubject: true,
+      shareBody: false,
+      shareAttachments: false,
+      signatureEnrichment: true,
+      modelContactExtraction: true,
+      retentionDays: 540,
+      version: 2,
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
