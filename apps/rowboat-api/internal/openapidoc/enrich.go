@@ -1053,11 +1053,37 @@ func addRuntimePaths(paths obj) {
 	addVoiceCloudPaths(paths)
 }
 
+const nextChatMessage = "Ask about a company, a promise, or the next step."
+
+func documentedNextChatMessage() obj {
+	return obj{"input": nextChatMessage}
+}
+
+func documentedAcceptedChatTurn() obj {
+	return obj{
+		"accepted": true,
+		"turnSeq":  1,
+	}
+}
+
 func addAgentSessionPaths(paths obj) {
 	paths["/v1/agent-sessions"] = obj{"get": operation("Agent Sessions", "List agent sessions", "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.", "listAgentSessions", bearer(), nil, nil, obj{
 		"200": jsonResponse("Recent agent conversations.", ref("AgentSessionListResponse"), obj{"sessions": []any{obj{"sessionId": "session_abc123", "agent": "assistant", "status": "active", "channel": "web", "title": "Review the Acme renewal", "turns": 2, "llmCalls": 3, "toolCalls": 1, "costUnits": 45, "continuationToken": "agt_example", "createdAt": "2026-09-02T15:00:00Z"}}}),
 		"401": responseRef("401"),
 		"500": responseRef("500"),
+	})}
+	paths["/v1/agent-sessions/{id}/turns"] = obj{"post": operation("Agent Sessions", "Submit", "Submit sends the next message in the open chat. It posts only \"Ask about a company, a promise, or the next step.\" The opening message already took sequence 0, so this turn is accepted as sequence 1.", "submitAgentSessionTurn", bearer(), []any{
+		pathParam("id", "Stable session id.", stringSchema("Session id.", "session_abc123")),
+	}, jsonRequest("Next chat message.", objectSchema("Next chat message.", obj{
+		"input": stringSchema("Message text.", nextChatMessage),
+	}, "input"), documentedNextChatMessage()), obj{
+		"202": jsonResponse("Turn accepted.", objectSchema("Accepted turn.", obj{
+			"accepted": boolSchema("The turn was queued.", true),
+			"turnSeq":  intSchema("Sequence of the accepted turn.", 1),
+		}, "accepted", "turnSeq"), documentedAcceptedChatTurn()),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
 	})}
 	paths["/v1/agent-sessions/{id}/events"] = obj{"get": operation("Agent Sessions", "List agent session events", "Returns ordered durable events used to reconstruct a conversation after navigation or reload.", "listAgentSessionEvents", bearer(), []any{
 		pathParam("id", "Stable session id.", stringSchema("Session id.", "session_abc123")),

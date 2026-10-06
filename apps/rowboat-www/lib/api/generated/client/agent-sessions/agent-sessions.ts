@@ -14,6 +14,8 @@ import type {
   N401Response,
   N404Response,
   N500Response,
+  SubmitAgentSessionTurn202,
+  SubmitAgentSessionTurnBody,
 } from "../model";
 
 export type listAgentSessionsResponse200 = {
@@ -76,6 +78,66 @@ export const listAgentSessions = async (
 
   const data: listAgentSessionsResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as listAgentSessionsResponse;
+};
+
+export type submitAgentSessionTurnResponse202 = {
+  data: SubmitAgentSessionTurn202;
+  status: 202;
+};
+
+export type submitAgentSessionTurnResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type submitAgentSessionTurnResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type submitAgentSessionTurnResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type submitAgentSessionTurnResponseSuccess = submitAgentSessionTurnResponse202 & {
+  headers: Headers;
+};
+export type submitAgentSessionTurnResponseError = (
+  | submitAgentSessionTurnResponse400
+  | submitAgentSessionTurnResponse401
+  | submitAgentSessionTurnResponse404
+) & {
+  headers: Headers;
+};
+
+export type submitAgentSessionTurnResponse =
+  submitAgentSessionTurnResponseSuccess | submitAgentSessionTurnResponseError;
+
+export const getSubmitAgentSessionTurnUrl = (id: string) => {
+  return `/v1/agent-sessions/${id}/turns`;
+};
+
+/**
+ * Submit sends the next message in the open chat. It posts only "Ask about a company, a promise, or the next step." The opening message already took sequence 0, so this turn is accepted as sequence 1.
+ * @summary Submit
+ */
+export const submitAgentSessionTurn = async (
+  id: string,
+  submitAgentSessionTurnBody: SubmitAgentSessionTurnBody,
+  options?: RequestInit,
+): Promise<submitAgentSessionTurnResponse> => {
+  const res = await fetch(getSubmitAgentSessionTurnUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(submitAgentSessionTurnBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: submitAgentSessionTurnResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as submitAgentSessionTurnResponse;
 };
 
 export type listAgentSessionEventsResponse200 = {

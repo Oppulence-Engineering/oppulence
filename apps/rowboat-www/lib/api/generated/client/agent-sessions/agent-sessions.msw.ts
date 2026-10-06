@@ -8,15 +8,21 @@
 import { HttpResponse, http } from "msw";
 import type { RequestHandlerOptions } from "msw";
 
-import type { AgentSessionEventsResponse, AgentSessionListResponse } from "../model";
+import type {
+  AgentSessionEventsResponse,
+  AgentSessionListResponse,
+  SubmitAgentSessionTurn202,
+} from "../model";
 
 import {
   getListAgentSessionEventsResponseMock,
   getListAgentSessionsResponseMock,
+  getSubmitAgentSessionTurnResponseMock,
 } from "./agent-sessions.faker";
 
 export {
   getListAgentSessionsResponseMock,
+  getSubmitAgentSessionTurnResponseMock,
   getListAgentSessionEventsResponseMock,
 } from "./agent-sessions.faker";
 
@@ -38,6 +44,30 @@ export const getListAgentSessionsMockHandler = (
             : overrideResponse
           : getListAgentSessionsResponseMock(),
         { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getSubmitAgentSessionTurnMockHandler = (
+  overrideResponse?:
+    | SubmitAgentSessionTurn202
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<SubmitAgentSessionTurn202> | SubmitAgentSessionTurn202),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/agent-sessions/:id/turns",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getSubmitAgentSessionTurnResponseMock(),
+        { status: 202 },
       );
     },
     options,
@@ -69,5 +99,6 @@ export const getListAgentSessionEventsMockHandler = (
 };
 export const getAgentSessionsMock = () => [
   getListAgentSessionsMockHandler(),
+  getSubmitAgentSessionTurnMockHandler(),
   getListAgentSessionEventsMockHandler(),
 ];

@@ -52,6 +52,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/background-tasks/{slug}/runs/{runId}/events",
 		"/v1/background-tasks/{slug}/runs/{runId}/events/stream",
 		"/v1/background-tasks/{slug}/trigger",
+		"/v1/agent-sessions/{id}/turns",
 		"/v1/llm/models",
 		"/v1/llm/chat/completions",
 		"/v1/llm/completions",
@@ -338,6 +339,51 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertNextChatMessage(t, spec)
+}
+
+func TestSubmitSendsTheNextChatMessage(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertNextChatMessage(t, spec)
+}
+
+func assertNextChatMessage(t *testing.T, spec obj) {
+	t.Helper()
+	post := asObj(asObj(asObj(spec["paths"])["/v1/agent-sessions/{id}/turns"])["post"])
+	if post["summary"] != "Submit" || post["operationId"] != "submitAgentSessionTurn" {
+		t.Fatalf("next message operation = %#v", post["summary"])
+	}
+	request := asObj(asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])["example"])
+	if mustJSON(request) != mustJSON(documentedNextChatMessage()) {
+		t.Fatalf("next message request = %s", mustJSON(request))
+	}
+	if _, ok := request["channel"]; ok || request["agent"] != nil || request["title"] != nil {
+		t.Fatalf("next message included create fields: %s", mustJSON(request))
+	}
+	accepted := asObj(asObj(asObj(asObj(asObj(post["responses"])["202"])["content"])["application/json"])["example"])
+	if mustJSON(accepted) != mustJSON(documentedAcceptedChatTurn()) {
+		t.Fatalf("accepted turn = %s", mustJSON(accepted))
+	}
+	get := asObj(asObj(spec["paths"])["/v1/agent-sessions"])["get"]
+	example := asObj(asObj(asObj(asObj(asObj(get)["responses"])["200"])["content"])["application/json"])["example"]
+	listed := asObj(example)
+	sessions, _ := listed["sessions"].([]any)
+	if len(sessions) == 0 {
+		t.Fatal("session history example is empty")
+	}
+	first := asObj(sessions[0])
+	if first["title"] != "Review the Acme renewal" || first["sessionId"] != "session_abc123" {
+		t.Fatalf("session history example changed: %s", mustJSON(first))
+	}
+}
+
+func mustJSON(v any) string {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(raw)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

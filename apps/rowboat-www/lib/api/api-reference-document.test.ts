@@ -315,6 +315,26 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the next chat message Submit stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const turn = presented.paths["/v1/agent-sessions/{id}/turns"].post;
+    expect(turn.summary).toBe("Submit");
+    expect(turn.description).toContain("Ask about a company, a promise, or the next step.");
+    expect(turn.description).toContain("sequence 1");
+    expect(turn.requestBody.content["application/json"].example).toEqual({
+      input: "Ask about a company, a promise, or the next step.",
+    });
+    expect(turn.responses["202"].content["application/json"].example).toEqual({
+      accepted: true,
+      turnSeq: 1,
+    });
+    expect(JSON.stringify(turn.requestBody)).not.toContain("channel");
+    const listed = presented.paths["/v1/agent-sessions"].get.responses["200"].content["application/json"]
+      .example.sessions[0];
+    expect(listed.title).toBe("Review the Acme renewal");
+    expect(listed.turns).toBe(2);
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
