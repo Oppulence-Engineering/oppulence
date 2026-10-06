@@ -338,6 +338,38 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertGraphFollowUpRequest(t, spec)
+}
+
+func TestGraphFollowUpSendsATask(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertGraphFollowUpRequest(t, spec)
+}
+
+func assertGraphFollowUpRequest(t *testing.T, spec obj) {
+	t.Helper()
+	content := asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/revenue-actions"])["post"])["requestBody"])["content"])["application/json"])
+	example := asObj(content["example"])
+	if example["relationshipId"] != "9c8dfa9b-a7b2-46ea-982c-622a914c00e5" ||
+		example["actionType"] != "follow_up_task" ||
+		example["channel"] != "task" ||
+		example["executionMode"] != "draft" ||
+		example["reason"] != documentedGraphFollowUpReason ||
+		example["proposedMessage"] != documentedGraphFollowUpMessage {
+		t.Fatalf("follow-up request: %#v", example)
+	}
+	props := asObj(asObj(content["schema"])["properties"])
+	if asObj(props["actionType"])["example"] != "follow_up_task" || asObj(props["channel"])["example"] != "task" {
+		t.Fatalf("follow-up fields: %#v", props)
+	}
+	if asObj(props["reason"])["example"] != documentedGraphFollowUpReason || asObj(props["proposedMessage"])["example"] != documentedGraphFollowUpMessage {
+		t.Fatalf("follow-up copy: %#v", props)
+	}
+	relationship := asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueRelationship"])["properties"])
+	if asObj(relationship["summary"])["example"] != documentedGraphFollowUpMessage || asObj(relationship["displayName"])["example"] != "Jordan Buyer" {
+		t.Fatalf("relationship copy: %#v", relationship)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

@@ -315,6 +315,23 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the task the graph follow-up button sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const body = presented.paths["/v1/revenue-actions"].post.requestBody.content["application/json"];
+    expect(body.example).toEqual({
+      relationshipId: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      actionType: "follow_up_task",
+      channel: "task",
+      executionMode: "draft",
+      reason: "Follow up on company: Jordan Buyer",
+      proposedMessage: "Asked for pricing in April; wants a follow-up in July.",
+    });
+    expect(body.schema.properties.actionType.example).toBe("follow_up_task");
+    expect(body.schema.properties.channel.example).toBe("task");
+    expect(JSON.stringify(body)).not.toContain("They asked for a follow-up in July.");
+    expect(JSON.stringify(body)).not.toContain("Hi Jordan");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

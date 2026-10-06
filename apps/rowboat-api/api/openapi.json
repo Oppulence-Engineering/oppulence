@@ -25757,6 +25757,14 @@
         "requestBody": {
           "content": {
             "application/json": {
+              "example": {
+                "actionType": "follow_up_task",
+                "channel": "task",
+                "executionMode": "draft",
+                "proposedMessage": "Asked for pricing in April; wants a follow-up in July.",
+                "reason": "Follow up on company: Jordan Buyer",
+                "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+              },
               "schema": {
                 "description": "Create request.",
                 "properties": {
@@ -25774,13 +25782,13 @@
                       "calendar_hold",
                       "commitment_rescue"
                     ],
-                    "example": "warm_follow_up",
+                    "example": "follow_up_task",
                     "type": "string"
                   },
                   "channel": {
                     "description": "Delivery channel.",
                     "enum": ["email", "slack", "call", "crm_task", "crm", "task", "calendar"],
-                    "example": "email",
+                    "example": "task",
                     "type": "string"
                   },
                   "dueAt": {
@@ -25808,7 +25816,7 @@
                   },
                   "proposedMessage": {
                     "description": "Proposed body.",
-                    "example": "Hi Jordan — circling back as promised...",
+                    "example": "Asked for pricing in April; wants a follow-up in July.",
                     "type": "string"
                   },
                   "proposedSubject": {
@@ -25818,7 +25826,7 @@
                   },
                   "reason": {
                     "description": "Evidence-backed reason.",
-                    "example": "They asked for a follow-up in July.",
+                    "example": "Follow up on company: Jordan Buyer",
                     "type": "string"
                   },
                   "recipientEmail": {
