@@ -6,16 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type GetRelationshipChangesParams = {
-  /**
-   * Maximum snapshots. A company asks for the two newest.
-   * @minimum 1
-   * @maximum 50
-   */
-  limit?: number;
-  /**
-   * Older snapshots to skip. The first page sends none.
-   * @minimum 0
-   */
-  offset?: number;
-};
+/**
+ * Editor document, when one was saved.
+ */
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };

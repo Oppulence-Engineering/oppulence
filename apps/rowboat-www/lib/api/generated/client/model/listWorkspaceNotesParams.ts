@@ -6,15 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type GetRelationshipChangesParams = {
+export type ListWorkspaceNotesParams = {
   /**
-   * Maximum snapshots. A company asks for the two newest.
+   * Maximum notes to return (default 50, max 100).
    * @minimum 1
-   * @maximum 50
+   * @maximum 100
    */
   limit?: number;
   /**
-   * Older snapshots to skip. The first page sends none.
+   * Number of collapsed notes to skip.
    * @minimum 0
    */
   offset?: number;
