@@ -1,6 +1,7 @@
 package revenue
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -48,6 +49,51 @@ func personsIn(t *testing.T, f *fixture) []*ent.Person {
 		t.Fatalf("query persons: %v", err)
 	}
 	return rows
+}
+
+func TestPeopleDirectoryListsTheProjectedPerson(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 4, 12, 0, 0, 0, time.UTC)
+	if _, err := f.svc.IngestRelationshipObservations(f.ctx, f.user,
+		[]RelationshipObservationInput{personObservation("obs_1", "Acme", "acme.example", now,
+			RelationshipParticipantInput{
+				DisplayName: "Sarah Chen",
+				Email:       "sarah@acme.example",
+				Role:        "champion",
+				Title:       "VP Engineering",
+			})},
+	); err != nil {
+		t.Fatal(err)
+	}
+	page, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Limit: 500})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := make([]*personDTO, 0, len(page.Persons))
+	for _, person := range page.Persons {
+		out = append(out, personToDTO(person))
+	}
+	raw, err := json.Marshal(map[string]any{"persons": out, "hasMore": page.HasMore})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var body map[string]any
+	if err := json.Unmarshal(raw, &body); err != nil {
+		t.Fatal(err)
+	}
+	people, _ := body["persons"].([]any)
+	if len(people) != 1 {
+		t.Fatalf("people: %s", raw)
+	}
+	people[0].(map[string]any)["id"] = "ab8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	got, err := json.Marshal(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const want = `{"hasMore":false,"persons":[{"aliases":[],"attributesVersion":1,"displayName":"Sarah Chen","employmentStatus":"unknown","firstInteractionAt":"2026-08-04T12:00:00Z","id":"ab8dfa9b-a7b2-46ea-982c-622a914c00e5","lastInteractionAt":"2026-08-04T12:00:00Z","orgDomain":"acme.example","orgName":"Acme","participantRoles":["champion"],"primaryEmail":"sarah@acme.example","relationshipCount":1,"status":"active","title":"VP Engineering"}]}`
+	if string(got) != want {
+		t.Fatalf("people directory:\n%s", got)
+	}
 }
 
 func TestIngestCreatesCanonicalPersonWithAnchors(t *testing.T) {

@@ -1061,6 +1061,31 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"409": responseRef("409"),
 	})}
+	paths["/v1/relationship-persons"] = obj{"get": operation("Relationship Intelligence", "People", "People loads this directory. The request asks for the first 500 people. The answer lists each person with their name, email, role, company, and when you last talked.", "listRelationshipPersons", bearer(), []any{
+		obj{"name": "limit", "in": "query", "required": false, "description": "How many people to return. The directory asks for 500.", "schema": intSchema("How many people to return. The directory asks for 500.", 500, obj{"minimum": 1, "maximum": 500})},
+	}, nil, obj{
+		"200": jsonResponse("The people in this workspace.", objectSchema("People directory.", obj{
+			"persons": arraySchema("People, most recently active first.", objectSchema("One person.", obj{
+				"id":                 uuidSchema("Person id.", peopleDirectoryPersonID),
+				"displayName":        stringSchema("Name.", "Sarah Chen"),
+				"aliases":            arraySchema("Other names.", stringSchema("Other name.", nil)),
+				"primaryEmail":       stringSchema("Email.", "sarah@acme.example"),
+				"title":              stringSchema("Role.", "VP Engineering"),
+				"orgName":            stringSchema("Company.", "Acme"),
+				"orgDomain":          stringSchema("Company domain.", "acme.example"),
+				"status":             stringEnum("Whether this person is in the directory.", "active", "active", "merged"),
+				"employmentStatus":   stringEnum("Whether their mail still reaches them.", "unknown", "unknown", "active", "departed"),
+				"relationshipCount":  intSchema("Companies this person is on.", 1),
+				"participantRoles":   arraySchema("Roles on those companies.", stringSchema("Role.", "champion")),
+				"firstInteractionAt": stringSchema("When you first talked.", "2026-08-04T12:00:00Z", obj{"format": "date-time"}),
+				"lastInteractionAt":  stringSchema("When you last talked.", "2026-08-04T12:00:00Z", obj{"format": "date-time"}),
+				"attributesVersion":  intSchema("How many times these details changed.", 1),
+			}, "id", "displayName", "aliases", "status", "relationshipCount", "attributesVersion")),
+			"hasMore": boolSchema("Whether another person exists past this page.", false),
+		}, "persons", "hasMore"), peopleDirectoryResponse()),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+	})}
 	planTokenParam := []any{obj{"name": "X-Oppulence-Plan-Token", "in": "header", "required": true, "description": "Scoped plan response token. Never put this token in a URL or query parameter.", "schema": obj{"type": "string"}}}
 	paths["/v1/public/mutual-action-plan"] = obj{"get": operation("Relationship Intelligence", "Open a scoped mutual action plan", "Returns only the externally authorized plan revision with internal evidence references removed and policy redactions applied.", "getPublicMutualActionPlan", nil, planTokenParam, nil, obj{
 		"200": jsonResponse("Scoped public plan.", freeFormSchema("Public mutual action plan."), nil), "404": responseRef("404"),
@@ -1311,4 +1336,32 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
+}
+
+const peopleDirectoryPersonID = "ab8dfa9b-a7b2-46ea-982c-622a914c00e5"
+
+func peopleDirectoryResponse() obj {
+	return obj{
+		"hasMore": false,
+		"persons": []any{peopleDirectoryPerson()},
+	}
+}
+
+func peopleDirectoryPerson() obj {
+	return obj{
+		"id":                 peopleDirectoryPersonID,
+		"displayName":        "Sarah Chen",
+		"aliases":            []any{},
+		"primaryEmail":       "sarah@acme.example",
+		"title":              "VP Engineering",
+		"orgName":            "Acme",
+		"orgDomain":          "acme.example",
+		"status":             "active",
+		"employmentStatus":   "unknown",
+		"relationshipCount":  1,
+		"participantRoles":   []any{"champion"},
+		"firstInteractionAt": "2026-08-04T12:00:00Z",
+		"lastInteractionAt":  "2026-08-04T12:00:00Z",
+		"attributesVersion":  1,
+	}
 }

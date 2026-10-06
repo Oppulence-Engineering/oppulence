@@ -315,6 +315,33 @@ describe("API reference document", () => {
     );
   });
 
+  it("shows the person People loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const people = presented.paths["/v1/relationship-persons"].get;
+    expect(people.summary).toBe("People");
+    expect(people.description).toContain("first 500 people");
+    expect(people.parameters?.[0]?.schema?.example).toBe(500);
+    const example = people.responses["200"].content["application/json"].example as {
+      hasMore: boolean;
+      persons: Array<{ displayName: string; primaryEmail: string; title: string; participantRoles: string[] }>;
+    };
+    expect(example.hasMore).toBe(false);
+    expect(example.persons[0]).toMatchObject({
+      id: "ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      displayName: "Sarah Chen",
+      primaryEmail: "sarah@acme.example",
+      title: "VP Engineering",
+      orgName: "Acme",
+      orgDomain: "acme.example",
+      status: "active",
+      employmentStatus: "unknown",
+      relationshipCount: 1,
+      participantRoles: ["champion"],
+      attributesVersion: 1,
+    });
+    expect(example.persons[0]).not.toHaveProperty("phone");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
