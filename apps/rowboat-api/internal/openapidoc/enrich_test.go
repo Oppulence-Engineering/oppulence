@@ -52,6 +52,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/background-tasks/{slug}/runs/{runId}/events",
 		"/v1/background-tasks/{slug}/runs/{runId}/events/stream",
 		"/v1/background-tasks/{slug}/trigger",
+		"/v1/agents",
 		"/v1/llm/models",
 		"/v1/llm/chat/completions",
 		"/v1/llm/completions",
@@ -338,6 +339,41 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertCreatedAgent(t, spec)
+}
+
+func TestCreateAgentStoresTheDialog(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertCreatedAgent(t, spec)
+}
+
+func assertCreatedAgent(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/agents"])["post"])
+	if op["summary"] != "Create agent" {
+		t.Fatalf("summary = %#v", op["summary"])
+	}
+	request := asObj(asObj(asObj(asObj(op["requestBody"])["content"])["application/json"])["example"])
+	if mustJSON(t, request) != mustJSON(t, documentedCreatedAgentRequest()) {
+		t.Fatalf("request = %s", mustJSON(t, request))
+	}
+	stored := asObj(asObj(asObj(asObj(asObj(op["responses"])["201"])["content"])["application/json"])["example"])
+	if mustJSON(t, stored) != mustJSON(t, documentedCreatedAgent()) {
+		t.Fatalf("stored = %s", mustJSON(t, stored))
+	}
+	if _, ok := stored["model"]; ok {
+		t.Fatal("stored agent should omit an empty model")
+	}
+}
+
+func mustJSON(t *testing.T, v any) string {
+	t.Helper()
+	raw, err := json.Marshal(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(raw)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
