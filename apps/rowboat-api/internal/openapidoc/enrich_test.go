@@ -338,6 +338,56 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertCreatedWorkflow(t, spec)
+}
+
+func TestCreatedWorkflowStoresTheDraft(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertCreatedWorkflow(t, spec)
+}
+
+func assertCreatedWorkflow(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	post := asObj(asObj(paths["/v1/background-tasks"])["post"])
+	if post["summary"] != "Create workflow" {
+		t.Fatalf("summary: %#v", post["summary"])
+	}
+	const description = "Create workflow posts a draft named Follow up when a promise slips. It runs in the cloud, starts when a communication event matches, and stays inactive. The stored workflow keeps that name, the address follow-up-when-a-promise-slips, those instructions and triggers, cloud execution, revision 1, and schedule sync paused."
+	if post["description"] != description {
+		t.Fatalf("description: %#v", post["description"])
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
+	if mustJSON(request["example"]) != mustJSON(documentedCreatedWorkflowRequest()) {
+		t.Fatalf("request example: %s", mustJSON(request["example"]))
+	}
+	response := asObj(asObj(post["responses"])["201"])
+	if response["description"] != "Stored workflow." {
+		t.Fatalf("response description: %#v", response["description"])
+	}
+	body := asObj(asObj(response["content"])["application/json"])
+	if mustJSON(body["example"]) != mustJSON(documentedCreatedWorkflow()) {
+		t.Fatalf("response example: %s", mustJSON(body["example"]))
+	}
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	props := asObj(asObj(schemas["BackgroundTask"])["properties"])
+	if asObj(props["name"])["example"] != "Daily Account Summary" || asObj(props["executionTarget"])["example"] != "desktop" || asObj(props["active"])["example"] != true {
+		t.Fatalf("shared task examples changed: name %#v target %#v active %#v", props["name"], props["executionTarget"], props["active"])
+	}
+	listExample := asObj(asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks"])["get"])["responses"])["200"])["content"])["application/json"])["example"]
+	tasks, ok := asObj(listExample)["tasks"].([]any)
+	if !ok || len(tasks) != 1 || asObj(tasks[0])["slug"] != "daily-summary" || asObj(tasks[0])["executionTarget"] != "desktop" {
+		t.Fatalf("list example changed: %s", mustJSON(listExample))
+	}
+}
+
+func mustJSON(v any) string {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(raw)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

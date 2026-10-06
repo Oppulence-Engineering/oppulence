@@ -398,8 +398,8 @@ export const getCreateBackgroundTaskUrl = () => {
 };
 
 /**
- * Creates the cloud mirror for a desktop task.yaml entry. If slug is omitted, Solomon AI API derives one from name. Slugs are unique per authenticated user.
- * @summary Create background task mirror
+ * Create workflow posts a draft named Follow up when a promise slips. It runs in the cloud, starts when a communication event matches, and stays inactive. The stored workflow keeps that name, the address follow-up-when-a-promise-slips, those instructions and triggers, cloud execution, revision 1, and schedule sync paused.
+ * @summary Create workflow
  */
 export const createBackgroundTask = async (
   backgroundTaskCreateRequest: BackgroundTaskCreateRequest,

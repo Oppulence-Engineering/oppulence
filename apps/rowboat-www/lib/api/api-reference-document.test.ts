@@ -315,6 +315,48 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the draft Create workflow stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const post = presented.paths["/v1/background-tasks"].post;
+    expect(post.summary).toBe("Create workflow");
+    expect(post.description).toBe(
+      "Create workflow posts a draft named Follow up when a promise slips. It runs in the cloud, starts when a communication event matches, and stays inactive. The stored workflow keeps that name, the address follow-up-when-a-promise-slips, those instructions and triggers, cloud execution, revision 1, and schedule sync paused.",
+    );
+    const request = post.requestBody.content["application/json"].example;
+    expect(request).toMatchObject({
+      name: "Follow up when a promise slips",
+      active: false,
+      executionTarget: "api",
+    });
+    expect(request.slug).toBeUndefined();
+    expect(request.model).toBeUndefined();
+    expect(request.provider).toBeUndefined();
+    expect(request.createdAt).toBeUndefined();
+    expect(request.triggers.workflow.trigger.kind).toBe("communication");
+    expect(request.triggers.eventMatchCriteria).toContain("Gmail, Calendar, or HubSpot");
+    expect(request.instructions).toContain("Objective: When a promise is about to slip");
+    expect(request.instructions).toContain("scope: matching-record");
+    const stored = post.responses["201"].content["application/json"].example;
+    expect(post.responses["201"].description).toBe("Stored workflow.");
+    expect(stored).toMatchObject({
+      id: "c8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+      slug: "follow-up-when-a-promise-slips",
+      name: "Follow up when a promise slips",
+      active: false,
+      executionTarget: "api",
+      systemManaged: false,
+      scheduleSyncState: "paused",
+      revision: 1,
+      createdAt: "2026-06-04T20:38:00Z",
+      updatedAt: "2026-06-04T20:38:00Z",
+    });
+    expect(presented.components.schemas.BackgroundTask.properties.executionTarget.example).toBe("desktop");
+    expect(presented.components.schemas.BackgroundTask.properties.name.example).toBe("Daily Account Summary");
+    expect(presented.paths["/v1/background-tasks"].get.responses["200"].content["application/json"].example.tasks[0].slug).toBe(
+      "daily-summary",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
