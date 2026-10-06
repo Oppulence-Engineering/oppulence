@@ -338,6 +338,37 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertResearchFill(t, spec)
+}
+
+func TestFillInCompaniesAndPeopleSendsPendingIDs(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertResearchFill(t, spec)
+}
+
+func assertResearchFill(t *testing.T, spec obj) {
+	t.Helper()
+	companies := requestExample(t, spec, "/v1/research/companies")
+	companyIDs, _ := companies["relationshipIds"].([]any)
+	if len(companyIDs) != 1 || companyIDs[0] != documentedResearchCompanyID {
+		t.Fatalf("company research request: %#v", companies)
+	}
+	people := requestExample(t, spec, "/v1/research/people")
+	personIDs, _ := people["personIds"].([]any)
+	if len(personIDs) != 1 || personIDs[0] != documentedResearchPersonID {
+		t.Fatalf("person research request: %#v", people)
+	}
+}
+
+func requestExample(t *testing.T, spec obj, path string) obj {
+	t.Helper()
+	content := asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])[path])["post"])["requestBody"])["content"])["application/json"])
+	example := asObj(content["example"])
+	if example == nil {
+		t.Fatalf("%s request example missing", path)
+	}
+	return example
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

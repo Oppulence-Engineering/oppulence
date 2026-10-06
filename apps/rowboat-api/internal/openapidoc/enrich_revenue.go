@@ -1,5 +1,9 @@
 package openapidoc
 
+// Fill in companies and people posts these pending ids, companies first.
+const documentedResearchCompanyID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+const documentedResearchPersonID = "1b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
@@ -383,6 +387,19 @@ func addRevenueSchemas(schemas obj) {
 		}, "target", "status", "attempts")),
 		"completedAt": stringSchema("Time every required target was verified.", "2026-07-31T14:01:00Z", obj{"format": "date-time"}, nullable()),
 	}, "receiptId", "requestedAt", "scopeRef", "legalHold", "status", "targets")
+
+	schemas["CompanyResearchOutcome"] = objectSchema("Result of filling in one company from public research.", obj{
+		"relationshipId": uuidSchema("Company relationship id.", documentedResearchCompanyID),
+		"matched":        boolSchema("Whether the vendor identified the company.", true),
+		"written":        intSchema("Details saved.", 1),
+		"replayed":       boolSchema("Whether this company was already filled in at the current version.", false),
+	}, "relationshipId", "matched", "written", "replayed")
+	schemas["PersonResearchOutcome"] = objectSchema("Result of filling in one person from public research.", obj{
+		"personId": uuidSchema("Person id.", documentedResearchPersonID),
+		"matched":  boolSchema("Whether the vendor identified the person.", true),
+		"written":  intSchema("Details saved.", 1),
+		"replayed": boolSchema("Whether this person was already filled in at the current version.", false),
+	}, "personId", "matched", "written", "replayed")
 
 	schemas["RelationshipIntelligence"] = objectSchema("Derived trust surface for a relationship: conversation claims, focused review, exact delta, governance, contradictions, and live cue cards.", obj{
 		"claims":                    arraySchema("Material quote-backed claims.", ref("ConversationClaim")),
@@ -1010,6 +1027,22 @@ func addRevenuePaths(paths obj) {
 	}, "requestId"), obj{"requestId": "delete:ab12"}), obj{
 		"202": jsonResponse("Deletion receipt.", ref("ConversationDeletionReceipt"), nil),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
+	})}
+	paths["/v1/research/companies"] = obj{"post": operation("Relationship Intelligence", "Fill in companies", "Fill in companies and people posts the pending company ids first. Each request stays within the estimate batch size.", "enrichCompanies", bearer(), nil, jsonRequest("Company research batch.", objectSchema("Company research batch.", obj{
+		"relationshipIds": arraySchema("Pending company ids.", uuidSchema("Relationship id.", documentedResearchCompanyID)),
+	}, "relationshipIds"), obj{"relationshipIds": []any{documentedResearchCompanyID}}), obj{
+		"200": jsonResponse("Company research results.", objectSchema("Company research results.", obj{
+			"outcomes": arraySchema("One outcome per company.", ref("CompanyResearchOutcome")),
+		}, "outcomes"), nil),
+		"400": responseRef("400"), "401": responseRef("401"), "402": responseRef("402"), "403": responseRef("403"), "409": responseRef("409"), "503": responseRef("503"),
+	})}
+	paths["/v1/research/people"] = obj{"post": operation("Relationship Intelligence", "Fill in people", "Fill in companies and people posts the pending person ids after the companies. Each request stays within the estimate batch size.", "enrichPersons", bearer(), nil, jsonRequest("Person research batch.", objectSchema("Person research batch.", obj{
+		"personIds": arraySchema("Pending person ids.", uuidSchema("Person id.", documentedResearchPersonID)),
+	}, "personIds"), obj{"personIds": []any{documentedResearchPersonID}}), obj{
+		"200": jsonResponse("Person research results.", objectSchema("Person research results.", obj{
+			"outcomes": arraySchema("One outcome per person.", ref("PersonResearchOutcome")),
+		}, "outcomes"), nil),
+		"400": responseRef("400"), "401": responseRef("401"), "402": responseRef("402"), "403": responseRef("403"), "409": responseRef("409"), "503": responseRef("503"),
 	})}
 	paths["/v1/relationship-observations/batch"] = obj{"post": operation("Relationship Intelligence", "Ingest relationship observations", "Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.", "ingestRelationshipObservations", bearer(), nil, jsonRequest("Observation batch.", objectSchema("Observation batch.", obj{
 		"observations": arraySchema("Provider-neutral observations.", objectSchema("Observation input.", obj{

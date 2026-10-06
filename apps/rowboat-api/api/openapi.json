@@ -5693,6 +5693,62 @@
         ],
         "type": "object"
       },
+      "CompanyResearchOutcome": {
+        "description": "Result of filling in one company from public research.",
+        "properties": {
+          "matched": {
+            "description": "Whether the vendor identified the company.",
+            "example": true,
+            "type": "boolean"
+          },
+          "relationshipId": {
+            "description": "Company relationship id.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "replayed": {
+            "description": "Whether this company was already filled in at the current version.",
+            "example": false,
+            "type": "boolean"
+          },
+          "written": {
+            "description": "Details saved.",
+            "example": 1,
+            "type": "integer"
+          }
+        },
+        "required": ["relationshipId", "matched", "written", "replayed"],
+        "type": "object"
+      },
+      "PersonResearchOutcome": {
+        "description": "Result of filling in one person from public research.",
+        "properties": {
+          "matched": {
+            "description": "Whether the vendor identified the person.",
+            "example": true,
+            "type": "boolean"
+          },
+          "personId": {
+            "description": "Person id.",
+            "example": "1b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "replayed": {
+            "description": "Whether this person was already filled in at the current version.",
+            "example": false,
+            "type": "boolean"
+          },
+          "written": {
+            "description": "Details saved.",
+            "example": 1,
+            "type": "integer"
+          }
+        },
+        "required": ["personId", "matched", "written", "replayed"],
+        "type": "object"
+      },
       "ConversationDeletionReceipt": {
         "description": "Immutable deletion request and per-target verification state. Pending device or provider targets keep the receipt partial.",
         "properties": {
@@ -24892,6 +24948,138 @@
           }
         ],
         "summary": "Request conversation deletion",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/research/companies": {
+      "post": {
+        "description": "Fill in companies and people posts the pending company ids first. Each request stays within the estimate batch size.",
+        "operationId": "enrichCompanies",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "relationshipIds": ["9c8dfa9b-a7b2-46ea-982c-622a914c00e5"]
+              },
+              "schema": {
+                "description": "Company research batch.",
+                "properties": {
+                  "relationshipIds": {
+                    "description": "Pending company ids.",
+                    "items": {
+                      "description": "Relationship id.",
+                      "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": ["relationshipIds"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Company research batch.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Company research results.",
+                  "properties": {
+                    "outcomes": {
+                      "description": "One outcome per company.",
+                      "items": {
+                        "$ref": "#/components/schemas/CompanyResearchOutcome"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["outcomes"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Company research results."
+          },
+          "400": { "$ref": "#/components/responses/400" },
+          "401": { "$ref": "#/components/responses/401" },
+          "402": { "$ref": "#/components/responses/402" },
+          "403": { "$ref": "#/components/responses/403" },
+          "409": { "$ref": "#/components/responses/409" },
+          "503": { "$ref": "#/components/responses/503" }
+        },
+        "security": [{ "BearerAuth": [] }],
+        "summary": "Fill in companies",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/research/people": {
+      "post": {
+        "description": "Fill in companies and people posts the pending person ids after the companies. Each request stays within the estimate batch size.",
+        "operationId": "enrichPersons",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "personIds": ["1b8dfa9b-a7b2-46ea-982c-622a914c00e5"]
+              },
+              "schema": {
+                "description": "Person research batch.",
+                "properties": {
+                  "personIds": {
+                    "description": "Pending person ids.",
+                    "items": {
+                      "description": "Person id.",
+                      "example": "1b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": ["personIds"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Person research batch.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Person research results.",
+                  "properties": {
+                    "outcomes": {
+                      "description": "One outcome per person.",
+                      "items": {
+                        "$ref": "#/components/schemas/PersonResearchOutcome"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["outcomes"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Person research results."
+          },
+          "400": { "$ref": "#/components/responses/400" },
+          "401": { "$ref": "#/components/responses/401" },
+          "402": { "$ref": "#/components/responses/402" },
+          "403": { "$ref": "#/components/responses/403" },
+          "409": { "$ref": "#/components/responses/409" },
+          "503": { "$ref": "#/components/responses/503" }
+        },
+        "security": [{ "BearerAuth": [] }],
+        "summary": "Fill in people",
         "tags": ["Relationship Intelligence"]
       }
     },
