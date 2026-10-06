@@ -315,6 +315,24 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the subject and message Save draft posts", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-actions/{actionId}/edit"].post;
+    expect(operation.summary).toBe("Save draft");
+    expect(operation.operationId).toBe("editRevenueAction");
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      proposedSubject: "Following up as promised",
+      proposedMessage: "Hi Jordan — circling back as promised.",
+    });
+    expect(operation.responses["200"].content["application/json"].example).toMatchObject({
+      revision: 2,
+      revisionHash: "sha256:35a77a7dc38e7b2d73e06e754a8a5767b3b8af2234f5caeeb532c63e488b2925",
+      policyStatus: "pending",
+      approvalStatus: "pending",
+    });
+    expect(presented.components.schemas.RevenueAction.properties.revision.example).toBe(1);
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

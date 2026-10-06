@@ -1162,8 +1162,8 @@ export const DismissRevenueAction404Response = zod
   );
 
 /**
- * Creates a new revision and invalidates the previous policy decision and approval. Editing is refused once execution has started.
- * @summary Edit an action
+ * Save draft posts the subject and message from the review sheet. The stored action moves to revision 2, and the previous sending check and approval no longer apply.
+ * @summary Save draft
  */
 export const EditRevenueActionParams = zod.object({
   actionId: zod.uuid().describe("Action id."),

@@ -648,6 +648,48 @@ func restoreRevenueSchemaOverrides(schemas obj) {
 	)
 }
 
+const (
+	documentedDraftActionID = "1a8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedDraftSubject  = "Following up as promised"
+	documentedDraftMessage  = "Hi Jordan — circling back as promised."
+	documentedDraftHash     = "sha256:35a77a7dc38e7b2d73e06e754a8a5767b3b8af2234f5caeeb532c63e488b2925"
+)
+
+func documentedDraftEditRequest() obj {
+	return obj{
+		"proposedSubject": documentedDraftSubject,
+		"proposedMessage": documentedDraftMessage,
+	}
+}
+
+func documentedSavedDraft() obj {
+	return obj{
+		"id":               documentedDraftActionID,
+		"relationshipId":   "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+		"relationshipName": "Acme",
+		"actionType":       "warm_follow_up",
+		"channel":          "email",
+		"detector":         "requested_follow_up_due",
+		"revision":         2,
+		"revisionHash":     documentedDraftHash,
+		"reason":           "They asked for a follow-up in July.",
+		"recipientEmail":   "buyer@example.com",
+		"proposedSubject":  documentedDraftSubject,
+		"proposedMessage":  documentedDraftMessage,
+		"senderAccountRef": "gmail:me@company.com",
+		"priorityScore":    82,
+		"queueStatus":      "open",
+		"policyStatus":     "pending",
+		"approvalStatus":   "pending",
+		"executionStatus":  "pending",
+		"executionOwner":   "rowboat",
+		"executionMode":    "draft",
+		"createdAt":        "2026-07-12T12:00:00Z",
+		"updatedAt":        "2026-07-31T14:00:00Z",
+		"evidence":         []any{},
+	}
+}
+
 func addRevenuePaths(paths obj) {
 	actionParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Action id.", "schema": obj{"type": "string", "format": "uuid"}}}
 
@@ -1196,17 +1238,18 @@ func addRevenuePaths(paths obj) {
 		"404": responseRef("404"),
 		"503": problemResponse("Policy facade unavailable; the action stays pending.", ref("ErrorEnvelope"), problemExample(503, "Service Unavailable", "policy preflight unavailable; the action stays pending", "facade_unavailable")),
 	})}
-	paths["/v1/revenue-actions/{actionId}/edit"] = obj{"post": operation("Revenue", "Edit an action", "Creates a new revision and invalidates the previous policy decision and approval. Editing is refused once execution has started.", "editRevenueAction", bearer(), actionParam, jsonRequest("Fields to change; omitted fields keep their value.", objectSchema("Edit request.", obj{
+	editActionParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Action id.", "schema": obj{"type": "string", "format": "uuid", "example": documentedDraftActionID}}}
+	paths["/v1/revenue-actions/{actionId}/edit"] = obj{"post": operation("Revenue", "Save draft", "Save draft posts the subject and message from the review sheet. The stored action moves to revision 2, and the previous sending check and approval no longer apply.", "editRevenueAction", bearer(), editActionParam, jsonRequest("Fields to change; omitted fields keep their value.", objectSchema("Edit request.", obj{
 		"reason":           stringSchema("Reason.", "Updated context.", nullable()),
 		"recipientEmail":   stringSchema("Recipient email.", "buyer@example.com", nullable()),
-		"proposedSubject":  stringSchema("Proposed subject.", "Updated subject", nullable()),
-		"proposedMessage":  stringSchema("Proposed body.", "Updated body", nullable()),
+		"proposedSubject":  stringSchema("Proposed subject.", documentedDraftSubject, nullable()),
+		"proposedMessage":  stringSchema("Proposed body.", documentedDraftMessage, nullable()),
 		"senderAccountRef": stringSchema("Sender account reference.", "gmail:me@company.com", nullable()),
 		"channel":          stringEnum("Channel.", "email", "email", "slack", "call", "crm_task"),
 		"actionType":       stringEnum("Action type.", "warm_follow_up", "warm_follow_up", "proposal_nudge", "referral_reconnect", "customer_risk", "meeting_follow_up"),
 		"executionMode":    stringEnum("Execution mode.", "draft", "draft", "send"),
-	}), nil), obj{
-		"200": jsonResponse("Action at its new revision.", ref("RevenueAction"), nil),
+	}), documentedDraftEditRequest()), obj{
+		"200": jsonResponse("Action at its new revision.", ref("RevenueAction"), documentedSavedDraft()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
