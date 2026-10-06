@@ -315,6 +315,35 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the conversation a history row opens", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const open = presented.paths["/v1/agent-sessions/{id}/events"].get;
+    expect(open.summary).toBe("Open conversation");
+    expect(open.description).toContain("Review the Acme renewal");
+    expect(open.description).toContain("sends no cursor");
+    expect(open.description).toContain("1000");
+    const afterSeq = open.parameters.find((param: { name: string }) => param.name === "afterSeq");
+    const limit = open.parameters.find((param: { name: string }) => param.name === "limit");
+    expect(afterSeq.schema.example).toBeUndefined();
+    expect(limit.schema.example).toBe(1000);
+    const page = open.responses["200"].content["application/json"].example;
+    expect(page.nextSeq).toBeUndefined();
+    expect(page.events).toHaveLength(15);
+    expect(page.events[0]).toEqual({
+      seq: 0,
+      type: "agent.session_started",
+      data: { agent: "assistant", sessionId: "session_abc123" },
+    });
+    expect(page.events[1].data.input).toBe("Review the Acme renewal");
+    expect(page.events[10].data.input).toBe("What is the next step?");
+    expect(page.events.map((event: { type: string }) => event.type).filter((type: string) => type === "agent.llm_call_completed")).toHaveLength(3);
+    expect(JSON.stringify(page)).not.toContain("Review Acme");
+    const history = presented.paths["/v1/agent-sessions"].get.responses["200"].content["application/json"].example.sessions[0];
+    expect(history.title).toBe("Review the Acme renewal");
+    expect(presented.components.schemas.DurableAgentSessionEvent.properties.type.example).toBe("agent.message");
+    expect(presented.components.schemas.AgentSessionEventsResponse.properties.nextSeq.example).toBe(500);
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

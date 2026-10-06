@@ -94,15 +94,22 @@ export const ListAgentSessions500Response = zod
   );
 
 /**
- * Returns ordered durable events used to reconstruct a conversation after navigation or reload.
- * @summary List agent session events
+ * Open conversation reads the history row Review the Acme renewal. The first read asks for 1000 events and sends no cursor. The stored page starts at sequence 0 for Assistant, includes both completed turns, the relationship.read tool call, and three model calls on anthropic/claude-sonnet-4-5, and does not name another page.
+ * @summary Open conversation
  */
 export const ListAgentSessionEventsParams = zod.object({
   id: zod.string().describe("Stable session id."),
 });
 
+export const listAgentSessionEventsQueryAfterSeqMin = 0;
+
 export const ListAgentSessionEventsQueryParams = zod.object({
-  afterSeq: zod.coerce.number().int().optional().describe("Return events after this sequence."),
+  afterSeq: zod.coerce
+    .number()
+    .int()
+    .min(listAgentSessionEventsQueryAfterSeqMin)
+    .optional()
+    .describe("Return events after this sequence. The first read omits this."),
   limit: zod.coerce.number().int().optional().describe("Maximum events to return (up to 1000)."),
 });
 

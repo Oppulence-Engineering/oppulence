@@ -6,14 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListAgentSessionEventsParams = {
-  /**
-   * Sequence cursor.
-   * @minimum 0
-   */
-  afterSeq?: number;
-  /**
-   * Page size.
-   */
-  limit?: number;
-};
+/**
+ * Editor document, when one was saved.
+ */
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };

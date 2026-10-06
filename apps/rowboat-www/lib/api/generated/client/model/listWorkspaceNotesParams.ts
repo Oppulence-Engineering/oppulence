@@ -6,14 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListAgentSessionEventsParams = {
+export type ListWorkspaceNotesParams = {
   /**
-   * Sequence cursor.
-   * @minimum 0
-   */
-  afterSeq?: number;
-  /**
-   * Page size.
+   * Maximum notes to return (default 50, max 100).
+   * @minimum 1
+   * @maximum 100
    */
   limit?: number;
+  /**
+   * Number of collapsed notes to skip.
+   * @minimum 0
+   */
+  offset?: number;
 };
