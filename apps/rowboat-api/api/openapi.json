@@ -13214,9 +13214,9 @@
             "type": "string"
           },
           "status": {
-            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "description": "Decision status.",
             "enum": ["passed", "review_required", "blocked"],
-            "example": "active",
+            "example": "passed",
             "type": "string"
           },
           "suppression": {
@@ -26291,7 +26291,7 @@
     },
     "/v1/revenue-actions/{actionId}/evaluate": {
       "post": {
-        "description": "Requests or retries the OutboundConsole preflight for the current revision and stores the immutable decision snapshot. A fresh unexpired decision for the same revision is returned without provider cost. Facade unavailability keeps the action pending (fail closed).",
+        "description": "Re-check policy posts no request body. The stored decision passed for the current revision, with no reason codes, and it expires the next day.",
         "operationId": "evaluateRevenueAction",
         "parameters": [
           {
@@ -26300,6 +26300,7 @@
             "name": "actionId",
             "required": true,
             "schema": {
+              "example": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -26309,6 +26310,15 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "evaluatedAt": "2026-07-12T12:00:00Z",
+                  "expiresAt": "2026-07-13T12:00:00Z",
+                  "id": "2b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "reasonCodes": [],
+                  "revision": 1,
+                  "revisionHash": "sha256:ab12...",
+                  "status": "passed"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenuePolicyDecision"
                 }
@@ -26346,8 +26356,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Request policy preflight",
-        "tags": ["Revenue"]
+        "summary": "Re-check policy",
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-actions/{actionId}/execute": {

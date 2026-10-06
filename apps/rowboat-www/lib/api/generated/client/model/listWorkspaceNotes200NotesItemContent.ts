@@ -7,13 +7,6 @@
  */
 
 /**
- * Decision status.
+ * Editor document, when one was saved.
  */
-export type RevenuePolicyDecisionStatus =
-  (typeof RevenuePolicyDecisionStatus)[keyof typeof RevenuePolicyDecisionStatus];
-
-export const RevenuePolicyDecisionStatus = {
-  passed: "passed",
-  review_required: "review_required",
-  blocked: "blocked",
-} as const;
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };
