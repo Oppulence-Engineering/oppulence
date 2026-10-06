@@ -987,6 +987,28 @@ func addRevenuePaths(paths obj) {
 		"200": jsonResponse("Revised plan.", freeFormSchema("Mutual action plan."), nil),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
+	const pendingCompanyID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	const pendingPersonID = "1b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	paths["/v1/research/companies/pending"] = obj{"get": operation("Relationship Intelligence", "Pending companies", "Fill in companies and people reads this list first, then posts these relationship ids. The pending company is 9c8dfa9b-a7b2-46ea-982c-622a914c00e5.", "listPendingCompanyEnrichment", bearer(), nil, nil, obj{
+		"200": jsonResponse("Pending company ids.", objectSchema("Pending companies.", obj{
+			"relationshipIds": arraySchema("Pending company ids.", uuidSchema("Relationship id.", pendingCompanyID)),
+		}, "relationshipIds"), obj{"relationshipIds": []any{pendingCompanyID}}),
+		"401": responseRef("401"),
+		"402": responseRef("402"),
+		"403": responseRef("403"),
+		"409": responseRef("409"),
+		"503": responseRef("503"),
+	})}
+	paths["/v1/research/people/pending"] = obj{"get": operation("Relationship Intelligence", "Pending people", "Fill in companies and people reads this list after the companies, then posts these person ids. The pending person is 1b8dfa9b-a7b2-46ea-982c-622a914c00e5.", "listPendingPersonEnrichment", bearer(), nil, nil, obj{
+		"200": jsonResponse("Pending person ids.", objectSchema("Pending people.", obj{
+			"personIds": arraySchema("Pending person ids.", uuidSchema("Person id.", pendingPersonID)),
+		}, "personIds"), obj{"personIds": []any{pendingPersonID}}),
+		"401": responseRef("401"),
+		"402": responseRef("402"),
+		"403": responseRef("403"),
+		"409": responseRef("409"),
+		"503": responseRef("503"),
+	})}
 	paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/approve"] = obj{"post": operation("Relationship Intelligence", "Approve a plan revision", "Binds internal approval to the exact current revision hash.", "approveMutualActionPlan", bearer(), planParam, jsonRequestOptional("Empty request.", objectSchema("Plan approval request.", obj{}), obj{}), obj{
 		"200": jsonResponse("Approved plan.", freeFormSchema("Mutual action plan."), nil),
 		"401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),

@@ -25667,6 +25667,132 @@
         "tags": ["Relationship Intelligence"]
       }
     },
+    "/v1/research/companies/pending": {
+      "get": {
+        "description": "Fill in companies and people reads this list first, then posts these relationship ids. The pending company is 9c8dfa9b-a7b2-46ea-982c-622a914c00e5.",
+        "operationId": "listPendingCompanyEnrichment",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "relationshipIds": [
+                    "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                  ]
+                },
+                "schema": {
+                  "description": "Pending companies.",
+                  "properties": {
+                    "relationshipIds": {
+                      "description": "Pending company ids.",
+                      "items": {
+                        "description": "Relationship id.",
+                        "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "format": "uuid",
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "relationshipIds"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Pending company ids."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "402": {
+            "$ref": "#/components/responses/402"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Pending companies",
+        "tags": [
+          "Relationship Intelligence"
+        ]
+      }
+    },
+    "/v1/research/people/pending": {
+      "get": {
+        "description": "Fill in companies and people reads this list after the companies, then posts these person ids. The pending person is 1b8dfa9b-a7b2-46ea-982c-622a914c00e5.",
+        "operationId": "listPendingPersonEnrichment",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "personIds": [
+                    "1b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                  ]
+                },
+                "schema": {
+                  "description": "Pending people.",
+                  "properties": {
+                    "personIds": {
+                      "description": "Pending person ids.",
+                      "items": {
+                        "description": "Person id.",
+                        "example": "1b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "format": "uuid",
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "personIds"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Pending person ids."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "402": {
+            "$ref": "#/components/responses/402"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Pending people",
+        "tags": [
+          "Relationship Intelligence"
+        ]
+      }
+    },
     "/v1/revenue-actions": {
       "get": {
         "description": "Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.",

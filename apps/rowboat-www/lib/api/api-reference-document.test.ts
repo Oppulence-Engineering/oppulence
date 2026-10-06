@@ -315,6 +315,20 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the pending ids Fill in companies and people reads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const companies = presented.paths["/v1/research/companies/pending"].get;
+    const people = presented.paths["/v1/research/people/pending"].get;
+    expect(companies.summary).toBe("Pending companies");
+    expect(people.summary).toBe("Pending people");
+    expect(companies.responses["200"].content["application/json"].example).toEqual({
+      relationshipIds: ["9c8dfa9b-a7b2-46ea-982c-622a914c00e5"],
+    });
+    expect(people.responses["200"].content["application/json"].example).toEqual({
+      personIds: ["1b8dfa9b-a7b2-46ea-982c-622a914c00e5"],
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
