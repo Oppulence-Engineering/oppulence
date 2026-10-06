@@ -13758,12 +13758,12 @@ export interface operations {
         content: {
           /**
            * @example {
+           *       "seq": 0,
+           *       "type": "agent.session_started",
            *       "data": {
            *         "agent": "assistant",
            *         "sessionId": "session_abc123"
-           *       },
-           *       "seq": 0,
-           *       "type": "agent.session_started"
+           *       }
            *     }
            */
           "application/x-ndjson": components["schemas"]["DurableAgentSessionEvent"];
