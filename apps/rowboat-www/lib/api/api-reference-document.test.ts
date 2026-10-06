@@ -315,6 +315,30 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the privacy rule Add rule sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-workspaces/current/communication-privacy-rules"].post;
+    const body = operation.requestBody.content["application/json"];
+    const stored = operation.responses["201"].content["application/json"];
+    expect(operation.summary).toBe("Add rule");
+    expect(body.example).toEqual({ kind: "protected_address", value: "buyer@example.com" });
+    expect(body.schema.properties.kind.example).toBe("protected_address");
+    expect(body.schema.properties.kind.enum).toEqual([
+      "protected_address",
+      "protected_domain",
+      "blocked_address",
+      "blocked_domain",
+    ]);
+    expect(body.schema.properties.value.example).toBe("buyer@example.com");
+    expect(stored.example).toMatchObject({
+      id: "3b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      kind: "protected_address",
+      value: "buyer@example.com",
+      valueHash: "sha256:6a6c26195c3682faa816966af789717c3bfa834eee6c599d667d2b3429c27cfd",
+      active: true,
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

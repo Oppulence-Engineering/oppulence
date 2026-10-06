@@ -27259,6 +27259,129 @@
         "tags": ["Revenue"]
       }
     },
+    "/v1/revenue-workspaces/current/communication-privacy-rules": {
+      "post": {
+        "description": "Add rule sends kind protected_address and value buyer@example.com. The server lowercases the address, stores an active rule, and returns that rule with the sha256 of the stored address.",
+        "operationId": "createCommunicationPrivacyRule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "kind": "protected_address",
+                "value": "buyer@example.com"
+              },
+              "schema": {
+                "description": "Privacy rule.",
+                "properties": {
+                  "kind": {
+                    "description": "Rule kind. Add rule leaves the default protected address selected.",
+                    "enum": [
+                      "protected_address",
+                      "protected_domain",
+                      "blocked_address",
+                      "blocked_domain"
+                    ],
+                    "example": "protected_address",
+                    "type": "string"
+                  },
+                  "value": {
+                    "description": "Address or domain typed into the rule field.",
+                    "example": "buyer@example.com",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "value"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Privacy rule.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "active": true,
+                  "id": "3b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "kind": "protected_address",
+                  "value": "buyer@example.com",
+                  "valueHash": "sha256:6a6c26195c3682faa816966af789717c3bfa834eee6c599d667d2b3429c27cfd"
+                },
+                "schema": {
+                  "description": "Stored privacy rule.",
+                  "properties": {
+                    "active": {
+                      "description": "New rules are stored active.",
+                      "example": true,
+                      "type": "boolean"
+                    },
+                    "id": {
+                      "description": "Rule id.",
+                      "example": "3b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "kind": {
+                      "description": "Stored rule kind.",
+                      "enum": [
+                        "protected_address",
+                        "protected_domain",
+                        "blocked_address",
+                        "blocked_domain"
+                      ],
+                      "example": "protected_address",
+                      "type": "string"
+                    },
+                    "value": {
+                      "description": "Normalized address or domain.",
+                      "example": "buyer@example.com",
+                      "type": "string"
+                    },
+                    "valueHash": {
+                      "description": "sha256 of the normalized value.",
+                      "example": "sha256:6a6c26195c3682faa816966af789717c3bfa834eee6c599d667d2b3429c27cfd",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "kind",
+                    "value",
+                    "valueHash",
+                    "active"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Stored privacy rule."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Add rule",
+        "tags": [
+          "Revenue"
+        ]
+      }
+    },
     "/v1/revenue-workspaces/current/communications/attachments/{attachmentId}/content": {
       "get": {
         "description": "Returns one scanned text attachment when policy and grants allow it.",
