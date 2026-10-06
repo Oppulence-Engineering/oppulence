@@ -315,6 +315,22 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the reason Confirm remove sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const body =
+      presented.paths["/v1/relationship-persons/{personId}"].delete.requestBody.content[
+        "application/json"
+      ];
+    expect(body.example).toEqual({ reason: "user_action" });
+    expect(body.schema.properties.reason.example).toBe("user_action");
+    expect(presented.components.schemas.PersonDeletionReceipt.properties.reason.example).toBe(
+      "user_action",
+    );
+    expect(presented.paths["/v1/relationship-persons/{personId}"].delete.summary).toBe(
+      "Remove a person",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

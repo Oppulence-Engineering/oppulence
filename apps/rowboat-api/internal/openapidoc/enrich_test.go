@@ -338,6 +338,27 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertPersonRemovalReason(t, spec)
+}
+
+func TestConfirmRemoveSendsUserAction(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertPersonRemovalReason(t, spec)
+}
+
+func assertPersonRemovalReason(t *testing.T, spec obj) {
+	t.Helper()
+	content := asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/relationship-persons/{personId}"])["delete"])["requestBody"])["content"])["application/json"])
+	example := asObj(content["example"])
+	reason := asObj(asObj(asObj(content["schema"])["properties"])["reason"])
+	if example["reason"] != documentedPersonRemovalReason || reason["example"] != documentedPersonRemovalReason {
+		t.Fatalf("person removal request: %#v %#v", example, reason)
+	}
+	stored := asObj(asObj(asObj(asObj(asObj(spec["components"])["schemas"])["PersonDeletionReceipt"])["properties"])["reason"])
+	if stored["example"] != documentedPersonRemovalReason || stored["enum"] == nil {
+		t.Fatalf("person removal receipt reason: %#v", stored)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
