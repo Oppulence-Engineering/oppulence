@@ -6,10 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListBackgroundTaskRunEventsParams = {
-  /**
-   * Sequence cursor.
-   * @minimum 0
-   */
-  afterSeq?: number;
-};
+/**
+ * Editor document, when one was saved.
+ */
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertOpenTranscript(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -370,6 +372,66 @@ func assertEventObservation(t *testing.T, schemas obj) {
 	if asObj(evidence["observationId"])["example"] != observationID {
 		t.Fatalf("mission control observation id changed: %#v", evidence["observationId"])
 	}
+}
+
+func TestOpenTranscriptReadsTheCloudRun(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertOpenTranscript(t, spec)
+}
+
+func assertOpenTranscript(t *testing.T, spec obj) {
+	t.Helper()
+	path := asObj(asObj(spec["paths"])["/v1/background-tasks/{slug}/runs/{runId}/events"])
+	get := asObj(path["get"])
+	if get["summary"] != "Open the transcript" {
+		t.Fatalf("summary: %#v", get["summary"])
+	}
+	description, _ := get["description"].(string)
+	if !strings.Contains(description, "sends no cursor") || !strings.Contains(description, "API worker claimed the run.") || !strings.Contains(description, "api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b") {
+		t.Fatalf("description: %s", description)
+	}
+	var afterSeq, runID obj
+	for _, raw := range get["parameters"].([]any) {
+		param := asObj(raw)
+		switch param["name"] {
+		case "afterSeq":
+			afterSeq = asObj(param["schema"])
+		case "runId":
+			runID = asObj(param["schema"])
+		}
+	}
+	if _, ok := afterSeq["example"]; ok || afterSeq["type"] != "integer" {
+		t.Fatalf("afterSeq example must be omitted: %#v", afterSeq)
+	}
+	if runID["example"] != "api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b" {
+		t.Fatalf("run id: %#v", runID["example"])
+	}
+	example := asObj(asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"])
+	if _, ok := example["nextSeq"]; ok {
+		t.Fatalf("first page names another page: %#v", example["nextSeq"])
+	}
+	if mustJSON(t, example) != mustJSON(t, documentedTranscriptPage()) {
+		t.Fatalf("transcript page: %s", mustJSON(t, example))
+	}
+	post := asObj(path["post"])
+	if post["summary"] != "Append task run logs" {
+		t.Fatalf("append summary changed: %#v", post["summary"])
+	}
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	event := asObj(asObj(schemas["BackgroundTaskRunEvent"])["properties"])
+	if asObj(event["type"])["example"] != "temporal.completed" || mustJSON(t, asObj(event["seq"])["example"]) != "1" {
+		t.Fatalf("shared event example changed: %#v", event)
+	}
+}
+
+func mustJSON(t *testing.T, v any) string {
+	t.Helper()
+	raw, err := json.Marshal(v)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	return string(raw)
 }
 
 func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {

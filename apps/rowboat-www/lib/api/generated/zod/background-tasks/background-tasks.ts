@@ -2617,21 +2617,24 @@ export const CancelBackgroundTaskRun503Response = zod
   );
 
 /**
- * Returns durable log/progress events for a run ordered by seq. Use afterSeq for incremental polling of desktop and API-worker progress events.
- * @summary List task run logs
+ * Open the transcript reads the cloud run api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b on daily-summary. The first read sends no cursor. The stored page starts at sequence 0 with the message API worker claimed the run.
+ * @summary Open the transcript
  */
 export const ListBackgroundTaskRunEventsParams = zod.object({
   slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
   runId: zod.string().describe("Cloud-visible run id for a background task run."),
 });
 
+export const listBackgroundTaskRunEventsQueryAfterSeqMin = 0;
+
 export const ListBackgroundTaskRunEventsQueryParams = zod.object({
   afterSeq: zod.coerce
     .number()
     .int()
+    .min(listBackgroundTaskRunEventsQueryAfterSeqMin)
     .optional()
     .describe(
-      "Optional sequence cursor. When provided, only events with seq greater than this value are returned.",
+      "Optional sequence cursor. The first read omits this. When provided, only events with seq greater than this value are returned.",
     ),
 });
 

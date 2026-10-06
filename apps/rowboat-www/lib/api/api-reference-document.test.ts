@@ -315,6 +315,42 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the transcript a run opens", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const open = presented.paths["/v1/background-tasks/{slug}/runs/{runId}/events"].get;
+    expect(open.summary).toBe("Open the transcript");
+    expect(open.description).toContain("sends no cursor");
+    expect(open.description).toContain("API worker claimed the run.");
+    const afterSeq = open.parameters.find((param: { name: string }) => param.name === "afterSeq");
+    const runId = open.parameters.find((param: { name: string }) => param.name === "runId");
+    expect(afterSeq.schema.example).toBeUndefined();
+    expect(runId.schema.example).toBe("api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b");
+    const page = open.responses["200"].content["application/json"].example;
+    expect(page.nextSeq).toBeUndefined();
+    expect(page.events).toEqual([
+      {
+        id: "c6227adb-924f-46f1-b324-1b10d080a661",
+        seq: 0,
+        type: "temporal.running",
+        event: {
+          message: "API worker claimed the run.",
+          progress: 5,
+          type: "temporal.running",
+          workflowId:
+            "background-task/user/daily-summary/api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b",
+        },
+        receivedAt: "2026-06-04T21:01:00Z",
+      },
+    ]);
+    expect(presented.paths["/v1/background-tasks/{slug}/runs/{runId}/events"].post.summary).toBe(
+      "Add run events",
+    );
+    expect(presented.components.schemas.BackgroundTaskRunEvent.properties.type.example).toBe(
+      "temporal.completed",
+    );
+    expect(presented.components.schemas.BackgroundTaskRunEvent.properties.seq.example).toBe(1);
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
