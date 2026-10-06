@@ -7,7 +7,11 @@
  */
 import { faker } from "@faker-js/faker";
 
-import type { AgentSessionEventsResponse, AgentSessionListResponse } from "../model";
+import type {
+  AgentSessionEventsResponse,
+  AgentSessionListResponse,
+  ApproveAgentSession202,
+} from "../model";
 
 export const getListAgentSessionsResponseMock = (
   overrideResponse: Partial<Extract<AgentSessionListResponse, object>> = {},
@@ -56,6 +60,14 @@ export const getListAgentSessionsResponseMock = (
       turns: faker.number.int(),
     }),
   ),
+  ...overrideResponse,
+});
+
+export const getApproveAgentSessionResponseMock = (
+  overrideResponse: Partial<Extract<ApproveAgentSession202, object>> = {},
+): ApproveAgentSession202 => ({
+  approvalId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  decision: faker.helpers.arrayElement(["granted", "denied"] as const),
   ...overrideResponse,
 });
 

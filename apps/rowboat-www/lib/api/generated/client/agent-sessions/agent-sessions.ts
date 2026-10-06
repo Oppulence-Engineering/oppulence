@@ -8,6 +8,8 @@
 import type {
   AgentSessionEventsResponse,
   AgentSessionListResponse,
+  ApproveAgentSession202,
+  ApproveAgentSessionBody,
   ListAgentSessionEventsParams,
   ListAgentSessionsParams,
   N400Response,
@@ -76,6 +78,65 @@ export const listAgentSessions = async (
 
   const data: listAgentSessionsResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as listAgentSessionsResponse;
+};
+
+export type approveAgentSessionResponse202 = {
+  data: ApproveAgentSession202;
+  status: 202;
+};
+
+export type approveAgentSessionResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type approveAgentSessionResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type approveAgentSessionResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type approveAgentSessionResponseSuccess = approveAgentSessionResponse202 & {
+  headers: Headers;
+};
+export type approveAgentSessionResponseError = (
+  approveAgentSessionResponse400 | approveAgentSessionResponse401 | approveAgentSessionResponse404
+) & {
+  headers: Headers;
+};
+
+export type approveAgentSessionResponse =
+  approveAgentSessionResponseSuccess | approveAgentSessionResponseError;
+
+export const getApproveAgentSessionUrl = (id: string, approvalId: string) => {
+  return `/v1/agent-sessions/${id}/approvals/${approvalId}`;
+};
+
+/**
+ * Approve allows the paused chat action. It posts decision granted for approval session_abc123/turn/0/approval/0. The response repeats that approval and decision granted.
+ * @summary Approve
+ */
+export const approveAgentSession = async (
+  id: string,
+  approvalId: string,
+  approveAgentSessionBody: ApproveAgentSessionBody,
+  options?: RequestInit,
+): Promise<approveAgentSessionResponse> => {
+  const res = await fetch(getApproveAgentSessionUrl(id, approvalId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(approveAgentSessionBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: approveAgentSessionResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as approveAgentSessionResponse;
 };
 
 export type listAgentSessionEventsResponse200 = {

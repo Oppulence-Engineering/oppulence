@@ -94,6 +94,73 @@ export const ListAgentSessions500Response = zod
   );
 
 /**
+ * Approve allows the paused chat action. It posts decision granted for approval session_abc123/turn/0/approval/0. The response repeats that approval and decision granted.
+ * @summary Approve
+ */
+export const ApproveAgentSessionParams = zod.object({
+  id: zod.string().describe("Stable session id."),
+  approvalId: zod.string().describe("Approval id."),
+});
+
+export const ApproveAgentSessionBody = zod
+  .strictObject({
+    decision: zod.enum(["granted", "denied"]).describe("Granted or denied."),
+  })
+  .describe("Chat approval decision.");
+
+export const ApproveAgentSession202Response = zod
+  .strictObject({
+    approvalId: zod.string().describe("Approval that was decided."),
+    decision: zod.enum(["granted", "denied"]).describe("Decision that was stored."),
+  })
+  .describe("Accepted approval.");
+
+export const ApproveAgentSession400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ApproveAgentSession401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ApproveAgentSession404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
  * Returns ordered durable events used to reconstruct a conversation after navigation or reload.
  * @summary List agent session events
  */

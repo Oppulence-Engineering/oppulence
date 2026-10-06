@@ -1053,11 +1053,38 @@ func addRuntimePaths(paths obj) {
 	addVoiceCloudPaths(paths)
 }
 
+const documentedChatApprovalID = "session_abc123/turn/0/approval/0"
+
+func documentedChatApprovalRequest() obj {
+	return obj{"decision": "granted"}
+}
+
+func documentedChatApproval() obj {
+	return obj{
+		"approvalId": documentedChatApprovalID,
+		"decision":   "granted",
+	}
+}
+
 func addAgentSessionPaths(paths obj) {
 	paths["/v1/agent-sessions"] = obj{"get": operation("Agent Sessions", "List agent sessions", "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.", "listAgentSessions", bearer(), nil, nil, obj{
 		"200": jsonResponse("Recent agent conversations.", ref("AgentSessionListResponse"), obj{"sessions": []any{obj{"sessionId": "session_abc123", "agent": "assistant", "status": "active", "channel": "web", "title": "Review the Acme renewal", "turns": 2, "llmCalls": 3, "toolCalls": 1, "costUnits": 45, "continuationToken": "agt_example", "createdAt": "2026-09-02T15:00:00Z"}}}),
 		"401": responseRef("401"),
 		"500": responseRef("500"),
+	})}
+	paths["/v1/agent-sessions/{id}/approvals/{approvalId}"] = obj{"post": operation("Agent Sessions", "Approve", "Approve allows the paused chat action. It posts decision granted for approval session_abc123/turn/0/approval/0. The response repeats that approval and decision granted.", "approveAgentSession", bearer(), []any{
+		pathParam("id", "Stable session id.", stringSchema("Session id.", "session_abc123")),
+		pathParam("approvalId", "Approval id.", stringSchema("Approval id.", documentedChatApprovalID)),
+	}, jsonRequest("Approval decision.", objectSchema("Chat approval decision.", obj{
+		"decision": stringEnum("Granted or denied.", "granted", "granted", "denied"),
+	}, "decision"), documentedChatApprovalRequest()), obj{
+		"202": jsonResponse("Approval granted.", objectSchema("Accepted approval.", obj{
+			"approvalId": stringSchema("Approval that was decided.", documentedChatApprovalID),
+			"decision":   stringEnum("Decision that was stored.", "granted", "granted", "denied"),
+		}, "approvalId", "decision"), documentedChatApproval()),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
 	})}
 	paths["/v1/agent-sessions/{id}/events"] = obj{"get": operation("Agent Sessions", "List agent session events", "Returns ordered durable events used to reconstruct a conversation after navigation or reload.", "listAgentSessionEvents", bearer(), []any{
 		pathParam("id", "Stable session id.", stringSchema("Session id.", "session_abc123")),

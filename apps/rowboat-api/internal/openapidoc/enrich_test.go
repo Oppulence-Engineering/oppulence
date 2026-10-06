@@ -52,6 +52,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/background-tasks/{slug}/runs/{runId}/events",
 		"/v1/background-tasks/{slug}/runs/{runId}/events/stream",
 		"/v1/background-tasks/{slug}/trigger",
+		"/v1/agent-sessions/{id}/approvals/{approvalId}",
 		"/v1/llm/models",
 		"/v1/llm/chat/completions",
 		"/v1/llm/completions",
@@ -338,6 +339,44 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertChatApproval(t, spec)
+}
+
+func TestApproveAllowsThePausedChatAction(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertChatApproval(t, spec)
+}
+
+func assertChatApproval(t *testing.T, spec obj) {
+	t.Helper()
+	post := asObj(asObj(asObj(spec["paths"])["/v1/agent-sessions/{id}/approvals/{approvalId}"])["post"])
+	if post["summary"] != "Approve" || post["operationId"] != "approveAgentSession" {
+		t.Fatalf("approve operation = %#v", post["summary"])
+	}
+	request := asObj(asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])["example"])
+	if mustJSON(request) != mustJSON(documentedChatApprovalRequest()) {
+		t.Fatalf("approve request = %s", mustJSON(request))
+	}
+	if _, ok := request["resolvedBy"]; ok {
+		t.Fatal("approve request included resolvedBy")
+	}
+	accepted := asObj(asObj(asObj(asObj(asObj(post["responses"])["202"])["content"])["application/json"])["example"])
+	if mustJSON(accepted) != mustJSON(documentedChatApproval()) {
+		t.Fatalf("approve response = %s", mustJSON(accepted))
+	}
+	params, _ := post["parameters"].([]any)
+	if len(params) != 2 || asObj(asObj(params[1])["schema"])["example"] != documentedChatApprovalID {
+		t.Fatalf("approval id = %#v", params)
+	}
+}
+
+func mustJSON(v any) string {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(raw)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
