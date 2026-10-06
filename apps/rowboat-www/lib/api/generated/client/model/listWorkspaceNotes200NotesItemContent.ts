@@ -6,9 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ExportCommitmentParams = {
-  /**
-   * Export format.
-   */
-  format?: string;
-};
+/**
+ * Editor document, when one was saved.
+ */
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };

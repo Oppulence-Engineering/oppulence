@@ -56,6 +56,8 @@ import type {
   ListRelationshipIdentityCandidatesParams,
   ListRelationships200,
   ListRelationshipsParams,
+  ListWorkspaceNotes200,
+  ListWorkspaceNotesParams,
   N400Response,
   N401Response,
   N403Response,
@@ -197,8 +199,8 @@ export const getExportCommitmentUrl = (commitmentId: string, params?: ExportComm
 };
 
 /**
- * Returns one commitment as a standalone record: the obligation, its full state history, and the verbatim cited evidence with timestamps. Pass format=md for the Markdown document a user forwards. A record that cannot leave the tool cannot settle an argument.
- * @summary Export a commitment record
+ * Export record downloads this promise as Markdown. The request uses format md. The file names the company, the promise, the state, the due date, the quoted mail, and the history.
+ * @summary Export record
  */
 export const exportCommitment = async (
   commitmentId: string,
@@ -2924,4 +2926,66 @@ export const getCommunicationInteractionBody = async (
     status: res.status,
     headers: res.headers,
   } as getCommunicationInteractionBodyResponse;
+};
+
+export type listWorkspaceNotesResponse200 = {
+  data: ListWorkspaceNotes200;
+  status: 200;
+};
+
+export type listWorkspaceNotesResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type listWorkspaceNotesResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listWorkspaceNotesResponseSuccess = listWorkspaceNotesResponse200 & {
+  headers: Headers;
+};
+export type listWorkspaceNotesResponseError = (
+  listWorkspaceNotesResponse400 | listWorkspaceNotesResponse401
+) & {
+  headers: Headers;
+};
+
+export type listWorkspaceNotesResponse =
+  listWorkspaceNotesResponseSuccess | listWorkspaceNotesResponseError;
+
+export const getListWorkspaceNotesUrl = (params?: ListWorkspaceNotesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/workspace-notes?${stringifiedParams}`
+    : `/v1/workspace-notes`;
+};
+
+/**
+ * Returns the latest copy of each company note in this workspace. One request reads every company, so the notes page does not ask for each company timeline. A newer edit replaces the previous copy, and a later deletion removes the note.
+ * @summary List workspace notes
+ */
+export const listWorkspaceNotes = async (
+  params?: ListWorkspaceNotesParams,
+  options?: RequestInit,
+): Promise<listWorkspaceNotesResponse> => {
+  const res = await fetch(getListWorkspaceNotesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listWorkspaceNotesResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listWorkspaceNotesResponse;
 };

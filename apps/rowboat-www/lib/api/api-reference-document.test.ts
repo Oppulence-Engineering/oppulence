@@ -315,6 +315,24 @@ describe("API reference document", () => {
     );
   });
 
+  it("shows the Markdown file Export record downloads", () => {
+    const commitmentId = "8b8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/commitments/{commitmentId}/export"].get;
+    expect(operation.summary).toBe("Export record");
+    expect(operation.description).toContain("format md");
+    expect(operation.parameters.find((param) => param.name === "format")?.schema.example).toBe("md");
+    expect(operation.parameters.find((param) => param.name === "commitmentId")?.schema.example).toBe(
+      commitmentId,
+    );
+    const markdown = operation.responses["200"].content["text/markdown"].example as string;
+    expect(markdown).toContain("**We promised:** Migration live by the 14th");
+    expect(markdown).toContain("| State | At risk |");
+    expect(markdown).toContain("Confirmed in this workspace");
+    expect(markdown).not.toContain("at_risk");
+    expect(markdown).not.toContain("internally_confirmed");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

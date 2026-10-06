@@ -2133,6 +2133,12 @@ func jsonOrMarkdownResponse(description string, schema any, example any) obj {
 	return response
 }
 
+func markdownDownloadResponse(description string, schema any, markdown string) obj {
+	response := jsonOrMarkdownResponse(description, schema, nil)
+	asObj(asObj(response["content"])["text/markdown"])["example"] = markdown
+	return response
+}
+
 func problemResponse(description string, schema any, example any) obj {
 	media := obj{"schema": schema}
 	if example != nil {

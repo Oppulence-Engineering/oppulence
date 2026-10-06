@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,38 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertExportRecord(t, paths)
+}
+
+func TestExportRecordSamplesTheMarkdownFile(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertExportRecord(t, asObj(spec["paths"]))
+}
+
+func assertExportRecord(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/commitments/{commitmentId}/export"])["get"])
+	if op["summary"] != "Export record" {
+		t.Fatalf("summary: %#v", op["summary"])
+	}
+	params, ok := op["parameters"].([]any)
+	if !ok || len(params) != 2 {
+		t.Fatalf("parameters: %#v", op["parameters"])
+	}
+	if asObj(asObj(params[0])["schema"])["example"] != "8b8dfa9b-a7b2-46ea-982c-622a914c00e5" {
+		t.Fatalf("commitment id: %#v", params[0])
+	}
+	if asObj(asObj(params[1])["schema"])["example"] != "md" {
+		t.Fatalf("format: %#v", params[1])
+	}
+	markdown := asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["text/markdown"])["example"]
+	if markdown != exportedCommitmentMarkdown {
+		t.Fatalf("markdown: %#v", markdown)
+	}
+	if strings.Contains(exportedCommitmentMarkdown, "at_risk") || strings.Contains(exportedCommitmentMarkdown, "internally_confirmed") {
+		t.Fatal("markdown leaked stored tokens")
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
