@@ -338,6 +338,38 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertOriginalEmail(t, paths)
+}
+
+func TestViewOriginalEmailSamplesTheGmailMessage(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertOriginalEmail(t, asObj(spec["paths"]))
+}
+
+func assertOriginalEmail(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/revenue-actions/{actionId}/source-body"])["get"])
+	if op["summary"] != "View original email" {
+		t.Fatalf("summary: %#v", op["summary"])
+	}
+	if op["description"] != "View original email loads the Gmail message behind this action. The request sends only the action id. The answer is that message as plain text in body, separate from the draft on the action." {
+		t.Fatalf("description: %#v", op["description"])
+	}
+	params, ok := op["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("parameters: %#v", op["parameters"])
+	}
+	if asObj(asObj(params[0])["schema"])["example"] != "1a8dfa9b-a7b2-46ea-982c-622a914c00e5" {
+		t.Fatalf("action id: %#v", params[0])
+	}
+	example := asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"]
+	if !reflect.DeepEqual(example, obj{"body": originalEmailBody}) {
+		t.Fatalf("body: %#v", example)
+	}
+	if originalEmailBody == "Hi — following up on the proposal..." || originalEmailBody == "Hi Jordan — you asked me to circle back this month..." {
+		t.Fatal("original email collapsed into the draft")
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

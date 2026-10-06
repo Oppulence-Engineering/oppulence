@@ -26674,7 +26674,7 @@
     },
     "/v1/revenue-actions/{actionId}/source-body": {
       "get": {
-        "description": "Returns the plain-text body of the original email behind this action (RFC 031 Layer 3), served from the sealed short-TTL cache or fetched from Gmail on demand. 404 when no source message is linked or the body is unavailable.",
+        "description": "View original email loads the Gmail message behind this action. The request sends only the action id. The answer is that message as plain text in body, separate from the draft on the action.",
         "operationId": "getRevenueActionSourceBody",
         "parameters": [
           {
@@ -26683,6 +26683,8 @@
             "name": "actionId",
             "required": true,
             "schema": {
+              "description": "Action id.",
+              "example": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -26692,12 +26694,15 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "body": "Could you circle back this month? July works for us."
+                },
                 "schema": {
                   "description": "Body.",
                   "properties": {
                     "body": {
-                      "description": "Plain-text body.",
-                      "example": "Hi — following up on the proposal...",
+                      "description": "Plain-text Gmail message.",
+                      "example": "Could you circle back this month? July works for us.",
                       "type": "string"
                     }
                   },
@@ -26705,7 +26710,7 @@
                 }
               }
             },
-            "description": "Original email body."
+            "description": "The original email View original email shows."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -26719,8 +26724,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Get the original email body",
-        "tags": ["Revenue"]
+        "summary": "View original email",
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-digest": {

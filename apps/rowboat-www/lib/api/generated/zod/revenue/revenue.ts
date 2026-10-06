@@ -2127,8 +2127,8 @@ export const SnoozeRevenueAction404Response = zod
   );
 
 /**
- * Returns the plain-text body of the original email behind this action (RFC 031 Layer 3), served from the sealed short-TTL cache or fetched from Gmail on demand. 404 when no source message is linked or the body is unavailable.
- * @summary Get the original email body
+ * View original email loads the Gmail message behind this action. The request sends only the action id. The answer is that message as plain text in body, separate from the draft on the action.
+ * @summary View original email
  */
 export const GetRevenueActionSourceBodyParams = zod.object({
   actionId: zod.uuid().describe("Action id."),
@@ -2136,7 +2136,7 @@ export const GetRevenueActionSourceBodyParams = zod.object({
 
 export const GetRevenueActionSourceBody200Response = zod
   .strictObject({
-    body: zod.string().optional().describe("Plain-text body."),
+    body: zod.string().optional().describe("Plain-text Gmail message."),
   })
   .describe("Body.");
 

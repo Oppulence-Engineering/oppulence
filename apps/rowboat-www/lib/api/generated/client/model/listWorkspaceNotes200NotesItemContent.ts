@@ -7,9 +7,6 @@
  */
 
 /**
- * Body.
+ * Editor document, when one was saved.
  */
-export type GetRevenueActionSourceBody200 = {
-  /** Plain-text Gmail message. */
-  body?: string;
-};
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };
