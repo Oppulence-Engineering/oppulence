@@ -56,6 +56,8 @@ import type {
   ListRelationshipIdentityCandidatesParams,
   ListRelationships200,
   ListRelationshipsParams,
+  ListWorkspaceNotes200,
+  ListWorkspaceNotesParams,
   N400Response,
   N401Response,
   N403Response,
@@ -81,7 +83,7 @@ import type {
   RevenueRelationship,
   ReviseMutualActionPlan200,
   ReviseMutualActionPlanBody,
-  RunCommitmentRecovery200,
+  RunCommitmentRecovery201,
   RunCommitmentRecoveryBody,
   ShareMutualActionPlan200,
   ShareMutualActionPlanBody,
@@ -1663,9 +1665,9 @@ export const createCommitmentDependency = async (
   return { data, status: res.status, headers: res.headers } as createCommitmentDependencyResponse;
 };
 
-export type runCommitmentRecoveryResponse200 = {
-  data: RunCommitmentRecovery200;
-  status: 200;
+export type runCommitmentRecoveryResponse201 = {
+  data: RunCommitmentRecovery201;
+  status: 201;
 };
 
 export type runCommitmentRecoveryResponse401 = {
@@ -1678,7 +1680,7 @@ export type runCommitmentRecoveryResponse404 = {
   status: 404;
 };
 
-export type runCommitmentRecoveryResponseSuccess = runCommitmentRecoveryResponse200 & {
+export type runCommitmentRecoveryResponseSuccess = runCommitmentRecoveryResponse201 & {
   headers: Headers;
 };
 export type runCommitmentRecoveryResponseError = (
@@ -1695,8 +1697,8 @@ export const getRunCommitmentRecoveryUrl = (relationshipId: string) => {
 };
 
 /**
- * Reconciles due commitments against bounded fresh evidence, closes only explicit fulfillment, and queues governed recovery proposals otherwise.
- * @summary Run commitment recovery
+ * Reconcile now sends an empty body. A past-due promise with nothing newer comes back as classification forgotten, and the company sheet reads that as a forgotten promise.
+ * @summary Reconcile now
  */
 export const runCommitmentRecovery = async (
   relationshipId: string,
@@ -2924,4 +2926,66 @@ export const getCommunicationInteractionBody = async (
     status: res.status,
     headers: res.headers,
   } as getCommunicationInteractionBodyResponse;
+};
+
+export type listWorkspaceNotesResponse200 = {
+  data: ListWorkspaceNotes200;
+  status: 200;
+};
+
+export type listWorkspaceNotesResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type listWorkspaceNotesResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listWorkspaceNotesResponseSuccess = listWorkspaceNotesResponse200 & {
+  headers: Headers;
+};
+export type listWorkspaceNotesResponseError = (
+  listWorkspaceNotesResponse400 | listWorkspaceNotesResponse401
+) & {
+  headers: Headers;
+};
+
+export type listWorkspaceNotesResponse =
+  listWorkspaceNotesResponseSuccess | listWorkspaceNotesResponseError;
+
+export const getListWorkspaceNotesUrl = (params?: ListWorkspaceNotesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/workspace-notes?${stringifiedParams}`
+    : `/v1/workspace-notes`;
+};
+
+/**
+ * Returns the latest copy of each company note in this workspace. One request reads every company, so the notes page does not ask for each company timeline. A newer edit replaces the previous copy, and a later deletion removes the note.
+ * @summary List workspace notes
+ */
+export const listWorkspaceNotes = async (
+  params?: ListWorkspaceNotesParams,
+  options?: RequestInit,
+): Promise<listWorkspaceNotesResponse> => {
+  const res = await fetch(getListWorkspaceNotesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listWorkspaceNotesResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listWorkspaceNotesResponse;
 };

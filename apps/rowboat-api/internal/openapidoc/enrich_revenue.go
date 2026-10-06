@@ -940,8 +940,30 @@ func addRevenuePaths(paths obj) {
 		"201": jsonResponse("Updated relationship and intelligence.", freeFormSchema("Relationship detail result."), nil),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
-	paths["/v1/relationships/{relationshipId}/commitment-recovery/run"] = obj{"post": operation("Relationship Intelligence", "Run commitment recovery", "Reconciles due commitments against bounded fresh evidence, closes only explicit fulfillment, and queues governed recovery proposals otherwise.", "runCommitmentRecovery", bearer(), relationshipParam, jsonRequestOptional("Empty request.", objectSchema("Recovery request.", obj{}), obj{}), obj{
-		"200": jsonResponse("Recovery evaluations.", freeFormSchema("Recovery evaluation result."), nil),
+	const reconcileCommitmentID = "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	const reconcileEvaluationID = "recovery:7cb1669953b1015129545ab3"
+	paths["/v1/relationships/{relationshipId}/commitment-recovery/run"] = obj{"post": operation("Relationship Intelligence", "Reconcile now", "Reconcile now sends an empty body. A past-due promise with nothing newer comes back as classification forgotten, and the company sheet reads that as a forgotten promise.", "runCommitmentRecovery", bearer(), relationshipParam, jsonRequestOptional("Empty request.", objectSchema("Recovery request.", obj{}), obj{}), obj{
+		"201": jsonResponse("Recovery evaluations.", objectSchema("Recovery evaluations.", obj{
+			"evaluations": arraySchema("One classification per due promise.", objectSchema("Recovery evaluation.", obj{
+				"evaluationId":       stringSchema("Stable id for this classification.", reconcileEvaluationID),
+				"commitmentId":       uuidSchema("Promise id.", reconcileCommitmentID),
+				"commitmentVersion":  intSchema("Promise version that was checked.", 3),
+				"recoveryWindow":     stringSchema("Day the check ran.", "2026-07-31"),
+				"reconcilerVersion":  stringSchema("Checker version.", "commitment-recovery-v1"),
+				"classification":     stringEnum("Stored classification.", "forgotten", "forgotten", "unknown_stale_sources", "fulfilled", "likely_fulfilled", "superseded", "renegotiated", "blocked"),
+				"evidenceRefs":       arraySchema("Fresh evidence considered.", stringSchema("Evidence reference.", "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5")),
+				"staleSources":       nullableArraySchema("Sources that were too old to trust. Null when every source was fresh.", stringSchema("Source.", "google")),
+				"requiresReview":     boolSchema("Whether a person must review the result.", true),
+				"proposedActionType": stringSchema("Follow-up the checker proposes. A forgotten promise proposes a reminder.", "reminder"),
+				"explanation":        stringSchema("Sentence the company sheet shows.", "This promise is past due and nothing newer has closed it."),
+				"evaluatedAt":        stringSchema("When the check ran.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
+			}, "evaluationId", "commitmentId", "classification", "explanation")),
+		}, "evaluations"), obj{"evaluations": []any{obj{
+			"evaluationId": reconcileEvaluationID, "commitmentId": reconcileCommitmentID, "commitmentVersion": 3,
+			"recoveryWindow": "2026-07-31", "reconcilerVersion": "commitment-recovery-v1", "classification": "forgotten",
+			"evidenceRefs": []any{}, "staleSources": nil, "requiresReview": true, "proposedActionType": "reminder",
+			"explanation": "This promise is past due and nothing newer has closed it.", "evaluatedAt": "2026-07-31T14:00:00Z",
+		}}}),
 		"401": responseRef("401"), "404": responseRef("404"),
 	})}
 	commitmentParam := make([]any, len(relationshipParam), len(relationshipParam)+1)

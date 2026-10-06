@@ -2429,6 +2429,12 @@ func arraySchema(description string, items any) obj {
 	return obj{"type": "array", "description": description, "items": items}
 }
 
+func nullableArraySchema(description string, items any) obj {
+	schema := arraySchema(description, items)
+	schema["nullable"] = true
+	return schema
+}
+
 func nullable() obj {
 	return obj{"nullable": true}
 }

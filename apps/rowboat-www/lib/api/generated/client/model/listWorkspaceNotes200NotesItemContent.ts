@@ -7,6 +7,6 @@
  */
 
 /**
- * Recovery evaluation result.
+ * Editor document, when one was saved.
  */
-export type RunCommitmentRecovery200 = { [key: string]: unknown };
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };

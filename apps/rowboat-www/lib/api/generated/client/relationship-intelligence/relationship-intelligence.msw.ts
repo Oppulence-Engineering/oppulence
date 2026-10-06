@@ -36,6 +36,7 @@ import type {
   ListRelationshipAttention200,
   ListRelationshipIdentityCandidates200,
   ListRelationships200,
+  ListWorkspaceNotes200,
   PutConversationPolicy201,
   RelationshipAttentionItem,
   RelationshipCommitment,
@@ -47,7 +48,7 @@ import type {
   RevenueAction,
   RevenueRelationship,
   ReviseMutualActionPlan200,
-  RunCommitmentRecovery200,
+  RunCommitmentRecovery201,
   ShareMutualActionPlan200,
 } from "../model";
 
@@ -87,6 +88,7 @@ import {
   getListRelationshipAttentionResponseMock,
   getListRelationshipIdentityCandidatesResponseMock,
   getListRelationshipsResponseMock,
+  getListWorkspaceNotesResponseMock,
   getPutConversationPolicyResponseMock,
   getRejectRelationshipRecommendationResponseMock,
   getReportRelationshipSourceAuthorizationResponseMock,
@@ -147,6 +149,7 @@ export {
   getGetRelationshipTimelineResponseMock,
   getGetCommunicationAttachmentContentResponseMock,
   getGetCommunicationInteractionBodyResponseMock,
+  getListWorkspaceNotesResponseMock,
 } from "./relationship-intelligence.faker";
 
 export const getListCommitmentsMockHandler = (
@@ -780,10 +783,10 @@ export const getCreateCommitmentDependencyMockHandler = (
 
 export const getRunCommitmentRecoveryMockHandler = (
   overrideResponse?:
-    | RunCommitmentRecovery200
+    | RunCommitmentRecovery201
     | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Promise<RunCommitmentRecovery200> | RunCommitmentRecovery200),
+      ) => Promise<RunCommitmentRecovery201> | RunCommitmentRecovery201),
   options?: RequestHandlerOptions,
 ) => {
   return http.post(
@@ -795,7 +798,7 @@ export const getRunCommitmentRecoveryMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getRunCommitmentRecoveryResponseMock(),
-        { status: 200 },
+        { status: 201 },
       );
     },
     options,
@@ -1257,6 +1260,30 @@ export const getGetCommunicationInteractionBodyMockHandler = (
     options,
   );
 };
+
+export const getListWorkspaceNotesMockHandler = (
+  overrideResponse?:
+    | ListWorkspaceNotes200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListWorkspaceNotes200> | ListWorkspaceNotes200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/workspace-notes",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListWorkspaceNotesResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 export const getRelationshipIntelligenceMock = () => [
   getListCommitmentsMockHandler(),
   getExportCommitmentMockHandler(),
@@ -1304,4 +1331,5 @@ export const getRelationshipIntelligenceMock = () => [
   getGetRelationshipTimelineMockHandler(),
   getGetCommunicationAttachmentContentMockHandler(),
   getGetCommunicationInteractionBodyMockHandler(),
+  getListWorkspaceNotesMockHandler(),
 ];
