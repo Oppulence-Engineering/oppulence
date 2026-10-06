@@ -338,6 +338,59 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertActivityHistory(t, paths)
+}
+
+func TestActivityHistorySamplesTheAcmeTimeline(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertActivityHistory(t, asObj(spec["paths"]))
+}
+
+func assertActivityHistory(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/relationships/{relationshipId}/timeline"])["get"])
+	if op["summary"] != "Activity" {
+		t.Fatalf("summary: %#v", op["summary"])
+	}
+	const wantDescription = "Activity loads when a company opens. The request asks for the first 50 records and sends no older-page time. The answer lists the newest activity first, from Slack, Calendar, Gmail, and HubSpot."
+	if op["description"] != wantDescription {
+		t.Fatalf("description: %#v", op["description"])
+	}
+	var limitExample any
+	var beforeExample any
+	for _, param := range op["parameters"].([]any) {
+		item := asObj(param)
+		switch item["name"] {
+		case "limit":
+			limitExample = asObj(item["schema"])["example"]
+		case "before":
+			beforeExample = asObj(item["schema"])["example"]
+		case "relationshipId":
+			if asObj(item["schema"])["example"] != activityRelationshipID {
+				t.Fatalf("company id: %#v", item)
+			}
+		}
+	}
+	limitRaw, err := json.Marshal(limitExample)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(limitRaw) != "50" || beforeExample != nil {
+		t.Fatalf("limit=%s before=%v", limitRaw, beforeExample)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(activityHistoryPage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("page example:\n%s\nwant:\n%s", got, want)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

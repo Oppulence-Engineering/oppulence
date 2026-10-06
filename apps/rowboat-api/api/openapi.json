@@ -25563,109 +25563,179 @@
       }
     },
     "/v1/relationships/{relationshipId}/timeline": {
-      "get": {
-        "description": "Returns the latest immutable observations for a relationship. Rows that share a time stay in id order, so the next page does not skip them.",
-        "operationId": "getRelationshipTimeline",
-        "parameters": [
-          {
-            "description": "Relationship id.",
-            "in": "path",
-            "name": "relationshipId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Maximum observations (1-100).",
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "description": "Return observations before this RFC3339 timestamp.",
-            "in": "query",
-            "name": "before",
-            "required": false,
-            "schema": {
-              "format": "date-time",
-              "type": "string"
-            }
-          },
-          {
-            "description": "With before, also return observations at that time whose id sorts earlier.",
-            "in": "query",
-            "name": "beforeId",
-            "required": false,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "description": "Observation page.",
-                  "properties": {
-                    "hasMore": {
-                      "description": "An older observation exists beyond this page.",
-                      "example": true,
-                      "type": "boolean"
-                    },
-                    "nextBefore": {
-                      "description": "Occurred-at cursor for the next page.",
-                      "example": "2026-06-01T00:00:00Z",
-                      "format": "date-time",
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "nextBeforeId": {
-                      "description": "Id cursor for the next page. Send it with nextBefore.",
-                      "example": "a1160000-0000-4000-8000-000000000002",
-                      "format": "uuid",
-                      "nullable": true,
-                      "type": "string"
-                    },
-                    "observations": {
-                      "description": "Observations.",
-                      "items": {
-                        "$ref": "#/components/schemas/RelationshipObservation"
-                      },
-                      "type": "array"
-                    }
-                  },
-                  "required": ["observations", "hasMore"],
-                  "type": "object"
-                }
+        "get": {
+          "description": "Activity loads when a company opens. The request asks for the first 50 records and sends no older-page time. The answer lists the newest activity first, from Slack, Calendar, Gmail, and HubSpot.",
+          "operationId": "getRelationshipTimeline",
+          "parameters": [
+            {
+              "description": "Company id.",
+              "in": "path",
+              "name": "relationshipId",
+              "required": true,
+              "schema": {
+                "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                "format": "uuid",
+                "type": "string"
               }
             },
-            "description": "Evidence timeline."
+            {
+              "description": "How many records to return. Opening a company asks for 50.",
+              "in": "query",
+              "name": "limit",
+              "required": false,
+              "schema": {
+                "example": 50,
+                "maximum": 200,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            {
+              "description": "Return records before this time. The first page does not send it.",
+              "in": "query",
+              "name": "before",
+              "required": false,
+              "schema": {
+                "format": "date-time",
+                "type": "string"
+              }
+            },
+            {
+              "description": "With before, also return records at that time whose id sorts earlier. The first page does not send it.",
+              "in": "query",
+              "name": "beforeId",
+              "required": false,
+              "schema": {
+                "format": "uuid",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "example": {
+                    "hasMore": false,
+                    "observations": [
+                      {
+                        "contentHash": "dd678926df937610ecb0697421c89440d8fe69aa6769c440d53d538a59d3b864",
+                        "eventType": "engagement_declined",
+                        "externalId": "acme-engagement",
+                        "id": "f18dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "normalizedFacts": {
+                          "adapter": "slack"
+                        },
+                        "occurredAt": "2026-07-25T15:00:00Z",
+                        "receivedAt": "2026-07-25T16:00:00Z",
+                        "source": "slack",
+                        "sourceVersion": "1",
+                        "summary": "No champion reply after pricing."
+                      },
+                      {
+                        "contentHash": "00c3732fea559aee849682ce662c3066c1bdc3d30d695f6a48d38a4b3401da53",
+                        "eventType": "meeting_missing",
+                        "externalId": "acme-security-meeting",
+                        "id": "f28dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "normalizedFacts": {
+                          "adapter": "calendar"
+                        },
+                        "occurredAt": "2026-07-23T15:00:00Z",
+                        "receivedAt": "2026-07-25T16:00:00Z",
+                        "source": "calendar",
+                        "sourceVersion": "1",
+                        "summary": "No security-review meeting was scheduled."
+                      },
+                      {
+                        "contentHash": "e57461826e791945b63630c2de4c026adb4459066470014cf50aadde9b6aafca",
+                        "eventType": "commitment_created",
+                        "externalId": "acme-security-promise",
+                        "id": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "normalizedFacts": {
+                          "adapter": "gmail"
+                        },
+                        "occurredAt": "2026-07-18T15:00:00Z",
+                        "receivedAt": "2026-07-25T16:00:00Z",
+                        "source": "gmail",
+                        "sourceVersion": "1",
+                        "summary": "We promised the security packet by July 22."
+                      },
+                      {
+                        "contentHash": "481faa42c6d60f434fc57540a21c1bee4a1dd745479fded5f6476080f9ebb3e7",
+                        "eventType": "deal_stage_changed",
+                        "externalId": "acme-deal-stage",
+                        "id": "f48dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "normalizedFacts": {
+                          "adapter": "hubspot"
+                        },
+                        "occurredAt": "2026-07-08T15:00:00Z",
+                        "receivedAt": "2026-07-25T16:00:00Z",
+                        "source": "hubspot",
+                        "sourceVersion": "1",
+                        "summary": "Acme moved into evaluation."
+                      }
+                    ]
+                  },
+                  "schema": {
+                    "description": "Observation page.",
+                    "properties": {
+                      "hasMore": {
+                        "description": "An older record exists beyond this page.",
+                        "example": false,
+                        "type": "boolean"
+                      },
+                      "nextBefore": {
+                        "description": "Time of the last record on this page. Send it to load older records that share that time.",
+                        "example": "2026-07-08T15:00:00Z",
+                        "format": "date-time",
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "nextBeforeId": {
+                        "description": "Id of the last record on this page. Send it with the time so records that share that time stay on the next page.",
+                        "example": "f48dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "format": "uuid",
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "observations": {
+                        "description": "Observations.",
+                        "items": {
+                          "$ref": "#/components/schemas/RelationshipObservation"
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "observations",
+                      "hasMore"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "description": "The activity this company loads."
+            },
+            "400": {
+              "$ref": "#/components/responses/400"
+            },
+            "401": {
+              "$ref": "#/components/responses/401"
+            },
+            "404": {
+              "$ref": "#/components/responses/404"
+            }
           },
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "404": {
-            "$ref": "#/components/responses/404"
-          }
-        },
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "summary": "Get evidence timeline",
-        "tags": ["Relationship Intelligence"]
-      }
+          "security": [
+            {
+              "BearerAuth": []
+            }
+          ],
+          "summary": "Activity",
+          "tags": [
+            "Relationship Intelligence"
+          ]
+        }
     },
     "/v1/revenue-actions": {
       "get": {
