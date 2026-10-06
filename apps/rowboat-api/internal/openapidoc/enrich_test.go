@@ -338,6 +338,63 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertRunNow(t, spec)
+}
+
+func TestRunNowStoresTheEditorNote(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertRunNow(t, spec)
+}
+
+func assertRunNow(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	post := asObj(asObj(paths["/v1/background-tasks/{slug}/trigger"])["post"])
+	if post["summary"] != "Run now" {
+		t.Fatalf("summary: %#v", post["summary"])
+	}
+	const description = "Run now posts a manual start from the visual workflow editor. The stored cloud run stays queued, keeps the note Started from the visual workflow editor, uses cloud execution, and records revision 2."
+	if post["description"] != description {
+		t.Fatalf("description: %#v", post["description"])
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
+	if mustJSON(request["example"]) != mustJSON(documentedRunNowRequest()) {
+		t.Fatalf("request example: %s", mustJSON(request["example"]))
+	}
+	response := asObj(asObj(post["responses"])["202"])
+	if response["description"] != "Stored run." {
+		t.Fatalf("response description: %#v", response["description"])
+	}
+	body := asObj(asObj(response["content"])["application/json"])
+	if mustJSON(body["example"]) != mustJSON(documentedRunNow()) {
+		t.Fatalf("response example: %s", mustJSON(body["example"]))
+	}
+	params, ok := post["parameters"].([]any)
+	if !ok || len(params) != 1 || asObj(asObj(params[0])["schema"])["example"] != "follow-up-when-a-promise-slips" {
+		t.Fatalf("path workflow: %#v", post["parameters"])
+	}
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	triggerProps := asObj(asObj(schemas["BackgroundTaskTriggerRequest"])["properties"])
+	if asObj(triggerProps["context"])["example"] != "Run this now and focus on high-risk accounts." {
+		t.Fatalf("trigger context example changed: %#v", triggerProps["context"])
+	}
+	runProps := asObj(asObj(schemas["BackgroundTaskRun"])["properties"])
+	if asObj(runProps["requestedContext"])["example"] != "Run this now and focus on high-risk accounts." || asObj(runProps["slug"])["example"] != "daily-summary" {
+		t.Fatalf("shared run example changed: %#v", runProps)
+	}
+	create := asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks"])["post"])["requestBody"])["content"])["application/json"])
+	if asObj(create["example"])["slug"] != "daily-summary" {
+		t.Fatalf("create workflow example changed: %s", mustJSON(create["example"]))
+	}
+}
+
+func mustJSON(v any) string {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(raw)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

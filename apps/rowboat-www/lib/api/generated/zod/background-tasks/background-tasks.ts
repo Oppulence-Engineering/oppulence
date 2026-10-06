@@ -3333,11 +3333,11 @@ export const GetBackgroundTaskRunStatus500Response = zod
   );
 
 /**
- * For executionTarget=desktop, queues a remote trigger with status=queued for desktop pickup. For executionTarget=api, creates an API-worker run and starts a Temporal workflow, while clients poll Solomon AI run status endpoints.
- * @summary Queue or start task trigger
+ * Run now posts a manual start from the visual workflow editor. The stored cloud run stays queued, keeps the note Started from the visual workflow editor, uses cloud execution, and records revision 2.
+ * @summary Run now
  */
 export const TriggerBackgroundTaskParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
+  slug: zod.string().describe("Workflow to run."),
 });
 
 export const TriggerBackgroundTaskBody = zod

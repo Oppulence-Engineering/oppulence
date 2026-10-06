@@ -1536,11 +1536,8 @@ func addBackgroundTaskPaths(paths obj) {
 		}),
 	}
 	paths["/v1/background-tasks/{slug}/trigger"] = obj{
-		"post": operation("Background Tasks", "Queue or start task trigger", "For executionTarget=desktop, queues a remote trigger with status=queued for desktop pickup. For executionTarget=api, creates an API-worker run and starts a Temporal workflow, while clients poll Solomon AI run status endpoints.", "triggerBackgroundTask", bearer(), slugParam(), jsonRequestOptional("Optional trigger context.", ref("BackgroundTaskTriggerRequest"), obj{
-			"trigger": "manual",
-			"context": "Run this now and focus on high-risk accounts.",
-		}), obj{
-			"202": jsonResponse("Queued or started run mirror.", ref("BackgroundTaskRun"), backgroundTaskQueuedRunExample()),
+		"post": operation("Background Tasks", "Run now", "Run now posts a manual start from the visual workflow editor. The stored cloud run stays queued, keeps the note Started from the visual workflow editor, uses cloud execution, and records revision 2.", "triggerBackgroundTask", bearer(), []any{pathParam("slug", "Workflow to run.", stringSchema("Workflow address.", "follow-up-when-a-promise-slips"))}, jsonRequestOptional("Optional trigger context.", ref("BackgroundTaskTriggerRequest"), documentedRunNowRequest()), obj{
+			"202": jsonResponse("Stored run.", ref("BackgroundTaskRun"), documentedRunNow()),
 			"400": responseRef("400"),
 			"401": responseRef("401"),
 			"404": responseRef("404"),
@@ -2308,6 +2305,35 @@ func backgroundTaskRunStatusExample() obj {
 		"completedAt":        nil,
 		"error":              "",
 		"revision":           3,
+	}
+}
+
+func documentedRunNowRequest() obj {
+	return obj{
+		"trigger": "manual",
+		"context": "Started from the visual workflow editor.",
+	}
+}
+
+func documentedRunNow() obj {
+	const runID = "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b"
+	return obj{
+		"id":                 "88f5e632-a841-4557-a8e4-9b8f0d207ff4",
+		"runId":              runID,
+		"slug":               "follow-up-when-a-promise-slips",
+		"trigger":            "manual",
+		"status":             "queued",
+		"executor":           "api",
+		"attempt":            1,
+		"requestedContext":   "Started from the visual workflow editor.",
+		"temporalWorkflowId": "background-task/user/follow-up-when-a-promise-slips/" + runID,
+		"temporalRunId":      "00000000-0000-0000-0000-000000000002",
+		"temporalStatus":     "Started",
+		"progressPercent":    0,
+		"progressMessage":    "Queued for API worker.",
+		"createdAt":          "2026-06-04T21:00:30Z",
+		"updatedAt":          "2026-06-04T21:00:31Z",
+		"revision":           2,
 	}
 }
 
