@@ -338,6 +338,27 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertResearchConsent(t, spec)
+}
+
+func TestAllowPublicResearchSendsConsent(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertResearchConsent(t, spec)
+}
+
+func assertResearchConsent(t *testing.T, spec obj) {
+	t.Helper()
+	content := asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/research/consent"])["put"])["requestBody"])["content"])["application/json"])
+	example := asObj(content["example"])
+	consented := asObj(asObj(asObj(content["schema"])["properties"])["consented"])
+	if example["consented"] != true || consented["example"] != true {
+		t.Fatalf("research consent request: %#v %#v", example, consented)
+	}
+	stored := asObj(asObj(asObj(asObj(asObj(spec["components"])["schemas"])["CloudResearchConsentState"])["properties"])["consented"])
+	if stored["example"] != true {
+		t.Fatalf("stored research consent: %#v", stored)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

@@ -315,6 +315,18 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the consent Allow public research sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/research/consent"].put;
+    const body = operation.requestBody.content["application/json"];
+    expect(operation.summary).toBe("Allow public research");
+    expect(body.example).toEqual({ consented: true });
+    expect(body.schema.properties.consented.example).toBe(true);
+    expect(presented.components.schemas.CloudResearchConsentState.properties.consented.example).toBe(
+      true,
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

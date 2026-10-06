@@ -5693,6 +5693,25 @@
         ],
         "type": "object"
       },
+      "CloudResearchConsentState": {
+        "description": "Whether this workspace allows public research to send a counterparty name and domain to the research vendor.",
+        "properties": {
+          "consented": {
+            "description": "Whether public research is allowed.",
+            "example": true,
+            "type": "boolean"
+          },
+          "consentedAt": {
+            "description": "When public research was allowed. Absent after Turn off.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": ["consented"],
+        "type": "object"
+      },
       "ConversationDeletionReceipt": {
         "description": "Immutable deletion request and per-target verification state. Pending device or provider targets keep the receipt partial.",
         "properties": {
@@ -24892,6 +24911,63 @@
           }
         ],
         "summary": "Request conversation deletion",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/research/consent": {
+      "put": {
+        "description": "Allow public research sends consented true. Turn off sends consented false. The server stores that choice for the workspace and records consentedAt only while consent is on.",
+        "operationId": "setCloudResearchConsent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "consented": true
+              },
+              "schema": {
+                "description": "Public research consent.",
+                "properties": {
+                  "consented": {
+                    "description": "Whether public research is allowed.",
+                    "example": true,
+                    "type": "boolean"
+                  }
+                },
+                "required": ["consented"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Public research consent.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudResearchConsentState"
+                }
+              }
+            },
+            "description": "Stored public research consent."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Allow public research",
         "tags": ["Relationship Intelligence"]
       }
     },

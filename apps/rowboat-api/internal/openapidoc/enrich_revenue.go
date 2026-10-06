@@ -384,6 +384,11 @@ func addRevenueSchemas(schemas obj) {
 		"completedAt": stringSchema("Time every required target was verified.", "2026-07-31T14:01:00Z", obj{"format": "date-time"}, nullable()),
 	}, "receiptId", "requestedAt", "scopeRef", "legalHold", "status", "targets")
 
+	schemas["CloudResearchConsentState"] = objectSchema("Whether this workspace allows public research to send a counterparty name and domain to the research vendor.", obj{
+		"consented":   boolSchema("Whether public research is allowed.", true),
+		"consentedAt": stringSchema("When public research was allowed. Absent after Turn off.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}, nullable()),
+	}, "consented")
+
 	schemas["RelationshipIntelligence"] = objectSchema("Derived trust surface for a relationship: conversation claims, focused review, exact delta, governance, contradictions, and live cue cards.", obj{
 		"claims":                    arraySchema("Material quote-backed claims.", ref("ConversationClaim")),
 		"reviewItems":               arraySchema("Only low-confidence review items.", ref("ConversationReviewItem")),
@@ -1010,6 +1015,12 @@ func addRevenuePaths(paths obj) {
 	}, "requestId"), obj{"requestId": "delete:ab12"}), obj{
 		"202": jsonResponse("Deletion receipt.", ref("ConversationDeletionReceipt"), nil),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
+	})}
+	paths["/v1/research/consent"] = obj{"put": operation("Relationship Intelligence", "Allow public research", "Allow public research sends consented true. Turn off sends consented false. The server stores that choice for the workspace and records consentedAt only while consent is on.", "setCloudResearchConsent", bearer(), nil, jsonRequest("Public research consent.", objectSchema("Public research consent.", obj{
+		"consented": boolSchema("Whether public research is allowed.", true),
+	}, "consented"), obj{"consented": true}), obj{
+		"200": jsonResponse("Stored public research consent.", ref("CloudResearchConsentState"), nil),
+		"400": responseRef("400"), "401": responseRef("401"), "403": responseRef("403"),
 	})}
 	paths["/v1/relationship-observations/batch"] = obj{"post": operation("Relationship Intelligence", "Ingest relationship observations", "Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.", "ingestRelationshipObservations", bearer(), nil, jsonRequest("Observation batch.", objectSchema("Observation batch.", obj{
 		"observations": arraySchema("Provider-neutral observations.", objectSchema("Observation input.", obj{
