@@ -7,6 +7,6 @@
  */
 
 /**
- * Plan share result.
+ * Editor document, when one was saved.
  */
-export type ShareMutualActionPlan200 = { [key: string]: unknown };
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };

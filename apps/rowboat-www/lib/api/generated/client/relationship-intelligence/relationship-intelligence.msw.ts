@@ -10,7 +10,7 @@ import type { RequestHandlerOptions } from "msw";
 
 import type {
   AcknowledgeMissionControl201,
-  ApproveMutualActionPlan200,
+  ApproveMutualActionPlan201,
   BetaDiagnostics,
   CommitmentDependency,
   CommunicationTimelinePage,
@@ -36,6 +36,7 @@ import type {
   ListRelationshipAttention200,
   ListRelationshipIdentityCandidates200,
   ListRelationships200,
+  ListWorkspaceNotes200,
   PutConversationPolicy201,
   RelationshipAttentionItem,
   RelationshipCommitment,
@@ -48,7 +49,7 @@ import type {
   RevenueRelationship,
   ReviseMutualActionPlan200,
   RunCommitmentRecovery200,
-  ShareMutualActionPlan200,
+  ShareMutualActionPlan201,
 } from "../model";
 
 import {
@@ -87,6 +88,7 @@ import {
   getListRelationshipAttentionResponseMock,
   getListRelationshipIdentityCandidatesResponseMock,
   getListRelationshipsResponseMock,
+  getListWorkspaceNotesResponseMock,
   getPutConversationPolicyResponseMock,
   getRejectRelationshipRecommendationResponseMock,
   getReportRelationshipSourceAuthorizationResponseMock,
@@ -147,6 +149,7 @@ export {
   getGetRelationshipTimelineResponseMock,
   getGetCommunicationAttachmentContentResponseMock,
   getGetCommunicationInteractionBodyResponseMock,
+  getListWorkspaceNotesResponseMock,
 } from "./relationship-intelligence.faker";
 
 export const getListCommitmentsMockHandler = (
@@ -1140,10 +1143,10 @@ export const getReviseMutualActionPlanMockHandler = (
 
 export const getApproveMutualActionPlanMockHandler = (
   overrideResponse?:
-    | ApproveMutualActionPlan200
+    | ApproveMutualActionPlan201
     | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Promise<ApproveMutualActionPlan200> | ApproveMutualActionPlan200),
+      ) => Promise<ApproveMutualActionPlan201> | ApproveMutualActionPlan201),
   options?: RequestHandlerOptions,
 ) => {
   return http.post(
@@ -1155,7 +1158,7 @@ export const getApproveMutualActionPlanMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getApproveMutualActionPlanResponseMock(),
-        { status: 200 },
+        { status: 201 },
       );
     },
     options,
@@ -1164,10 +1167,10 @@ export const getApproveMutualActionPlanMockHandler = (
 
 export const getShareMutualActionPlanMockHandler = (
   overrideResponse?:
-    | ShareMutualActionPlan200
+    | ShareMutualActionPlan201
     | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Promise<ShareMutualActionPlan200> | ShareMutualActionPlan200),
+      ) => Promise<ShareMutualActionPlan201> | ShareMutualActionPlan201),
   options?: RequestHandlerOptions,
 ) => {
   return http.post(
@@ -1179,7 +1182,7 @@ export const getShareMutualActionPlanMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getShareMutualActionPlanResponseMock(),
-        { status: 200 },
+        { status: 201 },
       );
     },
     options,
@@ -1257,6 +1260,30 @@ export const getGetCommunicationInteractionBodyMockHandler = (
     options,
   );
 };
+
+export const getListWorkspaceNotesMockHandler = (
+  overrideResponse?:
+    | ListWorkspaceNotes200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListWorkspaceNotes200> | ListWorkspaceNotes200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/workspace-notes",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListWorkspaceNotesResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 export const getRelationshipIntelligenceMock = () => [
   getListCommitmentsMockHandler(),
   getExportCommitmentMockHandler(),
@@ -1304,4 +1331,5 @@ export const getRelationshipIntelligenceMock = () => [
   getGetRelationshipTimelineMockHandler(),
   getGetCommunicationAttachmentContentMockHandler(),
   getGetCommunicationInteractionBodyMockHandler(),
+  getListWorkspaceNotesMockHandler(),
 ];

@@ -9,7 +9,7 @@ import { faker } from "@faker-js/faker";
 
 import type {
   AcknowledgeMissionControl201,
-  ApproveMutualActionPlan200,
+  ApproveMutualActionPlan201,
   BetaDiagnostics,
   CommitmentDependency,
   CommunicationTimelinePage,
@@ -35,6 +35,7 @@ import type {
   ListRelationshipAttention200,
   ListRelationshipIdentityCandidates200,
   ListRelationships200,
+  ListWorkspaceNotes200,
   PutConversationPolicy201,
   RelationshipAttentionItem,
   RelationshipCommitment,
@@ -47,7 +48,7 @@ import type {
   RevenueRelationship,
   ReviseMutualActionPlan200,
   RunCommitmentRecovery200,
-  ShareMutualActionPlan200,
+  ShareMutualActionPlan201,
 } from "../model";
 
 export const getListCommitmentsResponseMock = (
@@ -1584,6 +1585,10 @@ export const getApproveRelationshipRecommendationResponseMock = (
     undefined,
   ]),
   relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+  relationshipName: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
   revision: faker.number.int(),
   revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
   senderAccountRef: faker.helpers.arrayElement([
@@ -1744,6 +1749,10 @@ export const getRejectRelationshipRecommendationResponseMock = (
     undefined,
   ]),
   relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+  relationshipName: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
   revision: faker.number.int(),
   revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
   senderAccountRef: faker.helpers.arrayElement([
@@ -2871,6 +2880,10 @@ export const getGetRelationshipResponseMock = (
         undefined,
       ]),
       relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+      relationshipName: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
       revision: faker.number.int(),
       revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
       senderAccountRef: faker.helpers.arrayElement([
@@ -3446,6 +3459,10 @@ export const getGetRelationshipResponseMock = (
         undefined,
       ]),
       relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+      relationshipName: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
       revision: faker.number.int(),
       revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
       senderAccountRef: faker.helpers.arrayElement([
@@ -4854,9 +4871,114 @@ export const getCreateMutualActionPlanResponseMock = (): CreateMutualActionPlan2
 
 export const getReviseMutualActionPlanResponseMock = (): ReviseMutualActionPlan200 => ({});
 
-export const getApproveMutualActionPlanResponseMock = (): ApproveMutualActionPlan200 => ({});
+export const getApproveMutualActionPlanResponseMock = (
+  overrideResponse: Partial<Extract<ApproveMutualActionPlan201, object>> = {},
+): ApproveMutualActionPlan201 => ({
+  counterpartyRef: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  currentRevision: {
+    createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+    createdBy: faker.string.uuid(),
+    items: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+      () => ({
+        commitmentId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+        dependencyItemIds: Array.from(
+          { length: faker.number.int({ min: 1, max: 10 }) },
+          (_, i) => i + 1,
+        ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+        dueAt: faker.helpers.arrayElement([
+          faker.date.past().toISOString().slice(0, 19) + "Z",
+          undefined,
+        ]),
+        evidenceRefs: Array.from(
+          { length: faker.number.int({ min: 1, max: 10 }) },
+          (_, i) => i + 1,
+        ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+        itemId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        ownerParticipantRef: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        status: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        title: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      }),
+    ),
+    planId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    revisionId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    version: faker.number.int(),
+  },
+  internalOwnerRef: faker.string.uuid(),
+  planId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  relationshipId: faker.string.uuid(),
+  sharePolicyDecisionId: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  status: faker.helpers.arrayElement([
+    "draft",
+    "revised",
+    "internally_approved",
+    "shared",
+    "counterparty_responded",
+    "completed",
+    "cancelled",
+  ] as const),
+  tokenState: faker.helpers.arrayElement(["not_issued", "active"] as const),
+  ...overrideResponse,
+});
 
-export const getShareMutualActionPlanResponseMock = (): ShareMutualActionPlan200 => ({});
+export const getShareMutualActionPlanResponseMock = (
+  overrideResponse: Partial<Extract<ShareMutualActionPlan201, object>> = {},
+): ShareMutualActionPlan201 => ({
+  plan: {
+    counterpartyRef: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    currentRevision: {
+      createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+      createdBy: faker.string.uuid(),
+      items: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+        () => ({
+          commitmentId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+          dependencyItemIds: Array.from(
+            { length: faker.number.int({ min: 1, max: 10 }) },
+            (_, i) => i + 1,
+          ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+          dueAt: faker.helpers.arrayElement([
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            undefined,
+          ]),
+          evidenceRefs: Array.from(
+            { length: faker.number.int({ min: 1, max: 10 }) },
+            (_, i) => i + 1,
+          ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+          itemId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          ownerParticipantRef: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          status: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          title: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        }),
+      ),
+      planId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      revisionId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      version: faker.number.int(),
+    },
+    internalOwnerRef: faker.string.uuid(),
+    planId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    relationshipId: faker.string.uuid(),
+    sharePolicyDecisionId: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    status: faker.helpers.arrayElement([
+      "draft",
+      "revised",
+      "internally_approved",
+      "shared",
+      "counterparty_responded",
+      "completed",
+      "cancelled",
+    ] as const),
+    tokenState: faker.helpers.arrayElement(["not_issued", "active"] as const),
+  },
+  responseToken: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ...overrideResponse,
+});
 
 export const getGetRelationshipTimelineResponseMock = (
   overrideResponse: Partial<Extract<GetRelationshipTimeline200, object>> = {},
@@ -4963,5 +5085,24 @@ export const getGetCommunicationInteractionBodyResponseMock = (
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
+  ...overrideResponse,
+});
+
+export const getListWorkspaceNotesResponseMock = (
+  overrideResponse: Partial<Extract<ListWorkspaceNotes200, object>> = {},
+): ListWorkspaceNotes200 => ({
+  hasMore: faker.datatype.boolean(),
+  notes: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+    body: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    content: faker.helpers.arrayElement([{}, undefined]),
+    eventType: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    externalId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    liveLinked: faker.datatype.boolean(),
+    meetingLinked: faker.datatype.boolean(),
+    occurredAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+    relationshipId: faker.string.uuid(),
+    relationshipName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    title: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  })),
   ...overrideResponse,
 });

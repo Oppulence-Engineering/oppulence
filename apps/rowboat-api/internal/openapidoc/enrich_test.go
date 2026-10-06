@@ -1,6 +1,8 @@
 package openapidoc
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"reflect"
@@ -338,6 +340,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertApprovePlan(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -370,6 +373,121 @@ func assertEventObservation(t *testing.T, schemas obj) {
 	if asObj(evidence["observationId"])["example"] != observationID {
 		t.Fatalf("mission control observation id changed: %#v", evidence["observationId"])
 	}
+}
+
+func TestApprovePlanReturnsInternallyApproved(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertApprovePlan(t, spec)
+}
+
+func assertApprovePlan(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	approve := asObj(asObj(paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/approve"])["post"])
+	if approve["summary"] != "Approve this plan" {
+		t.Fatalf("approve summary: %#v", approve["summary"])
+	}
+	if approve["operationId"] != "approveMutualActionPlan" {
+		t.Fatalf("approve operation: %#v", approve["operationId"])
+	}
+	approveResponses := asObj(approve["responses"])
+	if approveResponses["200"] != nil || approveResponses["201"] == nil {
+		t.Fatalf("approve status: %#v", approveResponses)
+	}
+	if len(mediaExample(t, approve["requestBody"])) != 0 {
+		t.Fatalf("approve request: %#v", mediaExample(t, approve["requestBody"]))
+	}
+	approved := mediaExample(t, approveResponses["201"])
+	if approved["status"] != "internally_approved" || approved["tokenState"] != "not_issued" {
+		t.Fatalf("approve body: %#v", approved)
+	}
+	if _, ok := approved["sharePolicyDecisionId"]; ok {
+		t.Fatalf("approve body includes a share decision: %#v", approved["sharePolicyDecisionId"])
+	}
+	assertPlanRevision(t, approved)
+
+	share := asObj(asObj(paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share"])["post"])
+	if share["summary"] != "Draft an email to share this plan" {
+		t.Fatalf("share summary: %#v", share["summary"])
+	}
+	if share["operationId"] != "shareMutualActionPlan" {
+		t.Fatalf("share operation: %#v", share["operationId"])
+	}
+	shareResponses := asObj(share["responses"])
+	if shareResponses["200"] != nil || shareResponses["201"] == nil {
+		t.Fatalf("share status: %#v", shareResponses)
+	}
+	if len(mediaExample(t, share["requestBody"])) != 0 {
+		t.Fatalf("share request: %#v", mediaExample(t, share["requestBody"]))
+	}
+	shared := mediaExample(t, shareResponses["201"])
+	plan := asObj(shared["plan"])
+	if plan["status"] != "shared" || plan["tokenState"] != "active" || plan["sharePolicyDecisionId"] != documentedPlanDecisionID {
+		t.Fatalf("share plan: %#v", plan)
+	}
+	token, _ := shared["responseToken"].(string)
+	if token != documentedPlanResponseToken || len(token) != 64 {
+		t.Fatalf("response token: %#v", shared["responseToken"])
+	}
+	assertPlanRevision(t, plan)
+}
+
+func assertPlanRevision(t *testing.T, plan obj) {
+	t.Helper()
+	revision := asObj(plan["currentRevision"])
+	if revision["revisionId"] != documentedPlanRevisionID || revision["revisionHash"] != documentedPlanRevisionHash {
+		t.Fatalf("revision: %#v", revision)
+	}
+	version, ok := revision["version"].(int)
+	if !ok {
+		if number, isFloat := revision["version"].(float64); isFloat {
+			version, ok = int(number), true
+		}
+	}
+	if !ok || version != 1 {
+		t.Fatalf("revision version: %#v", revision["version"])
+	}
+	raw, err := json.Marshal([]planItemSample{{
+		ItemID:              "item:" + documentedPlanCommitmentID,
+		CommitmentID:        documentedPlanCommitmentID,
+		Title:               "Send the security packet.",
+		OwnerParticipantRef: "alex@example.com",
+		DependencyItemIDs:   []string{},
+		DueAt:               "2026-09-14T17:00:00Z",
+		Status:              "open",
+		EvidenceRefs:        []string{"revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(raw)
+	if got := "sha256:" + hex.EncodeToString(sum[:]); got != documentedPlanRevisionHash {
+		t.Fatalf("revision hash %s from %s", got, raw)
+	}
+}
+
+type planItemSample struct {
+	ItemID              string   `json:"itemId"`
+	CommitmentID        string   `json:"commitmentId,omitempty"`
+	MilestoneRef        string   `json:"milestoneRef,omitempty"`
+	Title               string   `json:"title"`
+	OwnerParticipantRef string   `json:"ownerParticipantRef"`
+	DependencyItemIDs   []string `json:"dependencyItemIds"`
+	DueAt               string   `json:"dueAt,omitempty"`
+	Status              string   `json:"status"`
+	EvidenceRefs        []string `json:"evidenceRefs"`
+}
+
+func mediaExample(t *testing.T, body any) obj {
+	t.Helper()
+	content := asObj(asObj(body)["content"])
+	media := asObj(content["application/json"])
+	example := asObj(media["example"])
+	if example == nil {
+		t.Fatalf("missing example: %#v", body)
+	}
+	return example
 }
 
 func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {

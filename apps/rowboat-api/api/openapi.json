@@ -25422,7 +25422,7 @@
     },
     "/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/approve": {
       "post": {
-        "description": "Binds internal approval to the exact current revision hash.",
+        "description": "Approve this plan posts an empty body. The stored plan status is internally_approved, which the company sheet reads as Approved in this workspace.",
         "operationId": "approveMutualActionPlan",
         "parameters": [
           {
@@ -25460,12 +25460,217 @@
           "required": false
         },
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "counterpartyRef": "jordan@example.com",
+                  "currentRevision": {
+                    "createdAt": "2026-07-31T14:00:00Z",
+                    "createdBy": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "items": [
+                      {
+                        "commitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "dependencyItemIds": [],
+                        "dueAt": "2026-09-14T17:00:00Z",
+                        "evidenceRefs": [
+                          "revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                        ],
+                        "itemId": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "ownerParticipantRef": "alex@example.com",
+                        "status": "open",
+                        "title": "Send the security packet."
+                      }
+                    ],
+                    "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "revisionHash": "sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966",
+                    "revisionId": "revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "version": 1
+                  },
+                  "internalOwnerRef": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "status": "internally_approved",
+                  "tokenState": "not_issued"
+                },
                 "schema": {
-                  "additionalProperties": true,
-                  "description": "Mutual action plan.",
+                  "description": "The plan the company sheet reads.",
+                  "properties": {
+                    "counterpartyRef": {
+                      "description": "The other party.",
+                      "example": "jordan@example.com",
+                      "type": "string"
+                    },
+                    "currentRevision": {
+                      "description": "The revision this approval is bound to.",
+                      "properties": {
+                        "createdAt": {
+                          "description": "When this revision was written.",
+                          "example": "2026-07-31T14:00:00Z",
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "createdBy": {
+                          "description": "Who wrote this revision.",
+                          "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "items": {
+                          "description": "Plan steps.",
+                          "items": {
+                            "description": "One step on the plan.",
+                            "properties": {
+                              "commitmentId": {
+                                "description": "Commitment this step came from.",
+                                "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "dependencyItemIds": {
+                                "description": "Steps this one waits on.",
+                                "items": {
+                                  "description": "Step id.",
+                                  "example": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                                  "type": "string"
+                                },
+                                "type": "array"
+                              },
+                              "dueAt": {
+                                "description": "When the step is due.",
+                                "example": "2026-09-14T17:00:00Z",
+                                "format": "date-time",
+                                "type": "string"
+                              },
+                              "evidenceRefs": {
+                                "description": "Evidence for the step.",
+                                "items": {
+                                  "description": "Evidence reference.",
+                                  "example": "revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                                  "type": "string"
+                                },
+                                "type": "array"
+                              },
+                              "itemId": {
+                                "description": "Step id.",
+                                "example": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                                "type": "string"
+                              },
+                              "ownerParticipantRef": {
+                                "description": "Who owns the step.",
+                                "example": "alex@example.com",
+                                "type": "string"
+                              },
+                              "status": {
+                                "description": "Step status.",
+                                "example": "open",
+                                "type": "string"
+                              },
+                              "title": {
+                                "description": "Step title.",
+                                "example": "Send the security packet.",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "itemId",
+                              "title",
+                              "ownerParticipantRef",
+                              "dependencyItemIds",
+                              "status",
+                              "evidenceRefs"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "planId": {
+                          "description": "Plan id.",
+                          "example": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "type": "string"
+                        },
+                        "revisionHash": {
+                          "description": "Hash of the steps.",
+                          "example": "sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966",
+                          "type": "string"
+                        },
+                        "revisionId": {
+                          "description": "Revision id.",
+                          "example": "revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "type": "string"
+                        },
+                        "version": {
+                          "description": "Revision number.",
+                          "example": 1,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "revisionId",
+                        "planId",
+                        "version",
+                        "revisionHash",
+                        "createdAt",
+                        "createdBy",
+                        "items"
+                      ],
+                      "type": "object"
+                    },
+                    "internalOwnerRef": {
+                      "description": "Person who owns the plan inside this workspace.",
+                      "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "planId": {
+                      "description": "Plan id.",
+                      "example": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "type": "string"
+                    },
+                    "relationshipId": {
+                      "description": "Company id.",
+                      "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "sharePolicyDecisionId": {
+                      "description": "Decision recorded when the plan was shared.",
+                      "example": "governance:ab8dfa9ba7b246ea982c622a",
+                      "type": "string"
+                    },
+                    "status": {
+                      "description": "Plan status.",
+                      "enum": [
+                        "draft",
+                        "revised",
+                        "internally_approved",
+                        "shared",
+                        "counterparty_responded",
+                        "completed",
+                        "cancelled"
+                      ],
+                      "example": "internally_approved",
+                      "type": "string"
+                    },
+                    "tokenState": {
+                      "description": "Share token state.",
+                      "enum": [
+                        "not_issued",
+                        "active"
+                      ],
+                      "example": "not_issued",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "planId",
+                    "relationshipId",
+                    "internalOwnerRef",
+                    "counterpartyRef",
+                    "status",
+                    "currentRevision",
+                    "tokenState"
+                  ],
                   "type": "object"
                 }
               }
@@ -25487,13 +25692,15 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Approve a plan revision",
-        "tags": ["Relationship Intelligence"]
+        "summary": "Approve this plan",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share": {
       "post": {
-        "description": "Re-evaluates effective policy, creates a scoped expiring token, stores only its hash, and queues the exact approved revision for operator approval.",
+        "description": "Draft an email to share this plan posts an empty body. The stored plan status is shared, the token state is active, and responseToken is the one-time token. The server keeps only the hash of that token.",
         "operationId": "shareMutualActionPlan",
         "parameters": [
           {
@@ -25531,17 +25738,241 @@
           "required": false
         },
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "plan": {
+                    "counterpartyRef": "jordan@example.com",
+                    "currentRevision": {
+                      "createdAt": "2026-07-31T14:00:00Z",
+                      "createdBy": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "items": [
+                        {
+                          "commitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "dependencyItemIds": [],
+                          "dueAt": "2026-09-14T17:00:00Z",
+                          "evidenceRefs": [
+                            "revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                          ],
+                          "itemId": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "ownerParticipantRef": "alex@example.com",
+                          "status": "open",
+                          "title": "Send the security packet."
+                        }
+                      ],
+                      "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "revisionHash": "sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966",
+                      "revisionId": "revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "version": 1
+                    },
+                    "internalOwnerRef": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "sharePolicyDecisionId": "governance:ab8dfa9ba7b246ea982c622a",
+                    "status": "shared",
+                    "tokenState": "active"
+                  },
+                  "responseToken": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                },
                 "schema": {
-                  "additionalProperties": true,
                   "description": "Plan share result.",
+                  "properties": {
+                    "plan": {
+                      "description": "The plan the company sheet reads.",
+                      "properties": {
+                        "counterpartyRef": {
+                          "description": "The other party.",
+                          "example": "jordan@example.com",
+                          "type": "string"
+                        },
+                        "currentRevision": {
+                          "description": "The revision this approval is bound to.",
+                          "properties": {
+                            "createdAt": {
+                              "description": "When this revision was written.",
+                              "example": "2026-07-31T14:00:00Z",
+                              "format": "date-time",
+                              "type": "string"
+                            },
+                            "createdBy": {
+                              "description": "Who wrote this revision.",
+                              "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                              "format": "uuid",
+                              "type": "string"
+                            },
+                            "items": {
+                              "description": "Plan steps.",
+                              "items": {
+                                "description": "One step on the plan.",
+                                "properties": {
+                                  "commitmentId": {
+                                    "description": "Commitment this step came from.",
+                                    "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                                    "format": "uuid",
+                                    "type": "string"
+                                  },
+                                  "dependencyItemIds": {
+                                    "description": "Steps this one waits on.",
+                                    "items": {
+                                      "description": "Step id.",
+                                      "example": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "dueAt": {
+                                    "description": "When the step is due.",
+                                    "example": "2026-09-14T17:00:00Z",
+                                    "format": "date-time",
+                                    "type": "string"
+                                  },
+                                  "evidenceRefs": {
+                                    "description": "Evidence for the step.",
+                                    "items": {
+                                      "description": "Evidence reference.",
+                                      "example": "revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                                      "type": "string"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "itemId": {
+                                    "description": "Step id.",
+                                    "example": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                                    "type": "string"
+                                  },
+                                  "ownerParticipantRef": {
+                                    "description": "Who owns the step.",
+                                    "example": "alex@example.com",
+                                    "type": "string"
+                                  },
+                                  "status": {
+                                    "description": "Step status.",
+                                    "example": "open",
+                                    "type": "string"
+                                  },
+                                  "title": {
+                                    "description": "Step title.",
+                                    "example": "Send the security packet.",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "itemId",
+                                  "title",
+                                  "ownerParticipantRef",
+                                  "dependencyItemIds",
+                                  "status",
+                                  "evidenceRefs"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "planId": {
+                              "description": "Plan id.",
+                              "example": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                              "type": "string"
+                            },
+                            "revisionHash": {
+                              "description": "Hash of the steps.",
+                              "example": "sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966",
+                              "type": "string"
+                            },
+                            "revisionId": {
+                              "description": "Revision id.",
+                              "example": "revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                              "type": "string"
+                            },
+                            "version": {
+                              "description": "Revision number.",
+                              "example": 1,
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "revisionId",
+                            "planId",
+                            "version",
+                            "revisionHash",
+                            "createdAt",
+                            "createdBy",
+                            "items"
+                          ],
+                          "type": "object"
+                        },
+                        "internalOwnerRef": {
+                          "description": "Person who owns the plan inside this workspace.",
+                          "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "planId": {
+                          "description": "Plan id.",
+                          "example": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "type": "string"
+                        },
+                        "relationshipId": {
+                          "description": "Company id.",
+                          "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "sharePolicyDecisionId": {
+                          "description": "Decision recorded when the plan was shared.",
+                          "example": "governance:ab8dfa9ba7b246ea982c622a",
+                          "type": "string"
+                        },
+                        "status": {
+                          "description": "Plan status.",
+                          "enum": [
+                            "draft",
+                            "revised",
+                            "internally_approved",
+                            "shared",
+                            "counterparty_responded",
+                            "completed",
+                            "cancelled"
+                          ],
+                          "example": "shared",
+                          "type": "string"
+                        },
+                        "tokenState": {
+                          "description": "Share token state.",
+                          "enum": [
+                            "not_issued",
+                            "active"
+                          ],
+                          "example": "active",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "planId",
+                        "relationshipId",
+                        "internalOwnerRef",
+                        "counterpartyRef",
+                        "status",
+                        "currentRevision",
+                        "tokenState"
+                      ],
+                      "type": "object"
+                    },
+                    "responseToken": {
+                      "description": "One-time token for the shared plan. The server stores only its hash.",
+                      "example": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "plan",
+                    "responseToken"
+                  ],
                   "type": "object"
                 }
               }
             },
-            "description": "Shared plan metadata and one-time response token."
+            "description": "Shared plan and one-time token."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -25558,8 +25989,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Queue an approved plan share",
-        "tags": ["Relationship Intelligence"]
+        "summary": "Draft an email to share this plan",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/timeline": {
