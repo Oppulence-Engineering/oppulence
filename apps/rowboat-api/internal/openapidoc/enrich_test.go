@@ -338,6 +338,13 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertRemoveRule(t, spec)
+}
+
+func TestRemoveRuleReturnsNoBody(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertRemoveRule(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -369,6 +376,25 @@ func assertEventObservation(t *testing.T, schemas obj) {
 	evidence := asObj(asObj(schemas["MissionControlEvidenceReference"])["properties"])
 	if asObj(evidence["observationId"])["example"] != observationID {
 		t.Fatalf("mission control observation id changed: %#v", evidence["observationId"])
+	}
+}
+
+func assertRemoveRule(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/revenue-workspaces/current/communication-privacy-rules/{ruleId}"])["delete"])
+	if op["summary"] != "Remove" || op["operationId"] != "deleteCommunicationPrivacyRule" {
+		t.Fatalf("remove rule operation: %#v", op)
+	}
+	if op["requestBody"] != nil {
+		t.Fatalf("remove sends no body: %#v", op["requestBody"])
+	}
+	responses := asObj(op["responses"])
+	if responses["204"] == nil || responses["200"] != nil {
+		t.Fatalf("remove responses: %#v", responses)
+	}
+	params, _ := op["parameters"].([]any)
+	if len(params) != 1 || asObj(asObj(params[0])["schema"])["example"] != "3b8dfa9b-a7b2-46ea-982c-622a914c00e5" {
+		t.Fatalf("remove rule id: %#v", op["parameters"])
 	}
 }
 

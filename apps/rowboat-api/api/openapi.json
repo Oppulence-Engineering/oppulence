@@ -27331,6 +27331,48 @@
         "tags": ["Relationship Intelligence"]
       }
     },
+    "/v1/revenue-workspaces/current/communication-privacy-rules/{ruleId}": {
+      "delete": {
+        "description": "Remove deletes one protected or blocked address and returns no response body.",
+        "operationId": "deleteCommunicationPrivacyRule",
+        "parameters": [
+          {
+            "description": "Privacy rule id.",
+            "in": "path",
+            "name": "ruleId",
+            "required": true,
+            "schema": {
+              "example": "3b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Privacy rule removed."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Remove",
+        "tags": [
+          "Relationship Intelligence"
+        ]
+      }
+    },
     "/v1/revenue-workspaces/current/communications/{interactionId}/body": {
       "get": {
         "description": "Returns the plain-text body for one interaction when policy and grants allow it.",
