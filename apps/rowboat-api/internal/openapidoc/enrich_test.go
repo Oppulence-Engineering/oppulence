@@ -338,6 +338,67 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertMailAndMeetings(t, paths, schemas)
+}
+
+func TestMailAndMeetingsSamplesTheSentFollowUp(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertMailAndMeetings(t, asObj(spec["paths"]), asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertMailAndMeetings(t *testing.T, paths obj, schemas obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/relationships/{relationshipId}/communication-timeline"])["get"])
+	if op["summary"] != "Mail and meetings" {
+		t.Fatalf("summary: %#v", op["summary"])
+	}
+	const wantDescription = "Mail and meetings loads when a company opens. The request asks for the first 50 records and sends no older-page time. The answer is the newest record, the sent message Follow up, and shows this mailbox can see it."
+	if op["description"] != wantDescription {
+		t.Fatalf("description: %#v", op["description"])
+	}
+	var limitExample any
+	var beforeExample any
+	for _, param := range op["parameters"].([]any) {
+		item := asObj(param)
+		switch item["name"] {
+		case "limit":
+			limitExample = asObj(item["schema"])["example"]
+		case "before":
+			beforeExample = asObj(item["schema"])["example"]
+		case "relationshipId":
+			if asObj(item["schema"])["example"] != mailMeetingsRelationshipID {
+				t.Fatalf("company id: %#v", item)
+			}
+		}
+	}
+	limitRaw, err := json.Marshal(limitExample)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(limitRaw) != "50" || beforeExample != nil {
+		t.Fatalf("limit=%s before=%v", limitRaw, beforeExample)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(mailMeetingsPage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("page example:\n%s\nwant:\n%s", got, want)
+	}
+	reason := asObj(asObj(asObj(schemas["CommunicationAccess"])["properties"])["reason"])
+	if reason["example"] != "mailbox_owner" || reason["enum"] != nil {
+		t.Fatalf("access reason: %#v", reason)
+	}
+	direction := asObj(asObj(asObj(schemas["CommunicationTimelineItem"])["properties"])["direction"])
+	if direction["example"] != "outbound" {
+		t.Fatalf("direction: %#v", direction)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

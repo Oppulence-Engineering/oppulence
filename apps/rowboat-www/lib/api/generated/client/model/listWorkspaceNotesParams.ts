@@ -6,19 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type GetRelationshipCommunicationTimelineParams = {
+export type ListWorkspaceNotesParams = {
   /**
-   * How many records to return. Opening a company asks for 50.
+   * Maximum notes to return (default 50, max 100).
    * @minimum 1
    * @maximum 100
    */
   limit?: number;
   /**
-   * Return records before this time. The first page does not send it.
+   * Number of collapsed notes to skip.
+   * @minimum 0
    */
-  before?: string;
-  /**
-   * With before, also return records at that time whose id sorts earlier. The first page does not send it.
-   */
-  beforeId?: string;
+  offset?: number;
 };

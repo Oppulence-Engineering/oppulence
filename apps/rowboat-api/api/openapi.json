@@ -3804,55 +3804,52 @@
         "description": "One cross-account register row with its reader-facing state and account."
       },
       "CommunicationAccess": {
-        "description": "Authorized communication fields for one actor.",
-        "properties": {
-          "attachments": {
-            "description": "Attachment visibility.",
-            "example": false,
-            "type": "boolean"
+          "description": "Authorized communication fields for one actor.",
+          "properties": {
+            "attachments": {
+              "description": "Attachment visibility.",
+              "example": true,
+              "type": "boolean"
+            },
+            "body": {
+              "description": "Body visibility.",
+              "example": true,
+              "type": "boolean"
+            },
+            "metadata": {
+              "description": "Metadata visibility.",
+              "example": true,
+              "type": "boolean"
+            },
+            "policyVersion": {
+              "description": "Policy version.",
+              "example": 1,
+              "type": "integer"
+            },
+            "protected": {
+              "description": "Protected recipient match.",
+              "example": false,
+              "type": "boolean"
+            },
+            "reason": {
+              "description": "Decision reason.",
+              "example": "mailbox_owner",
+              "type": "string"
+            },
+            "subject": {
+              "description": "Subject visibility.",
+              "example": true,
+              "type": "boolean"
+            }
           },
-          "body": {
-            "description": "Body visibility.",
-            "example": false,
-            "type": "boolean"
-          },
-          "metadata": {
-            "description": "Metadata visibility.",
-            "example": true,
-            "type": "boolean"
-          },
-          "policyVersion": {
-            "description": "Policy version.",
-            "example": 1,
-            "type": "integer"
-          },
-          "protected": {
-            "description": "Protected recipient match.",
-            "example": false,
-            "type": "boolean"
-          },
-          "reason": {
-            "description": "Reason code for the ledger entry.",
-            "enum": [
-              "llm_call",
-              "llm_call_reserve",
-              "llm_settle",
-              "voice_tts",
-              "exa_search",
-              "grant",
-              "refund"
-            ],
-            "example": "llm_settle",
-            "type": "string"
-          },
-          "subject": {
-            "description": "Subject visibility.",
-            "example": true,
-            "type": "boolean"
-          }
-        },
-        "required": ["metadata", "subject", "body", "attachments", "reason"],
-        "type": "object"
+          "required": [
+            "metadata",
+            "subject",
+            "body",
+            "attachments",
+            "reason"
+          ],
+          "type": "object"
       },
       "CommunicationAttachment": {
         "properties": {
@@ -4365,112 +4362,125 @@
         "type": "object"
       },
       "CommunicationTimelineItem": {
-        "description": "One redacted communication metadata row.",
-        "properties": {
-          "access": {
-            "$ref": "#/components/schemas/CommunicationAccess"
+          "description": "One redacted communication metadata row.",
+          "properties": {
+            "access": {
+              "$ref": "#/components/schemas/CommunicationAccess"
+            },
+            "attachmentCount": {
+              "description": "Attachment count.",
+              "example": 1,
+              "type": "integer"
+            },
+            "bodyLocked": {
+              "description": "Whether the body remains locked.",
+              "example": false,
+              "type": "boolean"
+            },
+            "direction": {
+              "description": "Direction.",
+              "example": "outbound",
+              "type": "string"
+            },
+            "id": {
+              "description": "Interaction id.",
+              "example": "e18dfa9b-a7b2-46ea-982c-622a914c00e5",
+              "format": "uuid",
+              "type": "string"
+            },
+            "interactionType": {
+              "description": "Interaction kind.",
+              "enum": [
+                "email",
+                "meeting"
+              ],
+              "example": "email",
+              "type": "string"
+            },
+            "occurredAt": {
+              "description": "When it occurred.",
+              "example": "2026-09-17T12:00:00Z",
+              "format": "date-time",
+              "type": "string"
+            },
+            "ownerId": {
+              "description": "Mailbox owner.",
+              "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+              "format": "uuid",
+              "type": "string"
+            },
+            "source": {
+              "description": "Provider source.",
+              "enum": [
+                "gmail",
+                "calendar"
+              ],
+              "example": "gmail",
+              "type": "string"
+            },
+            "subject": {
+              "description": "Redacted subject.",
+              "example": "Follow up",
+              "type": "string"
+            },
+            "visibility": {
+              "description": "Stored visibility.",
+              "enum": [
+                "private",
+                "metadata",
+                "full"
+              ],
+              "example": "metadata",
+              "type": "string"
+            }
           },
-          "attachmentCount": {
-            "description": "Attachment count.",
-            "example": 1,
-            "type": "integer"
-          },
-          "bodyLocked": {
-            "description": "Whether the body remains locked.",
-            "example": true,
-            "type": "boolean"
-          },
-          "direction": {
-            "description": "Direction.",
-            "example": "inbound",
-            "type": "string"
-          },
-          "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
-            "format": "uuid",
-            "type": "string"
-          },
-          "interactionType": {
-            "description": "Interaction kind.",
-            "enum": ["email", "meeting"],
-            "example": "email",
-            "type": "string"
-          },
-          "occurredAt": {
-            "description": "When it occurred.",
-            "example": "2026-09-06T12:00:00Z",
-            "format": "date-time",
-            "type": "string"
-          },
-          "ownerId": {
-            "description": "Mailbox owner.",
-            "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-            "format": "uuid",
-            "type": "string"
-          },
-          "source": {
-            "description": "Provider source.",
-            "enum": ["gmail", "calendar"],
-            "example": "gmail",
-            "type": "string"
-          },
-          "subject": {
-            "description": "Redacted subject.",
-            "example": "Follow up",
-            "type": "string"
-          },
-          "visibility": {
-            "description": "Stored visibility.",
-            "enum": ["private", "metadata", "full"],
-            "example": "metadata",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "source",
-          "interactionType",
-          "occurredAt",
-          "visibility",
-          "ownerId",
-          "bodyLocked",
-          "access"
-        ],
-        "type": "object"
+          "required": [
+            "id",
+            "source",
+            "interactionType",
+            "occurredAt",
+            "visibility",
+            "ownerId",
+            "bodyLocked",
+            "access"
+          ],
+          "type": "object"
       },
       "CommunicationTimelinePage": {
-        "description": "Paginated communication timeline.",
-        "properties": {
-          "hasMore": {
-            "description": "More pages exist.",
-            "example": false,
-            "type": "boolean"
-          },
-          "items": {
-            "description": "Timeline items.",
-            "items": {
-              "$ref": "#/components/schemas/CommunicationTimelineItem"
+          "description": "Paginated communication timeline.",
+          "properties": {
+            "hasMore": {
+              "description": "More pages exist.",
+              "example": false,
+              "type": "boolean"
             },
-            "type": "array"
+            "items": {
+              "description": "Timeline items.",
+              "items": {
+                "$ref": "#/components/schemas/CommunicationTimelineItem"
+              },
+              "type": "array"
+            },
+            "nextBefore": {
+              "description": "Time of the last record on this page. Send it to load older records that share that time.",
+              "example": "2026-09-17T12:00:00Z",
+              "format": "date-time",
+              "nullable": true,
+              "type": "string"
+            },
+            "nextBeforeId": {
+              "description": "Id of the last record on this page. Send it with the time so records that share that time stay on the next page.",
+              "example": "e18dfa9b-a7b2-46ea-982c-622a914c00e5",
+              "format": "uuid",
+              "nullable": true,
+              "type": "string"
+            }
           },
-          "nextBefore": {
-            "description": "Cursor for the next page.",
-            "example": "2026-09-06T12:00:00Z",
-            "format": "date-time",
-            "nullable": true,
-            "type": "string"
-          },
-          "nextBeforeId": {
-            "description": "Id of the last item on this page. Send it with nextBefore so rows that share that time stay on the next page.",
-            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-            "format": "uuid",
-            "nullable": true,
-            "type": "string"
-          }
-        },
-        "required": ["items", "hasMore"],
-        "type": "object"
+          "required": [
+            "items",
+            "hasMore"
+          ],
+          "type": "object"
       },
       "ConfigResponse": {
         "description": "Public bootstrap values consumed by the desktop before sign-in.",
@@ -24464,79 +24474,111 @@
       }
     },
     "/v1/relationships/{relationshipId}/communication-timeline": {
-      "get": {
-        "description": "Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship. Rows that share a time stay in id order, so the next page does not skip them.",
-        "operationId": "getRelationshipCommunicationTimeline",
-        "parameters": [
-          {
-            "description": "Relationship id.",
-            "in": "path",
-            "name": "relationshipId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Maximum items (1-100).",
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "description": "Return items before this RFC3339 timestamp.",
-            "in": "query",
-            "name": "before",
-            "required": false,
-            "schema": {
-              "format": "date-time",
-              "type": "string"
-            }
-          },
-          {
-            "description": "With before, also return items at that time whose id sorts earlier.",
-            "in": "query",
-            "name": "beforeId",
-            "required": false,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CommunicationTimelinePage"
-                }
+        "get": {
+          "description": "Mail and meetings loads when a company opens. The request asks for the first 50 records and sends no older-page time. The answer is the newest record, the sent message Follow up, and shows this mailbox can see it.",
+          "operationId": "getRelationshipCommunicationTimeline",
+          "parameters": [
+            {
+              "description": "Company id.",
+              "in": "path",
+              "name": "relationshipId",
+              "required": true,
+              "schema": {
+                "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                "format": "uuid",
+                "type": "string"
               }
             },
-            "description": "Communication timeline."
+            {
+              "description": "How many records to return. Opening a company asks for 50.",
+              "in": "query",
+              "name": "limit",
+              "required": false,
+              "schema": {
+                "example": 50,
+                "maximum": 100,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            {
+              "description": "Return records before this time. The first page does not send it.",
+              "in": "query",
+              "name": "before",
+              "required": false,
+              "schema": {
+                "format": "date-time",
+                "type": "string"
+              }
+            },
+            {
+              "description": "With before, also return records at that time whose id sorts earlier. The first page does not send it.",
+              "in": "query",
+              "name": "beforeId",
+              "required": false,
+              "schema": {
+                "format": "uuid",
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "example": {
+                    "hasMore": false,
+                    "items": [
+                      {
+                        "access": {
+                          "attachments": true,
+                          "body": true,
+                          "metadata": true,
+                          "policyVersion": 1,
+                          "protected": false,
+                          "reason": "mailbox_owner",
+                          "subject": true
+                        },
+                        "attachmentCount": 1,
+                        "bodyLocked": false,
+                        "direction": "outbound",
+                        "id": "e18dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "interactionType": "email",
+                        "occurredAt": "2026-09-17T12:00:00Z",
+                        "ownerId": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "source": "gmail",
+                        "subject": "Follow up",
+                        "visibility": "metadata"
+                      }
+                    ]
+                  },
+                  "schema": {
+                    "$ref": "#/components/schemas/CommunicationTimelinePage"
+                  }
+                }
+              },
+              "description": "The mail and meetings this company loads."
+            },
+            "400": {
+              "$ref": "#/components/responses/400"
+            },
+            "401": {
+              "$ref": "#/components/responses/401"
+            },
+            "404": {
+              "$ref": "#/components/responses/404"
+            }
           },
-          "400": {
-            "$ref": "#/components/responses/400"
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "404": {
-            "$ref": "#/components/responses/404"
-          }
-        },
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "summary": "Get communication timeline",
-        "tags": ["Relationship Intelligence"]
-      }
+          "security": [
+            {
+              "BearerAuth": []
+            }
+          ],
+          "summary": "Mail and meetings",
+          "tags": [
+            "Relationship Intelligence"
+          ]
+        }
     },
     "/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve": {
       "post": {

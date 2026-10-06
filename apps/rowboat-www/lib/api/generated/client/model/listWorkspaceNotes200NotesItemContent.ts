@@ -7,17 +7,6 @@
  */
 
 /**
- * Reason code for the ledger entry.
+ * Editor document, when one was saved.
  */
-export type CommunicationAccessReason =
-  (typeof CommunicationAccessReason)[keyof typeof CommunicationAccessReason];
-
-export const CommunicationAccessReason = {
-  llm_call: "llm_call",
-  llm_call_reserve: "llm_call_reserve",
-  llm_settle: "llm_settle",
-  voice_tts: "voice_tts",
-  exa_search: "exa_search",
-  grant: "grant",
-  refund: "refund",
-} as const;
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };

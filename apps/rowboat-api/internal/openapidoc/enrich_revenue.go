@@ -604,30 +604,30 @@ func addRevenueSchemas(schemas obj) {
 	schemas["CommunicationAccess"] = objectSchema("Authorized communication fields for one actor.", obj{
 		"metadata":      boolSchema("Metadata visibility.", true),
 		"subject":       boolSchema("Subject visibility.", true),
-		"body":          boolSchema("Body visibility.", false),
-		"attachments":   boolSchema("Attachment visibility.", false),
+		"body":          boolSchema("Body visibility.", true),
+		"attachments":   boolSchema("Attachment visibility.", true),
 		"protected":     boolSchema("Protected recipient match.", false),
-		"reason":        stringSchema("Decision reason.", "owner_default"),
+		"reason":        stringSchema("Decision reason.", "mailbox_owner"),
 		"policyVersion": intSchema("Policy version.", 1),
 	}, "metadata", "subject", "body", "attachments", "reason")
 	schemas["CommunicationTimelineItem"] = objectSchema("One redacted communication metadata row.", obj{
-		"id":              uuidSchema("Interaction id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"id":              uuidSchema("Interaction id.", mailMeetingsInteractionID),
 		"source":          stringEnum("Provider source.", "gmail", "gmail", "calendar"),
 		"interactionType": stringEnum("Interaction kind.", "email", "email", "meeting"),
-		"direction":       stringSchema("Direction.", "inbound"),
+		"direction":       stringSchema("Direction.", "outbound"),
 		"subject":         stringSchema("Redacted subject.", "Follow up"),
-		"occurredAt":      stringSchema("When it occurred.", "2026-09-06T12:00:00Z", obj{"format": "date-time"}),
+		"occurredAt":      stringSchema("When it occurred.", mailMeetingsOccurredAt, obj{"format": "date-time"}),
 		"visibility":      stringEnum("Stored visibility.", "metadata", "private", "metadata", "full"),
-		"ownerId":         uuidSchema("Mailbox owner.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-		"bodyLocked":      boolSchema("Whether the body remains locked.", true),
+		"ownerId":         uuidSchema("Mailbox owner.", mailMeetingsOwnerID),
+		"bodyLocked":      boolSchema("Whether the body remains locked.", false),
 		"attachmentCount": intSchema("Attachment count.", 1),
 		"access":          ref("CommunicationAccess"),
 	}, "id", "source", "interactionType", "occurredAt", "visibility", "ownerId", "bodyLocked", "access")
 	schemas["CommunicationTimelinePage"] = objectSchema("Paginated communication timeline.", obj{
 		"items":        arraySchema("Timeline items.", ref("CommunicationTimelineItem")),
 		"hasMore":      boolSchema("More pages exist.", false),
-		"nextBefore":   stringSchema("Cursor for the next page.", "2026-09-06T12:00:00Z", obj{"format": "date-time"}, nullable()),
-		"nextBeforeId": stringSchema("Id of the last item on this page. Send it with nextBefore so rows that share that time stay on the next page.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5", obj{"format": "uuid"}, nullable()),
+		"nextBefore":   stringSchema("Time of the last record on this page. Send it to load older records that share that time.", mailMeetingsOccurredAt, obj{"format": "date-time"}, nullable()),
+		"nextBeforeId": stringSchema("Id of the last record on this page. Send it with the time so records that share that time stay on the next page.", mailMeetingsInteractionID, obj{"format": "uuid"}, nullable()),
 	}, "items", "hasMore")
 }
 
@@ -646,6 +646,19 @@ func restoreRevenueSchemaOverrides(schemas obj) {
 		"accepted",
 		"proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active",
 	)
+	if access := asObj(schemas["CommunicationAccess"]); access != nil {
+		accessProps := asObj(access["properties"])
+		accessProps["reason"] = stringSchema("Decision reason.", "mailbox_owner")
+		accessProps["body"] = boolSchema("Body visibility.", true)
+		accessProps["attachments"] = boolSchema("Attachment visibility.", true)
+	}
+	if item := asObj(schemas["CommunicationTimelineItem"]); item != nil {
+		itemProps := asObj(item["properties"])
+		itemProps["id"] = uuidSchema("Interaction id.", mailMeetingsInteractionID)
+		itemProps["direction"] = stringSchema("Direction.", "outbound")
+		itemProps["occurredAt"] = stringSchema("When it occurred.", mailMeetingsOccurredAt, obj{"format": "date-time"})
+		itemProps["bodyLocked"] = boolSchema("Whether the body remains locked.", false)
+	}
 }
 
 func addRevenuePaths(paths obj) {
@@ -847,8 +860,13 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/relationships/{relationshipId}/communication-timeline"] = obj{"get": operation("Relationship Intelligence", "Get communication timeline", "Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship. Rows that share a time stay in id order, so the next page does not skip them.", "getRelationshipCommunicationTimeline", bearer(), append(relationshipParam, obj{"name": "limit", "in": "query", "required": false, "description": "Maximum items (1-100).", "schema": obj{"type": "integer"}}, obj{"name": "before", "in": "query", "required": false, "description": "Return items before this RFC3339 timestamp.", "schema": obj{"type": "string", "format": "date-time"}}, obj{"name": "beforeId", "in": "query", "required": false, "description": "With before, also return items at that time whose id sorts earlier.", "schema": obj{"type": "string", "format": "uuid"}}), nil, obj{
-		"200": jsonResponse("Communication timeline.", ref("CommunicationTimelinePage"), nil),
+	paths["/v1/relationships/{relationshipId}/communication-timeline"] = obj{"get": operation("Relationship Intelligence", "Mail and meetings", "Mail and meetings loads when a company opens. The request asks for the first 50 records and sends no older-page time. The answer is the newest record, the sent message Follow up, and shows this mailbox can see it.", "getRelationshipCommunicationTimeline", bearer(), []any{
+		obj{"name": "relationshipId", "in": "path", "required": true, "description": "Company id.", "schema": obj{"type": "string", "format": "uuid", "example": mailMeetingsRelationshipID}},
+		obj{"name": "limit", "in": "query", "required": false, "description": "How many records to return. Opening a company asks for 50.", "schema": obj{"type": "integer", "minimum": 1, "maximum": 100, "example": 50}},
+		obj{"name": "before", "in": "query", "required": false, "description": "Return records before this time. The first page does not send it.", "schema": obj{"type": "string", "format": "date-time"}},
+		obj{"name": "beforeId", "in": "query", "required": false, "description": "With before, also return records at that time whose id sorts earlier. The first page does not send it.", "schema": obj{"type": "string", "format": "uuid"}},
+	}, nil, obj{
+		"200": jsonResponse("The mail and meetings this company loads.", ref("CommunicationTimelinePage"), mailMeetingsPage()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
@@ -1311,4 +1329,42 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
+}
+
+const (
+	mailMeetingsRelationshipID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	mailMeetingsInteractionID  = "e18dfa9b-a7b2-46ea-982c-622a914c00e5"
+	mailMeetingsOwnerID        = "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	mailMeetingsOccurredAt     = "2026-09-17T12:00:00Z"
+)
+
+func mailMeetingsPage() obj {
+	return obj{
+		"hasMore": false,
+		"items":   []any{mailMeetingsItem()},
+	}
+}
+
+func mailMeetingsItem() obj {
+	return obj{
+		"id":              mailMeetingsInteractionID,
+		"source":          "gmail",
+		"interactionType": "email",
+		"direction":       "outbound",
+		"subject":         "Follow up",
+		"occurredAt":      mailMeetingsOccurredAt,
+		"visibility":      "metadata",
+		"ownerId":         mailMeetingsOwnerID,
+		"bodyLocked":      false,
+		"attachmentCount": 1,
+		"access": obj{
+			"metadata":      true,
+			"subject":       true,
+			"body":          true,
+			"attachments":   true,
+			"protected":     false,
+			"reason":        "mailbox_owner",
+			"policyVersion": 1,
+		},
+	}
 }
