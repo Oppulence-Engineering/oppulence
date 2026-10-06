@@ -315,6 +315,34 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the account Retry sync queues", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const op = presented.paths["/v1/relationship-sources/{source}/resync"].post;
+    expect(op.summary).toBe("Resync a source");
+    expect(op.description).toBe(
+      "Retry sync, Refresh now, and Resync post the connected account and queue a fresh read. The stored answer marks that account backfilling, with the read queued and completeness rebuilding.",
+    );
+    expect(op.requestBody.content["application/json"].example).toEqual({
+      sourceAccountId: "owner@example.com",
+    });
+    const queued = op.responses["202"].content["application/json"].example;
+    expect(queued).toMatchObject({
+      connectionId: "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      source: "google",
+      sourceAccountId: "owner@example.com",
+      status: "backfilling",
+      backfillPhase: "queued",
+      completeness: "rebuilding",
+      backfillCompleted: 0,
+      backfillTotal: 0,
+      retryCount: 0,
+      missingScopes: [],
+    });
+    expect(JSON.stringify(queued)).not.toContain("me@company.com");
+    expect(JSON.stringify(queued)).not.toContain('"status":"active"');
+    expect(JSON.stringify(queued)).not.toContain('"backfillPhase":"live"');
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
