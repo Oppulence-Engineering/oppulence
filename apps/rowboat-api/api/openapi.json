@@ -10324,7 +10324,7 @@
           },
           "stateReason": {
             "description": "Triage reason.",
-            "example": "Reviewed with account owner.",
+            "example": "Reviewed from the portfolio attention queue.",
             "type": "string"
           },
           "status": {
@@ -22417,7 +22417,8 @@
             "application/json": {
               "example": {
                 "decision": "acknowledge",
-                "expectedVersion": 1
+                "expectedVersion": 1,
+                "reason": "Reviewed from the portfolio attention queue."
               },
               "schema": {
                 "description": "Attention decision request.",
@@ -22435,7 +22436,7 @@
                   },
                   "reason": {
                     "description": "Decision reason.",
-                    "example": "Reviewed with the account owner.",
+                    "example": "Reviewed from the portfolio attention queue.",
                     "type": "string"
                   },
                   "snoozedUntil": {

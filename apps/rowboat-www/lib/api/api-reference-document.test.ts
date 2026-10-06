@@ -315,6 +315,24 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the reason portfolio attention Acknowledge sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const reason = "Reviewed from the portfolio attention queue.";
+    const body =
+      presented.paths["/v1/relationship-attention/{attentionId}/decisions"].post.requestBody
+        .content["application/json"];
+    expect(body.example).toEqual({
+      decision: "acknowledge",
+      reason,
+      expectedVersion: 1,
+    });
+    expect(body.schema.properties.reason.example).toBe(reason);
+    expect(
+      presented.components.schemas.RelationshipAttentionItem.properties.stateReason.example,
+    ).toBe(reason);
+    expect(JSON.stringify(body)).not.toContain("Reviewed with the account owner.");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

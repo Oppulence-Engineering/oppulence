@@ -1,5 +1,8 @@
 package openapidoc
 
+// Portfolio attention Acknowledge sends this reason, and the server stores it as stateReason.
+const documentedAttentionAcknowledgeReason = "Reviewed from the portfolio attention queue."
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
@@ -236,7 +239,7 @@ func addRevenueSchemas(schemas obj) {
 		"triggeringObjectRef": stringSchema("Triggering object.", "commitment:123"), "evidenceRefs": arraySchema("Evidence refs.", stringSchema("Evidence ref.", "relationship-observation:1")),
 		"urgencyBand": stringEnum("Urgency.", "high", "low", "normal", "high", "critical"), "rankScore": intSchema("Internal deterministic rank.", 82), "rankFactors": freeFormSchema("Readable factor contributions."),
 		"sourceRequirements": arraySchema("Fresh sources required.", stringSchema("Source.", "google")), "recommendationId": uuidSchema("Recommendation id.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "recommendationRevision": intSchema("Recommendation revision.", 2),
-		"ownerId": uuidSchema("Owner id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"), "status": stringEnum("Triage state.", "open", "open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved"), "stateReason": stringSchema("Triage reason.", "Reviewed with account owner."),
+		"ownerId": uuidSchema("Owner id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"), "status": stringEnum("Triage state.", "open", "open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved"), "stateReason": stringSchema("Triage reason.", documentedAttentionAcknowledgeReason),
 		"snoozedUntil": stringSchema("Snooze time.", "2026-08-07T14:00:00Z", obj{"format": "date-time"}, nullable()), "expiresAt": stringSchema("Expiry time.", "2026-08-07T14:00:00Z", obj{"format": "date-time"}, nullable()),
 		"detectorVersion": intSchema("Detector version.", 1), "projectorVersion": intSchema("Projector version.", 1), "relationshipStateVersion": intSchema("Relationship version evaluated.", 4),
 		"acknowledgedBy": uuidSchema("Acknowledging actor.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"), "acknowledgedAt": stringSchema("Acknowledged time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}, nullable()),
@@ -1127,8 +1130,8 @@ func addRevenuePaths(paths obj) {
 	}, "contractVersion", "asOf", "items"), nil), "401": responseRef("401")})}
 	attentionParam := []any{obj{"name": "attentionId", "in": "path", "required": true, "description": "Attention item id.", "schema": obj{"type": "string", "format": "uuid"}}}
 	paths["/v1/relationship-attention/{attentionId}/decisions"] = obj{"post": operation("Relationship Intelligence", "Decide attention item", "Acknowledges, snoozes, or dismisses at the expected optimistic version. Materially new evidence reopens the item.", "decideRelationshipAttention", bearer(), attentionParam, jsonRequest("Attention decision.", objectSchema("Attention decision request.", obj{
-		"decision": stringEnum("Decision.", "acknowledge", "acknowledge", "snooze", "dismiss"), "reason": stringSchema("Decision reason.", "Reviewed with the account owner."), "expectedVersion": intSchema("Expected version.", 1), "snoozedUntil": stringSchema("Bounded future wake time.", "2026-08-07T14:00:00Z", obj{"format": "date-time"}, nullable()),
-	}, "decision", "expectedVersion"), obj{"decision": "acknowledge", "expectedVersion": 1}), obj{"200": jsonResponse("Updated attention item.", ref("RelationshipAttentionItem"), nil), "400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409")})}
+		"decision": stringEnum("Decision.", "acknowledge", "acknowledge", "snooze", "dismiss"), "reason": stringSchema("Decision reason.", documentedAttentionAcknowledgeReason), "expectedVersion": intSchema("Expected version.", 1), "snoozedUntil": stringSchema("Bounded future wake time.", "2026-08-07T14:00:00Z", obj{"format": "date-time"}, nullable()),
+	}, "decision", "expectedVersion"), obj{"decision": "acknowledge", "reason": documentedAttentionAcknowledgeReason, "expectedVersion": 1}), obj{"200": jsonResponse("Updated attention item.", ref("RelationshipAttentionItem"), nil), "400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409")})}
 	recommendationParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Recommendation/action id.", "schema": obj{"type": "string", "format": "uuid"}}}
 	paths["/v1/relationship-recommendations/{actionId}/approve"] = obj{"post": operation("Relationship Intelligence", "Approve a recommendation", "Relationship-intelligence alias for the governed action approval transition.", "approveRelationshipRecommendation", bearer(), recommendationParam, jsonRequestOptional("Approval options.", objectSchema("Approve request.", obj{"acceptRisk": boolSchema("Explicitly accept a review-required decision.", false)}), obj{"acceptRisk": false}), obj{
 		"200": jsonResponse("Approved recommendation.", ref("RevenueAction"), nil),

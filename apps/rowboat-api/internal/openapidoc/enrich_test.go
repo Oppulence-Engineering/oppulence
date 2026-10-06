@@ -338,6 +338,31 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertAttentionAcknowledgeReason(t, spec)
+}
+
+func TestPortfolioAttentionAcknowledgeSendsQueueReason(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertAttentionAcknowledgeReason(t, spec)
+}
+
+func assertAttentionAcknowledgeReason(t *testing.T, spec obj) {
+	t.Helper()
+	content := asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/relationship-attention/{attentionId}/decisions"])["post"])["requestBody"])["content"])["application/json"])
+	example := asObj(content["example"])
+	reason := asObj(asObj(asObj(content["schema"])["properties"])["reason"])
+	versionOK := example["expectedVersion"] == 1 || example["expectedVersion"] == float64(1)
+	if example["decision"] != "acknowledge" || example["reason"] != documentedAttentionAcknowledgeReason || !versionOK {
+		t.Fatalf("attention decision example: %#v", example)
+	}
+	if reason["example"] != documentedAttentionAcknowledgeReason {
+		t.Fatalf("attention decision reason: %#v", reason)
+	}
+	stateReason := asObj(asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RelationshipAttentionItem"])["properties"])["stateReason"])
+	if stateReason["example"] != documentedAttentionAcknowledgeReason {
+		t.Fatalf("stored attention stateReason: %#v", stateReason)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
