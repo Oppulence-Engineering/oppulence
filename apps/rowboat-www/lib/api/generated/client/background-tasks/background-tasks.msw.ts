@@ -20,6 +20,7 @@ import type {
   BackgroundTaskRunsResponse,
   BackgroundTaskTemplate,
   BackgroundTaskTemplatesResponse,
+  GetBackgroundTaskScheduleState200,
 } from "../model";
 
 import {
@@ -32,6 +33,7 @@ import {
   getGetBackgroundTaskResponseMock,
   getGetBackgroundTaskRunResponseMock,
   getGetBackgroundTaskRunStatusResponseMock,
+  getGetBackgroundTaskScheduleStateResponseMock,
   getGetBackgroundTaskTemplateResponseMock,
   getInstantiateBackgroundTaskTemplateResponseMock,
   getListBackgroundTaskRunEventsResponseMock,
@@ -60,6 +62,7 @@ export {
   getPatchBackgroundTaskResponseMock,
   getGetBackgroundTaskArtifactResponseMock,
   getPutBackgroundTaskArtifactResponseMock,
+  getGetBackgroundTaskScheduleStateResponseMock,
   getListBackgroundTaskRunsResponseMock,
   getCreateBackgroundTaskRunResponseMock,
   getGetBackgroundTaskRunResponseMock,
@@ -349,6 +352,30 @@ export const getPutBackgroundTaskArtifactMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getPutBackgroundTaskArtifactResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getGetBackgroundTaskScheduleStateMockHandler = (
+  overrideResponse?:
+    | GetBackgroundTaskScheduleState200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<GetBackgroundTaskScheduleState200> | GetBackgroundTaskScheduleState200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/background-tasks/:slug/schedule-state",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetBackgroundTaskScheduleStateResponseMock(),
         { status: 200 },
       );
     },
@@ -656,6 +683,7 @@ export const getBackgroundTasksMock = () => [
   getPatchBackgroundTaskMockHandler(),
   getGetBackgroundTaskArtifactMockHandler(),
   getPutBackgroundTaskArtifactMockHandler(),
+  getGetBackgroundTaskScheduleStateMockHandler(),
   getListBackgroundTaskRunsMockHandler(),
   getCreateBackgroundTaskRunMockHandler(),
   getGetBackgroundTaskRunMockHandler(),

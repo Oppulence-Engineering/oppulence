@@ -19,6 +19,7 @@ import type {
   BackgroundTaskRunsResponse,
   BackgroundTaskTemplate,
   BackgroundTaskTemplatesResponse,
+  GetBackgroundTaskScheduleState200,
 } from "../model";
 
 export const getListBackgroundTaskRunsForAccountResponseMock = (
@@ -605,6 +606,75 @@ export const getPutBackgroundTaskArtifactResponseMock = (
   revision: faker.number.int(),
   slug: faker.string.alpha({ length: { min: 10, max: 20 } }),
   updatedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+  ...overrideResponse,
+});
+
+export const getGetBackgroundTaskScheduleStateResponseMock = (
+  overrideResponse: Partial<Extract<GetBackgroundTaskScheduleState200, object>> = {},
+): GetBackgroundTaskScheduleState200 => ({
+  health: faker.helpers.arrayElement([
+    "paused",
+    "current",
+    "failed",
+    "unknown",
+    "syncing",
+  ] as const),
+  lastEvaluatedAt: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+    undefined,
+  ]),
+  lastTriggeredAt: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+    undefined,
+  ]),
+  mechanism: faker.helpers.arrayElement([
+    "none",
+    "desktop_loop",
+    "rowboat_loop",
+    "temporal_schedule",
+  ] as const),
+  nextDueAt: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+    undefined,
+  ]),
+  scheduleSyncState: faker.helpers.arrayElement([
+    faker.helpers.arrayElement(["current", "syncing", "failed", "paused"] as const),
+    undefined,
+  ]),
+  sources: faker.helpers.arrayElement([
+    {
+      [faker.string.alphanumeric(5)]: {
+        health: faker.helpers.arrayElement([
+          "paused",
+          "current",
+          "failed",
+          "unknown",
+          "syncing",
+        ] as const),
+        lastEvaluatedAt: faker.helpers.arrayElement([
+          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+          undefined,
+        ]),
+        lastTriggeredAt: faker.helpers.arrayElement([
+          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+          undefined,
+        ]),
+        mechanism: faker.helpers.arrayElement([
+          "none",
+          "desktop_loop",
+          "rowboat_loop",
+          "temporal_schedule",
+        ] as const),
+        nextDueAt: faker.helpers.arrayElement([
+          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+          undefined,
+        ]),
+      },
+    },
+    undefined,
+  ]),
+  target: faker.helpers.arrayElement(["api", "desktop"] as const),
+  triggerSources: faker.helpers.arrayElements(["cron", "window", "event"] as const),
   ...overrideResponse,
 });
 

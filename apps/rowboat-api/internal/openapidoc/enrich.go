@@ -1420,6 +1420,14 @@ func addBackgroundTaskPaths(paths obj) {
 			"500": responseRef("500"),
 		}),
 	}
+	paths["/v1/background-tasks/{slug}/schedule-state"] = obj{
+		"get": operation("Background Tasks", "Next run", "Next run reads the open workflow. A paused communication workflow reports health paused, mechanism none, no next time, and event as its only trigger.", "getBackgroundTaskScheduleState", bearer(), []any{pathParam("slug", "Workflow to read.", stringSchema("Workflow address.", "follow-up-when-a-promise-slips"))}, nil, obj{
+			"200": jsonResponse("Next run.", documentedNextRunSchema(), documentedNextRun()),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"500": responseRef("500"),
+		}),
+	}
 	paths["/v1/background-tasks/{slug}/runs"] = obj{
 		"get": operation("Background Tasks", "List task runs", "Lists mirrored runs for a task. Poll with status, executor, limit, and cursor filters to drive desktop queue pickup, dashboards, and API-worker Temporal status views.", "listBackgroundTaskRuns", bearer(), append(slugParam(), runListQueryParams(false)...), nil, obj{
 			"200": jsonResponse("Task runs.", ref("BackgroundTaskRunsResponse"), obj{"runs": []any{backgroundTaskRunExample()}}),
@@ -2191,6 +2199,59 @@ func revisionConflictResponse() obj {
 	ex := problemExample(409, "Conflict", "revision conflict", "conflict")
 	ex["currentRevision"] = 3
 	return problemResponse("Revision conflict. The caller wrote with a stale revision and should retry with currentRevision.", ref("RevisionConflictEnvelope"), ex)
+}
+
+func documentedNextRun() obj {
+	return obj{
+		"target":          "api",
+		"triggerSources":  []any{"event"},
+		"health":          "paused",
+		"mechanism":       "none",
+		"nextDueAt":       nil,
+		"lastEvaluatedAt": nil,
+		"lastTriggeredAt": nil,
+		"sources":         obj{"event": documentedNextRunSource()},
+	}
+}
+
+func documentedNextRunSource() obj {
+	return obj{
+		"mechanism":       "none",
+		"health":          "paused",
+		"nextDueAt":       nil,
+		"lastEvaluatedAt": nil,
+		"lastTriggeredAt": nil,
+	}
+}
+
+func documentedNextRunSchema() obj {
+	source := objectSchema("One trigger on this workflow.", obj{
+		"mechanism":       stringEnum("What owns this trigger.", "none", "none", "desktop_loop", "rowboat_loop", "temporal_schedule"),
+		"health":          stringEnum("Whether this trigger is ready.", "paused", "paused", "current", "failed", "unknown", "syncing"),
+		"nextDueAt":       stringSchema("When this trigger is due.", nil, nullable(), obj{"format": "date-time"}),
+		"lastEvaluatedAt": stringSchema("When this trigger was last checked.", nil, nullable(), obj{"format": "date-time"}),
+		"lastTriggeredAt": stringSchema("When this trigger last started a run.", nil, nullable(), obj{"format": "date-time"}),
+	}, "mechanism", "health")
+	return objectSchema("When this workflow runs next.", obj{
+		"target": stringEnum("Where this workflow runs.", "api", "api", "desktop"),
+		"triggerSources": obj{
+			"type":        "array",
+			"description": "What can start this workflow.",
+			"items":       stringEnum("Trigger source.", "event", "cron", "window", "event"),
+			"example":     []any{"event"},
+		},
+		"health":            stringEnum("Whether the next run is ready.", "paused", "paused", "current", "failed", "unknown", "syncing"),
+		"mechanism":         stringEnum("What owns the schedule.", "none", "none", "desktop_loop", "rowboat_loop", "temporal_schedule"),
+		"nextDueAt":         stringSchema("When it is due next.", nil, nullable(), obj{"format": "date-time"}),
+		"lastEvaluatedAt":   stringSchema("When the schedule was last checked.", nil, nullable(), obj{"format": "date-time"}),
+		"lastTriggeredAt":   stringSchema("When it last started.", nil, nullable(), obj{"format": "date-time"}),
+		"scheduleSyncState": stringEnum("Whether a timed cloud schedule matches the workflow.", nil, "current", "syncing", "failed", "paused"),
+		"sources": obj{
+			"type":                 "object",
+			"description":          "One entry for each trigger.",
+			"additionalProperties": source,
+		},
+	}, "target", "triggerSources", "health", "mechanism")
 }
 
 func backgroundTaskExample() obj {

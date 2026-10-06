@@ -17157,6 +17157,216 @@
         "tags": ["Background Tasks"]
       }
     },
+    "/v1/background-tasks/{slug}/schedule-state": {
+      "get": {
+        "description": "Next run reads the open workflow. A paused communication workflow reports health paused, mechanism none, no next time, and event as its only trigger.",
+        "operationId": "getBackgroundTaskScheduleState",
+        "parameters": [
+          {
+            "description": "Workflow to read.",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "description": "Workflow address.",
+              "example": "follow-up-when-a-promise-slips",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "health": "paused",
+                  "lastEvaluatedAt": null,
+                  "lastTriggeredAt": null,
+                  "mechanism": "none",
+                  "nextDueAt": null,
+                  "sources": {
+                    "event": {
+                      "health": "paused",
+                      "lastEvaluatedAt": null,
+                      "lastTriggeredAt": null,
+                      "mechanism": "none",
+                      "nextDueAt": null
+                    }
+                  },
+                  "target": "api",
+                  "triggerSources": [
+                    "event"
+                  ]
+                },
+                "schema": {
+                  "description": "When this workflow runs next.",
+                  "properties": {
+                    "health": {
+                      "description": "Whether the next run is ready.",
+                      "enum": [
+                        "paused",
+                        "current",
+                        "failed",
+                        "unknown",
+                        "syncing"
+                      ],
+                      "example": "paused",
+                      "type": "string"
+                    },
+                    "lastEvaluatedAt": {
+                      "description": "When the schedule was last checked.",
+                      "format": "date-time",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lastTriggeredAt": {
+                      "description": "When it last started.",
+                      "format": "date-time",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "mechanism": {
+                      "description": "What owns the schedule.",
+                      "enum": [
+                        "none",
+                        "desktop_loop",
+                        "rowboat_loop",
+                        "temporal_schedule"
+                      ],
+                      "example": "none",
+                      "type": "string"
+                    },
+                    "nextDueAt": {
+                      "description": "When it is due next.",
+                      "format": "date-time",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "scheduleSyncState": {
+                      "description": "Whether a timed cloud schedule matches the workflow.",
+                      "enum": [
+                        "current",
+                        "syncing",
+                        "failed",
+                        "paused"
+                      ],
+                      "type": "string"
+                    },
+                    "sources": {
+                      "additionalProperties": {
+                        "description": "One trigger on this workflow.",
+                        "properties": {
+                          "health": {
+                            "description": "Whether this trigger is ready.",
+                            "enum": [
+                              "paused",
+                              "current",
+                              "failed",
+                              "unknown",
+                              "syncing"
+                            ],
+                            "example": "paused",
+                            "type": "string"
+                          },
+                          "lastEvaluatedAt": {
+                            "description": "When this trigger was last checked.",
+                            "format": "date-time",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "lastTriggeredAt": {
+                            "description": "When this trigger last started a run.",
+                            "format": "date-time",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "mechanism": {
+                            "description": "What owns this trigger.",
+                            "enum": [
+                              "none",
+                              "desktop_loop",
+                              "rowboat_loop",
+                              "temporal_schedule"
+                            ],
+                            "example": "none",
+                            "type": "string"
+                          },
+                          "nextDueAt": {
+                            "description": "When this trigger is due.",
+                            "format": "date-time",
+                            "nullable": true,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "mechanism",
+                          "health"
+                        ],
+                        "type": "object"
+                      },
+                      "description": "One entry for each trigger.",
+                      "type": "object"
+                    },
+                    "target": {
+                      "description": "Where this workflow runs.",
+                      "enum": [
+                        "api",
+                        "desktop"
+                      ],
+                      "example": "api",
+                      "type": "string"
+                    },
+                    "triggerSources": {
+                      "description": "What can start this workflow.",
+                      "example": [
+                        "event"
+                      ],
+                      "items": {
+                        "description": "Trigger source.",
+                        "enum": [
+                          "cron",
+                          "window",
+                          "event"
+                        ],
+                        "example": "event",
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "target",
+                    "triggerSources",
+                    "health",
+                    "mechanism"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Next run."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Next run",
+        "tags": [
+          "Background Tasks"
+        ]
+      }
+    },
     "/v1/background-tasks/{slug}/runs": {
       "get": {
         "description": "Lists mirrored runs for a task. Poll with status, executor, limit, and cursor filters to drive desktop queue pickup, dashboards, and API-worker Temporal status views.",
