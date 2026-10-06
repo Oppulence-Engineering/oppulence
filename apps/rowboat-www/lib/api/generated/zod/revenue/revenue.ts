@@ -951,7 +951,11 @@ export const GetRevenueActionAudit200Response = zod
             source: zod
               .enum(["gmail", "calendar", "crm", "user", "outbound", "slack", "meeting", "task"])
               .describe("Observing source."),
-            sourceEventId: zod.string().describe("Source event id used for deduplication."),
+            sourceEventId: zod
+              .string()
+              .describe(
+                "Source event id used for deduplication. Log outcome sends manual, the kind, and the current time.",
+              ),
           })
           .describe(
             "One observed action outcome, append-only and idempotent on (action, source, sourceEventId).",
@@ -1656,8 +1660,8 @@ export const ExecuteRevenueAction409Response = zod
   );
 
 /**
- * Appends an observed outcome idempotently on (action, source, sourceEventId); the duplicate returns the stored row.
- * @summary Record an outcome
+ * Log outcome records They replied from the history sheet. The button sends source user and sourceEventId manual:replied plus the current time. Sending the same id again returns the stored row.
+ * @summary Log outcome
  */
 export const RecordRevenueActionOutcomeParams = zod.object({
   actionId: zod.uuid().describe("Action id."),
@@ -1679,11 +1683,18 @@ export const RecordRevenueActionOutcomeBody = zod
       ])
       .describe("Outcome kind."),
     metadata: zod.record(zod.string(), zod.unknown()).optional().describe("Bounded metadata."),
-    occurredAt: zod.iso.datetime({ offset: true }).nullish().describe("When the outcome occurred."),
+    occurredAt: zod.iso
+      .datetime({ offset: true })
+      .nullish()
+      .describe(
+        "When the outcome occurred. Log outcome leaves this empty and the server records the current time.",
+      ),
     source: zod
       .enum(["gmail", "calendar", "crm", "user", "outbound"])
-      .describe("Observing source."),
-    sourceEventId: zod.string().describe("Source event id for deduplication."),
+      .describe("Observing source. Log outcome sends user."),
+    sourceEventId: zod
+      .string()
+      .describe("Source event id. Log outcome sends manual, the kind, and the current time."),
   })
   .describe("Outcome request.");
 
@@ -1713,7 +1724,11 @@ export const RecordRevenueActionOutcome201Response = zod
     source: zod
       .enum(["gmail", "calendar", "crm", "user", "outbound", "slack", "meeting", "task"])
       .describe("Observing source."),
-    sourceEventId: zod.string().describe("Source event id used for deduplication."),
+    sourceEventId: zod
+      .string()
+      .describe(
+        "Source event id used for deduplication. Log outcome sends manual, the kind, and the current time.",
+      ),
   })
   .describe(
     "One observed action outcome, append-only and idempotent on (action, source, sourceEventId).",

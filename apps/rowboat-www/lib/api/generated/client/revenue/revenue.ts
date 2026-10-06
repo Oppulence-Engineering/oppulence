@@ -595,8 +595,8 @@ export const getRecordRevenueActionOutcomeUrl = (actionId: string) => {
 };
 
 /**
- * Appends an observed outcome idempotently on (action, source, sourceEventId); the duplicate returns the stored row.
- * @summary Record an outcome
+ * Log outcome records They replied from the history sheet. The button sends source user and sourceEventId manual:replied plus the current time. Sending the same id again returns the stored row.
+ * @summary Log outcome
  */
 export const recordRevenueActionOutcome = async (
   actionId: string,

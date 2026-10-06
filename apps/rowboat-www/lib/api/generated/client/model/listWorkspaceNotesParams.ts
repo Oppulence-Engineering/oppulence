@@ -6,16 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * Observing source. Log outcome sends user.
- */
-export type RecordRevenueActionOutcomeBodySource =
-  (typeof RecordRevenueActionOutcomeBodySource)[keyof typeof RecordRevenueActionOutcomeBodySource];
-
-export const RecordRevenueActionOutcomeBodySource = {
-  gmail: "gmail",
-  calendar: "calendar",
-  crm: "crm",
-  user: "user",
-  outbound: "outbound",
-} as const;
+export type ListWorkspaceNotesParams = {
+  /**
+   * Maximum notes to return (default 50, max 100).
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * Number of collapsed notes to skip.
+   * @minimum 0
+   */
+  offset?: number;
+};

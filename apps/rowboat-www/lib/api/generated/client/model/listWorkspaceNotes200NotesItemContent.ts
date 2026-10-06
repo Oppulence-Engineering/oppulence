@@ -7,15 +7,6 @@
  */
 
 /**
- * Observing source. Log outcome sends user.
+ * Editor document, when one was saved.
  */
-export type RecordRevenueActionOutcomeBodySource =
-  (typeof RecordRevenueActionOutcomeBodySource)[keyof typeof RecordRevenueActionOutcomeBodySource];
-
-export const RecordRevenueActionOutcomeBodySource = {
-  gmail: "gmail",
-  calendar: "calendar",
-  crm: "crm",
-  user: "user",
-  outbound: "outbound",
-} as const;
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };

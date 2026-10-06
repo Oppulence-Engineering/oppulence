@@ -338,6 +338,35 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertLogOutcome(t, spec)
+}
+
+func TestLogOutcomeRecordsTheyReplied(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertLogOutcome(t, spec)
+}
+
+func assertLogOutcome(t *testing.T, spec obj) {
+	t.Helper()
+	const eventID = "manual:replied:1783864800000"
+	post := asObj(asObj(asObj(spec["paths"])["/v1/revenue-actions/{actionId}/outcomes"])["post"])
+	if post["summary"] != "Log outcome" {
+		t.Fatalf("outcome summary = %#v", post["summary"])
+	}
+	media := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
+	example := asObj(media["example"])
+	if example["kind"] != "replied" || example["source"] != "user" || example["sourceEventId"] != eventID || example["occurredAt"] != nil {
+		t.Fatalf("log outcome request = %#v", example)
+	}
+	recorded := asObj(asObj(asObj(asObj(asObj(post["responses"])["201"])["content"])["application/json"])["example"])
+	if recorded["kind"] != "replied" || recorded["source"] != "user" || recorded["sourceEventId"] != eventID || recorded["occurredAt"] != "2026-07-12T14:00:00Z" {
+		t.Fatalf("recorded outcome = %#v", recorded)
+	}
+	properties := asObj(asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueOutcome"])["properties"]))
+	if asObj(properties["source"])["example"] != "user" || asObj(properties["sourceEventId"])["example"] != eventID {
+		t.Fatalf("outcome schema = %#v", properties)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

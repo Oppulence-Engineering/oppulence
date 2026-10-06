@@ -5,17 +5,14 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
+import type { ListWorkspaceNotes200NotesItem } from "./listWorkspaceNotes200NotesItem";
 
 /**
- * Observing source. Log outcome sends user.
+ * Workspace notes page.
  */
-export type RecordRevenueActionOutcomeBodySource =
-  (typeof RecordRevenueActionOutcomeBodySource)[keyof typeof RecordRevenueActionOutcomeBodySource];
-
-export const RecordRevenueActionOutcomeBodySource = {
-  gmail: "gmail",
-  calendar: "calendar",
-  crm: "crm",
-  user: "user",
-  outbound: "outbound",
-} as const;
+export type ListWorkspaceNotes200 = {
+  /** Whether another page of notes exists. */
+  hasMore: boolean;
+  /** Latest note for each note id. */
+  notes: ListWorkspaceNotes200NotesItem[];
+};

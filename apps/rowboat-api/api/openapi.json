@@ -13150,17 +13150,32 @@
           },
           "source": {
             "description": "Observing source.",
-            "enum": ["gmail", "calendar", "crm", "user", "outbound", "slack", "meeting", "task"],
-            "example": "gmail",
+            "enum": [
+              "gmail",
+              "calendar",
+              "crm",
+              "user",
+              "outbound",
+              "slack",
+              "meeting",
+              "task"
+            ],
+            "example": "user",
             "type": "string"
           },
           "sourceEventId": {
-            "description": "Source event id used for deduplication.",
-            "example": "msg_01",
+            "description": "Source event id used for deduplication. Log outcome sends manual, the kind, and the current time.",
+            "example": "manual:replied:1783864800000",
             "type": "string"
           }
         },
-        "required": ["id", "kind", "source", "sourceEventId", "occurredAt"],
+        "required": [
+          "id",
+          "kind",
+          "source",
+          "sourceEventId",
+          "occurredAt"
+        ],
         "type": "object"
       },
       "RevenuePolicyDecision": {
@@ -26431,7 +26446,7 @@
     },
     "/v1/revenue-actions/{actionId}/outcomes": {
       "post": {
-        "description": "Appends an observed outcome idempotently on (action, source, sourceEventId); the duplicate returns the stored row.",
+        "description": "Log outcome records They replied from the history sheet. The button sends source user and sourceEventId manual:replied plus the current time. Sending the same id again returns the stored row.",
         "operationId": "recordRevenueActionOutcome",
         "parameters": [
           {
@@ -26450,8 +26465,8 @@
             "application/json": {
               "example": {
                 "kind": "replied",
-                "source": "gmail",
-                "sourceEventId": "msg_01"
+                "source": "user",
+                "sourceEventId": "manual:replied:1783864800000"
               },
               "schema": {
                 "description": "Outcome request.",
@@ -26478,25 +26493,35 @@
                     "type": "object"
                   },
                   "occurredAt": {
-                    "description": "When the outcome occurred.",
+                    "description": "When the outcome occurred. Log outcome leaves this empty and the server records the current time.",
                     "example": "2026-07-12T14:00:00Z",
                     "format": "date-time",
                     "nullable": true,
                     "type": "string"
                   },
                   "source": {
-                    "description": "Observing source.",
-                    "enum": ["gmail", "calendar", "crm", "user", "outbound"],
-                    "example": "gmail",
+                    "description": "Observing source. Log outcome sends user.",
+                    "enum": [
+                      "gmail",
+                      "calendar",
+                      "crm",
+                      "user",
+                      "outbound"
+                    ],
+                    "example": "user",
                     "type": "string"
                   },
                   "sourceEventId": {
-                    "description": "Source event id for deduplication.",
-                    "example": "msg_01",
+                    "description": "Source event id. Log outcome sends manual, the kind, and the current time.",
+                    "example": "manual:replied:1783864800000",
                     "type": "string"
                   }
                 },
-                "required": ["kind", "source", "sourceEventId"],
+                "required": [
+                  "kind",
+                  "source",
+                  "sourceEventId"
+                ],
                 "type": "object"
               }
             }
@@ -26508,6 +26533,13 @@
           "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "id": "3c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "kind": "replied",
+                  "occurredAt": "2026-07-12T14:00:00Z",
+                  "source": "user",
+                  "sourceEventId": "manual:replied:1783864800000"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueOutcome"
                 }
@@ -26530,8 +26562,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Record an outcome",
-        "tags": ["Revenue"]
+        "summary": "Log outcome",
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-actions/{actionId}/reject": {
