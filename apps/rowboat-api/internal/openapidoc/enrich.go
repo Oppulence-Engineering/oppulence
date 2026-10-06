@@ -1053,10 +1053,28 @@ func addRuntimePaths(paths obj) {
 	addVoiceCloudPaths(paths)
 }
 
+func documentedStoppedChat() obj {
+	return obj{
+		"sessionId": "session_abc123",
+		"status":    "canceling",
+	}
+}
+
 func addAgentSessionPaths(paths obj) {
 	paths["/v1/agent-sessions"] = obj{"get": operation("Agent Sessions", "List agent sessions", "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.", "listAgentSessions", bearer(), nil, nil, obj{
 		"200": jsonResponse("Recent agent conversations.", ref("AgentSessionListResponse"), obj{"sessions": []any{obj{"sessionId": "session_abc123", "agent": "assistant", "status": "active", "channel": "web", "title": "Review the Acme renewal", "turns": 2, "llmCalls": 3, "toolCalls": 1, "costUnits": 45, "continuationToken": "agt_example", "createdAt": "2026-09-02T15:00:00Z"}}}),
 		"401": responseRef("401"),
+		"500": responseRef("500"),
+	})}
+	paths["/v1/agent-sessions/{id}/cancel"] = obj{"post": operation("Agent Sessions", "Stop response", "Stop response ends the open chat. The request has no body. The response names that session and reports status canceling.", "cancelAgentSession", bearer(), []any{
+		pathParam("id", "Stable session id.", stringSchema("Session id.", "session_abc123")),
+	}, nil, obj{
+		"202": jsonResponse("Stop accepted.", objectSchema("Accepted stop.", obj{
+			"sessionId": stringSchema("Session that is stopping.", "session_abc123"),
+			"status":    stringSchema("Stop acknowledgement.", "canceling"),
+		}, "sessionId", "status"), documentedStoppedChat()),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
 		"500": responseRef("500"),
 	})}
 	paths["/v1/agent-sessions/{id}/events"] = obj{"get": operation("Agent Sessions", "List agent session events", "Returns ordered durable events used to reconstruct a conversation after navigation or reload.", "listAgentSessionEvents", bearer(), []any{

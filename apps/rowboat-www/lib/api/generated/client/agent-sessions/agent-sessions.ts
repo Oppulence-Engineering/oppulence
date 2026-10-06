@@ -8,6 +8,7 @@
 import type {
   AgentSessionEventsResponse,
   AgentSessionListResponse,
+  CancelAgentSession202,
   ListAgentSessionEventsParams,
   ListAgentSessionsParams,
   N400Response,
@@ -76,6 +77,61 @@ export const listAgentSessions = async (
 
   const data: listAgentSessionsResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as listAgentSessionsResponse;
+};
+
+export type cancelAgentSessionResponse202 = {
+  data: CancelAgentSession202;
+  status: 202;
+};
+
+export type cancelAgentSessionResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type cancelAgentSessionResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type cancelAgentSessionResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type cancelAgentSessionResponseSuccess = cancelAgentSessionResponse202 & {
+  headers: Headers;
+};
+export type cancelAgentSessionResponseError = (
+  cancelAgentSessionResponse401 | cancelAgentSessionResponse404 | cancelAgentSessionResponse500
+) & {
+  headers: Headers;
+};
+
+export type cancelAgentSessionResponse =
+  cancelAgentSessionResponseSuccess | cancelAgentSessionResponseError;
+
+export const getCancelAgentSessionUrl = (id: string) => {
+  return `/v1/agent-sessions/${id}/cancel`;
+};
+
+/**
+ * Stop response ends the open chat. The request has no body. The response names that session and reports status canceling.
+ * @summary Stop response
+ */
+export const cancelAgentSession = async (
+  id: string,
+  options?: RequestInit,
+): Promise<cancelAgentSessionResponse> => {
+  const res = await fetch(getCancelAgentSessionUrl(id), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: cancelAgentSessionResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as cancelAgentSessionResponse;
 };
 
 export type listAgentSessionEventsResponse200 = {
