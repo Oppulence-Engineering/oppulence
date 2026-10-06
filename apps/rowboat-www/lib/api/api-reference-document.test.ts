@@ -315,6 +315,28 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the research estimates the companies page adds together", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const companies = presented.paths["/v1/research/companies/estimate"].get;
+    const people = presented.paths["/v1/research/people/estimate"].get;
+    expect(companies.summary).toBe("Estimate companies");
+    expect(people.summary).toBe("Estimate people");
+    expect(companies.responses["200"].content["application/json"].example).toEqual({
+      companies: 1,
+      processor: "pro",
+      credits: 1000,
+      usd: 0.1,
+      batchSize: 25,
+    });
+    expect(people.responses["200"].content["application/json"].example).toEqual({
+      people: 1,
+      processor: "pro",
+      credits: 1000,
+      usd: 0.1,
+      batchSize: 25,
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

@@ -1005,6 +1005,38 @@ func addRevenuePaths(paths obj) {
 			"201": jsonResponse("Resolved effective policy.", freeFormSchema("Conversation policy result."), nil), "400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"),
 		}),
 	}
+	paths["/v1/research/companies/estimate"] = obj{"get": operation("Relationship Intelligence", "Estimate companies", "When public research is allowed, the companies page loads this estimate and prints the company count. One pending company uses the pro processor: 1000 credits, which is usd 0.1. batchSize 25 is the maximum ids one fill request accepts. The page adds this usd to the people estimate.", "getCompanyResearchEstimate", bearer(), nil, nil, obj{
+		"200": jsonResponse("Company research estimate.", objectSchema("Company research estimate.", obj{
+			"companies": intSchema("Pending companies.", 1),
+			"processor": stringEnum("Research processor. Company estimates use pro.", "pro", "lite", "base", "core", "pro"),
+			"credits":   intSchema("Credits for the pending companies. pro is 1000 credits each.", 1000),
+			"usd":       numberSchema("credits divided by 10000.", 0.1),
+			"batchSize": intSchema("Maximum company ids one fill request accepts.", 25),
+		}, "processor", "credits", "usd", "batchSize"), obj{
+			"companies": 1, "processor": "pro", "credits": 1000, "usd": 0.1, "batchSize": 25,
+		}),
+		"401": responseRef("401"),
+		"402": responseRef("402"),
+		"403": responseRef("403"),
+		"409": responseRef("409"),
+		"503": responseRef("503"),
+	})}
+	paths["/v1/research/people/estimate"] = obj{"get": operation("Relationship Intelligence", "Estimate people", "When public research is allowed, the companies page loads this estimate and prints the people count. One pending person uses the pro processor: 1000 credits, which is usd 0.1. batchSize 25 is the maximum ids one fill request accepts. The page adds this usd to the company estimate.", "getPersonResearchEstimate", bearer(), nil, nil, obj{
+		"200": jsonResponse("People research estimate.", objectSchema("People research estimate.", obj{
+			"people":    intSchema("Pending people.", 1),
+			"processor": stringEnum("Research processor. People estimates use pro.", "pro", "lite", "base", "core", "pro"),
+			"credits":   intSchema("Credits for the pending people. pro is 1000 credits each.", 1000),
+			"usd":       numberSchema("credits divided by 10000.", 0.1),
+			"batchSize": intSchema("Maximum person ids one fill request accepts.", 25),
+		}, "processor", "credits", "usd", "batchSize"), obj{
+			"people": 1, "processor": "pro", "credits": 1000, "usd": 0.1, "batchSize": 25,
+		}),
+		"401": responseRef("401"),
+		"402": responseRef("402"),
+		"403": responseRef("403"),
+		"409": responseRef("409"),
+		"503": responseRef("503"),
+	})}
 	paths["/v1/relationships/{relationshipId}/conversation-deletion"] = obj{"post": operation("Relationship Intelligence", "Request conversation deletion", "Evaluates legal hold at execution time, removes server-side content transactionally, and returns an idempotent per-target receipt. Device and provider work remains pending until separately verified.", "requestConversationDeletion", bearer(), relationshipParam, jsonRequest("Deletion request.", objectSchema("Deletion request.", obj{
 		"requestId": stringSchema("Idempotency key.", "delete:ab12"),
 	}, "requestId"), obj{"requestId": "delete:ab12"}), obj{

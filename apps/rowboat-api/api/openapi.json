@@ -25667,6 +25667,184 @@
         "tags": ["Relationship Intelligence"]
       }
     },
+    "/v1/research/companies/estimate": {
+      "get": {
+        "description": "When public research is allowed, the companies page loads this estimate and prints the company count. One pending company uses the pro processor: 1000 credits, which is usd 0.1. batchSize 25 is the maximum ids one fill request accepts. The page adds this usd to the people estimate.",
+        "operationId": "getCompanyResearchEstimate",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "batchSize": 25,
+                  "companies": 1,
+                  "credits": 1000,
+                  "processor": "pro",
+                  "usd": 0.1
+                },
+                "schema": {
+                  "description": "Company research estimate.",
+                  "properties": {
+                    "batchSize": {
+                      "description": "Maximum company ids one fill request accepts.",
+                      "example": 25,
+                      "type": "integer"
+                    },
+                    "companies": {
+                      "description": "Pending companies.",
+                      "example": 1,
+                      "type": "integer"
+                    },
+                    "credits": {
+                      "description": "Credits for the pending companies. pro is 1000 credits each.",
+                      "example": 1000,
+                      "type": "integer"
+                    },
+                    "processor": {
+                      "description": "Research processor. Company estimates use pro.",
+                      "enum": [
+                        "lite",
+                        "base",
+                        "core",
+                        "pro"
+                      ],
+                      "example": "pro",
+                      "type": "string"
+                    },
+                    "usd": {
+                      "description": "credits divided by 10000.",
+                      "example": 0.1,
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "processor",
+                    "credits",
+                    "usd",
+                    "batchSize"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Company research estimate."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "402": {
+            "$ref": "#/components/responses/402"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Estimate companies",
+        "tags": [
+          "Relationship Intelligence"
+        ]
+      }
+    },
+    "/v1/research/people/estimate": {
+      "get": {
+        "description": "When public research is allowed, the companies page loads this estimate and prints the people count. One pending person uses the pro processor: 1000 credits, which is usd 0.1. batchSize 25 is the maximum ids one fill request accepts. The page adds this usd to the company estimate.",
+        "operationId": "getPersonResearchEstimate",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "batchSize": 25,
+                  "credits": 1000,
+                  "people": 1,
+                  "processor": "pro",
+                  "usd": 0.1
+                },
+                "schema": {
+                  "description": "People research estimate.",
+                  "properties": {
+                    "batchSize": {
+                      "description": "Maximum person ids one fill request accepts.",
+                      "example": 25,
+                      "type": "integer"
+                    },
+                    "credits": {
+                      "description": "Credits for the pending people. pro is 1000 credits each.",
+                      "example": 1000,
+                      "type": "integer"
+                    },
+                    "people": {
+                      "description": "Pending people.",
+                      "example": 1,
+                      "type": "integer"
+                    },
+                    "processor": {
+                      "description": "Research processor. People estimates use pro.",
+                      "enum": [
+                        "lite",
+                        "base",
+                        "core",
+                        "pro"
+                      ],
+                      "example": "pro",
+                      "type": "string"
+                    },
+                    "usd": {
+                      "description": "credits divided by 10000.",
+                      "example": 0.1,
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "processor",
+                    "credits",
+                    "usd",
+                    "batchSize"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "People research estimate."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "402": {
+            "$ref": "#/components/responses/402"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Estimate people",
+        "tags": [
+          "Relationship Intelligence"
+        ]
+      }
+    },
     "/v1/revenue-actions": {
       "get": {
         "description": "Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.",
