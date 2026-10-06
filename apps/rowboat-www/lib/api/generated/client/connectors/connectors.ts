@@ -205,8 +205,8 @@ export const getSetConnectionAPIKeyUrl = (name: string) => {
 };
 
 /**
- * Stores a vendor-issued API key for an api_key connector. The key remains sealed and server-side; product calls receive only short-lived broker tokens.
- * @summary Connect API-key connector
+ * Connect on HubSpot posts the private app token from the token field. The server checks that token, stores it sealed, and answers only that the connection is on.
+ * @summary Connect HubSpot
  */
 export const setConnectionAPIKey = async (
   name: string,

@@ -315,6 +315,20 @@ describe("API reference document", () => {
     );
   });
 
+  it("shows the HubSpot private app token Connect sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/connections/{name}/api-key"].post;
+    expect(operation.summary).toBe("Connect HubSpot");
+    expect(operation.description).toContain("private app token");
+    expect(operation.description).not.toMatch(/\bslug\b|Temporal/);
+    expect(operation.parameters[0].schema.example).toBe("hubspot");
+    expect(operation.requestBody.content["application/json"].example).toEqual({ apiKey: "pat-test" });
+    expect(operation.responses["200"].content["application/json"].example).toEqual({ connected: true });
+    expect(JSON.stringify(operation.requestBody.content["application/json"].example)).not.toContain(
+      "example-vendor-key",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

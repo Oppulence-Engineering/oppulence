@@ -101,11 +101,11 @@ export const DeleteConnection503Response = zod
   );
 
 /**
- * Stores a vendor-issued API key for an api_key connector. The key remains sealed and server-side; product calls receive only short-lived broker tokens.
- * @summary Connect API-key connector
+ * Connect on HubSpot posts the private app token from the token field. The server checks that token, stores it sealed, and answers only that the connection is on.
+ * @summary Connect HubSpot
  */
 export const SetConnectionAPIKeyParams = zod.object({
-  name: zod.string().describe("Connector slug, for example canvas, corinthian, or wispr."),
+  name: zod.string().describe("HubSpot connector name."),
 });
 
 export const SetConnectionAPIKeyBody = zod

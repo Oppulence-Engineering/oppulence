@@ -2,8 +2,10 @@ package openapidoc
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +340,46 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertConnectHubSpot(t, paths)
+}
+
+func TestConnectHubSpotSamplesThePrivateAppToken(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertConnectHubSpot(t, asObj(spec["paths"]))
+}
+
+func assertConnectHubSpot(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/connections/{name}/api-key"])["post"])
+	if op["summary"] != "Connect HubSpot" {
+		t.Fatalf("summary: %#v", op["summary"])
+	}
+	if !strings.Contains(fmt.Sprint(op["description"]), "private app token") {
+		t.Fatalf("description: %#v", op["description"])
+	}
+	params, ok := op["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("parameters: %#v", op["parameters"])
+	}
+	name := asObj(asObj(params[0])["schema"])
+	if name["example"] != "hubspot" {
+		t.Fatalf("name example: %#v", name)
+	}
+	body := asObj(asObj(asObj(asObj(op["requestBody"])["content"])["application/json"])["example"])
+	if body["apiKey"] != "pat-test" {
+		t.Fatalf("api key example: %#v", body)
+	}
+	if _, extra := body["requestedScopes"]; extra {
+		t.Fatal("hubspot connect must not send scopes")
+	}
+	response := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	if response["connected"] != true {
+		t.Fatalf("response: %#v", response)
+	}
+	if _, canvas := response["connector"]; canvas {
+		t.Fatal("response must not name another connector")
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
