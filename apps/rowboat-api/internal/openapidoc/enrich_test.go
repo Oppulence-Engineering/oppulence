@@ -338,6 +338,41 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertSavedTemplate(t, spec)
+}
+
+func TestSavedTemplateStoresTheNoteTemplate(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSavedTemplate(t, spec)
+}
+
+func assertSavedTemplate(t *testing.T, spec obj) {
+	t.Helper()
+	post := asObj(asObj(asObj(spec["paths"])["/v1/console/resources"])["post"])
+	if post["summary"] != "Save template" {
+		t.Fatalf("summary: %v", post["summary"])
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])["example"]
+	if got, want := mustJSON(request), mustJSON(documentedSavedTemplateRequest()); got != want {
+		t.Fatalf("request example:\n%s\nwant:\n%s", got, want)
+	}
+	response := asObj(asObj(asObj(asObj(post["responses"])["201"])["content"])["application/json"])["example"]
+	if got, want := mustJSON(response), mustJSON(documentedSavedTemplate()); got != want {
+		t.Fatalf("response example:\n%s\nwant:\n%s", got, want)
+	}
+	kind := asObj(asObj(asObj(spec["components"])["schemas"])["ConsoleResourceKind"])
+	if kind["example"] != "graph_saved_view" {
+		t.Fatalf("shared resource kind changed: %#v", kind["example"])
+	}
+}
+
+func mustJSON(value any) string {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return err.Error()
+	}
+	return string(raw)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

@@ -36,6 +36,7 @@ import type {
   ListRelationshipAttention200,
   ListRelationshipIdentityCandidates200,
   ListRelationships200,
+  ListWorkspaceNotes200,
   PutConversationPolicy201,
   RelationshipAttentionItem,
   RelationshipCommitment,
@@ -87,6 +88,7 @@ import {
   getListRelationshipAttentionResponseMock,
   getListRelationshipIdentityCandidatesResponseMock,
   getListRelationshipsResponseMock,
+  getListWorkspaceNotesResponseMock,
   getPutConversationPolicyResponseMock,
   getRejectRelationshipRecommendationResponseMock,
   getReportRelationshipSourceAuthorizationResponseMock,
@@ -147,6 +149,7 @@ export {
   getGetRelationshipTimelineResponseMock,
   getGetCommunicationAttachmentContentResponseMock,
   getGetCommunicationInteractionBodyResponseMock,
+  getListWorkspaceNotesResponseMock,
 } from "./relationship-intelligence.faker";
 
 export const getListCommitmentsMockHandler = (
@@ -1257,6 +1260,30 @@ export const getGetCommunicationInteractionBodyMockHandler = (
     options,
   );
 };
+
+export const getListWorkspaceNotesMockHandler = (
+  overrideResponse?:
+    | ListWorkspaceNotes200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListWorkspaceNotes200> | ListWorkspaceNotes200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/workspace-notes",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListWorkspaceNotesResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 export const getRelationshipIntelligenceMock = () => [
   getListCommitmentsMockHandler(),
   getExportCommitmentMockHandler(),
@@ -1304,4 +1331,5 @@ export const getRelationshipIntelligenceMock = () => [
   getGetRelationshipTimelineMockHandler(),
   getGetCommunicationAttachmentContentMockHandler(),
   getGetCommunicationInteractionBodyMockHandler(),
+  getListWorkspaceNotesMockHandler(),
 ];

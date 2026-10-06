@@ -95,6 +95,35 @@ func addConsoleSchemas(schemas obj) {
 	}, "resources", "limit", "offset")
 }
 
+const documentedSavedTemplateID = "bed845f2-975a-4678-9c86-2157548161e4"
+
+func documentedSavedTemplatePayload() obj {
+	return obj{
+		"title": "Weekly account review",
+		"body":  "Agenda",
+	}
+}
+
+func documentedSavedTemplateRequest() obj {
+	return obj{
+		"kind":    "note_template",
+		"name":    "Weekly account review",
+		"payload": documentedSavedTemplatePayload(),
+	}
+}
+
+func documentedSavedTemplate() obj {
+	return obj{
+		"id":        documentedSavedTemplateID,
+		"kind":      "note_template",
+		"name":      "Weekly account review",
+		"payload":   documentedSavedTemplatePayload(),
+		"sortOrder": 0,
+		"createdAt": "2026-09-17T20:00:00Z",
+		"updatedAt": "2026-09-17T20:00:00Z",
+	}
+}
+
 func addConsolePaths(paths obj) {
 	authErrors := obj{
 		"400": responseRef("400"),
@@ -118,7 +147,7 @@ func addConsolePaths(paths obj) {
 	listResponses["200"] = jsonResponse("Resource page.", ref("ConsoleResourcePage"), nil)
 	createResponses := cloneResponses(authErrors)
 	createResponses["200"] = jsonResponse("Existing favorite returned after an idempotent replay.", ref("ConsoleResource"), nil)
-	createResponses["201"] = jsonResponse("Created resource.", ref("ConsoleResource"), nil)
+	createResponses["201"] = jsonResponse("Stored template.", ref("ConsoleResource"), documentedSavedTemplate())
 	createResponses["409"] = consoleConflictResponse()
 	paths["/v1/console/resources"] = obj{
 		"get": operation("Console", "List console resources", "Lists only the caller's resources in the exact organization workspace asserted by the token. A full page is the end of the list when hasMore is false.", "listConsoleResources", bearer(), []any{
@@ -126,8 +155,8 @@ func addConsolePaths(paths obj) {
 			queryParam("limit", "Page size (default 50, max 100).", false, obj{"type": "integer", "minimum": 1, "maximum": 100}),
 			queryParam("offset", "Page offset (max 10000).", false, obj{"type": "integer", "minimum": 0, "maximum": 10000}),
 		}, nil, listResponses),
-		"post": operation("Console", "Create console resource", "Creates a typed artifact. Replaying a note favorite returns the existing resource.", "createConsoleResource", bearer(), nil,
-			jsonRequest("Typed resource.", ref("ConsoleResourceCreate"), nil), createResponses),
+		"post": operation("Console", "Save template", "Save template posts a note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0.", "createConsoleResource", bearer(), nil,
+			jsonRequest("Typed resource.", ref("ConsoleResourceCreate"), documentedSavedTemplateRequest()), createResponses),
 	}
 
 	resourceID := []any{pathParam("resourceId", "Console resource id.", obj{"type": "string", "format": "uuid"})}
