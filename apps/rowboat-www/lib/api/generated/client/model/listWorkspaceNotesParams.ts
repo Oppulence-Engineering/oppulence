@@ -6,10 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * Scan request.
- */
-export type StartRevenueLeakScanBody = {
-  /** Historical lookback in days. Run Promise Leak Audit sends 180. Omitted values use 180. Maximum 365. */
-  lookbackDays?: number;
+export type ListWorkspaceNotesParams = {
+  /**
+   * Maximum notes to return (default 50, max 100).
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * Number of collapsed notes to skip.
+   * @minimum 0
+   */
+  offset?: number;
 };

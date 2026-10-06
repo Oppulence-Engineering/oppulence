@@ -7,9 +7,6 @@
  */
 
 /**
- * Scan request.
+ * Editor document, when one was saved.
  */
-export type StartRevenueLeakScanBody = {
-  /** Historical lookback in days. Run Promise Leak Audit sends 180. Omitted values use 180. Maximum 365. */
-  lookbackDays?: number;
-};
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };

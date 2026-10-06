@@ -960,8 +960,8 @@ export const getStartRevenueLeakScanUrl = () => {
 };
 
 /**
- * Starts a bounded historical scan over the user's connected Gmail (deterministic detectors, draft-first actions). One scan runs per workspace at a time; poll the scan id for progress.
- * @summary Start a revenue leak scan
+ * Run Promise Leak Audit reads the last six months of connected Gmail. The button sends lookbackDays 180. One audit runs at a time; poll the scan id for progress.
+ * @summary Run Promise Leak Audit
  */
 export const startRevenueLeakScan = async (
   startRevenueLeakScanBody?: StartRevenueLeakScanBody,

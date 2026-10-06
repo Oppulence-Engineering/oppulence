@@ -12971,7 +12971,7 @@
           },
           "lookbackDays": {
             "description": "Historical lookback in days.",
-            "example": 90,
+            "example": 180,
             "type": "integer"
           },
           "mode": {
@@ -13000,9 +13000,9 @@
             "type": "string"
           },
           "status": {
-            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "description": "Scan status.",
             "enum": ["pending", "running", "completed", "failed"],
-            "example": "active",
+            "example": "running",
             "type": "string"
           },
           "threadsDeepRead": {
@@ -26825,7 +26825,9 @@
                       "type": "array"
                     }
                   },
-                  "required": ["scans"],
+                  "required": [
+                    "scans"
+                  ],
                   "type": "object"
                 }
               }
@@ -26845,23 +26847,25 @@
           }
         ],
         "summary": "List revenue leak scans",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       },
       "post": {
-        "description": "Starts a bounded historical scan over the user's connected Gmail (deterministic detectors, draft-first actions). One scan runs per workspace at a time; poll the scan id for progress.",
+        "description": "Run Promise Leak Audit reads the last six months of connected Gmail. The button sends lookbackDays 180. One audit runs at a time; poll the scan id for progress.",
         "operationId": "startRevenueLeakScan",
         "requestBody": {
           "content": {
             "application/json": {
               "example": {
-                "lookbackDays": 90
+                "lookbackDays": 180
               },
               "schema": {
                 "description": "Scan request.",
                 "properties": {
                   "lookbackDays": {
-                    "description": "Historical lookback in days (default 90, max 365).",
-                    "example": 90,
+                    "description": "Historical lookback in days. Run Promise Leak Audit sends 180. Omitted values use 180. Maximum 365.",
+                    "example": 180,
                     "type": "integer"
                   }
                 },
@@ -26876,6 +26880,22 @@
           "202": {
             "content": {
               "application/json": {
+                "example": {
+                  "actionsCreated": 0,
+                  "candidatesSeen": 0,
+                  "commitmentsCreated": 0,
+                  "evidencesCreated": 0,
+                  "id": "4d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "lookbackDays": 180,
+                  "mode": "local",
+                  "relationshipsCreated": 0,
+                  "startedAt": "2026-07-23T12:00:00Z",
+                  "status": "running",
+                  "threadsDeepRead": 0,
+                  "threadsSeen": 0,
+                  "threadsSkipped": 0,
+                  "threadsSnippetOnly": 0
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueLeakScan"
                 }
@@ -26910,8 +26930,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Start a revenue leak scan",
-        "tags": ["Revenue"]
+        "summary": "Run Promise Leak Audit",
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-leak-scans/{scanId}": {
@@ -27078,7 +27100,7 @@
                     },
                     "lookbackDays": {
                       "description": "Scan window in days.",
-                      "example": 90,
+                      "example": 180,
                       "type": "integer"
                     },
                     "outboundCount": {

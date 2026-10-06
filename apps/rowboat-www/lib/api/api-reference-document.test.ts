@@ -315,6 +315,27 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the six-month window Run Promise Leak Audit sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const audit = presented.paths["/v1/revenue-leak-scans"].post;
+    expect(audit.summary).toBe("Run Promise Leak Audit");
+    expect(audit.requestBody.content["application/json"].example).toEqual({ lookbackDays: 180 });
+    const started = audit.responses["202"].content["application/json"].example;
+    expect(started).toMatchObject({
+      status: "running",
+      lookbackDays: 180,
+      threadsSeen: 0,
+      mode: "local",
+    });
+    expect(started.completedAt).toBeUndefined();
+    expect(started.error).toBeUndefined();
+    expect(presented.components.schemas.RevenueLeakScan.properties.status).toMatchObject({
+      description: "Scan status.",
+      example: "running",
+    });
+    expect(presented.components.schemas.RevenueLeakScan.properties.lookbackDays.example).toBe(180);
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
