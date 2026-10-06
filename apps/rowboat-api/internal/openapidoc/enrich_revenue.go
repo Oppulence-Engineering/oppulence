@@ -1,5 +1,11 @@
 package openapidoc
 
+// Focused review sends these reasons for every correction and every decision.
+const (
+	documentedConversationCorrectionReason = "User corrected conversation evidence during focused review."
+	documentedConversationDecisionReason   = "User decided a proposed conversation change."
+)
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
@@ -910,8 +916,8 @@ func addRevenuePaths(paths obj) {
 	paths["/v1/relationships/{relationshipId}/conversation-corrections"] = obj{"post": operation("Relationship Intelligence", "Correct reviewed conversation evidence", "Resolves a focused word, speaker, entity, or material-claim review item. State-affecting corrections append a top-precedence user assertion and reproject deterministically.", "correctConversationEvidence", bearer(), relationshipParam, jsonRequest("Focused correction.", objectSchema("Conversation correction.", obj{
 		"reviewItemId":   stringSchema("Focused review item id.", "review:ab12"),
 		"correctedValue": stringSchema("Human-corrected value.", "Avery Chen"),
-		"reason":         stringSchema("Correction reason.", "Avery was the speaker."),
-	}, "reviewItemId", "correctedValue", "reason"), obj{"reviewItemId": "review:ab12", "correctedValue": "Avery Chen", "reason": "Avery was the speaker."}), obj{
+		"reason":         stringSchema("Correction reason.", documentedConversationCorrectionReason),
+	}, "reviewItemId", "correctedValue", "reason"), obj{"reviewItemId": "review:ab12", "correctedValue": "Avery Chen", "reason": documentedConversationCorrectionReason}), obj{
 		"201": jsonResponse("Corrected relationship and refreshed intelligence.", objectSchema("Correction result.", obj{"relationship": ref("RevenueRelationship"), "intelligence": ref("RelationshipIntelligence")}, "relationship", "intelligence"), nil),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
@@ -921,9 +927,9 @@ func addRevenuePaths(paths obj) {
 		"reviewItemId":   stringSchema("Review item id.", "review:ab12"),
 		"kind":           stringEnum("Decision kind.", "approve", "approve", "correct", "reject", "defer"),
 		"correctedValue": stringSchema("Required replacement for correct.", "Security review is complete."),
-		"reason":         stringSchema("Decision reason.", "Customer clarified this in the meeting."),
+		"reason":         stringSchema("Decision reason.", documentedConversationDecisionReason),
 		"deferUntil":     stringSchema("Future reminder for defer.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
-	}, "reviewItemId", "kind"), obj{"reviewItemId": "review:ab12", "kind": "approve", "reason": "Customer stated this directly."}), obj{
+	}, "reviewItemId", "kind"), obj{"reviewItemId": "review:ab12", "kind": "approve", "reason": documentedConversationDecisionReason}), obj{
 		"201": jsonResponse("Updated relationship and refreshed review queue.", objectSchema("Decision result.", obj{"relationship": ref("RevenueRelationship"), "intelligence": ref("RelationshipIntelligence")}, "relationship", "intelligence"), nil),
 		"400": responseRef("400"),
 		"401": responseRef("401"),

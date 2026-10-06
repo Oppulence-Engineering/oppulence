@@ -315,6 +315,26 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the reasons focused review sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const correction =
+      presented.paths["/v1/relationships/{relationshipId}/conversation-corrections"].post
+        .requestBody.content["application/json"];
+    const decision =
+      presented.paths["/v1/relationships/{relationshipId}/conversation-decisions"].post.requestBody
+        .content["application/json"];
+    const correctionReason = "User corrected conversation evidence during focused review.";
+    const decisionReason = "User decided a proposed conversation change.";
+    expect(correction.example.reason).toBe(correctionReason);
+    expect(correction.schema.properties.reason.example).toBe(correctionReason);
+    expect(decision.example).toMatchObject({ kind: "approve", reason: decisionReason });
+    expect(decision.schema.properties.reason.example).toBe(decisionReason);
+    const encoded = JSON.stringify({ correction, decision });
+    expect(encoded).not.toContain("Avery was the speaker.");
+    expect(encoded).not.toContain("Customer stated this directly.");
+    expect(encoded).not.toContain("Customer clarified this in the meeting.");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
