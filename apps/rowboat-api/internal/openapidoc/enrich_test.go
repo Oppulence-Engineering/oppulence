@@ -52,6 +52,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/background-tasks/{slug}/runs/{runId}/events",
 		"/v1/background-tasks/{slug}/runs/{runId}/events/stream",
 		"/v1/background-tasks/{slug}/trigger",
+		"/v1/agents",
 		"/v1/llm/models",
 		"/v1/llm/chat/completions",
 		"/v1/llm/completions",
@@ -338,6 +339,59 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertListedAgents(t, spec)
+}
+
+func TestListAgentsLoadsTheBuiltins(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertListedAgents(t, spec)
+}
+
+func assertListedAgents(t *testing.T, spec obj) {
+	t.Helper()
+	get := asObj(asObj(asObj(spec["paths"])["/v1/agents"])["get"])
+	if get["summary"] != "List agents" || get["operationId"] != "listAgents" {
+		t.Fatalf("list agents operation = %#v", get["summary"])
+	}
+	if get["requestBody"] != nil {
+		t.Fatal("list agents should have no body")
+	}
+	example := asObj(asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"])
+	if mustJSON(example) != mustJSON(documentedAgentList()) {
+		t.Fatal("agent list example drifted from the built-in agents")
+	}
+	agents, _ := example["agents"].([]any)
+	if len(agents) != 3 {
+		t.Fatalf("agent count = %d", len(agents))
+	}
+	first := asObj(agents[0])
+	if first["slug"] != "assistant" || first["name"] != "Assistant" || first["source"] != "builtin" {
+		t.Fatalf("first agent = %s", mustJSON(first))
+	}
+	found := false
+	tools, _ := first["enabledTools"].([]any)
+	for _, tool := range tools {
+		if tool == "workspace.read" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("assistant is missing workspace.read")
+	}
+	tags, _ := spec["tags"].([]any)
+	last := asObj(tags[len(tags)-1])
+	if last["name"] != "Agents" {
+		t.Fatalf("agents tag = %#v", last["name"])
+	}
+}
+
+func mustJSON(v any) string {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(raw)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

@@ -284,6 +284,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/agents": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List agents
+     * @description The agents page loads the built-in agents when this workspace has none of its own. The first one is Assistant, short name assistant, source builtin.
+     */
+    get: operations["listAgents"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/agent-sessions": {
     parameters: {
       query?: never;
@@ -293,7 +313,7 @@ export interface paths {
     };
     /**
      * List agent sessions
-     * @description Returns the authenticated user's recent durable agent conversations.
+     * @description Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.
      */
     get: operations["listAgentSessions"];
     put?: never;
@@ -801,7 +821,7 @@ export interface paths {
     };
     /**
      * List the commitment register
-     * @description Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register.
+     * @description Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register. A full page is the end of the register when hasMore is false.
      */
     get: operations["listCommitments"];
     put?: never;
@@ -1105,7 +1125,7 @@ export interface paths {
     };
     /**
      * List console resources
-     * @description Lists only the caller's resources in the exact organization workspace asserted by the token.
+     * @description Lists only the caller's resources in the exact organization workspace asserted by the token. A full page is the end of the list when hasMore is false.
      */
     get: operations["listConsoleResources"];
     put?: never;
@@ -1633,7 +1653,7 @@ export interface paths {
     };
     /**
      * List portfolio attention
-     * @description Returns deterministic relationship-native attention ordered by explicit factor contributions.
+     * @description Returns deterministic relationship-native attention ordered by explicit factor contributions. A full page is the end of the queue when hasMore is false.
      */
     get: operations["listRelationshipAttention"];
     put?: never;
@@ -1693,7 +1713,7 @@ export interface paths {
     };
     /**
      * List identity review candidates
-     * @description Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage.
+     * @description Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage. A full page is the end of the inbox when hasMore is false.
      */
     get: operations["listRelationshipIdentityCandidates"];
     put?: never;
@@ -1913,7 +1933,7 @@ export interface paths {
     };
     /**
      * List relationships
-     * @description Lists canonical relationship state with optional text, lifecycle, health, and engagement filters.
+     * @description Lists canonical relationship state with optional text, lifecycle, health, and engagement filters. A full page of 200 is the end of the list when hasMore is false.
      */
     get: operations["listRelationships"];
     put?: never;
@@ -2017,7 +2037,7 @@ export interface paths {
     };
     /**
      * Get relationship changes
-     * @description Returns immutable projection snapshots so operators can see what changed and why.
+     * @description Returns immutable projection snapshots so operators can see what changed and why. The first page is the two newest snapshots.
      */
     get: operations["getRelationshipChanges"];
     put?: never;
@@ -2117,7 +2137,7 @@ export interface paths {
     };
     /**
      * Get communication timeline
-     * @description Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship.
+     * @description Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship. Rows that share a time stay in id order, so the next page does not skip them.
      */
     get: operations["getRelationshipCommunicationTimeline"];
     put?: never;
@@ -2225,6 +2245,26 @@ export interface paths {
      * @description Appends authorized policy-layer versions; lower layers may only make handling stricter.
      */
     put: operations["putConversationPolicy"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/conversation-review": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get earlier conversation review
+     * @description Returns focused review items and governance receipts from conversations older than the newest page.
+     */
+    get: operations["getRelationshipConversationReview"];
+    put?: never;
     post?: never;
     delete?: never;
     options?: never;
@@ -2361,7 +2401,7 @@ export interface paths {
     };
     /**
      * Get evidence timeline
-     * @description Returns the latest immutable observations for a relationship.
+     * @description Returns the latest immutable observations for a relationship. Rows that share a time stay in id order, so the next page does not skip them.
      */
     get: operations["getRelationshipTimeline"];
     put?: never;
@@ -2381,7 +2421,7 @@ export interface paths {
     };
     /**
      * List the action queue
-     * @description Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions.
+     * @description Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.
      */
     get: operations["listRevenueActions"];
     put?: never;
@@ -2665,7 +2705,7 @@ export interface paths {
     };
     /**
      * List revenue leak scans
-     * @description Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions.
+     * @description Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions. A full page is the end of the history when hasMore is false.
      */
     get: operations["listRevenueLeakScans"];
     put?: never;
@@ -3078,6 +3118,26 @@ export interface paths {
      * @description Receives Slack Events API deliveries, verified via the X-Slack-Signature HMAC (v0:{ts}:{body} with SLACK_SIGNING_SECRET, ±5 minute replay window). Handles the url_verification handshake; event_callback deliveries for workspaces mapped to a Rowboat user are ingested, others are acknowledged and dropped.
      */
     post: operations["slackWebhook"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspace-notes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List workspace notes
+     * @description Returns the latest copy of each company note in this workspace. One request reads every company, so the notes page does not ask for each company timeline. A newer edit replaces the previous copy, and a later deletion removes the note.
+     */
+    get: operations["listWorkspaceNotes"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -3549,8 +3609,13 @@ export interface components {
        */
       nextSeq?: number | null;
     };
-    /** @description Recent durable agent conversations. */
+    /** @description Recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false. */
     AgentSessionListResponse: {
+      /**
+       * @description Another conversation exists beyond this page.
+       * @example false
+       */
+      hasMore?: boolean;
       /** @description Sessions ordered by latest update. */
       sessions: components["schemas"]["DurableAgentSessionView"][];
     };
@@ -5436,7 +5501,12 @@ export interface components {
        * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
        */
       eventId: string;
-      /** @description Exact evidence references. */
+      /**
+       * @description Exact evidence references.
+       * @example [
+       *       "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+       *     ]
+       */
       evidenceRefs: string[];
       /**
        * @description Transition kind.
@@ -5490,7 +5560,7 @@ export interface components {
       sourceEventId: string;
       /**
        * @description Source observation id.
-       * @example relationship-observation:ab12
+       * @example 6b8dfa9b-a7b2-46ea-982c-622a914c00e5
        */
       sourceObservationId?: string;
       /**
@@ -5904,6 +5974,12 @@ export interface components {
        * @example 2026-09-06T12:00:00Z
        */
       nextBefore?: string | null;
+      /**
+       * Format: uuid
+       * @description Id of the last item on this page. Send it with nextBefore so rows that share that time stay on the next page.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      nextBeforeId?: string | null;
     };
     /** @description Public bootstrap values consumed by the desktop before sign-in. */
     ConfigResponse: {
@@ -6631,8 +6707,13 @@ export interface components {
      * @enum {string}
      */
     ConsoleResourceKind: "note_template" | "note_favorite" | "graph_saved_view";
-    /** @description Bounded deterministic resource page. */
+    /** @description Bounded deterministic resource page. A full page is the end of the list when hasMore is false. */
     ConsoleResourcePage: {
+      /**
+       * @description Another resource exists beyond this page.
+       * @example false
+       */
+      hasMore?: boolean;
       /**
        * @description Applied page limit.
        * @example 50
@@ -9824,6 +9905,16 @@ export interface components {
        */
       generatedAt: string;
       /**
+       * @description Another company exists beyond this page.
+       * @example true
+       */
+      hasMore?: boolean;
+      /**
+       * @description An older conversation exists beyond this page.
+       * @example true
+       */
+      observationHasMore?: boolean;
+      /**
        * @description Whether the response is an historical projection.
        * @example false
        */
@@ -10332,6 +10423,11 @@ export interface components {
       mutualActionPlans: {
         [key: string]: unknown;
       }[];
+      /**
+       * @description An older conversation exists beyond this page of focused review.
+       * @example true
+       */
+      observationPageHasMore?: boolean;
       /** @description Immutable contextual ranking factors. */
       recommendationEvaluations: {
         [key: string]: unknown;
@@ -11058,18 +11154,10 @@ export interface components {
        */
       queueStatus: "open" | "snoozed" | "dismissed" | "handled";
       /**
-       * @description Reason code for the ledger entry.
-       * @example llm_settle
-       * @enum {string}
+       * @description Why this action was proposed.
+       * @example Follow up on the open promise.
        */
-      reason:
-        | "llm_call"
-        | "llm_call_reserve"
-        | "llm_settle"
-        | "voice_tts"
-        | "exa_search"
-        | "grant"
-        | "refund";
+      reason: string;
       /**
        * @description Recipient email address.
        * @example buyer@example.com
@@ -11109,6 +11197,11 @@ export interface components {
        * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
        */
       relationshipId?: string;
+      /**
+       * @description Owning company name. The directory is paged, so a task still names a company that is not on the first page.
+       * @example Acme
+       */
+      relationshipName?: string;
       /**
        * @description Current revision number.
        * @example 1
@@ -11160,18 +11253,10 @@ export interface components {
       proposed_message?: string;
       proposed_subject?: string;
       /**
-       * @description Reason code for the ledger entry.
-       * @example llm_settle
-       * @enum {string}
+       * @description Why this action was proposed.
+       * @example Follow up on the open promise.
        */
-      reason?:
-        | "llm_call"
-        | "llm_call_reserve"
-        | "llm_settle"
-        | "voice_tts"
-        | "exa_search"
-        | "grant"
-        | "refund";
+      reason?: string;
       recipient_email?: string;
       revision: number;
       revision_hash: string;
@@ -11353,6 +11438,11 @@ export interface components {
        * @example 8
        */
       open: number;
+      /**
+       * @description Open follow-up tasks. These are saved work, not recovery follow-ups.
+       * @example 3
+       */
+      openTasks: number;
       /** @description Raw outcome-kind counts. */
       outcomes?: {
         [key: string]: unknown;
@@ -13552,9 +13642,166 @@ export interface operations {
       503: components["responses"]["503"];
     };
   };
-  listAgentSessions: {
+  listAgents: {
     parameters: {
       query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Built-in agents. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "agents": [
+           *         {
+           *           "enabledTools": [
+           *             "current_time",
+           *             "echo",
+           *             "web.search",
+           *             "tool_result.read",
+           *             "run_history.read",
+           *             "workflow.read",
+           *             "workspace.read",
+           *             "relationship.read",
+           *             "relationship.create",
+           *             "relationship.correct",
+           *             "relationship.assertion.retract",
+           *             "relationship.review.acknowledge",
+           *             "relationship.identity.decide",
+           *             "relationship.attention.decide",
+           *             "conversation.delete",
+           *             "source.retry_sync",
+           *             "task.create",
+           *             "task.update",
+           *             "task.complete",
+           *             "task.snooze",
+           *             "recommendation.create",
+           *             "recommendation.dismiss",
+           *             "recommendation.snooze",
+           *             "recommendation.update",
+           *             "action.audit",
+           *             "action.outcome.record",
+           *             "commitment.export",
+           *             "commitment.accept",
+           *             "commitment.block",
+           *             "commitment.confirm",
+           *             "commitment.correct",
+           *             "commitment.complete",
+           *             "commitment.dispute",
+           *             "commitment.unblock",
+           *             "person.create",
+           *             "person.correct",
+           *             "person.attribute.retract",
+           *             "person.identity.decide",
+           *             "person.delete",
+           *             "note.create",
+           *             "note.update",
+           *             "note.delete",
+           *             "action_proposal.read",
+           *             "action.propose",
+           *             "connector.read.gmail",
+           *             "connector.write.gmail_draft",
+           *             "connector.write.gmail_send",
+           *             "connector.read.calendar",
+           *             "connector.read.composio_tool_search",
+           *             "connector.read.composio_tool_describe",
+           *             "connector.write.composio_tool_execute"
+           *           ],
+           *           "instructions": "You are a helpful, careful cloud assistant running as a durable Rowboat agent.\n\n- Answer the user's request directly and concisely.\n- Use the tools provided in this request when they help; never claim to have used a tool you did not call.\n- Only use the tools advertised to you. If a capability you need is not available, say so plainly.\n- Do not fabricate data. If required information is unavailable, state what is missing.\n- Use workflow.read when the user asks which workflows exist, are active, when they run, whether schedules are synchronized, or what their latest stored result was. It never starts, edits, enables, or disables a workflow.\n- Use run_history.read when the user asks what workflows ran, failed, succeeded, or are still active. Filter by slug or status when useful; report stored failure details without retrying or changing a workflow.\n- Use workspace.read with view workspaces to list every accessible workspace. For summary, members, or features, pass the exact workspaceId when more than one is accessible; never choose a default workspace for the user. It reads existing Oppulence access metadata and never changes or backfills workspace settings.\n- Use workspace.read with view billing when the user asks about their Oppulence plan or AI credit balance. Billing is account-scoped, does not select a workspace, and does not report or change a third-party AI provider's balance.\n- Use connector.read.gmail with mailboxProfile true when the user asks which Gmail account is connected or for live mailbox totals. Use listLabels true to discover exact Gmail label names and IDs, then pass one returned id as labelId or up to 20 as labelIds to read their live message/thread totals and unread counts. Use query with countOnly true to count matching messages and distinct threads without content; report both as lower bounds if complete is false. Use query alone to search Gmail and see each result's sender, reply-to address when supplied, delivered-to mailbox or alias, To, Cc, and Bcc recipients, subject, timestamp, estimated sizeBytes, labels, direction, snippet, mailing-list metadata, rfc822MessageId, and inReplyToMessageId; rfc822MessageId is the standards-based message identity for correlation with external mail and ticketing systems, inReplyToMessageId identifies the exact parent email when supplied, and id remains Gmail's provider identity. listId identifies the mailing list, listUnsubscribe preserves its provider-supplied unsubscribe target, and unsubscribeOneClick reports the standard one-click header. Use replyTo instead of from when addressing a reply, while deliveredTo identifies the receiving address and is not a reply target. Add groupByThread true to return distinct conversations with chronological headers and snippets, includeAttachments true for attachment metadata and sealed references without message bodies, or includeBodies true for complete plain-text messages and attachment metadata. Query results keep the 10-message or thread limit and pagination. If it returns nextPageToken, repeat the same query, mode, and limit with pageToken to read older matches. Call it again with a returned threadId for chronological headers and snippets, add includeAttachments true for every message's attachment metadata and sealed references without bodies, add includeBodies true for every complete plain-text message and attachment metadata, or use a returned messageId for one full message. Pass one returned attachmentRef to read UTF-8 text, JSON, XML, CSV, HTML, or calendar content up to 256 KiB; binary attachments remain metadata-only. All modes are read-only.\n- Use connector.read.calendar with exact time bounds and countOnly true to count event instances without event details, or countByDay true to group those counts by date in the primary calendar's timezone. Report matchingEvents and daily counts as lower bounds if complete is false. Use time bounds or query to list events; id is Google's provider identity while iCalUID is the standards-based identity for correlation with other calendar systems, allDay explicitly distinguishes date-only events, eventType preserves Google's event classification, creator identifies who made the event while organizer identifies who owns it, createdAt and updatedAt preserve Google's provenance timestamps, blocksTime applies the same cancelled/transparent rules as availability, recurringEventId identifies the parent series, originalStartAt identifies that occurrence, and recurrenceRules preserves Google's RRULE, RDATE, and EXDATE entries on the recurring master. To explain an occurrence's schedule, read its recurringEventId as an exact event. usesDefaultReminders reports whether the event inherits the calendar default; reminderOverrides lists only explicit method and minutes values, so do not infer the default reminder time. attendeeResponses maps attendee emails to Google's RSVP status, selfResponseStatus is the signed-in user's response, attachments provide meeting-material titles, MIME types, and links, and conferenceProvider identifies the structured conference service. conferenceLink prefers Google's direct hangout link and otherwise uses its structured video entry. If it returns nextPageToken, repeat the same list filters with pageToken to read the next page. Add durationMinutes to exact time bounds to return busyMinutes, timedBusyMinutes, allDayBusyEvents, and free windows without event details; timedBusyMinutes is timed calendar load, not proven meeting time, while busyMinutes also includes opaque all-day blocks. Overlapping busy events count once and transparent or cancelled events do not count. Call it again with a returned eventId for iCalUID, allDay, eventType, creator, createdAt, updatedAt, blocksTime, recurring-series metadata, recurrenceRules, usesDefaultReminders, reminderOverrides, description, location, organizer, status, attendees, attendeeResponses, attachments, conferenceProvider, and conferenceLink. All modes are read-only.\n- Use relationship.create only when the user asks to add a company. Get the exact workspaceId from workspace.read first, and pass the requested company name plus only the domain, primary email, and context the user supplied. It creates one retry-safe internal Oppulence record and never contacts a provider or creates an external record.\n- Use relationship.correct only when the user explicitly asks to correct lifecycle, engagement, sentiment, or health on an internal Oppulence relationship. It preserves source evidence and never contacts anyone.\n- Use relationship.read with view mission_control when the user asks for an account brief, what needs attention, or whether evidence is complete enough to act. It reads the server-owned state, changes, evidence, freshness, pending work, and active recommendation without contacting the provider.\n- Use relationship.read with view graph when the user asks how accounts, people, commitments, actions, evidence, and sources connect. Use portfolio scope for the workspace or pass a relationshipId for one account; use asOf only for an explicit historical question. It reads the same versioned graph as the web and desktop views and never changes data.\n- Use relationship.review.acknowledge only when the user explicitly says they reviewed the exact state returned by mission_control. Pass its stateVersion and stateHash unchanged; stale state is rejected and no external system is changed.\n- Use relationship.read with view timeline when the user asks what happened in an account or why a relationship state exists. It reads the stored normalized history and evidence references without contacting the provider.\n- Use relationship.read with view assertions to show the exact provenance and assertion ID behind relationship state before changing it.\n- Use relationship.read with view identity_reviews when the user asks about possible duplicate or conflicting accounts. Show both candidate relationships, impact, evidence references, recommendation, and version; never infer or apply an identity decision from confidence alone.\n- Use relationship.read with view person_identity_reviews when the user asks whether two contact profiles might be the same person. Show both people, safe anchor labels, confidence, recommendation, status, and exact version; never infer or apply a merge from confidence alone.\n- Use relationship.identity.decide only when the user explicitly chooses merge, keep_separate, move_evidence, split, defer, or undo for a specific identity candidate and gives a reason. Pass the exact version from identity_reviews; explain that merge and move_evidence relocate internal account history before invoking it. It never changes the provider.\n- Use relationship.attention.decide only when the user explicitly asks to acknowledge, snooze, or dismiss a specific attention item and gives a reason. Pass its exact version from relationship.read with view attention; snooze also requires an exact future time. It never changes a provider or executes the related recommendation.\n- Use conversation.delete only when the user explicitly asks to delete conversation-derived data for a relationship. Read the relationship immediately before the request, pass its exact name, and explain that approval is required, a legal hold can block deletion, and the receipt may leave local-device or provider cleanup pending. It never deletes Gmail messages, calendar events, or other provider data.\n- Use relationship.assertion.retract only when the user explicitly asks to withdraw a specific user correction and gives a reason. It preserves the correction in the audit trail, restores the next valid projected value, and never changes the source system.\n- Use source.retry_sync only when the user explicitly asks to retry an existing source sync. It keeps the current connection and never starts OAuth or reconnects a provider.\n- Use task.create only when the user asks to create an internal Oppulence task. It never sends a message or creates a calendar event.\n- Use task.update only when the user asks to edit an existing internal Oppulence task. It can change its title, due time, or priority and never sends anything externally.\n- Use task.complete only when the user asks to complete an internal Oppulence task. It cannot dismiss other action types and never sends anything externally.\n- Use task.snooze only when the user asks to snooze an internal Oppulence task. It cannot snooze other action types and never sends anything externally.\n- Use recommendation.create only when the user asks to add an internal recommendation draft for an existing relationship. It derives the recipient from that relationship, adds the draft to Oppulence's review queue, and never creates a provider draft or sends anything.\n- Use recommendation.dismiss only when the user explicitly asks to dismiss an internal Oppulence recommendation and gives a reason. It cannot dismiss tasks and never executes or sends anything.\n- Use recommendation.snooze only when the user explicitly asks to snooze an internal Oppulence recommendation until a specific time. It cannot snooze tasks and never executes or sends anything.\n- Use recommendation.update only when the user asks to edit an internal recommendation draft. It can change the subject or message, invalidates prior approval when content changes, and never executes or sends anything.\n- Use action.audit when the user asks why an internal task or recommendation exists or what happened to it. It reads evidence and lifecycle history without changing anything.\n- Use action.outcome.record only when the user explicitly says an outcome happened for an internal task or recommendation. It records user-confirmed history in Oppulence and never contacts anyone.\n- Use action_proposal.read when the user asks which closed-loop finance actions are pending, approved, rejected, executed, failed, unconfirmed, or expired. It returns no approval token and never approves, rejects, or executes an action.\n- Use commitment.export when the user asks to review or export an internal commitment record. It returns the record and Markdown with evidence and history, but never shares or uploads it.\n- Use commitment.accept only when the user explicitly says an internal commitment was accepted. It records the transition in Oppulence and never contacts anyone.\n- Use commitment.block only when the user explicitly identifies what is blocking an accepted internal commitment. It records the blocker in Oppulence and never contacts anyone.\n- Use commitment.confirm only when the user explicitly confirms that an extracted internal commitment is accurate. It preserves source evidence and never contacts anyone.\n- Use commitment.correct only when the user explicitly asks to correct an internal commitment's text or due time. It preserves source evidence and never contacts anyone.\n- Use commitment.complete only when the user explicitly says an internal commitment was fulfilled. It records the transition in Oppulence and never contacts anyone.\n- Use commitment.dispute only when the user explicitly says an accepted or offered internal commitment is disputed and gives a reason. It records the reason in Oppulence and never contacts anyone.\n- Use commitment.unblock only when the user explicitly says an internal commitment's blocker was resolved. It clears the blocker in Oppulence and never contacts anyone.\n- Use person.create only when the user asks to add a person. Get the exact workspaceId from workspace.read first, and pass the requested full name plus only the email they supplied. It creates one retry-safe internal Oppulence contact and never contacts the person or changes a provider.\n- Use person.correct only when the user explicitly asks to correct an internal person profile fact. It preserves the source evidence and never contacts anyone.\n- Use person.attribute.retract only when the user explicitly asks to withdraw a specific profile fact and gives a reason. It preserves the fact in the audit trail and never changes the source system.\n- Use person.identity.decide only when the user explicitly chooses merge, keep_separate, defer, or undo for a specific person identity candidate and gives a reason. Pass the exact version from person_identity_reviews; for undo, read the resolved candidate first. Before merge, explain that Oppulence will move internal identity anchors, profile facts, account-participant links, and interaction history to the surviving person and tombstone the duplicate. Before undo, explain that Oppulence will restore that internal split and refuse if interaction history changed after the merge. Neither decision changes the provider.\n- Use person.delete only when the user explicitly asks to permanently remove a person. Read the person immediately before the request, pass its exact display name, distinguish user_action from subject_request, and explain that approval will remove the internal merged profile family and suppress its identity anchors so later syncs cannot recreate it. It never deletes mail, calendar events, or provider contacts.\n- Use note.create only when the user asks to create an internal Oppulence note. It never sends a message or creates an external event.\n- Use note.update only when the user asks to edit an existing internal Oppulence note. It keeps unspecified fields unchanged and never sends anything externally.\n- Use note.delete only when the user explicitly asks to delete an internal Oppulence note. It keeps a tombstone in history and never sends anything externally.\n- Use action.propose only when the user asks to prepare a finance action; it records a pending proposal and never approves or executes it.\n- For any action that requires approval, explain what you intend to do and why before requesting it.\n- Finish each turn with a short, plain-language summary of what you did or found.",
+           *           "name": "Assistant",
+           *           "slug": "assistant",
+           *           "source": "builtin"
+           *         },
+           *         {
+           *           "enabledTools": [
+           *             "current_time",
+           *             "echo",
+           *             "demo.payment",
+           *             "subagent.delegate",
+           *             "connector.read.hubspot_search",
+           *             "connector.write.hubspot_note",
+           *             "connector.write.hubspot_task",
+           *             "connector.read.composio_tool_search",
+           *             "connector.read.composio_tool_describe",
+           *             "connector.write.composio_tool_execute"
+           *           ],
+           *           "instructions": "You are a concierge agent that can take actions on the user's behalf and delegate research to subagents.\n\n- Break a request into steps. For self-contained research or drafting, delegate to a subagent via subagent.delegate and incorporate its summary.\n- Any money-moving action (e.g. demo.payment) requires explicit human approval. Describe the exact action and amount before requesting it, and never retry an approval that was denied — explain and adapt.\n- Use read-only tools freely. Keep the user informed with a short summary at the end of each turn.",
+           *           "name": "Concierge",
+           *           "slug": "concierge",
+           *           "source": "builtin",
+           *           "subagentRefs": [
+           *             "assistant"
+           *           ]
+           *         },
+           *         {
+           *           "enabledTools": [
+           *             "current_time",
+           *             "slack.read_thread",
+           *             "slack.post_message",
+           *             "connector.read.gmail",
+           *             "connector.read.calendar",
+           *             "connector.write.gmail_draft",
+           *             "web.search",
+           *             "conduit.read",
+           *             "eigen.simulate",
+           *             "connector.read.composio_tool_search",
+           *             "connector.read.composio_tool_describe",
+           *             "connector.write.composio_tool_execute"
+           *           ],
+           *           "instructions": "You are Rowboat's Slack concierge. A teammate has tagged you (@-mentioned) in a\nSlack thread to do work on their behalf. You run as a durable cloud agent.\n\n- Read the thread first when the request refers to \"this\", \"the above\", or the\n  conversation: call slack.read_thread to load the messages, then act.\n- Answer the request directly and concisely. Your final message each turn is\n  posted back into the Slack thread automatically — write it as the reply the\n  teammate should see, not as a status note to yourself.\n- Use slack.post_message only for an EXTRA message or to post into a DIFFERENT\n  channel; do not use it to repeat your final answer (that is delivered for you).\n  Posting requires human approval.\n- Only use the tools advertised to you. If a capability you need is not available\n  (e.g. a connector is not connected, or a scope is missing), say so plainly and\n  tell the teammate what to connect or grant.\n- Never fabricate data or claim to have used a tool you did not call.\n- Keep replies short and skimmable — Slack is a chat surface. Lead with the\n  answer; add detail only if it helps.",
+           *           "name": "Slack Concierge",
+           *           "slug": "concierge-slack",
+           *           "source": "builtin"
+           *         }
+           *       ]
+           *     }
+           */
+          "application/json": {
+            /** @description Agents ordered with workspace agents first, then built-ins. */
+            agents: {
+              /** @description Tools this agent can use. */
+              enabledTools: string[];
+              /**
+               * @description Purpose stored for this agent.
+               * @example You are a helpful, careful cloud assistant running as a durable Rowboat agent.
+               */
+              instructions?: string;
+              /**
+               * @description Display name.
+               * @example Assistant
+               */
+              name: string;
+              /**
+               * @description Short name.
+               * @example assistant
+               */
+              slug: string;
+              /**
+               * @description Where this agent comes from.
+               * @example builtin
+               */
+              source: string;
+            }[];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      500: components["responses"]["500"];
+    };
+  };
+  listAgentSessions: {
+    parameters: {
+      query?: {
+        /** @description Page offset. */
+        offset?: number;
+      };
       header?: never;
       path?: never;
       cookie?: never;
@@ -15388,6 +15635,11 @@ export interface operations {
           "application/json": {
             /** @description Register rows, each with its derived state and account. */
             commitments: components["schemas"]["CommitmentRegisterEntry"][];
+            /**
+             * @description Another promise exists beyond this page.
+             * @example false
+             */
+            hasMore?: boolean;
           };
         };
       };
@@ -18065,6 +18317,8 @@ export interface operations {
           | "resolved"
           | "all";
         limit?: number;
+        /** @description Page offset. */
+        offset?: number;
       };
       header?: never;
       path?: never;
@@ -18090,6 +18344,11 @@ export interface operations {
              * @example relationship-attention.v1
              */
             contractVersion: string;
+            /**
+             * @description Another company exists beyond this page of the queue.
+             * @example false
+             */
+            hasMore?: boolean;
             /** @description Attention items. */
             items: components["schemas"]["RelationshipAttentionItem"][];
           };
@@ -18188,6 +18447,8 @@ export interface operations {
         source?: string;
         relationshipId?: string;
         limit?: number;
+        /** @description Page offset. */
+        offset?: number;
       };
       header?: never;
       path?: never;
@@ -18204,6 +18465,11 @@ export interface operations {
           "application/json": {
             /** @description Candidates. */
             candidates: components["schemas"]["RelationshipIdentityCandidate"][];
+            /**
+             * @description Another duplicate exists beyond this page.
+             * @example false
+             */
+            hasMore?: boolean;
           };
         };
       };
@@ -18813,6 +19079,8 @@ export interface operations {
         health?: string;
         /** @description Engagement filter. */
         engagement?: string;
+        /** @description How many relationships to skip. Each page is 200 rows, newest touch first. */
+        offset?: number;
       };
       header?: never;
       path?: never;
@@ -18827,6 +19095,11 @@ export interface operations {
         };
         content: {
           "application/json": {
+            /**
+             * @description Another company exists beyond this page.
+             * @example false
+             */
+            hasMore?: boolean;
             /** @description Relationships. */
             relationships?: components["schemas"]["RevenueRelationship"][];
           };
@@ -18907,6 +19180,10 @@ export interface operations {
         depth?: number;
         /** @description Historical evidence boundary; must not be in the future. */
         asOf?: string;
+        /** @description Company offset. The first page is the 200 most recently updated companies. */
+        offset?: number;
+        /** @description Evidence offset. The first page is the newest conversations on each company. */
+        observationOffset?: number;
       };
       header?: never;
       path?: never;
@@ -19086,7 +19363,12 @@ export interface operations {
   };
   getRelationshipChanges: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description Maximum snapshots (default 2, max 50). */
+        limit?: number;
+        /** @description Page offset. */
+        offset?: number;
+      };
       header?: never;
       path: {
         /** @description Relationship id. */
@@ -19103,11 +19385,17 @@ export interface operations {
         };
         content: {
           "application/json": {
+            /**
+             * @description An older snapshot exists beyond this page.
+             * @example true
+             */
+            hasMore: boolean;
             /** @description Snapshots. */
-            snapshots?: components["schemas"]["RelationshipStateSnapshot"][];
+            snapshots: components["schemas"]["RelationshipStateSnapshot"][];
           };
         };
       };
+      400: components["responses"]["400"];
       401: components["responses"]["401"];
       404: components["responses"]["404"];
     };
@@ -19337,6 +19625,8 @@ export interface operations {
         limit?: number;
         /** @description Return items before this RFC3339 timestamp. */
         before?: string;
+        /** @description With before, also return items at that time whose id sorts earlier. */
+        beforeId?: string;
       };
       header?: never;
       path: {
@@ -19356,6 +19646,7 @@ export interface operations {
           "application/json": components["schemas"]["CommunicationTimelinePage"];
         };
       };
+      400: components["responses"]["400"];
       401: components["responses"]["401"];
       404: components["responses"]["404"];
     };
@@ -19647,6 +19938,45 @@ export interface operations {
       404: components["responses"]["404"];
     };
   };
+  getRelationshipConversationReview: {
+    parameters: {
+      query?: {
+        /** @description Observation offset. The first page is the newest 200 conversations. */
+        offset?: number;
+      };
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Conversation review page. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description Governance receipts from this page of conversations. */
+            governanceReceipts: components["schemas"]["ConversationGovernanceReceipt"][];
+            /**
+             * @description An older conversation exists beyond this page.
+             * @example false
+             */
+            hasMore: boolean;
+            /** @description Review items from this page of conversations. */
+            reviewItems: components["schemas"]["ConversationReviewItem"][];
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
   correctRelationship: {
     parameters: {
       query?: never;
@@ -19917,6 +20247,10 @@ export interface operations {
       query?: {
         /** @description Maximum observations (1-100). */
         limit?: number;
+        /** @description Return observations before this RFC3339 timestamp. */
+        before?: string;
+        /** @description With before, also return observations at that time whose id sorts earlier. */
+        beforeId?: string;
       };
       header?: never;
       path: {
@@ -19934,11 +20268,29 @@ export interface operations {
         };
         content: {
           "application/json": {
+            /**
+             * @description An older observation exists beyond this page.
+             * @example true
+             */
+            hasMore: boolean;
+            /**
+             * Format: date-time
+             * @description Occurred-at cursor for the next page.
+             * @example 2026-06-01T00:00:00Z
+             */
+            nextBefore?: string | null;
+            /**
+             * Format: uuid
+             * @description Id cursor for the next page. Send it with nextBefore.
+             * @example a1160000-0000-4000-8000-000000000002
+             */
+            nextBeforeId?: string | null;
             /** @description Observations. */
-            observations?: components["schemas"]["RelationshipObservation"][];
+            observations: components["schemas"]["RelationshipObservation"][];
           };
         };
       };
+      400: components["responses"]["400"];
       401: components["responses"]["401"];
       404: components["responses"]["404"];
     };
@@ -19950,6 +20302,10 @@ export interface operations {
         queueStatus?: "open" | "snoozed" | "dismissed" | "handled" | "all";
         /** @description Page size (max 100, default 10). */
         limit?: number;
+        /** @description How many actions to skip. Pages stay in priority order. */
+        offset?: number;
+        /** @description task keeps follow-up tasks. recovery keeps every other action. */
+        surface?: "task" | "recovery";
       };
       header?: never;
       path?: never;
@@ -19965,7 +20321,12 @@ export interface operations {
         content: {
           "application/json": {
             /** @description Actions. */
-            actions?: components["schemas"]["RevenueAction"][];
+            actions: components["schemas"]["RevenueAction"][];
+            /**
+             * @description Another task or follow-up exists beyond this page.
+             * @example false
+             */
+            hasMore?: boolean;
           };
         };
       };
@@ -20699,6 +21060,8 @@ export interface operations {
       query?: {
         /** @description Maximum scans to return (default 10, max 100). */
         limit?: number;
+        /** @description Page offset. */
+        offset?: number;
       };
       header?: never;
       path?: never;
@@ -20713,6 +21076,8 @@ export interface operations {
         };
         content: {
           "application/json": {
+            /** @description Another audit exists beyond this page. */
+            hasMore?: boolean;
             /** @description Scans newest first. */
             scans: components["schemas"]["RevenueLeakScan"][];
           };
@@ -21820,6 +22185,93 @@ export interface operations {
       400: components["responses"]["400"];
       401: components["responses"]["401"];
       500: components["responses"]["500"];
+    };
+  };
+  listWorkspaceNotes: {
+    parameters: {
+      query?: {
+        /** @description Maximum notes to return (default 50, max 100). */
+        limit?: number;
+        /** @description Number of collapsed notes to skip. */
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Collapsed workspace notes, newest first. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /**
+             * @description Whether another page of notes exists.
+             * @example false
+             */
+            hasMore: boolean;
+            /** @description Latest note for each note id. */
+            notes: {
+              /**
+               * @description Plain note body.
+               * @example Use the updated terms.
+               */
+              body: string;
+              /** @description Editor document, when one was saved. */
+              content?: {
+                [key: string]: unknown;
+              };
+              /**
+               * @description Stored event. Live notes are note.
+               * @example note
+               */
+              eventType: string;
+              /**
+               * @description Stable note id.
+               * @example note-1
+               */
+              externalId: string;
+              /**
+               * @description Whether the note is linked to a live note.
+               * @example false
+               */
+              liveLinked: boolean;
+              /**
+               * @description Whether the note is linked to a meeting.
+               * @example false
+               */
+              meetingLinked: boolean;
+              /**
+               * Format: date-time
+               * @description When this copy was written.
+               * @example 2026-09-01T12:00:00Z
+               */
+              occurredAt: string;
+              /**
+               * Format: uuid
+               * @description Company id.
+               * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+               */
+              relationshipId: string;
+              /**
+               * @description Company name.
+               * @example Cedar Notes
+               */
+              relationshipName: string;
+              /**
+               * @description Note title.
+               * @example Renewal context
+               */
+              title: string;
+            }[];
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
     };
   };
 }

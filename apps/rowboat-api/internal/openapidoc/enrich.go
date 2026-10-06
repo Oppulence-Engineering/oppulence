@@ -69,6 +69,7 @@ func Enrich(spec obj) {
 		obj{"name": "Entities", "description": "Org-scoped minimal entity identity spine (RFC 022)."},
 		obj{"name": "Internal", "description": "Server-to-server APIs. Most use X-Internal-Secret; connector invalidation uses individually scoped HMAC/JWT service principals."},
 		obj{"name": "GraphQL", "description": "Internal admin GraphQL over the ent graph."},
+		obj{"name": "Agents", "description": "Agents available in this workspace."},
 	}
 
 	components := ensureObj(spec, "components")
@@ -1041,6 +1042,7 @@ func addRuntimePaths(paths obj) {
 	addAuthPaths(paths)
 	addBillingPaths(paths)
 	addBackgroundTaskPaths(paths)
+	addAgentPaths(paths)
 	addAgentSessionPaths(paths)
 	addLLMPaths(paths)
 	addVendorProxyPaths(paths)
@@ -1051,6 +1053,30 @@ func addRuntimePaths(paths obj) {
 	addRevenuePaths(paths)
 	addInternalPaths(paths)
 	addVoiceCloudPaths(paths)
+}
+
+func documentedAgentList() obj {
+	var body obj
+	if err := json.Unmarshal([]byte(documentedAgentListJSON), &body); err != nil {
+		panic(err)
+	}
+	return body
+}
+
+func addAgentPaths(paths obj) {
+	paths["/v1/agents"] = obj{"get": operation("Agents", "List agents", "The agents page loads the built-in agents when this workspace has none of its own. The first one is Assistant, short name assistant, source builtin.", "listAgents", bearer(), nil, nil, obj{
+		"200": jsonResponse("Built-in agents.", objectSchema("Agent list.", obj{
+			"agents": arraySchema("Agents ordered with workspace agents first, then built-ins.", objectSchema("One agent.", obj{
+				"slug":         stringSchema("Short name.", "assistant"),
+				"name":         stringSchema("Display name.", "Assistant"),
+				"source":       stringSchema("Where this agent comes from.", "builtin"),
+				"instructions": stringSchema("Purpose stored for this agent.", "You are a helpful, careful cloud assistant running as a durable Rowboat agent."),
+				"enabledTools": arraySchema("Tools this agent can use.", stringSchema("Tool name.", "workspace.read")),
+			}, "slug", "name", "source", "enabledTools")),
+		}, "agents"), documentedAgentList()),
+		"401": responseRef("401"),
+		"500": responseRef("500"),
+	})}
 }
 
 func addAgentSessionPaths(paths obj) {
