@@ -2,6 +2,7 @@ package revenue
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -66,6 +67,30 @@ func TestScanComputesSignalsAndSearchRanks(t *testing.T) {
 		if matches[i-1].Score < matches[i].Score {
 			t.Fatal("matches must be sorted by descending score")
 		}
+	}
+}
+
+func TestSearchMailRanksTheLaunchPromise(t *testing.T) {
+	f := newFixture(t)
+	f.svc.SetSweeper(&fakeSweeper{threads: scanFixtureThreads(), email: selfAddr})
+	f.svc.SetEmbedder(&fakeEmbedder{enabled: true})
+	scan, err := f.svc.StartScan(f.ctx, f.user, 90)
+	if err != nil {
+		t.Fatalf("scan: %v", err)
+	}
+	waitScan(t, f, scan.ID)
+
+	matches, err := f.svc.SemanticSearch(f.ctx, f.user, "launch promise", 10)
+	if err != nil {
+		t.Fatalf("search: %v", err)
+	}
+	raw, err := json.Marshal(matches)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const want = `[{"threadId":"tc","subject":"Launch plan","counterparty":"client@example.org","classification":"other","summary":"An explicit promise in this message needs confirmation.","score":0.9130171833009648},{"threadId":"tp","subject":"SOW draft","counterparty":"buyer@example.com","classification":"deal","summary":"You sent a proposal-stage message 10 days ago and there has been no reply.","score":0.8497568598529869},{"threadId":"tw","subject":"Contract","counterparty":"casey@corp.com","classification":"client","summary":"Casey Lee asked you something 6 days ago and is still waiting on a reply.","score":0.848014789037389}]`
+	if string(raw) != want {
+		t.Fatalf("search mail:\n%s", raw)
 	}
 }
 

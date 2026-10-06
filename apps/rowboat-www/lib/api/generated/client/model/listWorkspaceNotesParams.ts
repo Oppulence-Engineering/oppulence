@@ -6,9 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type RevenueSemanticSearchParams = {
+export type ListWorkspaceNotesParams = {
   /**
-   * Words typed in Search mail.
+   * Maximum notes to return (default 50, max 100).
+   * @minimum 1
+   * @maximum 100
    */
-  q: string;
+  limit?: number;
+  /**
+   * Number of collapsed notes to skip.
+   * @minimum 0
+   */
+  offset?: number;
 };

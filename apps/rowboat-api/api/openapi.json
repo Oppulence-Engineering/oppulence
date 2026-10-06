@@ -27142,15 +27142,17 @@
     },
     "/v1/revenue-search": {
       "get": {
-        "description": "Natural-language search over the caller's Layer-2 signals (RFC 031). Returns available=false with no matches when semantic memory is not configured.",
+        "description": "Search mail sends the words typed in the palette. The answer lists the closest mail first, with the subject, the other person's email, the kind of thread, why it matched, and how close it is. When mail search is not set up, the answer includes no matches.",
         "operationId": "revenueSemanticSearch",
         "parameters": [
           {
-            "description": "Search query.",
+            "description": "Words typed in Search mail.",
             "in": "query",
             "name": "q",
             "required": true,
             "schema": {
+              "description": "Words typed in Search mail.",
+              "example": "launch promise",
               "type": "string"
             }
           }
@@ -27159,48 +27161,83 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "available": true,
+                  "matches": [
+                    {
+                      "classification": "other",
+                      "counterparty": "client@example.org",
+                      "score": 0.9130171833009648,
+                      "subject": "Launch plan",
+                      "summary": "An explicit promise in this message needs confirmation.",
+                      "threadId": "tc"
+                    },
+                    {
+                      "classification": "deal",
+                      "counterparty": "buyer@example.com",
+                      "score": 0.8497568598529869,
+                      "subject": "SOW draft",
+                      "summary": "You sent a proposal-stage message 10 days ago and there has been no reply.",
+                      "threadId": "tp"
+                    },
+                    {
+                      "classification": "client",
+                      "counterparty": "casey@corp.com",
+                      "score": 0.848014789037389,
+                      "subject": "Contract",
+                      "summary": "Casey Lee asked you something 6 days ago and is still waiting on a reply.",
+                      "threadId": "tw"
+                    }
+                  ]
+                },
                 "schema": {
-                  "description": "Search result.",
+                  "description": "Mail search answer.",
                   "properties": {
                     "available": {
-                      "description": "Whether semantic memory is configured.",
+                      "description": "Whether mail search is set up.",
                       "example": true,
                       "type": "boolean"
                     },
                     "matches": {
-                      "description": "Ranked matches.",
+                      "description": "Closest mail first.",
                       "items": {
-                        "description": "Match.",
+                        "description": "One mail thread.",
                         "properties": {
                           "classification": {
-                            "description": "Signal class.",
-                            "enum": ["deal", "invoice", "client", "referral", "other"],
-                            "example": "deal",
+                            "description": "Kind of thread.",
+                            "enum": [
+                              "deal",
+                              "invoice",
+                              "client",
+                              "referral",
+                              "other"
+                            ],
+                            "example": "other",
                             "type": "string"
                           },
                           "counterparty": {
-                            "description": "Counterparty email.",
-                            "example": "buyer@example.com",
+                            "description": "Other person's email.",
+                            "example": "client@example.org",
                             "type": "string"
                           },
                           "score": {
-                            "description": "Cosine similarity.",
-                            "example": 0.82,
+                            "description": "How close this thread is.",
+                            "example": 0.9130171833009648,
                             "type": "number"
                           },
                           "subject": {
-                            "description": "Thread subject.",
-                            "example": "Proposal follow-up",
+                            "description": "Subject.",
+                            "example": "Launch plan",
                             "type": "string"
                           },
                           "summary": {
-                            "description": "Derived summary.",
-                            "example": "Unanswered proposal from 10 days ago.",
+                            "description": "Why this thread matched.",
+                            "example": "An explicit promise in this message needs confirmation.",
                             "type": "string"
                           },
                           "threadId": {
-                            "description": "Provider thread id.",
-                            "example": "thr_01",
+                            "description": "Mail thread id.",
+                            "example": "tc",
                             "type": "string"
                           }
                         },
@@ -27213,7 +27250,7 @@
                 }
               }
             },
-            "description": "Ranked matches."
+            "description": "The mail Search mail ranks."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -27227,8 +27264,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Semantic search over mail",
-        "tags": ["Revenue"]
+        "summary": "Search mail",
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-workspaces/current": {
