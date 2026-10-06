@@ -648,6 +648,40 @@ func restoreRevenueSchemaOverrides(schemas obj) {
 	)
 }
 
+const documentedDraftedActionID = "1a8dfa9b-a7b2-46ea-982c-622a914c00e5"
+
+func documentedProviderDraft() obj {
+	return obj{
+		"id":                documentedDraftedActionID,
+		"relationshipId":    "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+		"relationshipName":  "Acme",
+		"actionType":        "warm_follow_up",
+		"channel":           "email",
+		"detector":          "requested_follow_up_due",
+		"revision":          1,
+		"revisionHash":      "sha256:ab12...",
+		"reason":            "They asked for a follow-up in July.",
+		"recipientEmail":    "buyer@example.com",
+		"proposedSubject":   "Following up as promised",
+		"proposedMessage":   "Hi Jordan — you asked me to circle back this month...",
+		"senderAccountRef":  "gmail:me@company.com",
+		"priorityScore":     82,
+		"queueStatus":       "handled",
+		"policyStatus":      "pending",
+		"approvalStatus":    "approved",
+		"executionStatus":   "sent",
+		"executionOwner":    "rowboat",
+		"executionMode":     "draft",
+		"approvedRevision":  1,
+		"approvedAt":        "2026-07-12T12:05:00Z",
+		"providerMessageId": "draft_1",
+		"executedAt":        "2026-07-12T12:06:00Z",
+		"createdAt":         "2026-07-12T12:00:00Z",
+		"updatedAt":         "2026-07-12T12:06:00Z",
+		"evidence":          []any{},
+	}
+}
+
 func addRevenuePaths(paths obj) {
 	actionParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Action id.", "schema": obj{"type": "string", "format": "uuid"}}}
 
@@ -1244,8 +1278,9 @@ func addRevenuePaths(paths obj) {
 		"404": responseRef("404"),
 		"409": responseRef("409"),
 	})}
-	paths["/v1/revenue-actions/{actionId}/execute"] = obj{"post": operation("Revenue", "Execute an action", "Executes the approved current revision exactly once through the assigned execution owner, with an idempotency key derived from the action and revision. A duplicate execute returns the existing result. A lost provider result is marked ambiguous and never automatically resent.", "executeRevenueAction", bearer(), actionParam, nil, obj{
-		"200": jsonResponse("Action after execution.", ref("RevenueAction"), nil),
+	executeActionParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Action id.", "schema": obj{"type": "string", "format": "uuid", "example": documentedDraftedActionID}}}
+	paths["/v1/revenue-actions/{actionId}/execute"] = obj{"post": operation("Revenue", "Create provider draft", "Create provider draft posts no request body. The stored action is sent and handled, and the draft time is recorded. Send approved email uses this same call when the action is in send mode.", "executeRevenueAction", bearer(), executeActionParam, nil, obj{
+		"200": jsonResponse("Provider draft created.", ref("RevenueAction"), documentedProviderDraft()),
 		"401": responseRef("401"),
 		"402": problemResponse("Acting on actions requires a paid subscription.", ref("ErrorEnvelope"), problemExample(402, "Payment Required", "an active subscription is required to act on actions", "subscription_required")),
 		"404": responseRef("404"),

@@ -315,6 +315,23 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the sent handled action Create provider draft stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-actions/{actionId}/execute"].post;
+    expect(operation.summary).toBe("Create provider draft");
+    expect(operation.operationId).toBe("executeRevenueAction");
+    expect(operation.requestBody).toBeUndefined();
+    expect(operation.responses["200"].content["application/json"].example).toMatchObject({
+      executionMode: "draft",
+      executionStatus: "sent",
+      queueStatus: "handled",
+      providerMessageId: "draft_1",
+      executedAt: "2026-07-12T12:06:00Z",
+    });
+    expect(presented.components.schemas.RevenueAction.properties.executionStatus.example).toBe("pending");
+    expect(presented.components.schemas.RevenueAction.properties.queueStatus.example).toBe("open");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
