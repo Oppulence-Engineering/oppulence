@@ -338,6 +338,62 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertUsedInbox(t, spec)
+}
+
+func TestUsedInboxStoresTheTemplate(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertUsedInbox(t, spec)
+}
+
+func assertUsedInbox(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	post := asObj(asObj(paths["/v1/background-task-templates/{templateSlug}/instantiate"])["post"])
+	if post["summary"] != "Use Inbox Digest" {
+		t.Fatalf("summary: %#v", post["summary"])
+	}
+	const description = "Use Inbox Digest posts an empty body. The stored workflow is named Inbox Digest, stays active, and runs in the cloud. It starts at 8:00 on weekdays in America/New_York, keeps the template instructions, model, and provider, and records revision 1 with schedule sync paused."
+	if post["description"] != description {
+		t.Fatalf("description: %#v", post["description"])
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
+	if mustJSON(request["example"]) != mustJSON(documentedUsedInboxRequest()) {
+		t.Fatalf("request example: %s", mustJSON(request["example"]))
+	}
+	response := asObj(asObj(post["responses"])["201"])
+	if response["description"] != "Stored workflow." {
+		t.Fatalf("response description: %#v", response["description"])
+	}
+	body := asObj(asObj(response["content"])["application/json"])
+	if mustJSON(body["example"]) != mustJSON(documentedUsedInbox()) {
+		t.Fatalf("response example: %s", mustJSON(body["example"]))
+	}
+	params, ok := post["parameters"].([]any)
+	if !ok || len(params) != 1 || asObj(asObj(params[0])["schema"])["example"] != "inbox-digest" {
+		t.Fatalf("path template: %#v", post["parameters"])
+	}
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	template := asObj(asObj(schemas["BackgroundTaskTemplate"])["properties"])
+	if asObj(template["instructions"])["example"] != "Review recent important Gmail messages and produce a markdown digest." {
+		t.Fatalf("template instructions example changed: %#v", template["instructions"])
+	}
+	if asObj(template["name"])["example"] != "Inbox Digest" || asObj(template["firstParty"])["example"] != false {
+		t.Fatalf("template identity changed: %#v", template)
+	}
+	create := asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks"])["post"])["requestBody"])["content"])["application/json"])
+	if asObj(create["example"])["slug"] != "daily-summary" {
+		t.Fatalf("create workflow example changed: %s", mustJSON(create["example"]))
+	}
+}
+
+func mustJSON(v any) string {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(raw)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

@@ -1329,11 +1329,8 @@ func addBackgroundTaskPaths(paths obj) {
 		}),
 	}
 	paths["/v1/background-task-templates/{templateSlug}/instantiate"] = obj{
-		"post": operation("Background Tasks", "Instantiate background task template", "Creates a normal background task from a built-in template. The resulting task is owned by the authenticated user and then follows the same trigger, admission, and Temporal execution path as tasks created directly.", "instantiateBackgroundTaskTemplate", bearer(), []any{templateSlugParam()}, jsonRequestOptional("Optional template overrides.", ref("BackgroundTaskTemplateInstantiateRequest"), obj{
-			"slug": "exec-inbox",
-			"name": "Executive Inbox Digest",
-		}), obj{
-			"201": jsonResponse("Created task.", ref("BackgroundTask"), backgroundTaskExample()),
+		"post": operation("Background Tasks", "Use Inbox Digest", "Use Inbox Digest posts an empty body. The stored workflow is named Inbox Digest, stays active, and runs in the cloud. It starts at 8:00 on weekdays in America/New_York, keeps the template instructions, model, and provider, and records revision 1 with schedule sync paused.", "instantiateBackgroundTaskTemplate", bearer(), []any{templateSlugParam()}, jsonRequestOptional("Optional template overrides.", ref("BackgroundTaskTemplateInstantiateRequest"), documentedUsedInboxRequest()), obj{
+			"201": jsonResponse("Stored workflow.", ref("BackgroundTask"), documentedUsedInbox()),
 			"400": responseRef("400"),
 			"401": responseRef("401"),
 			"404": responseRef("404"),
@@ -2191,6 +2188,29 @@ func revisionConflictResponse() obj {
 	ex := problemExample(409, "Conflict", "revision conflict", "conflict")
 	ex["currentRevision"] = 3
 	return problemResponse("Revision conflict. The caller wrote with a stale revision and should retry with currentRevision.", ref("RevisionConflictEnvelope"), ex)
+}
+
+func documentedUsedInboxRequest() obj {
+	return obj{}
+}
+
+func documentedUsedInbox() obj {
+	return obj{
+		"id":                "d8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+		"slug":              "inbox-digest",
+		"name":              "Inbox Digest",
+		"instructions":      "Review recent important Gmail messages, group them by account or topic, call out deadlines and blockers, and produce a markdown digest with concrete next actions.",
+		"active":            true,
+		"triggers":          obj{"cronExpr": "0 8 * * 1-5", "timezone": "America/New_York"},
+		"model":             "anthropic/claude-sonnet-4-5",
+		"provider":          "openrouter",
+		"executionTarget":   "api",
+		"systemManaged":     false,
+		"createdAt":         "2026-06-04T20:38:00Z",
+		"updatedAt":         "2026-06-04T20:38:00Z",
+		"scheduleSyncState": "paused",
+		"revision":          1,
+	}
 }
 
 func backgroundTaskExample() obj {
