@@ -20102,7 +20102,9 @@
           }
         ],
         "summary": "Delete console resource",
-        "tags": ["Console"]
+        "tags": [
+          "Console"
+        ]
       },
       "get": {
         "description": "Returns one caller-owned resource.",
@@ -20203,10 +20205,12 @@
           }
         ],
         "summary": "Get console resource",
-        "tags": ["Console"]
+        "tags": [
+          "Console"
+        ]
       },
       "patch": {
-        "description": "Validates the complete resulting kind-specific payload before updating.",
+        "description": "Save template posts the name and payload of an existing note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0, and the update time is later.",
         "operationId": "patchConsoleResource",
         "parameters": [
           {
@@ -20215,6 +20219,8 @@
             "name": "resourceId",
             "required": true,
             "schema": {
+              "description": "Console resource id.",
+              "example": "bed845f2-975a-4678-9c86-2157548161e4",
               "format": "uuid",
               "type": "string"
             }
@@ -20223,6 +20229,13 @@
         "requestBody": {
           "content": {
             "application/json": {
+              "example": {
+                "name": "Weekly account review",
+                "payload": {
+                  "body": "Agenda",
+                  "title": "Weekly account review"
+                }
+              },
               "schema": {
                 "$ref": "#/components/schemas/ConsoleResourcePatch"
               }
@@ -20235,12 +20248,24 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "createdAt": "2026-09-17T20:00:00Z",
+                  "id": "bed845f2-975a-4678-9c86-2157548161e4",
+                  "kind": "note_template",
+                  "name": "Weekly account review",
+                  "payload": {
+                    "body": "Agenda",
+                    "title": "Weekly account review"
+                  },
+                  "sortOrder": 0,
+                  "updatedAt": "2026-09-17T20:01:00Z"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/ConsoleResource"
                 }
               }
             },
-            "description": "Resource."
+            "description": "Stored template."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -20332,8 +20357,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Patch console resource",
-        "tags": ["Console"]
+        "summary": "Save template",
+        "tags": [
+          "Console"
+        ]
       }
     },
     "/v1/entities": {
