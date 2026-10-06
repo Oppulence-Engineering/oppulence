@@ -338,6 +338,35 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertResearchStatus(t, spec)
+}
+
+func TestCheckPublicResearchReportsConsentRequired(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertResearchStatus(t, spec)
+}
+
+func assertResearchStatus(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/research/status"])["get"])
+	if op["summary"] != "Check public research" {
+		t.Fatalf("summary: %#v", op["summary"])
+	}
+	content := asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])
+	example := asObj(content["example"])
+	consent := asObj(example["consent"])
+	if example["available"] != true || example["allowed"] != false || example["reason"] != "consent_required" || example["requiredPlan"] != "intelligence" || consent["consented"] != false || consent["consentedAt"] != nil {
+		t.Fatalf("research status: %#v", example)
+	}
+	props := asObj(asObj(content["schema"])["properties"])
+	reason := asObj(props["reason"])
+	if reason["example"] != "consent_required" || asObj(props["requiredPlan"])["example"] != "intelligence" {
+		t.Fatalf("research status fields: %#v %#v", reason, props["requiredPlan"])
+	}
+	if !reflect.DeepEqual(reason["enum"], []any{"consent_required", "plan_required", "capability_disabled", "provider_unconfigured", "unavailable"}) {
+		t.Fatalf("research status reasons: %#v", reason["enum"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
