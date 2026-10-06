@@ -648,6 +648,23 @@ func restoreRevenueSchemaOverrides(schemas obj) {
 	)
 }
 
+const documentedMailboxPolicyID = "db8dfa9b-a7b2-46ea-982c-622a914c00e5"
+
+func documentedMailboxPolicy() obj {
+	return obj{
+		"id":                     documentedMailboxPolicyID,
+		"sourceAccountId":        "you@company.com",
+		"metadataVisibility":     "workspace",
+		"shareSubject":           true,
+		"shareBody":              false,
+		"shareAttachments":       false,
+		"signatureEnrichment":    true,
+		"modelContactExtraction": true,
+		"retentionDays":          540,
+		"version":                1,
+	}
+}
+
 func addRevenuePaths(paths obj) {
 	actionParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Action id.", "schema": obj{"type": "string", "format": "uuid"}}}
 
@@ -1253,6 +1270,25 @@ func addRevenuePaths(paths obj) {
 	})}
 	paths["/v1/revenue-actions/{actionId}/source-body"] = obj{"get": operation("Revenue", "Get the original email body", "Returns the plain-text body of the original email behind this action (RFC 031 Layer 3), served from the sealed short-TTL cache or fetched from Gmail on demand. 404 when no source message is linked or the body is unavailable.", "getRevenueActionSourceBody", bearer(), actionParam, nil, obj{
 		"200": jsonResponse("Original email body.", objectSchema("Body.", obj{"body": stringSchema("Plain-text body.", "Hi — following up on the proposal...")}), nil),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+	})}
+	paths["/v1/revenue-workspaces/current/communication-policy/{sourceAccountId}"] = obj{"get": operation("Relationship Intelligence", "Mailbox policy", "Email & Calendar privacy loads this mailbox policy after the mailbox account is entered. Metadata stays workspace-visible, subject lines are shared, and bodies and attachments stay private.", "getCommunicationPolicy", bearer(), []any{obj{
+		"name": "sourceAccountId", "in": "path", "required": true, "description": "Mailbox account email.",
+		"schema": stringSchema("Mailbox account email.", "you@company.com"),
+	}}, nil, obj{
+		"200": jsonResponse("Stored mailbox policy.", objectSchema("Mailbox policy.", obj{
+			"id":                     uuidSchema("Policy id.", documentedMailboxPolicyID),
+			"sourceAccountId":        stringSchema("Mailbox account email.", "you@company.com"),
+			"metadataVisibility":     stringEnum("Who can see mailbox metadata.", "workspace", "private", "workspace"),
+			"shareSubject":           boolSchema("Share subject lines by default.", true),
+			"shareBody":              boolSchema("Share bodies by default.", false),
+			"shareAttachments":       boolSchema("Share attachments by default.", false),
+			"signatureEnrichment":    boolSchema("Read email signatures.", true),
+			"modelContactExtraction": boolSchema("Extract contacts from mail.", true),
+			"retentionDays":          intSchema("Days mailbox content is kept.", 540),
+			"version":                intSchema("Policy version.", 1),
+		}, "id", "sourceAccountId", "metadataVisibility", "shareSubject", "shareBody", "shareAttachments", "signatureEnrichment", "modelContactExtraction", "retentionDays", "version"), documentedMailboxPolicy()),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
