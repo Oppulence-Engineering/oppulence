@@ -315,6 +315,27 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the approved revision Approve stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/relationship-recommendations/{actionId}/approve"].post;
+    expect(operation.summary).toBe("Approve");
+    expect(operation.description).toContain("acceptRisk false");
+    expect(operation.requestBody.content["application/json"].example).toEqual({ acceptRisk: false });
+    expect(operation.responses["200"].content["application/json"].example).toMatchObject({
+      id: "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      approvalStatus: "approved",
+      approvedRevision: 1,
+      approvedAt: "2026-07-12T12:05:00Z",
+      queueStatus: "open",
+      executionStatus: "pending",
+      executionMode: "draft",
+      reason: "They asked for a follow-up in July.",
+    });
+    expect(operation.responses["200"].content["application/json"].example.executedAt).toBeUndefined();
+    expect(operation.responses["200"].content["application/json"].example.providerMessageId).toBeUndefined();
+    expect(presented.components.schemas.RevenueAction.properties.approvalStatus.example).toBe("pending");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
