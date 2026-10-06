@@ -315,6 +315,17 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the reason Confirm reject sends when the box is empty", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const body =
+      presented.paths["/v1/revenue-actions/{actionId}/reject"].post.requestBody.content[
+        "application/json"
+      ];
+    expect(body.example).toEqual({ reason: "not_appropriate" });
+    expect(body.schema.properties.reason.example).toBe("not_appropriate");
+    expect(JSON.stringify(body)).not.toContain("wrong_recipient");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

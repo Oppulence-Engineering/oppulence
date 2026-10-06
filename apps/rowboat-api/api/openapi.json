@@ -26554,14 +26554,14 @@
           "content": {
             "application/json": {
               "example": {
-                "reason": "wrong_recipient"
+                "reason": "not_appropriate"
               },
               "schema": {
                 "description": "Reject request.",
                 "properties": {
                   "reason": {
                     "description": "Reason.",
-                    "example": "wrong_recipient",
+                    "example": "not_appropriate",
                     "type": "string"
                   }
                 },

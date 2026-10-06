@@ -338,6 +338,26 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertRejectReason(t, spec)
+}
+
+func TestConfirmRejectSendsNotAppropriate(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertRejectReason(t, spec)
+}
+
+func assertRejectReason(t *testing.T, spec obj) {
+	t.Helper()
+	content := asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/revenue-actions/{actionId}/reject"])["post"])["requestBody"])["content"])["application/json"])
+	example := asObj(content["example"])
+	reason := asObj(asObj(asObj(content["schema"])["properties"])["reason"])
+	if example["reason"] != documentedRejectReason || reason["example"] != documentedRejectReason {
+		t.Fatalf("reject request: %#v %#v", example, reason)
+	}
+	if example["reason"] == "wrong_recipient" {
+		t.Fatal("reject still samples wrong_recipient")
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
