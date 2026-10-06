@@ -26,6 +26,7 @@ import type {
   BackgroundTaskTemplateInstantiateRequest,
   BackgroundTaskTemplatesResponse,
   BackgroundTaskTriggerRequest,
+  CancelBackgroundTaskRunBody,
   DeleteBackgroundTaskParams,
   ErrorEnvelope,
   ListBackgroundTaskRunEventsParams,
@@ -1143,17 +1144,20 @@ export const getCancelBackgroundTaskRunUrl = (slug: string, runId: string) => {
 };
 
 /**
- * Requests Temporal cancellation for an API-worker run and mirrors stopped/canceled state to Solomon AI. Desktop-local runs are rejected unless a future desktop cancellation bridge is added.
- * @summary Cancel API-worker run
+ * Cancel posts an empty body. The stored cloud run is stopped, its progress is Cancellation requested, and the revision is 3.
+ * @summary Cancel
  */
 export const cancelBackgroundTaskRun = async (
   slug: string,
   runId: string,
+  cancelBackgroundTaskRunBody?: CancelBackgroundTaskRunBody,
   options?: RequestInit,
 ): Promise<cancelBackgroundTaskRunResponse> => {
   const res = await fetch(getCancelBackgroundTaskRunUrl(slug, runId), {
     ...options,
     method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(cancelBackgroundTaskRunBody),
   });
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();

@@ -1477,8 +1477,11 @@ func addBackgroundTaskPaths(paths obj) {
 		}),
 	}
 	paths["/v1/background-tasks/{slug}/runs/{runId}/cancel"] = obj{
-		"post": operation("Background Tasks", "Cancel API-worker run", "Requests Temporal cancellation for an API-worker run and mirrors stopped/canceled state to Solomon AI. Desktop-local runs are rejected unless a future desktop cancellation bridge is added.", "cancelBackgroundTaskRun", bearer(), append(slugParam(), runIDParam()...), nil, obj{
-			"202": jsonResponse("Cancellation accepted.", ref("BackgroundTaskRun"), backgroundTaskQueuedRunExample()),
+		"post": operation("Background Tasks", "Cancel", "Cancel posts an empty body. The stored cloud run is stopped, its progress is Cancellation requested, and the revision is 3.", "cancelBackgroundTaskRun", bearer(), []any{
+			pathParam("slug", "Workflow to stop.", stringSchema("Workflow address.", "follow-up-when-a-promise-slips")),
+			pathParam("runId", "Run to stop.", stringSchema("Run id.", "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b")),
+		}, jsonRequestOptional("Empty cancel body.", obj{"type": "object"}, documentedCanceledRunRequest()), obj{
+			"202": jsonResponse("Stopped run.", ref("BackgroundTaskRun"), documentedCanceledRun()),
 			"400": responseRef("400"),
 			"401": responseRef("401"),
 			"404": responseRef("404"),
@@ -2307,6 +2310,35 @@ func backgroundTaskRunStatusExample() obj {
 		"startedAt":          "2026-06-04T21:01:00Z",
 		"completedAt":        nil,
 		"error":              "",
+		"revision":           3,
+	}
+}
+
+func documentedCanceledRunRequest() obj {
+	return obj{}
+}
+
+func documentedCanceledRun() obj {
+	const runID = "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b"
+	return obj{
+		"id":                 "88f5e632-a841-4557-a8e4-9b8f0d207ff4",
+		"runId":              runID,
+		"slug":               "follow-up-when-a-promise-slips",
+		"trigger":            "manual",
+		"status":             "stopped",
+		"executor":           "api",
+		"attempt":            1,
+		"requestedContext":   "Started from the visual workflow editor.",
+		"temporalWorkflowId": "background-task/user/follow-up-when-a-promise-slips/" + runID,
+		"temporalRunId":      "00000000-0000-0000-0000-000000000002",
+		"temporalStatus":     "Canceled",
+		"temporalClosedAt":   "2026-06-04T21:03:00Z",
+		"cancelRequestedAt":  "2026-06-04T21:03:00Z",
+		"progressPercent":    0,
+		"progressMessage":    "Cancellation requested.",
+		"completedAt":        "2026-06-04T21:03:00Z",
+		"createdAt":          "2026-06-04T21:00:30Z",
+		"updatedAt":          "2026-06-04T21:03:00Z",
 		"revision":           3,
 	}
 }
