@@ -655,14 +655,14 @@ func addRevenuePaths(paths obj) {
 		"200": jsonResponse("Current workspace.", ref("RevenueWorkspace"), nil),
 		"401": responseRef("401"),
 	})}
-	paths["/v1/revenue-workspaces/link"] = obj{"post": operation("Revenue", "Link the OutboundConsole workspace", "Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.", "linkRevenueWorkspace", bearer(), nil, jsonRequest("OutboundConsole identifiers.", objectSchema("Link request.", obj{
-		"outboundOrganizationId": stringSchema("OutboundConsole organization id.", "org_01ABC"),
-		"outboundWorkspaceId":    stringSchema("OutboundConsole workspace id.", "ws_01ABC"),
-	}, "outboundWorkspaceId"), obj{"outboundOrganizationId": "org_01ABC", "outboundWorkspaceId": "ws_01ABC"}), obj{
-		"200": jsonResponse("Linked workspace.", ref("RevenueWorkspace"), nil),
+	paths["/v1/revenue-workspaces/link"] = obj{"post": operation("Revenue", "Link workspace", "Link workspace sends the sending workspace id and the organization id from the form. The stored workspace keeps those ids, switches to linked, and turns the sending check on.", "linkRevenueWorkspace", bearer(), nil, jsonRequest("Sending workspace id and organization id.", objectSchema("Link request.", obj{
+		"outboundOrganizationId": stringSchema("Organization id.", linkedOrganizationID),
+		"outboundWorkspaceId":    stringSchema("Sending workspace id.", linkedSendingWorkspaceID),
+	}, "outboundWorkspaceId"), linkedWorkspaceRequest()), obj{
+		"200": jsonResponse("The linked workspace Link workspace stores.", ref("RevenueWorkspace"), linkedWorkspace()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
-		"503": problemResponse("Policy facade unavailable; the link fails closed.", ref("ErrorEnvelope"), problemExample(503, "Service Unavailable", "policy preflight unavailable; the action stays pending", "facade_unavailable")),
+		"503": problemResponse("Checked sending is not configured, so the link stays off.", ref("ErrorEnvelope"), problemExample(503, "Service Unavailable", "policy preflight unavailable; the action stays pending", "facade_unavailable")),
 	})}
 
 	paths["/v1/revenue-impact"] = obj{"get": operation("Revenue", "Get the revenue impact summary", "Returns the aggregate ROI picture for the caller: actions surfaced, triage breakdown, executions, outcomes, reply/meeting rates, and per-detector contribution.", "getRevenueImpact", bearer(), nil, nil, obj{
@@ -1311,4 +1311,28 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
+}
+
+const (
+	linkedWorkspaceID         = "0b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	linkedOrganizationID      = "org_1"
+	linkedSendingWorkspaceID  = "ws_1"
+	linkedWorkspaceVerifiedAt = "2026-07-12T12:00:00Z"
+)
+
+func linkedWorkspaceRequest() obj {
+	return obj{
+		"outboundOrganizationId": linkedOrganizationID,
+		"outboundWorkspaceId":    linkedSendingWorkspaceID,
+	}
+}
+
+func linkedWorkspace() obj {
+	saved := linkedWorkspaceRequest()
+	saved["id"] = linkedWorkspaceID
+	saved["mode"] = "linked"
+	saved["status"] = "active"
+	saved["lastVerifiedAt"] = linkedWorkspaceVerifiedAt
+	saved["preflightAvailable"] = true
+	return saved
 }

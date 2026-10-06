@@ -27390,47 +27390,58 @@
     },
     "/v1/revenue-workspaces/link": {
       "post": {
-        "description": "Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.",
+        "description": "Link workspace sends the sending workspace id and the organization id from the form. The stored workspace keeps those ids, switches to linked, and turns the sending check on.",
         "operationId": "linkRevenueWorkspace",
         "requestBody": {
           "content": {
             "application/json": {
               "example": {
-                "outboundOrganizationId": "org_01ABC",
-                "outboundWorkspaceId": "ws_01ABC"
+                "outboundOrganizationId": "org_1",
+                "outboundWorkspaceId": "ws_1"
               },
               "schema": {
                 "description": "Link request.",
                 "properties": {
                   "outboundOrganizationId": {
-                    "description": "OutboundConsole organization id.",
-                    "example": "org_01ABC",
+                    "description": "Organization id.",
+                    "example": "org_1",
                     "type": "string"
                   },
                   "outboundWorkspaceId": {
-                    "description": "OutboundConsole workspace id.",
-                    "example": "ws_01ABC",
+                    "description": "Sending workspace id.",
+                    "example": "ws_1",
                     "type": "string"
                   }
                 },
-                "required": ["outboundWorkspaceId"],
+                "required": [
+                  "outboundWorkspaceId"
+                ],
                 "type": "object"
               }
             }
           },
-          "description": "OutboundConsole identifiers.",
+          "description": "Sending workspace id and organization id.",
           "required": true
         },
         "responses": {
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "id": "0b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "lastVerifiedAt": "2026-07-12T12:00:00Z",
+                  "mode": "linked",
+                  "outboundOrganizationId": "org_1",
+                  "outboundWorkspaceId": "ws_1",
+                  "preflightAvailable": true,
+                  "status": "active"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueWorkspace"
                 }
               }
             },
-            "description": "Linked workspace."
+            "description": "The linked workspace Link workspace stores."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -27454,7 +27465,7 @@
                 }
               }
             },
-            "description": "Policy facade unavailable; the link fails closed."
+            "description": "Checked sending is not configured, so the link stays off."
           }
         },
         "security": [
@@ -27462,8 +27473,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Link the OutboundConsole workspace",
-        "tags": ["Revenue"]
+        "summary": "Link workspace",
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/search/exa": {

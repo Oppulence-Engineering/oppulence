@@ -7,11 +7,6 @@
  */
 
 /**
- * Link request.
+ * Editor document, when one was saved.
  */
-export type LinkRevenueWorkspaceBody = {
-  /** Organization id. */
-  outboundOrganizationId?: string;
-  /** Sending workspace id. */
-  outboundWorkspaceId: string;
-};
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };
