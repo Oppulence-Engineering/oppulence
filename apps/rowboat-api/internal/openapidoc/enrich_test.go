@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,54 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertOpenPlan(t, spec)
+}
+
+func TestOpenPlan(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertOpenPlan(t, spec)
+}
+
+func assertOpenPlan(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/public/mutual-action-plan"])["get"])
+	if operation["summary"] != "Review the shared plan" || operation["operationId"] != "getPublicMutualActionPlan" {
+		t.Fatalf("open plan operation: summary=%#v id=%#v", operation["summary"], operation["operationId"])
+	}
+	if operation["description"] != "Review the shared plan opens this plan. The page shows the version and each item title." {
+		t.Fatalf("description: %#v", operation["description"])
+	}
+	if operation["requestBody"] != nil {
+		t.Fatalf("opening the plan sends no body: %#v", operation["requestBody"])
+	}
+	params, ok := operation["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("parameters: %#v", operation["parameters"])
+	}
+	header := asObj(params[0])
+	if header["name"] != "X-Oppulence-Plan-Token" || header["in"] != "header" || header["example"] != nil || asObj(header["schema"])["example"] != nil {
+		t.Fatalf("plan token stays unpublished: %#v", header)
+	}
+	example := asObj(asObj(asObj(asObj(operation["responses"])["200"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(openPlanExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("open plan example:\n%s\nwant:\n%s", got, want)
+	}
+	encoded := string(got)
+	if strings.Contains(encoded, "responseToken") || strings.Contains(encoded, "commitmentId") || strings.Contains(encoded, "alex@example.com") {
+		t.Fatalf("public plan kept a private field: %s", encoded)
+	}
+	if !strings.Contains(encoded, openPlanTitle) || !strings.Contains(encoded, `"ownerParticipantRef":"plan-participant"`) || !strings.Contains(encoded, openPlanRevisionHash()) {
+		t.Fatalf("public plan is missing the page: %s", encoded)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
