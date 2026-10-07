@@ -20124,14 +20124,23 @@ export interface operations {
   listRevenueActions: {
     parameters: {
       query?: {
-        /** @description Queue status filter, or all. */
+        /**
+         * @description Queue status filter, or all.
+         * @example open
+         */
         queueStatus?: "open" | "snoozed" | "dismissed" | "handled" | "all";
-        /** @description Page size (max 100). Recovery asks for 100. */
+        /**
+         * @description Page size (max 100). Recovery asks for 100.
+         * @example 100
+         */
         limit?: number;
         /** @description How many actions to skip. Recovery does not send this on the first page. */
         offset?: number;
-        /** @description task keeps follow-up tasks. recovery keeps every other action. */
-        surface?: "task" | "recovery";
+        /**
+         * @description recovery keeps every action that is not a follow-up task. task keeps follow-up tasks.
+         * @example recovery
+         */
+        surface?: "recovery" | "task";
       };
       header?: never;
       path?: never;

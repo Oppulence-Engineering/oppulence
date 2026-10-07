@@ -23,7 +23,7 @@ export type ListRevenueActionsParams = {
    */
   offset?: number;
   /**
-   * task keeps follow-up tasks. recovery keeps every other action.
+   * recovery keeps every action that is not a follow-up task. task keeps follow-up tasks.
    */
   surface?: ListRevenueActionsSurface;
 };

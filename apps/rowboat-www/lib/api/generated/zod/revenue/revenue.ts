@@ -30,9 +30,11 @@ export const ListRevenueActionsQueryParams = zod.object({
     .optional()
     .describe("How many actions to skip. Recovery does not send this on the first page."),
   surface: zod
-    .enum(["task", "recovery"])
+    .enum(["recovery", "task"])
     .optional()
-    .describe("task keeps follow-up tasks. recovery keeps every other action."),
+    .describe(
+      "recovery keeps every action that is not a follow-up task. task keeps follow-up tasks.",
+    ),
 });
 
 export const ListRevenueActions200Response = zod

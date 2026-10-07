@@ -25674,6 +25674,7 @@
         "parameters": [
           {
             "description": "Queue status filter, or all.",
+            "example": "open",
             "in": "query",
             "name": "queueStatus",
             "required": false,
@@ -25691,6 +25692,7 @@
           },
           {
             "description": "Page size (max 100). Recovery asks for 100.",
+            "example": 100,
             "in": "query",
             "name": "limit",
             "required": false,
@@ -25710,14 +25712,15 @@
             }
           },
           {
-            "description": "task keeps follow-up tasks. recovery keeps every other action.",
+            "description": "recovery keeps every action that is not a follow-up task. task keeps follow-up tasks.",
+            "example": "recovery",
             "in": "query",
             "name": "surface",
             "required": false,
             "schema": {
               "enum": [
-                "task",
-                "recovery"
+                "recovery",
+                "task"
               ],
               "example": "recovery",
               "type": "string"

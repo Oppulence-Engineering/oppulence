@@ -1144,10 +1144,10 @@ func addRevenuePaths(paths obj) {
 
 	paths["/v1/revenue-actions"] = obj{
 		"get": operation("Revenue", "Recovery", recoveryQueueDescription, "listRevenueActions", bearer(), []any{
-			obj{"name": "queueStatus", "in": "query", "required": false, "description": "Queue status filter, or all.", "schema": obj{"type": "string", "enum": []any{"open", "snoozed", "dismissed", "handled", "all"}, "example": "open"}},
-			obj{"name": "limit", "in": "query", "required": false, "description": "Page size (max 100). Recovery asks for 100.", "schema": obj{"type": "integer", "example": 100}},
+			obj{"name": "queueStatus", "in": "query", "required": false, "description": "Queue status filter, or all.", "example": "open", "schema": obj{"type": "string", "enum": []any{"open", "snoozed", "dismissed", "handled", "all"}, "example": "open"}},
+			obj{"name": "limit", "in": "query", "required": false, "description": "Page size (max 100). Recovery asks for 100.", "example": 100, "schema": obj{"type": "integer", "example": 100}},
 			obj{"name": "offset", "in": "query", "required": false, "description": "How many actions to skip. Recovery does not send this on the first page.", "schema": obj{"type": "integer", "minimum": 0}},
-			obj{"name": "surface", "in": "query", "required": false, "description": "task keeps follow-up tasks. recovery keeps every other action.", "schema": obj{"type": "string", "enum": []any{"task", "recovery"}, "example": "recovery"}},
+			obj{"name": "surface", "in": "query", "required": false, "description": "recovery keeps every action that is not a follow-up task. task keeps follow-up tasks.", "example": "recovery", "schema": obj{"type": "string", "enum": []any{"recovery", "task"}, "example": "recovery"}},
 		}, nil, obj{
 			"200": jsonResponse("Queue page.", objectSchema("Action list. A full page is the end of the queue when hasMore is false.", obj{
 				"actions": arraySchema("Actions.", ref("RevenueAction")),
