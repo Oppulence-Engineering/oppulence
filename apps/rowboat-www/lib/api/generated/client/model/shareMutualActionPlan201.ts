@@ -7,6 +7,6 @@
  */
 
 /**
- * Plan share result.
+ * Shared plan and one-time value.
  */
-export type ShareMutualActionPlan200 = { [key: string]: unknown };
+export type ShareMutualActionPlan201 = { [key: string]: unknown };

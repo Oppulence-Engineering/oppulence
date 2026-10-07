@@ -56,6 +56,8 @@ import type {
   ListRelationshipIdentityCandidatesParams,
   ListRelationships200,
   ListRelationshipsParams,
+  ListWorkspaceNotes200,
+  ListWorkspaceNotesParams,
   N400Response,
   N401Response,
   N403Response,
@@ -83,7 +85,7 @@ import type {
   ReviseMutualActionPlanBody,
   RunCommitmentRecovery200,
   RunCommitmentRecoveryBody,
-  ShareMutualActionPlan200,
+  ShareMutualActionPlan201,
   ShareMutualActionPlanBody,
 } from "../model";
 
@@ -2668,9 +2670,9 @@ export const approveMutualActionPlan = async (
   return { data, status: res.status, headers: res.headers } as approveMutualActionPlanResponse;
 };
 
-export type shareMutualActionPlanResponse200 = {
-  data: ShareMutualActionPlan200;
-  status: 200;
+export type shareMutualActionPlanResponse201 = {
+  data: ShareMutualActionPlan201;
+  status: 201;
 };
 
 export type shareMutualActionPlanResponse401 = {
@@ -2688,7 +2690,7 @@ export type shareMutualActionPlanResponse409 = {
   status: 409;
 };
 
-export type shareMutualActionPlanResponseSuccess = shareMutualActionPlanResponse200 & {
+export type shareMutualActionPlanResponseSuccess = shareMutualActionPlanResponse201 & {
   headers: Headers;
 };
 export type shareMutualActionPlanResponseError = (
@@ -2707,8 +2709,8 @@ export const getShareMutualActionPlanUrl = (relationshipId: string, planId: stri
 };
 
 /**
- * Re-evaluates effective policy, creates a scoped expiring token, stores only its hash, and queues the exact approved revision for operator approval.
- * @summary Queue an approved plan share
+ * Draft an email to share this plan marks that approved plan as shared and writes a draft email. The email is not sent.
+ * @summary Draft an email to share this plan
  */
 export const shareMutualActionPlan = async (
   relationshipId: string,
@@ -2924,4 +2926,66 @@ export const getCommunicationInteractionBody = async (
     status: res.status,
     headers: res.headers,
   } as getCommunicationInteractionBodyResponse;
+};
+
+export type listWorkspaceNotesResponse200 = {
+  data: ListWorkspaceNotes200;
+  status: 200;
+};
+
+export type listWorkspaceNotesResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type listWorkspaceNotesResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listWorkspaceNotesResponseSuccess = listWorkspaceNotesResponse200 & {
+  headers: Headers;
+};
+export type listWorkspaceNotesResponseError = (
+  listWorkspaceNotesResponse400 | listWorkspaceNotesResponse401
+) & {
+  headers: Headers;
+};
+
+export type listWorkspaceNotesResponse =
+  listWorkspaceNotesResponseSuccess | listWorkspaceNotesResponseError;
+
+export const getListWorkspaceNotesUrl = (params?: ListWorkspaceNotesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/workspace-notes?${stringifiedParams}`
+    : `/v1/workspace-notes`;
+};
+
+/**
+ * Returns the latest copy of each company note in this workspace. One request reads every company, so the notes page does not ask for each company timeline. A newer edit replaces the previous copy, and a later deletion removes the note.
+ * @summary List workspace notes
+ */
+export const listWorkspaceNotes = async (
+  params?: ListWorkspaceNotesParams,
+  options?: RequestInit,
+): Promise<listWorkspaceNotesResponse> => {
+  const res = await fetch(getListWorkspaceNotesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listWorkspaceNotesResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listWorkspaceNotesResponse;
 };

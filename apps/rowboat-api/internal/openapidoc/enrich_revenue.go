@@ -991,10 +991,7 @@ func addRevenuePaths(paths obj) {
 		"200": jsonResponse("Approved plan.", freeFormSchema("Mutual action plan."), nil),
 		"401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
-	paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share"] = obj{"post": operation("Relationship Intelligence", "Queue an approved plan share", "Re-evaluates effective policy, creates a scoped expiring token, stores only its hash, and queues the exact approved revision for operator approval.", "shareMutualActionPlan", bearer(), planParam, jsonRequestOptional("Empty request.", objectSchema("Plan share request.", obj{}), obj{}), obj{
-		"200": jsonResponse("Shared plan metadata and one-time response token.", freeFormSchema("Plan share result."), nil),
-		"401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
-	})}
+	paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share"] = obj{"post": sharePlanOperation()}
 	paths["/v1/relationships/{relationshipId}/conversation-policy"] = obj{
 		"get": operation("Relationship Intelligence", "Inspect conversation policy", "Returns all applicable layers and the monotonically resolved effective policy.", "getConversationPolicy", bearer(), relationshipParam, nil, obj{
 			"200": jsonResponse("Policy layers and effective policy.", freeFormSchema("Conversation policy result."), nil), "401": responseRef("401"), "404": responseRef("404"),

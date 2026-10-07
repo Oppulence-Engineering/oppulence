@@ -25493,25 +25493,31 @@
     },
     "/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share": {
       "post": {
-        "description": "Re-evaluates effective policy, creates a scoped expiring token, stores only its hash, and queues the exact approved revision for operator approval.",
+        "description": "Draft an email to share this plan marks that approved plan as shared and writes a draft email. The email is not sent.",
         "operationId": "shareMutualActionPlan",
         "parameters": [
           {
             "description": "Relationship id.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "relationshipId",
             "required": true,
             "schema": {
+              "description": "Relationship id.",
+              "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
           },
           {
             "description": "Mutual action plan id.",
+            "example": "plan:f8dfa9b6-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "planId",
             "required": true,
             "schema": {
+              "description": "Mutual action plan id.",
+              "example": "plan:f8dfa9b6-a7b2-46ea-982c-622a914c00e5",
               "type": "string"
             }
           }
@@ -25531,17 +25537,51 @@
           "required": false
         },
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "plan": {
+                    "counterpartyRef": "jordan@example.com",
+                    "currentRevision": {
+                      "createdAt": "2026-07-15T16:00:00Z",
+                      "createdBy": "0c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "items": [
+                        {
+                          "commitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "dependencyItemIds": [],
+                          "dueAt": "2026-07-15T17:00:00Z",
+                          "evidenceRefs": [
+                            "revenue-evidence:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                          ],
+                          "itemId": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "ownerParticipantRef": "jordan@example.com",
+                          "status": "open",
+                          "title": "Follow up on the proposal"
+                        }
+                      ],
+                      "planId": "plan:f8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+                      "revisionHash": "sha256:c7ba0b5e53805088b4435a27848fb9a5c899287b4aac146b86d4709eaef49dc0",
+                      "revisionId": "revision:d8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+                      "version": 1
+                    },
+                    "internalOwnerRef": "0c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "planId": "plan:f8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+                    "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "sharePolicyDecisionId": "governance:ab12cd34ef56789012345678",
+                    "status": "shared",
+                    "tokenState": "active"
+                  },
+                  "responseToken": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+                },
                 "schema": {
                   "additionalProperties": true,
-                  "description": "Plan share result.",
+                  "description": "Shared plan and one-time value.",
                   "type": "object"
                 }
               }
             },
-            "description": "Shared plan metadata and one-time response token."
+            "description": "The approved plan is shared, and a draft email is ready."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -25558,8 +25598,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Queue an approved plan share",
-        "tags": ["Relationship Intelligence"]
+        "summary": "Draft an email to share this plan",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/timeline": {
