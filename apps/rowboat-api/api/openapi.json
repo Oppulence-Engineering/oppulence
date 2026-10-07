@@ -20011,15 +20011,18 @@
     },
     "/v1/console/resources/{resourceId}": {
       "delete": {
-        "description": "Deletes one caller-owned resource.",
+        "description": "Remove from favorites deletes the saved favorite for that note. The note stays.",
         "operationId": "deleteConsoleResource",
         "parameters": [
           {
-            "description": "Console resource id.",
+            "description": "Saved favorite to remove.",
+            "example": "e8dfa9b6-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "resourceId",
             "required": true,
             "schema": {
+              "description": "Saved favorite id.",
+              "example": "e8dfa9b6-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -20027,7 +20030,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Resource deleted."
+            "description": "The favorite is gone."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -20101,8 +20104,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Delete console resource",
-        "tags": ["Console"]
+        "summary": "Remove from favorites",
+        "tags": [
+          "Console"
+        ]
       },
       "get": {
         "description": "Returns one caller-owned resource.",

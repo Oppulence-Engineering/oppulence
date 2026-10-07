@@ -996,11 +996,11 @@ export const CreateConsoleResource500Response = zod
   );
 
 /**
- * Deletes one caller-owned resource.
- * @summary Delete console resource
+ * Remove from favorites deletes the saved favorite for that note. The note stays.
+ * @summary Remove from favorites
  */
 export const DeleteConsoleResourceParams = zod.object({
-  resourceId: zod.uuid().describe("Console resource id."),
+  resourceId: zod.uuid().describe("Saved favorite to remove."),
 });
 
 export const DeleteConsoleResource204Response = zod.void();

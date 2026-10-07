@@ -315,6 +315,25 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the favorite Remove from favorites deletes", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/console/resources/{resourceId}"].delete;
+    expect(operation.summary).toBe("Remove from favorites");
+    expect(operation.operationId).toBe("deleteConsoleResource");
+    expect(operation.description).toBe(
+      "Remove from favorites deletes the saved favorite for that note. The note stays.",
+    );
+    expect(operation.parameters).toEqual([
+      expect.objectContaining({
+        name: "resourceId",
+        example: "e8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+        schema: expect.objectContaining({ example: "e8dfa9b6-a7b2-46ea-982c-622a914c00e5" }),
+      }),
+    ]);
+    expect(operation.responses["204"].description).toBe("The favorite is gone.");
+    expect(operation.responses["204"].content).toBeUndefined();
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

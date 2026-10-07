@@ -136,14 +136,11 @@ func addConsolePaths(paths obj) {
 	getResponses["404"] = consoleNotFoundResponse()
 	patchResponses := cloneResponses(getResponses)
 	patchResponses["409"] = consoleConflictResponse()
-	deleteResponses := cloneResponses(authErrors)
-	deleteResponses["204"] = obj{"description": "Resource deleted."}
-	deleteResponses["404"] = consoleNotFoundResponse()
 	paths["/v1/console/resources/{resourceId}"] = obj{
 		"get": operation("Console", "Get console resource", "Returns one caller-owned resource.", "getConsoleResource", bearer(), resourceID, nil, getResponses),
 		"patch": operation("Console", "Patch console resource", "Validates the complete resulting kind-specific payload before updating.", "patchConsoleResource", bearer(), resourceID,
 			jsonRequest("Mutable resource fields.", ref("ConsoleResourcePatch"), nil), patchResponses),
-		"delete": operation("Console", "Delete console resource", "Deletes one caller-owned resource.", "deleteConsoleResource", bearer(), resourceID, nil, deleteResponses),
+		"delete": removeFavoriteOperation(),
 	}
 }
 
