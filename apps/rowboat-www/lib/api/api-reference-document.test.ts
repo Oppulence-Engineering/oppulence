@@ -315,6 +315,33 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the receipt Confirm delete returns", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const post = presented.paths["/v1/relationships/{relationshipId}/conversation-deletion"].post;
+    expect(post.summary).toBe("Confirm delete");
+    expect(post.operationId).toBe("requestConversationDeletion");
+    expect(post.description).toBe(
+      "Confirm delete removes this company's conversation evidence from Oppulence. Copies on this device and at the mailbox stay until they are checked.",
+    );
+    const relationship = post.parameters.find(
+      (parameter: { name: string }) => parameter.name === "relationshipId",
+    );
+    expect(relationship.example).toBe("9c8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    expect(post.requestBody.content["application/json"].example.requestId).toBeTruthy();
+    const example = post.responses["202"].content["application/json"].example;
+    expect(example.status).toBe("partial");
+    expect(example.legalHold).toBe(false);
+    expect(example.scopeRef).toBe("9c8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    expect(example.targets.find((target: { target: string }) => target.target === "api_evidence").status).toBe(
+      "deleted",
+    );
+    expect(example.targets.find((target: { target: string }) => target.target === "provider").status).toBe(
+      "pending",
+    );
+    expect(example.completedAt).toBeUndefined();
+    expect(JSON.stringify(post)).not.toContain("acta_");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

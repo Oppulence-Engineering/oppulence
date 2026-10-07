@@ -1005,10 +1005,10 @@ func addRevenuePaths(paths obj) {
 			"201": jsonResponse("Resolved effective policy.", freeFormSchema("Conversation policy result."), nil), "400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"),
 		}),
 	}
-	paths["/v1/relationships/{relationshipId}/conversation-deletion"] = obj{"post": operation("Relationship Intelligence", "Request conversation deletion", "Evaluates legal hold at execution time, removes server-side content transactionally, and returns an idempotent per-target receipt. Device and provider work remains pending until separately verified.", "requestConversationDeletion", bearer(), relationshipParam, jsonRequest("Deletion request.", objectSchema("Deletion request.", obj{
+	paths["/v1/relationships/{relationshipId}/conversation-deletion"] = obj{"post": operation("Relationship Intelligence", "Confirm delete", confirmDeleteDescription, "requestConversationDeletion", bearer(), confirmDeleteParams(), jsonRequest("Deletion request.", objectSchema("Deletion request.", obj{
 		"requestId": stringSchema("Idempotency key.", "delete:ab12"),
 	}, "requestId"), obj{"requestId": "delete:ab12"}), obj{
-		"202": jsonResponse("Deletion receipt.", ref("ConversationDeletionReceipt"), nil),
+		"202": jsonResponse("Conversation evidence stored here is deleted. Device and mailbox copies are still waiting.", ref("ConversationDeletionReceipt"), confirmDeleteReceipt()),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
 	paths["/v1/relationship-observations/batch"] = obj{"post": operation("Relationship Intelligence", "Ingest relationship observations", "Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.", "ingestRelationshipObservations", bearer(), nil, jsonRequest("Observation batch.", objectSchema("Observation batch.", obj{
