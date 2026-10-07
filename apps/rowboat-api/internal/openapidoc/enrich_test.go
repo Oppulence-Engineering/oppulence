@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,39 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertImpactCounts(t, paths)
+}
+
+func TestImpactCountsSampleTheEmptyWorkspace(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertImpactCounts(t, asObj(spec["paths"]))
+}
+
+func assertImpactCounts(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/revenue-impact"])["get"])
+	if op["summary"] != "Impact" || op["description"] != impactCountsDescription {
+		t.Fatalf("impact copy: summary=%#v description=%#v", op["summary"], op["description"])
+	}
+	if op["parameters"] != nil {
+		t.Fatalf("impact must not send a filter: %#v", op["parameters"])
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(impactCounts())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("impact example:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "42") || strings.Contains(string(got), "0.38") || strings.Contains(string(got), "unanswered_proposal") || strings.Contains(string(got), "buyer@example.com") {
+		t.Fatalf("impact example still uses the invented counts: %s", got)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

@@ -665,8 +665,8 @@ func addRevenuePaths(paths obj) {
 		"503": problemResponse("Policy facade unavailable; the link fails closed.", ref("ErrorEnvelope"), problemExample(503, "Service Unavailable", "policy preflight unavailable; the action stays pending", "facade_unavailable")),
 	})}
 
-	paths["/v1/revenue-impact"] = obj{"get": operation("Revenue", "Get the revenue impact summary", "Returns the aggregate ROI picture for the caller: actions surfaced, triage breakdown, executions, outcomes, reply/meeting rates, and per-detector contribution.", "getRevenueImpact", bearer(), nil, nil, obj{
-		"200": jsonResponse("Impact summary.", ref("RevenueImpact"), nil),
+	paths["/v1/revenue-impact"] = obj{"get": operation("Revenue", "Impact", impactCountsDescription, "getRevenueImpact", bearer(), nil, nil, obj{
+		"200": jsonResponse("Impact summary.", ref("RevenueImpact"), impactCounts()),
 		"401": responseRef("401"),
 	})}
 	paths["/v1/revenue-search"] = obj{"get": operation("Revenue", "Semantic search over mail", "Natural-language search over the caller's Layer-2 signals (RFC 031). Returns available=false with no matches when semantic memory is not configured.", "revenueSemanticSearch", bearer(), []any{obj{"name": "q", "in": "query", "required": true, "description": "Search query.", "schema": obj{"type": "string"}}}, nil, obj{
@@ -1311,4 +1311,36 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
+}
+
+const impactCountsDescription = "Impact loads the home counts. The request sends no filter. Overdue promises, open recovery, and companies at risk are zero, and there is no reply rate or meeting rate yet."
+
+func impactCounts() obj {
+	return obj{
+		"surfaced":              0,
+		"open":                  0,
+		"openTasks":             0,
+		"handled":               0,
+		"snoozed":               0,
+		"dismissed":             0,
+		"approved":              0,
+		"executed":              0,
+		"replied":               0,
+		"meetingsBooked":        0,
+		"won":                   0,
+		"lost":                  0,
+		"replyRate":             nil,
+		"meetingRate":           nil,
+		"outcomes":              obj{},
+		"byDetector":            []any{},
+		"relationships":         0,
+		"atRiskRelationships":   0,
+		"criticalRelationships": 0,
+		"portfolioRiskScore":    0,
+		"overdueCommitments":    0,
+		"overdueByUs":           0,
+		"overdueByThem":         0,
+		"longestOverdueDays":    0,
+		"riskReasons":           []any{},
+	}
 }

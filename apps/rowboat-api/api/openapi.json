@@ -26753,12 +26753,39 @@
     },
     "/v1/revenue-impact": {
       "get": {
-        "description": "Returns the aggregate ROI picture for the caller: actions surfaced, triage breakdown, executions, outcomes, reply/meeting rates, and per-detector contribution.",
+        "description": "Impact loads the home counts. The request sends no filter. Overdue promises, open recovery, and companies at risk are zero, and there is no reply rate or meeting rate yet.",
         "operationId": "getRevenueImpact",
         "responses": {
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "approved": 0,
+                  "atRiskRelationships": 0,
+                  "byDetector": [],
+                  "criticalRelationships": 0,
+                  "dismissed": 0,
+                  "executed": 0,
+                  "handled": 0,
+                  "longestOverdueDays": 0,
+                  "lost": 0,
+                  "meetingRate": null,
+                  "meetingsBooked": 0,
+                  "open": 0,
+                  "openTasks": 0,
+                  "outcomes": {},
+                  "overdueByThem": 0,
+                  "overdueByUs": 0,
+                  "overdueCommitments": 0,
+                  "portfolioRiskScore": 0,
+                  "relationships": 0,
+                  "replied": 0,
+                  "replyRate": null,
+                  "riskReasons": [],
+                  "snoozed": 0,
+                  "surfaced": 0,
+                  "won": 0
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueImpact"
                 }
@@ -26775,8 +26802,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Get the revenue impact summary",
-        "tags": ["Revenue"]
+        "summary": "Impact",
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-leak-scans": {
