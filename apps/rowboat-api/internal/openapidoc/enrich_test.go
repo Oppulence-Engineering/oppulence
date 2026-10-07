@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,52 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertNotesPage(t, paths)
+}
+
+func TestNotesPageSamplesTheEmptyWorkspace(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertNotesPage(t, asObj(spec["paths"]))
+}
+
+func assertNotesPage(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/workspace-notes"])["get"])
+	if op["summary"] != "Notes" || op["description"] != notesPageDescription {
+		t.Fatalf("notes copy: summary=%#v description=%#v", op["summary"], op["description"])
+	}
+	examples := map[string]string{}
+	for _, param := range op["parameters"].([]any) {
+		item := asObj(param)
+		name, _ := item["name"].(string)
+		if name == "order" {
+			t.Fatal("notes must not send an order on the first page")
+		}
+		raw, err := json.Marshal(asObj(item["schema"])["example"])
+		if err != nil {
+			t.Fatal(err)
+		}
+		examples[name] = string(raw)
+	}
+	if examples["limit"] != "50" || examples["offset"] != "null" {
+		t.Fatalf("notes query examples: %#v", examples)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(notesPage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("notes example:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "Cedar Notes") || strings.Contains(string(got), "note-1") || strings.Contains(string(got), "Renewal context") || strings.Contains(string(got), "Use the updated terms.") {
+		t.Fatalf("notes example still uses the invented note: %s", got)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

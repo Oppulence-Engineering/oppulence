@@ -1289,9 +1289,9 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/workspace-notes"] = obj{"get": operation("Relationship Intelligence", "List workspace notes", "Returns the latest copy of each company note in this workspace. One request reads every company, so the notes page does not ask for each company timeline. A newer edit replaces the previous copy, and a later deletion removes the note.", "listWorkspaceNotes", bearer(), []any{
-		obj{"name": "limit", "in": "query", "required": false, "description": "Maximum notes to return (default 50, max 100).", "schema": obj{"type": "integer", "minimum": 1, "maximum": 100}},
-		obj{"name": "offset", "in": "query", "required": false, "description": "Number of collapsed notes to skip.", "schema": obj{"type": "integer", "minimum": 0}},
+	paths["/v1/workspace-notes"] = obj{"get": operation("Relationship Intelligence", "Notes", notesPageDescription, "listWorkspaceNotes", bearer(), []any{
+		obj{"name": "limit", "in": "query", "required": false, "description": "Page size (max 100). Notes asks for 50.", "example": 50, "schema": obj{"type": "integer", "minimum": 1, "maximum": 100, "example": 50}},
+		obj{"name": "offset", "in": "query", "required": false, "description": "How many notes to skip. Notes does not send this on the first page.", "schema": obj{"type": "integer", "minimum": 0}},
 	}, nil, obj{
 		"200": jsonResponse("Collapsed workspace notes, newest first.", objectSchema("Workspace notes page.", obj{
 			"notes": arraySchema("Latest note for each note id.", objectSchema("Workspace note.", obj{
@@ -1307,8 +1307,17 @@ func addRevenuePaths(paths obj) {
 				"eventType":        stringSchema("Stored event. Live notes are note.", "note"),
 			}, "externalId", "title", "body", "meetingLinked", "liveLinked", "relationshipId", "relationshipName", "occurredAt", "eventType")),
 			"hasMore": boolSchema("Whether another page of notes exists.", false),
-		}, "notes", "hasMore"), nil),
+		}, "notes", "hasMore"), notesPage()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
+}
+
+const notesPageDescription = "Notes loads the newest page. The request asks for 50 notes and does not ask for an older page. This workspace has no company note, so the page is empty."
+
+func notesPage() obj {
+	return obj{
+		"hasMore": false,
+		"notes":   []any{},
+	}
 }
