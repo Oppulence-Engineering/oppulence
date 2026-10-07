@@ -1051,6 +1051,7 @@ func addRuntimePaths(paths obj) {
 	addRevenuePaths(paths)
 	addInternalPaths(paths)
 	addVoiceCloudPaths(paths)
+	addObjectAuditPath(paths)
 }
 
 func addAgentSessionPaths(paths obj) {

@@ -11,6 +11,7 @@ import type {
   DismissRevenueActionBody,
   EditRevenueActionBody,
   ErrorEnvelope,
+  GetObjectAudit200,
   GetOpenPromisesReport200One,
   GetOpenPromisesReportParams,
   GetRevenueActionAudit200,
@@ -24,6 +25,7 @@ import type {
   N401Response,
   N404Response,
   N409Response,
+  N500Response,
   RecordRevenueActionOutcomeBody,
   RejectRevenueActionBody,
   RevenueAction,
@@ -38,6 +40,68 @@ import type {
   SnoozeRevenueActionBody,
   StartRevenueLeakScanBody,
 } from "../model";
+
+export type getObjectAuditResponse200 = {
+  data: GetObjectAudit200;
+  status: 200;
+};
+
+export type getObjectAuditResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type getObjectAuditResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getObjectAuditResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type getObjectAuditResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type getObjectAuditResponseSuccess = getObjectAuditResponse200 & {
+  headers: Headers;
+};
+export type getObjectAuditResponseError = (
+  | getObjectAuditResponse400
+  | getObjectAuditResponse401
+  | getObjectAuditResponse404
+  | getObjectAuditResponse500
+) & {
+  headers: Headers;
+};
+
+export type getObjectAuditResponse = getObjectAuditResponseSuccess | getObjectAuditResponseError;
+
+export const getGetObjectAuditUrl = (resourceRef: string) => {
+  return `/v1/objects/${resourceRef}/audit`;
+};
+
+/**
+ * Audit trail opens this object's proposal, approval, and execution. The page shows the proposal kind, the approval prefix, and the execution result.
+ * @summary Audit trail
+ */
+export const getObjectAudit = async (
+  resourceRef: string,
+  options?: RequestInit,
+): Promise<getObjectAuditResponse> => {
+  const res = await fetch(getGetObjectAuditUrl(resourceRef), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getObjectAuditResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as getObjectAuditResponse;
+};
 
 export type listRevenueActionsResponse200 = {
   data: ListRevenueActions200;

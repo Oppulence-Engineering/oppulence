@@ -9,6 +9,7 @@ import { HttpResponse, http } from "msw";
 import type { RequestHandlerOptions } from "msw";
 
 import type {
+  GetObjectAudit200,
   GetOpenPromisesReport200One,
   GetRevenueActionAudit200,
   GetRevenueActionSourceBody200,
@@ -31,6 +32,7 @@ import {
   getEditRevenueActionResponseMock,
   getEvaluateRevenueActionResponseMock,
   getExecuteRevenueActionResponseMock,
+  getGetObjectAuditResponseMock,
   getGetOpenPromisesReportResponseMock,
   getGetRevenueActionAuditResponseMock,
   getGetRevenueActionResponseMock,
@@ -50,6 +52,7 @@ import {
 } from "./revenue.faker";
 
 export {
+  getGetObjectAuditResponseMock,
   getListRevenueActionsResponseMock,
   getCreateRevenueActionResponseMock,
   getGetRevenueActionResponseMock,
@@ -73,6 +76,30 @@ export {
   getGetRevenueWorkspaceResponseMock,
   getLinkRevenueWorkspaceResponseMock,
 } from "./revenue.faker";
+
+export const getGetObjectAuditMockHandler = (
+  overrideResponse?:
+    | GetObjectAudit200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<GetObjectAudit200> | GetObjectAudit200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/objects/:resourceRef/audit",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetObjectAuditResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 
 export const getListRevenueActionsMockHandler = (
   overrideResponse?:
@@ -607,6 +634,7 @@ export const getLinkRevenueWorkspaceMockHandler = (
   );
 };
 export const getRevenueMock = () => [
+  getGetObjectAuditMockHandler(),
   getListRevenueActionsMockHandler(),
   getCreateRevenueActionMockHandler(),
   getGetRevenueActionMockHandler(),

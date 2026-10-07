@@ -8,6 +8,7 @@
 import { faker } from "@faker-js/faker";
 
 import type {
+  GetObjectAudit200,
   GetOpenPromisesReport200One,
   GetRevenueActionAudit200,
   GetRevenueActionSourceBody200,
@@ -22,6 +23,8 @@ import type {
   RevenueSemanticSearch200,
   RevenueWorkspace,
 } from "../model";
+
+export const getGetObjectAuditResponseMock = (): GetObjectAudit200 => ({});
 
 export const getListRevenueActionsResponseMock = (
   overrideResponse: Partial<Extract<ListRevenueActions200, object>> = {},
@@ -168,6 +171,10 @@ export const getListRevenueActionsResponseMock = (
         undefined,
       ]),
       relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+      relationshipName: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
       revision: faker.number.int(),
       revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
       senderAccountRef: faker.helpers.arrayElement([
@@ -331,6 +338,10 @@ export const getCreateRevenueActionResponseMock = (
     undefined,
   ]),
   relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+  relationshipName: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
   revision: faker.number.int(),
   revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
   senderAccountRef: faker.helpers.arrayElement([
@@ -491,6 +502,10 @@ export const getGetRevenueActionResponseMock = (
     undefined,
   ]),
   relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+  relationshipName: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
   revision: faker.number.int(),
   revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
   senderAccountRef: faker.helpers.arrayElement([
@@ -651,6 +666,10 @@ export const getApproveRevenueActionResponseMock = (
     undefined,
   ]),
   relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+  relationshipName: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
   revision: faker.number.int(),
   revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
   senderAccountRef: faker.helpers.arrayElement([
@@ -813,6 +832,10 @@ export const getGetRevenueActionAuditResponseMock = (
         undefined,
       ]),
       relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+      relationshipName: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
       revision: faker.number.int(),
       revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
       senderAccountRef: faker.helpers.arrayElement([
@@ -1036,6 +1059,10 @@ export const getDismissRevenueActionResponseMock = (
     undefined,
   ]),
   relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+  relationshipName: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
   revision: faker.number.int(),
   revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
   senderAccountRef: faker.helpers.arrayElement([
@@ -1196,6 +1223,10 @@ export const getEditRevenueActionResponseMock = (
     undefined,
   ]),
   relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+  relationshipName: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
   revision: faker.number.int(),
   revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
   senderAccountRef: faker.helpers.arrayElement([
@@ -1378,6 +1409,10 @@ export const getExecuteRevenueActionResponseMock = (
     undefined,
   ]),
   relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+  relationshipName: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
   revision: faker.number.int(),
   revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
   senderAccountRef: faker.helpers.arrayElement([
@@ -1574,6 +1609,10 @@ export const getRejectRevenueActionResponseMock = (
     undefined,
   ]),
   relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+  relationshipName: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
   revision: faker.number.int(),
   revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
   senderAccountRef: faker.helpers.arrayElement([
@@ -1734,6 +1773,10 @@ export const getSnoozeRevenueActionResponseMock = (
     undefined,
   ]),
   relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+  relationshipName: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
   revision: faker.number.int(),
   revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
   senderAccountRef: faker.helpers.arrayElement([

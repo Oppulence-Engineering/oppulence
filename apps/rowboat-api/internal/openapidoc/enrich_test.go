@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,59 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertObjectAudit(t, spec)
+}
+
+func TestObjectAudit(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertObjectAudit(t, spec)
+}
+
+func assertObjectAudit(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	operation := asObj(asObj(paths["/v1/objects/{resourceRef}/audit"])["get"])
+	if operation["summary"] != "Audit trail" || operation["operationId"] != "getObjectAudit" || operation["description"] != objectAuditDescription {
+		t.Fatalf("audit trail operation: summary=%#v id=%#v description=%#v", operation["summary"], operation["operationId"], operation["description"])
+	}
+	if operation["requestBody"] != nil {
+		t.Fatalf("audit trail sends no body: %#v", operation["requestBody"])
+	}
+	params, ok := operation["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("audit trail parameters: %#v", operation["parameters"])
+	}
+	param := asObj(params[0])
+	if param["name"] != "resourceRef" || param["example"] != objectAuditTarget || param["required"] != true {
+		t.Fatalf("audit trail param: %#v", param)
+	}
+	if asObj(param["schema"])["example"] != objectAuditTarget {
+		t.Fatalf("audit trail schema example: %#v", param["schema"])
+	}
+	example := asObj(asObj(asObj(asObj(operation["responses"])["200"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(objectAuditExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("audit trail example:\n%s\nwant:\n%s", got, want)
+	}
+	encoded := string(got)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, objectAuditLedger) || strings.Contains(encoded, "test-signing-secret") {
+		t.Fatalf("audit trail published a token or its preimage: %s", encoded)
+	}
+	if !strings.Contains(encoded, objectAuditHashPrefix()) || !strings.Contains(encoded, objectAuditParamsHash()) || !strings.Contains(encoded, `"status":"executed"`) || !strings.Contains(encoded, "conduit:step:step_1") || !strings.Contains(encoded, "Acme is 14 days overdue") {
+		t.Fatalf("audit trail example is missing the page: %s", encoded)
+	}
+	plan := asObj(asObj(paths["/v1/public/mutual-action-plan"])["get"])
+	if plan["summary"] != "Open a scoped mutual action plan" {
+		t.Fatalf("public plan changed: %#v", plan["summary"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
