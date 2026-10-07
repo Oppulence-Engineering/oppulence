@@ -394,11 +394,11 @@ export const CreateRevenueAction404Response = zod
   );
 
 /**
- * Returns one action with relationship context.
- * @summary Get an action
+ * Re-check policy reloads this action. The sheet shows the company, the follow-up, and that the check passed.
+ * @summary Reload the checked action
  */
 export const GetRevenueActionParams = zod.object({
-  actionId: zod.uuid().describe("Action id."),
+  actionId: zod.uuid().describe("Action the sheet reloads."),
 });
 
 export const GetRevenueAction200Response = zod
@@ -520,6 +520,21 @@ export const GetRevenueAction200Response = zod
   })
   .describe(
     "One Revenue Action Queue item. State is split into independent dimensions: queue triage, policy preflight, approval, and execution. Every edit creates a new revision and invalidates the previous policy decision and approval.",
+  );
+
+export const GetRevenueAction400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
   );
 
 export const GetRevenueAction401Response = zod

@@ -1175,11 +1175,7 @@ func addRevenuePaths(paths obj) {
 			"404": responseRef("404"),
 		}),
 	}
-	paths["/v1/revenue-actions/{actionId}"] = obj{"get": operation("Revenue", "Get an action", "Returns one action with relationship context.", "getRevenueAction", bearer(), actionParam, nil, obj{
-		"200": jsonResponse("Action.", ref("RevenueAction"), nil),
-		"401": responseRef("401"),
-		"404": responseRef("404"),
-	})}
+	paths["/v1/revenue-actions/{actionId}"] = obj{"get": reloadedActionOperation()}
 	paths["/v1/revenue-actions/{actionId}/audit"] = obj{"get": operation("Revenue", "Get the audit chain", "Returns the full observe, decision, approval, execution, and outcome chain for one action.", "getRevenueActionAudit", bearer(), actionParam, nil, obj{
 		"200": jsonResponse("Audit chain.", objectSchema("Audit chain.", obj{
 			"action":    ref("RevenueAction"),
