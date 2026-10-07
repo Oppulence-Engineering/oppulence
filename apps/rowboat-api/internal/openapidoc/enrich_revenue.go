@@ -951,7 +951,7 @@ func addRevenuePaths(paths obj) {
 		"200": jsonResponse("Commitment events.", objectSchema("Commitment history.", obj{"events": arraySchema("Ordered immutable events.", ref("CommitmentEvent"))}, "events"), nil),
 		"401": responseRef("401"), "404": responseRef("404"),
 	})}
-	paths["/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions"] = obj{"post": operation("Relationship Intelligence", "Append a commitment transition", "Validates the state machine and appends one idempotent event before atomically updating the materialized projection.", "appendCommitmentTransition", bearer(), commitmentParam, jsonRequest("Transition.", objectSchema("Commitment transition.", obj{
+	paths["/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions"] = obj{"post": operation("Relationship Intelligence", "They accepted", theyAcceptedDescription, "appendCommitmentTransition", bearer(), theyAcceptedParams(), jsonRequest("Transition.", objectSchema("Commitment transition.", obj{
 		"kind":           stringEnum("Event kind.", "accepted", "internally_confirmed", "offered", "accepted", "disputed", "blocked", "unblocked", "corrected", "due_date_changed", "renegotiated", "fulfilled", "missed", "waived", "cancelled", "superseded"),
 		"idempotencyKey": stringSchema("Stable source event id.", "ui:accept:ab12"),
 		"reason":         stringSchema("Optional reason.", "Counterparty accepted in writing."),
@@ -960,7 +960,7 @@ func addRevenuePaths(paths obj) {
 		"blocker":        stringSchema("Blocker detail.", "Waiting on legal."),
 		"evidenceRefs":   arraySchema("Evidence references.", stringSchema("Reference.", "relationship-observation:ab12")),
 	}, "kind", "idempotencyKey"), obj{"kind": "accepted", "idempotencyKey": "ui:accept:ab12", "evidenceRefs": []any{"counterparty:accepted"}}), obj{
-		"200": jsonResponse("Updated commitment.", ref("RelationshipCommitment"), nil),
+		"201": jsonResponse("The promise is accepted and still open.", ref("RelationshipCommitment"), theyAcceptedCommitment()),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
 	paths["/v1/relationships/{relationshipId}/commitment-dependencies"] = obj{"post": operation("Relationship Intelligence", "Create a commitment dependency", "Creates an evidence-backed dependency after enforcing tenant and relationship scope and rejecting graph cycles.", "createCommitmentDependency", bearer(), relationshipParam, jsonRequest("Dependency.", objectSchema("Commitment dependency request.", obj{

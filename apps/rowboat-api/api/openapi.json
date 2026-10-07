@@ -24330,25 +24330,31 @@
     },
     "/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions": {
       "post": {
-        "description": "Validates the state machine and appends one idempotent event before atomically updating the materialized projection.",
+        "description": "They accepted records that the other party accepted this promise. The promise stays open.",
         "operationId": "appendCommitmentTransition",
         "parameters": [
           {
             "description": "Relationship id.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "relationshipId",
             "required": true,
             "schema": {
+              "description": "Relationship id.",
+              "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
           },
           {
             "description": "Commitment id.",
+            "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "commitmentId",
             "required": true,
             "schema": {
+              "description": "Commitment id.",
+              "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -24358,7 +24364,9 @@
           "content": {
             "application/json": {
               "example": {
-                "evidenceRefs": ["counterparty:accepted"],
+                "evidenceRefs": [
+                  "counterparty:accepted"
+                ],
                 "idempotencyKey": "ui:accept:ab12",
                 "kind": "accepted"
               },
@@ -24422,7 +24430,10 @@
                     "type": "string"
                   }
                 },
-                "required": ["kind", "idempotencyKey"],
+                "required": [
+                  "kind",
+                  "idempotencyKey"
+                ],
                 "type": "object"
               }
             }
@@ -24431,15 +24442,32 @@
           "required": true
         },
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "acceptance": "accepted",
+                  "beneficiaryParticipantRef": "customer:acme",
+                  "confidence": 0.94,
+                  "counterpartyParticipantRef": "jordan@example.com",
+                  "currentEventVersion": 4,
+                  "direction": "promised_by_me",
+                  "dueAt": "2026-07-22T17:00:00Z",
+                  "duePhrase": "by Friday",
+                  "dueTimezone": "America/Los_Angeles",
+                  "id": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "ownerParticipantRef": "alex@example.com",
+                  "sourcePhrase": "I will send it by Friday.",
+                  "status": "open",
+                  "text": "Send the security packet.",
+                  "userConfirmed": true
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RelationshipCommitment"
                 }
               }
             },
-            "description": "Updated commitment."
+            "description": "The promise is accepted and still open."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -24459,8 +24487,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Append a commitment transition",
-        "tags": ["Relationship Intelligence"]
+        "summary": "They accepted",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/communication-timeline": {

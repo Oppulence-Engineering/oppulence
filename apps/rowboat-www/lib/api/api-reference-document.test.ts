@@ -315,6 +315,32 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the promise They accepted returns", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const post =
+      presented.paths["/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions"].post;
+    expect(post.summary).toBe("They accepted");
+    expect(post.operationId).toBe("appendCommitmentTransition");
+    expect(post.description).toBe(
+      "They accepted records that the other party accepted this promise. The promise stays open.",
+    );
+    const relationship = post.parameters.find(
+      (parameter: { name: string }) => parameter.name === "relationshipId",
+    );
+    const commitment = post.parameters.find(
+      (parameter: { name: string }) => parameter.name === "commitmentId",
+    );
+    expect(relationship.example).toBe("9c8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    expect(commitment.example).toBe("8b8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    expect(post.responses["200"]).toBeUndefined();
+    const example = post.responses["201"].content["application/json"].example;
+    expect(example.acceptance).toBe("accepted");
+    expect(example.status).toBe("open");
+    expect(example.text).toBe("Send the security packet.");
+    expect(example.currentEventVersion).toBe(4);
+    expect(JSON.stringify(post)).not.toContain("acta_");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
