@@ -26725,18 +26725,26 @@
     },
     "/v1/revenue-digest": {
       "get": {
-        "description": "Returns the digest content the scheduled email is built from: the top open loops and running impact counts.",
+        "description": "Impact loads the weekly digest. The request sends no filter. This workspace has no open loop, so the highlight list is empty and every count is zero.",
         "operationId": "getRevenueDigest",
         "responses": {
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "generatedAt": "2026-07-23T09:00:00Z",
+                  "handled": 0,
+                  "meetingsBooked": 0,
+                  "openCount": 0,
+                  "replied": 0,
+                  "top": []
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueDigest"
                 }
               }
             },
-            "description": "Digest content."
+            "description": "Empty weekly digest."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -26747,8 +26755,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Preview the proactive digest",
-        "tags": ["Revenue"]
+        "summary": "Weekly digest",
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-impact": {

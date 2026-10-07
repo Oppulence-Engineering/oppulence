@@ -2171,8 +2171,8 @@ export const GetRevenueActionSourceBody404Response = zod
   );
 
 /**
- * Returns the digest content the scheduled email is built from: the top open loops and running impact counts.
- * @summary Preview the proactive digest
+ * Impact loads the weekly digest. The request sends no filter. This workspace has no open loop, so the highlight list is empty and every count is zero.
+ * @summary Weekly digest
  */
 export const GetRevenueDigest200Response = zod
   .strictObject({

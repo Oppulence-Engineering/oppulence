@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,39 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertWeeklyDigest(t, paths)
+}
+
+func TestWeeklyDigestSamplesTheEmptyWorkspace(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertWeeklyDigest(t, asObj(spec["paths"]))
+}
+
+func assertWeeklyDigest(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/revenue-digest"])["get"])
+	if op["summary"] != "Weekly digest" || op["description"] != weeklyDigestDescription || op["operationId"] != "getRevenueDigest" {
+		t.Fatalf("digest copy: summary=%#v description=%#v id=%#v", op["summary"], op["description"], op["operationId"])
+	}
+	if op["parameters"] != nil {
+		t.Fatalf("weekly digest sends no filter: %#v", op["parameters"])
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(weeklyDigest())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("digest example:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "buyer@example.com") || strings.Contains(string(got), "Unanswered proposal") || strings.Contains(string(got), "You sent a proposal") {
+		t.Fatalf("digest example still uses the invented loop: %s", got)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

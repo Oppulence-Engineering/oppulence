@@ -315,6 +315,27 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the page Impact loads for the weekly digest", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-digest"].get;
+    expect(operation.summary).toBe("Weekly digest");
+    expect(operation.description).toBe(
+      "Impact loads the weekly digest. The request sends no filter. This workspace has no open loop, so the highlight list is empty and every count is zero.",
+    );
+    expect(operation.parameters).toBeUndefined();
+    const digest = operation.responses["200"].content["application/json"].example;
+    expect(digest).toEqual({
+      generatedAt: "2026-07-23T09:00:00Z",
+      handled: 0,
+      meetingsBooked: 0,
+      openCount: 0,
+      replied: 0,
+      top: [],
+    });
+    expect(JSON.stringify(digest)).not.toContain("buyer@example.com");
+    expect(JSON.stringify(digest)).not.toContain("Unanswered proposal");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
