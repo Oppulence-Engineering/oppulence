@@ -7,7 +7,7 @@
  */
 
 /**
- * Relationship kind.
+ * Person or company.
  */
 export type CreateRelationshipBodyKind =
   (typeof CreateRelationshipBodyKind)[keyof typeof CreateRelationshipBodyKind];
