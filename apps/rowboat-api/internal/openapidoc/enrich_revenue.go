@@ -878,8 +878,11 @@ func addRevenuePaths(paths obj) {
 		"201": jsonResponse("Acknowledgement.", objectSchema("Mission Control acknowledgement result.", obj{"id": uuidSchema("Acknowledgement id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "stateVersion": intSchema("Reviewed state version.", 4), "stateHash": stringSchema("Reviewed hash.", "sha256:ab12"), "acknowledgedAt": stringSchema("Review time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"})}, "id", "stateVersion", "stateHash", "acknowledgedAt"), nil),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
-	paths["/v1/relationships/{relationshipId}/evidence/{evidenceId}"] = obj{"get": operation("Relationship Intelligence", "Open source evidence", "Returns one observation plus its decrypted raw payload. Tenant ownership is enforced before decryption.", "getRelationshipEvidence", bearer(), append(relationshipParam, obj{"name": "evidenceId", "in": "path", "required": true, "description": "Observation id.", "schema": obj{"type": "string", "format": "uuid"}}), nil, obj{
-		"200": jsonResponse("Source evidence.", objectSchema("Evidence result.", obj{"observation": ref("RelationshipObservation"), "payload": freeFormSchema("Decrypted provider payload.")}), nil),
+	paths["/v1/relationships/{relationshipId}/evidence/{evidenceId}"] = obj{"get": operation("Relationship Intelligence", "Open the original detail", originalDetailDescription, "getRelationshipEvidence", bearer(), []any{
+		obj{"name": "relationshipId", "in": "path", "required": true, "description": "Company id.", "schema": obj{"type": "string", "format": "uuid", "example": originalDetailRelationshipID}},
+		obj{"name": "evidenceId", "in": "path", "required": true, "description": "Activity id.", "schema": obj{"type": "string", "format": "uuid", "example": originalDetailEvidenceID}},
+	}, nil, obj{
+		"200": jsonResponse("Original detail.", objectSchema("Evidence result.", obj{"observation": ref("RelationshipObservation"), "payload": freeFormSchema("Decrypted provider body. Empty when the activity stored none.")}), originalDetail()),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
@@ -1311,4 +1314,31 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
+}
+
+const (
+	originalDetailRelationshipID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	originalDetailEvidenceID     = "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	originalDetailHash           = "e57461826e791945b63630c2de4c026adb4459066470014cf50aadde9b6aafca"
+	originalDetailOccurredAt     = "2026-07-18T15:00:00Z"
+	originalDetailReceivedAt     = "2026-07-25T16:00:00Z"
+	originalDetailDescription    = "Open the original detail loads when an activity row opens. The request names that activity on Acme. The Gmail promise stores no provider body, and the response is that activity with a null payload."
+)
+
+func originalDetail() obj {
+	return obj{
+		"observation": obj{
+			"id":              originalDetailEvidenceID,
+			"source":          "gmail",
+			"externalId":      "acme-security-promise",
+			"sourceVersion":   "1",
+			"eventType":       "commitment_created",
+			"occurredAt":      originalDetailOccurredAt,
+			"receivedAt":      originalDetailReceivedAt,
+			"summary":         "We promised the security packet by July 22.",
+			"normalizedFacts": obj{"adapter": "gmail"},
+			"contentHash":     originalDetailHash,
+		},
+		"payload": nil,
+	}
 }

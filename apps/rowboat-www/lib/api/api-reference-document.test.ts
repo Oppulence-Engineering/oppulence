@@ -315,6 +315,34 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the activity Open the original detail loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation =
+      presented.paths["/v1/relationships/{relationshipId}/evidence/{evidenceId}"].get;
+    expect(operation.summary).toBe("Open the original detail");
+    expect(operation.description).toBe(
+      "Open the original detail loads when an activity row opens. The request names that activity on Acme. The Gmail promise stores no provider body, and the response is that activity with a null payload.",
+    );
+    const company = operation.parameters.find((parameter) => parameter.name === "relationshipId");
+    const activity = operation.parameters.find((parameter) => parameter.name === "evidenceId");
+    expect(company.schema.example).toBe("9c8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    expect(activity.schema.example).toBe("6b8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    const detail = operation.responses["200"].content["application/json"].example;
+    expect(detail.payload).toBeNull();
+    expect(detail.observation).toMatchObject({
+      id: "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      source: "gmail",
+      externalId: "acme-security-promise",
+      eventType: "commitment_created",
+      occurredAt: "2026-07-18T15:00:00Z",
+      summary: "We promised the security packet by July 22.",
+      contentHash: "e57461826e791945b63630c2de4c026adb4459066470014cf50aadde9b6aafca",
+      normalizedFacts: { adapter: "gmail" },
+    });
+    expect(JSON.stringify(detail)).not.toContain("message-123");
+    expect(JSON.stringify(detail)).not.toContain("ab12cd34");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

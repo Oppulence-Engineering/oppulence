@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,52 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertOriginalDetail(t, paths)
+}
+
+func TestOriginalDetailSamplesTheAcmePromise(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertOriginalDetail(t, asObj(spec["paths"]))
+}
+
+func assertOriginalDetail(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/relationships/{relationshipId}/evidence/{evidenceId}"])["get"])
+	if op["summary"] != "Open the original detail" {
+		t.Fatalf("summary: %#v", op["summary"])
+	}
+	if op["description"] != originalDetailDescription {
+		t.Fatalf("description: %#v", op["description"])
+	}
+	for _, param := range op["parameters"].([]any) {
+		item := asObj(param)
+		switch item["name"] {
+		case "relationshipId":
+			if asObj(item["schema"])["example"] != originalDetailRelationshipID {
+				t.Fatalf("company id: %#v", item)
+			}
+		case "evidenceId":
+			if asObj(item["schema"])["example"] != originalDetailEvidenceID {
+				t.Fatalf("activity id: %#v", item)
+			}
+		}
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(originalDetail())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("detail example:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "message-123") || strings.Contains(string(got), "ab12cd34") || strings.Contains(string(got), "me@company.com") {
+		t.Fatalf("detail example still uses the generic observation: %s", got)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
