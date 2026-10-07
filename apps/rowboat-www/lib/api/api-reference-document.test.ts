@@ -315,6 +315,26 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the workflow the editor removes", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const item = presented.paths["/v1/background-tasks/{slug}"];
+    const operation = item.delete;
+    expect(operation.summary).toBe("Delete a background task");
+    expect(operation.description).toBe(
+      "Deletes the background task and its note, runs, and run events after checking the current revision.",
+    );
+    expect(operation.requestBody).toBeUndefined();
+    expect(operation.parameters.map((parameter: { name: string; example: string | number }) => [
+      parameter.name,
+      parameter.example,
+    ])).toEqual([
+      ["slug", "follow-up-when-a-promise-slips"],
+      ["revision", 1],
+    ]);
+    expect(operation.responses["204"].description).toBe("Background task deleted.");
+    expect(item.get.responses["200"].content["application/json"].example.slug).toBe("daily-summary");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

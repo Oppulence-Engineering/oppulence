@@ -1025,11 +1025,11 @@ export const EnsureFirstPartyBackgroundTasks500Response = zod
  * @summary Delete background task mirror
  */
 export const DeleteBackgroundTaskParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
+  slug: zod.string().describe("Workflow to remove."),
 });
 
 export const DeleteBackgroundTaskQueryParams = zod.object({
-  revision: zod.coerce.number().int().describe("Current task revision required for delete."),
+  revision: zod.coerce.number().int().describe("Revision the editor last read."),
 });
 
 export const DeleteBackgroundTask204Response = zod.void();

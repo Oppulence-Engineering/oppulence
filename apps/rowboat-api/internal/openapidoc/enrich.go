@@ -1392,7 +1392,7 @@ func addBackgroundTaskPaths(paths obj) {
 			"409": revisionConflictResponse(),
 			"500": responseRef("500"),
 		}),
-		"delete": operation("Background Tasks", "Delete background task mirror", "Deletes the task mirror and its artifact, runs, and run events after verifying the supplied task revision. This supports full local lifecycle parity when a desktop task is removed.", "deleteBackgroundTask", bearer(), append(slugParam(), revisionQueryParam()), nil, obj{
+		"delete": operation("Background Tasks", "Delete background task mirror", "Deletes the task mirror and its artifact, runs, and run events after verifying the supplied task revision. This supports full local lifecycle parity when a desktop task is removed.", "deleteBackgroundTask", bearer(), removeWorkflowParams(), nil, obj{
 			"204": obj{"description": "Task mirror and child rows deleted."},
 			"400": responseRef("400"),
 			"401": responseRef("401"),

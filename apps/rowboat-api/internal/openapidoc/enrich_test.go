@@ -338,6 +338,57 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertRemoveWorkflow(t, spec)
+}
+
+func TestRemoveWorkflowSamplesTheEditorDelete(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertRemoveWorkflow(t, spec)
+}
+
+func assertRemoveWorkflow(t *testing.T, spec obj) {
+	t.Helper()
+	item := asObj(asObj(spec["paths"])["/v1/background-tasks/{slug}"])
+	del := asObj(item["delete"])
+	if del["summary"] != "Delete background task mirror" || del["operationId"] != "deleteBackgroundTask" {
+		t.Fatalf("remove workflow copy: %#v %#v", del["summary"], del["operationId"])
+	}
+	if del["requestBody"] != nil {
+		t.Fatalf("remove workflow sends no body: %#v", del["requestBody"])
+	}
+	params, _ := del["parameters"].([]any)
+	if len(params) != 2 {
+		t.Fatalf("remove workflow params: %#v", del["parameters"])
+	}
+	slug := asObj(params[0])
+	revision := asObj(params[1])
+	if slug["name"] != "slug" || slug["example"] != removedWorkflowSlug || asObj(slug["schema"])["example"] != removedWorkflowSlug {
+		t.Fatalf("remove workflow slug: %#v", slug)
+	}
+	if revision["name"] != "revision" || !exampleIsOne(revision["example"]) || !exampleIsOne(asObj(revision["schema"])["example"]) {
+		t.Fatalf("remove workflow revision: %#v", revision)
+	}
+	if asObj(asObj(del["responses"])["204"])["description"] != "Task mirror and child rows deleted." {
+		t.Fatalf("remove workflow response: %#v", asObj(del["responses"])["204"])
+	}
+	got := asObj(jsonExample(asObj(asObj(asObj(item["get"])["responses"])["200"])))
+	if got["slug"] != "daily-summary" || got["executionTarget"] != "desktop" {
+		t.Fatalf("task read sample changed: %#v", got)
+	}
+	patched := asObj(asObj(asObj(asObj(asObj(item["patch"])["requestBody"])["content"])["application/json"]))
+	if asObj(asObj(patched)["example"])["name"] != "Daily Account Summary" {
+		t.Fatalf("save sample changed: %#v", patched)
+	}
+}
+
+func exampleIsOne(value any) bool {
+	raw, err := json.Marshal(value)
+	return err == nil && string(raw) == "1"
+}
+
+func jsonExample(response obj) any {
+	return asObj(asObj(response["content"])["application/json"])["example"]
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
