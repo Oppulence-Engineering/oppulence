@@ -711,21 +711,21 @@ func addRevenuePaths(paths obj) {
 	// The commitment register: obligations across every account. Every other
 	// commitment path is nested under a relationship id and cannot answer
 	// "what do we owe anyone", which is the product.
-	paths["/v1/commitments"] = obj{"get": operation("Relationship Intelligence", "List the commitment register", "Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register. A full page is the end of the register when hasMore is false.", "listCommitments", bearer(), []any{
-		obj{"name": "direction", "in": "query", "required": false, "description": "promised_by_me, promised_by_them, or mutual.", "schema": obj{"type": "string"}},
-		obj{"name": "state", "in": "query", "required": false, "description": "Comma-separated register states: open, at_risk, met, missed, waived, disputed. at_risk is derived from the due date.", "schema": obj{"type": "string"}},
-		obj{"name": "owner", "in": "query", "required": false, "description": "Owner participant reference.", "schema": obj{"type": "string"}},
-		obj{"name": "relationshipId", "in": "query", "required": false, "description": "Restrict to one account.", "schema": obj{"type": "string", "format": "uuid"}},
-		obj{"name": "dueBefore", "in": "query", "required": false, "description": "Only commitments due before this instant.", "schema": obj{"type": "string", "format": "date-time"}},
-		obj{"name": "changedSince", "in": "query", "required": false, "description": "Only commitments updated at or after this instant.", "schema": obj{"type": "string", "format": "date-time"}},
-		obj{"name": "limit", "in": "query", "required": false, "description": "Page size (default 50, max 200).", "schema": obj{"type": "integer"}},
-		obj{"name": "offset", "in": "query", "required": false, "description": "Page offset.", "schema": obj{"type": "integer"}},
-		obj{"name": "includeCandidates", "in": "query", "required": false, "description": "Include unconfirmed extractions for a review surface.", "schema": obj{"type": "boolean"}},
+	paths["/v1/commitments"] = obj{"get": operation("Relationship Intelligence", "What we owe", whatWeOweDescription, "listCommitments", bearer(), []any{
+		obj{"name": "direction", "in": "query", "required": false, "description": "promised_by_me, promised_by_them, or mutual. What we owe asks for promised_by_me.", "example": "promised_by_me", "schema": obj{"type": "string", "example": "promised_by_me"}},
+		obj{"name": "state", "in": "query", "required": false, "description": "Comma-separated register states. What we owe asks for open and at risk.", "example": "open,at_risk", "schema": obj{"type": "string", "example": "open,at_risk"}},
+		obj{"name": "owner", "in": "query", "required": false, "description": "Owner participant reference. What we owe does not send this.", "schema": obj{"type": "string"}},
+		obj{"name": "relationshipId", "in": "query", "required": false, "description": "Restrict to one company. What we owe does not send this.", "schema": obj{"type": "string", "format": "uuid"}},
+		obj{"name": "dueBefore", "in": "query", "required": false, "description": "Only commitments due before this instant. What we owe does not send this.", "schema": obj{"type": "string", "format": "date-time"}},
+		obj{"name": "changedSince", "in": "query", "required": false, "description": "Only commitments updated at or after this instant. What we owe does not send this.", "schema": obj{"type": "string", "format": "date-time"}},
+		obj{"name": "limit", "in": "query", "required": false, "description": "Page size (max 200). What we owe asks for 200.", "example": 200, "schema": obj{"type": "integer", "example": 200}},
+		obj{"name": "offset", "in": "query", "required": false, "description": "How many promises to skip. What we owe does not send this on the first page.", "schema": obj{"type": "integer"}},
+		obj{"name": "includeCandidates", "in": "query", "required": false, "description": "Include unconfirmed extractions. What we owe does not send this.", "schema": obj{"type": "boolean"}},
 	}, nil, obj{
-		"200": jsonResponse("The register page.", objectSchema("Commitment register. A full page is the end of the register when hasMore is false.", obj{
+		"200": jsonResponse("Empty promise page.", objectSchema("Promise page.", obj{
 			"commitments": arraySchema("Register rows, each with its derived state and account.", ref("CommitmentRegisterEntry")),
 			"hasMore":     boolSchema("Another promise exists beyond this page.", false),
-		}, "commitments"), nil),
+		}, "commitments", "hasMore"), whatWeOwePage()),
 		"400": responseRef("400"), "401": responseRef("401"),
 	})}
 	paths["/v1/commitments/{commitmentId}/export"] = obj{"get": operation("Relationship Intelligence", "Export a commitment record", "Returns one commitment as a standalone record: the obligation, its full state history, and the verbatim cited evidence with timestamps. Pass format=md for the Markdown document a user forwards. A record that cannot leave the tool cannot settle an argument.", "exportCommitment", bearer(), []any{
@@ -1311,4 +1311,13 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
+}
+
+const whatWeOweDescription = "What we owe loads promises we made that are still open. The request asks for promised by us, open and at risk, 200 at a time, and it does not ask for an older page. This workspace has no open promise we made, so the page is empty."
+
+func whatWeOwePage() obj {
+	return obj{
+		"commitments": []any{},
+		"hasMore":     false,
+	}
 }

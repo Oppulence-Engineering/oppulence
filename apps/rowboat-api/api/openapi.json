@@ -18433,29 +18433,33 @@
     },
     "/v1/commitments": {
       "get": {
-        "description": "Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register. A full page is the end of the register when hasMore is false.",
+        "description": "What we owe loads promises we made that are still open. The request asks for promised by us, open and at risk, 200 at a time, and it does not ask for an older page. This workspace has no open promise we made, so the page is empty.",
         "operationId": "listCommitments",
         "parameters": [
           {
-            "description": "promised_by_me, promised_by_them, or mutual.",
+            "description": "promised_by_me, promised_by_them, or mutual. What we owe asks for promised_by_me.",
+            "example": "promised_by_me",
             "in": "query",
             "name": "direction",
             "required": false,
             "schema": {
+              "example": "promised_by_me",
               "type": "string"
             }
           },
           {
-            "description": "Comma-separated register states: open, at_risk, met, missed, waived, disputed. at_risk is derived from the due date.",
+            "description": "Comma-separated register states. What we owe asks for open and at risk.",
+            "example": "open,at_risk",
             "in": "query",
             "name": "state",
             "required": false,
             "schema": {
+              "example": "open,at_risk",
               "type": "string"
             }
           },
           {
-            "description": "Owner participant reference.",
+            "description": "Owner participant reference. What we owe does not send this.",
             "in": "query",
             "name": "owner",
             "required": false,
@@ -18464,7 +18468,7 @@
             }
           },
           {
-            "description": "Restrict to one account.",
+            "description": "Restrict to one company. What we owe does not send this.",
             "in": "query",
             "name": "relationshipId",
             "required": false,
@@ -18474,7 +18478,7 @@
             }
           },
           {
-            "description": "Only commitments due before this instant.",
+            "description": "Only commitments due before this instant. What we owe does not send this.",
             "in": "query",
             "name": "dueBefore",
             "required": false,
@@ -18484,7 +18488,7 @@
             }
           },
           {
-            "description": "Only commitments updated at or after this instant.",
+            "description": "Only commitments updated at or after this instant. What we owe does not send this.",
             "in": "query",
             "name": "changedSince",
             "required": false,
@@ -18494,16 +18498,18 @@
             }
           },
           {
-            "description": "Page size (default 50, max 200).",
+            "description": "Page size (max 200). What we owe asks for 200.",
+            "example": 200,
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
+              "example": 200,
               "type": "integer"
             }
           },
           {
-            "description": "Page offset.",
+            "description": "How many promises to skip. What we owe does not send this on the first page.",
             "in": "query",
             "name": "offset",
             "required": false,
@@ -18512,7 +18518,7 @@
             }
           },
           {
-            "description": "Include unconfirmed extractions for a review surface.",
+            "description": "Include unconfirmed extractions. What we owe does not send this.",
             "in": "query",
             "name": "includeCandidates",
             "required": false,
@@ -18525,8 +18531,12 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "commitments": [],
+                  "hasMore": false
+                },
                 "schema": {
-                  "description": "Commitment register. A full page is the end of the register when hasMore is false.",
+                  "description": "Promise page.",
                   "properties": {
                     "commitments": {
                       "description": "Register rows, each with its derived state and account.",
@@ -18541,12 +18551,15 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["commitments"],
+                  "required": [
+                    "commitments",
+                    "hasMore"
+                  ],
                   "type": "object"
                 }
               }
             },
-            "description": "The register page."
+            "description": "Empty promise page."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -18560,8 +18573,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List the commitment register",
-        "tags": ["Relationship Intelligence"]
+        "summary": "What we owe",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/commitments/{commitmentId}/export": {
