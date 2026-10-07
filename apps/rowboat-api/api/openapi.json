@@ -22746,7 +22746,7 @@
     },
     "/v1/relationship-observations/batch": {
       "post": {
-        "description": "Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.",
+        "description": "New person sends the new person id, source user, and event person_added. The summary is that person's name followed by added by the user.",
         "operationId": "ingestRelationshipObservations",
         "requestBody": {
           "content": {
@@ -22754,11 +22754,20 @@
               "example": {
                 "observations": [
                   {
-                    "accountDomain": "acme.com",
-                    "displayName": "Acme",
-                    "eventType": "commitment_created",
-                    "externalId": "message-123",
-                    "source": "gmail"
+                    "eventType": "person_added",
+                    "externalId": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "normalizedFacts": {},
+                    "occurredAt": "2026-07-31T14:00:00Z",
+                    "participants": [
+                      {
+                        "displayName": "Jordan Buyer",
+                        "email": "buyer@example.com",
+                        "role": "contact"
+                      }
+                    ],
+                    "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "source": "user",
+                    "summary": "Jordan Buyer added by the user"
                   }
                 ]
               },
@@ -22868,20 +22877,36 @@
                                 "type": "integer"
                               }
                             },
-                            "required": ["dimension", "value", "confidence", "reason"],
+                            "required": [
+                              "dimension",
+                              "value",
+                              "confidence",
+                              "reason"
+                            ],
                             "type": "object"
                           },
                           "type": "array"
                         },
                         "channel": {
                           "description": "Interaction channel.",
-                          "enum": ["email", "meeting", "call", "chat", "note", "crm"],
+                          "enum": [
+                            "email",
+                            "meeting",
+                            "call",
+                            "chat",
+                            "note",
+                            "crm"
+                          ],
                           "example": "email",
                           "type": "string"
                         },
                         "direction": {
                           "description": "Interaction direction.",
-                          "enum": ["inbound", "outbound", "internal"],
+                          "enum": [
+                            "inbound",
+                            "outbound",
+                            "internal"
+                          ],
                           "example": "inbound",
                           "type": "string"
                         },
@@ -22892,12 +22917,12 @@
                         },
                         "eventType": {
                           "description": "Normalized event type.",
-                          "example": "commitment_created",
+                          "example": "person_added",
                           "type": "string"
                         },
                         "externalId": {
                           "description": "Provider event id.",
-                          "example": "message-123",
+                          "example": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
                           "type": "string"
                         },
                         "normalizedFacts": {
@@ -22907,7 +22932,7 @@
                         },
                         "occurredAt": {
                           "description": "Occurrence time.",
-                          "example": "2026-07-18T17:30:00Z",
+                          "example": "2026-07-31T14:00:00Z",
                           "format": "date-time",
                           "type": "string"
                         },
@@ -22918,18 +22943,22 @@
                             "properties": {
                               "direction": {
                                 "description": "Participant interaction direction.",
-                                "enum": ["inbound", "outbound", "internal"],
+                                "enum": [
+                                  "inbound",
+                                  "outbound",
+                                  "internal"
+                                ],
                                 "example": "inbound",
                                 "type": "string"
                               },
                               "displayName": {
                                 "description": "Participant display name.",
-                                "example": "Avery Chen",
+                                "example": "Jordan Buyer",
                                 "type": "string"
                               },
                               "email": {
                                 "description": "Participant email.",
-                                "example": "avery@acme.com",
+                                "example": "buyer@example.com",
                                 "type": "string"
                               },
                               "externalRefs": {
@@ -22943,7 +22972,7 @@
                               },
                               "role": {
                                 "description": "Relationship role.",
-                                "example": "champion",
+                                "example": "contact",
                                 "type": "string"
                               },
                               "title": {
@@ -22952,7 +22981,9 @@
                                 "type": "string"
                               }
                             },
-                            "required": ["displayName"],
+                            "required": [
+                              "displayName"
+                            ],
                             "type": "object"
                           },
                           "type": "array"
@@ -22990,7 +23021,7 @@
                         },
                         "source": {
                           "description": "Evidence source.",
-                          "example": "gmail",
+                          "example": "user",
                           "type": "string"
                         },
                         "sourceAccountId": {
@@ -23005,17 +23036,23 @@
                         },
                         "summary": {
                           "description": "Bounded evidence summary.",
-                          "example": "We promised the security packet.",
+                          "example": "Jordan Buyer added by the user",
                           "type": "string"
                         }
                       },
-                      "required": ["source", "externalId", "eventType"],
+                      "required": [
+                        "source",
+                        "externalId",
+                        "eventType"
+                      ],
                       "type": "object"
                     },
                     "type": "array"
                   }
                 },
-                "required": ["observations"],
+                "required": [
+                  "observations"
+                ],
                 "type": "object"
               }
             }
@@ -23027,6 +23064,63 @@
           "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "results": [
+                    {
+                      "duplicate": false,
+                      "observation": {
+                        "contentHash": "a9ca4ce2e0cf65ff92d605d96c2f6ac649e3fadd83c402ac59e9c481e7aa67ef",
+                        "eventType": "person_added",
+                        "externalId": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "id": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "normalizedFacts": {},
+                        "occurredAt": "2026-07-31T14:00:00Z",
+                        "receivedAt": "2026-07-31T14:00:00Z",
+                        "source": "user",
+                        "sourceVersion": "1",
+                        "summary": "Jordan Buyer added by the user"
+                      },
+                      "projectionStatus": "completed",
+                      "relationship": {
+                        "accountDomain": "example.com",
+                        "categories": [
+                          "Artificial intelligence"
+                        ],
+                        "commitmentCount": 4,
+                        "displayName": "Jordan Buyer",
+                        "emailThreadCount": 12,
+                        "engagement": "declining",
+                        "health": "needs_attention",
+                        "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "kind": "person",
+                        "lastChangedAt": "2026-07-25T16:00:00Z",
+                        "lastTouchAt": "2026-04-10T15:00:00Z",
+                        "lifecycle": "evaluation",
+                        "milestones": [
+                          "Proposal shared."
+                        ],
+                        "nextAction": "Confirm the security review owner.",
+                        "nextActionAt": "2026-07-01T00:00:00Z",
+                        "peopleCount": 3,
+                        "primaryEmail": "buyer@example.com",
+                        "projectedAt": "2026-07-25T16:00:00Z",
+                        "projectorVersion": 2,
+                        "resourceRefs": [
+                          "hubspot:company:123"
+                        ],
+                        "risks": [
+                          "Security review has no owner."
+                        ],
+                        "sentiment": "mixed",
+                        "stateHash": "sha256:ab12cd34",
+                        "stateReason": "Security review was promised, but no owner or meeting exists.",
+                        "stateVersion": 4,
+                        "status": "active",
+                        "summary": "Asked for pricing in April; wants a follow-up in July."
+                      }
+                    }
+                  ]
+                },
                 "schema": {
                   "additionalProperties": true,
                   "description": "Observation, relationship, and duplicate status per input.",
@@ -23052,7 +23146,9 @@
           }
         ],
         "summary": "Ingest relationship observations",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-recommendations/{actionId}/approve": {

@@ -315,6 +315,44 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the person New person adds", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/relationship-observations/batch"].post;
+    expect(operation.summary).toBe("Ingest relationship observations");
+    expect(operation.description).toBe(
+      "New person sends the new person id, source user, and event person_added. The summary is that person's name followed by added by the user.",
+    );
+    const request = operation.requestBody.content["application/json"].example;
+    expect(request.observations).toEqual([
+      {
+        eventType: "person_added",
+        externalId: "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+        normalizedFacts: {},
+        occurredAt: "2026-07-31T14:00:00Z",
+        participants: [
+          {
+            displayName: "Jordan Buyer",
+            email: "buyer@example.com",
+            role: "contact",
+          },
+        ],
+        relationshipId: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+        source: "user",
+        summary: "Jordan Buyer added by the user",
+      },
+    ]);
+    const stored = operation.responses["201"].content["application/json"].example.results[0];
+    expect(stored.observation).toMatchObject({
+      contentHash: "a9ca4ce2e0cf65ff92d605d96c2f6ac649e3fadd83c402ac59e9c481e7aa67ef",
+      eventType: "person_added",
+      source: "user",
+      sourceVersion: "1",
+      summary: "Jordan Buyer added by the user",
+    });
+    expect(JSON.stringify(request)).not.toContain("message-123");
+    expect(JSON.stringify(request)).not.toContain("commitment_created");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

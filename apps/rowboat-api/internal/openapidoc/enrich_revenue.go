@@ -1011,27 +1011,27 @@ func addRevenuePaths(paths obj) {
 		"202": jsonResponse("Deletion receipt.", ref("ConversationDeletionReceipt"), nil),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
-	paths["/v1/relationship-observations/batch"] = obj{"post": operation("Relationship Intelligence", "Ingest relationship observations", "Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.", "ingestRelationshipObservations", bearer(), nil, jsonRequest("Observation batch.", objectSchema("Observation batch.", obj{
+	paths["/v1/relationship-observations/batch"] = obj{"post": operation("Relationship Intelligence", "Ingest relationship observations", "New person sends the new person id, source user, and event person_added. The summary is that person's name followed by added by the user.", "ingestRelationshipObservations", bearer(), nil, jsonRequest("Observation batch.", objectSchema("Observation batch.", obj{
 		"observations": arraySchema("Provider-neutral observations.", objectSchema("Observation input.", obj{
 			"relationshipId":  uuidSchema("Known relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 			"displayName":     stringSchema("Account display name for first ingestion.", "Acme"),
 			"primaryEmail":    stringSchema("Primary contact email.", "avery@acme.com"),
 			"accountDomain":   stringSchema("Exact account domain.", "acme.com"),
 			"resourceRefs":    arraySchema("Canonical product:type:externalId references.", stringSchema("Resource reference.", "desktop:relationship:acme")),
-			"source":          stringSchema("Evidence source.", "gmail"),
+			"source":          stringSchema("Evidence source.", "user"),
 			"sourceAccountId": stringSchema("Provider account id.", "me@company.com"),
-			"externalId":      stringSchema("Provider event id.", "message-123"),
+			"externalId":      stringSchema("Provider event id.", addedPersonExternalID),
 			"sourceVersion":   stringSchema("Provider event version.", "1"),
-			"eventType":       stringSchema("Normalized event type.", "commitment_created"),
-			"occurredAt":      stringSchema("Occurrence time.", "2026-07-18T17:30:00Z", obj{"format": "date-time"}),
+			"eventType":       stringSchema("Normalized event type.", "person_added"),
+			"occurredAt":      stringSchema("Occurrence time.", addedPersonAt, obj{"format": "date-time"}),
 			"receivedAt":      stringSchema("Receipt time.", "2026-07-18T17:30:01Z", obj{"format": "date-time"}),
-			"summary":         stringSchema("Bounded evidence summary.", "We promised the security packet."),
+			"summary":         stringSchema("Bounded evidence summary.", addedPersonSummary),
 			"normalizedFacts": freeFormSchema("Provider-neutral facts."),
 			"payload":         freeFormSchema("Raw provider payload, sealed at rest."),
 			"participants": arraySchema("Observed relationship participants.", objectSchema("Observation participant.", obj{
-				"displayName": stringSchema("Participant display name.", "Avery Chen"),
-				"email":       stringSchema("Participant email.", "avery@acme.com"),
-				"role":        stringSchema("Relationship role.", "champion"),
+				"displayName": stringSchema("Participant display name.", addedPersonName),
+				"email":       stringSchema("Participant email.", addedPersonEmail),
+				"role":        stringSchema("Relationship role.", "contact"),
 				"title":       stringSchema("Participant title.", "VP Engineering"),
 				"externalRefs": arraySchema("Provider participant references.",
 					stringSchema("Participant reference.", "gmail:contact:123")),
@@ -1055,8 +1055,8 @@ func addRevenuePaths(paths obj) {
 			"channel":   stringEnum("Interaction channel.", "email", "email", "meeting", "call", "chat", "note", "crm"),
 			"direction": stringEnum("Interaction direction.", "inbound", "inbound", "outbound", "internal"),
 		}, "source", "externalId", "eventType")),
-	}, "observations"), obj{"observations": []any{obj{"displayName": "Acme", "accountDomain": "acme.com", "source": "gmail", "externalId": "message-123", "eventType": "commitment_created"}}}), obj{
-		"201": jsonResponse("Ingestion results.", freeFormSchema("Observation, relationship, and duplicate status per input."), nil),
+	}, "observations"), addedPersonRequest()), obj{
+		"201": jsonResponse("Ingestion results.", freeFormSchema("Observation, relationship, and duplicate status per input."), addedPersonResponse()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"409": responseRef("409"),
