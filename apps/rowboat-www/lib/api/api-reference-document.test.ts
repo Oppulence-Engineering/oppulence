@@ -315,6 +315,36 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the maintained workflows the Workflows page loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/background-tasks"].get;
+    expect(operation.summary).toBe("Workflows");
+    expect(operation.description).toBe(
+      "The Workflows page loads the six maintained cloud workflows for the signed-in person. Each one is live and starts on its schedule.",
+    );
+    expect(operation.parameters).toBeUndefined();
+    const tasks = operation.responses["200"].content["application/json"].example.tasks;
+    expect(tasks.map((task: { slug: string; name: string; executionTarget: string }) => [
+      task.slug,
+      task.name,
+      task.executionTarget,
+    ])).toEqual([
+      ["oppulence-attention-monitor", "Attention Monitor", "api"],
+      ["oppulence-connector-health-repair", "Connector Health and Repair", "api"],
+      ["oppulence-meeting-pre-brief", "Meeting Pre-Brief", "api"],
+      ["oppulence-post-meeting-processor", "Post-Meeting Processor", "api"],
+      ["oppulence-recommendation-review", "Recommendation Review", "api"],
+      ["oppulence-relationship-refresh", "Relationship Refresh", "api"],
+    ]);
+    expect(tasks.every((task: { active: boolean; systemManaged: boolean; scheduleSyncState: string }) =>
+      task.active && task.systemManaged && task.scheduleSyncState === "current",
+    )).toBe(true);
+    expect(JSON.stringify(operation.responses["200"])).not.toContain("daily-summary");
+    expect(presented.paths["/v1/background-tasks"].post.requestBody.content["application/json"].example.slug).toBe(
+      "daily-summary",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

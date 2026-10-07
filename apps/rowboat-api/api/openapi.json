@@ -16531,7 +16531,7 @@
     },
     "/v1/background-tasks": {
       "get": {
-        "description": "Lists the authenticated user's server-readable desktop background task mirrors ordered by slug. This is the primary sync pull for the desktop task registry.",
+        "description": "The Workflows page loads the six maintained cloud workflows for the signed-in person. Each one is live and starts on its schedule.",
         "operationId": "listBackgroundTasks",
         "responses": {
           "200": {
@@ -16541,31 +16541,118 @@
                   "tasks": [
                     {
                       "active": true,
-                      "createdAt": "2026-06-04T20:38:00Z",
-                      "executionTarget": "desktop",
-                      "id": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
-                      "instructions": "Summarize important account changes and draft follow-up notes.",
-                      "lastAttemptAt": "2026-06-04T21:00:00Z",
-                      "lastRunAt": "2026-06-04T21:02:00Z",
-                      "lastRunError": "",
-                      "lastRunId": "run-20260604-210000",
-                      "lastRunSummary": "No high-priority account changes.",
-                      "model": "openai/gpt-4.1-mini",
-                      "name": "Daily Account Summary",
-                      "provider": "openai",
-                      "revision": 2,
-                      "scheduleSyncError": "",
+                      "executionTarget": "api",
+                      "id": "b8dfa9b6-a7b2-46ea-982c-622a914c0001",
+                      "instructions": "Use relationship.read with view=attention and run_history.read. Rank open attention items by urgency and score, explain the deterministic reason and freshness, cite every triggering object and evidence reference, and write an operator-ready markdown brief. Recommend review actions only; do not perform external actions.",
+                      "name": "Attention Monitor",
                       "scheduleSyncState": "current",
-                      "scheduleSyncedAt": "2026-06-04T20:39:00Z",
-                      "slug": "daily-summary",
-                      "systemManaged": false,
-                      "templateSlug": "",
-                      "templateVersion": 0,
+                      "slug": "oppulence-attention-monitor",
+                      "systemManaged": true,
+                      "templateSlug": "attention-monitor",
+                      "templateVersion": 1,
                       "triggers": {
-                        "cronExpr": "0 9 * * *",
+                        "cronExpr": "0 8 * * *",
                         "timezone": "America/New_York"
-                      },
-                      "updatedAt": "2026-06-04T20:39:00Z"
+                      }
+                    },
+                    {
+                      "active": true,
+                      "executionTarget": "api",
+                      "id": "b8dfa9b6-a7b2-46ea-982c-622a914c0002",
+                      "instructions": "Use relationship.read with view=sources and run_history.read. Report each connector's authorization, freshness, completeness, missing scopes, retry state, lag, and backfill progress. Separate transient retries from reconnect-required failures and write safe operator repair steps. Never request or expose secrets and never reconnect a provider automatically.",
+                      "name": "Connector Health and Repair",
+                      "scheduleSyncState": "current",
+                      "slug": "oppulence-connector-health-repair",
+                      "systemManaged": true,
+                      "templateSlug": "connector-health-repair",
+                      "templateVersion": 1,
+                      "triggers": {
+                        "cronExpr": "*/30 * * * *",
+                        "events": {
+                          "eventTypes": [
+                            "*"
+                          ],
+                          "sources": [
+                            "google",
+                            "slack",
+                            "hubspot"
+                          ]
+                        },
+                        "timezone": "UTC"
+                      }
+                    },
+                    {
+                      "active": true,
+                      "executionTarget": "api",
+                      "id": "b8dfa9b6-a7b2-46ea-982c-622a914c0003",
+                      "instructions": "Use connector.read.calendar for upcoming meetings, relationship.read with view=portfolio for matching customer context, and run_history.read. For meetings in the next 24 hours, write a concise brief with participants, relationship health, open commitments, risks, last material change, desired outcome, and evidence references. If no relevant meeting exists, record that clearly. Do not contact participants.",
+                      "name": "Meeting Pre-Brief",
+                      "scheduleSyncState": "current",
+                      "slug": "oppulence-meeting-pre-brief",
+                      "systemManaged": true,
+                      "templateSlug": "meeting-pre-brief",
+                      "templateVersion": 1,
+                      "triggers": {
+                        "cronExpr": "*/30 * * * *",
+                        "timezone": "UTC"
+                      }
+                    },
+                    {
+                      "active": true,
+                      "executionTarget": "api",
+                      "id": "b8dfa9b6-a7b2-46ea-982c-622a914c0004",
+                      "instructions": "Use event.read when event-triggered, connector.read.calendar for recently completed meetings, relationship.read with view=portfolio, and run_history.read. Produce a markdown meeting record containing decisions, commitments with owners and dates, risks, unresolved questions, relationship changes, and draft follow-up recommendations. Cite source references. Any outward action must remain a proposal requiring human approval.",
+                      "name": "Post-Meeting Processor",
+                      "scheduleSyncState": "current",
+                      "slug": "oppulence-post-meeting-processor",
+                      "systemManaged": true,
+                      "templateSlug": "post-meeting-processor",
+                      "templateVersion": 1,
+                      "triggers": {
+                        "cronExpr": "*/15 * * * *",
+                        "events": {
+                          "eventTypes": [
+                            "resource.exists",
+                            "resource.update"
+                          ],
+                          "sources": [
+                            "google"
+                          ]
+                        },
+                        "timezone": "UTC"
+                      }
+                    },
+                    {
+                      "active": true,
+                      "executionTarget": "api",
+                      "id": "b8dfa9b6-a7b2-46ea-982c-622a914c0005",
+                      "instructions": "Use relationship.read with view=recommendations and run_history.read. Group pending recommendations by relationship, show priority, reason, revision, policy and approval state, flag stale or conflicting evidence, and write a review brief. Never approve, reject, or execute on the user's behalf.",
+                      "name": "Recommendation Review",
+                      "scheduleSyncState": "current",
+                      "slug": "oppulence-recommendation-review",
+                      "systemManaged": true,
+                      "templateSlug": "recommendation-review",
+                      "templateVersion": 1,
+                      "triggers": {
+                        "cronExpr": "0 9 * * 1-5",
+                        "timezone": "America/New_York"
+                      }
+                    },
+                    {
+                      "active": true,
+                      "executionTarget": "api",
+                      "id": "b8dfa9b6-a7b2-46ea-982c-622a914c0006",
+                      "instructions": "Use relationship.read with view=portfolio and run_history.read. Compare current versioned relationship state with the prior run, identify only material changes, cite relationship and evidence references returned by the tool, and write a concise markdown portfolio refresh. Never invent evidence or execute an external action.",
+                      "name": "Relationship Refresh",
+                      "scheduleSyncState": "current",
+                      "slug": "oppulence-relationship-refresh",
+                      "systemManaged": true,
+                      "templateSlug": "relationship-refresh",
+                      "templateVersion": 1,
+                      "triggers": {
+                        "cronExpr": "*/15 * * * *",
+                        "timezone": "UTC"
+                      }
                     }
                   ]
                 },
@@ -16574,7 +16661,7 @@
                 }
               }
             },
-            "description": "Task list."
+            "description": "Maintained cloud workflows."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -16588,8 +16675,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List background tasks",
-        "tags": ["Background Tasks"]
+        "summary": "Workflows",
+        "tags": [
+          "Background Tasks"
+        ]
       },
       "post": {
         "description": "Creates the cloud mirror for a desktop task.yaml entry. If slug is omitted, Solomon AI API derives one from name. Slugs are unique per authenticated user.",

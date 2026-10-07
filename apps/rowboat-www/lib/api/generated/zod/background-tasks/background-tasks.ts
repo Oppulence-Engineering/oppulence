@@ -562,8 +562,8 @@ export const InstantiateBackgroundTaskTemplate500Response = zod
   );
 
 /**
- * Lists the authenticated user's server-readable desktop background task mirrors ordered by slug. This is the primary sync pull for the desktop task registry.
- * @summary List background tasks
+ * The Workflows page loads the six maintained cloud workflows for the signed-in person. Each one is live and starts on its schedule.
+ * @summary Workflows
  */
 export const ListBackgroundTasks200Response = zod
   .strictObject({

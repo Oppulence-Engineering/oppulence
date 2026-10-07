@@ -1342,8 +1342,8 @@ func addBackgroundTaskPaths(paths obj) {
 		}),
 	}
 	paths["/v1/background-tasks"] = obj{
-		"get": operation("Background Tasks", "List background tasks", "Lists the authenticated user's server-readable desktop background task mirrors ordered by slug. This is the primary sync pull for the desktop task registry.", "listBackgroundTasks", bearer(), nil, nil, obj{
-			"200": jsonResponse("Task list.", ref("BackgroundTaskListResponse"), obj{"tasks": []any{backgroundTaskExample()}}),
+		"get": operation("Background Tasks", "Workflows", workflowLibraryDescription, "listBackgroundTasks", bearer(), nil, nil, obj{
+			"200": jsonResponse("Maintained cloud workflows.", ref("BackgroundTaskListResponse"), workflowLibraryExample()),
 			"401": responseRef("401"),
 			"500": responseRef("500"),
 		}),
