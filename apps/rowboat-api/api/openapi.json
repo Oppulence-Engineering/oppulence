@@ -23191,12 +23191,108 @@
     },
     "/v1/relationship-sources": {
       "get": {
-        "description": "Returns Google, Slack, and HubSpot capability/scopes plus durable account lifecycle state. No token, secret, or raw cursor is exposed.",
+        "description": "Sources to connect lists Google, Slack, and HubSpot. The page names each source and offers Connect for Google and HubSpot when no account is connected.",
         "operationId": "getRelationshipSourceInventory",
         "responses": {
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "sources": [
+                    {
+                      "accounts": [],
+                      "actions": [
+                        "gmail_draft",
+                        "gmail_send",
+                        "calendar_event"
+                      ],
+                      "connectPath": "/v1/google-oauth/start",
+                      "disconnectPath": "/v1/google-oauth",
+                      "displayName": "Google Gmail \u0026 Calendar",
+                      "evidence": [
+                        "email_threads",
+                        "replies",
+                        "meetings",
+                        "participants",
+                        "commitments"
+                      ],
+                      "expectedCadenceSeconds": 900,
+                      "readScopes": [
+                        "https://www.googleapis.com/auth/gmail.readonly",
+                        "https://www.googleapis.com/auth/calendar.events.readonly"
+                      ],
+                      "scopeExplanation": "Read scopes build relationship history. Write scopes are requested progressively only when you enable an approval-gated action.",
+                      "source": "google",
+                      "supportsReconnect": true,
+                      "supportsResync": true,
+                      "writeScopes": [
+                        "https://www.googleapis.com/auth/gmail.compose",
+                        "https://www.googleapis.com/auth/gmail.send",
+                        "https://www.googleapis.com/auth/calendar.events"
+                      ]
+                    },
+                    {
+                      "accounts": [],
+                      "actions": [
+                        "slack_message"
+                      ],
+                      "connectPath": "/v1/slack-oauth/start",
+                      "disconnectPath": "/v1/slack-oauth/workspaces/{sourceAccountId}",
+                      "displayName": "Slack",
+                      "evidence": [
+                        "messages",
+                        "threads",
+                        "participants",
+                        "decisions",
+                        "commitments"
+                      ],
+                      "expectedCadenceSeconds": 900,
+                      "readScopes": [
+                        "channels:history",
+                        "channels:read",
+                        "users:read"
+                      ],
+                      "scopeExplanation": "Channel and user reads assemble shared account context. chat:write is used only after approval of an exact destination and message revision.",
+                      "source": "slack",
+                      "supportsReconnect": true,
+                      "supportsResync": true,
+                      "writeScopes": [
+                        "chat:write"
+                      ]
+                    },
+                    {
+                      "accounts": [],
+                      "actions": [
+                        "crm_note",
+                        "crm_task"
+                      ],
+                      "connectPath": "/v1/connections/hubspot/api-key",
+                      "disconnectPath": "/v1/connections/hubspot",
+                      "displayName": "HubSpot",
+                      "evidence": [
+                        "companies",
+                        "contacts",
+                        "deals",
+                        "activities",
+                        "pipeline_changes"
+                      ],
+                      "expectedCadenceSeconds": 1800,
+                      "readScopes": [
+                        "crm.objects.companies.read",
+                        "crm.objects.contacts.read",
+                        "crm.objects.deals.read"
+                      ],
+                      "scopeExplanation": "CRM reads preserve HubSpot-owned lifecycle evidence. Progressive note/task scopes create only the exact revision-bound engagement a user approves; beta does not silently mutate CRM-owned fields.",
+                      "source": "hubspot",
+                      "supportsReconnect": true,
+                      "supportsResync": true,
+                      "writeScopes": [
+                        "crm.objects.notes.write",
+                        "crm.objects.tasks.write"
+                      ]
+                    }
+                  ]
+                },
                 "schema": {
                   "description": "Source inventory.",
                   "properties": {
@@ -23208,12 +23304,14 @@
                       "type": "array"
                     }
                   },
-                  "required": ["sources"],
+                  "required": [
+                    "sources"
+                  ],
                   "type": "object"
                 }
               }
             },
-            "description": "Guided source inventory."
+            "description": "Sources to connect."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -23224,8 +23322,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List guided source connections",
-        "tags": ["Relationship Intelligence"]
+        "summary": "Sources to connect",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-sources/status": {
