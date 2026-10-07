@@ -189,8 +189,8 @@ export const ListRevenueActions401Response = zod
   );
 
 /**
- * Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.
- * @summary Create a manual action
+ * Create task saves a follow-up on a company. It sends the title, the due time, and a priority of 30.
+ * @summary Create task
  */
 export const CreateRevenueActionBody = zod
   .strictObject({
@@ -220,9 +220,9 @@ export const CreateRevenueActionBody = zod
     priorityScore: zod.int().optional().describe("Priority (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed body."),
     proposedSubject: zod.string().optional().describe("Proposed subject."),
-    reason: zod.string().describe("Evidence-backed reason."),
+    reason: zod.string().describe("Task title."),
     recipientEmail: zod.string().optional().describe("Recipient email."),
-    relationshipId: zod.uuid().describe("Owning relationship id."),
+    relationshipId: zod.uuid().describe("Company the task is for."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
   })
   .describe("Create request.");

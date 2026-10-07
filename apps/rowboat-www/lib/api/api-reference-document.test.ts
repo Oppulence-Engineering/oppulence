@@ -315,6 +315,49 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the follow-up Create task saves", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-actions"].post;
+    expect(operation.summary).toBe("Create task");
+    expect(operation.operationId).toBe("createRevenueAction");
+    expect(operation.description).toBe(
+      "Create task saves a follow-up on a company. It sends the title, the due time, and a priority of 30.",
+    );
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      relationshipId: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      actionType: "follow_up_task",
+      channel: "task",
+      reason: "Follow up on the proposal",
+      dueAt: "2026-07-15T17:00:00Z",
+      priorityScore: 30,
+    });
+    expect(operation.responses["201"].content["application/json"].example).toEqual({
+      id: "3a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      relationshipId: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      relationshipName: "Acme",
+      actionType: "follow_up_task",
+      channel: "task",
+      detector: "manual",
+      revision: 1,
+      revisionHash: "sha256:ab12...",
+      reason: "Follow up on the proposal",
+      priorityScore: 30,
+      queueStatus: "open",
+      policyStatus: "pending",
+      approvalStatus: "pending",
+      executionStatus: "pending",
+      executionOwner: "rowboat",
+      executionMode: "draft",
+      dueAt: "2026-07-15T17:00:00Z",
+      createdAt: "2026-07-15T16:00:00Z",
+      updatedAt: "2026-07-15T16:00:00Z",
+      evidence: [],
+    });
+    const encoded = JSON.stringify(operation.responses["201"].content["application/json"].example);
+    expect(encoded).not.toContain("acta_");
+    expect(encoded).not.toContain("approvedAt");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

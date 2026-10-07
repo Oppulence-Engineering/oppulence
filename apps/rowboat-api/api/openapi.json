@@ -25752,11 +25752,19 @@
         "tags": ["Revenue"]
       },
       "post": {
-        "description": "Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.",
+        "description": "Create task saves a follow-up on a company. It sends the title, the due time, and a priority of 30.",
         "operationId": "createRevenueAction",
         "requestBody": {
           "content": {
             "application/json": {
+              "example": {
+                "actionType": "follow_up_task",
+                "channel": "task",
+                "dueAt": "2026-07-15T17:00:00Z",
+                "priorityScore": 30,
+                "reason": "Follow up on the proposal",
+                "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+              },
               "schema": {
                 "description": "Create request.",
                 "properties": {
@@ -25774,25 +25782,36 @@
                       "calendar_hold",
                       "commitment_rescue"
                     ],
-                    "example": "warm_follow_up",
+                    "example": "follow_up_task",
                     "type": "string"
                   },
                   "channel": {
                     "description": "Delivery channel.",
-                    "enum": ["email", "slack", "call", "crm_task", "crm", "task", "calendar"],
-                    "example": "email",
+                    "enum": [
+                      "email",
+                      "slack",
+                      "call",
+                      "crm_task",
+                      "crm",
+                      "task",
+                      "calendar"
+                    ],
+                    "example": "task",
                     "type": "string"
                   },
                   "dueAt": {
                     "description": "Due time.",
-                    "example": "2026-07-15T00:00:00Z",
+                    "example": "2026-07-15T17:00:00Z",
                     "format": "date-time",
                     "nullable": true,
                     "type": "string"
                   },
                   "executionMode": {
                     "description": "Execution mode.",
-                    "enum": ["draft", "send"],
+                    "enum": [
+                      "draft",
+                      "send"
+                    ],
                     "example": "draft",
                     "type": "string"
                   },
@@ -25803,7 +25822,7 @@
                   },
                   "priorityScore": {
                     "description": "Priority (0-100).",
-                    "example": 80,
+                    "example": 30,
                     "type": "integer"
                   },
                   "proposedMessage": {
@@ -25817,8 +25836,8 @@
                     "type": "string"
                   },
                   "reason": {
-                    "description": "Evidence-backed reason.",
-                    "example": "They asked for a follow-up in July.",
+                    "description": "Task title.",
+                    "example": "Follow up on the proposal",
                     "type": "string"
                   },
                   "recipientEmail": {
@@ -25827,7 +25846,7 @@
                     "type": "string"
                   },
                   "relationshipId": {
-                    "description": "Owning relationship id.",
+                    "description": "Company the task is for.",
                     "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
                     "format": "uuid",
                     "type": "string"
@@ -25838,24 +25857,51 @@
                     "type": "string"
                   }
                 },
-                "required": ["relationshipId", "actionType", "channel", "reason"],
+                "required": [
+                  "relationshipId",
+                  "actionType",
+                  "channel",
+                  "reason"
+                ],
                 "type": "object"
               }
             }
           },
-          "description": "Action.",
+          "description": "Task.",
           "required": true
         },
         "responses": {
           "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "actionType": "follow_up_task",
+                  "approvalStatus": "pending",
+                  "channel": "task",
+                  "createdAt": "2026-07-15T16:00:00Z",
+                  "detector": "manual",
+                  "dueAt": "2026-07-15T17:00:00Z",
+                  "evidence": [],
+                  "executionMode": "draft",
+                  "executionOwner": "rowboat",
+                  "executionStatus": "pending",
+                  "id": "3a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "policyStatus": "pending",
+                  "priorityScore": 30,
+                  "queueStatus": "open",
+                  "reason": "Follow up on the proposal",
+                  "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "relationshipName": "Acme",
+                  "revision": 1,
+                  "revisionHash": "sha256:ab12...",
+                  "updatedAt": "2026-07-15T16:00:00Z"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueAction"
                 }
               }
             },
-            "description": "Created action."
+            "description": "Created task."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -25872,8 +25918,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Create a manual action",
-        "tags": ["Revenue"]
+        "summary": "Create task",
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-actions/{actionId}": {

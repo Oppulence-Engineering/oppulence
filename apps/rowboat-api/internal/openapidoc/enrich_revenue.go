@@ -1155,25 +1155,7 @@ func addRevenuePaths(paths obj) {
 			}, "actions"), nil),
 			"401": responseRef("401"),
 		}),
-		"post": operation("Revenue", "Create a manual action", "Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.", "createRevenueAction", bearer(), nil, jsonRequest("Action.", objectSchema("Create request.", obj{
-			"relationshipId":     uuidSchema("Owning relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-			"actionType":         stringEnum("Action type.", "warm_follow_up", "warm_follow_up", "proposal_nudge", "referral_reconnect", "customer_risk", "meeting_follow_up", "meeting_recap", "crm_update", "follow_up_task", "calendar_hold", "commitment_rescue"),
-			"channel":            stringEnum("Delivery channel.", "email", "email", "slack", "call", "crm_task", "crm", "task", "calendar"),
-			"reason":             stringSchema("Evidence-backed reason.", "They asked for a follow-up in July."),
-			"recipientEmail":     stringSchema("Recipient email.", "buyer@example.com"),
-			"proposedSubject":    stringSchema("Proposed subject.", "Following up as promised"),
-			"proposedMessage":    stringSchema("Proposed body.", "Hi Jordan — circling back as promised..."),
-			"senderAccountRef":   stringSchema("Sender account reference.", "gmail:me@company.com"),
-			"executionMode":      stringEnum("Execution mode.", "draft", "draft", "send"),
-			"priorityScore":      intSchema("Priority (0-100).", 80),
-			"priorityComponents": freeFormSchema("Per-component priority breakdown."),
-			"dueAt":              stringSchema("Due time.", "2026-07-15T00:00:00Z", obj{"format": "date-time"}, nullable()),
-		}, "relationshipId", "actionType", "channel", "reason"), nil), obj{
-			"201": jsonResponse("Created action.", ref("RevenueAction"), nil),
-			"400": responseRef("400"),
-			"401": responseRef("401"),
-			"404": responseRef("404"),
-		}),
+		"post": createdTaskOperation(),
 	}
 	paths["/v1/revenue-actions/{actionId}"] = obj{"get": operation("Revenue", "Get an action", "Returns one action with relationship context.", "getRevenueAction", bearer(), actionParam, nil, obj{
 		"200": jsonResponse("Action.", ref("RevenueAction"), nil),

@@ -131,8 +131,8 @@ export const getCreateRevenueActionUrl = () => {
 };
 
 /**
- * Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.
- * @summary Create a manual action
+ * Create task saves a follow-up on a company. It sends the title, the due time, and a priority of 30.
+ * @summary Create task
  */
 export const createRevenueAction = async (
   createRevenueActionBody: CreateRevenueActionBody,
