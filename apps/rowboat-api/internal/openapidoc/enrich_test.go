@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,60 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertCorrectDetail(t, spec)
+}
+
+func TestCorrectDetailSamplesTheCompany(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertCorrectDetail(t, spec)
+}
+
+func assertCorrectDetail(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/corrections"])["post"])
+	if op["summary"] != "Correct a detail" || op["operationId"] != "correctRelationship" || op["description"] != correctDetailDescription {
+		t.Fatalf("correct detail copy: summary=%#v id=%#v description=%#v", op["summary"], op["operationId"], op["description"])
+	}
+	params := op["parameters"].([]any)
+	if len(params) != 1 {
+		t.Fatalf("correct detail parameters: %#v", params)
+	}
+	relationshipID := asObj(asObj(params[0])["schema"])["example"]
+	if relationshipID != correctDetailRelationship {
+		t.Fatalf("correct detail company id: %#v", relationshipID)
+	}
+	request := asObj(asObj(asObj(op["requestBody"])["content"])["application/json"])["example"]
+	gotRequest, err := json.Marshal(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantRequest, err := json.Marshal(correctDetailRequest())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotRequest) != string(wantRequest) {
+		t.Fatalf("correct detail request:\n%s\nwant:\n%s", gotRequest, wantRequest)
+	}
+	example := asObj(asObj(asObj(asObj(op["responses"])["201"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(correctDetailCompany())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("correct detail company:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "acta_") || strings.Contains(string(got), "\"token\"") || strings.Contains(string(got), "approvedAt") {
+		t.Fatalf("correct detail includes a live approval: %s", got)
+	}
+	company := asObj(example)
+	if company["displayName"] != "Acme" || company["health"] != "healthy" || company["kind"] != "company" || company["stateReason"] != correctDetailReason {
+		t.Fatalf("correct detail company state: %#v", company)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

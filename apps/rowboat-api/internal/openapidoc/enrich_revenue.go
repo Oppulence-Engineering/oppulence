@@ -883,18 +883,7 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/relationships/{relationshipId}/corrections"] = obj{"post": operation("Relationship Intelligence", "Correct relationship state", "Appends a user correction assertion and deterministically reprojects the relationship. Source evidence is never overwritten.", "correctRelationship", bearer(), relationshipParam, jsonRequest("Correction.", objectSchema("Relationship correction.", obj{
-		"dimension":             stringEnum("Corrected state dimension.", "health", "lifecycle", "engagement", "sentiment", "health", "summary", "next_action", "risk", "milestone"),
-		"value":                 stringSchema("Correct value.", "healthy"),
-		"reason":                stringSchema("Why the model is wrong.", "The review happened yesterday."),
-		"supersedesAssertionId": stringSchema("Optional active assertion on the same relationship and dimension that this correction permanently replaces.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5", obj{"format": "uuid"}),
-		"validTo":               stringSchema("Optional exclusive expiry boundary for a temporary correction.", "2026-08-31T17:00:00Z", obj{"format": "date-time"}, nullable()),
-	}, "dimension", "value", "reason"), obj{"dimension": "health", "value": "healthy", "reason": "The review happened yesterday."}), obj{
-		"201": jsonResponse("Reprojected relationship.", ref("RevenueRelationship"), nil),
-		"400": responseRef("400"),
-		"401": responseRef("401"),
-		"404": responseRef("404"),
-	})}
+	paths["/v1/relationships/{relationshipId}/corrections"] = obj{"post": correctDetailOperation()}
 	assertionParam := make([]any, len(relationshipParam), len(relationshipParam)+1)
 	copy(assertionParam, relationshipParam)
 	assertionParam = append(assertionParam, obj{"name": "assertionId", "in": "path", "required": true, "description": "User-correction assertion id.", "schema": obj{"type": "string", "format": "uuid"}})

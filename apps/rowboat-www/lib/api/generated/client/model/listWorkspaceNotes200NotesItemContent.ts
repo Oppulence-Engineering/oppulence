@@ -7,18 +7,6 @@
  */
 
 /**
- * The detail this form corrects.
+ * Editor document, when one was saved.
  */
-export type CorrectRelationshipBodyDimension =
-  (typeof CorrectRelationshipBodyDimension)[keyof typeof CorrectRelationshipBodyDimension];
-
-export const CorrectRelationshipBodyDimension = {
-  lifecycle: "lifecycle",
-  engagement: "engagement",
-  sentiment: "sentiment",
-  health: "health",
-  summary: "summary",
-  next_action: "next_action",
-  risk: "risk",
-  milestone: "milestone",
-} as const;
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };

@@ -315,6 +315,33 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the company Correct a detail returns", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/relationships/{relationshipId}/corrections"].post;
+    expect(operation.summary).toBe("Correct a detail");
+    expect(operation.operationId).toBe("correctRelationship");
+    expect(operation.description).toBe(
+      "Correct a detail replaces one field on this company. It sends the field, the new value, and why, and the company comes back with that value.",
+    );
+    expect(operation.parameters[0].schema.example).toBe("9c8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      dimension: "health",
+      value: "healthy",
+      reason: "The review happened yesterday.",
+    });
+    const company = operation.responses["201"].content["application/json"].example;
+    expect(company).toMatchObject({
+      id: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      kind: "company",
+      displayName: "Acme",
+      health: "healthy",
+      stateReason: "The review happened yesterday.",
+    });
+    const encoded = JSON.stringify(company);
+    expect(encoded).not.toContain("acta_");
+    expect(encoded).not.toContain('"token"');
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
