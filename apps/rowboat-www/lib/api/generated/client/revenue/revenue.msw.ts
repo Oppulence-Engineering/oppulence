@@ -12,6 +12,7 @@ import type {
   GetOpenPromisesReport200One,
   GetRevenueActionAudit200,
   GetRevenueActionSourceBody200,
+  ListActionProposals200,
   ListRevenueActions200,
   ListRevenueLeakScans200,
   RevenueAction,
@@ -40,6 +41,7 @@ import {
   getGetRevenueLeakScanResponseMock,
   getGetRevenueWorkspaceResponseMock,
   getLinkRevenueWorkspaceResponseMock,
+  getListActionProposalsResponseMock,
   getListRevenueActionsResponseMock,
   getListRevenueLeakScansResponseMock,
   getRecordRevenueActionOutcomeResponseMock,
@@ -50,6 +52,7 @@ import {
 } from "./revenue.faker";
 
 export {
+  getListActionProposalsResponseMock,
   getListRevenueActionsResponseMock,
   getCreateRevenueActionResponseMock,
   getGetRevenueActionResponseMock,
@@ -73,6 +76,30 @@ export {
   getGetRevenueWorkspaceResponseMock,
   getLinkRevenueWorkspaceResponseMock,
 } from "./revenue.faker";
+
+export const getListActionProposalsMockHandler = (
+  overrideResponse?:
+    | ListActionProposals200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListActionProposals200> | ListActionProposals200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/action-proposals",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListActionProposalsResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 
 export const getListRevenueActionsMockHandler = (
   overrideResponse?:
@@ -607,6 +634,7 @@ export const getLinkRevenueWorkspaceMockHandler = (
   );
 };
 export const getRevenueMock = () => [
+  getListActionProposalsMockHandler(),
   getListRevenueActionsMockHandler(),
   getCreateRevenueActionMockHandler(),
   getGetRevenueActionMockHandler(),

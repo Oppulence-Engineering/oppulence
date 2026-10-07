@@ -15866,6 +15866,67 @@
         "tags": ["System"]
       }
     },
+    "/v1/action-proposals": {
+      "get": {
+        "description": "Agent approvals loads the pending queue. The request asks for pending proposals. This workspace has no pending proposal, so the page is empty.",
+        "operationId": "listActionProposals",
+        "parameters": [
+          {
+            "description": "pending is the queue. Agent approvals asks for pending.",
+            "example": "pending",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "description": "pending is the queue. Agent approvals asks for pending.",
+              "example": "pending",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "proposals": []
+                },
+                "schema": {
+                  "description": "Pending proposals.",
+                  "properties": {
+                    "proposals": {
+                      "description": "Proposals waiting for a decision.",
+                      "items": {
+                        "description": "One proposal.",
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "proposals"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Empty approval queue."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Agent approvals",
+        "tags": [
+          "Revenue"
+        ]
+      }
+    },
     "/v1/agent-sessions": {
       "get": {
         "description": "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.",

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -93,6 +94,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/relationship-sources/status",
 		"/v1/relationship-recommendations/{actionId}/approve",
 		"/v1/relationship-recommendations/{actionId}/reject",
+		"/v1/action-proposals",
 		"/v1/entities",
 		"/v1/entities/{id}",
 		"/v1/entities/merge",
@@ -338,6 +340,45 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertAgentApprovals(t, paths)
+}
+
+func TestAgentApprovalsSamplesTheEmptyQueue(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertAgentApprovals(t, asObj(spec["paths"]))
+}
+
+func assertAgentApprovals(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/action-proposals"])["get"])
+	if op["summary"] != "Agent approvals" || op["description"] != agentApprovalsDescription || op["operationId"] != "listActionProposals" {
+		t.Fatalf("approvals copy: summary=%#v description=%#v id=%#v", op["summary"], op["description"], op["operationId"])
+	}
+	params, ok := op["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("approvals parameters: %#v", op["parameters"])
+	}
+	status := asObj(params[0])
+	schema := asObj(status["schema"])
+	if status["name"] != "status" || status["example"] != "pending" || schema["example"] != "pending" {
+		t.Fatalf("approvals status: %#v", status)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(agentApprovalsPage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("approvals example:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "financial") || strings.Contains(string(got), "gmail") {
+		t.Fatalf("approvals example still uses an invented proposal: %s", got)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

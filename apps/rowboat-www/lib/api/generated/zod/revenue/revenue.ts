@@ -8,6 +8,40 @@
 import * as zod from "zod";
 
 /**
+ * Agent approvals loads the pending queue. The request asks for pending proposals. This workspace has no pending proposal, so the page is empty.
+ * @summary Agent approvals
+ */
+export const ListActionProposalsQueryParams = zod.object({
+  status: zod
+    .string()
+    .optional()
+    .describe("pending is the queue. Agent approvals asks for pending."),
+});
+
+export const ListActionProposals200Response = zod
+  .strictObject({
+    proposals: zod
+      .array(zod.looseObject({}).describe("One proposal."))
+      .describe("Proposals waiting for a decision."),
+  })
+  .describe("Pending proposals.");
+
+export const ListActionProposals401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
  * Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.
  * @summary List the action queue
  */

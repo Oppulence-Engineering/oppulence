@@ -315,6 +315,25 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the page Agent approvals loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/action-proposals"].get;
+    expect(operation.summary).toBe("Agent approvals");
+    expect(operation.description).toBe(
+      "Agent approvals loads the pending queue. The request asks for pending proposals. This workspace has no pending proposal, so the page is empty.",
+    );
+    expect(operation.parameters).toEqual([
+      expect.objectContaining({
+        name: "status",
+        example: "pending",
+        schema: expect.objectContaining({ example: "pending" }),
+      }),
+    ]);
+    expect(operation.responses["200"].content["application/json"].example).toEqual({
+      proposals: [],
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
