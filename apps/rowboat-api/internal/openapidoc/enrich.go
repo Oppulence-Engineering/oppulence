@@ -1447,8 +1447,8 @@ func addBackgroundTaskPaths(paths obj) {
 		}),
 	}
 	paths["/v1/background-tasks/{slug}/runs/{runId}"] = obj{
-		"get": operation("Background Tasks", "Get task run", "Fetches the full mirrored state for one desktop or API-worker run, including Temporal ids and polling progress when present.", "getBackgroundTaskRun", bearer(), append(slugParam(), runIDParam()...), nil, obj{
-			"200": jsonResponse("Run mirror.", ref("BackgroundTaskRun"), backgroundTaskRunExample()),
+		"get": operation("Background Tasks", "Get task run", "Fetches the full mirrored state for one desktop or API-worker run, including Temporal ids and polling progress when present.", "getBackgroundTaskRun", bearer(), openedRunPathParams(), nil, obj{
+			"200": jsonResponse("Failed cloud run.", ref("BackgroundTaskRun"), openedCloudRunExample()),
 			"401": responseRef("401"),
 			"404": responseRef("404"),
 			"500": responseRef("500"),

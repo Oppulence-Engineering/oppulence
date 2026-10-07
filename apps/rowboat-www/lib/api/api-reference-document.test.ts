@@ -315,6 +315,33 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the cloud run the Runs page opens", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/background-tasks/{slug}/runs/{runId}"].get;
+    expect(operation.summary).toBe("Get a run");
+    expect(operation.description).toBe("Gets one workflow run, including its progress.");
+    expect(operation.parameters.map((parameter: { name: string; example: string }) => [
+      parameter.name,
+      parameter.example,
+    ])).toEqual([
+      ["slug", "oppulence-relationship-refresh"],
+      ["runId", "sched-temporal-77f5e632-a841-4557-a8e4-9b8f0d207ff4"],
+    ]);
+    const example = operation.responses["200"].content["application/json"].example;
+    expect(example).toMatchObject({
+      id: "77f5e632-a841-4557-a8e4-9b8f0d207ff4",
+      slug: "oppulence-relationship-refresh",
+      status: "failed",
+      executor: "api",
+      trigger: "cron",
+      errorCode: "llm_call_failed",
+    });
+    expect(JSON.stringify(example)).not.toContain("daily-summary");
+    expect(presented.paths["/v1/background-tasks/{slug}/runs/{runId}"].patch.responses["200"].content["application/json"].example.slug).toBe(
+      "daily-summary",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
