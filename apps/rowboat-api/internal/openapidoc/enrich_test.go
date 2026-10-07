@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,69 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertReview(t, spec)
+}
+
+func TestReviewSamplesTheAttentionItem(t *testing.T) {
+	spec := obj{"paths": obj{}, "components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertReview(t, spec)
+}
+
+func assertReview(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	post := asObj(asObj(paths["/v1/relationship-attention/{attentionId}/decisions"])["post"])
+	if post["summary"] != "Review" || post["operationId"] != "decideRelationshipAttention" || post["description"] != reviewDescription {
+		t.Fatalf("review operation: summary=%#v description=%#v id=%#v", post["summary"], post["description"], post["operationId"])
+	}
+	params, _ := post["parameters"].([]any)
+	if len(params) != 1 {
+		t.Fatalf("review parameters: %#v", post["parameters"])
+	}
+	attention := asObj(params[0])
+	if attention["name"] != "attentionId" || attention["example"] != reviewAttentionID || asObj(attention["schema"])["example"] != reviewAttentionID {
+		t.Fatalf("review attention: %#v", attention)
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
+	example := asObj(request["example"])
+	versionOK := example["expectedVersion"] == 1 || example["expectedVersion"] == float64(1)
+	if example["decision"] != "acknowledge" || example["reason"] != reviewReason || !versionOK {
+		t.Fatalf("review request: %#v", example)
+	}
+	responses := asObj(post["responses"])
+	if asObj(responses["200"])["description"] != "This item is reviewed and leaves the open queue." {
+		t.Fatalf("review response: %#v", responses["200"])
+	}
+	ok := asObj(asObj(asObj(responses["200"])["content"])["application/json"])
+	if !reflect.DeepEqual(normalizedReview(t, ok["example"]), normalizedReview(t, reviewedAttention())) {
+		t.Fatalf("review example: %#v", ok["example"])
+	}
+	stored := asObj(asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RelationshipAttentionItem"])["properties"])["stateReason"])
+	if stored["example"] != reviewReason {
+		t.Fatalf("stored review reason: %#v", stored)
+	}
+	raw, err := json.Marshal(ok["example"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded := string(raw)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "approvedAt") || strings.Contains(encoded, "snoozedUntil") || strings.Contains(encoded, "dismissedAt") {
+		t.Fatalf("review looks live or unfinished: %s", encoded)
+	}
+}
+
+func normalizedReview(t *testing.T, value any) any {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out any
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+	return out
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

@@ -315,6 +315,34 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the attention item Review records", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const post = presented.paths["/v1/relationship-attention/{attentionId}/decisions"].post;
+    expect(post.summary).toBe("Review");
+    expect(post.operationId).toBe("decideRelationshipAttention");
+    expect(post.description).toBe(
+      "Review records that this attention item was reviewed. It leaves the open queue.",
+    );
+    const attention = post.parameters.find((parameter: { name: string }) => parameter.name === "attentionId");
+    expect(attention.example).toBe("da8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    expect(post.requestBody.content["application/json"].example).toEqual({
+      decision: "acknowledge",
+      reason: "Reviewed from the portfolio attention queue.",
+      expectedVersion: 1,
+    });
+    const example = post.responses["200"].content["application/json"].example;
+    expect(example.status).toBe("acknowledged");
+    expect(example.stateReason).toBe("Reviewed from the portfolio attention queue.");
+    expect(example.relationshipName).toBe("Acme");
+    expect(example.version).toBe(2);
+    expect(example.snoozedUntil).toBeUndefined();
+    expect(example.dismissedAt).toBeUndefined();
+    expect(presented.components.schemas.RelationshipAttentionItem.properties.stateReason.example).toBe(
+      "Reviewed from the portfolio attention queue.",
+    );
+    expect(JSON.stringify(post)).not.toContain("acta_");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
