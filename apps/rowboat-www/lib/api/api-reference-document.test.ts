@@ -315,6 +315,24 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the preferences Profile loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/console/preferences"].get;
+    expect(operation.summary).toBe("Profile");
+    expect(operation.operationId).toBe("getConsolePreferences");
+    expect(operation.description).toBe(
+      "Profile loads the saved display name, the default agent, and whether usage data is shared. Before a name is saved, the name and the agent are empty, usage sharing is off, notifications are off, and the theme follows the system.",
+    );
+    expect(operation.responses["200"].content["application/json"].example).toEqual({
+      displayName: "",
+      defaultAgentSlug: "",
+      shareUsageData: false,
+      notificationLevel: "off",
+      showModelReasoning: false,
+      theme: "system",
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

@@ -108,8 +108,10 @@ func addConsolePaths(paths obj) {
 	}
 	preferenceResponses := cloneResponses(authErrors)
 	preferenceResponses["200"] = jsonResponse("Current preferences.", ref("ConsolePreferences"), nil)
+	profileResponses := cloneResponses(authErrors)
+	profileResponses["200"] = jsonResponse("Preferences Profile loads before a name is saved.", ref("ConsolePreferences"), profilePreferences())
 	paths["/v1/console/preferences"] = obj{
-		"get": operation("Console", "Get console preferences", "Returns defaults before the caller's first write.", "getConsolePreferences", bearer(), nil, nil, preferenceResponses),
+		"get": operation("Console", "Profile", profileDescription, "getConsolePreferences", bearer(), nil, nil, profileResponses),
 		"patch": operation("Console", "Patch console preferences", "Strictly merges supplied typed fields into the caller's durable preference document.", "patchConsolePreferences", bearer(), nil,
 			jsonRequest("Preference fields to merge.", ref("ConsolePreferencesPatch"), nil), preferenceResponses),
 	}

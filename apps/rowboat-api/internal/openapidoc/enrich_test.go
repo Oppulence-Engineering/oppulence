@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,36 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertProfile(t, paths)
+}
+
+func TestProfileSamplesThePreferences(t *testing.T) {
+	spec := obj{"paths": obj{}, "components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertProfile(t, asObj(spec["paths"]))
+}
+
+func assertProfile(t *testing.T, paths obj) {
+	t.Helper()
+	get := asObj(asObj(paths["/v1/console/preferences"])["get"])
+	if get["summary"] != "Profile" || get["operationId"] != "getConsolePreferences" || get["description"] != profileDescription {
+		t.Fatalf("profile operation: summary=%#v description=%#v id=%#v", get["summary"], get["description"], get["operationId"])
+	}
+	if get["parameters"] != nil || get["requestBody"] != nil {
+		t.Fatalf("profile request changed: %#v", get)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"])
+	if !reflect.DeepEqual(example, profilePreferences()) {
+		t.Fatalf("profile example: %#v", example)
+	}
+	raw, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded := string(raw)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "approvedAt") {
+		t.Fatalf("profile example looks live: %s", encoded)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

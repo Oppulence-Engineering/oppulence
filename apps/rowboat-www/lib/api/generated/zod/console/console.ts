@@ -8,8 +8,8 @@
 import * as zod from "zod";
 
 /**
- * Returns defaults before the caller's first write.
- * @summary Get console preferences
+ * Profile loads the saved display name, the default agent, and whether usage data is shared. Before a name is saved, the name and the agent are empty, usage sharing is off, notifications are off, and the theme follows the system.
+ * @summary Profile
  */
 export const getConsolePreferences200ResponseDefaultAgentSlugMax = 100;
 

@@ -19640,18 +19640,26 @@
     },
     "/v1/console/preferences": {
       "get": {
-        "description": "Returns defaults before the caller's first write.",
+        "description": "Profile loads the saved display name, the default agent, and whether usage data is shared. Before a name is saved, the name and the agent are empty, usage sharing is off, notifications are off, and the theme follows the system.",
         "operationId": "getConsolePreferences",
         "responses": {
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "defaultAgentSlug": "",
+                  "displayName": "",
+                  "notificationLevel": "off",
+                  "shareUsageData": false,
+                  "showModelReasoning": false,
+                  "theme": "system"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/ConsolePreferences"
                 }
               }
             },
-            "description": "Current preferences."
+            "description": "Preferences Profile loads before a name is saved."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -19707,8 +19715,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Get console preferences",
-        "tags": ["Console"]
+        "summary": "Profile",
+        "tags": [
+          "Console"
+        ]
       },
       "patch": {
         "description": "Strictly merges supplied typed fields into the caller's durable preference document.",
