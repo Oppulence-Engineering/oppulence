@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,58 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertAttentionQueue(t, paths)
+}
+
+func TestAttentionQueueSamplesTheEmptyPage(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertAttentionQueue(t, asObj(spec["paths"]))
+}
+
+func assertAttentionQueue(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/relationship-attention"])["get"])
+	if op["summary"] != "Attention queue" || op["description"] != attentionQueueDescription || op["operationId"] != "listRelationshipAttention" {
+		t.Fatalf("attention copy: summary=%#v description=%#v id=%#v", op["summary"], op["description"], op["operationId"])
+	}
+	examples := map[string]string{}
+	for _, param := range op["parameters"].([]any) {
+		item := asObj(param)
+		name, _ := item["name"].(string)
+		raw, err := json.Marshal(asObj(item["schema"])["example"])
+		if err != nil {
+			t.Fatal(err)
+		}
+		examples[name] = string(raw)
+		if name == "status" || name == "limit" {
+			level, err := json.Marshal(item["example"])
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(level) != string(raw) {
+				t.Fatalf("%s parameter example %#v != schema %#v", name, string(level), string(raw))
+			}
+		}
+	}
+	if examples["status"] != `"open"` || examples["limit"] != "50" || examples["offset"] != "null" {
+		t.Fatalf("attention query examples: %#v", examples)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(attentionQueuePage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("attention example:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "overdue by two days") || strings.Contains(string(got), "123e4567-e89b-12d3-a456-426614174000") || strings.Contains(string(got), "relationship-observation:1") {
+		t.Fatalf("attention example still uses the invented item: %s", got)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

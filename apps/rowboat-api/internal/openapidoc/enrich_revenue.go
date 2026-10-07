@@ -1115,16 +1115,16 @@ func addRevenuePaths(paths obj) {
 		"decision": stringEnum("Decision.", "merge", "merge", "keep_separate", "move_evidence", "split", "defer", "undo"), "reason": stringSchema("Actor reason.", "Confirmed provider records are the same account."), "expectedVersion": intSchema("Expected candidate version.", 1), "idempotencyKey": stringSchema("Stable client idempotency key.", "identity-review:123"),
 	}, "decision", "expectedVersion", "idempotencyKey"), obj{"decision": "merge", "expectedVersion": 1, "idempotencyKey": "identity-review:123"}), obj{"200": jsonResponse("Resolved candidate.", ref("RelationshipIdentityCandidate"), nil), "400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409")})}
 
-	paths["/v1/relationship-attention"] = obj{"get": operation("Relationship Intelligence", "List portfolio attention", "Returns deterministic relationship-native attention ordered by explicit factor contributions. A full page is the end of the queue when hasMore is false.", "listRelationshipAttention", bearer(), []any{
-		obj{"name": "status", "in": "query", "required": false, "schema": obj{"type": "string", "enum": []any{"open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved", "all"}}},
-		obj{"name": "limit", "in": "query", "required": false, "schema": obj{"type": "integer"}},
-		obj{"name": "offset", "in": "query", "required": false, "description": "Page offset.", "schema": obj{"type": "integer", "minimum": 0}},
-	}, nil, obj{"200": jsonResponse("Attention projection.", objectSchema("Attention list. A full page is the end of the queue when hasMore is false.", obj{
+	paths["/v1/relationship-attention"] = obj{"get": operation("Relationship Intelligence", "Attention queue", attentionQueueDescription, "listRelationshipAttention", bearer(), []any{
+		obj{"name": "status", "in": "query", "required": false, "description": "open is the queue. Attention queue asks for open.", "example": "open", "schema": obj{"type": "string", "enum": []any{"open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved", "all"}, "example": "open"}},
+		obj{"name": "limit", "in": "query", "required": false, "description": "Page size (max 100). Attention queue asks for 50.", "example": 50, "schema": obj{"type": "integer", "example": 50}},
+		obj{"name": "offset", "in": "query", "required": false, "description": "How many items to skip. Attention queue does not send this on the first page.", "schema": obj{"type": "integer", "minimum": 0}},
+	}, nil, obj{"200": jsonResponse("Empty attention queue.", objectSchema("Attention queue page.", obj{
 		"contractVersion": stringSchema("Contract version.", "relationship-attention.v1"),
 		"asOf":            stringSchema("Read boundary.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
 		"items":           arraySchema("Attention items.", ref("RelationshipAttentionItem")),
 		"hasMore":         boolSchema("Another company exists beyond this page of the queue.", false),
-	}, "contractVersion", "asOf", "items"), nil), "401": responseRef("401")})}
+	}, "contractVersion", "asOf", "items", "hasMore"), attentionQueuePage()), "401": responseRef("401")})}
 	attentionParam := []any{obj{"name": "attentionId", "in": "path", "required": true, "description": "Attention item id.", "schema": obj{"type": "string", "format": "uuid"}}}
 	paths["/v1/relationship-attention/{attentionId}/decisions"] = obj{"post": operation("Relationship Intelligence", "Decide attention item", "Acknowledges, snoozes, or dismisses at the expected optimistic version. Materially new evidence reopens the item.", "decideRelationshipAttention", bearer(), attentionParam, jsonRequest("Attention decision.", objectSchema("Attention decision request.", obj{
 		"decision": stringEnum("Decision.", "acknowledge", "acknowledge", "snooze", "dismiss"), "reason": stringSchema("Decision reason.", "Reviewed with the account owner."), "expectedVersion": intSchema("Expected version.", 1), "snoozedUntil": stringSchema("Bounded future wake time.", "2026-08-07T14:00:00Z", obj{"format": "date-time"}, nullable()),
@@ -1311,4 +1311,15 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
+}
+
+const attentionQueueDescription = "Attention queue loads the open page. The request asks for open items, 50 at a time, and it does not ask for an older page. This workspace has no open company in the queue, so the page is empty."
+
+func attentionQueuePage() obj {
+	return obj{
+		"asOf":            "2026-07-31T14:00:00Z",
+		"contractVersion": "relationship-attention.v1",
+		"hasMore":         false,
+		"items":           []any{},
+	}
 }

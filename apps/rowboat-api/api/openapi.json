@@ -22306,10 +22306,12 @@
     },
     "/v1/relationship-attention": {
       "get": {
-        "description": "Returns deterministic relationship-native attention ordered by explicit factor contributions. A full page is the end of the queue when hasMore is false.",
+        "description": "Attention queue loads the open page. The request asks for open items, 50 at a time, and it does not ask for an older page. This workspace has no open company in the queue, so the page is empty.",
         "operationId": "listRelationshipAttention",
         "parameters": [
           {
+            "description": "open is the queue. Attention queue asks for open.",
+            "example": "open",
             "in": "query",
             "name": "status",
             "required": false,
@@ -22323,19 +22325,23 @@
                 "resolved",
                 "all"
               ],
+              "example": "open",
               "type": "string"
             }
           },
           {
+            "description": "Page size (max 100). Attention queue asks for 50.",
+            "example": 50,
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
+              "example": 50,
               "type": "integer"
             }
           },
           {
-            "description": "Page offset.",
+            "description": "How many items to skip. Attention queue does not send this on the first page.",
             "in": "query",
             "name": "offset",
             "required": false,
@@ -22349,8 +22355,14 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "asOf": "2026-07-31T14:00:00Z",
+                  "contractVersion": "relationship-attention.v1",
+                  "hasMore": false,
+                  "items": []
+                },
                 "schema": {
-                  "description": "Attention list. A full page is the end of the queue when hasMore is false.",
+                  "description": "Attention queue page.",
                   "properties": {
                     "asOf": {
                       "description": "Read boundary.",
@@ -22376,12 +22388,17 @@
                       "type": "array"
                     }
                   },
-                  "required": ["contractVersion", "asOf", "items"],
+                  "required": [
+                    "contractVersion",
+                    "asOf",
+                    "items",
+                    "hasMore"
+                  ],
                   "type": "object"
                 }
               }
             },
-            "description": "Attention projection."
+            "description": "Empty attention queue."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -22392,8 +22409,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List portfolio attention",
-        "tags": ["Relationship Intelligence"]
+        "summary": "Attention queue",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-attention/{attentionId}/decisions": {

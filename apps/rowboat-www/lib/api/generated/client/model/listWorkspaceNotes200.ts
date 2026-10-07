@@ -5,20 +5,14 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { ListRelationshipAttentionStatus } from "./listRelationshipAttentionStatus";
+import type { ListWorkspaceNotes200NotesItem } from "./listWorkspaceNotes200NotesItem";
 
-export type ListRelationshipAttentionParams = {
-  /**
-   * open is the queue. Attention queue asks for open.
-   */
-  status?: ListRelationshipAttentionStatus;
-  /**
-   * Page size (max 100). Attention queue asks for 50.
-   */
-  limit?: number;
-  /**
-   * How many items to skip. Attention queue does not send this on the first page.
-   * @minimum 0
-   */
-  offset?: number;
+/**
+ * Workspace notes page.
+ */
+export type ListWorkspaceNotes200 = {
+  /** Whether another page of notes exists. */
+  hasMore: boolean;
+  /** Latest note for each note id. */
+  notes: ListWorkspaceNotes200NotesItem[];
 };
