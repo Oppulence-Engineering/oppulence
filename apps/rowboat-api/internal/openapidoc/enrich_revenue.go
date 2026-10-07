@@ -690,8 +690,14 @@ func addRevenuePaths(paths obj) {
 	})}
 
 	paths["/v1/revenue-leak-scans"] = obj{
-		"get": operation("Revenue", "List revenue leak scans", "Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions.", "listRevenueLeakScans", bearer(), []any{obj{"name": "limit", "in": "query", "required": false, "description": "Maximum scans to return (default 10, max 100).", "schema": obj{"type": "integer", "minimum": 1, "maximum": 100}}}, nil, obj{
-			"200": jsonResponse("Audit history.", objectSchema("Audit history.", obj{"scans": arraySchema("Scans newest first.", ref("RevenueLeakScan"))}, "scans"), nil),
+		"get": operation("Revenue", "Audits", auditsPageDescription, "listRevenueLeakScans", bearer(), []any{
+			obj{"name": "limit", "in": "query", "required": false, "description": "Page size (max 100). Audits asks for 10.", "example": 10, "schema": obj{"type": "integer", "minimum": 1, "maximum": 100, "example": 10}},
+			obj{"name": "offset", "in": "query", "required": false, "description": "How many audits to skip. Audits does not send this on the first page.", "schema": obj{"type": "integer", "minimum": 0}},
+		}, nil, obj{
+			"200": jsonResponse("Empty audit page, newest first.", objectSchema("Audit history.", obj{
+				"scans":   arraySchema("Scans newest first.", ref("RevenueLeakScan")),
+				"hasMore": boolSchema("Whether another audit exists past this page.", false),
+			}, "scans", "hasMore"), auditsPage()),
 			"400": responseRef("400"),
 			"401": responseRef("401"),
 		}),
@@ -1311,4 +1317,13 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
+}
+
+const auditsPageDescription = "Audits loads the newest page. The request asks for 10 audits and does not ask for an older page. This workspace has no audit, so the page is empty."
+
+func auditsPage() obj {
+	return obj{
+		"hasMore": false,
+		"scans":   []any{},
+	}
 }

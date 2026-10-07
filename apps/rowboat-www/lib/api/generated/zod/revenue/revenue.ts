@@ -2305,8 +2305,8 @@ export const GetRevenueImpact401Response = zod
   );
 
 /**
- * Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions. A full page is the end of the history when hasMore is false.
- * @summary List revenue leak scans
+ * Audits loads the newest page. The request asks for 10 audits and does not ask for an older page. This workspace has no audit, so the page is empty.
+ * @summary Audits
  */
 export const listRevenueLeakScansQueryLimitMax = 100;
 
@@ -2319,18 +2319,18 @@ export const ListRevenueLeakScansQueryParams = zod.object({
     .min(1)
     .max(listRevenueLeakScansQueryLimitMax)
     .optional()
-    .describe("Maximum scans to return (default 10, max 100)."),
+    .describe("Page size (max 100). Audits asks for 10."),
   offset: zod.coerce
     .number()
     .int()
     .min(listRevenueLeakScansQueryOffsetMin)
     .optional()
-    .describe("Page offset."),
+    .describe("How many audits to skip. Audits does not send this on the first page."),
 });
 
 export const ListRevenueLeakScans200Response = zod
   .strictObject({
-    hasMore: zod.boolean().optional().describe("Another audit exists beyond this page."),
+    hasMore: zod.boolean().describe("Whether another audit exists past this page."),
     scans: zod
       .array(
         zod
@@ -2375,7 +2375,7 @@ export const ListRevenueLeakScans200Response = zod
       )
       .describe("Scans newest first."),
   })
-  .describe("Audit history. A full page is the end of the history when hasMore is false.");
+  .describe("Audit history.");
 
 export const ListRevenueLeakScans400Response = zod
   .strictObject({

@@ -26781,22 +26781,24 @@
     },
     "/v1/revenue-leak-scans": {
       "get": {
-        "description": "Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions. A full page is the end of the history when hasMore is false.",
+        "description": "Audits loads the newest page. The request asks for 10 audits and does not ask for an older page. This workspace has no audit, so the page is empty.",
         "operationId": "listRevenueLeakScans",
         "parameters": [
           {
-            "description": "Maximum scans to return (default 10, max 100).",
+            "description": "Page size (max 100). Audits asks for 10.",
+            "example": 10,
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
+              "example": 10,
               "maximum": 100,
               "minimum": 1,
               "type": "integer"
             }
           },
           {
-            "description": "Page offset.",
+            "description": "How many audits to skip. Audits does not send this on the first page.",
             "in": "query",
             "name": "offset",
             "required": false,
@@ -26810,11 +26812,16 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "hasMore": false,
+                  "scans": []
+                },
                 "schema": {
-                  "description": "Audit history. A full page is the end of the history when hasMore is false.",
+                  "description": "Audit history.",
                   "properties": {
                     "hasMore": {
-                      "description": "Another audit exists beyond this page.",
+                      "description": "Whether another audit exists past this page.",
+                      "example": false,
                       "type": "boolean"
                     },
                     "scans": {
@@ -26825,12 +26832,15 @@
                       "type": "array"
                     }
                   },
-                  "required": ["scans"],
+                  "required": [
+                    "scans",
+                    "hasMore"
+                  ],
                   "type": "object"
                 }
               }
             },
-            "description": "Audit history."
+            "description": "Empty audit page, newest first."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -26844,8 +26854,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List revenue leak scans",
-        "tags": ["Revenue"]
+        "summary": "Audits",
+        "tags": [
+          "Revenue"
+        ]
       },
       "post": {
         "description": "Starts a bounded historical scan over the user's connected Gmail (deterministic detectors, draft-first actions). One scan runs per workspace at a time; poll the scan id for progress.",
@@ -26911,7 +26923,9 @@
           }
         ],
         "summary": "Start a revenue leak scan",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-leak-scans/{scanId}": {

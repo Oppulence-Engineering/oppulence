@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,53 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertAuditsPage(t, paths)
+}
+
+func TestAuditsPageSamplesTheEmptyWorkspace(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertAuditsPage(t, asObj(spec["paths"]))
+}
+
+func assertAuditsPage(t *testing.T, paths obj) {
+	t.Helper()
+	item := asObj(paths["/v1/revenue-leak-scans"])
+	if asObj(item["post"])["operationId"] != "startRevenueLeakScan" {
+		t.Fatalf("start scan was dropped: %#v", item["post"])
+	}
+	op := asObj(item["get"])
+	if op["summary"] != "Audits" || op["description"] != auditsPageDescription || op["operationId"] != "listRevenueLeakScans" {
+		t.Fatalf("audits copy: summary=%#v description=%#v id=%#v", op["summary"], op["description"], op["operationId"])
+	}
+	examples := map[string]string{}
+	for _, param := range op["parameters"].([]any) {
+		item := asObj(param)
+		name, _ := item["name"].(string)
+		raw, err := json.Marshal(asObj(item["schema"])["example"])
+		if err != nil {
+			t.Fatal(err)
+		}
+		examples[name] = string(raw)
+	}
+	if examples["limit"] != "10" || examples["offset"] != "null" || len(examples) != 2 {
+		t.Fatalf("audits query examples: %#v", examples)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(auditsPage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("audits example:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "123e4567-e89b-12d3-a456-426614174000") || strings.Contains(string(got), "threadsSeen") || strings.Contains(string(got), "actionsCreated") {
+		t.Fatalf("audits example still uses the invented scan: %s", got)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
