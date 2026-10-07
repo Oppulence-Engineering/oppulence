@@ -315,6 +315,28 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the page Connect Google sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/google-oauth/start"].post;
+    expect(operation.summary).toBe("Connect Google");
+    expect(operation.description).toBe(
+      "Connect Google starts Gmail and Calendar authorization. The request asks for commitments, a web return, and the connections page. This server has not configured Google sign-in, so the request is refused.",
+    );
+    expect(operation.operationId).toBe("startGoogleOAuth");
+    expect(operation.requestBody).toBeUndefined();
+    expect(operation.parameters.map((parameter) => [parameter.name, parameter.example])).toEqual([
+      ["profile", "commitments"],
+      ["return", "web"],
+      ["return_path", "/app/settings?settings=connections"],
+    ]);
+    expect(operation.responses["200"].content["application/json"].example).toBeUndefined();
+    expect(operation.responses["502"].description).toBe("Google sign-in is not configured.");
+    expect(operation.responses["502"].content["text/html"].example).toBe(
+      `<!doctype html><meta charset=utf-8><title>Oppulence</title><p style="font:14px system-ui;margin:3rem">Google sign-in isn't configured on the server yet.</p>`,
+    );
+    expect(JSON.stringify(operation)).not.toContain("accounts.google.com");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

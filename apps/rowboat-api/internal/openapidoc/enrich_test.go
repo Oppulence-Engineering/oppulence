@@ -338,6 +338,58 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertConnectGoogle(t, paths)
+}
+
+func TestConnectGoogleSamplesTheUnconfiguredServer(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertConnectGoogle(t, asObj(spec["paths"]))
+}
+
+func assertConnectGoogle(t *testing.T, paths obj) {
+	t.Helper()
+	post := asObj(asObj(paths["/v1/google-oauth/start"])["post"])
+	if post["summary"] != "Connect Google" || post["description"] != connectGoogleDescription || post["operationId"] != "startGoogleOAuth" {
+		t.Fatalf("connect google operation: summary=%#v description=%#v id=%#v", post["summary"], post["description"], post["operationId"])
+	}
+	params := post["parameters"].([]any)
+	if len(params) != 3 {
+		t.Fatalf("connect google parameters: %#v", params)
+	}
+	want := []struct {
+		name, example string
+	}{
+		{"profile", "commitments"},
+		{"return", "web"},
+		{"return_path", "/app/settings?settings=connections"},
+	}
+	for i, item := range want {
+		param := asObj(params[i])
+		if param["name"] != item.name || param["example"] != item.example || asObj(param["schema"])["example"] != item.example {
+			t.Fatalf("connect google param %d: %#v", i, param)
+		}
+	}
+	if post["requestBody"] != nil {
+		t.Fatalf("connect google sent a body: %#v", post["requestBody"])
+	}
+	responses := asObj(post["responses"])
+	success := asObj(asObj(asObj(responses["200"])["content"])["application/json"])
+	if _, ok := success["example"]; ok {
+		t.Fatalf("connect google invented an authorization address: %#v", success["example"])
+	}
+	failure := asObj(responses["502"])
+	if failure["description"] != "Google sign-in is not configured." {
+		t.Fatalf("connect google failure description: %#v", failure["description"])
+	}
+	example := asObj(asObj(failure["content"])["text/html"])["example"]
+	if example != connectGoogleRefusal {
+		t.Fatalf("connect google refusal:\n%#v\nwant:\n%#v", example, connectGoogleRefusal)
+	}
+	disconnect := asObj(asObj(paths["/v1/google-oauth"])["delete"])
+	if disconnect["operationId"] != "disconnectGoogle" {
+		t.Fatalf("disconnect google changed: %#v", disconnect["operationId"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

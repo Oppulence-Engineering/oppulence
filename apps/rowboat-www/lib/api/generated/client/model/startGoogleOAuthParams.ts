@@ -6,7 +6,17 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type StartGoogleOAuth200 = {
-  /** Google authorization address. */
-  authorizeUrl: string;
+export type StartGoogleOAuthParams = {
+  /**
+   * Google access.
+   */
+  profile?: string;
+  /**
+   * Return mode.
+   */
+  return?: string;
+  /**
+   * Return page.
+   */
+  return_path?: string;
 };

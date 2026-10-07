@@ -21144,30 +21144,68 @@
         "tags": ["Google OAuth"]
       }
     },
-    "/v1/google-oauth/start": {
+    "/v1/google-oauth/start":     {
       "post": {
-        "description": "Creates a one-time state ticket bound to the authenticated Rowboat user and a PKCE S256 verifier, then returns the Google consent URL for the desktop to open.",
+        "description": "Connect Google starts Gmail and Calendar authorization. The request asks for commitments, a web return, and the connections page. This server has not configured Google sign-in, so the request is refused.",
         "operationId": "startGoogleOAuth",
+        "parameters": [
+          {
+            "description": "Google access Connect Google asks for.",
+            "example": "commitments",
+            "in": "query",
+            "name": "profile",
+            "required": false,
+            "schema": {
+              "description": "Google access.",
+              "example": "commitments",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Where the browser comes back.",
+            "example": "web",
+            "in": "query",
+            "name": "return",
+            "required": false,
+            "schema": {
+              "description": "Return mode.",
+              "example": "web",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page Connect Google returns to.",
+            "example": "/app/settings?settings=connections",
+            "in": "query",
+            "name": "return_path",
+            "required": false,
+            "schema": {
+              "description": "Return page.",
+              "example": "/app/settings?settings=connections",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
               "application/json": {
-                "example": {
-                  "authorizeUrl": "https://accounts.google.com/o/oauth2/v2/auth?..."
-                },
                 "schema": {
                   "properties": {
                     "authorizeUrl": {
+                      "description": "Google authorization address.",
                       "format": "uri",
                       "type": "string"
                     }
                   },
-                  "required": ["authorizeUrl"],
+                  "required": [
+                    "authorizeUrl"
+                  ],
                   "type": "object"
                 }
               }
             },
-            "description": "Bound Google authorization URL."
+            "description": "Google authorization address."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -21176,7 +21214,15 @@
             "$ref": "#/components/responses/500"
           },
           "502": {
-            "$ref": "#/components/responses/502"
+            "content": {
+              "text/html": {
+                "example": "\u003c!doctype html\u003e\u003cmeta charset=utf-8\u003e\u003ctitle\u003eOppulence\u003c/title\u003e\u003cp style=\"font:14px system-ui;margin:3rem\"\u003eGoogle sign-in isn't configured on the server yet.\u003c/p\u003e",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Google sign-in is not configured."
           }
         },
         "security": [
@@ -21184,8 +21230,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Start Google OAuth consent",
-        "tags": ["Google OAuth"]
+        "summary": "Connect Google",
+        "tags": [
+          "Google OAuth"
+        ]
       }
     },
     "/v1/hubspot/search": {

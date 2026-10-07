@@ -363,11 +363,17 @@ export const RefreshGoogleOAuth503Response = zod
   );
 
 /**
- * Creates a one-time state ticket bound to the authenticated Rowboat user and a PKCE S256 verifier, then returns the Google consent URL for the desktop to open.
- * @summary Start Google OAuth consent
+ * Connect Google starts Gmail and Calendar authorization. The request asks for commitments, a web return, and the connections page. This server has not configured Google sign-in, so the request is refused.
+ * @summary Connect Google
  */
+export const StartGoogleOAuthQueryParams = zod.object({
+  profile: zod.string().optional().describe("Google access Connect Google asks for."),
+  return: zod.string().optional().describe("Where the browser comes back."),
+  return_path: zod.string().optional().describe("Page Connect Google returns to."),
+});
+
 export const StartGoogleOAuth200Response = zod.strictObject({
-  authorizeUrl: zod.url(),
+  authorizeUrl: zod.url().describe("Google authorization address."),
 });
 
 export const StartGoogleOAuth401Response = zod
@@ -400,17 +406,4 @@ export const StartGoogleOAuth500Response = zod
     "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
   );
 
-export const StartGoogleOAuth502Response = zod
-  .strictObject({
-    code: zod.string().describe("Stable machine-readable error code."),
-    detail: zod.string().optional().describe("Human-readable error detail."),
-    instance: zod.string().nullish().describe("Optional occurrence URI."),
-    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
-    status: zod.int().describe("HTTP status code."),
-    title: zod.string().describe("Short HTTP-status summary."),
-    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
-    type: zod.string().describe("Problem type URI."),
-  })
-  .describe(
-    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
-  );
+export const StartGoogleOAuth502Response = zod.unknown();
