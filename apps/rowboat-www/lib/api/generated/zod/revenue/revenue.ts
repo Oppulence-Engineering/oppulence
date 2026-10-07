@@ -8,8 +8,8 @@
 import * as zod from "zod";
 
 /**
- * Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.
- * @summary List the action queue
+ * Tasks loads open follow-ups with the soonest due date first. It asks for open tasks, one hundred at a time, and does not ask for an older page. The first task is Follow up on the proposal, due on July 15.
+ * @summary Tasks
  */
 export const listRevenueActionsQueryOffsetMin = 0;
 
@@ -18,17 +18,21 @@ export const ListRevenueActionsQueryParams = zod.object({
     .enum(["open", "snoozed", "dismissed", "handled", "all"])
     .optional()
     .describe("Queue status filter, or all."),
-  limit: zod.coerce.number().int().optional().describe("Page size (max 100, default 10)."),
+  limit: zod.coerce.number().int().optional().describe("Page size (max 100). Tasks asks for 100."),
   offset: zod.coerce
     .number()
     .int()
     .min(listRevenueActionsQueryOffsetMin)
     .optional()
-    .describe("How many actions to skip. Pages stay in priority order."),
+    .describe("How many tasks to skip. Tasks does not send this on the first page."),
   surface: zod
     .enum(["task", "recovery"])
     .optional()
     .describe("task keeps follow-up tasks. recovery keeps every other action."),
+  due: zod
+    .enum(["asc", "desc"])
+    .optional()
+    .describe("Soonest due first is asc. Latest due is desc."),
 });
 
 export const ListRevenueActions200Response = zod

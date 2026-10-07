@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,59 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertTaskList(t, spec)
+}
+
+func TestTaskListSamplesSoonestDue(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertTaskList(t, spec)
+}
+
+func assertTaskList(t *testing.T, spec obj) {
+	t.Helper()
+	path := asObj(asObj(spec["paths"])["/v1/revenue-actions"])
+	post := asObj(path["post"])
+	if post["operationId"] != "createRevenueAction" || post["summary"] != "Create a manual action" {
+		t.Fatalf("task list replaced create: id=%#v summary=%#v", post["operationId"], post["summary"])
+	}
+	op := asObj(path["get"])
+	if op["summary"] != "Tasks" || op["operationId"] != "listRevenueActions" || op["description"] != taskListDescription {
+		t.Fatalf("task list copy: summary=%#v id=%#v description=%#v", op["summary"], op["operationId"], op["description"])
+	}
+	examples := map[string]string{}
+	for _, param := range op["parameters"].([]any) {
+		item := asObj(param)
+		name, _ := item["name"].(string)
+		raw, err := json.Marshal(asObj(item["schema"])["example"])
+		if err != nil {
+			t.Fatal(err)
+		}
+		examples[name] = string(raw)
+	}
+	if examples["queueStatus"] != `"open"` || examples["limit"] != "100" || examples["surface"] != `"task"` || examples["due"] != `"asc"` || examples["offset"] != "null" {
+		t.Fatalf("task list query examples: %#v", examples)
+	}
+	example := asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(taskListPage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("task list example:\n%s\nwant:\n%s", got, want)
+	}
+	encoded := string(got)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, "approvedAt") || strings.Contains(encoded, "\"token\"") || strings.Contains(encoded, "recipientEmail") {
+		t.Fatalf("task list includes a send: %s", encoded)
+	}
+	action := asObj(asObj(example)["actions"].([]any)[0])
+	if action["actionType"] != "follow_up_task" || action["channel"] != "task" || action["queueStatus"] != "open" || action["dueAt"] != taskListDue {
+		t.Fatalf("task list row: %#v", action)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

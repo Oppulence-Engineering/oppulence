@@ -1143,18 +1143,7 @@ func addRevenuePaths(paths obj) {
 	})}
 
 	paths["/v1/revenue-actions"] = obj{
-		"get": operation("Revenue", "List the action queue", "Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.", "listRevenueActions", bearer(), []any{
-			obj{"name": "queueStatus", "in": "query", "required": false, "description": "Queue status filter, or all.", "schema": obj{"type": "string", "enum": []any{"open", "snoozed", "dismissed", "handled", "all"}}},
-			obj{"name": "limit", "in": "query", "required": false, "description": "Page size (max 100, default 10).", "schema": obj{"type": "integer"}},
-			obj{"name": "offset", "in": "query", "required": false, "description": "How many actions to skip. Pages stay in priority order.", "schema": obj{"type": "integer", "minimum": 0}},
-			obj{"name": "surface", "in": "query", "required": false, "description": "task keeps follow-up tasks. recovery keeps every other action.", "schema": obj{"type": "string", "enum": []any{"task", "recovery"}}},
-		}, nil, obj{
-			"200": jsonResponse("Queue page.", objectSchema("Action list. A full page is the end of the queue when hasMore is false.", obj{
-				"actions": arraySchema("Actions.", ref("RevenueAction")),
-				"hasMore": boolSchema("Another task or follow-up exists beyond this page.", false),
-			}, "actions"), nil),
-			"401": responseRef("401"),
-		}),
+		"get": taskListOperation(),
 		"post": operation("Revenue", "Create a manual action", "Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.", "createRevenueAction", bearer(), nil, jsonRequest("Action.", objectSchema("Create request.", obj{
 			"relationshipId":     uuidSchema("Owning relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 			"actionType":         stringEnum("Action type.", "warm_follow_up", "warm_follow_up", "proposal_nudge", "referral_reconnect", "customer_risk", "meeting_follow_up", "meeting_recap", "crm_update", "follow_up_task", "calendar_hold", "commitment_rescue"),

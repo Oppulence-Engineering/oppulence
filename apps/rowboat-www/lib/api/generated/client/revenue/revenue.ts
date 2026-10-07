@@ -76,8 +76,8 @@ export const getListRevenueActionsUrl = (params?: ListRevenueActionsParams) => {
 };
 
 /**
- * Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.
- * @summary List the action queue
+ * Tasks loads open follow-ups with the soonest due date first. It asks for open tasks, one hundred at a time, and does not ask for an older page. The first task is Follow up on the proposal, due on July 15.
+ * @summary Tasks
  */
 export const listRevenueActions = async (
   params?: ListRevenueActionsParams,

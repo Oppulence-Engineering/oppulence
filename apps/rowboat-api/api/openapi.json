@@ -25669,45 +25669,75 @@
     },
     "/v1/revenue-actions": {
       "get": {
-        "description": "Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.",
+        "description": "Tasks loads open follow-ups with the soonest due date first. It asks for open tasks, one hundred at a time, and does not ask for an older page. The first task is Follow up on the proposal, due on July 15.",
         "operationId": "listRevenueActions",
         "parameters": [
           {
             "description": "Queue status filter, or all.",
+            "example": "open",
             "in": "query",
             "name": "queueStatus",
             "required": false,
             "schema": {
-              "enum": ["open", "snoozed", "dismissed", "handled", "all"],
+              "enum": [
+                "open",
+                "snoozed",
+                "dismissed",
+                "handled",
+                "all"
+              ],
+              "example": "open",
               "type": "string"
             }
           },
           {
-            "description": "Page size (max 100, default 10).",
+            "description": "Page size (max 100). Tasks asks for 100.",
+            "example": 100,
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
+              "example": 100,
               "type": "integer"
             }
           },
           {
-            "description": "How many actions to skip. Pages stay in priority order.",
+            "description": "How many tasks to skip. Tasks does not send this on the first page.",
             "in": "query",
             "name": "offset",
             "required": false,
             "schema": {
-              "type": "integer",
-              "minimum": 0
+              "minimum": 0,
+              "type": "integer"
             }
           },
           {
             "description": "task keeps follow-up tasks. recovery keeps every other action.",
+            "example": "task",
             "in": "query",
             "name": "surface",
             "required": false,
             "schema": {
-              "enum": ["task", "recovery"],
+              "enum": [
+                "task",
+                "recovery"
+              ],
+              "example": "task",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Soonest due first is asc. Latest due is desc.",
+            "example": "asc",
+            "in": "query",
+            "name": "due",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "example": "asc",
               "type": "string"
             }
           }
@@ -25716,6 +25746,33 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "actions": [
+                    {
+                      "actionType": "follow_up_task",
+                      "approvalStatus": "pending",
+                      "channel": "task",
+                      "createdAt": "2026-07-15T16:00:00Z",
+                      "detector": "manual",
+                      "dueAt": "2026-07-15T17:00:00Z",
+                      "evidence": [],
+                      "executionMode": "draft",
+                      "executionOwner": "rowboat",
+                      "executionStatus": "pending",
+                      "id": "3a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "policyStatus": "pending",
+                      "priorityScore": 30,
+                      "queueStatus": "open",
+                      "reason": "Follow up on the proposal",
+                      "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "relationshipName": "Acme",
+                      "revision": 1,
+                      "revisionHash": "sha256:ab12...",
+                      "updatedAt": "2026-07-15T16:00:00Z"
+                    }
+                  ],
+                  "hasMore": false
+                },
                 "schema": {
                   "description": "Action list. A full page is the end of the queue when hasMore is false.",
                   "properties": {
@@ -25732,7 +25789,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["actions"],
+                  "required": [
+                    "actions"
+                  ],
                   "type": "object"
                 }
               }
@@ -25748,8 +25807,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List the action queue",
-        "tags": ["Revenue"]
+        "summary": "Tasks",
+        "tags": [
+          "Revenue"
+        ]
       },
       "post": {
         "description": "Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.",
