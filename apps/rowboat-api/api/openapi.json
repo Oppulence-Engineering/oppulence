@@ -15868,15 +15868,17 @@
     },
     "/v1/agent-sessions": {
       "get": {
-        "description": "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.",
+        "description": "Show earlier conversations loads the next page of History. It skips the newest 50 conversations. This page has one older conversation, and no conversation after it.",
         "operationId": "listAgentSessions",
         "parameters": [
           {
-            "description": "Page offset.",
+            "description": "How many conversations to skip. Show earlier conversations skips the newest 50.",
+            "example": 50,
             "in": "query",
             "name": "offset",
             "required": false,
             "schema": {
+              "example": 50,
               "minimum": 0,
               "type": "integer"
             }
@@ -15887,15 +15889,17 @@
             "content": {
               "application/json": {
                 "example": {
+                  "hasMore": false,
                   "sessions": [
                     {
                       "agent": "assistant",
                       "channel": "web",
-                      "continuationToken": "agt_example",
+                      "continuationToken": "",
                       "costUnits": 45,
                       "createdAt": "2026-09-02T15:00:00Z",
+                      "lastActivityAt": "2026-09-02T15:01:00Z",
                       "llmCalls": 3,
-                      "sessionId": "session_abc123",
+                      "sessionId": "c8dfa9b6-a7b2-46ea-982c-622a914c00e5",
                       "status": "active",
                       "title": "Review the Acme renewal",
                       "toolCalls": 1,
@@ -15908,7 +15912,7 @@
                 }
               }
             },
-            "description": "Recent agent conversations."
+            "description": "Older conversations from History."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -15922,8 +15926,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List agent sessions",
-        "tags": ["Agent Sessions"]
+        "summary": "Show earlier conversations",
+        "tags": [
+          "Agent Sessions"
+        ]
       }
     },
     "/v1/agent-sessions/{id}/events": {

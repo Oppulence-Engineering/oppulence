@@ -8,8 +8,8 @@
 import * as zod from "zod";
 
 /**
- * Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.
- * @summary List agent sessions
+ * Show earlier conversations loads the next page of History. It skips the newest 50 conversations. This page has one older conversation, and no conversation after it.
+ * @summary Show earlier conversations
  */
 export const listAgentSessionsQueryOffsetMin = 0;
 
@@ -19,7 +19,7 @@ export const ListAgentSessionsQueryParams = zod.object({
     .int()
     .min(listAgentSessionsQueryOffsetMin)
     .optional()
-    .describe("Page offset."),
+    .describe("How many conversations to skip. Show earlier conversations skips the newest 50."),
 });
 
 export const ListAgentSessions200Response = zod

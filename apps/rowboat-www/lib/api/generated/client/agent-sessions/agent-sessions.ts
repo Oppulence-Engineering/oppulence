@@ -60,8 +60,8 @@ export const getListAgentSessionsUrl = (params?: ListAgentSessionsParams) => {
 };
 
 /**
- * Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.
- * @summary List agent sessions
+ * Show earlier conversations loads the next page of History. It skips the newest 50 conversations. This page has one older conversation, and no conversation after it.
+ * @summary Show earlier conversations
  */
 export const listAgentSessions = async (
   params?: ListAgentSessionsParams,

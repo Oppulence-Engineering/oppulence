@@ -6,10 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListAgentSessionsParams = {
-  /**
-   * How many conversations to skip. Show earlier conversations skips the newest 50.
-   * @minimum 0
-   */
-  offset?: number;
-};
+/**
+ * Editor document, when one was saved.
+ */
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };

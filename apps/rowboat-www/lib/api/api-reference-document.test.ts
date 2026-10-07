@@ -315,6 +315,34 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the page Show earlier conversations loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/agent-sessions"].get;
+    expect(operation.summary).toBe("Show earlier conversations");
+    expect(operation.operationId).toBe("listAgentSessions");
+    expect(operation.description).toBe(
+      "Show earlier conversations loads the next page of History. It skips the newest 50 conversations. This page has one older conversation, and no conversation after it.",
+    );
+    expect(operation.parameters).toEqual([
+      expect.objectContaining({
+        name: "offset",
+        example: 50,
+        schema: expect.objectContaining({ example: 50 }),
+      }),
+    ]);
+    expect(operation.responses["200"].content["application/json"].example).toMatchObject({
+      hasMore: false,
+      sessions: [
+        {
+          sessionId: "c8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+          title: "Review the Acme renewal",
+          channel: "web",
+          continuationToken: "",
+        },
+      ],
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

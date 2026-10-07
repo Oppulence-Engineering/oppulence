@@ -1054,11 +1054,7 @@ func addRuntimePaths(paths obj) {
 }
 
 func addAgentSessionPaths(paths obj) {
-	paths["/v1/agent-sessions"] = obj{"get": operation("Agent Sessions", "List agent sessions", "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.", "listAgentSessions", bearer(), nil, nil, obj{
-		"200": jsonResponse("Recent agent conversations.", ref("AgentSessionListResponse"), obj{"sessions": []any{obj{"sessionId": "session_abc123", "agent": "assistant", "status": "active", "channel": "web", "title": "Review the Acme renewal", "turns": 2, "llmCalls": 3, "toolCalls": 1, "costUnits": 45, "continuationToken": "agt_example", "createdAt": "2026-09-02T15:00:00Z"}}}),
-		"401": responseRef("401"),
-		"500": responseRef("500"),
-	})}
+	paths["/v1/agent-sessions"] = obj{"get": earlierChatsOperation()}
 	paths["/v1/agent-sessions/{id}/events"] = obj{"get": operation("Agent Sessions", "List agent session events", "Returns ordered durable events used to reconstruct a conversation after navigation or reload.", "listAgentSessionEvents", bearer(), []any{
 		pathParam("id", "Stable session id.", stringSchema("Session id.", "session_abc123")),
 		queryParam("afterSeq", "Return events after this sequence.", false, intSchema("Sequence cursor.", 10)),
