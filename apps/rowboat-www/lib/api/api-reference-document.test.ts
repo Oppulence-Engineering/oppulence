@@ -315,6 +315,28 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the page Upgrade to Pro sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/billing/checkout-session"].post;
+    expect(operation.summary).toBe("Upgrade to Pro");
+    expect(operation.description).toBe(
+      "Upgrade to Pro opens checkout. The request asks for the Pro plan. This server has not configured checkout, so the request is refused.",
+    );
+    expect(operation.operationId).toBe("createCheckoutSession");
+    expect(operation.requestBody.content["application/json"].example).toEqual({ plan: "pro" });
+    expect(operation.responses["200"].content["application/json"].example).toBeUndefined();
+    expect(operation.responses["502"].description).toBe("Checkout is not configured.");
+    expect(operation.responses["502"].content["application/problem+json"].example).toEqual({
+      type: "https://api.rowboat.dev/problems/provider_unconfigured",
+      title: "Bad Gateway",
+      status: 502,
+      detail: "Stripe checkout is not configured",
+      code: "provider_unconfigured",
+      requestId: "req-abc123",
+      retryable: true,
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

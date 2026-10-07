@@ -37,6 +37,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/auth/workos/exchange",
 		"/v1/auth/workos/refresh",
 		"/v1/me",
+		"/v1/billing/checkout-session",
 		"/v1/console/preferences",
 		"/v1/console/resources",
 		"/v1/console/resources/{resourceId}",
@@ -338,6 +339,58 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertCheckoutPro(t, paths)
+}
+
+func TestCheckoutProSamplesTheUnconfiguredServer(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertCheckoutPro(t, asObj(spec["paths"]))
+}
+
+func assertCheckoutPro(t *testing.T, paths obj) {
+	t.Helper()
+	post := asObj(asObj(paths["/v1/billing/checkout-session"])["post"])
+	if post["summary"] != "Upgrade to Pro" || post["description"] != checkoutProDescription || post["operationId"] != "createCheckoutSession" {
+		t.Fatalf("checkout operation: summary=%#v description=%#v id=%#v", post["summary"], post["description"], post["operationId"])
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
+	gotRequest, err := json.Marshal(request["example"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantRequest, err := json.Marshal(checkoutProRequest())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotRequest) != string(wantRequest) {
+		t.Fatalf("checkout request:\n%s\nwant:\n%s", gotRequest, wantRequest)
+	}
+	responses := asObj(post["responses"])
+	success := asObj(asObj(asObj(responses["200"])["content"])["application/json"])
+	if _, ok := success["example"]; ok {
+		t.Fatalf("checkout success invented an address: %#v", success["example"])
+	}
+	failure := asObj(responses["502"])
+	if failure["description"] != "Checkout is not configured." {
+		t.Fatalf("checkout failure description: %#v", failure["description"])
+	}
+	example := asObj(asObj(failure["content"])["application/problem+json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(checkoutUnconfigured())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("checkout failure:\n%s\nwant:\n%s", got, want)
+	}
+	body := asObj(example)
+	if body["traceId"] != nil || body["requestId"] != "req-abc123" {
+		t.Fatalf("checkout failure ids: %#v", body)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
