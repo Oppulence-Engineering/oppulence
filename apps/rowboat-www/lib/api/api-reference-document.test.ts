@@ -315,6 +315,30 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the page Reusable note templates loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/console/resources"].get;
+    expect(operation.summary).toBe("Reusable note templates");
+    expect(operation.description).toBe(
+      "Reusable note templates loads the first page. The request asks for note templates, one hundred at a time, starting at the beginning. This workspace has no template, so the page is empty.",
+    );
+    expect(operation.operationId).toBe("listConsoleResources");
+    const parameters = Object.fromEntries(
+      (operation.parameters ?? []).map((parameter) => [parameter.name, parameter]),
+    );
+    expect(parameters.kind.example).toBe("note_template");
+    expect(parameters.limit.example).toBe(100);
+    expect(parameters.offset.example).toBe(0);
+    expect(operation.responses["200"].description).toBe("Empty template page.");
+    expect(operation.responses["200"].content["application/json"].example).toEqual({
+      hasMore: false,
+      limit: 100,
+      offset: 0,
+      resources: [],
+    });
+    expect(presented.paths["/v1/console/resources"].post.operationId).toBe("createConsoleResource");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

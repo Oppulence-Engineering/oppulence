@@ -114,18 +114,12 @@ func addConsolePaths(paths obj) {
 			jsonRequest("Preference fields to merge.", ref("ConsolePreferencesPatch"), nil), preferenceResponses),
 	}
 
-	listResponses := cloneResponses(authErrors)
-	listResponses["200"] = jsonResponse("Resource page.", ref("ConsoleResourcePage"), nil)
 	createResponses := cloneResponses(authErrors)
 	createResponses["200"] = jsonResponse("Existing favorite returned after an idempotent replay.", ref("ConsoleResource"), nil)
 	createResponses["201"] = jsonResponse("Created resource.", ref("ConsoleResource"), nil)
 	createResponses["409"] = consoleConflictResponse()
 	paths["/v1/console/resources"] = obj{
-		"get": operation("Console", "List console resources", "Lists only the caller's resources in the exact organization workspace asserted by the token. A full page is the end of the list when hasMore is false.", "listConsoleResources", bearer(), []any{
-			queryParam("kind", "Required resource kind.", true, ref("ConsoleResourceKind")),
-			queryParam("limit", "Page size (default 50, max 100).", false, obj{"type": "integer", "minimum": 1, "maximum": 100}),
-			queryParam("offset", "Page offset (max 10000).", false, obj{"type": "integer", "minimum": 0, "maximum": 10000}),
-		}, nil, listResponses),
+		"get": noteTemplatesOperation(authErrors),
 		"post": operation("Console", "Create console resource", "Creates a typed artifact. Replaying a note favorite returns the existing resource.", "createConsoleResource", bearer(), nil,
 			jsonRequest("Typed resource.", ref("ConsoleResourceCreate"), nil), createResponses),
 	}

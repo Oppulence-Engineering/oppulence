@@ -240,8 +240,8 @@ export const getListConsoleResourcesUrl = (params: ListConsoleResourcesParams) =
 };
 
 /**
- * Lists only the caller's resources in the exact organization workspace asserted by the token. A full page is the end of the list when hasMore is false.
- * @summary List console resources
+ * Reusable note templates loads the first page. The request asks for note templates, one hundred at a time, starting at the beginning. This workspace has no template, so the page is empty.
+ * @summary Reusable note templates
  */
 export const listConsoleResources = async (
   params: ListConsoleResourcesParams,

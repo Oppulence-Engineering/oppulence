@@ -19795,11 +19795,12 @@
     },
     "/v1/console/resources": {
       "get": {
-        "description": "Lists only the caller's resources in the exact organization workspace asserted by the token. A full page is the end of the list when hasMore is false.",
+        "description": "Reusable note templates loads the first page. The request asks for note templates, one hundred at a time, starting at the beginning. This workspace has no template, so the page is empty.",
         "operationId": "listConsoleResources",
         "parameters": [
           {
             "description": "Required resource kind.",
+            "example": "note_template",
             "in": "query",
             "name": "kind",
             "required": true,
@@ -19809,10 +19810,12 @@
           },
           {
             "description": "Page size (default 50, max 100).",
+            "example": 100,
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
+              "example": 100,
               "maximum": 100,
               "minimum": 1,
               "type": "integer"
@@ -19820,10 +19823,12 @@
           },
           {
             "description": "Page offset (max 10000).",
+            "example": 0,
             "in": "query",
             "name": "offset",
             "required": false,
             "schema": {
+              "example": 0,
               "maximum": 10000,
               "minimum": 0,
               "type": "integer"
@@ -19834,12 +19839,18 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "hasMore": false,
+                  "limit": 100,
+                  "offset": 0,
+                  "resources": []
+                },
                 "schema": {
                   "$ref": "#/components/schemas/ConsoleResourcePage"
                 }
               }
             },
-            "description": "Resource page."
+            "description": "Empty template page."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -19895,8 +19906,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List console resources",
-        "tags": ["Console"]
+        "summary": "Reusable note templates",
+        "tags": [
+          "Console"
+        ]
       },
       "post": {
         "description": "Creates a typed artifact. Replaying a note favorite returns the existing resource.",
@@ -20006,7 +20019,9 @@
           }
         ],
         "summary": "Create console resource",
-        "tags": ["Console"]
+        "tags": [
+          "Console"
+        ]
       }
     },
     "/v1/console/resources/{resourceId}": {
