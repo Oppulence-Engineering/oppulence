@@ -315,6 +315,38 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the action history History loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-actions/{actionId}/audit"]?.get;
+    expect(operation?.summary).toBe("Get action history");
+    expect(operation?.description).toBe(
+      "History loads the action, its revisions, the policy decisions, and the outcomes.",
+    );
+    expect(operation?.parameters?.[0]?.example).toBe("1a8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    const example = operation?.responses?.["200"]?.content?.["application/json"]?.example;
+    const hash = "sha256:878529bfd91ade7c21b79bcd0f4a2b80dfe46a6f6b41c2b82f58d196c1f10184";
+    expect(example?.action).toMatchObject({
+      id: "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      relationshipName: "Jordan Buyer",
+      actionType: "warm_follow_up",
+      channel: "email",
+      policyStatus: "passed",
+      revisionHash: hash,
+    });
+    expect(example?.revisions?.[0]).toMatchObject({
+      revision: 1,
+      actionType: "warm_follow_up",
+      channel: "email",
+      revisionHash: hash,
+    });
+    expect(example?.outcomes?.[0]).toMatchObject({
+      kind: "replied",
+      source: "user",
+      sourceEventId: "manual:replied:1783864800000",
+    });
+    expect(JSON.stringify(example)).not.toContain("sha256:ab12");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

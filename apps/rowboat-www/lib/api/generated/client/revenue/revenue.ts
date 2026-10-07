@@ -299,8 +299,8 @@ export const getGetRevenueActionAuditUrl = (actionId: string) => {
 };
 
 /**
- * Returns the full observe, decision, approval, execution, and outcome chain for one action.
- * @summary Get the audit chain
+ * History loads the action, its revisions, the policy decisions, and the outcomes.
+ * @summary Get action history
  */
 export const getRevenueActionAudit = async (
   actionId: string,

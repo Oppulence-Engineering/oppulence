@@ -748,8 +748,8 @@ export const ApproveRevenueAction409Response = zod
   );
 
 /**
- * Returns the full observe, decision, approval, execution, and outcome chain for one action.
- * @summary Get the audit chain
+ * History loads the action, its revisions, the policy decisions, and the outcomes.
+ * @summary Get action history
  */
 export const GetRevenueActionAuditParams = zod.object({
   actionId: zod.uuid().describe("Action id."),
@@ -964,7 +964,7 @@ export const GetRevenueActionAudit200Response = zod
       .optional()
       .describe("Immutable revision snapshots."),
   })
-  .describe("Audit chain.");
+  .describe("Action history.");
 
 export const GetRevenueActionAudit401Response = zod
   .strictObject({
