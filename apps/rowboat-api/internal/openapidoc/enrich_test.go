@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,69 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertMerge(t, spec)
+}
+
+func TestMergeSamplesTheDuplicate(t *testing.T) {
+	spec := obj{"paths": obj{}, "components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertMerge(t, spec)
+}
+
+func assertMerge(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	post := asObj(asObj(paths["/v1/relationship-identity-candidates/{candidateId}/decisions"])["post"])
+	if post["summary"] != "Merge" || post["operationId"] != "decideRelationshipIdentityCandidate" || post["description"] != mergeDescription {
+		t.Fatalf("merge operation: summary=%#v description=%#v id=%#v", post["summary"], post["description"], post["operationId"])
+	}
+	params, _ := post["parameters"].([]any)
+	if len(params) != 1 {
+		t.Fatalf("merge parameters: %#v", post["parameters"])
+	}
+	candidate := asObj(params[0])
+	if candidate["name"] != "candidateId" || candidate["example"] != mergeCandidateID || asObj(candidate["schema"])["example"] != mergeCandidateID {
+		t.Fatalf("merge candidate: %#v", candidate)
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
+	example := asObj(request["example"])
+	versionOK := example["expectedVersion"] == 1 || example["expectedVersion"] == float64(1)
+	if example["decision"] != "merge" || example["reason"] != mergeReason || example["idempotencyKey"] != mergeIdempotencyKey || !versionOK {
+		t.Fatalf("merge request: %#v", example)
+	}
+	props := asObj(asObj(request["schema"])["properties"])
+	if asObj(props["idempotencyKey"])["example"] != mergeIdempotencyKey || asObj(props["idempotencyKey"])["format"] != "uuid" {
+		t.Fatalf("merge key: %#v", props["idempotencyKey"])
+	}
+	responses := asObj(post["responses"])
+	if asObj(responses["200"])["description"] != "The duplicate is merged into the existing company." {
+		t.Fatalf("merge response: %#v", responses["200"])
+	}
+	ok := asObj(asObj(asObj(responses["200"])["content"])["application/json"])
+	if !reflect.DeepEqual(normalizedMerge(t, ok["example"]), normalizedMerge(t, mergedCandidate())) {
+		t.Fatalf("merge example: %#v", ok["example"])
+	}
+	raw, err := json.Marshal(ok["example"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded := string(raw)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "identity-review:123") {
+		t.Fatalf("merge looks live or stale: %s", encoded)
+	}
+}
+
+func normalizedMerge(t *testing.T, value any) any {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out any
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+	return out
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
