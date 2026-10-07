@@ -338,6 +338,42 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertLocalWorkspace(t, spec)
+}
+
+func TestLocalWorkspaceSamplesTheStoredFields(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertLocalWorkspace(t, spec)
+}
+
+func assertLocalWorkspace(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	get := asObj(asObj(paths["/v1/revenue-workspaces/current"])["get"])
+	if get["summary"] != "Workspace" || get["description"] != localWorkspaceDescription || get["operationId"] != "getRevenueWorkspace" {
+		t.Fatalf("workspace operation: summary=%v description=%v id=%v", get["summary"], get["description"], get["operationId"])
+	}
+	if get["parameters"] != nil {
+		t.Fatalf("workspace request sends no query: %#v", get["parameters"])
+	}
+	example := asObj(asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"])
+	if !reflect.DeepEqual(example, localWorkspaceExample()) {
+		t.Fatalf("workspace example: %#v", example)
+	}
+	for _, key := range []string{"outboundOrganizationId", "outboundWorkspaceId", "lastVerifiedAt"} {
+		if _, ok := example[key]; ok {
+			t.Fatalf("local workspace includes %s", key)
+		}
+	}
+	props := asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueWorkspace"])["properties"])
+	if asObj(props["outboundOrganizationId"])["example"] != "org_01ABC" || asObj(props["outboundWorkspaceId"])["example"] != "ws_01ABC" {
+		t.Fatalf("shared workspace examples changed: %#v", props)
+	}
+	link := asObj(asObj(paths["/v1/revenue-workspaces/link"])["post"])
+	if link["operationId"] != "linkRevenueWorkspace" {
+		t.Fatalf("link operation changed: %#v", link["operationId"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

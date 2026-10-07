@@ -651,10 +651,7 @@ func restoreRevenueSchemaOverrides(schemas obj) {
 func addRevenuePaths(paths obj) {
 	actionParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Action id.", "schema": obj{"type": "string", "format": "uuid"}}}
 
-	paths["/v1/revenue-workspaces/current"] = obj{"get": operation("Revenue", "Get current revenue workspace", "Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.", "getRevenueWorkspace", bearer(), nil, nil, obj{
-		"200": jsonResponse("Current workspace.", ref("RevenueWorkspace"), nil),
-		"401": responseRef("401"),
-	})}
+	paths["/v1/revenue-workspaces/current"] = localWorkspacePath()
 	paths["/v1/revenue-workspaces/link"] = obj{"post": operation("Revenue", "Link the OutboundConsole workspace", "Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.", "linkRevenueWorkspace", bearer(), nil, jsonRequest("OutboundConsole identifiers.", objectSchema("Link request.", obj{
 		"outboundOrganizationId": stringSchema("OutboundConsole organization id.", "org_01ABC"),
 		"outboundWorkspaceId":    stringSchema("OutboundConsole workspace id.", "ws_01ABC"),

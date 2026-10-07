@@ -315,6 +315,29 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the local workspace Connected sources loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-workspaces/current"]?.get;
+    expect(operation?.summary).toBe("Workspace");
+    expect(operation?.description).toBe(
+      "Connected sources loads this workspace. The request sends no filter. This workspace is local, active, and the sending check is off, so the organization and sending workspace are omitted.",
+    );
+    expect(operation?.description).not.toMatch(/\bpreflight\b/);
+    expect(operation?.parameters).toBeUndefined();
+    const example = operation?.responses?.["200"]?.content?.["application/json"]?.example;
+    expect(example).toEqual({
+      id: "0b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      mode: "local",
+      status: "active",
+      preflightAvailable: false,
+    });
+    expect(JSON.stringify(example)).not.toContain("org_01ABC");
+    expect(JSON.stringify(example)).not.toContain("ws_01ABC");
+    expect(
+      presented.components.schemas.RevenueWorkspace.properties.outboundOrganizationId.example,
+    ).toBe("org_01ABC");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
