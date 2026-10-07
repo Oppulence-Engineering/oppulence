@@ -1047,6 +1047,7 @@ func addRuntimePaths(paths obj) {
 	addGoogleOAuthPaths(paths)
 	addSlackOAuthPaths(paths)
 	addConnectorPaths(paths)
+	addActionRejectPath(paths)
 	addCloudEventPaths(paths)
 	addRevenuePaths(paths)
 	addInternalPaths(paths)

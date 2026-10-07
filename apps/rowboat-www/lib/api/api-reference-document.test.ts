@@ -315,6 +315,38 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the proposal Reject discards", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/action-proposals/{id}/reject"].post;
+    expect(operation.summary).toBe("Reject");
+    expect(operation.operationId).toBe("rejectActionProposal");
+    expect(operation.description).toBe(
+      "Reject posts a short reason. The page discards the action and keeps that reason on the audit trail.",
+    );
+    expect(operation.parameters[0]).toMatchObject({
+      name: "id",
+      example: "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+    });
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      reason: "Customer paid yesterday",
+    });
+    expect(operation.responses["200"].content["application/json"].example).toEqual({
+      id: "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      target: "conduit:invoice:inv_456",
+      kind: "conduit.dunning.advance",
+      paramsJson: '{"amount":100,"step":2}',
+      financial: false,
+      rationale: "Acme is 14 days overdue",
+      status: "rejected",
+      reason: "Customer paid yesterday",
+      createdAt: "2026-07-31T14:00:00Z",
+    });
+    const encoded = JSON.stringify(operation.responses["200"].content["application/json"].example);
+    expect(encoded).not.toContain("acta_");
+    expect(encoded).not.toContain("approvedAt");
+    expect(encoded).not.toContain("token");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

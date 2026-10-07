@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,55 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertActionReject(t, spec)
+}
+
+func TestActionReject(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertActionReject(t, spec)
+}
+
+func assertActionReject(t *testing.T, spec obj) {
+	t.Helper()
+	post := asObj(asObj(asObj(spec["paths"])["/v1/action-proposals/{id}/reject"])["post"])
+	if post["summary"] != "Reject" || post["operationId"] != "rejectActionProposal" || post["description"] != actionRejectDescription {
+		t.Fatalf("reject operation: summary=%#v id=%#v description=%#v", post["summary"], post["operationId"], post["description"])
+	}
+	params, ok := post["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("reject parameters: %#v", post["parameters"])
+	}
+	param := asObj(params[0])
+	if param["name"] != "id" || param["example"] != actionRejectProposalID || param["required"] != true {
+		t.Fatalf("reject param: %#v", param)
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])["example"]
+	requestRaw, err := json.Marshal(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(requestRaw) != `{"reason":"`+actionRejectReason+`"}` {
+		t.Fatalf("reject request: %s", requestRaw)
+	}
+	example := asObj(asObj(asObj(asObj(post["responses"])["200"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(actionRejectExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("reject example:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "acta_") || strings.Contains(string(got), "approvedAt") || strings.Contains(string(got), "executedAt") || strings.Contains(string(got), "token") {
+		t.Fatalf("reject example already approved the action: %s", got)
+	}
+	if asObj(example)["status"] != "rejected" || asObj(example)["reason"] != actionRejectReason {
+		t.Fatalf("reject result: %#v", example)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

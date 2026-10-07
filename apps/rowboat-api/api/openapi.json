@@ -15866,6 +15866,155 @@
         "tags": ["System"]
       }
     },
+    "/v1/action-proposals/{id}/reject": {
+      "post": {
+        "description": "Reject posts a short reason. The page discards the action and keeps that reason on the audit trail.",
+        "operationId": "rejectActionProposal",
+        "parameters": [
+          {
+            "description": "Proposal id.",
+            "example": "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Proposal id.",
+              "example": "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "reason": "Customer paid yesterday"
+              },
+              "schema": {
+                "description": "Reject request.",
+                "properties": {
+                  "reason": {
+                    "description": "Why this action is being rejected.",
+                    "example": "Customer paid yesterday",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Short reason for the audit trail.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "createdAt": "2026-07-31T14:00:00Z",
+                  "financial": false,
+                  "id": "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "kind": "conduit.dunning.advance",
+                  "paramsJson": "{\"amount\":100,\"step\":2}",
+                  "rationale": "Acme is 14 days overdue",
+                  "reason": "Customer paid yesterday",
+                  "status": "rejected",
+                  "target": "conduit:invoice:inv_456"
+                },
+                "schema": {
+                  "description": "Rejected proposal.",
+                  "properties": {
+                    "createdAt": {
+                      "description": "When the proposal was created.",
+                      "example": "2026-07-31T14:00:00Z",
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "financial": {
+                      "description": "Whether money moves.",
+                      "example": false,
+                      "type": "boolean"
+                    },
+                    "id": {
+                      "description": "Proposal id.",
+                      "example": "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "kind": {
+                      "description": "Action kind.",
+                      "example": "conduit.dunning.advance",
+                      "type": "string"
+                    },
+                    "paramsJson": {
+                      "description": "JSON parameters.",
+                      "example": "{\"amount\":100,\"step\":2}",
+                      "type": "string"
+                    },
+                    "rationale": {
+                      "description": "Why the action was proposed.",
+                      "example": "Acme is 14 days overdue",
+                      "type": "string"
+                    },
+                    "reason": {
+                      "description": "Why it was rejected.",
+                      "example": "Customer paid yesterday",
+                      "type": "string"
+                    },
+                    "status": {
+                      "description": "Rejected.",
+                      "example": "rejected",
+                      "type": "string"
+                    },
+                    "target": {
+                      "description": "Object the action changes.",
+                      "example": "conduit:invoice:inv_456",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "target",
+                    "kind",
+                    "financial",
+                    "status",
+                    "reason",
+                    "createdAt"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Rejected proposal."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Reject",
+        "tags": [
+          "Revenue"
+        ]
+      }
+    },
     "/v1/agent-sessions": {
       "get": {
         "description": "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.",

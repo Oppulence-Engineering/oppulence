@@ -25,6 +25,8 @@ import type {
   N404Response,
   N409Response,
   RecordRevenueActionOutcomeBody,
+  RejectActionProposal200,
+  RejectActionProposalBody,
   RejectRevenueActionBody,
   RevenueAction,
   RevenueDigest,
@@ -38,6 +40,72 @@ import type {
   SnoozeRevenueActionBody,
   StartRevenueLeakScanBody,
 } from "../model";
+
+export type rejectActionProposalResponse200 = {
+  data: RejectActionProposal200;
+  status: 200;
+};
+
+export type rejectActionProposalResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type rejectActionProposalResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type rejectActionProposalResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type rejectActionProposalResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type rejectActionProposalResponseSuccess = rejectActionProposalResponse200 & {
+  headers: Headers;
+};
+export type rejectActionProposalResponseError = (
+  | rejectActionProposalResponse400
+  | rejectActionProposalResponse401
+  | rejectActionProposalResponse404
+  | rejectActionProposalResponse409
+) & {
+  headers: Headers;
+};
+
+export type rejectActionProposalResponse =
+  rejectActionProposalResponseSuccess | rejectActionProposalResponseError;
+
+export const getRejectActionProposalUrl = (id: string) => {
+  return `/v1/action-proposals/${id}/reject`;
+};
+
+/**
+ * Reject posts a short reason. The page discards the action and keeps that reason on the audit trail.
+ * @summary Reject
+ */
+export const rejectActionProposal = async (
+  id: string,
+  rejectActionProposalBody: RejectActionProposalBody,
+  options?: RequestInit,
+): Promise<rejectActionProposalResponse> => {
+  const res = await fetch(getRejectActionProposalUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(rejectActionProposalBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: rejectActionProposalResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as rejectActionProposalResponse;
+};
 
 export type listRevenueActionsResponse200 = {
   data: ListRevenueActions200;
