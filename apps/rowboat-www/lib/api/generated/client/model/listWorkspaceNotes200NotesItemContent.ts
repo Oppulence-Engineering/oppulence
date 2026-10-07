@@ -7,9 +7,6 @@
  */
 
 /**
- * Correction retraction.
+ * Editor document, when one was saved.
  */
-export type RetractRelationshipAssertionBody = {
-  /** Why this correction is no longer valid. */
-  reason: string;
-};
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };
