@@ -315,6 +315,26 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the follow-up Reject declines", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const post = presented.paths["/v1/revenue-actions/{actionId}/reject"].post;
+    expect(post.summary).toBe("Reject");
+    expect(post.operationId).toBe("rejectRevenueAction");
+    expect(post.description).toBe(
+      "Reject declines this follow-up. The decision is stored and the follow-up stays open.",
+    );
+    const action = post.parameters.find((parameter: { name: string }) => parameter.name === "actionId");
+    expect(action.example).toBe("1a8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    expect(post.requestBody.content["application/json"].example).toEqual({ reason: "not_appropriate" });
+    const example = post.responses["200"].content["application/json"].example;
+    expect(example.approvalStatus).toBe("rejected");
+    expect(example.queueStatus).toBe("open");
+    expect(example.relationshipName).toBe("Acme");
+    expect(example.approvedAt).toBeUndefined();
+    expect(JSON.stringify(post)).not.toContain("acta_");
+    expect(JSON.stringify(post)).not.toContain("wrong_recipient");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

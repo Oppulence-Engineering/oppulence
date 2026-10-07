@@ -1236,10 +1236,10 @@ func addRevenuePaths(paths obj) {
 		"404": responseRef("404"),
 		"409": problemResponse("Invariant violation: blocked, no decision, expired decision, or review required.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "action is blocked by policy", "blocked")),
 	})}
-	paths["/v1/revenue-actions/{actionId}/reject"] = obj{"post": operation("Revenue", "Reject an action", "Rejects the current revision with a reason.", "rejectRevenueAction", bearer(), actionParam, jsonRequest("Rejection reason.", objectSchema("Reject request.", obj{
-		"reason": stringSchema("Reason.", "wrong_recipient"),
-	}), obj{"reason": "wrong_recipient"}), obj{
-		"200": jsonResponse("Rejected action.", ref("RevenueAction"), nil),
+	paths["/v1/revenue-actions/{actionId}/reject"] = obj{"post": operation("Revenue", "Reject", rejectDescription, "rejectRevenueAction", bearer(), rejectParams(), jsonRequest("Rejection reason.", objectSchema("Reject request.", obj{
+		"reason": stringSchema("Reason.", rejectReason),
+	}), obj{"reason": rejectReason}), obj{
+		"200": jsonResponse("The follow-up is rejected and still open.", ref("RevenueAction"), rejectedAction()),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 		"409": responseRef("409"),

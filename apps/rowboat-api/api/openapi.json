@@ -26535,16 +26535,19 @@
       }
     },
     "/v1/revenue-actions/{actionId}/reject": {
-      "post": {
-        "description": "Rejects the current revision with a reason.",
+            "post": {
+        "description": "Reject declines this follow-up. The decision is stored and the follow-up stays open.",
         "operationId": "rejectRevenueAction",
         "parameters": [
           {
             "description": "Action id.",
+            "example": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "actionId",
             "required": true,
             "schema": {
+              "description": "Action id.",
+              "example": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -26554,14 +26557,14 @@
           "content": {
             "application/json": {
               "example": {
-                "reason": "wrong_recipient"
+                "reason": "not_appropriate"
               },
               "schema": {
                 "description": "Reject request.",
                 "properties": {
                   "reason": {
                     "description": "Reason.",
-                    "example": "wrong_recipient",
+                    "example": "not_appropriate",
                     "type": "string"
                   }
                 },
@@ -26576,12 +26579,46 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "actionType": "warm_follow_up",
+                  "approvalStatus": "rejected",
+                  "channel": "email",
+                  "createdAt": "2026-07-12T12:00:00Z",
+                  "detector": "waiting_on_me",
+                  "evidence": [
+                    {
+                      "excerpt": "We are concerned security could delay renewal.",
+                      "externalEvidenceRefs": [
+                        "timestamp:12000-16000"
+                      ],
+                      "id": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "occurredAt": "2026-07-31T14:00:00Z",
+                      "source": "meeting",
+                      "sourceRecordId": "oppulence:session-42:claim:claim-risk"
+                    }
+                  ],
+                  "executionMode": "draft",
+                  "executionOwner": "rowboat",
+                  "executionStatus": "pending",
+                  "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "policyStatus": "pending",
+                  "priorityScore": 82,
+                  "proposedSubject": "Following up as promised",
+                  "queueStatus": "open",
+                  "reason": "They asked for a follow-up in July.",
+                  "recipientEmail": "buyer@example.com",
+                  "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "relationshipName": "Acme",
+                  "revision": 1,
+                  "revisionHash": "sha256:ab12cd34ef567890",
+                  "updatedAt": "2026-07-15T16:05:00Z"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueAction"
                 }
               }
             },
-            "description": "Rejected action."
+            "description": "The follow-up is rejected and still open."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -26598,8 +26635,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Reject an action",
-        "tags": ["Revenue"]
+        "summary": "Reject",
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-actions/{actionId}/snooze": {
