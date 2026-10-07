@@ -822,17 +822,18 @@ func addRevenuePaths(paths obj) {
 		},
 	)}
 	relationshipParam := []any{obj{"name": "relationshipId", "in": "path", "required": true, "description": "Relationship id.", "schema": obj{"type": "string", "format": "uuid"}}}
-	paths["/v1/relationships/{relationshipId}"] = obj{"get": operation("Relationship Intelligence", "Get relationship mission control", "Returns living relationship state, governed recommendations, participants, and commitments.", "getRelationship", bearer(), relationshipParam, nil, obj{
-		"200": jsonResponse("Relationship detail.", objectSchema("Relationship detail.", obj{
+	paths["/v1/relationships/{relationshipId}"] = obj{"get": operation("Relationship Intelligence", "Open a company", "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.", "getRelationship", bearer(), openedCompanyParams(), nil, obj{
+		"200": jsonResponse("Opened company.", objectSchema("Company the sheet opened.", obj{
 			"relationship":           ref("RevenueRelationship"),
-			"actions":                arraySchema("Actions for this relationship.", ref("RevenueAction")),
+			"actions":                arraySchema("Actions for this company.", ref("RevenueAction")),
 			"recommendations":        arraySchema("Governed recommendations.", ref("RevenueAction")),
-			"participants":           arraySchema("Relationship participants.", ref("RelationshipParticipant")),
-			"commitments":            arraySchema("Open and completed commitments.", ref("RelationshipCommitment")),
+			"participants":           arraySchema("People on this company.", ref("RelationshipParticipant")),
+			"emailThreads":           arraySchema("Email threads the company sheet counts.", openedCompanyEmailThreadSchema()),
+			"commitments":            arraySchema("Promises on this company.", ref("RelationshipCommitment")),
 			"commitmentDependencies": arraySchema("Evidence-backed commitment graph edges.", ref("CommitmentDependency")),
 			"intelligence":           ref("RelationshipIntelligence"),
 			"missionControl":         ref("MissionControlReadModel"),
-		}), nil),
+		}), openedCompanySheetExample()),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
