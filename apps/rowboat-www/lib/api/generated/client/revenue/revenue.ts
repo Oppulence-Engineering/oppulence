@@ -16,6 +16,8 @@ import type {
   GetRevenueActionAudit200,
   GetRevenueActionSourceBody200,
   LinkRevenueWorkspaceBody,
+  ListPendingActionProposals200,
+  ListPendingActionProposalsParams,
   ListRevenueActions200,
   ListRevenueActionsParams,
   ListRevenueLeakScans200,
@@ -38,6 +40,61 @@ import type {
   SnoozeRevenueActionBody,
   StartRevenueLeakScanBody,
 } from "../model";
+
+export type listPendingActionProposalsResponse200 = {
+  data: ListPendingActionProposals200;
+  status: 200;
+};
+
+export type listPendingActionProposalsResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listPendingActionProposalsResponseSuccess = listPendingActionProposalsResponse200 & {
+  headers: Headers;
+};
+export type listPendingActionProposalsResponseError = listPendingActionProposalsResponse401 & {
+  headers: Headers;
+};
+
+export type listPendingActionProposalsResponse =
+  listPendingActionProposalsResponseSuccess | listPendingActionProposalsResponseError;
+
+export const getListPendingActionProposalsUrl = (params?: ListPendingActionProposalsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/action-proposals?${stringifiedParams}`
+    : `/v1/action-proposals`;
+};
+
+/**
+ * The approvals page loads proposals that are still waiting. It sends status=pending and shows each one until you approve or reject it.
+ * @summary List pending approvals
+ */
+export const listPendingActionProposals = async (
+  params?: ListPendingActionProposalsParams,
+  options?: RequestInit,
+): Promise<listPendingActionProposalsResponse> => {
+  const res = await fetch(getListPendingActionProposalsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listPendingActionProposalsResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listPendingActionProposalsResponse;
+};
 
 export type listRevenueActionsResponse200 = {
   data: ListRevenueActions200;

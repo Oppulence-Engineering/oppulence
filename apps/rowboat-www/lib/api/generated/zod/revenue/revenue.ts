@@ -8,6 +8,52 @@
 import * as zod from "zod";
 
 /**
+ * The approvals page loads proposals that are still waiting. It sends status=pending and shows each one until you approve or reject it.
+ * @summary List pending approvals
+ */
+export const ListPendingActionProposalsQueryParams = zod.object({
+  status: zod.string().optional().describe("The approvals page sends pending."),
+});
+
+export const ListPendingActionProposals200Response = zod
+  .strictObject({
+    proposals: zod
+      .array(
+        zod
+          .strictObject({
+            createdAt: zod.iso
+              .datetime({ offset: true })
+              .describe("When the proposal was created."),
+            financial: zod.boolean().describe("Whether money moves."),
+            id: zod.uuid().describe("Proposal id."),
+            kind: zod.string().describe("Action kind."),
+            paramsJson: zod.string().optional().describe("JSON parameters."),
+            rationale: zod.string().optional().describe("Why the action was proposed."),
+            status: zod.string().describe("Waiting for approval."),
+            target: zod.string().describe("Object the action changes."),
+          })
+          .describe("Pending proposal."),
+      )
+      .describe("Proposals the page shows."),
+  })
+  .describe("Pending approvals.");
+
+export const ListPendingActionProposals401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
  * Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.
  * @summary List the action queue
  */

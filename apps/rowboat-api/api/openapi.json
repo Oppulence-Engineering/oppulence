@@ -15866,6 +15866,129 @@
         "tags": ["System"]
       }
     },
+    "/v1/action-proposals": {
+      "get": {
+        "description": "The approvals page loads proposals that are still waiting. It sends status=pending and shows each one until you approve or reject it.",
+        "operationId": "listPendingActionProposals",
+        "parameters": [
+          {
+            "description": "The approvals page sends pending.",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "description": "Waiting proposals.",
+              "example": "pending",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "proposals": [
+                    {
+                      "createdAt": "2026-07-31T14:00:00Z",
+                      "financial": false,
+                      "id": "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "kind": "conduit.dunning.advance",
+                      "paramsJson": "{\"amount\":100,\"step\":2}",
+                      "rationale": "Acme is 14 days overdue",
+                      "status": "pending",
+                      "target": "conduit:invoice:inv_456"
+                    }
+                  ]
+                },
+                "schema": {
+                  "description": "Pending approvals.",
+                  "properties": {
+                    "proposals": {
+                      "description": "Proposals the page shows.",
+                      "items": {
+                        "description": "Pending proposal.",
+                        "properties": {
+                          "createdAt": {
+                            "description": "When the proposal was created.",
+                            "example": "2026-07-31T14:00:00Z",
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "financial": {
+                            "description": "Whether money moves.",
+                            "example": false,
+                            "type": "boolean"
+                          },
+                          "id": {
+                            "description": "Proposal id.",
+                            "example": "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "kind": {
+                            "description": "Action kind.",
+                            "example": "conduit.dunning.advance",
+                            "type": "string"
+                          },
+                          "paramsJson": {
+                            "description": "JSON parameters.",
+                            "example": "{\"amount\":100,\"step\":2}",
+                            "type": "string"
+                          },
+                          "rationale": {
+                            "description": "Why the action was proposed.",
+                            "example": "Acme is 14 days overdue",
+                            "type": "string"
+                          },
+                          "status": {
+                            "description": "Waiting for approval.",
+                            "example": "pending",
+                            "type": "string"
+                          },
+                          "target": {
+                            "description": "Object the action changes.",
+                            "example": "conduit:invoice:inv_456",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "target",
+                          "kind",
+                          "financial",
+                          "status",
+                          "createdAt"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "proposals"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Proposals still waiting."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List pending approvals",
+        "tags": [
+          "Revenue"
+        ]
+      }
+    },
     "/v1/agent-sessions": {
       "get": {
         "description": "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.",
