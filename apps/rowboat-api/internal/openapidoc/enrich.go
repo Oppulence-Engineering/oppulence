@@ -1040,6 +1040,7 @@ func addRuntimePaths(paths obj) {
 
 	addAuthPaths(paths)
 	addBillingPaths(paths)
+	addActionApprovePath(paths)
 	addBackgroundTaskPaths(paths)
 	addAgentSessionPaths(paths)
 	addLLMPaths(paths)
