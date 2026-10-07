@@ -14,6 +14,7 @@ import type {
   ConnectorsResponse,
   GetConnectorBrokerJWKS200,
   HubSpotSearchResponse,
+  ListCommunicationPrivacyRules200,
   MCPTokenResponse,
 } from "../model";
 
@@ -22,6 +23,7 @@ import {
   getCreateConnectorResourceTokenResponseMock,
   getCreateMCPTokenResponseMock,
   getGetConnectorBrokerJWKSResponseMock,
+  getListCommunicationPrivacyRulesResponseMock,
   getListConnectorsResponseMock,
   getSearchHubSpotResponseMock,
   getSetConnectionAPIKeyResponseMock,
@@ -39,6 +41,7 @@ export {
   getCreateConnectorResourceTokenResponseMock,
   getStartConnectorResponseMock,
   getSearchHubSpotResponseMock,
+  getListCommunicationPrivacyRulesResponseMock,
 } from "./connectors.faker";
 
 export const getGetConnectorBrokerJWKSMockHandler = (
@@ -328,6 +331,30 @@ export const getSearchHubSpotMockHandler = (
     options,
   );
 };
+
+export const getListCommunicationPrivacyRulesMockHandler = (
+  overrideResponse?:
+    | ListCommunicationPrivacyRules200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListCommunicationPrivacyRules200> | ListCommunicationPrivacyRules200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/revenue-workspaces/current/communication-privacy-rules",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListCommunicationPrivacyRulesResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 export const getConnectorsMock = () => [
   getGetConnectorBrokerJWKSMockHandler(),
   getDeleteConnectionMockHandler(),
@@ -342,4 +369,5 @@ export const getConnectorsMock = () => [
   getCreateConnectorResourceTokenMockHandler(),
   getStartConnectorMockHandler(),
   getSearchHubSpotMockHandler(),
+  getListCommunicationPrivacyRulesMockHandler(),
 ];

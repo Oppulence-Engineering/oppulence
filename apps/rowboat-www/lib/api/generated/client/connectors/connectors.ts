@@ -17,6 +17,7 @@ import type {
   HandleConnectorCallbackParams,
   HubSpotSearchRequest,
   HubSpotSearchResponse,
+  ListCommunicationPrivacyRules200,
   MCPTokenRequest,
   MCPTokenResponse,
   N400Response,
@@ -1046,4 +1047,52 @@ export const searchHubSpot = async (
 
   const data: searchHubSpotResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as searchHubSpotResponse;
+};
+
+export type listCommunicationPrivacyRulesResponse200 = {
+  data: ListCommunicationPrivacyRules200;
+  status: 200;
+};
+
+export type listCommunicationPrivacyRulesResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listCommunicationPrivacyRulesResponseSuccess =
+  listCommunicationPrivacyRulesResponse200 & {
+    headers: Headers;
+  };
+export type listCommunicationPrivacyRulesResponseError =
+  listCommunicationPrivacyRulesResponse401 & {
+    headers: Headers;
+  };
+
+export type listCommunicationPrivacyRulesResponse =
+  listCommunicationPrivacyRulesResponseSuccess | listCommunicationPrivacyRulesResponseError;
+
+export const getListCommunicationPrivacyRulesUrl = () => {
+  return `/v1/revenue-workspaces/current/communication-privacy-rules`;
+};
+
+/**
+ * Protected or blocked addresses loads this workspace's list. The request sends no filter. This workspace has no protected or blocked address, so the list is empty.
+ * @summary Protected or blocked addresses
+ */
+export const listCommunicationPrivacyRules = async (
+  options?: RequestInit,
+): Promise<listCommunicationPrivacyRulesResponse> => {
+  const res = await fetch(getListCommunicationPrivacyRulesUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCommunicationPrivacyRulesResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCommunicationPrivacyRulesResponse;
 };

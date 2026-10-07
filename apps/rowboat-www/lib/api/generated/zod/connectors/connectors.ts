@@ -1735,3 +1735,30 @@ export const SearchHubSpot503Response = zod
   .describe(
     "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
   );
+
+/**
+ * Protected or blocked addresses loads this workspace's list. The request sends no filter. This workspace has no protected or blocked address, so the list is empty.
+ * @summary Protected or blocked addresses
+ */
+export const ListCommunicationPrivacyRules200Response = zod
+  .strictObject({
+    rules: zod
+      .array(zod.looseObject({}).describe("One address rule."))
+      .describe("Addresses this workspace keeps private or leaves out."),
+  })
+  .describe("Protected and blocked addresses.");
+
+export const ListCommunicationPrivacyRules401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );

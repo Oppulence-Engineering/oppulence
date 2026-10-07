@@ -27259,6 +27259,53 @@
         "tags": ["Revenue"]
       }
     },
+    "/v1/revenue-workspaces/current/communication-privacy-rules": {
+      "get": {
+        "description": "Protected or blocked addresses loads this workspace's list. The request sends no filter. This workspace has no protected or blocked address, so the list is empty.",
+        "operationId": "listCommunicationPrivacyRules",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "rules": []
+                },
+                "schema": {
+                  "description": "Protected and blocked addresses.",
+                  "properties": {
+                    "rules": {
+                      "description": "Addresses this workspace keeps private or leaves out.",
+                      "items": {
+                        "description": "One address rule.",
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "rules"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Empty address list."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Protected or blocked addresses",
+        "tags": [
+          "Connectors"
+        ]
+      }
+    },
     "/v1/revenue-workspaces/current/communications/attachments/{attachmentId}/content": {
       "get": {
         "description": "Returns one scanned text attachment when policy and grants allow it.",

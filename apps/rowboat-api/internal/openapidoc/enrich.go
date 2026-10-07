@@ -1049,6 +1049,7 @@ func addRuntimePaths(paths obj) {
 	addConnectorPaths(paths)
 	addCloudEventPaths(paths)
 	addRevenuePaths(paths)
+	addPrivacyRulePaths(paths)
 	addInternalPaths(paths)
 	addVoiceCloudPaths(paths)
 }

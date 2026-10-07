@@ -93,6 +93,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/relationship-sources/status",
 		"/v1/relationship-recommendations/{actionId}/approve",
 		"/v1/relationship-recommendations/{actionId}/reject",
+		"/v1/revenue-workspaces/current/communication-privacy-rules",
 		"/v1/entities",
 		"/v1/entities/{id}",
 		"/v1/entities/merge",
@@ -338,6 +339,36 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertPrivacyAddresses(t, paths)
+}
+
+func TestPrivacyAddressesSamplesTheEmptyList(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertPrivacyAddresses(t, asObj(spec["paths"]))
+}
+
+func assertPrivacyAddresses(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/revenue-workspaces/current/communication-privacy-rules"])["get"])
+	if op["summary"] != "Protected or blocked addresses" || op["description"] != privacyAddressesDescription || op["operationId"] != "listCommunicationPrivacyRules" {
+		t.Fatalf("privacy list copy: summary=%#v description=%#v id=%#v", op["summary"], op["description"], op["operationId"])
+	}
+	if op["parameters"] != nil {
+		t.Fatalf("privacy list sends no filter: %#v", op["parameters"])
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(privacyAddressesPage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("privacy list example:\n%s\nwant:\n%s", got, want)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
