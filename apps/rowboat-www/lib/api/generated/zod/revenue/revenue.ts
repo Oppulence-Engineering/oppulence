@@ -8,8 +8,8 @@
 import * as zod from "zod";
 
 /**
- * Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.
- * @summary List the action queue
+ * Recovery loads the open queue. The request asks for open actions, one hundred at a time, on the recovery list, and it does not ask for an older page. Acme has no open recovery action, so the page is empty.
+ * @summary Recovery
  */
 export const listRevenueActionsQueryOffsetMin = 0;
 
@@ -18,13 +18,17 @@ export const ListRevenueActionsQueryParams = zod.object({
     .enum(["open", "snoozed", "dismissed", "handled", "all"])
     .optional()
     .describe("Queue status filter, or all."),
-  limit: zod.coerce.number().int().optional().describe("Page size (max 100, default 10)."),
+  limit: zod.coerce
+    .number()
+    .int()
+    .optional()
+    .describe("Page size (max 100). Recovery asks for 100."),
   offset: zod.coerce
     .number()
     .int()
     .min(listRevenueActionsQueryOffsetMin)
     .optional()
-    .describe("How many actions to skip. Pages stay in priority order."),
+    .describe("How many actions to skip. Recovery does not send this on the first page."),
   surface: zod
     .enum(["task", "recovery"])
     .optional()

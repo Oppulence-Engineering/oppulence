@@ -25669,7 +25669,7 @@
     },
     "/v1/revenue-actions": {
       "get": {
-        "description": "Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.",
+        "description": "Recovery loads the open queue. The request asks for open actions, one hundred at a time, on the recovery list, and it does not ask for an older page. Acme has no open recovery action, so the page is empty.",
         "operationId": "listRevenueActions",
         "parameters": [
           {
@@ -25678,27 +25678,35 @@
             "name": "queueStatus",
             "required": false,
             "schema": {
-              "enum": ["open", "snoozed", "dismissed", "handled", "all"],
+              "enum": [
+                "open",
+                "snoozed",
+                "dismissed",
+                "handled",
+                "all"
+              ],
+              "example": "open",
               "type": "string"
             }
           },
           {
-            "description": "Page size (max 100, default 10).",
+            "description": "Page size (max 100). Recovery asks for 100.",
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
+              "example": 100,
               "type": "integer"
             }
           },
           {
-            "description": "How many actions to skip. Pages stay in priority order.",
+            "description": "How many actions to skip. Recovery does not send this on the first page.",
             "in": "query",
             "name": "offset",
             "required": false,
             "schema": {
-              "type": "integer",
-              "minimum": 0
+              "minimum": 0,
+              "type": "integer"
             }
           },
           {
@@ -25707,7 +25715,11 @@
             "name": "surface",
             "required": false,
             "schema": {
-              "enum": ["task", "recovery"],
+              "enum": [
+                "task",
+                "recovery"
+              ],
+              "example": "recovery",
               "type": "string"
             }
           }
@@ -25716,6 +25728,10 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "actions": [],
+                  "hasMore": false
+                },
                 "schema": {
                   "description": "Action list. A full page is the end of the queue when hasMore is false.",
                   "properties": {
@@ -25732,7 +25748,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["actions"],
+                  "required": [
+                    "actions"
+                  ],
                   "type": "object"
                 }
               }
@@ -25748,8 +25766,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List the action queue",
-        "tags": ["Revenue"]
+        "summary": "Recovery",
+        "tags": [
+          "Revenue"
+        ]
       },
       "post": {
         "description": "Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.",
@@ -25779,7 +25799,15 @@
                   },
                   "channel": {
                     "description": "Delivery channel.",
-                    "enum": ["email", "slack", "call", "crm_task", "crm", "task", "calendar"],
+                    "enum": [
+                      "email",
+                      "slack",
+                      "call",
+                      "crm_task",
+                      "crm",
+                      "task",
+                      "calendar"
+                    ],
                     "example": "email",
                     "type": "string"
                   },
@@ -25792,7 +25820,10 @@
                   },
                   "executionMode": {
                     "description": "Execution mode.",
-                    "enum": ["draft", "send"],
+                    "enum": [
+                      "draft",
+                      "send"
+                    ],
                     "example": "draft",
                     "type": "string"
                   },
@@ -25838,7 +25869,12 @@
                     "type": "string"
                   }
                 },
-                "required": ["relationshipId", "actionType", "channel", "reason"],
+                "required": [
+                  "relationshipId",
+                  "actionType",
+                  "channel",
+                  "reason"
+                ],
                 "type": "object"
               }
             }
@@ -25873,7 +25909,9 @@
           }
         ],
         "summary": "Create a manual action",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-actions/{actionId}": {

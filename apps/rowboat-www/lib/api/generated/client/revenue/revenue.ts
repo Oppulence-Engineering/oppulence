@@ -76,8 +76,8 @@ export const getListRevenueActionsUrl = (params?: ListRevenueActionsParams) => {
 };
 
 /**
- * Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.
- * @summary List the action queue
+ * Recovery loads the open queue. The request asks for open actions, one hundred at a time, on the recovery list, and it does not ask for an older page. Acme has no open recovery action, so the page is empty.
+ * @summary Recovery
  */
 export const listRevenueActions = async (
   params?: ListRevenueActionsParams,

@@ -5,25 +5,17 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { ListRevenueActionsQueueStatus } from "./listRevenueActionsQueueStatus";
-import type { ListRevenueActionsSurface } from "./listRevenueActionsSurface";
 
-export type ListRevenueActionsParams = {
+export type ListWorkspaceNotesParams = {
   /**
-   * Queue status filter, or all.
-   */
-  queueStatus?: ListRevenueActionsQueueStatus;
-  /**
-   * Page size (max 100). Recovery asks for 100.
+   * Maximum notes to return (default 50, max 100).
+   * @minimum 1
+   * @maximum 100
    */
   limit?: number;
   /**
-   * How many actions to skip. Recovery does not send this on the first page.
+   * Number of collapsed notes to skip.
    * @minimum 0
    */
   offset?: number;
-  /**
-   * task keeps follow-up tasks. recovery keeps every other action.
-   */
-  surface?: ListRevenueActionsSurface;
 };

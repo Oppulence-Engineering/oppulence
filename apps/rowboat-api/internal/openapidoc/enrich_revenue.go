@@ -1143,16 +1143,16 @@ func addRevenuePaths(paths obj) {
 	})}
 
 	paths["/v1/revenue-actions"] = obj{
-		"get": operation("Revenue", "List the action queue", "Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.", "listRevenueActions", bearer(), []any{
-			obj{"name": "queueStatus", "in": "query", "required": false, "description": "Queue status filter, or all.", "schema": obj{"type": "string", "enum": []any{"open", "snoozed", "dismissed", "handled", "all"}}},
-			obj{"name": "limit", "in": "query", "required": false, "description": "Page size (max 100, default 10).", "schema": obj{"type": "integer"}},
-			obj{"name": "offset", "in": "query", "required": false, "description": "How many actions to skip. Pages stay in priority order.", "schema": obj{"type": "integer", "minimum": 0}},
-			obj{"name": "surface", "in": "query", "required": false, "description": "task keeps follow-up tasks. recovery keeps every other action.", "schema": obj{"type": "string", "enum": []any{"task", "recovery"}}},
+		"get": operation("Revenue", "Recovery", recoveryQueueDescription, "listRevenueActions", bearer(), []any{
+			obj{"name": "queueStatus", "in": "query", "required": false, "description": "Queue status filter, or all.", "schema": obj{"type": "string", "enum": []any{"open", "snoozed", "dismissed", "handled", "all"}, "example": "open"}},
+			obj{"name": "limit", "in": "query", "required": false, "description": "Page size (max 100). Recovery asks for 100.", "schema": obj{"type": "integer", "example": 100}},
+			obj{"name": "offset", "in": "query", "required": false, "description": "How many actions to skip. Recovery does not send this on the first page.", "schema": obj{"type": "integer", "minimum": 0}},
+			obj{"name": "surface", "in": "query", "required": false, "description": "task keeps follow-up tasks. recovery keeps every other action.", "schema": obj{"type": "string", "enum": []any{"task", "recovery"}, "example": "recovery"}},
 		}, nil, obj{
 			"200": jsonResponse("Queue page.", objectSchema("Action list. A full page is the end of the queue when hasMore is false.", obj{
 				"actions": arraySchema("Actions.", ref("RevenueAction")),
 				"hasMore": boolSchema("Another task or follow-up exists beyond this page.", false),
-			}, "actions"), nil),
+			}, "actions"), recoveryQueuePage()),
 			"401": responseRef("401"),
 		}),
 		"post": operation("Revenue", "Create a manual action", "Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.", "createRevenueAction", bearer(), nil, jsonRequest("Action.", objectSchema("Create request.", obj{
@@ -1311,4 +1311,13 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
+}
+
+const recoveryQueueDescription = "Recovery loads the open queue. The request asks for open actions, one hundred at a time, on the recovery list, and it does not ask for an older page. Acme has no open recovery action, so the page is empty."
+
+func recoveryQueuePage() obj {
+	return obj{
+		"actions": []any{},
+		"hasMore": false,
+	}
 }
