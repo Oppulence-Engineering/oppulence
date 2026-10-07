@@ -1012,8 +1012,8 @@ export const getGetRevenueLeakScanUrl = (scanId: string) => {
 };
 
 /**
- * Returns progress, counts, errors, and source freshness for one scan.
- * @summary Get scan progress
+ * Reading your last 6 months polls this audit while it runs. The page shows how many conversations have been read.
+ * @summary Reading your last 6 months
  */
 export const getRevenueLeakScan = async (
   scanId: string,

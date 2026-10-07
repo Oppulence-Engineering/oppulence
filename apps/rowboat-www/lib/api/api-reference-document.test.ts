@@ -315,6 +315,33 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the audit Reading your last 6 months polls", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-leak-scans/{scanId}"].get;
+    expect(operation.summary).toBe("Reading your last 6 months");
+    expect(operation.operationId).toBe("getRevenueLeakScan");
+    expect(operation.description).toBe(
+      "Reading your last 6 months polls this audit while it runs. The page shows how many conversations have been read.",
+    );
+    expect(operation.requestBody).toBeUndefined();
+    expect(operation.parameters).toEqual([
+      expect.objectContaining({
+        name: "scanId",
+        example: "4d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      }),
+    ]);
+    const example = operation.responses["200"].content["application/json"].example;
+    expect(example).toMatchObject({
+      id: "4d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      status: "running",
+      lookbackDays: 180,
+      threadsSeen: 412,
+      startedAt: "2026-07-23T12:00:00Z",
+    });
+    expect(example.completedAt).toBeUndefined();
+    expect(example.error).toBeUndefined();
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

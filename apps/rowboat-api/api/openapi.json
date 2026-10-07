@@ -26916,15 +26916,18 @@
     },
     "/v1/revenue-leak-scans/{scanId}": {
       "get": {
-        "description": "Returns progress, counts, errors, and source freshness for one scan.",
+        "description": "Reading your last 6 months polls this audit while it runs. The page shows how many conversations have been read.",
         "operationId": "getRevenueLeakScan",
         "parameters": [
           {
-            "description": "Scan id.",
+            "description": "The audit Reading your last 6 months is polling.",
+            "example": "4d8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "scanId",
             "required": true,
             "schema": {
+              "description": "Scan id.",
+              "example": "4d8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -26934,12 +26937,28 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "actionsCreated": 0,
+                  "candidatesSeen": 0,
+                  "commitmentsCreated": 0,
+                  "evidencesCreated": 0,
+                  "id": "4d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "lookbackDays": 180,
+                  "mode": "local",
+                  "relationshipsCreated": 0,
+                  "startedAt": "2026-07-23T12:00:00Z",
+                  "status": "running",
+                  "threadsDeepRead": 412,
+                  "threadsSeen": 412,
+                  "threadsSkipped": 0,
+                  "threadsSnippetOnly": 0
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueLeakScan"
                 }
               }
             },
-            "description": "Scan state."
+            "description": "Reading your last 6 months."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -26953,8 +26972,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Get scan progress",
-        "tags": ["Revenue"]
+        "summary": "Reading your last 6 months",
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-leak-scans/{scanId}/report": {
