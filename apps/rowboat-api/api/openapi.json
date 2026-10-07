@@ -23230,12 +23230,41 @@
     },
     "/v1/relationship-sources/status": {
       "get": {
-        "description": "Returns authorization, backfill, freshness, failure, repair, revocation, and disconnect state for each relationship evidence source.",
+        "description": "Connected sources lists each account connected to this workspace. The page shows the account and whether its history is still syncing.",
         "operationId": "getRelationshipSourceStatuses",
         "responses": {
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "sources": [
+                    {
+                      "backfillCompleted": 250,
+                      "backfillPhase": "live",
+                      "backfillTotal": 1000,
+                      "completeness": "partial",
+                      "connectionId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "consentingActorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "expectedCadenceSeconds": 900,
+                      "grantedScopes": [
+                        "https://www.googleapis.com/auth/gmail.readonly",
+                        "https://www.googleapis.com/auth/calendar.events.readonly"
+                      ],
+                      "lagSeconds": 42,
+                      "lastSuccessAt": "2026-07-31T14:00:00Z",
+                      "lastSyncAt": "2026-07-31T14:00:00Z",
+                      "missingScopes": [],
+                      "requiredScopes": [
+                        "https://www.googleapis.com/auth/gmail.readonly",
+                        "https://www.googleapis.com/auth/calendar.events.readonly"
+                      ],
+                      "retryCount": 0,
+                      "source": "google",
+                      "sourceAccountId": "me@company.com",
+                      "status": "live"
+                    }
+                  ]
+                },
                 "schema": {
                   "description": "Source status list.",
                   "properties": {
@@ -23251,7 +23280,7 @@
                 }
               }
             },
-            "description": "Evidence source health."
+            "description": "Connected sources."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -23262,8 +23291,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Get source health",
-        "tags": ["Relationship Intelligence"]
+        "summary": "Connected sources",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-sources/{source}/authorization": {

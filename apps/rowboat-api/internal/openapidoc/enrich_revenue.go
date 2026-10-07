@@ -1078,10 +1078,7 @@ func addRevenuePaths(paths obj) {
 		"200": jsonResponse("Guided source inventory.", objectSchema("Source inventory.", obj{"sources": arraySchema("Source cards.", ref("RelationshipSourceInventoryItem"))}, "sources"), nil),
 		"401": responseRef("401"),
 	})}
-	paths["/v1/relationship-sources/status"] = obj{"get": operation("Relationship Intelligence", "Get source health", "Returns authorization, backfill, freshness, failure, repair, revocation, and disconnect state for each relationship evidence source.", "getRelationshipSourceStatuses", bearer(), nil, nil, obj{
-		"200": jsonResponse("Evidence source health.", objectSchema("Source status list.", obj{"sources": arraySchema("Sources.", ref("RelationshipSourceStatus"))}), nil),
-		"401": responseRef("401"),
-	})}
+	paths["/v1/relationship-sources/status"] = obj{"get": sourceStatusOperation()}
 	paths["/v1/relationship-beta/diagnostics"] = obj{"get": operation("Relationship Intelligence", "Export redacted beta diagnostics", "Returns metadata-only rollout, source, queue, projection, uncertainty, and trust-funnel diagnostics for workspace administrators. Customer content, credentials, cursors, raw errors, and correlation identifiers are excluded.", "getRelationshipBetaDiagnostics", bearer(), nil, nil, obj{
 		"200": jsonResponse("Support-safe diagnostic bundle.", ref("BetaDiagnostics"), nil), "401": responseRef("401"), "403": responseRef("403"),
 	})}

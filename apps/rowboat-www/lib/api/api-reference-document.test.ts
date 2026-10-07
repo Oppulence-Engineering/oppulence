@@ -315,6 +315,31 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the accounts Connected sources lists", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/relationship-sources/status"].get;
+    expect(operation.summary).toBe("Connected sources");
+    expect(operation.operationId).toBe("getRelationshipSourceStatuses");
+    expect(operation.description).toBe(
+      "Connected sources lists each account connected to this workspace. The page shows the account and whether its history is still syncing.",
+    );
+    expect(operation.requestBody).toBeUndefined();
+    expect(operation.parameters).toBeUndefined();
+    const example = operation.responses["200"].content["application/json"].example;
+    expect(example).toMatchObject({
+      sources: [
+        {
+          connectionId: "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+          source: "google",
+          sourceAccountId: "me@company.com",
+          status: "live",
+          completeness: "partial",
+          backfillPhase: "live",
+        },
+      ],
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
