@@ -1366,7 +1366,7 @@ func addBackgroundTaskPaths(paths obj) {
 	}
 	paths["/v1/background-tasks/first-party/ensure"] = obj{
 		"post": operation("Background Tasks", "Ensure first-party workflows", "Idempotently provisions or upgrades the six Oppulence-managed relationship workflows for the authenticated user. User pause choices are preserved during definition upgrades. Replica races converge on the same per-user task slugs.", "ensureFirstPartyBackgroundTasks", bearer(), nil, nil, obj{
-			"200": jsonResponse("Current managed workflow definitions.", ref("BackgroundTaskListResponse"), obj{"tasks": []any{backgroundTaskExample()}}),
+			"200": jsonResponse("Maintained workflows.", ref("BackgroundTaskListResponse"), workflowEnsureExample()),
 			"401": responseRef("401"),
 			"500": responseRef("500"),
 		}),
