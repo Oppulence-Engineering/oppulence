@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,57 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertActionApprove(t, spec)
+}
+
+func TestActionApprove(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertActionApprove(t, spec)
+}
+
+func assertActionApprove(t *testing.T, spec obj) {
+	t.Helper()
+	post := asObj(asObj(asObj(spec["paths"])["/v1/action-proposals/{id}/approve"])["post"])
+	if post["summary"] != "Approve and run" || post["operationId"] != "approveActionProposal" || post["description"] != actionApproveDescription {
+		t.Fatalf("approve operation: summary=%#v id=%#v description=%#v", post["summary"], post["operationId"], post["description"])
+	}
+	if post["requestBody"] != nil {
+		t.Fatalf("approve posts no body: %#v", post["requestBody"])
+	}
+	params, ok := post["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("approve parameters: %#v", post["parameters"])
+	}
+	param := asObj(params[0])
+	if param["name"] != "id" || param["example"] != actionApproveProposalID || param["required"] != true {
+		t.Fatalf("approve param: %#v", param)
+	}
+	if asObj(param["schema"])["example"] != actionApproveProposalID {
+		t.Fatalf("approve schema example: %#v", param["schema"])
+	}
+	example := asObj(asObj(asObj(asObj(post["responses"])["200"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(actionApproveExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("approve example:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "acta_") || strings.Contains(string(got), "documented-audit-ledger") || strings.Contains(string(got), "test-signing-secret") {
+		t.Fatalf("approve example publishes a live approval: %s", got)
+	}
+	proposal := asObj(asObj(example)["proposal"])
+	if proposal["status"] != "approved" || asObj(example)["token"] != actionApproveSample || asObj(example)["expiresAt"] != actionApproveExpires {
+		t.Fatalf("approve result: %#v", example)
+	}
+	if strings.Contains(string(got), "executedAt") || strings.Contains(string(got), "resultRef") || strings.Contains(string(got), "resolvedAt") {
+		t.Fatalf("approve example already ran: %s", got)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

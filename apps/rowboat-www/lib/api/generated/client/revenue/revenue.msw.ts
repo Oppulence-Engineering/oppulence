@@ -9,6 +9,7 @@ import { HttpResponse, http } from "msw";
 import type { RequestHandlerOptions } from "msw";
 
 import type {
+  ApproveActionProposal200,
   GetOpenPromisesReport200One,
   GetRevenueActionAudit200,
   GetRevenueActionSourceBody200,
@@ -25,6 +26,7 @@ import type {
 } from "../model";
 
 import {
+  getApproveActionProposalResponseMock,
   getApproveRevenueActionResponseMock,
   getCreateRevenueActionResponseMock,
   getDismissRevenueActionResponseMock,
@@ -50,6 +52,7 @@ import {
 } from "./revenue.faker";
 
 export {
+  getApproveActionProposalResponseMock,
   getListRevenueActionsResponseMock,
   getCreateRevenueActionResponseMock,
   getGetRevenueActionResponseMock,
@@ -73,6 +76,30 @@ export {
   getGetRevenueWorkspaceResponseMock,
   getLinkRevenueWorkspaceResponseMock,
 } from "./revenue.faker";
+
+export const getApproveActionProposalMockHandler = (
+  overrideResponse?:
+    | ApproveActionProposal200
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<ApproveActionProposal200> | ApproveActionProposal200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/action-proposals/:id/approve",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getApproveActionProposalResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 
 export const getListRevenueActionsMockHandler = (
   overrideResponse?:
@@ -607,6 +634,7 @@ export const getLinkRevenueWorkspaceMockHandler = (
   );
 };
 export const getRevenueMock = () => [
+  getApproveActionProposalMockHandler(),
   getListRevenueActionsMockHandler(),
   getCreateRevenueActionMockHandler(),
   getGetRevenueActionMockHandler(),
