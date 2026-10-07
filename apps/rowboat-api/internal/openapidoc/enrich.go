@@ -1586,8 +1586,8 @@ func addVendorProxyPaths(paths obj) {
 
 func addGoogleOAuthPaths(paths obj) {
 	paths["/v1/google-oauth"] = obj{
-		"get": operation("Google OAuth", "Get Google connection status", "Returns safe metadata for the authenticated user's connected Google account without exposing credentials.", "getGoogleConnectionStatus", bearer(), nil, nil, obj{
-			"200": jsonResponse("Google connection status.", ref("GoogleConnectionStatus"), obj{"connected": true, "accounts": []any{obj{"accountId": "owner@example.com", "scopes": []any{"https://www.googleapis.com/auth/gmail.readonly"}, "connectedAt": "2026-06-04T20:38:00Z"}}}),
+		"get": operation("Google OAuth", "Gmail and Google Calendar", googleConnectionDescription, "getGoogleConnectionStatus", bearer(), nil, nil, obj{
+			"200": jsonResponse("No Google connection.", ref("GoogleConnectionStatus"), googleConnectionPage()),
 			"401": responseRef("401"),
 			"500": responseRef("500"),
 		}),

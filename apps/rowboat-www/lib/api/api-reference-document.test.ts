@@ -315,6 +315,24 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the page Gmail and Google Calendar loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/google-oauth"]?.get;
+    expect(operation?.summary).toBe("Gmail and Google Calendar");
+    expect(operation?.description).toBe(
+      "Gmail and Google Calendar loads this account's connection. The request sends no filter. This workspace has not connected Google, so the account list is empty.",
+    );
+    expect(operation?.parameters).toBeUndefined();
+    const example = operation?.responses?.["200"]?.content?.["application/json"]?.example as {
+      connected?: boolean;
+      accounts?: unknown[];
+    };
+    expect(example.connected).toBe(false);
+    expect(example.accounts).toEqual([]);
+    expect(JSON.stringify(example)).not.toContain("owner@example.com");
+    expect(presented.paths["/v1/google-oauth"]?.delete?.operationId).toBe("disconnectGoogle");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

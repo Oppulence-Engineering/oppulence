@@ -20972,31 +20972,27 @@
           }
         ],
         "summary": "Disconnect Google",
-        "tags": ["Google OAuth"]
+        "tags": [
+          "Google OAuth"
+        ]
       },
       "get": {
-        "description": "Returns safe metadata for the authenticated user's connected Google account without exposing credentials.",
+        "description": "Gmail and Google Calendar loads this account's connection. The request sends no filter. This workspace has not connected Google, so the account list is empty.",
         "operationId": "getGoogleConnectionStatus",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "example": {
-                  "accounts": [
-                    {
-                      "accountId": "owner@example.com",
-                      "connectedAt": "2026-06-04T20:38:00Z",
-                      "scopes": ["https://www.googleapis.com/auth/gmail.readonly"]
-                    }
-                  ],
-                  "connected": true
+                  "accounts": [],
+                  "connected": false
                 },
                 "schema": {
                   "$ref": "#/components/schemas/GoogleConnectionStatus"
                 }
               }
             },
-            "description": "Google connection status."
+            "description": "No Google connection."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -21010,8 +21006,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Get Google connection status",
-        "tags": ["Google OAuth"]
+        "summary": "Gmail and Google Calendar",
+        "tags": [
+          "Google OAuth"
+        ]
       }
     },
     "/v1/google-oauth/claim": {
