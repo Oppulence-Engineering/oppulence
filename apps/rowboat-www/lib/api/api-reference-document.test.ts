@@ -315,6 +315,38 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the page Show earlier evidence loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation =
+      presented.paths["/v1/relationships/{relationshipId}/conversation-review"].get;
+    expect(operation.summary).toBe("Show earlier evidence");
+    expect(operation.operationId).toBe("getRelationshipConversationReview");
+    expect(operation.description).toBe(
+      "Show earlier evidence loads the next page of focused review. It skips the newest 200 conversations. This page has one speaker to resolve, and no older conversation after it.",
+    );
+    const examples = Object.fromEntries(
+      operation.parameters.map((parameter: { name: string; schema?: { example?: unknown } }) => [
+        parameter.name,
+        parameter.schema?.example,
+      ]),
+    );
+    expect(examples).toEqual({
+      relationshipId: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      offset: 200,
+    });
+    const page = operation.responses["200"].content["application/json"].example;
+    expect(page.hasMore).toBe(false);
+    expect(page.reviewItems[0]).toMatchObject({
+      kind: "speaker",
+      label: "Resolve the speaker for a material statement",
+      exactQuote: "We are concerned security could delay the renewal.",
+      observationId: "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+    });
+    const encoded = JSON.stringify(page);
+    expect(encoded).not.toContain("acta_");
+    expect(encoded).not.toContain('"token"');
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

@@ -25012,25 +25012,29 @@
     },
     "/v1/relationships/{relationshipId}/conversation-review": {
       "get": {
-        "description": "Returns focused review items and governance receipts from conversations older than the newest page.",
+        "description": "Show earlier evidence loads the next page of focused review. It skips the newest 200 conversations. This page has one speaker to resolve, and no older conversation after it.",
         "operationId": "getRelationshipConversationReview",
         "parameters": [
           {
-            "description": "Relationship id.",
+            "description": "Company this review belongs to.",
             "in": "path",
             "name": "relationshipId",
             "required": true,
             "schema": {
+              "description": "Company id.",
+              "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
           },
           {
-            "description": "Observation offset. The first page is the newest 200 conversations.",
+            "description": "How many conversations to skip. Show earlier evidence skips the newest 200.",
+            "example": 200,
             "in": "query",
             "name": "offset",
             "required": false,
             "schema": {
+              "example": 200,
               "minimum": 0,
               "type": "integer"
             }
@@ -25040,35 +25044,69 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "governanceReceipts": [
+                    {
+                      "capturePolicy": "manual_capture",
+                      "capturedAt": "2026-07-10T16:00:00Z",
+                      "deletionOutcome": "scheduled_after_transcription",
+                      "evidenceClip": "not_retained",
+                      "legalHold": false,
+                      "participantDisclosure": "not_recorded",
+                      "receiptId": "governance:ab12",
+                      "region": "local_device",
+                      "retention": "untilTranscribed",
+                      "routing": "local_transcription_to_oppulence"
+                    }
+                  ],
+                  "hasMore": false,
+                  "reviewItems": [
+                    {
+                      "claimId": "claim:ab12",
+                      "confidence": 0.5,
+                      "currentValue": "Other",
+                      "exactQuote": "We are concerned security could delay the renewal.",
+                      "id": "review:ab12cd34ef567890",
+                      "kind": "speaker",
+                      "label": "Resolve the speaker for a material statement",
+                      "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "stateDimension": "risk"
+                    }
+                  ]
+                },
                 "schema": {
-                  "description": "Focused review page.",
+                  "description": "Focused review from older conversations.",
                   "properties": {
                     "governanceReceipts": {
-                      "description": "Governance receipts from this page of conversations.",
+                      "description": "Receipts from this older page.",
                       "items": {
                         "$ref": "#/components/schemas/ConversationGovernanceReceipt"
                       },
                       "type": "array"
                     },
                     "hasMore": {
-                      "description": "An older conversation exists beyond this page.",
+                      "description": "Another older conversation exists beyond this page.",
                       "example": false,
                       "type": "boolean"
                     },
                     "reviewItems": {
-                      "description": "Review items from this page of conversations.",
+                      "description": "Review items from this older page.",
                       "items": {
                         "$ref": "#/components/schemas/ConversationReviewItem"
                       },
                       "type": "array"
                     }
                   },
-                  "required": ["reviewItems", "governanceReceipts", "hasMore"],
+                  "required": [
+                    "reviewItems",
+                    "governanceReceipts",
+                    "hasMore"
+                  ],
                   "type": "object"
                 }
               }
             },
-            "description": "Conversation review page."
+            "description": "Older focused review."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -25085,8 +25123,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Get earlier conversation review",
-        "tags": ["Relationship Intelligence"]
+        "summary": "Show earlier evidence",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/corrections": {

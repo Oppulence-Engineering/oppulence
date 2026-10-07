@@ -6,10 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type GetRelationshipConversationReviewParams = {
-  /**
-   * How many conversations to skip. Show earlier evidence skips the newest 200.
-   * @minimum 0
-   */
-  offset?: number;
-};
+/**
+ * Editor document, when one was saved.
+ */
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };
