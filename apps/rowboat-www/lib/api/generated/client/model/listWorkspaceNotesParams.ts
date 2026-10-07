@@ -6,27 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListBackgroundTaskRunsForAccountParams = {
+export type ListWorkspaceNotesParams = {
   /**
-   * How many runs to return. The Runs page asks for 50.
+   * Maximum notes to return (default 50, max 100).
    * @minimum 1
-   * @maximum 500
+   * @maximum 100
    */
   limit?: number;
   /**
-   * Optional run status filter.
+   * Number of collapsed notes to skip.
+   * @minimum 0
    */
-  status?: string;
-  /**
-   * Optional cloud or desktop filter.
-   */
-  executor?: string;
-  /**
-   * Cursor from a previous page.
-   */
-  cursor?: string;
-  /**
-   * Optional workflow filter.
-   */
-  slug?: string;
+  offset?: number;
 };

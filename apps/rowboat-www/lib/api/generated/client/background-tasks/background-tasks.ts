@@ -99,8 +99,8 @@ export const getListBackgroundTaskRunsForAccountUrl = (
 };
 
 /**
- * Lists all background task runs visible to the authenticated user. Use this for dashboards and polling views that need queued, running, failed, or API-worker Temporal runs without knowing a task slug first.
- * @summary List account background task runs
+ * The Runs page loads the first 50 cloud runs. Each run on that page failed on a schedule.
+ * @summary Runs
  */
 export const listBackgroundTaskRunsForAccount = async (
   params?: ListBackgroundTaskRunsForAccountParams,

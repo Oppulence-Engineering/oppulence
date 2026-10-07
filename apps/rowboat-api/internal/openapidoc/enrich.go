@@ -1306,8 +1306,8 @@ func addBillingPaths(paths obj) {
 
 func addBackgroundTaskPaths(paths obj) {
 	paths["/v1/background-task-runs"] = obj{
-		"get": operation("Background Tasks", "List account background task runs", "Lists all background task runs visible to the authenticated user. Use this for dashboards and polling views that need queued, running, failed, or API-worker Temporal runs without knowing a task slug first.", "listBackgroundTaskRunsForAccount", bearer(), runListQueryParams(true), nil, obj{
-			"200": jsonResponse("Account run list.", ref("BackgroundTaskRunsResponse"), obj{"runs": []any{backgroundTaskRunExample()}}),
+		"get": operation("Background Tasks", "Runs", workflowRunsDescription, "listBackgroundTaskRunsForAccount", bearer(), workflowRunsQueryParams(), nil, obj{
+			"200": jsonResponse("Failed cloud runs.", ref("BackgroundTaskRunsResponse"), workflowRunsExample()),
 			"400": responseRef("400"),
 			"401": responseRef("401"),
 			"500": responseRef("500"),

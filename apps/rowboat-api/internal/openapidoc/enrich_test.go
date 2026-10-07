@@ -338,6 +338,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertWorkflowRuns(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -398,5 +399,59 @@ func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) 
 		if asObj(token["responses"])[status] == nil {
 			t.Fatalf("MCP token missing %s", status)
 		}
+	}
+}
+
+func TestWorkflowRunsSamplesTheRunsPage(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertWorkflowRuns(t, spec)
+}
+
+func assertWorkflowRuns(t *testing.T, spec obj) {
+	t.Helper()
+	get := asObj(asObj(asObj(spec["paths"])["/v1/background-task-runs"])["get"])
+	if get["summary"] != "Runs" || get["description"] != workflowRunsDescription || get["operationId"] != "listBackgroundTaskRunsForAccount" {
+		t.Fatalf("runs operation: summary=%v description=%v id=%v", get["summary"], get["description"], get["operationId"])
+	}
+	params, ok := get["parameters"].([]any)
+	if !ok {
+		t.Fatalf("runs parameters: %#v", get["parameters"])
+	}
+	var limit obj
+	for _, raw := range params {
+		param := asObj(raw)
+		name, _ := param["name"].(string)
+		if name == "limit" {
+			limit = param
+		}
+		if name == "status" || name == "executor" || name == "cursor" || name == "slug" {
+			if param["example"] != nil || asObj(param["schema"])["enum"] != nil || asObj(param["schema"])["example"] != nil {
+				t.Fatalf("%s would be injected into the Runs request: %#v", name, param)
+			}
+		}
+	}
+	limitExample, _ := json.Marshal(limit["example"])
+	schemaExample, _ := json.Marshal(asObj(limit["schema"])["example"])
+	if string(limitExample) != "50" || string(schemaExample) != "50" {
+		t.Fatalf("limit example: param %s schema %s", limitExample, schemaExample)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"])
+	encoded, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(workflowRunsExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(encoded) != string(want) {
+		t.Fatalf("runs example:\n got %s\nwant %s", encoded, want)
+	}
+	taskRuns := asObj(asObj(asObj(spec["paths"])["/v1/background-tasks/{slug}/runs"])["get"])
+	shared := asObj(asObj(asObj(asObj(asObj(taskRuns["responses"])["200"])["content"])["application/json"])["example"])
+	sharedRuns, _ := shared["runs"].([]any)
+	if len(sharedRuns) != 1 || asObj(sharedRuns[0])["slug"] != "daily-summary" || asObj(sharedRuns[0])["status"] != "succeeded" {
+		t.Fatalf("per-workflow run example changed: %#v", shared)
 	}
 }

@@ -6,10 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListBackgroundTaskRunsForAccountExecutor =
-  (typeof ListBackgroundTaskRunsForAccountExecutor)[keyof typeof ListBackgroundTaskRunsForAccountExecutor];
-
-export const ListBackgroundTaskRunsForAccountExecutor = {
-  desktop: "desktop",
-  api: "api",
-} as const;
+/**
+ * Editor document, when one was saved.
+ */
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };
