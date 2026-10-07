@@ -2702,8 +2702,8 @@ export const RevenueSemanticSearch401Response = zod
   );
 
 /**
- * Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.
- * @summary Get current revenue workspace
+ * Local mode is the workspace Connected sources opens before a sending workspace is linked. It comes back local and active, and the sending check stays off.
+ * @summary Local mode
  */
 export const GetRevenueWorkspace200Response = zod
   .strictObject({

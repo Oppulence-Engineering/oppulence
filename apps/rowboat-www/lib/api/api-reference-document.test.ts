@@ -315,6 +315,24 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the workspace Local mode loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-workspaces/current"].get;
+    expect(operation.summary).toBe("Local mode");
+    expect(operation.operationId).toBe("getRevenueWorkspace");
+    expect(operation.description).toBe(
+      "Local mode is the workspace Connected sources opens before a sending workspace is linked. It comes back local and active, and the sending check stays off.",
+    );
+    expect(operation.parameters).toBeUndefined();
+    expect(operation.requestBody).toBeUndefined();
+    expect(operation.responses["200"].content["application/json"].example).toEqual({
+      id: "0b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      mode: "local",
+      status: "active",
+      preflightAvailable: false,
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
