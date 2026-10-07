@@ -1552,8 +1552,8 @@ func addBackgroundTaskPaths(paths obj) {
 }
 
 func addLLMPaths(paths obj) {
-	paths["/v1/llm/models"] = obj{"get": operation("LLM", "List routable LLM models", "Returns the sorted set of priced model ids the desktop can send to the LLM gateway.", "listLLMModels", bearer(), nil, nil, obj{
-		"200": jsonResponse("Model catalog.", ref("LLMModelsResponse"), obj{"data": []any{obj{"id": "openai/gpt-4.1-mini"}, obj{"id": "anthropic/claude-sonnet-4-5"}}}),
+	paths["/v1/llm/models"] = obj{"get": operation("LLM", "AI model", aiModelDescription, "listLLMModels", bearer(), nil, nil, obj{
+		"200": jsonResponse("Priced models.", ref("LLMModelsResponse"), aiModelPage()),
 		"401": responseRef("401"),
 		"503": responseRef("503"),
 	})}

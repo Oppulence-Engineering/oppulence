@@ -338,6 +338,48 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertAIModel(t, paths)
+}
+
+func TestAIModelSamplesThePricedList(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertAIModel(t, asObj(spec["paths"]))
+}
+
+func assertAIModel(t *testing.T, paths obj) {
+	t.Helper()
+	get := asObj(asObj(paths["/v1/llm/models"])["get"])
+	if get["summary"] != "AI model" || get["description"] != aiModelDescription || get["operationId"] != "listLLMModels" {
+		t.Fatalf("ai model operation: %#v", get)
+	}
+	if get["parameters"] != nil {
+		t.Fatalf("ai model parameters: %#v", get["parameters"])
+	}
+	example := asObj(asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(aiModelPage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("ai model example: %s", got)
+	}
+	rows, _ := example["data"].([]any)
+	if len(rows) != 10 {
+		t.Fatalf("model count: %d", len(rows))
+	}
+	if asObj(rows[0])["id"] != "anthropic/claude-haiku-4-5" {
+		t.Fatalf("first model: %#v", rows[0])
+	}
+	chat := asObj(asObj(paths["/v1/llm/chat/completions"])["post"])
+	request := asObj(asObj(asObj(asObj(chat["requestBody"])["content"])["application/json"])["example"])
+	if request["model"] != "openai/gpt-4.1-mini" {
+		t.Fatalf("chat model example changed: %#v", request["model"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
