@@ -907,12 +907,12 @@ func addRevenuePaths(paths obj) {
 		"404": responseRef("404"),
 		"409": responseRef("409"),
 	})}
-	paths["/v1/relationships/{relationshipId}/conversation-corrections"] = obj{"post": operation("Relationship Intelligence", "Correct reviewed conversation evidence", "Resolves a focused word, speaker, entity, or material-claim review item. State-affecting corrections append a top-precedence user assertion and reproject deterministically.", "correctConversationEvidence", bearer(), relationshipParam, jsonRequest("Focused correction.", objectSchema("Conversation correction.", obj{
-		"reviewItemId":   stringSchema("Focused review item id.", "review:ab12"),
-		"correctedValue": stringSchema("Human-corrected value.", "Avery Chen"),
-		"reason":         stringSchema("Correction reason.", "Avery was the speaker."),
-	}, "reviewItemId", "correctedValue", "reason"), obj{"reviewItemId": "review:ab12", "correctedValue": "Avery Chen", "reason": "Avery was the speaker."}), obj{
-		"201": jsonResponse("Corrected relationship and refreshed intelligence.", objectSchema("Correction result.", obj{"relationship": ref("RevenueRelationship"), "intelligence": ref("RelationshipIntelligence")}, "relationship", "intelligence"), nil),
+	paths["/v1/relationships/{relationshipId}/conversation-corrections"] = obj{"post": operation("Relationship Intelligence", "Correct reviewed conversation evidence", "Correct sends the company id, the review item id, and the edited value. It always sends the focused-review reason.", "correctConversationEvidence", bearer(), conversationCorrectionParams(), jsonRequest("Focused correction.", objectSchema("Conversation correction.", obj{
+		"reviewItemId":   stringSchema("Focused review item id.", conversationCorrectionReviewID()),
+		"correctedValue": stringSchema("Human-corrected value.", conversationCorrectionValue),
+		"reason":         stringSchema("Correction reason.", conversationCorrectionReason),
+	}, "reviewItemId", "correctedValue", "reason"), conversationCorrectionRequest()), obj{
+		"201": jsonResponse("Corrected relationship and refreshed intelligence.", objectSchema("Correction result.", obj{"relationship": ref("RevenueRelationship"), "intelligence": ref("RelationshipIntelligence")}, "relationship", "intelligence"), conversationCorrectionResponse()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
