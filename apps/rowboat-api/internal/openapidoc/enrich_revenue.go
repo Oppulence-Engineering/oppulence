@@ -930,16 +930,7 @@ func addRevenuePaths(paths obj) {
 		"404": responseRef("404"),
 		"409": responseRef("409"),
 	})}
-	caseParam := make([]any, len(relationshipParam), len(relationshipParam)+1)
-	copy(caseParam, relationshipParam)
-	caseParam = append(caseParam, obj{"name": "caseId", "in": "path", "required": true, "description": "Contradiction case id.", "schema": obj{"type": "string"}})
-	paths["/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve"] = obj{"post": operation("Relationship Intelligence", "Resolve a typed contradiction", "Records the user's selected evidence side as a top-authority correction without rewriting either source.", "resolveRelationshipContradiction", bearer(), caseParam, jsonRequest("Resolution.", objectSchema("Contradiction resolution.", obj{
-		"selectedAssertionId": stringSchema("Selected assertion id.", "assertion:ab12"),
-		"reason":              stringSchema("Optional rationale.", "CRM was updated after the meeting."),
-	}, "selectedAssertionId"), obj{"selectedAssertionId": "assertion:ab12"}), obj{
-		"201": jsonResponse("Updated relationship and intelligence.", freeFormSchema("Relationship detail result."), nil),
-		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
-	})}
+	paths["/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve"] = obj{"post": useThisValueOperation()}
 	paths["/v1/relationships/{relationshipId}/commitment-recovery/run"] = obj{"post": operation("Relationship Intelligence", "Run commitment recovery", "Reconciles due commitments against bounded fresh evidence, closes only explicit fulfillment, and queues governed recovery proposals otherwise.", "runCommitmentRecovery", bearer(), relationshipParam, jsonRequestOptional("Empty request.", objectSchema("Recovery request.", obj{}), obj{}), obj{
 		"200": jsonResponse("Recovery evaluations.", freeFormSchema("Recovery evaluation result."), nil),
 		"401": responseRef("401"), "404": responseRef("404"),

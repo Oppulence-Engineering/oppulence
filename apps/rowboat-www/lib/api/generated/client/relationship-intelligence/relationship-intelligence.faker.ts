@@ -35,6 +35,7 @@ import type {
   ListRelationshipAttention200,
   ListRelationshipIdentityCandidates200,
   ListRelationships200,
+  ListWorkspaceNotes200,
   PutConversationPolicy201,
   RelationshipAttentionItem,
   RelationshipCommitment,
@@ -1584,6 +1585,10 @@ export const getApproveRelationshipRecommendationResponseMock = (
     undefined,
   ]),
   relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+  relationshipName: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
   revision: faker.number.int(),
   revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
   senderAccountRef: faker.helpers.arrayElement([
@@ -1744,6 +1749,10 @@ export const getRejectRelationshipRecommendationResponseMock = (
     undefined,
   ]),
   relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+  relationshipName: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
   revision: faker.number.int(),
   revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
   senderAccountRef: faker.helpers.arrayElement([
@@ -2871,6 +2880,10 @@ export const getGetRelationshipResponseMock = (
         undefined,
       ]),
       relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+      relationshipName: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
       revision: faker.number.int(),
       revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
       senderAccountRef: faker.helpers.arrayElement([
@@ -3446,6 +3459,10 @@ export const getGetRelationshipResponseMock = (
         undefined,
       ]),
       relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+      relationshipName: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
       revision: faker.number.int(),
       revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
       senderAccountRef: faker.helpers.arrayElement([
@@ -3958,8 +3975,318 @@ export const getGetRelationshipCommunicationTimelineResponseMock = (
   ...overrideResponse,
 });
 
-export const getResolveRelationshipContradictionResponseMock =
-  (): ResolveRelationshipContradiction201 => ({});
+export const getResolveRelationshipContradictionResponseMock = (
+  overrideResponse: Partial<Extract<ResolveRelationshipContradiction201, object>> = {},
+): ResolveRelationshipContradiction201 => ({
+  intelligence: {
+    claims: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+      () => ({
+        captureCaveats: Array.from(
+          { length: faker.number.int({ min: 1, max: 10 }) },
+          (_, i) => i + 1,
+        ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+        confidence: faker.number.float({ fractionDigits: 2 }),
+        endMs: faker.number.int(),
+        exactQuote: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        id: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        kind: faker.helpers.arrayElement([
+          "risk",
+          "objection",
+          "decision",
+          "milestone",
+          "sentiment",
+          "stakeholder",
+          "lifecycle",
+          "commitment",
+        ] as const),
+        material: faker.datatype.boolean(),
+        observationId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+        speakerConfidence: faker.number.float({ fractionDigits: 2 }),
+        speakerId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        speakerLabel: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        startMs: faker.number.int(),
+        stateDimension: faker.helpers.arrayElement([
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+          undefined,
+        ]),
+        value: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      }),
+    ),
+    contradictionCases: Array.from(
+      { length: faker.number.int({ min: 1, max: 10 }) },
+      (_, i) => i + 1,
+    ).map(() => ({})),
+    deletionReceipts: Array.from(
+      { length: faker.number.int({ min: 1, max: 10 }) },
+      (_, i) => i + 1,
+    ).map(() => ({
+      completedAt: faker.helpers.arrayElement([
+        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+        undefined,
+      ]),
+      legalHold: faker.datatype.boolean(),
+      receiptId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      requestedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+      scopeRef: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      status: faker.helpers.arrayElement(["pending", "blocked", "partial", "verified"] as const),
+      targets: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+        () => ({
+          attempts: faker.number.int(),
+          errorCode: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+          status: faker.helpers.arrayElement([
+            "pending",
+            "deleted",
+            "not_found",
+            "blocked",
+            "failed",
+          ] as const),
+          target: faker.helpers.arrayElement([
+            "local_recording",
+            "local_note",
+            "outbox",
+            "api_evidence",
+            "embedding",
+            "plan_share",
+            "provider",
+          ] as const),
+          verificationHash: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+        }),
+      ),
+    })),
+    delta: {},
+    effectivePolicy: {
+      capture: faker.helpers.arrayElement(["deny", "require_consent", "allow"] as const),
+      externalShare: faker.datatype.boolean(),
+      legalHold: faker.datatype.boolean(),
+      modelRoute: faker.helpers.arrayElement([
+        "local_only",
+        "region_restricted",
+        "hosted_allowed",
+      ] as const),
+      policyVersion: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      publishEvidence: faker.datatype.boolean(),
+      redactionClasses: Array.from(
+        { length: faker.number.int({ min: 1, max: 10 }) },
+        (_, i) => i + 1,
+      ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+      resolvedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+      retentionDays: faker.number.int(),
+      sourceLayerIds: Array.from(
+        { length: faker.number.int({ min: 1, max: 10 }) },
+        (_, i) => i + 1,
+      ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+    },
+    governanceDecisions: Array.from(
+      { length: faker.number.int({ min: 1, max: 10 }) },
+      (_, i) => i + 1,
+    ).map(() => ({})),
+    governanceReceipts: Array.from(
+      { length: faker.number.int({ min: 1, max: 10 }) },
+      (_, i) => i + 1,
+    ).map(() => ({
+      capturePolicy: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      capturedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+      deletionOutcome: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      evidenceClip: faker.helpers.arrayElement(["not_retained", "encrypted"] as const),
+      legalHold: faker.datatype.boolean(),
+      participantDisclosure: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      receiptId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      region: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      retention: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      routing: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    })),
+    liveCues: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+      () => ({}),
+    ),
+    mutualActionPlans: Array.from(
+      { length: faker.number.int({ min: 1, max: 10 }) },
+      (_, i) => i + 1,
+    ).map(() => ({})),
+    observationPageHasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
+    recommendationEvaluations: Array.from(
+      { length: faker.number.int({ min: 1, max: 10 }) },
+      (_, i) => i + 1,
+    ).map(() => ({})),
+    recoveryEvaluations: Array.from(
+      { length: faker.number.int({ min: 1, max: 10 }) },
+      (_, i) => i + 1,
+    ).map(() => ({})),
+    reviewItems: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+      () => ({
+        baselineVersion: faker.helpers.arrayElement([faker.number.int(), undefined]),
+        batchId: faker.helpers.arrayElement([
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+          undefined,
+        ]),
+        before: faker.helpers.arrayElement([{}, undefined]),
+        caveats: faker.helpers.arrayElement([
+          Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+          ),
+          undefined,
+        ]),
+        claimId: faker.helpers.arrayElement([
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+          undefined,
+        ]),
+        confidence: faker.number.float({ fractionDigits: 2 }),
+        currentValue: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        dependentActionIds: faker.helpers.arrayElement([
+          Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+          ),
+          undefined,
+        ]),
+        exactQuote: faker.helpers.arrayElement([
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+          undefined,
+        ]),
+        id: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        kind: faker.helpers.arrayElement([
+          "word",
+          "speaker",
+          "entity",
+          "claim",
+          "capture",
+        ] as const),
+        label: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        observationId: faker.string.uuid(),
+        proposedAfter: faker.helpers.arrayElement([{}, undefined]),
+        stateDimension: faker.helpers.arrayElement([
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+          undefined,
+        ]),
+        status: faker.helpers.arrayElement([
+          faker.helpers.arrayElement([
+            "pending_review",
+            "accepted",
+            "corrected",
+            "rejected",
+            "deferred",
+          ] as const),
+          undefined,
+        ]),
+      }),
+    ),
+  },
+  relationship: {
+    accountDomain: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+      () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+    ),
+    commitmentCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    companyDescription: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    companyEnrichedAt: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+      undefined,
+    ]),
+    companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
+    companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
+    displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    emailThreadCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    engagement: faker.helpers.arrayElement([
+      "unknown",
+      "increasing",
+      "steady",
+      "declining",
+      "dormant",
+    ] as const),
+    health: faker.helpers.arrayElement([
+      "unknown",
+      "healthy",
+      "needs_attention",
+      "critical",
+    ] as const),
+    id: faker.string.uuid(),
+    kind: faker.helpers.arrayElement([
+      "person",
+      "company",
+      "customer",
+      "opportunity",
+      "referral",
+      "partner",
+    ] as const),
+    lastChangedAt: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+      undefined,
+    ]),
+    lastTouchAt: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+      undefined,
+    ]),
+    lifecycle: faker.helpers.arrayElement([
+      "prospect",
+      "evaluation",
+      "contracting",
+      "onboarding",
+      "active_customer",
+      "renewal",
+      "churned",
+      "former_customer",
+    ] as const),
+    linkedinUrl: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    milestones: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+      () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+    ),
+    nextAction: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    nextActionAt: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+      undefined,
+    ]),
+    openActions: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    peopleCount: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    primaryEmail: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    projectedAt: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+      undefined,
+    ]),
+    projectorVersion: faker.number.int(),
+    resourceRefs: Array.from(
+      { length: faker.number.int({ min: 1, max: 10 }) },
+      (_, i) => i + 1,
+    ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+    risks: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+    ),
+    sentiment: faker.helpers.arrayElement(["unknown", "positive", "mixed", "negative"] as const),
+    stateHash: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    stateReason: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    stateVersion: faker.number.int(),
+    status: faker.helpers.arrayElement(["active", "dormant", "closed", "archived"] as const),
+    summary: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+  },
+  ...overrideResponse,
+});
 
 export const getCorrectConversationEvidenceResponseMock = (
   overrideResponse: Partial<Extract<CorrectConversationEvidence201, object>> = {},
@@ -4963,5 +5290,24 @@ export const getGetCommunicationInteractionBodyResponseMock = (
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
+  ...overrideResponse,
+});
+
+export const getListWorkspaceNotesResponseMock = (
+  overrideResponse: Partial<Extract<ListWorkspaceNotes200, object>> = {},
+): ListWorkspaceNotes200 => ({
+  hasMore: faker.datatype.boolean(),
+  notes: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+    body: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    content: faker.helpers.arrayElement([{}, undefined]),
+    eventType: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    externalId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    liveLinked: faker.datatype.boolean(),
+    meetingLinked: faker.datatype.boolean(),
+    occurredAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+    relationshipId: faker.string.uuid(),
+    relationshipName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    title: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  })),
   ...overrideResponse,
 });

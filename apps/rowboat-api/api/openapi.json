@@ -24540,25 +24540,29 @@
     },
     "/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve": {
       "post": {
-        "description": "Records the user's selected evidence side as a top-authority correction without rewriting either source.",
+        "description": "Use this value closes a disagreement on this company. It sends the evidence you picked and why, and the company comes back with that value current.",
         "operationId": "resolveRelationshipContradiction",
         "parameters": [
           {
-            "description": "Relationship id.",
+            "description": "Company this disagreement belongs to.",
             "in": "path",
             "name": "relationshipId",
             "required": true,
             "schema": {
+              "description": "Company id.",
+              "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
           },
           {
-            "description": "Contradiction case id.",
+            "description": "Disagreement this button closes.",
             "in": "path",
             "name": "caseId",
             "required": true,
             "schema": {
+              "description": "Disagreement id.",
+              "example": "contradiction:d109218617da1fbea89bb5d6",
               "type": "string"
             }
           }
@@ -24567,42 +24571,183 @@
           "content": {
             "application/json": {
               "example": {
-                "selectedAssertionId": "assertion:ab12"
+                "reason": "You chose the value from Gmail.",
+                "selectedAssertionId": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"
               },
               "schema": {
-                "description": "Contradiction resolution.",
+                "description": "The value you picked.",
                 "properties": {
                   "reason": {
-                    "description": "Optional rationale.",
-                    "example": "CRM was updated after the meeting.",
+                    "description": "Why this value is current.",
+                    "example": "You chose the value from Gmail.",
                     "type": "string"
                   },
                   "selectedAssertionId": {
-                    "description": "Selected assertion id.",
-                    "example": "assertion:ab12",
+                    "description": "Evidence you picked.",
+                    "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "format": "uuid",
                     "type": "string"
                   }
                 },
-                "required": ["selectedAssertionId"],
+                "required": [
+                  "selectedAssertionId"
+                ],
                 "type": "object"
               }
             }
           },
-          "description": "Resolution.",
+          "description": "Choice.",
           "required": true
         },
         "responses": {
           "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "intelligence": {
+                    "claims": [],
+                    "contradictionCases": [
+                      {
+                        "caseId": "contradiction:d109218617da1fbea89bb5d6",
+                        "dimension": "health",
+                        "openedAt": "2026-07-20T16:00:00Z",
+                        "reason": "You chose the value from Gmail.",
+                        "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "resolutionAssertionId": "7e8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "resolvedAt": "2026-07-25T16:00:00Z",
+                        "sides": [
+                          {
+                            "assertionId": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                            "evidenceRefs": [
+                              "relationship-observation:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                            ],
+                            "identityConfidence": 1,
+                            "observedAt": "2026-07-20T16:00:00Z",
+                            "source": "gmail",
+                            "sourceType": "source_fact",
+                            "validFrom": "2026-07-20T16:00:00Z",
+                            "value": {
+                              "kind": "enum",
+                              "value": "needs_attention"
+                            }
+                          },
+                          {
+                            "assertionId": "7d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                            "evidenceRefs": [
+                              "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                            ],
+                            "identityConfidence": 0.5,
+                            "observedAt": "2026-07-10T16:00:00Z",
+                            "source": "meeting",
+                            "sourceType": "ai_inference",
+                            "validFrom": "2026-07-10T16:00:00Z",
+                            "value": {
+                              "kind": "enum",
+                              "value": "healthy"
+                            }
+                          }
+                        ],
+                        "status": "user_resolved",
+                        "subjectRef": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                      }
+                    ],
+                    "deletionReceipts": [],
+                    "delta": {
+                      "changes": [
+                        {
+                          "after": "needs_attention",
+                          "assertionIds": [
+                            "7e8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                          ],
+                          "before": "healthy",
+                          "dimension": "health",
+                          "reason": "Security review was promised, but no owner or meeting exists."
+                        }
+                      ],
+                      "contradictions": [
+                        {
+                          "contradictedAssertionId": "7d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "contradictedValue": "healthy",
+                          "currentAssertionId": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "currentValue": "needs_attention",
+                          "dimension": "health"
+                        }
+                      ],
+                      "fromVersion": 4,
+                      "recommendationReason": "Security review was promised, but no owner or meeting exists.",
+                      "toVersion": 5,
+                      "uncertainClaimIds": []
+                    },
+                    "effectivePolicy": {
+                      "capture": "require_consent",
+                      "externalShare": true,
+                      "legalHold": false,
+                      "modelRoute": "hosted_allowed",
+                      "policyVersion": "policy:9373cc30008dcb712c236fc9",
+                      "publishEvidence": true,
+                      "redactionClasses": [
+                        "credentials",
+                        "financial",
+                        "health",
+                        "personal_identifier"
+                      ],
+                      "resolvedAt": "2026-07-25T16:00:00Z",
+                      "retentionDays": 30,
+                      "sourceLayerIds": [
+                        "builtin:conversation-policy-v1"
+                      ]
+                    },
+                    "governanceDecisions": [],
+                    "governanceReceipts": [],
+                    "liveCues": [],
+                    "mutualActionPlans": [],
+                    "recommendationEvaluations": [],
+                    "recoveryEvaluations": [],
+                    "reviewItems": []
+                  },
+                  "relationship": {
+                    "categories": [],
+                    "commitmentCount": 0,
+                    "displayName": "Acme",
+                    "emailThreadCount": 0,
+                    "engagement": "declining",
+                    "health": "needs_attention",
+                    "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "kind": "company",
+                    "lastChangedAt": "2026-07-25T16:00:00Z",
+                    "lifecycle": "evaluation",
+                    "milestones": [],
+                    "peopleCount": 0,
+                    "projectedAt": "2026-07-25T16:00:00Z",
+                    "projectorVersion": 2,
+                    "resourceRefs": [],
+                    "risks": [],
+                    "sentiment": "mixed",
+                    "stateHash": "sha256:ab12cd34",
+                    "stateReason": "Security review was promised, but no owner or meeting exists.",
+                    "stateVersion": 5,
+                    "status": "active"
+                  }
+                },
                 "schema": {
-                  "additionalProperties": true,
-                  "description": "Relationship detail result.",
+                  "description": "Company after the chosen value is current.",
+                  "properties": {
+                    "intelligence": {
+                      "$ref": "#/components/schemas/RelationshipIntelligence"
+                    },
+                    "relationship": {
+                      "$ref": "#/components/schemas/RevenueRelationship"
+                    }
+                  },
+                  "required": [
+                    "relationship",
+                    "intelligence"
+                  ],
                   "type": "object"
                 }
               }
             },
-            "description": "Updated relationship and intelligence."
+            "description": "Company after you pick the current value."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -24622,8 +24767,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Resolve a typed contradiction",
-        "tags": ["Relationship Intelligence"]
+        "summary": "Use this value",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/conversation-corrections": {

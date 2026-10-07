@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,70 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertUseThisValue(t, spec)
+}
+
+func TestUseThisValueSamplesTheCompany(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertUseThisValue(t, spec)
+}
+
+func assertUseThisValue(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve"])["post"])
+	if op["summary"] != "Use this value" || op["operationId"] != "resolveRelationshipContradiction" || op["description"] != useThisValueDescription {
+		t.Fatalf("use this value copy: summary=%#v id=%#v description=%#v", op["summary"], op["operationId"], op["description"])
+	}
+	examples := map[string]string{}
+	for _, param := range op["parameters"].([]any) {
+		item := asObj(param)
+		name, _ := item["name"].(string)
+		raw, err := json.Marshal(asObj(item["schema"])["example"])
+		if err != nil {
+			t.Fatal(err)
+		}
+		examples[name] = string(raw)
+	}
+	if examples["relationshipId"] != `"`+useThisValueRelationship+`"` || examples["caseId"] != `"`+useThisValueCaseID+`"` {
+		t.Fatalf("use this value path examples: %#v", examples)
+	}
+	request := asObj(asObj(asObj(op["requestBody"])["content"])["application/json"])["example"]
+	gotRequest, err := json.Marshal(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantRequest, err := json.Marshal(useThisValueRequest())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotRequest) != string(wantRequest) {
+		t.Fatalf("use this value request:\n%s\nwant:\n%s", gotRequest, wantRequest)
+	}
+	example := asObj(asObj(asObj(asObj(op["responses"])["201"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(useThisValueResponse())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("use this value company:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "acta_") || strings.Contains(string(got), "\"token\"") || strings.Contains(string(got), "approvedAt") || strings.Contains(string(gotRequest), "assertion:ab12") {
+		t.Fatalf("use this value includes a live approval or placeholder assertion: %s", got)
+	}
+	company := asObj(asObj(example)["relationship"])
+	if company["displayName"] != "Acme" || company["health"] != "needs_attention" || company["kind"] != "company" {
+		t.Fatalf("use this value company state: %#v", company)
+	}
+	cases := asObj(asObj(example)["intelligence"])["contradictionCases"].([]any)
+	resolved := asObj(cases[0])
+	if resolved["status"] != "user_resolved" || resolved["reason"] != useThisValueReason {
+		t.Fatalf("use this value disagreement: %#v", resolved)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
