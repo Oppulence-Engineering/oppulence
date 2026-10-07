@@ -774,17 +774,17 @@ func addRevenuePaths(paths obj) {
 	})}
 
 	paths["/v1/relationships"] = obj{
-		"get": operation("Relationship Intelligence", "List relationships", "Lists canonical relationship state with optional text, lifecycle, health, and engagement filters. A full page of 200 is the end of the list when hasMore is false.", "listRelationships", bearer(), []any{
-			obj{"name": "q", "in": "query", "required": false, "description": "Account, domain, or contact search.", "schema": obj{"type": "string"}},
-			obj{"name": "lifecycle", "in": "query", "required": false, "description": "Lifecycle filter.", "schema": obj{"type": "string"}},
-			obj{"name": "health", "in": "query", "required": false, "description": "Health filter.", "schema": obj{"type": "string"}},
-			obj{"name": "engagement", "in": "query", "required": false, "description": "Engagement filter.", "schema": obj{"type": "string"}},
-			obj{"name": "offset", "in": "query", "required": false, "description": "How many relationships to skip. Each page is 200 rows, newest touch first.", "schema": obj{"type": "integer", "minimum": 0}},
+		"get": operation("Relationship Intelligence", "All companies", companyDirectoryDescription, "listRelationships", bearer(), []any{
+			obj{"name": "q", "in": "query", "required": false, "description": "Account, domain, or contact search. All companies sends none.", "schema": obj{"type": "string"}},
+			obj{"name": "lifecycle", "in": "query", "required": false, "description": "Lifecycle filter. All companies sends none.", "schema": obj{"type": "string"}},
+			obj{"name": "health", "in": "query", "required": false, "description": "Health filter. All companies sends none.", "schema": obj{"type": "string"}},
+			obj{"name": "engagement", "in": "query", "required": false, "description": "Engagement filter. All companies sends none.", "schema": obj{"type": "string"}},
+			obj{"name": "offset", "in": "query", "required": false, "description": "How many companies to skip. All companies sends none. Each page is 200 rows, newest touch first.", "schema": obj{"type": "integer", "minimum": 0}},
 		}, nil, obj{
-			"200": jsonResponse("Relationships.", objectSchema("Relationship list.", obj{
-				"relationships": arraySchema("Relationships.", ref("RevenueRelationship")),
+			"200": jsonResponse("Company directory.", objectSchema("Relationship list.", obj{
+				"relationships": arraySchema("Companies and people, newest touch first.", ref("RevenueRelationship")),
 				"hasMore":       boolSchema("Another company exists beyond this page.", false),
-			}, "relationships"), nil),
+			}, "relationships", "hasMore"), companyDirectoryPage()),
 			"401": responseRef("401"),
 		}),
 		"post": operation("Relationship Intelligence", "Create a relationship", "Records a canonical relationship in the caller's workspace.", "createRelationship", bearer(), nil, jsonRequest("Relationship.", objectSchema("Create request.", obj{
@@ -1311,4 +1311,44 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
+}
+
+const (
+	companyDirectoryID          = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	companyDirectoryHash        = "sha256:61dd3377d3854c6f9c104af050ad3f0f87ff6cdd1c3458c17541cbc1e87fc887"
+	companyDirectoryReason      = "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation."
+	companyDirectoryTouchedAt   = "2026-07-25T15:00:00Z"
+	companyDirectoryProjectedAt = "2026-07-25T16:00:00Z"
+	companyDirectoryDescription = "All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention."
+)
+
+func companyDirectoryPage() obj {
+	return obj{
+		"hasMore": false,
+		"relationships": []any{obj{
+			"id":               companyDirectoryID,
+			"kind":             "company",
+			"displayName":      "Acme",
+			"accountDomain":    "acme.com",
+			"status":           "active",
+			"lastTouchAt":      companyDirectoryTouchedAt,
+			"peopleCount":      1,
+			"emailThreadCount": 0,
+			"commitmentCount":  0,
+			"lifecycle":        "evaluation",
+			"engagement":       "declining",
+			"sentiment":        "unknown",
+			"health":           "needs_attention",
+			"stateReason":      companyDirectoryReason,
+			"stateVersion":     1,
+			"stateHash":        companyDirectoryHash,
+			"projectorVersion": 2,
+			"projectedAt":      companyDirectoryProjectedAt,
+			"lastChangedAt":    companyDirectoryProjectedAt,
+			"risks":            []any{},
+			"milestones":       []any{},
+			"resourceRefs":     []any{},
+			"categories":       []any{},
+		}},
+	}
 }

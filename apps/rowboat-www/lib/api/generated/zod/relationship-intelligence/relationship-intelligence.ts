@@ -2037,6 +2037,12 @@ export const ApproveRelationshipRecommendation200Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -2198,6 +2204,12 @@ export const RejectRelationshipRecommendation200Response = zod
       .optional()
       .describe("Read-only provider reconciliation state for an ambiguous write."),
     relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+    relationshipName: zod
+      .string()
+      .optional()
+      .describe(
+        "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+      ),
     revision: zod.int().describe("Current revision number."),
     revisionHash: zod.string().describe("Canonical hash of the revision content."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -2956,27 +2968,32 @@ export const DisconnectRelationshipSource403Response = zod
   );
 
 /**
- * Lists canonical relationship state with optional text, lifecycle, health, and engagement filters. A full page of 200 is the end of the list when hasMore is false.
- * @summary List relationships
+ * All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention.
+ * @summary All companies
  */
 export const listRelationshipsQueryOffsetMin = 0;
 
 export const ListRelationshipsQueryParams = zod.object({
-  q: zod.string().optional().describe("Account, domain, or contact search."),
-  lifecycle: zod.string().optional().describe("Lifecycle filter."),
-  health: zod.string().optional().describe("Health filter."),
-  engagement: zod.string().optional().describe("Engagement filter."),
+  q: zod
+    .string()
+    .optional()
+    .describe("Account, domain, or contact search. All companies sends none."),
+  lifecycle: zod.string().optional().describe("Lifecycle filter. All companies sends none."),
+  health: zod.string().optional().describe("Health filter. All companies sends none."),
+  engagement: zod.string().optional().describe("Engagement filter. All companies sends none."),
   offset: zod.coerce
     .number()
     .int()
     .min(listRelationshipsQueryOffsetMin)
     .optional()
-    .describe("How many relationships to skip. Each page is 200 rows, newest touch first."),
+    .describe(
+      "How many companies to skip. All companies sends none. Each page is 200 rows, newest touch first.",
+    ),
 });
 
 export const ListRelationships200Response = zod
   .strictObject({
-    hasMore: zod.boolean().optional().describe("Another company exists beyond this page."),
+    hasMore: zod.boolean().describe("Another company exists beyond this page."),
     relationships: zod
       .array(
         zod
@@ -3089,8 +3106,7 @@ export const ListRelationships200Response = zod
             "Canonical, living relationship state projected from append-only evidence. CRM and communication systems remain evidence sources; this object is the shared model rendered by web and desktop.",
           ),
       )
-      .optional()
-      .describe("Relationships."),
+      .describe("Companies and people, newest touch first."),
   })
   .describe("Relationship list.");
 
@@ -3636,6 +3652,12 @@ export const GetRelationship200Response = zod
               .optional()
               .describe("Read-only provider reconciliation state for an ambiguous write."),
             relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+            relationshipName: zod
+              .string()
+              .optional()
+              .describe(
+                "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+              ),
             revision: zod.int().describe("Current revision number."),
             revisionHash: zod.string().describe("Canonical hash of the revision content."),
             senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -4218,6 +4240,12 @@ export const GetRelationship200Response = zod
               .optional()
               .describe("Read-only provider reconciliation state for an ambiguous write."),
             relationshipId: zod.uuid().optional().describe("Owning relationship id."),
+            relationshipName: zod
+              .string()
+              .optional()
+              .describe(
+                "Owning company name. The directory is paged, so a task still names a company that is not on the first page.",
+              ),
             revision: zod.int().describe("Current revision number."),
             revisionHash: zod.string().describe("Canonical hash of the revision content."),
             senderAccountRef: zod.string().optional().describe("Sender account reference."),
@@ -7269,6 +7297,87 @@ export const GetCommunicationInteractionBody403Response = zod
   );
 
 export const GetCommunicationInteractionBody404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Returns the latest copy of each company note in this workspace. One request reads every company, so the notes page does not ask for each company timeline. A newer edit replaces the previous copy, and a later deletion removes the note.
+ * @summary List workspace notes
+ */
+export const listWorkspaceNotesQueryLimitMax = 100;
+
+export const listWorkspaceNotesQueryOffsetMin = 0;
+
+export const ListWorkspaceNotesQueryParams = zod.object({
+  limit: zod.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(listWorkspaceNotesQueryLimitMax)
+    .optional()
+    .describe("Maximum notes to return (default 50, max 100)."),
+  offset: zod.coerce
+    .number()
+    .int()
+    .min(listWorkspaceNotesQueryOffsetMin)
+    .optional()
+    .describe("Number of collapsed notes to skip."),
+});
+
+export const ListWorkspaceNotes200Response = zod
+  .strictObject({
+    hasMore: zod.boolean().describe("Whether another page of notes exists."),
+    notes: zod
+      .array(
+        zod
+          .strictObject({
+            body: zod.string().describe("Plain note body."),
+            content: zod
+              .record(zod.string(), zod.unknown())
+              .optional()
+              .describe("Editor document, when one was saved."),
+            eventType: zod.string().describe("Stored event. Live notes are note."),
+            externalId: zod.string().describe("Stable note id."),
+            liveLinked: zod.boolean().describe("Whether the note is linked to a live note."),
+            meetingLinked: zod.boolean().describe("Whether the note is linked to a meeting."),
+            occurredAt: zod.iso.datetime({ offset: true }).describe("When this copy was written."),
+            relationshipId: zod.uuid().describe("Company id."),
+            relationshipName: zod.string().describe("Company name."),
+            title: zod.string().describe("Note title."),
+          })
+          .describe("Workspace note."),
+      )
+      .describe("Latest note for each note id."),
+  })
+  .describe("Workspace notes page.");
+
+export const ListWorkspaceNotes400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ListWorkspaceNotes401Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),

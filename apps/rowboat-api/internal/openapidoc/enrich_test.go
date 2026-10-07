@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,46 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertCompanyDirectory(t, paths)
+}
+
+func TestCompanyDirectorySamplesAcme(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertCompanyDirectory(t, asObj(spec["paths"]))
+}
+
+func assertCompanyDirectory(t *testing.T, paths obj) {
+	t.Helper()
+	path := asObj(paths["/v1/relationships"])
+	if asObj(path["post"])["operationId"] != "createRelationship" {
+		t.Fatal("company directory replaced the create relationship route")
+	}
+	op := asObj(path["get"])
+	if op["summary"] != "All companies" || op["description"] != companyDirectoryDescription {
+		t.Fatalf("directory copy: summary=%#v description=%#v", op["summary"], op["description"])
+	}
+	for _, param := range op["parameters"].([]any) {
+		item := asObj(param)
+		if asObj(item["schema"])["example"] != nil {
+			t.Fatalf("All companies must not send %s", item["name"])
+		}
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(companyDirectoryPage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("directory example:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "Jordan Buyer") || strings.Contains(string(got), "buyer@example.com") || strings.Contains(string(got), "sha256:ab12") {
+		t.Fatalf("directory example still uses the person sample: %s", got)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

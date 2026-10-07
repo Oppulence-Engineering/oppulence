@@ -23486,11 +23486,11 @@
     },
     "/v1/relationships": {
       "get": {
-        "description": "Lists canonical relationship state with optional text, lifecycle, health, and engagement filters. A full page of 200 is the end of the list when hasMore is false.",
+        "description": "All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention.",
         "operationId": "listRelationships",
         "parameters": [
           {
-            "description": "Account, domain, or contact search.",
+            "description": "Account, domain, or contact search. All companies sends none.",
             "in": "query",
             "name": "q",
             "required": false,
@@ -23499,7 +23499,7 @@
             }
           },
           {
-            "description": "Lifecycle filter.",
+            "description": "Lifecycle filter. All companies sends none.",
             "in": "query",
             "name": "lifecycle",
             "required": false,
@@ -23508,7 +23508,7 @@
             }
           },
           {
-            "description": "Health filter.",
+            "description": "Health filter. All companies sends none.",
             "in": "query",
             "name": "health",
             "required": false,
@@ -23517,7 +23517,7 @@
             }
           },
           {
-            "description": "Engagement filter.",
+            "description": "Engagement filter. All companies sends none.",
             "in": "query",
             "name": "engagement",
             "required": false,
@@ -23526,13 +23526,13 @@
             }
           },
           {
-            "description": "How many relationships to skip. Each page is 200 rows, newest touch first.",
+            "description": "How many companies to skip. All companies sends none. Each page is 200 rows, newest touch first.",
             "in": "query",
             "name": "offset",
             "required": false,
             "schema": {
-              "type": "integer",
-              "minimum": 0
+              "minimum": 0,
+              "type": "integer"
             }
           }
         ],
@@ -23540,6 +23540,36 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "hasMore": false,
+                  "relationships": [
+                    {
+                      "accountDomain": "acme.com",
+                      "categories": [],
+                      "commitmentCount": 0,
+                      "displayName": "Acme",
+                      "emailThreadCount": 0,
+                      "engagement": "declining",
+                      "health": "needs_attention",
+                      "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "kind": "company",
+                      "lastChangedAt": "2026-07-25T16:00:00Z",
+                      "lastTouchAt": "2026-07-25T15:00:00Z",
+                      "lifecycle": "evaluation",
+                      "milestones": [],
+                      "peopleCount": 1,
+                      "projectedAt": "2026-07-25T16:00:00Z",
+                      "projectorVersion": 2,
+                      "resourceRefs": [],
+                      "risks": [],
+                      "sentiment": "unknown",
+                      "stateHash": "sha256:61dd3377d3854c6f9c104af050ad3f0f87ff6cdd1c3458c17541cbc1e87fc887",
+                      "stateReason": "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation.",
+                      "stateVersion": 1,
+                      "status": "active"
+                    }
+                  ]
+                },
                 "schema": {
                   "description": "Relationship list.",
                   "properties": {
@@ -23549,18 +23579,22 @@
                       "type": "boolean"
                     },
                     "relationships": {
-                      "description": "Relationships.",
+                      "description": "Companies and people, newest touch first.",
                       "items": {
                         "$ref": "#/components/schemas/RevenueRelationship"
                       },
                       "type": "array"
                     }
                   },
+                  "required": [
+                    "relationships",
+                    "hasMore"
+                  ],
                   "type": "object"
                 }
               }
             },
-            "description": "Relationships."
+            "description": "Company directory."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -23571,8 +23605,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List relationships",
-        "tags": ["Relationship Intelligence"]
+        "summary": "All companies",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       },
       "post": {
         "description": "Records a canonical relationship in the caller's workspace.",
@@ -23600,7 +23636,14 @@
                   },
                   "kind": {
                     "description": "Relationship kind.",
-                    "enum": ["person", "company", "customer", "opportunity", "referral", "partner"],
+                    "enum": [
+                      "person",
+                      "company",
+                      "customer",
+                      "opportunity",
+                      "referral",
+                      "partner"
+                    ],
                     "example": "person",
                     "type": "string"
                   },
@@ -23615,7 +23658,10 @@
                     "type": "string"
                   }
                 },
-                "required": ["kind", "displayName"],
+                "required": [
+                  "kind",
+                  "displayName"
+                ],
                 "type": "object"
               }
             }
@@ -23647,7 +23693,9 @@
           }
         ],
         "summary": "Create a relationship",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/graph": {

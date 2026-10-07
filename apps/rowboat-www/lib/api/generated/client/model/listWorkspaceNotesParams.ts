@@ -6,25 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListRelationshipsParams = {
+export type ListWorkspaceNotesParams = {
   /**
-   * Account, domain, or contact search. All companies sends none.
+   * Maximum notes to return (default 50, max 100).
+   * @minimum 1
+   * @maximum 100
    */
-  q?: string;
+  limit?: number;
   /**
-   * Lifecycle filter. All companies sends none.
-   */
-  lifecycle?: string;
-  /**
-   * Health filter. All companies sends none.
-   */
-  health?: string;
-  /**
-   * Engagement filter. All companies sends none.
-   */
-  engagement?: string;
-  /**
-   * How many companies to skip. All companies sends none. Each page is 200 rows, newest touch first.
+   * Number of collapsed notes to skip.
    * @minimum 0
    */
   offset?: number;
