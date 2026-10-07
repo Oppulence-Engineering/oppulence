@@ -315,6 +315,40 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the support file Download support file saves", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/relationship-beta/diagnostics"].get;
+    expect(operation.summary).toBe("Download support file");
+    expect(operation.operationId).toBe("getRelationshipBetaDiagnostics");
+    expect(operation.description).toBe(
+      "Download support file saves the redacted support file for this workspace. Names, addresses, evidence, and secrets are left out.",
+    );
+    expect(operation.requestBody).toBeUndefined();
+    const example = operation.responses["200"].content["application/json"].example;
+    expect(example).toMatchObject({
+      schemaVersion: "tfa-support-v1",
+      generatedAt: "2026-08-01T15:00:00Z",
+      workspaceRef: "workspace:sha256:1d811ce10de82ecb6ed8274b",
+      sources: [
+        {
+          connectionRef: "connection:sha256:da73462ccdf527f07099a17f",
+          source: "google",
+          sourceAccountRef: "source-account:sha256:24021bb72aca268d3989017b",
+          status: "degraded",
+        },
+      ],
+      checks: expect.arrayContaining([
+        expect.objectContaining({
+          code: "source_health",
+          status: "attention",
+          count: 1,
+        }),
+      ]),
+    });
+    expect(JSON.stringify(example)).not.toContain("sha256:ab12");
+    expect(JSON.stringify(example)).not.toContain("sha256:cd34");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
