@@ -872,10 +872,10 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/relationships/{relationshipId}/acknowledgements"] = obj{"post": operation("Relationship Intelligence", "Acknowledge Mission Control state", "Records the exact state version and hash the actor reviewed. A stale acknowledgement fails with 409.", "acknowledgeMissionControl", bearer(), relationshipParam, jsonRequest("Review boundary.", objectSchema("Mission Control acknowledgement.", obj{
-		"stateVersion": intSchema("Reviewed state version.", 4), "stateHash": stringSchema("Reviewed state hash.", "sha256:ab12"),
-	}, "stateVersion", "stateHash"), obj{"stateVersion": 4, "stateHash": "sha256:ab12"}), obj{
-		"201": jsonResponse("Acknowledgement.", objectSchema("Mission Control acknowledgement result.", obj{"id": uuidSchema("Acknowledgement id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "stateVersion": intSchema("Reviewed state version.", 4), "stateHash": stringSchema("Reviewed hash.", "sha256:ab12"), "acknowledgedAt": stringSchema("Review time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"})}, "id", "stateVersion", "stateHash", "acknowledgedAt"), nil),
+	paths["/v1/relationships/{relationshipId}/acknowledgements"] = obj{"post": operation("Relationship Intelligence", "Acknowledge Mission Control state", "Mark as reviewed sends the company id and the state version and hash that company is showing. A stale review fails with 409.", "acknowledgeMissionControl", bearer(), reviewedCompanyParams(), jsonRequest("Review boundary.", objectSchema("Mission Control acknowledgement.", obj{
+		"stateVersion": intSchema("Reviewed state version.", reviewedCompanyVersion), "stateHash": stringSchema("Reviewed state hash.", reviewedCompanyHash),
+	}, "stateVersion", "stateHash"), reviewedCompanyRequest()), obj{
+		"201": jsonResponse("Acknowledgement.", objectSchema("Mission Control acknowledgement result.", obj{"id": uuidSchema("Acknowledgement id.", reviewedAcknowledgementID), "stateVersion": intSchema("Reviewed state version.", reviewedCompanyVersion), "stateHash": stringSchema("Reviewed hash.", reviewedCompanyHash), "acknowledgedAt": stringSchema("Review time.", reviewedCompanyAt, obj{"format": "date-time"})}, "id", "stateVersion", "stateHash", "acknowledgedAt"), reviewedCompanyResponse()),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
 	paths["/v1/relationships/{relationshipId}/evidence/{evidenceId}"] = obj{"get": operation("Relationship Intelligence", "Open source evidence", "Returns one observation plus its decrypted raw payload. Tenant ownership is enforced before decryption.", "getRelationshipEvidence", bearer(), append(relationshipParam, obj{"name": "evidenceId", "in": "path", "required": true, "description": "Observation id.", "schema": obj{"type": "string", "format": "uuid"}}), nil, obj{

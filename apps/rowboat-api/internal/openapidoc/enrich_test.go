@@ -338,6 +338,57 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertReviewedCompany(t, spec)
+}
+
+func TestReviewedCompany(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertReviewedCompany(t, spec)
+}
+
+func assertReviewedCompany(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/acknowledgements"])["post"])
+	if operation["summary"] != "Acknowledge Mission Control state" {
+		t.Fatalf("summary: %#v", operation["summary"])
+	}
+	if operation["description"] != "Mark as reviewed sends the company id and the state version and hash that company is showing. A stale review fails with 409." {
+		t.Fatalf("description: %#v", operation["description"])
+	}
+	params, ok := operation["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("params: %#v", operation["parameters"])
+	}
+	param := asObj(params[0])
+	if param["name"] != "relationshipId" || param["example"] != reviewedCompanyID || asObj(param["schema"])["example"] != reviewedCompanyID {
+		t.Fatalf("param: %#v", param)
+	}
+	request := asObj(asObj(asObj(operation["requestBody"])["content"])["application/json"])
+	requestExample := asObj(request["example"])
+	if requestExample["stateHash"] != reviewedCompanyHash {
+		t.Fatalf("request hash: %#v", requestExample)
+	}
+	version, err := json.Marshal(requestExample["stateVersion"])
+	if err != nil || string(version) != "4" {
+		t.Fatalf("request version: %s %v", version, err)
+	}
+	response := asObj(asObj(asObj(asObj(operation["responses"])["201"])["content"])["application/json"])
+	responseExample := asObj(response["example"])
+	if responseExample["stateHash"] != reviewedCompanyHash || responseExample["id"] != reviewedAcknowledgementID || responseExample["acknowledgedAt"] != reviewedCompanyAt {
+		t.Fatalf("response: %#v", responseExample)
+	}
+	responseVersion, err := json.Marshal(responseExample["stateVersion"])
+	if err != nil || string(responseVersion) != "4" {
+		t.Fatalf("response version: %s %v", responseVersion, err)
+	}
+	if asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/evidence/{evidenceId}"])["get"])["summary"] != "Open source evidence" {
+		t.Fatal("evidence operation changed")
+	}
+	review := asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/conversation-review"])["get"])["responses"])["200"])["content"])["application/json"]
+	if asObj(review)["example"] != nil {
+		t.Fatalf("conversation review sample changed: %#v", review)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

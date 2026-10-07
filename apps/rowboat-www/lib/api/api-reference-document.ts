@@ -116,6 +116,7 @@ const API_REFERENCE_SUMMARIES: Record<string, string> = {
   "Retry API-worker run": "Retry a cloud run",
   "Signal API-worker run": "Pause or resume a cloud run",
   "Queue or start task trigger": "Start a workflow run",
+  "Acknowledge Mission Control state": "Mark as reviewed",
 };
 
 /**
