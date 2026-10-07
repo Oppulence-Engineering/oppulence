@@ -753,25 +753,7 @@ func addRevenuePaths(paths obj) {
 		}, "id", "generatedAt", "account", "direction", "text", "state", "confidence", "evidence", "history"), nil),
 		"401": responseRef("401"), "404": responseRef("404"),
 	})}
-	paths["/v1/revenue-leak-scans/{scanId}/report"] = obj{"get": operation("Revenue", "Get the open promises report", "Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.", "getOpenPromisesReport", bearer(), []any{
-		obj{"name": "scanId", "in": "path", "required": true, "description": "Scan id.", "schema": obj{"type": "string", "format": "uuid"}},
-		obj{"name": "format", "in": "query", "required": false, "description": "md for Markdown; JSON otherwise.", "schema": obj{"type": "string"}},
-	}, nil, obj{
-		"200": jsonOrMarkdownResponse("The open promises report.", objectSchema("Open promises report.", obj{
-			"generatedAt":   stringSchema("When the report was produced.", "2026-09-09T12:00:00Z", obj{"format": "date-time"}),
-			"lookbackDays":  intSchema("Scan window in days.", 90),
-			"threadsSeen":   intSchema("Conversations read.", 412),
-			"scanStatus":    stringSchema("Scan status.", "completed"),
-			"outboundCount": intSchema("Promises we made.", 12),
-			"inboundCount":  intSchema("Promises made to us.", 5),
-			"byAccount":     obj{"type": "object", "additionalProperties": obj{"type": "integer"}, "description": "Open promise count by account."},
-			"truncated":     boolSchema("Whether more than 200 matching promises exist.", false),
-			"items": arraySchema("Open promises, at risk first.", objectSchema("Open promise.", obj{
-				"commitmentId": stringSchema("Commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "account": stringSchema("Counterparty account.", "Acme"), "direction": stringSchema("Who owes the promise.", "promised_by_me"), "text": stringSchema("The obligation.", "Migration live by the 14th"), "state": stringSchema("Register state.", "at_risk"), "dueAt": stringSchema("Resolved due time.", "2026-09-14T17:00:00Z", obj{"format": "date-time"}, nullable()), "duePhrase": stringSchema("Due condition as stated.", "by the 14th"), "owner": stringSchema("Promise owner.", "alex@example.com"), "sourceQuote": stringSchema("The exact message that created it.", "We will have the migration live by the 14th."), "sourceUri": stringSchema("Link to the source.", "https://mail.google.com/thread-1"), "occurredAt": stringSchema("When the source was created.", "2026-09-06T12:00:00Z", obj{"format": "date-time"}),
-			}, "commitmentId", "account", "direction", "text", "state")),
-		}, "generatedAt", "lookbackDays", "threadsSeen", "scanStatus", "outboundCount", "inboundCount", "byAccount", "items", "truncated"), nil),
-		"401": responseRef("401"), "404": responseRef("404"),
-	})}
+	paths["/v1/revenue-leak-scans/{scanId}/report"] = obj{"get": openPromisesReportOperation()}
 
 	paths["/v1/relationships"] = obj{
 		"get": operation("Relationship Intelligence", "List relationships", "Lists canonical relationship state with optional text, lifecycle, health, and engagement filters. A full page of 200 is the end of the list when hasMore is false.", "listRelationships", bearer(), []any{

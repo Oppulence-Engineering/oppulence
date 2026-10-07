@@ -6,9 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type GetOpenPromisesReportParams = {
+export type ListWorkspaceNotesParams = {
   /**
-   * Export format.
+   * Maximum notes to return (default 50, max 100).
+   * @minimum 1
+   * @maximum 100
    */
-  format?: string;
+  limit?: number;
+  /**
+   * Number of collapsed notes to skip.
+   * @minimum 0
+   */
+  offset?: number;
 };

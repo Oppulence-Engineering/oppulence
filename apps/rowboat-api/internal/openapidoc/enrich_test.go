@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,72 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertOpenPromisesReport(t, spec)
+}
+
+func TestOpenPromisesReportDownload(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertOpenPromisesReport(t, spec)
+}
+
+func assertOpenPromisesReport(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/revenue-leak-scans/{scanId}/report"])["get"])
+	if operation["summary"] != "Download the report" || operation["operationId"] != "getOpenPromisesReport" {
+		t.Fatalf("report operation: summary=%#v id=%#v", operation["summary"], operation["operationId"])
+	}
+	if operation["description"] != "Download the report saves this audit as Markdown. The request uses format md. The file names the open promises, who owes them, and the message that created each one." {
+		t.Fatalf("description: %#v", operation["description"])
+	}
+	if operation["requestBody"] != nil {
+		t.Fatalf("report sends no body: %#v", operation["requestBody"])
+	}
+	params, ok := operation["parameters"].([]any)
+	if !ok || len(params) != 2 {
+		t.Fatalf("parameters: %#v", operation["parameters"])
+	}
+	scan := asObj(params[0])
+	format := asObj(params[1])
+	if scan["example"] != openPromisesScanID || asObj(scan["schema"])["example"] != openPromisesScanID {
+		t.Fatalf("scan id: %#v", scan)
+	}
+	if format["example"] != "md" || asObj(format["schema"])["example"] != "md" {
+		t.Fatalf("format: %#v", format)
+	}
+	content := asObj(asObj(asObj(operation["responses"])["200"])["content"])
+	example := asObj(asObj(content["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(openPromisesReportExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("report example:\n%s\nwant:\n%s", got, want)
+	}
+	markdown, _ := asObj(content["text/markdown"])["example"].(string)
+	if markdown != openPromisesReport().Markdown() {
+		t.Fatalf("markdown:\n%s\nwant:\n%s", markdown, openPromisesReport().Markdown())
+	}
+	if !strings.Contains(markdown, "# Open promises") || !strings.Contains(markdown, "Migration live by the 14th") || !strings.Contains(markdown, "last 180 days") {
+		t.Fatalf("markdown missing the downloaded file: %s", markdown)
+	}
+	window := asObj(asObj(asObj(asObj(content["application/json"])["schema"])["properties"])["lookbackDays"])
+	switch days := window["example"].(type) {
+	case int:
+		if days != 180 {
+			t.Fatalf("report window: %d", days)
+		}
+	case float64:
+		if days != 180 {
+			t.Fatalf("report window: %v", days)
+		}
+	default:
+		t.Fatalf("report window: %#v", window["example"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

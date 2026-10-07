@@ -26958,187 +26958,231 @@
       }
     },
     "/v1/revenue-leak-scans/{scanId}/report": {
-      "get": {
-        "description": "Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.",
-        "operationId": "getOpenPromisesReport",
-        "parameters": [
-          {
-            "description": "Scan id.",
-            "in": "path",
-            "name": "scanId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "description": "md for Markdown; JSON otherwise.",
-            "in": "query",
-            "name": "format",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "description": "Open promises report.",
-                  "properties": {
-                    "byAccount": {
-                      "additionalProperties": {
-                        "type": "integer"
-                      },
-                      "description": "Open promise count by account.",
-                      "type": "object"
-                    },
-                    "generatedAt": {
-                      "description": "When the report was produced.",
-                      "example": "2026-09-09T12:00:00Z",
-                      "format": "date-time",
-                      "type": "string"
-                    },
-                    "inboundCount": {
-                      "description": "Promises made to us.",
-                      "example": 5,
-                      "type": "integer"
-                    },
-                    "items": {
-                      "description": "Open promises, at risk first.",
-                      "items": {
-                        "description": "Open promise.",
-                        "properties": {
-                          "account": {
-                            "description": "Counterparty account.",
-                            "example": "Acme",
-                            "type": "string"
-                          },
-                          "commitmentId": {
-                            "description": "Commitment id.",
-                            "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                            "type": "string"
-                          },
-                          "direction": {
-                            "description": "Who owes the promise.",
-                            "example": "promised_by_me",
-                            "type": "string"
-                          },
-                          "dueAt": {
-                            "description": "Resolved due time.",
-                            "example": "2026-09-14T17:00:00Z",
-                            "format": "date-time",
-                            "nullable": true,
-                            "type": "string"
-                          },
-                          "duePhrase": {
-                            "description": "Due condition as stated.",
-                            "example": "by the 14th",
-                            "type": "string"
-                          },
-                          "occurredAt": {
-                            "description": "When the source was created.",
-                            "example": "2026-09-06T12:00:00Z",
-                            "format": "date-time",
-                            "type": "string"
-                          },
-                          "owner": {
-                            "description": "Promise owner.",
-                            "example": "alex@example.com",
-                            "type": "string"
-                          },
-                          "sourceQuote": {
-                            "description": "The exact message that created it.",
-                            "example": "We will have the migration live by the 14th.",
-                            "type": "string"
-                          },
-                          "sourceUri": {
-                            "description": "Link to the source.",
-                            "example": "https://mail.google.com/thread-1",
-                            "type": "string"
-                          },
-                          "state": {
-                            "description": "Register state.",
-                            "example": "at_risk",
-                            "type": "string"
-                          },
-                          "text": {
-                            "description": "The obligation.",
-                            "example": "Migration live by the 14th",
-                            "type": "string"
-                          }
-                        },
-                        "required": ["commitmentId", "account", "direction", "text", "state"],
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
-                    "lookbackDays": {
-                      "description": "Scan window in days.",
-                      "example": 90,
-                      "type": "integer"
-                    },
-                    "outboundCount": {
-                      "description": "Promises we made.",
-                      "example": 12,
-                      "type": "integer"
-                    },
-                    "scanStatus": {
-                      "description": "Scan status.",
-                      "example": "completed",
-                      "type": "string"
-                    },
-                    "threadsSeen": {
-                      "description": "Conversations read.",
-                      "example": 412,
-                      "type": "integer"
-                    },
-                    "truncated": {
-                      "description": "Whether more than 200 matching promises exist.",
-                      "example": false,
-                      "type": "boolean"
+        "get": {
+            "description": "Download the report saves this audit as Markdown. The request uses format md. The file names the open promises, who owes them, and the message that created each one.",
+            "operationId": "getOpenPromisesReport",
+            "parameters": [
+                {
+                    "description": "Scan id.",
+                    "example": "4d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "in": "path",
+                    "name": "scanId",
+                    "required": true,
+                    "schema": {
+                        "example": "4d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "format": "uuid",
+                        "type": "string"
                     }
-                  },
-                  "required": [
-                    "generatedAt",
-                    "lookbackDays",
-                    "threadsSeen",
-                    "scanStatus",
-                    "outboundCount",
-                    "inboundCount",
-                    "byAccount",
-                    "items",
-                    "truncated"
-                  ],
-                  "type": "object"
+                },
+                {
+                    "description": "md for the file Download the report saves.",
+                    "example": "md",
+                    "in": "query",
+                    "name": "format",
+                    "required": false,
+                    "schema": {
+                        "description": "Export format.",
+                        "example": "md",
+                        "type": "string"
+                    }
                 }
-              },
-              "text/markdown": {
-                "schema": {
-                  "type": "string"
+            ],
+            "responses": {
+                "200": {
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "byAccount": {
+                                    "Acme": 1
+                                },
+                                "generatedAt": "2026-09-09T12:00:00Z",
+                                "inboundCount": 0,
+                                "items": [
+                                    {
+                                        "account": "Acme",
+                                        "commitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                                        "direction": "promised_by_me",
+                                        "dueAt": "2026-09-14T17:00:00Z",
+                                        "duePhrase": "by the 14th",
+                                        "occurredAt": "2026-09-06T12:00:00Z",
+                                        "owner": "alex@example.com",
+                                        "sourceQuote": "We will have the migration live by the 14th.",
+                                        "sourceUri": "https://mail.google.com/thread-1",
+                                        "state": "at_risk",
+                                        "text": "Migration live by the 14th"
+                                    }
+                                ],
+                                "lookbackDays": 180,
+                                "outboundCount": 1,
+                                "scanStatus": "completed",
+                                "threadsSeen": 412,
+                                "truncated": false
+                            },
+                            "schema": {
+                                "description": "Open promises report.",
+                                "properties": {
+                                    "byAccount": {
+                                        "additionalProperties": {
+                                            "type": "integer"
+                                        },
+                                        "description": "Open promise count by account.",
+                                        "example": {
+                                            "Acme": 1
+                                        },
+                                        "type": "object"
+                                    },
+                                    "generatedAt": {
+                                        "description": "When the report was produced.",
+                                        "example": "2026-09-09T12:00:00Z",
+                                        "format": "date-time",
+                                        "type": "string"
+                                    },
+                                    "inboundCount": {
+                                        "description": "Promises made to us.",
+                                        "example": 0,
+                                        "type": "integer"
+                                    },
+                                    "items": {
+                                        "description": "Open promises, at risk first.",
+                                        "items": {
+                                            "description": "Open promise.",
+                                            "properties": {
+                                                "account": {
+                                                    "description": "Counterparty account.",
+                                                    "example": "Acme",
+                                                    "type": "string"
+                                                },
+                                                "commitmentId": {
+                                                    "description": "Commitment id.",
+                                                    "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                                                    "type": "string"
+                                                },
+                                                "direction": {
+                                                    "description": "Who owes the promise.",
+                                                    "example": "promised_by_me",
+                                                    "type": "string"
+                                                },
+                                                "dueAt": {
+                                                    "description": "Resolved due time.",
+                                                    "example": "2026-09-14T17:00:00Z",
+                                                    "format": "date-time",
+                                                    "nullable": true,
+                                                    "type": "string"
+                                                },
+                                                "duePhrase": {
+                                                    "description": "Due condition as stated.",
+                                                    "example": "by the 14th",
+                                                    "type": "string"
+                                                },
+                                                "occurredAt": {
+                                                    "description": "When the source was created.",
+                                                    "example": "2026-09-06T12:00:00Z",
+                                                    "format": "date-time",
+                                                    "type": "string"
+                                                },
+                                                "owner": {
+                                                    "description": "Promise owner.",
+                                                    "example": "alex@example.com",
+                                                    "type": "string"
+                                                },
+                                                "sourceQuote": {
+                                                    "description": "The exact message that created it.",
+                                                    "example": "We will have the migration live by the 14th.",
+                                                    "type": "string"
+                                                },
+                                                "sourceUri": {
+                                                    "description": "Link to the source.",
+                                                    "example": "https://mail.google.com/thread-1",
+                                                    "type": "string"
+                                                },
+                                                "state": {
+                                                    "description": "Register state.",
+                                                    "example": "at_risk",
+                                                    "type": "string"
+                                                },
+                                                "text": {
+                                                    "description": "The obligation.",
+                                                    "example": "Migration live by the 14th",
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "commitmentId",
+                                                "account",
+                                                "direction",
+                                                "text",
+                                                "state"
+                                            ],
+                                            "type": "object"
+                                        },
+                                        "type": "array"
+                                    },
+                                    "lookbackDays": {
+                                        "description": "Scan window in days.",
+                                        "example": 180,
+                                        "type": "integer"
+                                    },
+                                    "outboundCount": {
+                                        "description": "Promises we made.",
+                                        "example": 1,
+                                        "type": "integer"
+                                    },
+                                    "scanStatus": {
+                                        "description": "Scan status.",
+                                        "example": "completed",
+                                        "type": "string"
+                                    },
+                                    "threadsSeen": {
+                                        "description": "Conversations read.",
+                                        "example": 412,
+                                        "type": "integer"
+                                    },
+                                    "truncated": {
+                                        "description": "Whether more than 200 matching promises exist.",
+                                        "example": false,
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": [
+                                    "generatedAt",
+                                    "lookbackDays",
+                                    "threadsSeen",
+                                    "scanStatus",
+                                    "outboundCount",
+                                    "inboundCount",
+                                    "byAccount",
+                                    "items",
+                                    "truncated"
+                                ],
+                                "type": "object"
+                            }
+                        },
+                        "text/markdown": {
+                            "example": "# Open promises\n\nPromises from the last 180 days with no evidence they were kept.\n\n- **1** promises we made\n- **0** promises made to us\n- **412** conversations read\n\n| Company | Open promises |\n|---|---|\n| Acme | 1 |\n\n## The promises\n\n### Acme — Migration live by the 14th\n\nWe owe · state **At risk** · due 2026-09-14 · owner alex@example.com\n\n\u003e We will have the migration live by the 14th.\n\nSource observed 2026-09-06T12:00:00Z · https://mail.google.com/thread-1\n\n\n---\n\nGenerated 2026-09-09T12:00:00Z. Every promise above includes the source evidence available at scan time.\n",
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "description": "The report."
+                },
+                "401": {
+                    "$ref": "#/components/responses/401"
+                },
+                "404": {
+                    "$ref": "#/components/responses/404"
                 }
-              }
             },
-            "description": "The open promises report."
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "404": {
-            "$ref": "#/components/responses/404"
-          }
-        },
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "summary": "Get the open promises report",
-        "tags": ["Revenue"]
-      }
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "summary": "Download the report",
+            "tags": [
+                "Revenue"
+            ]
+        }
     },
     "/v1/revenue-search": {
       "get": {

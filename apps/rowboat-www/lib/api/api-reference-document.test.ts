@@ -315,6 +315,41 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the report Download the report saves", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-leak-scans/{scanId}/report"].get;
+    expect(operation.summary).toBe("Download the report");
+    expect(operation.operationId).toBe("getOpenPromisesReport");
+    expect(operation.description).toBe(
+      "Download the report saves this audit as Markdown. The request uses format md. The file names the open promises, who owes them, and the message that created each one.",
+    );
+    expect(operation.requestBody).toBeUndefined();
+    expect(operation.parameters.find((param) => param.name === "scanId")?.example).toBe(
+      "4d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+    );
+    expect(operation.parameters.find((param) => param.name === "format")?.schema.example).toBe("md");
+    const example = operation.responses["200"].content["application/json"].example;
+    expect(example).toMatchObject({
+      lookbackDays: 180,
+      scanStatus: "completed",
+      outboundCount: 1,
+      inboundCount: 0,
+      items: [
+        {
+          commitmentId: "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+          account: "Acme",
+          text: "Migration live by the 14th",
+          state: "at_risk",
+        },
+      ],
+    });
+    const markdown = operation.responses["200"].content["text/markdown"].example as string;
+    expect(markdown).toContain("# Open promises");
+    expect(markdown).toContain("Promises from the last 180 days");
+    expect(markdown).toContain("Migration live by the 14th");
+    expect(markdown).toContain("We will have the migration live by the 14th.");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

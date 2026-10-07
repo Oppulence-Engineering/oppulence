@@ -1084,8 +1084,8 @@ export const getGetOpenPromisesReportUrl = (
 };
 
 /**
- * Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.
- * @summary Get the open promises report
+ * Download the report saves this audit as Markdown. The request uses format md. The file names the open promises, who owes them, and the message that created each one.
+ * @summary Download the report
  */
 export const getOpenPromisesReport = async (
   scanId: string,
