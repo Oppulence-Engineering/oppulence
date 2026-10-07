@@ -15866,6 +15866,176 @@
         "tags": ["System"]
       }
     },
+    "/v1/action-proposals/{id}/execute": {
+      "post": {
+        "description": "Execute posts the one-time value Approve and run returned. The page shows the result while it waits for the product to confirm the change.",
+        "operationId": "executeActionProposal",
+        "parameters": [
+          {
+            "description": "Proposal id.",
+            "example": "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Proposal id.",
+              "example": "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "token": "example.not-a-live-approval"
+              },
+              "schema": {
+                "description": "Execute request.",
+                "properties": {
+                  "token": {
+                    "description": "One-time value from Approve and run. This sample is not a live approval.",
+                    "example": "example.not-a-live-approval",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "token"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "description": "One-time value.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "approvedAt": "2026-07-31T14:00:00Z",
+                  "createdAt": "2026-07-31T14:00:00Z",
+                  "executedAt": "2026-07-31T14:00:00Z",
+                  "financial": false,
+                  "id": "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "kind": "conduit.dunning.advance",
+                  "paramsJson": "{\"amount\":100,\"step\":2}",
+                  "rationale": "Acme is 14 days overdue",
+                  "resultRef": "conduit:step:step_1",
+                  "status": "executed",
+                  "target": "conduit:invoice:inv_456"
+                },
+                "schema": {
+                  "description": "Executed proposal.",
+                  "properties": {
+                    "approvedAt": {
+                      "description": "When it was approved.",
+                      "example": "2026-07-31T14:00:00Z",
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "description": "When the proposal was created.",
+                      "example": "2026-07-31T14:00:00Z",
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "executedAt": {
+                      "description": "When it ran.",
+                      "example": "2026-07-31T14:00:00Z",
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "financial": {
+                      "description": "Whether money moves.",
+                      "example": false,
+                      "type": "boolean"
+                    },
+                    "id": {
+                      "description": "Proposal id.",
+                      "example": "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "kind": {
+                      "description": "Action kind.",
+                      "example": "conduit.dunning.advance",
+                      "type": "string"
+                    },
+                    "paramsJson": {
+                      "description": "JSON parameters.",
+                      "example": "{\"amount\":100,\"step\":2}",
+                      "type": "string"
+                    },
+                    "rationale": {
+                      "description": "Why the action was proposed.",
+                      "example": "Acme is 14 days overdue",
+                      "type": "string"
+                    },
+                    "resultRef": {
+                      "description": "Result the page shows.",
+                      "example": "conduit:step:step_1",
+                      "type": "string"
+                    },
+                    "status": {
+                      "description": "Executed.",
+                      "example": "executed",
+                      "type": "string"
+                    },
+                    "target": {
+                      "description": "Object the action changes.",
+                      "example": "conduit:invoice:inv_456",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "target",
+                    "kind",
+                    "financial",
+                    "status",
+                    "createdAt",
+                    "approvedAt",
+                    "executedAt"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Executed proposal."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Execute",
+        "tags": [
+          "Revenue"
+        ]
+      }
+    },
     "/v1/agent-sessions": {
       "get": {
         "description": "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.",

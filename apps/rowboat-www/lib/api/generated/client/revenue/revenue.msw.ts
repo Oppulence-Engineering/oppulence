@@ -9,6 +9,7 @@ import { HttpResponse, http } from "msw";
 import type { RequestHandlerOptions } from "msw";
 
 import type {
+  ExecuteActionProposal200,
   GetOpenPromisesReport200One,
   GetRevenueActionAudit200,
   GetRevenueActionSourceBody200,
@@ -30,6 +31,7 @@ import {
   getDismissRevenueActionResponseMock,
   getEditRevenueActionResponseMock,
   getEvaluateRevenueActionResponseMock,
+  getExecuteActionProposalResponseMock,
   getExecuteRevenueActionResponseMock,
   getGetOpenPromisesReportResponseMock,
   getGetRevenueActionAuditResponseMock,
@@ -50,6 +52,7 @@ import {
 } from "./revenue.faker";
 
 export {
+  getExecuteActionProposalResponseMock,
   getListRevenueActionsResponseMock,
   getCreateRevenueActionResponseMock,
   getGetRevenueActionResponseMock,
@@ -73,6 +76,30 @@ export {
   getGetRevenueWorkspaceResponseMock,
   getLinkRevenueWorkspaceResponseMock,
 } from "./revenue.faker";
+
+export const getExecuteActionProposalMockHandler = (
+  overrideResponse?:
+    | ExecuteActionProposal200
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<ExecuteActionProposal200> | ExecuteActionProposal200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/action-proposals/:id/execute",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getExecuteActionProposalResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 
 export const getListRevenueActionsMockHandler = (
   overrideResponse?:
@@ -607,6 +634,7 @@ export const getLinkRevenueWorkspaceMockHandler = (
   );
 };
 export const getRevenueMock = () => [
+  getExecuteActionProposalMockHandler(),
   getListRevenueActionsMockHandler(),
   getCreateRevenueActionMockHandler(),
   getGetRevenueActionMockHandler(),

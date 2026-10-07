@@ -11,6 +11,8 @@ import type {
   DismissRevenueActionBody,
   EditRevenueActionBody,
   ErrorEnvelope,
+  ExecuteActionProposal200,
+  ExecuteActionProposalBody,
   GetOpenPromisesReport200One,
   GetOpenPromisesReportParams,
   GetRevenueActionAudit200,
@@ -22,8 +24,10 @@ import type {
   ListRevenueLeakScansParams,
   N400Response,
   N401Response,
+  N403Response,
   N404Response,
   N409Response,
+  N503Response,
   RecordRevenueActionOutcomeBody,
   RejectRevenueActionBody,
   RevenueAction,
@@ -38,6 +42,84 @@ import type {
   SnoozeRevenueActionBody,
   StartRevenueLeakScanBody,
 } from "../model";
+
+export type executeActionProposalResponse200 = {
+  data: ExecuteActionProposal200;
+  status: 200;
+};
+
+export type executeActionProposalResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type executeActionProposalResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type executeActionProposalResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type executeActionProposalResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type executeActionProposalResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type executeActionProposalResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type executeActionProposalResponseSuccess = executeActionProposalResponse200 & {
+  headers: Headers;
+};
+export type executeActionProposalResponseError = (
+  | executeActionProposalResponse400
+  | executeActionProposalResponse401
+  | executeActionProposalResponse403
+  | executeActionProposalResponse404
+  | executeActionProposalResponse409
+  | executeActionProposalResponse503
+) & {
+  headers: Headers;
+};
+
+export type executeActionProposalResponse =
+  executeActionProposalResponseSuccess | executeActionProposalResponseError;
+
+export const getExecuteActionProposalUrl = (id: string) => {
+  return `/v1/action-proposals/${id}/execute`;
+};
+
+/**
+ * Execute posts the one-time value Approve and run returned. The page shows the result while it waits for the product to confirm the change.
+ * @summary Execute
+ */
+export const executeActionProposal = async (
+  id: string,
+  executeActionProposalBody: ExecuteActionProposalBody,
+  options?: RequestInit,
+): Promise<executeActionProposalResponse> => {
+  const res = await fetch(getExecuteActionProposalUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(executeActionProposalBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: executeActionProposalResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as executeActionProposalResponse;
+};
 
 export type listRevenueActionsResponse200 = {
   data: ListRevenueActions200;

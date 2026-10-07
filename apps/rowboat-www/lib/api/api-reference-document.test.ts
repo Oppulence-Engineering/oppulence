@@ -315,6 +315,35 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the proposal Execute runs", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/action-proposals/{id}/execute"].post;
+    expect(operation.summary).toBe("Execute");
+    expect(operation.operationId).toBe("executeActionProposal");
+    expect(operation.description).toBe(
+      "Execute posts the one-time value Approve and run returned. The page shows the result while it waits for the product to confirm the change.",
+    );
+    expect(operation.parameters[0]).toMatchObject({
+      name: "id",
+      example: "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+    });
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      token: "example.not-a-live-approval",
+    });
+    expect(operation.responses["200"].content["application/json"].example).toMatchObject({
+      id: "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      target: "conduit:invoice:inv_456",
+      status: "executed",
+      resultRef: "conduit:step:step_1",
+      rationale: "Acme is 14 days overdue",
+      executedAt: "2026-07-31T14:00:00Z",
+    });
+    const encoded = JSON.stringify(operation.responses["200"].content["application/json"].example);
+    expect(encoded).not.toContain("acta_");
+    expect(encoded).not.toContain("resolvedAt");
+    expect(operation.requestBody.content["application/json"].example.token).not.toContain("acta_");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
