@@ -8,6 +8,112 @@
 import * as zod from "zod";
 
 /**
+ * Audit trail opens the chain for the object this action changes. It shows each proposal and a short prefix of the approval record. The one-time value is not included.
+ * @summary Audit trail
+ */
+export const GetObjectActionAuditParams = zod.object({
+  resourceRef: zod.string().describe("Object the action changes."),
+});
+
+export const GetObjectActionAudit200Response = zod
+  .strictObject({
+    entries: zod
+      .array(
+        zod
+          .strictObject({
+            proposal: zod
+              .strictObject({
+                approvedAt: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe("When the proposal was approved."),
+                createdAt: zod.iso
+                  .datetime({ offset: true })
+                  .describe("When the proposal was created."),
+                executedAt: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe("When the action ran."),
+                financial: zod.boolean().describe("Whether money moves."),
+                id: zod.uuid().describe("Proposal id."),
+                kind: zod.string().describe("Action kind."),
+                paramsJson: zod.string().optional().describe("JSON parameters."),
+                rationale: zod.string().optional().describe("Why the action was proposed."),
+                resolvedAt: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe("When the product confirmed the change."),
+                resultRef: zod.string().optional().describe("Record the product wrote."),
+                returnEventId: zod.uuid().optional().describe("Event that closed the loop."),
+                status: zod.string().describe("Executed, and the product confirmed the change."),
+                target: zod.string().describe("Object the action changes."),
+              })
+              .describe("Proposal on this object."),
+            tokens: zod
+              .array(
+                zod
+                  .strictObject({
+                    consumed: zod.boolean().describe("Whether the approval was used."),
+                    consumedAt: zod.iso
+                      .datetime({ offset: true })
+                      .optional()
+                      .describe("When the approval was used."),
+                    expiresAt: zod.iso
+                      .datetime({ offset: true })
+                      .describe("When the approval record expires."),
+                    hashPrefix: zod
+                      .string()
+                      .describe("First 12 characters of the approval-record hash."),
+                    issuedAt: zod.iso
+                      .datetime({ offset: true })
+                      .describe("When the approval record was issued."),
+                    paramsHash: zod
+                      .string()
+                      .describe("Hash of the parameters the approval was bound to."),
+                    stepUp: zod.boolean().describe("Whether a recent sign-in was required."),
+                  })
+                  .describe("Redacted approval record."),
+              )
+              .describe("Approval records. The one-time value is not included."),
+          })
+          .describe("One proposal and its approval records."),
+      )
+      .describe("Newest proposal first."),
+    resourceRef: zod.string().describe("Object the action changes."),
+  })
+  .describe("Audit trail.");
+
+export const GetObjectActionAudit400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetObjectActionAudit401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
  * Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.
  * @summary List the action queue
  */

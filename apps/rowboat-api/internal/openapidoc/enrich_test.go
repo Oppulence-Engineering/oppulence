@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,63 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertActionObjectAudit(t, spec)
+}
+
+func TestActionObjectAudit(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertActionObjectAudit(t, spec)
+}
+
+func assertActionObjectAudit(t *testing.T, spec obj) {
+	t.Helper()
+	get := asObj(asObj(asObj(spec["paths"])["/v1/objects/{resourceRef}/audit"])["get"])
+	if get["summary"] != "Audit trail" || get["operationId"] != "getObjectActionAudit" || get["description"] != actionAuditDescription {
+		t.Fatalf("audit operation: summary=%#v id=%#v description=%#v", get["summary"], get["operationId"], get["description"])
+	}
+	if get["requestBody"] != nil {
+		t.Fatalf("audit trail has no body: %#v", get["requestBody"])
+	}
+	params, ok := get["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("audit parameters: %#v", get["parameters"])
+	}
+	param := asObj(params[0])
+	if param["name"] != "resourceRef" || param["in"] != "path" || param["required"] != true {
+		t.Fatalf("audit path param: %#v", param)
+	}
+	if asObj(param["schema"])["example"] != actionAuditTarget {
+		t.Fatalf("audit target example: %#v", param["schema"])
+	}
+	example := asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(actionAuditExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("audit example:\n%s\nwant:\n%s", got, want)
+	}
+	encoded := string(got)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) {
+		t.Fatalf("audit example includes a live approval value: %s", encoded)
+	}
+	entries, ok := asObj(example)["entries"].([]any)
+	if !ok || len(entries) != 1 {
+		t.Fatalf("audit entries: %#v", example)
+	}
+	entry := asObj(entries[0])
+	if asObj(entry["proposal"])["status"] != actionAuditStatus || asObj(example)["resourceRef"] != actionAuditTarget {
+		t.Fatalf("audit proposal: %#v", entry)
+	}
+	records, ok := entry["tokens"].([]any)
+	if !ok || len(records) != 1 || asObj(records[0])["hashPrefix"] != actionAuditHashPrefix || asObj(records[0])["consumed"] != true {
+		t.Fatalf("audit records: %#v", entry["tokens"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

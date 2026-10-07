@@ -22184,6 +22184,252 @@
         "tags": ["Billing"]
       }
     },
+    "/v1/objects/{resourceRef}/audit": {
+      "get": {
+        "description": "Audit trail opens the chain for the object this action changes. It shows each proposal and a short prefix of the approval record. The one-time value is not included.",
+        "operationId": "getObjectActionAudit",
+        "parameters": [
+          {
+            "description": "Object the action changes.",
+            "in": "path",
+            "name": "resourceRef",
+            "required": true,
+            "schema": {
+              "description": "Object the action changes.",
+              "example": "conduit:invoice:inv_456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "entries": [
+                    {
+                      "proposal": {
+                        "approvedAt": "2026-07-31T14:00:00Z",
+                        "createdAt": "2026-07-31T14:00:00Z",
+                        "executedAt": "2026-07-31T14:00:00Z",
+                        "financial": false,
+                        "id": "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "kind": "conduit.dunning.advance",
+                        "paramsJson": "{\"amount\":100,\"step\":2}",
+                        "rationale": "Acme is 14 days overdue",
+                        "resolvedAt": "2026-07-31T14:02:00Z",
+                        "resultRef": "conduit:step:step_1",
+                        "returnEventId": "8d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "status": "executed",
+                        "target": "conduit:invoice:inv_456"
+                      },
+                      "tokens": [
+                        {
+                          "consumed": true,
+                          "consumedAt": "2026-07-31T14:00:00Z",
+                          "expiresAt": "2026-07-31T14:05:00Z",
+                          "hashPrefix": "c4e8a91b0d27",
+                          "issuedAt": "2026-07-31T14:00:00Z",
+                          "paramsHash": "1e750183c74a18b46e872244bea860113d34dd38a8c7a87192b41553be26941d",
+                          "stepUp": false
+                        }
+                      ]
+                    }
+                  ],
+                  "resourceRef": "conduit:invoice:inv_456"
+                },
+                "schema": {
+                  "description": "Audit trail.",
+                  "properties": {
+                    "entries": {
+                      "description": "Newest proposal first.",
+                      "items": {
+                        "description": "One proposal and its approval records.",
+                        "properties": {
+                          "proposal": {
+                            "description": "Proposal on this object.",
+                            "properties": {
+                              "approvedAt": {
+                                "description": "When the proposal was approved.",
+                                "example": "2026-07-31T14:00:00Z",
+                                "format": "date-time",
+                                "type": "string"
+                              },
+                              "createdAt": {
+                                "description": "When the proposal was created.",
+                                "example": "2026-07-31T14:00:00Z",
+                                "format": "date-time",
+                                "type": "string"
+                              },
+                              "executedAt": {
+                                "description": "When the action ran.",
+                                "example": "2026-07-31T14:00:00Z",
+                                "format": "date-time",
+                                "type": "string"
+                              },
+                              "financial": {
+                                "description": "Whether money moves.",
+                                "example": false,
+                                "type": "boolean"
+                              },
+                              "id": {
+                                "description": "Proposal id.",
+                                "example": "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "kind": {
+                                "description": "Action kind.",
+                                "example": "conduit.dunning.advance",
+                                "type": "string"
+                              },
+                              "paramsJson": {
+                                "description": "JSON parameters.",
+                                "example": "{\"amount\":100,\"step\":2}",
+                                "type": "string"
+                              },
+                              "rationale": {
+                                "description": "Why the action was proposed.",
+                                "example": "Acme is 14 days overdue",
+                                "type": "string"
+                              },
+                              "resolvedAt": {
+                                "description": "When the product confirmed the change.",
+                                "example": "2026-07-31T14:02:00Z",
+                                "format": "date-time",
+                                "type": "string"
+                              },
+                              "resultRef": {
+                                "description": "Record the product wrote.",
+                                "example": "conduit:step:step_1",
+                                "type": "string"
+                              },
+                              "returnEventId": {
+                                "description": "Event that closed the loop.",
+                                "example": "8d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "status": {
+                                "description": "Executed, and the product confirmed the change.",
+                                "example": "executed",
+                                "type": "string"
+                              },
+                              "target": {
+                                "description": "Object the action changes.",
+                                "example": "conduit:invoice:inv_456",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "target",
+                              "kind",
+                              "financial",
+                              "status",
+                              "createdAt"
+                            ],
+                            "type": "object"
+                          },
+                          "tokens": {
+                            "description": "Approval records. The one-time value is not included.",
+                            "items": {
+                              "description": "Redacted approval record.",
+                              "properties": {
+                                "consumed": {
+                                  "description": "Whether the approval was used.",
+                                  "example": true,
+                                  "type": "boolean"
+                                },
+                                "consumedAt": {
+                                  "description": "When the approval was used.",
+                                  "example": "2026-07-31T14:00:00Z",
+                                  "format": "date-time",
+                                  "type": "string"
+                                },
+                                "expiresAt": {
+                                  "description": "When the approval record expires.",
+                                  "example": "2026-07-31T14:05:00Z",
+                                  "format": "date-time",
+                                  "type": "string"
+                                },
+                                "hashPrefix": {
+                                  "description": "First 12 characters of the approval-record hash.",
+                                  "example": "c4e8a91b0d27",
+                                  "type": "string"
+                                },
+                                "issuedAt": {
+                                  "description": "When the approval record was issued.",
+                                  "example": "2026-07-31T14:00:00Z",
+                                  "format": "date-time",
+                                  "type": "string"
+                                },
+                                "paramsHash": {
+                                  "description": "Hash of the parameters the approval was bound to.",
+                                  "example": "1e750183c74a18b46e872244bea860113d34dd38a8c7a87192b41553be26941d",
+                                  "type": "string"
+                                },
+                                "stepUp": {
+                                  "description": "Whether a recent sign-in was required.",
+                                  "example": false,
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "hashPrefix",
+                                "paramsHash",
+                                "stepUp",
+                                "expiresAt",
+                                "consumed",
+                                "issuedAt"
+                              ],
+                              "type": "object"
+                            },
+                            "type": "array"
+                          }
+                        },
+                        "required": [
+                          "proposal",
+                          "tokens"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "resourceRef": {
+                      "description": "Object the action changes.",
+                      "example": "conduit:invoice:inv_456",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "resourceRef",
+                    "entries"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Proposals and approval records for this object."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Audit trail",
+        "tags": [
+          "Revenue"
+        ]
+      }
+    },
     "/v1/public/mutual-action-plan": {
       "get": {
         "description": "Returns only the externally authorized plan revision with internal evidence references removed and policy redactions applied.",

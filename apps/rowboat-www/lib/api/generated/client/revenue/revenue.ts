@@ -11,6 +11,7 @@ import type {
   DismissRevenueActionBody,
   EditRevenueActionBody,
   ErrorEnvelope,
+  GetObjectActionAudit200,
   GetOpenPromisesReport200One,
   GetOpenPromisesReportParams,
   GetRevenueActionAudit200,
@@ -38,6 +39,56 @@ import type {
   SnoozeRevenueActionBody,
   StartRevenueLeakScanBody,
 } from "../model";
+
+export type getObjectActionAuditResponse200 = {
+  data: GetObjectActionAudit200;
+  status: 200;
+};
+
+export type getObjectActionAuditResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type getObjectActionAuditResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getObjectActionAuditResponseSuccess = getObjectActionAuditResponse200 & {
+  headers: Headers;
+};
+export type getObjectActionAuditResponseError = (
+  getObjectActionAuditResponse400 | getObjectActionAuditResponse401
+) & {
+  headers: Headers;
+};
+
+export type getObjectActionAuditResponse =
+  getObjectActionAuditResponseSuccess | getObjectActionAuditResponseError;
+
+export const getGetObjectActionAuditUrl = (resourceRef: string) => {
+  return `/v1/objects/${resourceRef}/audit`;
+};
+
+/**
+ * Audit trail opens the chain for the object this action changes. It shows each proposal and a short prefix of the approval record. The one-time value is not included.
+ * @summary Audit trail
+ */
+export const getObjectActionAudit = async (
+  resourceRef: string,
+  options?: RequestInit,
+): Promise<getObjectActionAuditResponse> => {
+  const res = await fetch(getGetObjectActionAuditUrl(resourceRef), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getObjectActionAuditResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as getObjectActionAuditResponse;
+};
 
 export type listRevenueActionsResponse200 = {
   data: ListRevenueActions200;
