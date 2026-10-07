@@ -917,14 +917,14 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/relationships/{relationshipId}/conversation-decisions"] = obj{"post": operation("Relationship Intelligence", "Decide a proposed conversation change", "Approves, corrects, rejects, or defers one evidence-backed semantic candidate. A stale baseline returns 409 and no state mutation.", "decideConversationChange", bearer(), relationshipParam, jsonRequest("Review decision.", objectSchema("Conversation review decision.", obj{
+	paths["/v1/relationships/{relationshipId}/conversation-decisions"] = obj{"post": operation("Relationship Intelligence", "Approve", approveChangeDescription, "decideConversationChange", bearer(), approveChangeParams(), jsonRequest("Review decision.", objectSchema("Conversation review decision.", obj{
 		"reviewItemId":   stringSchema("Review item id.", "review:ab12"),
 		"kind":           stringEnum("Decision kind.", "approve", "approve", "correct", "reject", "defer"),
 		"correctedValue": stringSchema("Required replacement for correct.", "Security review is complete."),
 		"reason":         stringSchema("Decision reason.", "Customer clarified this in the meeting."),
 		"deferUntil":     stringSchema("Future reminder for defer.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
 	}, "reviewItemId", "kind"), obj{"reviewItemId": "review:ab12", "kind": "approve", "reason": "Customer stated this directly."}), obj{
-		"201": jsonResponse("Updated relationship and refreshed review queue.", objectSchema("Decision result.", obj{"relationship": ref("RevenueRelationship"), "intelligence": ref("RelationshipIntelligence")}, "relationship", "intelligence"), nil),
+		"201": jsonResponse("The proposed change is accepted, and the review queue is refreshed.", objectSchema("Decision result.", obj{"relationship": ref("RevenueRelationship"), "intelligence": ref("RelationshipIntelligence")}, "relationship", "intelligence"), approveChangeResult()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),

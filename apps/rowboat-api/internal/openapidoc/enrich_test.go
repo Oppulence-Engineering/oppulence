@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,65 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertApproveChange(t, paths)
+}
+
+func TestApproveChangeSamplesTheCompany(t *testing.T) {
+	spec := obj{"paths": obj{}, "components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertApproveChange(t, asObj(spec["paths"]))
+}
+
+func assertApproveChange(t *testing.T, paths obj) {
+	t.Helper()
+	post := asObj(asObj(paths["/v1/relationships/{relationshipId}/conversation-decisions"])["post"])
+	if post["summary"] != "Approve" || post["operationId"] != "decideConversationChange" || post["description"] != approveChangeDescription {
+		t.Fatalf("approve change operation: summary=%#v description=%#v id=%#v", post["summary"], post["description"], post["operationId"])
+	}
+	params, _ := post["parameters"].([]any)
+	if len(params) != 1 {
+		t.Fatalf("approve change parameters: %#v", post["parameters"])
+	}
+	relationship := asObj(params[0])
+	if relationship["name"] != "relationshipId" || relationship["example"] != approveChangeRelationshipID || asObj(relationship["schema"])["example"] != approveChangeRelationshipID {
+		t.Fatalf("approve change relationship: %#v", relationship)
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
+	if asObj(request["example"])["kind"] != "approve" {
+		t.Fatalf("approve change request: %#v", request["example"])
+	}
+	responses := asObj(post["responses"])
+	if responses["200"] != nil {
+		t.Fatalf("approve change still documents 200: %#v", responses["200"])
+	}
+	if asObj(responses["201"])["description"] != "The proposed change is accepted, and the review queue is refreshed." {
+		t.Fatalf("approve change response: %#v", responses["201"])
+	}
+	created := asObj(asObj(asObj(responses["201"])["content"])["application/json"])
+	if !reflect.DeepEqual(normalizedApproveChange(t, created["example"]), normalizedApproveChange(t, approveChangeResult())) {
+		t.Fatalf("approve change example: %#v", created["example"])
+	}
+	raw, err := json.Marshal(post)
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded := string(raw)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "approvedAt") {
+		t.Fatalf("approve change looks live: %s", encoded)
+	}
+}
+
+func normalizedApproveChange(t *testing.T, value any) any {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out any
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+	return out
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

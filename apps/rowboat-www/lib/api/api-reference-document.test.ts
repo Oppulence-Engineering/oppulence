@@ -315,6 +315,28 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the conversation change Approve accepts", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const post = presented.paths["/v1/relationships/{relationshipId}/conversation-decisions"].post;
+    expect(post.summary).toBe("Approve");
+    expect(post.operationId).toBe("decideConversationChange");
+    expect(post.description).toBe(
+      "Approve accepts this proposed conversation change. The company and its review queue refresh.",
+    );
+    const relationship = post.parameters.find(
+      (parameter: { name: string }) => parameter.name === "relationshipId",
+    );
+    expect(relationship.example).toBe("9c8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    expect(post.requestBody.content["application/json"].example.kind).toBe("approve");
+    expect(post.responses["200"]).toBeUndefined();
+    const example = post.responses["201"].content["application/json"].example;
+    expect(example.relationship.displayName).toBe("Acme");
+    expect(example.relationship.kind).toBe("company");
+    expect(example.relationship.stateVersion).toBe(5);
+    expect(example.intelligence.reviewItems).toEqual([]);
+    expect(JSON.stringify(post)).not.toContain("acta_");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
