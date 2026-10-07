@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,64 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertWorkflowTemplates(t, paths)
+}
+
+func TestWorkflowTemplatesSamplesTheBuiltInList(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertWorkflowTemplates(t, asObj(spec["paths"]))
+}
+
+func assertWorkflowTemplates(t *testing.T, paths obj) {
+	t.Helper()
+	get := asObj(asObj(paths["/v1/background-task-templates"])["get"])
+	if get["summary"] != "Templates" || get["description"] != workflowTemplatesDescription || get["operationId"] != "listBackgroundTaskTemplates" {
+		t.Fatalf("templates operation: %#v", get)
+	}
+	if get["parameters"] != nil {
+		t.Fatalf("templates parameters: %#v", get["parameters"])
+	}
+	example := asObj(asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(workflowTemplatesPage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatal("templates example does not match the built-in catalog")
+	}
+	raw := string(got)
+	if strings.Contains(raw, "produce a markdown digest.") || strings.Contains(raw, "report artifact") {
+		t.Fatal("templates example still uses the abbreviated catalog")
+	}
+	templates, _ := example["templates"].([]any)
+	if len(templates) != 10 {
+		t.Fatalf("template count: %d", len(templates))
+	}
+	first := asObj(templates[0])
+	if first["name"] != "Relationship Refresh" {
+		t.Fatalf("first template: %#v", first["name"])
+	}
+	var inbox obj
+	for _, item := range templates {
+		tpl := asObj(item)
+		if tpl["slug"] == "inbox-digest" {
+			inbox = tpl
+		}
+	}
+	instructions, _ := inbox["instructions"].(string)
+	if !strings.Contains(instructions, "concrete next actions") {
+		t.Fatalf("inbox digest instructions: %s", instructions)
+	}
+	one := asObj(asObj(paths["/v1/background-task-templates/{templateSlug}"])["get"])
+	oneExample := asObj(asObj(asObj(asObj(asObj(one["responses"])["200"])["content"])["application/json"])["example"])
+	if oneExample["instructions"] != "Review recent important Gmail messages and produce a markdown digest." {
+		t.Fatalf("single template example changed: %#v", oneExample["instructions"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

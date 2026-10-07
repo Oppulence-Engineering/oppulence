@@ -66,7 +66,7 @@ describe("workflow product copy", () => {
     expect(
       workflowProductDescription(
         "data-report",
-        "Run sandboxed analysis and publish a markdown report artifact.",
+        "Run sandboxed analysis and publish a markdown report.",
       ),
     ).toBe("Turn a question about your data into a written report.");
     expect(

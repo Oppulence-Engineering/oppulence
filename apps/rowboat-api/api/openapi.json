@@ -16300,7 +16300,7 @@
     },
     "/v1/background-task-templates": {
       "get": {
-        "description": "Lists built-in API-target task templates that can be instantiated into normal background tasks. Templates provide known-good instructions, triggers, and execution defaults for common cloud task patterns.",
+        "description": "Templates loads the built-in list. The request sends no filter. The list is every workflow you can start from.",
         "operationId": "listBackgroundTaskTemplates",
         "responses": {
           "200": {
@@ -16310,20 +16310,261 @@
                   "templates": [
                     {
                       "active": true,
+                      "description": "Continuously summarize relationship state, evidence freshness, commitments, and material changes.",
+                      "executionTarget": "api",
+                      "firstParty": true,
+                      "instructions": "Use relationship.read with view=portfolio and run_history.read. Compare current versioned relationship state with the prior run, identify only material changes, cite relationship and evidence references returned by the tool, and write a concise markdown portfolio refresh. Never invent evidence or execute an external action.",
+                      "name": "Relationship Refresh",
+                      "slug": "relationship-refresh",
+                      "tags": [
+                        "first-party",
+                        "relationships",
+                        "evidence",
+                        "scheduled"
+                      ],
+                      "taskSlug": "oppulence-relationship-refresh",
+                      "triggers": {
+                        "cronExpr": "*/15 * * * *",
+                        "timezone": "UTC"
+                      },
+                      "version": 1
+                    },
+                    {
+                      "active": true,
+                      "description": "Explain which relationships need attention now and why.",
+                      "executionTarget": "api",
+                      "firstParty": true,
+                      "instructions": "Use relationship.read with view=attention and run_history.read. Rank open attention items by urgency and score, explain the deterministic reason and freshness, cite every triggering object and evidence reference, and write an operator-ready markdown brief. Recommend review actions only; do not perform external actions.",
+                      "name": "Attention Monitor",
+                      "slug": "attention-monitor",
+                      "tags": [
+                        "first-party",
+                        "attention",
+                        "risk",
+                        "scheduled"
+                      ],
+                      "taskSlug": "oppulence-attention-monitor",
+                      "triggers": {
+                        "cronExpr": "0 8 * * *",
+                        "timezone": "America/New_York"
+                      },
+                      "version": 1
+                    },
+                    {
+                      "active": true,
+                      "description": "Prepare evidence-linked context, commitments, risks, and goals for upcoming customer meetings.",
+                      "executionTarget": "api",
+                      "firstParty": true,
+                      "instructions": "Use connector.read.calendar for upcoming meetings, relationship.read with view=portfolio for matching customer context, and run_history.read. For meetings in the next 24 hours, write a concise brief with participants, relationship health, open commitments, risks, last material change, desired outcome, and evidence references. If no relevant meeting exists, record that clearly. Do not contact participants.",
+                      "name": "Meeting Pre-Brief",
+                      "requiredConnectors": [
+                        "google"
+                      ],
+                      "slug": "meeting-pre-brief",
+                      "tags": [
+                        "first-party",
+                        "meeting",
+                        "brief",
+                        "scheduled"
+                      ],
+                      "taskSlug": "oppulence-meeting-pre-brief",
+                      "triggers": {
+                        "cronExpr": "*/30 * * * *",
+                        "timezone": "UTC"
+                      },
+                      "version": 1
+                    },
+                    {
+                      "active": true,
+                      "description": "Turn completed meetings and transcripts into evidence-linked commitments, risks, and approval-ready follow-ups.",
+                      "executionTarget": "api",
+                      "firstParty": true,
+                      "instructions": "Use event.read when event-triggered, connector.read.calendar for recently completed meetings, relationship.read with view=portfolio, and run_history.read. Produce a markdown meeting record containing decisions, commitments with owners and dates, risks, unresolved questions, relationship changes, and draft follow-up recommendations. Cite source references. Any outward action must remain a proposal requiring human approval.",
+                      "name": "Post-Meeting Processor",
+                      "requiredConnectors": [
+                        "google"
+                      ],
+                      "slug": "post-meeting-processor",
+                      "tags": [
+                        "first-party",
+                        "meeting",
+                        "transcript",
+                        "event",
+                        "scheduled"
+                      ],
+                      "taskSlug": "oppulence-post-meeting-processor",
+                      "triggers": {
+                        "cronExpr": "*/15 * * * *",
+                        "events": {
+                          "eventTypes": [
+                            "resource.exists",
+                            "resource.update"
+                          ],
+                          "sources": [
+                            "google"
+                          ]
+                        },
+                        "timezone": "UTC"
+                      },
+                      "version": 1
+                    },
+                    {
+                      "active": true,
+                      "description": "Assemble pending recommendations into a transparent, approval-ready review queue.",
+                      "executionTarget": "api",
+                      "firstParty": true,
+                      "instructions": "Use relationship.read with view=recommendations and run_history.read. Group pending recommendations by relationship, show priority, reason, revision, policy and approval state, flag stale or conflicting evidence, and write a review brief. Never approve, reject, or execute on the user's behalf.",
+                      "name": "Recommendation Review",
+                      "slug": "recommendation-review",
+                      "tags": [
+                        "first-party",
+                        "recommendations",
+                        "approval",
+                        "scheduled"
+                      ],
+                      "taskSlug": "oppulence-recommendation-review",
+                      "triggers": {
+                        "cronExpr": "0 9 * * 1-5",
+                        "timezone": "America/New_York"
+                      },
+                      "version": 1
+                    },
+                    {
+                      "active": true,
+                      "description": "Monitor source freshness, scopes, retries, and backfill progress with actionable repair guidance.",
+                      "executionTarget": "api",
+                      "firstParty": true,
+                      "instructions": "Use relationship.read with view=sources and run_history.read. Report each connector's authorization, freshness, completeness, missing scopes, retry state, lag, and backfill progress. Separate transient retries from reconnect-required failures and write safe operator repair steps. Never request or expose secrets and never reconnect a provider automatically.",
+                      "name": "Connector Health and Repair",
+                      "requiredConnectors": [
+                        "google",
+                        "slack",
+                        "hubspot"
+                      ],
+                      "slug": "connector-health-repair",
+                      "tags": [
+                        "first-party",
+                        "connectors",
+                        "health",
+                        "repair",
+                        "scheduled"
+                      ],
+                      "taskSlug": "oppulence-connector-health-repair",
+                      "triggers": {
+                        "cronExpr": "*/30 * * * *",
+                        "events": {
+                          "eventTypes": [
+                            "*"
+                          ],
+                          "sources": [
+                            "google",
+                            "slack",
+                            "hubspot"
+                          ]
+                        },
+                        "timezone": "UTC"
+                      },
+                      "version": 1
+                    },
+                    {
+                      "active": true,
                       "description": "Summarize new priority email and produce a short follow-up plan.",
                       "executionTarget": "api",
                       "firstParty": false,
-                      "instructions": "Review recent important Gmail messages and produce a markdown digest.",
+                      "instructions": "Review recent important Gmail messages, group them by account or topic, call out deadlines and blockers, and produce a markdown digest with concrete next actions.",
                       "model": "anthropic/claude-sonnet-4-5",
                       "name": "Inbox Digest",
                       "provider": "openrouter",
-                      "requiredConnectors": ["google"],
+                      "requiredConnectors": [
+                        "google"
+                      ],
                       "slug": "inbox-digest",
-                      "tags": ["gmail", "digest", "scheduled"],
+                      "tags": [
+                        "gmail",
+                        "digest",
+                        "scheduled"
+                      ],
                       "taskSlug": "inbox-digest",
                       "triggers": {
                         "cronExpr": "0 8 * * 1-5",
                         "timezone": "America/New_York"
+                      },
+                      "version": 1
+                    },
+                    {
+                      "active": true,
+                      "description": "Turn recent meetings into follow-up notes, owners, and next steps.",
+                      "executionTarget": "api",
+                      "firstParty": false,
+                      "instructions": "Inspect recent Google Calendar events and available notes, identify promised follow-ups, draft concise owner/action/deadline bullets, and highlight unresolved decisions.",
+                      "model": "anthropic/claude-sonnet-4-5",
+                      "name": "Calendar Follow-ups",
+                      "provider": "openrouter",
+                      "requiredConnectors": [
+                        "google"
+                      ],
+                      "slug": "calendar-followups",
+                      "tags": [
+                        "calendar",
+                        "follow-up",
+                        "scheduled"
+                      ],
+                      "taskSlug": "calendar-followups",
+                      "triggers": {
+                        "cronExpr": "0 17 * * 1-5",
+                        "timezone": "America/New_York"
+                      },
+                      "version": 1
+                    },
+                    {
+                      "active": true,
+                      "description": "Route inbound provider/webhook events into an actionable incident or support digest.",
+                      "executionTarget": "api",
+                      "firstParty": false,
+                      "instructions": "For trigger=event runs, summarize the event payload, identify affected customers or systems, rate urgency, and recommend the next response. Include links or external ids when present.",
+                      "model": "anthropic/claude-sonnet-4-5",
+                      "name": "Event Triage",
+                      "provider": "openrouter",
+                      "slug": "event-triage",
+                      "tags": [
+                        "event",
+                        "webhook",
+                        "triage"
+                      ],
+                      "taskSlug": "event-triage",
+                      "triggers": {
+                        "events": {
+                          "eventTypes": [
+                            "*"
+                          ],
+                          "sources": [
+                            "github",
+                            "linear",
+                            "stripe",
+                            "webhook"
+                          ]
+                        }
+                      },
+                      "version": 1
+                    },
+                    {
+                      "active": true,
+                      "description": "Run sandboxed analysis and publish a markdown report.",
+                      "executionTarget": "api",
+                      "firstParty": false,
+                      "instructions": "Use sandbox.run for bounded code or data analysis when needed. Generate a concise markdown report with inputs, method, key findings, and any attached artifact references.",
+                      "model": "anthropic/claude-sonnet-4-5",
+                      "name": "Data Report",
+                      "provider": "openrouter",
+                      "slug": "data-report",
+                      "tags": [
+                        "sandbox",
+                        "report",
+                        "manual"
+                      ],
+                      "taskSlug": "data-report",
+                      "triggers": {
+                        "manual": true
                       },
                       "version": 1
                     }
@@ -16334,7 +16575,7 @@
                 }
               }
             },
-            "description": "Task templates."
+            "description": "Built-in workflow templates."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -16348,8 +16589,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List background task templates",
-        "tags": ["Background Tasks"]
+        "summary": "Templates",
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-task-templates/{templateSlug}": {

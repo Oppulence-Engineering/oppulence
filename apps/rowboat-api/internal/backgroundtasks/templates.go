@@ -180,7 +180,7 @@ var builtInTaskTemplates = []taskTemplate{
 		Slug:            "data-report",
 		TaskSlug:        "data-report",
 		Name:            "Data Report",
-		Description:     "Run sandboxed analysis and publish a markdown report artifact.",
+		Description:     "Run sandboxed analysis and publish a markdown report.",
 		Instructions:    "Use sandbox.run for bounded code or data analysis when needed. Generate a concise markdown report with inputs, method, key findings, and any attached artifact references.",
 		Active:          true,
 		Triggers:        mustTemplateJSON(`{"manual":true}`),

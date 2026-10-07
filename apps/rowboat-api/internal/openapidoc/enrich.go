@@ -1314,8 +1314,8 @@ func addBackgroundTaskPaths(paths obj) {
 		}),
 	}
 	paths["/v1/background-task-templates"] = obj{
-		"get": operation("Background Tasks", "List background task templates", "Lists built-in API-target task templates that can be instantiated into normal background tasks. Templates provide known-good instructions, triggers, and execution defaults for common cloud task patterns.", "listBackgroundTaskTemplates", bearer(), nil, nil, obj{
-			"200": jsonResponse("Task templates.", ref("BackgroundTaskTemplatesResponse"), obj{"templates": []any{backgroundTaskTemplateExample()}}),
+		"get": operation("Background Tasks", "Templates", workflowTemplatesDescription, "listBackgroundTaskTemplates", bearer(), nil, nil, obj{
+			"200": jsonResponse("Built-in workflow templates.", ref("BackgroundTaskTemplatesResponse"), workflowTemplatesPage()),
 			"401": responseRef("401"),
 			"500": responseRef("500"),
 		}),
