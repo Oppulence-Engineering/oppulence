@@ -315,6 +315,47 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the page Company graph loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/relationships/graph"].get;
+    expect(operation.summary).toBe("Company graph");
+    expect(operation.description).toBe(
+      "Company graph loads the portfolio. The request asks for the portfolio at depth 2 and does not ask for an earlier moment or an older page. This workspace has no company, so the graph is empty.",
+    );
+    const examples = Object.fromEntries(
+      operation.parameters.map((parameter: { name: string; example?: unknown; schema?: { example?: unknown } }) => [
+        parameter.name,
+        parameter.example ?? parameter.schema?.example,
+      ]),
+    );
+    expect(examples.scope).toBe("portfolio");
+    expect(examples.depth).toBe(2);
+    expect(examples.relationshipId).toBeUndefined();
+    expect(examples.asOf).toBeUndefined();
+    expect(examples.offset).toBeUndefined();
+    expect(examples.observationOffset).toBeUndefined();
+    const graph = operation.responses["200"].content["application/json"].example;
+    expect(graph).toEqual({
+      asOf: "2026-08-01T14:00:00Z",
+      contractVersion: "2026-08-01",
+      depth: 2,
+      edges: [],
+      generatedAt: "2026-08-01T14:00:00Z",
+      historical: false,
+      nodes: [],
+      permissions: {
+        canApprove: true,
+        canContribute: true,
+        canExecute: true,
+        canSaveViews: true,
+        canView: true,
+      },
+      scope: "portfolio",
+    });
+    expect(JSON.stringify(graph)).not.toContain("hasMore");
+    expect(JSON.stringify(graph)).not.toContain("9c8dfa9b");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

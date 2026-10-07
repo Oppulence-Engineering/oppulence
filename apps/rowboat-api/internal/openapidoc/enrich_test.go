@@ -338,6 +338,72 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertCompanyGraph(t, paths)
+}
+
+func TestCompanyGraphSamplesTheEmptyPortfolio(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertCompanyGraph(t, asObj(spec["paths"]))
+}
+
+func assertCompanyGraph(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/relationships/graph"])["get"])
+	if op["summary"] != "Company graph" || op["description"] != companyGraphDescription || op["operationId"] != "getRelationshipGraph" {
+		t.Fatalf("graph copy: summary=%#v description=%#v id=%#v", op["summary"], op["description"], op["operationId"])
+	}
+	params, ok := op["parameters"].([]any)
+	if !ok {
+		t.Fatalf("graph parameters: %#v", op["parameters"])
+	}
+	byName := map[string]obj{}
+	for _, raw := range params {
+		param := asObj(raw)
+		name, _ := param["name"].(string)
+		byName[name] = param
+	}
+	scope := byName["scope"]
+	depth := byName["depth"]
+	if !jsonEqual(scope["example"], "portfolio") || !jsonEqual(asObj(scope["schema"])["example"], "portfolio") {
+		t.Fatalf("graph scope: %#v", scope)
+	}
+	if !jsonEqual(depth["example"], 2) || !jsonEqual(asObj(depth["schema"])["example"], 2) {
+		t.Fatalf("graph depth: %#v", depth)
+	}
+	for _, name := range []string{"relationshipId", "asOf", "offset", "observationOffset"} {
+		param := byName[name]
+		if param["example"] != nil || asObj(param["schema"])["example"] != nil {
+			t.Fatalf("graph %s should stay off the first page: %#v", name, param)
+		}
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	if example["hasMore"] != nil || example["observationHasMore"] != nil || example["relationshipId"] != nil {
+		t.Fatalf("graph example includes a field the empty portfolio omits: %#v", example)
+	}
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(companyGraphPage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("graph example:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func jsonEqual(got, want any) bool {
+	left, err := json.Marshal(got)
+	if err != nil {
+		return false
+	}
+	right, err := json.Marshal(want)
+	if err != nil {
+		return false
+	}
+	return string(left) == string(right)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
