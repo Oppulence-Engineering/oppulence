@@ -1102,13 +1102,16 @@ func addRevenuePaths(paths obj) {
 		"200": jsonResponse("Disconnected lifecycle.", ref("RelationshipSourceStatus"), nil), "400": responseRef("400"), "401": responseRef("401"), "403": responseRef("403"),
 	})}
 
-	paths["/v1/relationship-identity-candidates"] = obj{"get": operation("Relationship Intelligence", "List identity review candidates", "Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage. A full page is the end of the inbox when hasMore is false.", "listRelationshipIdentityCandidates", bearer(), []any{
-		obj{"name": "status", "in": "query", "required": false, "schema": obj{"type": "string", "enum": []any{"pending", "deferred", "resolving", "resolved", "undone"}}},
-		obj{"name": "source", "in": "query", "required": false, "schema": obj{"type": "string"}}, obj{"name": "relationshipId", "in": "query", "required": false, "schema": obj{"type": "string", "format": "uuid"}}, obj{"name": "limit", "in": "query", "required": false, "schema": obj{"type": "integer"}},
-	}, nil, obj{"200": jsonResponse("Identity inbox.", objectSchema("Identity candidate list. A full page is the end of the inbox when hasMore is false.", obj{
+	paths["/v1/relationship-identity-candidates"] = obj{"get": operation("Relationship Intelligence", "Review possible duplicates", pendingDuplicatesDescription, "listRelationshipIdentityCandidates", bearer(), []any{
+		obj{"name": "status", "in": "query", "required": false, "description": "pending is the inbox. Review possible duplicates asks for pending.", "example": "pending", "schema": obj{"type": "string", "enum": []any{"pending", "deferred", "resolving", "resolved", "undone"}, "example": "pending"}},
+		obj{"name": "source", "in": "query", "required": false, "description": "Provider. The inbox does not send this.", "schema": obj{"type": "string"}},
+		obj{"name": "relationshipId", "in": "query", "required": false, "description": "Restrict to one company. The inbox does not send this.", "schema": obj{"type": "string", "format": "uuid"}},
+		obj{"name": "limit", "in": "query", "required": false, "description": "Page size (max 100). The inbox asks for 50.", "example": 50, "schema": obj{"type": "integer", "example": 50}},
+		obj{"name": "offset", "in": "query", "required": false, "description": "How many duplicates to skip. The inbox does not send this on the first page.", "schema": obj{"type": "integer", "minimum": 0}},
+	}, nil, obj{"200": jsonResponse("Empty pending duplicate page.", objectSchema("Pending duplicate page.", obj{
 		"candidates": arraySchema("Candidates.", ref("RelationshipIdentityCandidate")),
 		"hasMore":    boolSchema("Another duplicate exists beyond this page.", false),
-	}, "candidates"), nil), "400": responseRef("400"), "401": responseRef("401")})}
+	}, "candidates", "hasMore"), pendingDuplicatesPage()), "400": responseRef("400"), "401": responseRef("401")})}
 	candidateParam := []any{obj{"name": "candidateId", "in": "path", "required": true, "description": "Identity candidate id.", "schema": obj{"type": "string", "format": "uuid"}}}
 	paths["/v1/relationship-identity-candidates/{candidateId}"] = obj{"get": operation("Relationship Intelligence", "Inspect identity candidate", "Returns exact anchors, provider records, evidence range, impact, advisory confidence, immutable decisions, and lineage.", "getRelationshipIdentityCandidate", bearer(), candidateParam, nil, obj{"200": jsonResponse("Identity candidate.", ref("RelationshipIdentityCandidate"), nil), "401": responseRef("401"), "404": responseRef("404")})}
 	paths["/v1/relationship-identity-candidates/{candidateId}/decisions"] = obj{"post": operation("Relationship Intelligence", "Decide identity candidate", "Applies merge, keep-separate, move-evidence, split, defer, or compensating undo once at the expected optimistic version.", "decideRelationshipIdentityCandidate", bearer(), candidateParam, jsonRequest("Identity decision.", objectSchema("Identity decision request.", obj{
@@ -1311,4 +1314,13 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
+}
+
+const pendingDuplicatesDescription = "Review possible duplicates loads the pending page. The request asks for pending duplicates, 50 at a time, and it does not ask for an older page. This workspace has no pending duplicate, so the page is empty."
+
+func pendingDuplicatesPage() obj {
+	return obj{
+		"candidates": []any{},
+		"hasMore":    false,
+	}
 }

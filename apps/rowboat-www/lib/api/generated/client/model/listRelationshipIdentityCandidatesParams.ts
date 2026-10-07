@@ -8,12 +8,24 @@
 import type { ListRelationshipIdentityCandidatesStatus } from "./listRelationshipIdentityCandidatesStatus";
 
 export type ListRelationshipIdentityCandidatesParams = {
+  /**
+   * pending is the inbox. Review possible duplicates asks for pending.
+   */
   status?: ListRelationshipIdentityCandidatesStatus;
+  /**
+   * Provider. The inbox does not send this.
+   */
   source?: string;
+  /**
+   * Restrict to one company. The inbox does not send this.
+   */
   relationshipId?: string;
+  /**
+   * Page size (max 100). The inbox asks for 50.
+   */
   limit?: number;
   /**
-   * Page offset.
+   * How many duplicates to skip. The inbox does not send this on the first page.
    * @minimum 0
    */
   offset?: number;

@@ -22520,19 +22520,29 @@
     },
     "/v1/relationship-identity-candidates": {
       "get": {
-        "description": "Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage. A full page is the end of the inbox when hasMore is false.",
+        "description": "Review possible duplicates loads the pending page. The request asks for pending duplicates, 50 at a time, and it does not ask for an older page. This workspace has no pending duplicate, so the page is empty.",
         "operationId": "listRelationshipIdentityCandidates",
         "parameters": [
           {
+            "description": "pending is the inbox. Review possible duplicates asks for pending.",
+            "example": "pending",
             "in": "query",
             "name": "status",
             "required": false,
             "schema": {
-              "enum": ["pending", "deferred", "resolving", "resolved", "undone"],
+              "enum": [
+                "pending",
+                "deferred",
+                "resolving",
+                "resolved",
+                "undone"
+              ],
+              "example": "pending",
               "type": "string"
             }
           },
           {
+            "description": "Provider. The inbox does not send this.",
             "in": "query",
             "name": "source",
             "required": false,
@@ -22541,6 +22551,7 @@
             }
           },
           {
+            "description": "Restrict to one company. The inbox does not send this.",
             "in": "query",
             "name": "relationshipId",
             "required": false,
@@ -22550,15 +22561,18 @@
             }
           },
           {
+            "description": "Page size (max 100). The inbox asks for 50.",
+            "example": 50,
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
+              "example": 50,
               "type": "integer"
             }
           },
           {
-            "description": "Page offset.",
+            "description": "How many duplicates to skip. The inbox does not send this on the first page.",
             "in": "query",
             "name": "offset",
             "required": false,
@@ -22572,8 +22586,12 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "candidates": [],
+                  "hasMore": false
+                },
                 "schema": {
-                  "description": "Identity candidate list. A full page is the end of the inbox when hasMore is false.",
+                  "description": "Pending duplicate page.",
                   "properties": {
                     "candidates": {
                       "description": "Candidates.",
@@ -22588,12 +22606,15 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["candidates"],
+                  "required": [
+                    "candidates",
+                    "hasMore"
+                  ],
                   "type": "object"
                 }
               }
             },
-            "description": "Identity inbox."
+            "description": "Empty pending duplicate page."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -22607,8 +22628,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List identity review candidates",
-        "tags": ["Relationship Intelligence"]
+        "summary": "Review possible duplicates",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-identity-candidates/{candidateId}": {

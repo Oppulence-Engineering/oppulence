@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,58 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertPendingDuplicates(t, paths)
+}
+
+func TestPendingDuplicatesSamplesTheEmptyInbox(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertPendingDuplicates(t, asObj(spec["paths"]))
+}
+
+func assertPendingDuplicates(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/relationship-identity-candidates"])["get"])
+	if op["summary"] != "Review possible duplicates" || op["description"] != pendingDuplicatesDescription || op["operationId"] != "listRelationshipIdentityCandidates" {
+		t.Fatalf("duplicates copy: summary=%#v description=%#v id=%#v", op["summary"], op["description"], op["operationId"])
+	}
+	examples := map[string]string{}
+	for _, param := range op["parameters"].([]any) {
+		item := asObj(param)
+		name, _ := item["name"].(string)
+		raw, err := json.Marshal(asObj(item["schema"])["example"])
+		if err != nil {
+			t.Fatal(err)
+		}
+		examples[name] = string(raw)
+		if name == "status" || name == "limit" {
+			level, err := json.Marshal(item["example"])
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(level) != string(raw) {
+				t.Fatalf("%s parameter example %#v != schema %#v", name, string(level), string(raw))
+			}
+		}
+	}
+	if examples["status"] != `"pending"` || examples["limit"] != "50" || examples["offset"] != "null" || examples["source"] != "null" || examples["relationshipId"] != "null" {
+		t.Fatalf("duplicates query examples: %#v", examples)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(pendingDuplicatesPage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("duplicates example:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "hubspot") || strings.Contains(string(got), "other@example.com") || strings.Contains(string(got), "Confirmed duplicate") || strings.Contains(string(got), "anchor_collision") {
+		t.Fatalf("duplicates example still uses the invented candidate: %s", got)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
