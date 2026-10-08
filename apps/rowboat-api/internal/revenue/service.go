@@ -722,6 +722,11 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 // is the same filters with Offset set to how many rows are already on screen.
 const relationshipListLimit = 200
 
+// recoveryQueuePage is the follow-up list the recovery queue asks for. The
+// button is "Show the next follow-ups" only when another open follow-up sits
+// past that page. A saved task is a different list.
+const recoveryQueuePage = 100
+
 // ListRelationships returns the workspace's relationships, most recent
 // interaction first. A company with no interaction follows those, newest
 // edit first. Each row includes its open queue actions so the caller can
@@ -846,6 +851,12 @@ func (s *Service) ListRelationshipsFiltered(
 		// has another saved view past the first page of 100.
 		if labelPhraseMatches("show the next saved views", needle) {
 			parts = append(parts, relationshipHasAnotherSavedViewPage(u.ID))
+		}
+
+		// Recovery prints "Show the next follow-ups" when another open follow-up
+		// sits past the first page. A full page of 100 is the whole queue.
+		if labelPhraseMatches("show the next follow-ups", needle) {
+			parts = append(parts, relationshipHasAnotherRecoveryPage())
 		}
 		if labelPhraseMatches("no activity", needle) {
 			parts = append(parts, relationship.LastTouchAtIsNil())
@@ -10832,6 +10843,36 @@ func writeDependentSource(b *sql.Builder, s *sql.Selector, alias string) {
 // that still contains that sentence. A word from the middle is not the
 // sentence. "email" sits inside both "1 email thread" and "email threads",
 // and treating it as both used to return every company.
+// relationshipHasAnotherRecoveryPage is the recovery button. The count is
+// every open follow-up in this workspace, not the company that owns one of
+// them. A task and a dismissed row stay out of that page.
+func relationshipHasAnotherRecoveryPage() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(revenueaction.Table)
+			b.WriteString(" AS directory WHERE directory.")
+			b.WriteString(revenueaction.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND directory.")
+			b.WriteString(revenueaction.FieldQueueStatus)
+			b.WriteString(" = ")
+			b.Arg(QueueOpen)
+			b.WriteString(" AND (directory.")
+			b.WriteString(revenueaction.FieldActionType)
+			b.WriteString(" <> ")
+			b.Arg("follow_up_task")
+			b.WriteString(" OR directory.")
+			b.WriteString(revenueaction.FieldChannel)
+			b.WriteString(" <> ")
+			b.Arg("task")
+			b.WriteString(")) > ")
+			b.Arg(recoveryQueuePage)
+		}))
+	})
+}
+
 func labelPhraseMatches(phrase, needle string) bool {
 	phrase = normalizePersonSearch(phrase)
 	needle = normalizePersonSearch(needle)
