@@ -20,9 +20,11 @@ const (
 	openedCompanyEmail = "avery@acme.com"
 	// The sheet Risks list prints this sentence. An empty list says None recorded.
 	openedCompanyRisk = "Security review has no owner."
+	// The sheet LinkedIn row opens this page. Without a saved page it searches for the company name.
+	openedCompanyLinkedInURL = "https://www.linkedin.com/company/acme"
 )
 
-const openedCompanyOperationDescription = "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com. The risk is that the security review has no owner."
+const openedCompanyOperationDescription = "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com. The risk is that the security review has no owner. The LinkedIn row opens the Acme company page."
 
 func openedCompanyParams() []any {
 	return []any{obj{
@@ -50,6 +52,7 @@ func openedCompanySheetExample() obj {
 			"commitmentCount":    0,
 			"companyDescription": openedCompanyDescription,
 			"lifecycle":          "evaluation",
+			"linkedinUrl":        openedCompanyLinkedInURL,
 			"engagement":         "declining",
 			"sentiment":          "unknown",
 			"health":             "needs_attention",
