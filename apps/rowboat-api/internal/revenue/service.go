@@ -961,6 +961,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if text := relationshipSheetActivityTextMatch(needle); text != nil {
 			parts = append(parts, text)
 		}
+		if reply := relationshipSheetActivityReplyMatch(needle); reply != nil {
+			parts = append(parts, reply)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -10653,4 +10656,56 @@ func actionOutcomeSummary(kind string) string {
 func isValidationError(err error) bool {
 	var ve *ent.ValidationError
 	return errors.As(err, &ve)
+}
+
+// relationshipSheetActivityReplyMatch is "Reply State: …" on an opened activity.
+// Gmail stores who speaks next as awaiting_reply or needs_reply. The sheet
+// prints those as labels. A label that repeats the row summary stays hidden.
+// The mail row's "Waiting on them" is a different sentence.
+func relationshipSheetActivityReplyMatch(needle string) predicate.Relationship {
+	const marker = "reply state: "
+	index := strings.Index(needle, marker)
+	if index < 0 {
+		return nil
+	}
+	value := strings.TrimSpace(needle[index+len(marker):])
+	if value == "" {
+		return nil
+	}
+	return relationship.HasObservationsWith(observationFactReplyState(value))
+}
+
+func observationFactReplyState(value string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeActivityFactTrim(b, s, facts, "reply_state")
+			b.WriteString(" <> '' AND ")
+			writeActivityFactTrim(b, s, facts, "reply_state")
+			b.WriteString(" NOT IN ('local-user', 'meeting-counterparty') AND ")
+			writeNormalizedActivityFact(b, s, facts, "reply_state")
+			b.WriteString(" = ")
+			b.Arg(value)
+			b.WriteString(" AND ")
+			writeReplyStateShown(b, s, facts)
+			b.WriteString(" <> ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", '')))")
+		}))
+	})
+}
+
+func writeReplyStateShown(b *sql.Builder, s *sql.Selector, facts string) {
+	b.WriteString("CASE ")
+	writeActivityFactTrim(b, s, facts, "reply_state")
+	b.WriteString(" WHEN 'awaiting_reply' THEN 'Awaiting Reply' WHEN 'needs_reply' THEN 'Needs Reply' ELSE ")
+	writeActivityFactTrim(b, s, facts, "reply_state")
+	b.WriteString(" END")
 }
