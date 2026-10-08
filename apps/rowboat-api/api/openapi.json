@@ -20336,6 +20336,92 @@
         "tags": ["Console"]
       }
     },
+    "/v1/composio/toolkits": {
+      "get": {
+        "description": "More products lists Jira and Asana. Gmail, Google Calendar, and HubSpot stay on their own cards.",
+        "operationId": "listComposioToolkits",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "toolkits": [
+                    {
+                      "managedAuth": true,
+                      "name": "Jira",
+                      "slug": "jira"
+                    },
+                    {
+                      "managedAuth": true,
+                      "name": "Asana",
+                      "slug": "asana"
+                    }
+                  ]
+                },
+                "schema": {
+                  "description": "Tools that can be connected from More products.",
+                  "properties": {
+                    "toolkits": {
+                      "description": "Products offered here.",
+                      "items": {
+                        "description": "One product on More products.",
+                        "properties": {
+                          "managedAuth": {
+                            "description": "This product can be connected from More products.",
+                            "example": true,
+                            "type": "boolean"
+                          },
+                          "name": {
+                            "description": "Name on the card.",
+                            "example": "Jira",
+                            "type": "string"
+                          },
+                          "slug": {
+                            "description": "Product id.",
+                            "example": "jira",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "slug",
+                          "name",
+                          "managedAuth"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "toolkits"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Jira and Asana are available to connect."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "More products",
+        "tags": [
+          "Connectors"
+        ]
+      }
+    },
     "/v1/entities": {
       "get": {
         "description": "Exact reverse resolution within the caller organization.",

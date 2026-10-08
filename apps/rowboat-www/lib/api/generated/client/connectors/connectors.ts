@@ -17,6 +17,7 @@ import type {
   HandleConnectorCallbackParams,
   HubSpotSearchRequest,
   HubSpotSearchResponse,
+  ListComposioToolkits200,
   MCPTokenRequest,
   MCPTokenResponse,
   N400Response,
@@ -976,6 +977,62 @@ export const startConnector = async (
 
   const data: startConnectorResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as startConnectorResponse;
+};
+
+export type listComposioToolkitsResponse200 = {
+  data: ListComposioToolkits200;
+  status: 200;
+};
+
+export type listComposioToolkitsResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listComposioToolkitsResponse502 = {
+  data: N502Response;
+  status: 502;
+};
+
+export type listComposioToolkitsResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type listComposioToolkitsResponseSuccess = listComposioToolkitsResponse200 & {
+  headers: Headers;
+};
+export type listComposioToolkitsResponseError = (
+  | listComposioToolkitsResponse401
+  | listComposioToolkitsResponse502
+  | listComposioToolkitsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listComposioToolkitsResponse =
+  listComposioToolkitsResponseSuccess | listComposioToolkitsResponseError;
+
+export const getListComposioToolkitsUrl = () => {
+  return `/v1/composio/toolkits`;
+};
+
+/**
+ * More products lists Jira and Asana. Gmail, Google Calendar, and HubSpot stay on their own cards.
+ * @summary More products
+ */
+export const listComposioToolkits = async (
+  options?: RequestInit,
+): Promise<listComposioToolkitsResponse> => {
+  const res = await fetch(getListComposioToolkitsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listComposioToolkitsResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listComposioToolkitsResponse;
 };
 
 export type searchHubSpotResponse200 = {

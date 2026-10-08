@@ -1783,6 +1783,7 @@ func addConnectorPaths(paths obj) {
 		"500": responseRef("500"),
 		"503": responseRef("503"),
 	})}
+	paths["/v1/composio/toolkits"] = obj{"get": moreProductsOperation()}
 }
 
 func aliasConnectorPath(paths obj, source, target, method, operationID string) {

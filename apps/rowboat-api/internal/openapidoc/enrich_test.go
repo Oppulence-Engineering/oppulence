@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,51 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertMoreProducts(t, spec)
+}
+
+func TestMoreProductsListsJiraAndAsana(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertMoreProducts(t, spec)
+}
+
+func assertMoreProducts(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/composio/toolkits"])["get"])
+	if operation["summary"] != "More products" || operation["operationId"] != "listComposioToolkits" || operation["description"] != moreProductsDescription {
+		t.Fatalf("more products copy: %#v", obj{"summary": operation["summary"], "operationId": operation["operationId"], "description": operation["description"]})
+	}
+	if operation["requestBody"] != nil || operation["parameters"] != nil {
+		t.Fatalf("more products sends no body: %#v", operation)
+	}
+	ok := asObj(asObj(operation["responses"])["200"])
+	if ok["description"] != moreProductsReady {
+		t.Fatalf("200 description: %#v", ok["description"])
+	}
+	example := asObj(asObj(asObj(ok["content"])["application/json"])["example"])
+	toolkits, _ := example["toolkits"].([]any)
+	if len(toolkits) != 2 {
+		t.Fatalf("toolkit page: %#v", example)
+	}
+	first := asObj(toolkits[0])
+	second := asObj(toolkits[1])
+	if first["slug"] != "jira" || first["name"] != "Jira" || first["managedAuth"] != true {
+		t.Fatalf("jira card: %#v", first)
+	}
+	if second["slug"] != "asana" || second["name"] != "Asana" || second["managedAuth"] != true {
+		t.Fatalf("asana card: %#v", second)
+	}
+	raw, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(raw)
+	for _, forbidden := range []string{"gmail", "googlecalendar", "slack", "hubspot", "acta_", `"token"`} {
+		if strings.Contains(text, forbidden) {
+			t.Fatalf("more products sample contains %s", forbidden)
+		}
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

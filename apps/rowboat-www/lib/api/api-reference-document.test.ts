@@ -315,6 +315,29 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the catalog More products lists", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const list = presented.paths["/v1/composio/toolkits"].get;
+    expect(list.summary).toBe("More products");
+    expect(list.operationId).toBe("listComposioToolkits");
+    expect(list.description).toBe(
+      "More products lists Jira and Asana. Gmail, Google Calendar, and HubSpot stay on their own cards.",
+    );
+    expect(list.requestBody).toBeUndefined();
+    expect(list.responses["200"].description).toBe("Jira and Asana are available to connect.");
+    expect(list.responses["200"].content["application/json"].example).toEqual({
+      toolkits: [
+        { slug: "jira", name: "Jira", managedAuth: true },
+        { slug: "asana", name: "Asana", managedAuth: true },
+      ],
+    });
+    const serialized = JSON.stringify(list.responses["200"].content["application/json"].example);
+    expect(serialized).not.toContain("gmail");
+    expect(serialized).not.toContain("hubspot");
+    expect(serialized).not.toContain("acta_");
+    expect(serialized).not.toContain('"token"');
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

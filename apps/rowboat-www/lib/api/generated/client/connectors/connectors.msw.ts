@@ -14,6 +14,7 @@ import type {
   ConnectorsResponse,
   GetConnectorBrokerJWKS200,
   HubSpotSearchResponse,
+  ListComposioToolkits200,
   MCPTokenResponse,
 } from "../model";
 
@@ -22,6 +23,7 @@ import {
   getCreateConnectorResourceTokenResponseMock,
   getCreateMCPTokenResponseMock,
   getGetConnectorBrokerJWKSResponseMock,
+  getListComposioToolkitsResponseMock,
   getListConnectorsResponseMock,
   getSearchHubSpotResponseMock,
   getSetConnectionAPIKeyResponseMock,
@@ -38,6 +40,7 @@ export {
   getListConnectorsResponseMock,
   getCreateConnectorResourceTokenResponseMock,
   getStartConnectorResponseMock,
+  getListComposioToolkitsResponseMock,
   getSearchHubSpotResponseMock,
 } from "./connectors.faker";
 
@@ -305,6 +308,30 @@ export const getStartConnectorMockHandler = (
   );
 };
 
+export const getListComposioToolkitsMockHandler = (
+  overrideResponse?:
+    | ListComposioToolkits200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListComposioToolkits200> | ListComposioToolkits200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/composio/toolkits",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListComposioToolkitsResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
 export const getSearchHubSpotMockHandler = (
   overrideResponse?:
     | HubSpotSearchResponse
@@ -341,5 +368,6 @@ export const getConnectorsMock = () => [
   getDeleteConnectorConnectionMockHandler(),
   getCreateConnectorResourceTokenMockHandler(),
   getStartConnectorMockHandler(),
+  getListComposioToolkitsMockHandler(),
   getSearchHubSpotMockHandler(),
 ];
