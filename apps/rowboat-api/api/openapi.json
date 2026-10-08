@@ -1754,6 +1754,11 @@
       "BackgroundTaskRun": {
         "description": "Mirrored run state for one desktop background task execution or queued remote trigger.",
         "properties": {
+          "attempt": {
+            "description": "Attempt shown when this run is open.",
+            "example": 1,
+            "type": "integer"
+          },
           "completedAt": {
             "description": "Desktop run completion timestamp.",
             "example": "2026-06-04T21:02:00Z",

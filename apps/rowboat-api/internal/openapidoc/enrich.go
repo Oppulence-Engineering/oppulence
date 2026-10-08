@@ -334,6 +334,8 @@ func addBillingSchemas(schemas obj) {
 	}, "user", "billing")
 }
 
+const runAttemptDescription = "Attempt shown when this run is open."
+
 func addBackgroundTaskSchemas(schemas obj) {
 	triggerJSON := obj{
 		"description": "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
@@ -457,6 +459,7 @@ func addBackgroundTaskSchemas(schemas obj) {
 		"trigger":            stringEnum("Trigger source for this run.", "manual", "manual", "cron", "window", "event", "retry"),
 		"status":             stringEnum("Run lifecycle state.", "running", "queued", "running", "succeeded", "failed", "stopped"),
 		"executor":           stringEnum("Execution backend that owns this run.", "desktop", "desktop", "api"),
+		"attempt":            intSchema(runAttemptDescription, 1),
 		"model":              stringSchema("Model id used by this run.", "openai/gpt-4.1-mini", nullable()),
 		"provider":           stringSchema("Provider used by this run.", "openai", nullable()),
 		"useCase":            stringSchema("High-level usage label for cost attribution.", "background-task", nullable()),

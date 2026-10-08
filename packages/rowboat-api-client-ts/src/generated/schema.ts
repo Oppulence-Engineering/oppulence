@@ -4367,6 +4367,11 @@ export interface components {
     /** @description Mirrored run state for one desktop background task execution or queued remote trigger. */
     BackgroundTaskRun: {
       /**
+       * @description Attempt shown when this run is open.
+       * @example 1
+       */
+      attempt?: number;
+      /**
        * Format: date-time
        * @description Desktop run completion timestamp.
        * @example 2026-06-04T21:02:00Z

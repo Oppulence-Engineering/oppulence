@@ -37,6 +37,7 @@ export const ListBackgroundTaskRunsForAccount200Response = zod
       .array(
         zod
           .strictObject({
+            attempt: zod.int().optional().describe("Attempt shown when this run is open."),
             completedAt: zod.iso
               .datetime({ offset: true })
               .nullish()
@@ -1779,6 +1780,7 @@ export const ListBackgroundTaskRuns200Response = zod
       .array(
         zod
           .strictObject({
+            attempt: zod.int().optional().describe("Attempt shown when this run is open."),
             completedAt: zod.iso
               .datetime({ offset: true })
               .nullish()
@@ -2006,6 +2008,7 @@ export const CreateBackgroundTaskRunBody = zod
 
 export const CreateBackgroundTaskRun201Response = zod
   .strictObject({
+    attempt: zod.int().optional().describe("Attempt shown when this run is open."),
     completedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
@@ -2182,6 +2185,7 @@ export const GetBackgroundTaskRunParams = zod.object({
 
 export const GetBackgroundTaskRun200Response = zod
   .strictObject({
+    attempt: zod.int().optional().describe("Attempt shown when this run is open."),
     completedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
@@ -2384,6 +2388,7 @@ export const PatchBackgroundTaskRunBody = zod
 
 export const PatchBackgroundTaskRun200Response = zod
   .strictObject({
+    attempt: zod.int().optional().describe("Attempt shown when this run is open."),
     completedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
@@ -2564,6 +2569,7 @@ export const CancelBackgroundTaskRunBody = zod.looseObject({});
 
 export const CancelBackgroundTaskRun202Response = zod
   .strictObject({
+    attempt: zod.int().optional().describe("Attempt shown when this run is open."),
     completedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
@@ -3020,6 +3026,7 @@ export const RetryBackgroundTaskRunBody = zod.looseObject({});
 
 export const RetryBackgroundTaskRun202Response = zod
   .strictObject({
+    attempt: zod.int().optional().describe("Attempt shown when this run is open."),
     completedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
@@ -3208,6 +3215,7 @@ export const SignalBackgroundTaskRunBody = zod
 
 export const SignalBackgroundTaskRun202Response = zod
   .strictObject({
+    attempt: zod.int().optional().describe("Attempt shown when this run is open."),
     completedAt: zod.iso
       .datetime({ offset: true })
       .nullish()
@@ -3483,6 +3491,7 @@ export const TriggerBackgroundTaskBody = zod
 
 export const TriggerBackgroundTask202Response = zod
   .strictObject({
+    attempt: zod.int().optional().describe("Attempt shown when this run is open."),
     completedAt: zod.iso
       .datetime({ offset: true })
       .nullish()

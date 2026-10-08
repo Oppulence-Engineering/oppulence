@@ -585,6 +585,8 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	assertVoiceKeyCreateExample(t, spec)
 
 	assertAttentionOwner(t, schemas)
+
+	assertRunAttempt(t, spec)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -6497,6 +6499,32 @@ func assertNextEventsSequence(t *testing.T, spec obj) {
 	example := asObj(asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks/{slug}/runs/{runId}/events"])["get"])["responses"])["200"])["content"])["application/json"])["example"]
 	if asObj(example)["nextSeq"] != nil {
 		t.Fatalf("first page must omit nextSeq: %#v", example)
+	}
+}
+
+func TestRunAttemptIsDocumented(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertRunAttempt(t, spec)
+}
+
+func assertRunAttempt(t *testing.T, spec obj) {
+	t.Helper()
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	run := asObj(schemas["BackgroundTaskRun"])
+	attempt := asObj(asObj(run["properties"])["attempt"])
+	exampleOK := false
+	switch attempt["example"] {
+	case 1, float64(1):
+		exampleOK = true
+	}
+	if attempt["description"] != runAttemptDescription || !exampleOK || attempt["type"] != "integer" {
+		t.Fatalf("run attempt: %#v", attempt)
+	}
+	for _, name := range run["required"].([]any) {
+		if name == "attempt" {
+			t.Fatal("attempt stays off the required list so an older run sample can omit it")
+		}
 	}
 }
 
