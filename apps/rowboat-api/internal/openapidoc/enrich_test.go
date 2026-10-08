@@ -4089,6 +4089,60 @@ func assertLocalWorkspace(t *testing.T, spec obj) {
 	}
 
 	assertWorkflowRuns(t, spec)
+
+	assertWorkflowLibrary(t, spec)
+}
+
+func TestWorkflowLibrarySamplesTheWorkflowsPage(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertWorkflowLibrary(t, spec)
+}
+
+func assertWorkflowLibrary(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	get := asObj(asObj(paths["/v1/background-tasks"])["get"])
+	if get["summary"] != "Workflows" || get["description"] != workflowLibraryDescription {
+		t.Fatalf("workflows list copy: %#v / %#v", get["summary"], get["description"])
+	}
+	if get["operationId"] != "listBackgroundTasks" {
+		t.Fatalf("operation id: %#v", get["operationId"])
+	}
+	if get["parameters"] != nil {
+		t.Fatalf("workflows list sends no query: %#v", get["parameters"])
+	}
+	got, err := json.Marshal(jsonExample(asObj(asObj(get["responses"])["200"])))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(workflowLibraryExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("workflows list example:\n%s\nwant:\n%s", got, want)
+	}
+	posted := asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks"])["post"])["requestBody"])["content"])["application/json"])
+	if asObj(posted)["example"] == nil {
+		t.Fatal("create workflow request example missing")
+	}
+	if exampleSlug(asObj(posted)["example"]) != "daily-summary" {
+		t.Fatalf("create workflow sample changed: %#v", asObj(posted)["example"])
+	}
+	one := jsonExample(asObj(asObj(asObj(asObj(paths["/v1/background-tasks/{slug}"])["get"])["responses"])["200"]))
+	if exampleSlug(one) != "daily-summary" || asObj(one)["executionTarget"] != "desktop" {
+		t.Fatalf("shared task example changed: %#v", one)
+	}
+}
+
+func jsonExample(response obj) any {
+	return asObj(asObj(response["content"])["application/json"])["example"]
+}
+
+func exampleSlug(example any) string {
+	slug, _ := asObj(example)["slug"].(string)
+	return slug
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
