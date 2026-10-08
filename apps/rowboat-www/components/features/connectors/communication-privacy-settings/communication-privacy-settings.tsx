@@ -14,6 +14,7 @@ import {
   useCommunicationPolicy,
   useCommunicationPrivacyRules,
 } from "@/hooks/queries/use-communication";
+import { useGoogleConnectionStatus } from "@/hooks/queries/use-google-oauth";
 import { communicationKeys } from "@/hooks/queries/utils/communication-keys";
 import {
   createCommunicationPrivacyRule,
@@ -45,6 +46,27 @@ export function privacyRuleLabel(kind: string): string {
 /** A failed rules request is not an empty protected-address list. */
 export function privacyRulesEmptyCopy(): string {
   return "No protected or blocked addresses yet.";
+}
+
+/**
+ * Privacy defaults apply to a mailbox Google has actually granted. The
+ * connections card says "Not connected" when that grant is missing, so this
+ * sentence must not claim a mailbox is already connected.
+ */
+export function mailboxPrivacyCopy(input: {
+  connected: boolean | null;
+  failed: boolean;
+}): string {
+  if (input.connected === true) {
+    return "Configure privacy defaults for one connected Google mailbox.";
+  }
+  if (input.failed && input.connected == null) {
+    return "Could not check whether a Google mailbox is connected.";
+  }
+  if (input.connected == null) {
+    return "Checking whether a Google mailbox is connected.";
+  }
+  return "Connect a Google mailbox before privacy defaults can apply.";
 }
 
 export function privacyLoadNotice(input: {
@@ -94,6 +116,16 @@ export async function retryPrivacyLoad(
 
 export function CommunicationPrivacySettings() {
   const queryClient = useQueryClient();
+  const googleQuery = useGoogleConnectionStatus();
+  const mailboxConnected = googleQuery.data
+    ? googleQuery.data.connected
+    : googleQuery.isSuccess
+      ? false
+      : null;
+  const mailboxCopy = mailboxPrivacyCopy({
+    connected: mailboxConnected,
+    failed: googleQuery.isError,
+  });
   const [accountId, setAccountId] = React.useState("");
   const trimmedAccountId = accountId.trim();
   const policyQuery = useCommunicationPolicy(trimmedAccountId);
@@ -166,17 +198,17 @@ export function CommunicationPrivacySettings() {
       <div className="settings-row">
         <div className="settings-row-copy">
           <p className="settings-row-label">Mailbox account</p>
-          <p className="settings-row-description">
-            Configure privacy defaults for one connected Google mailbox.
-          </p>
+          <p className="settings-row-description">{mailboxCopy}</p>
         </div>
-        <Input
-          aria-label="Mailbox account email"
-          className="settings-input"
-          onChange={(event) => setAccountId(event.target.value)}
-          placeholder="you@company.com"
-          value={accountId}
-        />
+        {mailboxConnected === true ? (
+          <Input
+            aria-label="Mailbox account email"
+            className="settings-input"
+            onChange={(event) => setAccountId(event.target.value)}
+            placeholder="you@company.com"
+            value={accountId}
+          />
+        ) : null}
       </div>
 
       {accountEntered && !policy && policyQuery.isPending ? (
