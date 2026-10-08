@@ -595,7 +595,7 @@ export function reportStateBadge(state: string): string | null {
   return null;
 }
 
-function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string }) {
+export function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string }) {
   const [downloading, setDownloading] = React.useState(false);
   const [downloadError, setDownloadError] = React.useState<string | null>(null);
   const download = React.useCallback(async () => {
@@ -652,7 +652,7 @@ function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string
         </Button>
         <Button asChild variant="outline">
           <Link href="/app/revenue">
-            Open commitments <ArrowRightIcon />
+            Open promises <ArrowRightIcon />
           </Link>
         </Button>
       </div>
@@ -660,7 +660,7 @@ function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string
       {downloadError ? <p className="text-[13px] text-destructive">{downloadError}</p> : null}
       {report.truncated ? (
         <p className="border border-amber-500/40 bg-amber-500/5 p-3 text-[13px] text-primary/70">
-          This report shows the first 200 open promises. Open commitments to see the rest.
+          This report shows the first 200 open promises. Open promises to see the rest.
         </p>
       ) : null}
 

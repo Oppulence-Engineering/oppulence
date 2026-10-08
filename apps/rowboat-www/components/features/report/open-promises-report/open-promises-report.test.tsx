@@ -1,9 +1,16 @@
+// @vitest-environment jsdom
+
 import fs from "node:fs";
 import path from "node:path";
+import type { ComponentProps } from "react";
 
-import { describe, expect, it } from "vitest";
+import "@testing-library/jest-dom/vitest";
+
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import {
+  Report,
   reportConnectDescription,
   reportKnownPromiseCopy,
   reportRiskLabel,
@@ -11,6 +18,14 @@ import {
   reportSourceQuote,
   reportStateBadge,
 } from "./open-promises-report";
+
+vi.mock("next/link", () => ({
+  default: ({ children, href, ...props }: ComponentProps<"a"> & { href: string }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "open-promises-report.tsx"), "utf8");
 
@@ -57,7 +72,8 @@ describe("OpenPromisesReportClient", () => {
     expect(source).not.toContain('title="Open promises"');
     expect(source).toContain("See the message each promise came from");
     expect(source).not.toContain("See exact message evidence");
-    expect(source).toContain("Open commitments");
+    expect(source).toContain("Open promises");
+    expect(source).not.toContain("Open commitments");
     expect(source).not.toContain("Open the register");
     expect(source).not.toContain("complete ledger");
     expect(source).not.toContain("no evidence of fulfillment");
@@ -99,5 +115,43 @@ describe("OpenPromisesReportClient", () => {
   it("prints a promise due date on the reader's calendar", () => {
     expect(source).toContain("{promiseDueLabel(item.dueAt)}");
     expect(source).not.toContain("item.dueAt.slice(0, 10)");
+  });
+
+  it("opens Promises when the report cannot show every promise", () => {
+    render(
+      <Report
+        scanId="scan-1"
+        report={{
+          generatedAt: "2026-10-08T12:00:00.000Z",
+          lookbackDays: 180,
+          threadsSeen: 240,
+          scanStatus: "completed",
+          outboundCount: 1,
+          inboundCount: 0,
+          byAccount: { Acme: 1 },
+          truncated: true,
+          items: [
+            {
+              commitmentId: "commitment-1",
+              account: "Acme",
+              direction: "promised_by_them",
+              text: "Send the signed security packet",
+              state: "open",
+              dueAt: "2026-10-20T00:00:00.000Z",
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "Open promises" })).toHaveAttribute(
+      "href",
+      "/app/revenue",
+    );
+    expect(
+      screen.getByText("This report shows the first 200 open promises. Open promises to see the rest."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Send the signed security packet")).toBeInTheDocument();
+    expect(screen.queryByText(/commitment/i)).not.toBeInTheDocument();
   });
 });
