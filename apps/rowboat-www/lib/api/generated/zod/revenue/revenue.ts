@@ -2743,13 +2743,13 @@ export const GetRevenueWorkspace401Response = zod
   );
 
 /**
- * Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.
- * @summary Link the OutboundConsole workspace
+ * Link workspace sends the sending workspace id and the organization id from the form. The stored workspace keeps those ids, switches to linked, and turns the sending check on.
+ * @summary Link workspace
  */
 export const LinkRevenueWorkspaceBody = zod
   .strictObject({
-    outboundOrganizationId: zod.string().optional().describe("OutboundConsole organization id."),
-    outboundWorkspaceId: zod.string().describe("OutboundConsole workspace id."),
+    outboundOrganizationId: zod.string().optional().describe("Organization id."),
+    outboundWorkspaceId: zod.string().describe("Sending workspace id."),
   })
   .describe("Link request.");
 

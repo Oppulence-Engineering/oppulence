@@ -206,6 +206,35 @@ func TestCreateActionDropsABlankDraftSubject(t *testing.T) {
 	}
 }
 
+func TestLinkWorkspaceStoresTheFormIds(t *testing.T) {
+	f := newFixture(t)
+	when := time.Date(2026, 7, 12, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return when }
+	ws, err := f.svc.LinkWorkspace(f.ctx, f.user, LinkInput{
+		OutboundOrganizationID: "org_1",
+		OutboundWorkspaceID:    "ws_1",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ws.Mode != ModeLinked || ws.Status != "active" {
+		t.Fatalf("mode %s status %s", ws.Mode, ws.Status)
+	}
+	if ws.OutboundOrganizationID != "org_1" {
+		t.Fatalf("organization %q", ws.OutboundOrganizationID)
+	}
+	if ws.OutboundWorkspaceID == nil || *ws.OutboundWorkspaceID != "ws_1" {
+		t.Fatalf("workspace %#v", ws.OutboundWorkspaceID)
+	}
+	if ws.LastVerifiedAt == nil || !ws.LastVerifiedAt.Equal(when) {
+		t.Fatalf("verified %#v", ws.LastVerifiedAt)
+	}
+	dto := (&Handler{}).workspaceDTO(ws)
+	if dto.Mode != "linked" || dto.OutboundWorkspaceID != "ws_1" || dto.OutboundOrganizationID != "org_1" || !dto.PreflightAvailable {
+		t.Fatalf("dto %#v", dto)
+	}
+}
+
 // link puts the workspace into linked mode (facade configured in fixtures).
 func (f *fixture) link(t *testing.T) {
 	t.Helper()

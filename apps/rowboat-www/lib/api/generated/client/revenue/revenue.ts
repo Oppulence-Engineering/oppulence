@@ -1251,8 +1251,8 @@ export const getLinkRevenueWorkspaceUrl = () => {
 };
 
 /**
- * Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.
- * @summary Link the OutboundConsole workspace
+ * Link workspace sends the sending workspace id and the organization id from the form. The stored workspace keeps those ids, switches to linked, and turns the sending check on.
+ * @summary Link workspace
  */
 export const linkRevenueWorkspace = async (
   linkRevenueWorkspaceBody: LinkRevenueWorkspaceBody,

@@ -2280,6 +2280,27 @@ describe("API reference document", () => {
     expect(JSON.stringify(example)).not.toContain("Hi Jordan");
   });
 
+  it("shows the linked workspace Link workspace stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-workspaces/link"].post;
+    expect(operation.summary).toBe("Link workspace");
+    expect(operation.description).toContain("sending workspace id");
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      outboundOrganizationId: "org_1",
+      outboundWorkspaceId: "ws_1",
+    });
+    expect(operation.responses["200"].content["application/json"].example).toEqual({
+      id: "0b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      mode: "linked",
+      status: "active",
+      outboundOrganizationId: "org_1",
+      outboundWorkspaceId: "ws_1",
+      lastVerifiedAt: "2026-07-12T12:00:00Z",
+      preflightAvailable: true,
+    });
+    expect(presented.components.schemas.RevenueWorkspace.properties.mode.example).toBe("local");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

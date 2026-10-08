@@ -2717,6 +2717,32 @@ func assertOriginalEmail(t *testing.T, paths obj) {
 	}
 }
 
+func TestLinkWorkspaceSamplesTheStoredLink(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertLinkWorkspace(t, asObj(spec["paths"]), asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertLinkWorkspace(t *testing.T, paths obj, schemas obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/revenue-workspaces/link"])["post"])
+	if op["summary"] != "Link workspace" {
+		t.Fatalf("summary: %#v", op["summary"])
+	}
+	request := asObj(asObj(asObj(op["requestBody"])["content"])["application/json"])["example"]
+	if !reflect.DeepEqual(request, linkedWorkspaceRequest()) {
+		t.Fatalf("request: %#v", request)
+	}
+	response := asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"]
+	if !reflect.DeepEqual(response, linkedWorkspace()) {
+		t.Fatalf("response: %#v", response)
+	}
+	mode := asObj(asObj(asObj(schemas["RevenueWorkspace"])["properties"])["mode"])
+	if mode["example"] != "local" {
+		t.Fatalf("shared workspace mode example changed: %#v", mode)
+	}
+}
+
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)

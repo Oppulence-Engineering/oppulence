@@ -2934,8 +2934,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Link the OutboundConsole workspace
-     * @description Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.
+     * Link workspace
+     * @description Link workspace sends the sending workspace id and the organization id from the form. The stored workspace keeps those ids, switches to linked, and turns the sending check on.
      */
     post: operations["linkRevenueWorkspace"];
     delete?: never;
@@ -23101,42 +23101,53 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
-    /** @description OutboundConsole identifiers. */
+    /** @description Sending workspace id and organization id. */
     requestBody: {
       content: {
         /**
          * @example {
-         *       "outboundOrganizationId": "org_01ABC",
-         *       "outboundWorkspaceId": "ws_01ABC"
+         *       "outboundOrganizationId": "org_1",
+         *       "outboundWorkspaceId": "ws_1"
          *     }
          */
         "application/json": {
           /**
-           * @description OutboundConsole organization id.
-           * @example org_01ABC
+           * @description Organization id.
+           * @example org_1
            */
           outboundOrganizationId?: string;
           /**
-           * @description OutboundConsole workspace id.
-           * @example ws_01ABC
+           * @description Sending workspace id.
+           * @example ws_1
            */
           outboundWorkspaceId: string;
         };
       };
     };
     responses: {
-      /** @description Linked workspace. */
+      /** @description The linked workspace Link workspace stores. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "id": "0b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "lastVerifiedAt": "2026-07-12T12:00:00Z",
+           *       "mode": "linked",
+           *       "outboundOrganizationId": "org_1",
+           *       "outboundWorkspaceId": "ws_1",
+           *       "preflightAvailable": true,
+           *       "status": "active"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueWorkspace"];
         };
       };
       400: components["responses"]["400"];
       401: components["responses"]["401"];
-      /** @description Policy facade unavailable; the link fails closed. */
+      /** @description Checked sending is not configured, so the link stays off. */
       503: {
         headers: {
           [name: string]: unknown;
