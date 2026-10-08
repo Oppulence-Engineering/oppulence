@@ -4159,6 +4159,162 @@ func TestRelationshipSearchFindsPublicResearchCounts(t *testing.T) {
 	assertCompanyQuery("Public research · 2 detail")
 }
 
+func TestRelationshipSearchFindsTheDuplicateLines(t *testing.T) {
+	f := newFixture(t)
+	quiet, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quiet Forge",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	lumen, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Lumen Packet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	harbor, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Harbor Ledger",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cedar, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Mill",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	north, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Northwind Mail",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolvedA, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Resolved Quay",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolvedB, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Resolved Dock",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	undoneA, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Undone Pier",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	undoneB, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Undone Slip",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = quiet
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	internal := auth.WithInternal(f.ctx)
+	if _, err := f.client.RelationshipIdentityCandidate.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetProposedRelationship(lumen).
+		SetExistingRelationship(harbor).
+		SetDedupeKey("lumen-harbor-domain").
+		SetAnchorKind("domain").
+		SetAnchorKeyHash("lumen-harbor-domain-hash").
+		SetStatus("pending").
+		SetEvidenceCount(1).
+		SetConfidence(0.8).
+		Save(internal); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipIdentityCandidate.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetProposedRelationship(cedar).
+		SetExistingRelationship(north).
+		SetDedupeKey("cedar-north-email").
+		SetAnchorKind("email").
+		SetAnchorProvider("gmail").
+		SetAnchorPreview("ada@northwind.example").
+		SetAnchorKeyHash("cedar-north-email-hash").
+		SetStatus("deferred").
+		SetEvidenceCount(2).
+		SetConfidence(0.5).
+		Save(internal); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipIdentityCandidate.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetProposedRelationship(resolvedA).
+		SetExistingRelationship(resolvedB).
+		SetDedupeKey("resolved-meeting").
+		SetAnchorKind("resource_ref").
+		SetAnchorProvider("meeting").
+		SetAnchorPreview("kickoff").
+		SetAnchorKeyHash("resolved-meeting-hash").
+		SetStatus("resolved").
+		SetEvidenceCount(3).
+		SetConfidence(1).
+		Save(internal); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipIdentityCandidate.Create().
+		SetWorkspace(ws).
+		SetUser(f.user).
+		SetProposedRelationship(undoneA).
+		SetExistingRelationship(undoneB).
+		SetDedupeKey("undone-note").
+		SetAnchorKind("email").
+		SetAnchorProvider("desktop_note").
+		SetAnchorPreview("old alias").
+		SetAnchorKeyHash("undone-note-hash").
+		SetStatus("undone").
+		SetEvidenceCount(4).
+		SetConfidence(0.1).
+		Save(internal); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+
+	assertCompanyQuery("1 supporting detail · 80% match", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("Matched on Domain: not shown", "Lumen Packet", "Harbor Ledger")
+	assertCompanyQuery("2 supporting details · 50% match", "Cedar Mill", "Northwind Mail")
+	assertCompanyQuery("Matched on Email from Gmail: ada@northwind.example", "Cedar Mill", "Northwind Mail")
+	assertCompanyQuery("3 supporting details · 100% match", "Resolved Quay", "Resolved Dock")
+	assertCompanyQuery("Matched on a linked record from A meeting: kickoff", "Resolved Quay", "Resolved Dock")
+	assertCompanyQuery("4 supporting details · 10% match")
+	assertCompanyQuery("Matched on Email from A note: old alias")
+	assertCompanyQuery("1 supporting details · 80% match")
+	assertCompanyQuery("1 supporting detail · 81% match")
+	assertCompanyQuery("2 supporting detail · 50% match")
+	assertCompanyQuery("Matched on Email: ada@northwind.example")
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {
