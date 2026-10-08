@@ -1144,8 +1144,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get console preferences
-     * @description Returns defaults before the caller's first write.
+     * Profile
+     * @description Profile loads the saved display name, the default agent, and whether usage data is shared. Before a name is saved, the name and the agent are empty, usage sharing is off, notifications are off, and the theme follows the system.
      */
     get: operations["getConsolePreferences"];
     put?: never;
@@ -17917,12 +17917,22 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Current preferences. */
+      /** @description Preferences Profile loads before a name is saved. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "defaultAgentSlug": "",
+           *       "displayName": "",
+           *       "notificationLevel": "off",
+           *       "shareUsageData": false,
+           *       "showModelReasoning": false,
+           *       "theme": "system"
+           *     }
+           */
           "application/json": components["schemas"]["ConsolePreferences"];
         };
       };

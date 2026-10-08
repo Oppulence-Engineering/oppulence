@@ -179,6 +179,9 @@ func addConsolePaths(paths obj) {
 	preferenceResponses["200"] = jsonResponse("Current preferences.", ref("ConsolePreferences"), nil)
 	savedProfileResponses := cloneResponses(preferenceResponses)
 	savedProfileResponses["200"] = jsonResponse("Stored profile.", ref("ConsolePreferences"), documentedSavedProfile())
+
+	profileResponses := cloneResponses(authErrors)
+	profileResponses["200"] = jsonResponse("Preferences Profile loads before a name is saved.", ref("ConsolePreferences"), profilePreferences())
 	paths["/v1/console/preferences"] = obj{
 		"get": operation("Console", "Get console preferences", "Returns defaults before the caller's first write.", "getConsolePreferences", bearer(), nil, nil, preferenceResponses),
 		"patch": operation("Console", "Save profile", "Save profile posts the display name. The name is Ada Lovelace. The stored preferences keep that name, an empty default agent, usage sharing off, notifications off, model reasoning hidden, and the system theme.", "patchConsolePreferences", bearer(), nil,

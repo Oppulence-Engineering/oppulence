@@ -652,6 +652,8 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	assertConversationReview(t, schemas)
 
 	assertConnectHubSpot(t, paths)
+
+	assertProfile(t, paths)
 }
 
 func TestConversationReviewNamesTheItem(t *testing.T) {
@@ -5669,6 +5671,35 @@ func assertEarlierChats(t *testing.T, spec obj) {
 		if strings.Contains(encoded, banned) {
 			t.Fatalf("sample still has %s: %s", banned, encoded)
 		}
+	}
+}
+
+func TestProfileSamplesThePreferences(t *testing.T) {
+	spec := obj{"paths": obj{}, "components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertProfile(t, asObj(spec["paths"]))
+}
+
+func assertProfile(t *testing.T, paths obj) {
+	t.Helper()
+	get := asObj(asObj(paths["/v1/console/preferences"])["get"])
+	if get["summary"] != "Profile" || get["operationId"] != "getConsolePreferences" || get["description"] != profileDescription {
+		t.Fatalf("profile operation: summary=%#v description=%#v id=%#v", get["summary"], get["description"], get["operationId"])
+	}
+	if get["parameters"] != nil || get["requestBody"] != nil {
+		t.Fatalf("profile request changed: %#v", get)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"])
+	if !reflect.DeepEqual(example, profilePreferences()) {
+		t.Fatalf("profile example: %#v", example)
+	}
+	raw, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded := string(raw)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "approvedAt") {
+		t.Fatalf("profile example looks live: %s", encoded)
 	}
 }
 
