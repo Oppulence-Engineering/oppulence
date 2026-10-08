@@ -301,6 +301,18 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	}
 	assertNonUUIDIdentifiers(t, schemas)
 
+	templateModel := asObj(asObj(asObj(schemas["BackgroundTaskTemplate"])["properties"])["model"])
+	if templateModel["example"] != "anthropic/claude-sonnet-4-5" || templateModel["description"] != "Default model id for runs." {
+		t.Fatalf("BackgroundTaskTemplate.model sampled the wrong model: %#v", templateModel)
+	}
+	instantiateModel := asObj(asObj(asObj(schemas["BackgroundTaskTemplateInstantiateRequest"])["properties"])["model"])
+	if instantiateModel["example"] != "anthropic/claude-sonnet-4-5" || instantiateModel["description"] != "Model override." {
+		t.Fatalf("BackgroundTaskTemplateInstantiateRequest.model sampled the wrong model: %#v", instantiateModel)
+	}
+	if chatModel := asObj(asObj(asObj(schemas["LLMChatCompletionsRequest"])["properties"])["model"]); chatModel["example"] != "openai/gpt-4.1-mini" {
+		t.Fatalf("LLMChatCompletionsRequest.model lost its chat example: %#v", chatModel)
+	}
+
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
 	reason := asObj(evidenceProperties["reason"])
@@ -428,6 +440,18 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	}
 
 	assertNonUUIDIdentifiers(t, schemas)
+
+	templateModel := asObj(asObj(asObj(schemas["BackgroundTaskTemplate"])["properties"])["model"])
+	if templateModel["example"] != "anthropic/claude-sonnet-4-5" || templateModel["description"] != "Default model id for runs." {
+		t.Fatalf("checked-in BackgroundTaskTemplate.model sampled the wrong model: %#v", templateModel)
+	}
+	instantiateModel := asObj(asObj(asObj(schemas["BackgroundTaskTemplateInstantiateRequest"])["properties"])["model"])
+	if instantiateModel["example"] != "anthropic/claude-sonnet-4-5" || instantiateModel["description"] != "Model override." {
+		t.Fatalf("checked-in BackgroundTaskTemplateInstantiateRequest.model sampled the wrong model: %#v", instantiateModel)
+	}
+	if chatModel := asObj(asObj(asObj(schemas["LLMChatCompletionsRequest"])["properties"])["model"]); chatModel["example"] != "openai/gpt-4.1-mini" {
+		t.Fatalf("checked-in LLMChatCompletionsRequest.model lost its chat example: %#v", chatModel)
+	}
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)

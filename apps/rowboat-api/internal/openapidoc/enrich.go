@@ -2032,6 +2032,25 @@ func enrichEntitySchemas(schemas obj) {
 		properties["id"] = stringSchema(item.description, item.example)
 	}
 
+	// The shared model note samples a chat default. Built-in templates, and the
+	// override used when creating a task from one, use Claude Sonnet.
+	for _, item := range []struct {
+		schema, description, example string
+	}{
+		{"BackgroundTaskTemplate", "Default model id for runs.", "anthropic/claude-sonnet-4-5"},
+		{"BackgroundTaskTemplateInstantiateRequest", "Model override.", "anthropic/claude-sonnet-4-5"},
+	} {
+		schema := asObj(schemas[item.schema])
+		if schema == nil {
+			continue
+		}
+		properties := asObj(schema["properties"])
+		if properties == nil || properties["model"] == nil {
+			continue
+		}
+		properties["model"] = stringSchema(item.description, item.example, nullable())
+	}
+
 	backgroundPropDocs := map[string]obj{
 		"slug":                 {"description": "Stable per-user background task slug matching bg-tasks/<slug> locally.", "example": "daily-summary"},
 		"name":                 {"description": "Human-readable background task name.", "example": "Daily Account Summary"},

@@ -2557,8 +2557,8 @@
             "type": "string"
           },
           "model": {
-            "description": "Desktop-facing LLM model id.",
-            "example": "openai/gpt-4.1-mini",
+            "description": "Default model id for runs.",
+            "example": "anthropic/claude-sonnet-4-5",
             "nullable": true,
             "type": "string"
           },
@@ -2643,8 +2643,8 @@
             "type": "string"
           },
           "model": {
-            "description": "Desktop-facing LLM model id.",
-            "example": "openai/gpt-4.1-mini",
+            "description": "Model override.",
+            "example": "anthropic/claude-sonnet-4-5",
             "nullable": true,
             "type": "string"
           },
