@@ -24620,6 +24620,211 @@
         ]
       }
     },
+    "/v1/relationship-persons/{personId}/attributes": {
+      "get": {
+        "description": "Open person loads the profile behind a name in the directory. The request sends only the person id. The answer is each stored detail: the value, where it came from, and why it is there.",
+        "operationId": "getRelationshipPersonAttributes",
+        "parameters": [
+          {
+            "description": "Person id.",
+            "in": "path",
+            "name": "personId",
+            "required": true,
+            "schema": {
+              "description": "Person id.",
+              "example": "ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "attributes": [
+                    {
+                      "confidence": 0.5,
+                      "dimension": "alias",
+                      "extractor": "display_name_header",
+                      "id": "b18dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "observedAt": "2026-08-04T12:00:00Z",
+                      "reason": "Every name we have seen for this person.",
+                      "source": "hubspot",
+                      "sourceType": "deterministic",
+                      "status": "active",
+                      "validFrom": "2026-08-04T12:00:00Z",
+                      "value": "Sarah Chen"
+                    },
+                    {
+                      "confidence": 0.8,
+                      "dimension": "display_name",
+                      "extractor": "display_name_header",
+                      "id": "b28dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "observedAt": "2026-08-04T12:00:00Z",
+                      "reason": "Name as it appeared on the source record.",
+                      "source": "hubspot",
+                      "sourceType": "source_fact",
+                      "status": "active",
+                      "validFrom": "2026-08-04T12:00:00Z",
+                      "value": "Sarah Chen"
+                    },
+                    {
+                      "confidence": 0.6,
+                      "dimension": "org_domain",
+                      "extractor": "email_header",
+                      "id": "b38dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "observedAt": "2026-08-04T12:00:00Z",
+                      "reason": "Derived from the participant's email domain.",
+                      "source": "hubspot",
+                      "sourceType": "deterministic",
+                      "status": "active",
+                      "validFrom": "2026-08-04T12:00:00Z",
+                      "value": "acme.example"
+                    },
+                    {
+                      "confidence": 0.65,
+                      "dimension": "org_name",
+                      "extractor": "display_name_header",
+                      "id": "b48dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "observedAt": "2026-08-04T12:00:00Z",
+                      "reason": "Name of the company that owns this domain.",
+                      "source": "hubspot",
+                      "sourceType": "deterministic",
+                      "status": "active",
+                      "validFrom": "2026-08-04T12:00:00Z",
+                      "value": "Acme"
+                    },
+                    {
+                      "confidence": 0.7,
+                      "dimension": "title",
+                      "extractor": "crm_field",
+                      "id": "b58dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "observedAt": "2026-08-04T12:00:00Z",
+                      "reason": "Title supplied by the source record.",
+                      "source": "hubspot",
+                      "sourceType": "source_fact",
+                      "status": "active",
+                      "validFrom": "2026-08-04T12:00:00Z",
+                      "value": "VP Engineering"
+                    }
+                  ]
+                },
+                "schema": {
+                  "description": "Person profile.",
+                  "properties": {
+                    "attributes": {
+                      "description": "Stored details, newest first.",
+                      "items": {
+                        "description": "One stored detail.",
+                        "properties": {
+                          "confidence": {
+                            "description": "How strongly this detail is held.",
+                            "example": 0.7,
+                            "type": "number"
+                          },
+                          "dimension": {
+                            "description": "Which detail this is.",
+                            "example": "title",
+                            "type": "string"
+                          },
+                          "extractor": {
+                            "description": "How it was read.",
+                            "example": "crm_field",
+                            "type": "string"
+                          },
+                          "id": {
+                            "description": "Detail id.",
+                            "example": "b58dfa9b-a7b2-46ea-982c-622a914c00e5",
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "observedAt": {
+                            "description": "When it was seen.",
+                            "example": "2026-08-04T12:00:00Z",
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "reason": {
+                            "description": "Why this detail is here.",
+                            "example": "Title supplied by the source record.",
+                            "type": "string"
+                          },
+                          "source": {
+                            "description": "Where this detail came from.",
+                            "example": "hubspot",
+                            "type": "string"
+                          },
+                          "sourceType": {
+                            "description": "How this detail was established.",
+                            "example": "source_fact",
+                            "type": "string"
+                          },
+                          "status": {
+                            "description": "Whether this detail is current.",
+                            "example": "active",
+                            "type": "string"
+                          },
+                          "validFrom": {
+                            "description": "When it started counting.",
+                            "example": "2026-08-04T12:00:00Z",
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "value": {
+                            "description": "The stored detail.",
+                            "example": "VP Engineering",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "dimension",
+                          "value",
+                          "sourceType",
+                          "source",
+                          "extractor",
+                          "status",
+                          "confidence",
+                          "observedAt",
+                          "validFrom"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "attributes"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The profile details Open person loads."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Open person",
+        "tags": [
+          "Relationship Intelligence"
+        ]
+      }
+    },
     "/v1/relationship-recommendations/{actionId}/approve": {
       "post": {
         "description": "Approve posts acceptRisk false. The stored recommendation is approved for its current revision, and the approval time is recorded. The queue stays open.",

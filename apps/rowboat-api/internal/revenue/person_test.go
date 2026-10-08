@@ -96,6 +96,62 @@ func TestPeopleDirectoryListsTheProjectedPerson(t *testing.T) {
 	}
 }
 
+func TestOpenPersonReturnsTheStoredProfile(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 4, 12, 0, 0, 0, time.UTC)
+	if _, err := f.svc.IngestRelationshipObservations(f.ctx, f.user,
+		[]RelationshipObservationInput{personObservation("obs_1", "Acme", "acme.example", now,
+			RelationshipParticipantInput{
+				DisplayName: "Sarah Chen",
+				Email:       "sarah@acme.example",
+				Role:        "champion",
+				Title:       "VP Engineering",
+			})},
+	); err != nil {
+		t.Fatal(err)
+	}
+	people := personsIn(t, f)
+	attrs, err := f.svc.PersonAttributes(f.ctx, f.user, people[0].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := make([]personAttributeDTO, 0, len(attrs))
+	for _, attribute := range attrs {
+		out = append(out, personAttributeToDTO(attribute))
+	}
+	raw, err := json.Marshal(map[string]any{"attributes": out})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var body map[string]any
+	if err := json.Unmarshal(raw, &body); err != nil {
+		t.Fatal(err)
+	}
+	ids := map[string]string{
+		"alias":        "b18dfa9b-a7b2-46ea-982c-622a914c00e5",
+		"display_name": "b28dfa9b-a7b2-46ea-982c-622a914c00e5",
+		"org_domain":   "b38dfa9b-a7b2-46ea-982c-622a914c00e5",
+		"org_name":     "b48dfa9b-a7b2-46ea-982c-622a914c00e5",
+		"title":        "b58dfa9b-a7b2-46ea-982c-622a914c00e5",
+	}
+	rows, _ := body["attributes"].([]any)
+	if len(rows) != len(ids) {
+		t.Fatalf("attributes: %s", raw)
+	}
+	for _, row := range rows {
+		item := row.(map[string]any)
+		item["id"] = ids[item["dimension"].(string)]
+	}
+	got, err := json.Marshal(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const want = `{"attributes":[{"confidence":0.5,"dimension":"alias","extractor":"display_name_header","id":"b18dfa9b-a7b2-46ea-982c-622a914c00e5","observedAt":"2026-08-04T12:00:00Z","reason":"Every name we have seen for this person.","source":"hubspot","sourceType":"deterministic","status":"active","validFrom":"2026-08-04T12:00:00Z","value":"Sarah Chen"},{"confidence":0.8,"dimension":"display_name","extractor":"display_name_header","id":"b28dfa9b-a7b2-46ea-982c-622a914c00e5","observedAt":"2026-08-04T12:00:00Z","reason":"Name as it appeared on the source record.","source":"hubspot","sourceType":"source_fact","status":"active","validFrom":"2026-08-04T12:00:00Z","value":"Sarah Chen"},{"confidence":0.6,"dimension":"org_domain","extractor":"email_header","id":"b38dfa9b-a7b2-46ea-982c-622a914c00e5","observedAt":"2026-08-04T12:00:00Z","reason":"Derived from the participant's email domain.","source":"hubspot","sourceType":"deterministic","status":"active","validFrom":"2026-08-04T12:00:00Z","value":"acme.example"},{"confidence":0.65,"dimension":"org_name","extractor":"display_name_header","id":"b48dfa9b-a7b2-46ea-982c-622a914c00e5","observedAt":"2026-08-04T12:00:00Z","reason":"Name of the company that owns this domain.","source":"hubspot","sourceType":"deterministic","status":"active","validFrom":"2026-08-04T12:00:00Z","value":"Acme"},{"confidence":0.7,"dimension":"title","extractor":"crm_field","id":"b58dfa9b-a7b2-46ea-982c-622a914c00e5","observedAt":"2026-08-04T12:00:00Z","reason":"Title supplied by the source record.","source":"hubspot","sourceType":"source_fact","status":"active","validFrom":"2026-08-04T12:00:00Z","value":"VP Engineering"}]}`
+	if string(got) != want {
+		t.Fatalf("open person:\n%s", got)
+	}
+}
+
 func TestIngestCreatesCanonicalPersonWithAnchors(t *testing.T) {
 	f := newFixture(t)
 	now := time.Date(2026, 8, 4, 12, 0, 0, 0, time.UTC)

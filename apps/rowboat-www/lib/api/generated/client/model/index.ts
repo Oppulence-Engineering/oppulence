@@ -310,6 +310,8 @@ export * from "./getRelationshipEvidence200";
 export * from "./getRelationshipEvidence200Payload";
 export * from "./getRelationshipGraphParams";
 export * from "./getRelationshipGraphScope";
+export * from "./getRelationshipPersonAttributes200";
+export * from "./getRelationshipPersonAttributes200AttributesItem";
 export * from "./getRelationshipSourceInventory200";
 export * from "./getRelationshipSourceStatuses200";
 export * from "./getRelationshipTimeline200";

@@ -111,6 +111,8 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/relationships/{relationshipId}/conversation-corrections",
 		"/v1/relationship-observations/batch",
 		"/v1/relationship-persons",
+
+		"/v1/relationship-persons/{personId}/attributes",
 		"/v1/workspace-notes",
 		"/v1/revenue-workspaces/current/communication-policy/{sourceAccountId}",
 		"/v1/relationship-sources/status",
@@ -2819,6 +2821,42 @@ func assertPeopleDirectory(t *testing.T, paths obj) {
 	}
 	if asObj(asObj(op["responses"])["200"])["description"] != "The people in this workspace." {
 		t.Fatalf("response: %#v", asObj(op["responses"])["200"])
+	}
+
+	assertOpenPerson(t, paths)
+}
+
+func TestOpenPersonSamplesTheProfileLedger(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertOpenPerson(t, asObj(spec["paths"]))
+}
+
+func assertOpenPerson(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/relationship-persons/{personId}/attributes"])["get"])
+	if op["summary"] != "Open person" {
+		t.Fatalf("summary: %#v", op["summary"])
+	}
+	const wantDescription = "Open person loads the profile behind a name in the directory. The request sends only the person id. The answer is each stored detail: the value, where it came from, and why it is there."
+	if op["description"] != wantDescription {
+		t.Fatalf("description: %#v", op["description"])
+	}
+	params, _ := op["parameters"].([]any)
+	if len(params) != 1 || asObj(asObj(params[0])["schema"])["example"] != openPersonID {
+		t.Fatalf("person id: %#v", op["parameters"])
+	}
+	media := asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])
+	got, err := json.Marshal(media["example"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(openPersonProfile())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("example:\n%s\nwant:\n%s", got, want)
 	}
 }
 

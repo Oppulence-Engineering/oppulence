@@ -2353,6 +2353,34 @@ describe("API reference document", () => {
     expect(example.persons[0]).not.toHaveProperty("phone");
   });
 
+  it("shows the profile Open person loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const profile = presented.paths["/v1/relationship-persons/{personId}/attributes"].get;
+    expect(profile.summary).toBe("Open person");
+    expect(profile.description).toContain("sends only the person id");
+    expect(profile.parameters?.[0]?.schema?.example).toBe("ab8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    const example = profile.responses["200"].content["application/json"].example as {
+      attributes: Array<{ dimension: string; value: string; reason: string }>;
+    };
+    expect(example.attributes.map((row) => row.dimension)).toEqual([
+      "alias",
+      "display_name",
+      "org_domain",
+      "org_name",
+      "title",
+    ]);
+    expect(example.attributes[4]).toMatchObject({
+      id: "b58dfa9b-a7b2-46ea-982c-622a914c00e5",
+      dimension: "title",
+      value: "VP Engineering",
+      source: "hubspot",
+      extractor: "crm_field",
+      reason: "Title supplied by the source record.",
+      confidence: 0.7,
+    });
+    expect(JSON.stringify(example)).not.toContain("phone");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
