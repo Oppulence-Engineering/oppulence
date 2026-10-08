@@ -61,6 +61,13 @@ const (
 	documentedConversationDecisionReason   = "User decided a proposed conversation change."
 )
 
+// Propose follow-up on the company node sends a task. The label is the
+// published relationship name, and the body is that relationship's summary.
+const (
+	documentedGraphFollowUpReason  = "Follow up on company: Jordan Buyer"
+	documentedGraphFollowUpMessage = "Asked for pricing in April; wants a follow-up in July."
+)
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
@@ -139,7 +146,7 @@ func addRevenueSchemas(schemas obj) {
 		"displayName":           stringSchema("Human display name.", "Jordan Buyer"),
 		"primaryEmail":          stringSchema("Primary email address.", "buyer@example.com"),
 		"accountDomain":         stringSchema("Account domain.", "example.com"),
-		"summary":               stringSchema("Bounded relationship summary.", "Asked for pricing in April; wants a follow-up in July."),
+		"summary":               stringSchema("Bounded relationship summary.", documentedGraphFollowUpMessage),
 		"status":                stringEnum("Lifecycle status.", "active", "active", "dormant", "closed", "archived"),
 		"lastTouchAt":           stringSchema("Last observed touch.", "2026-04-10T15:00:00Z", obj{"format": "date-time"}, nullable()),
 		"nextActionAt":          stringSchema("Next planned action.", "2026-07-01T00:00:00Z", obj{"format": "date-time"}, nullable()),
@@ -1335,18 +1342,25 @@ func addRevenuePaths(paths obj) {
 		}),
 		"post": operation("Revenue", "Create a manual action", "Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.", "createRevenueAction", bearer(), nil, jsonRequest("Action.", objectSchema("Create request.", obj{
 			"relationshipId":     uuidSchema("Owning relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-			"actionType":         stringEnum("Action type.", "warm_follow_up", "warm_follow_up", "proposal_nudge", "referral_reconnect", "customer_risk", "meeting_follow_up", "meeting_recap", "crm_update", "follow_up_task", "calendar_hold", "commitment_rescue"),
-			"channel":            stringEnum("Delivery channel.", "email", "email", "slack", "call", "crm_task", "crm", "task", "calendar"),
-			"reason":             stringSchema("Evidence-backed reason.", "They asked for a follow-up in July."),
+			"actionType":         stringEnum("Action type.", "follow_up_task", "warm_follow_up", "proposal_nudge", "referral_reconnect", "customer_risk", "meeting_follow_up", "meeting_recap", "crm_update", "follow_up_task", "calendar_hold", "commitment_rescue"),
+			"channel":            stringEnum("Delivery channel.", "task", "email", "slack", "call", "crm_task", "crm", "task", "calendar"),
+			"reason":             stringSchema("Evidence-backed reason.", documentedGraphFollowUpReason),
 			"recipientEmail":     stringSchema("Recipient email.", "buyer@example.com"),
 			"proposedSubject":    stringSchema("Proposed subject.", "Following up as promised"),
-			"proposedMessage":    stringSchema("Proposed body.", "Hi Jordan — circling back as promised..."),
+			"proposedMessage":    stringSchema("Proposed body.", documentedGraphFollowUpMessage),
 			"senderAccountRef":   stringSchema("Sender account reference.", "gmail:me@company.com"),
 			"executionMode":      stringEnum("Execution mode.", "draft", "draft", "send"),
 			"priorityScore":      intSchema("Priority (0-100).", 80),
 			"priorityComponents": freeFormSchema("Per-component priority breakdown."),
 			"dueAt":              stringSchema("Due time.", "2026-07-15T00:00:00Z", obj{"format": "date-time"}, nullable()),
-		}, "relationshipId", "actionType", "channel", "reason"), nil), obj{
+		}, "relationshipId", "actionType", "channel", "reason"), obj{
+			"relationshipId":  "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+			"actionType":      "follow_up_task",
+			"channel":         "task",
+			"executionMode":   "draft",
+			"reason":          documentedGraphFollowUpReason,
+			"proposedMessage": documentedGraphFollowUpMessage,
+		}), obj{
 			"201": jsonResponse("Created action.", ref("RevenueAction"), nil),
 			"400": responseRef("400"),
 			"401": responseRef("401"),
