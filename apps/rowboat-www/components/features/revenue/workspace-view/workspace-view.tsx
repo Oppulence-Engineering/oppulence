@@ -59,15 +59,20 @@ export function gmailDraftsAvailable(
   );
 }
 
+/**
+ * Local mode never sends. Audits and Gmail drafts need a mailbox this
+ * workspace can read. Saying they work while Google is missing contradicts
+ * the connect sentence on the same notice.
+ */
 export function localModeNotice(gmail: "connected" | "missing" | "unknown"): string {
-  const base = "Audits and drafts work here. Sending stays off until this workspace is linked.";
+  const sending = "Sending stays off until this workspace is linked.";
   if (gmail === "connected") {
-    return `${base} Drafts still land in your Gmail so you can send them yourself.`;
+    return `Audits and drafts work here. ${sending} Drafts still land in your Gmail so you can send them yourself.`;
   }
   if (gmail === "missing") {
-    return `${base} Connect Gmail before a draft can land in your mailbox.`;
+    return `${sending} Connect Gmail before a draft can land in your mailbox.`;
   }
-  return base;
+  return sending;
 }
 
 /** Preflight off means Oppulence will not send. "Drafts only" is true once Gmail can receive one. */

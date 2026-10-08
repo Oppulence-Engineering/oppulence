@@ -227,6 +227,7 @@ describe("WorkspaceView", () => {
     const emptySources = await screen.findByText(/Nothing is connected yet/);
     expect(emptySources).toBeVisible();
     expect(screen.getByText(/Connect Gmail before a draft can land in your mailbox/)).toBeVisible();
+    expect(screen.queryByText(/Audits and drafts work here/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Drafts still land in your Gmail/)).not.toBeInTheDocument();
     expect(emptySources).toHaveTextContent(
       "Nothing is connected yet. Connect Gmail and Calendar, or another tool below.",
@@ -282,13 +283,19 @@ describe("WorkspaceView", () => {
   it("keeps the Gmail draft sentence once Google is connected", () => {
     expect(gmailDraftsAvailable([{ source: "google", status: "live" }])).toBe(true);
     expect(gmailDraftsAvailable([{ source: "google", status: "disconnected" }])).toBe(false);
+    expect(localModeNotice("connected")).toContain("Audits and drafts work here.");
     expect(localModeNotice("connected")).toContain(
       "Drafts still land in your Gmail so you can send them yourself.",
     );
     expect(localModeNotice("missing")).toContain(
       "Connect Gmail before a draft can land in your mailbox.",
     );
+    expect(localModeNotice("missing")).not.toContain("Audits and drafts work here");
+    expect(localModeNotice("unknown")).toBe(
+      "Sending stays off until this workspace is linked.",
+    );
     expect(localModeNotice("unknown")).not.toContain("Gmail");
+    expect(localModeNotice("unknown")).not.toContain("Audits and drafts work here");
     expect(sendingCheckLabel(true, "missing")).toBe("Available");
     expect(sendingCheckLabel(false, "missing")).toBe("Unavailable");
     expect(sendingCheckLabel(false, "connected")).toBe("Unavailable (drafts only)");
