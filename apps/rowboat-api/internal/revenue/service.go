@@ -980,6 +980,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if timeline := relationshipSheetTimelineHeadingMatch(needle); timeline != nil {
 			parts = append(parts, timeline)
 		}
+
+		if sections := relationshipSheetSectionCountMatch(needle); sections != nil {
+			parts = append(parts, sections)
+		}
 		if accepted := relationshipSheetAcceptedPromiseMatch(needle); accepted != nil {
 			parts = append(parts, accepted)
 		}
@@ -2961,6 +2965,52 @@ func normalizedSearchExpr(expr string) string {
 		wrapped = fmt.Sprintf("replace(%s, '  ', ' ')", wrapped)
 	}
 	return wrapped
+}
+
+// relationshipSheetSectionCountMatch matches the section headings that count
+// every loaded row. Recommendations includes a dismissed action. Promises
+// includes a closed promise. Email activity is mail threads, not meetings.
+func relationshipSheetSectionCountMatch(needle string) predicate.Relationship {
+	if n, ok := sheetSectionCount(needle, "email activity ("); ok {
+		return relationshipMailThreadCount("=", n)
+	}
+	if n, ok := sheetSectionCount(needle, "people ("); ok {
+		return relationshipLinkedCount(relationshipparticipant.Table, relationshipparticipant.RelationshipColumn, n)
+	}
+	if n, ok := sheetSectionCount(needle, "promises ("); ok {
+		return relationshipLinkedCount(commitment.Table, commitment.RelationshipColumn, n)
+	}
+	if n, ok := sheetSectionCount(needle, "recommendations ("); ok {
+		return relationshipLinkedCount(revenueaction.Table, revenueaction.RelationshipColumn, n)
+	}
+	return nil
+}
+
+func sheetSectionCount(needle, prefix string) (int, bool) {
+	if !strings.HasPrefix(needle, prefix) || !strings.HasSuffix(needle, ")") {
+		return 0, false
+	}
+	body := strings.TrimSuffix(strings.TrimPrefix(needle, prefix), ")")
+	parsed, err := strconv.Atoi(body)
+	if err != nil || parsed < 0 || strconv.Itoa(parsed) != body {
+		return 0, false
+	}
+	return parsed, true
+}
+
+func relationshipLinkedCount(table, column string, n int) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(table)
+			b.WriteString(" AS counted WHERE counted.")
+			b.WriteString(column)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(") = ")
+			b.Arg(n)
+		}))
+	})
 }
 
 // relationshipSheetDeletionEmptyMatch matches the privacy line. The delete

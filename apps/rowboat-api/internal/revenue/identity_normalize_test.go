@@ -1033,6 +1033,92 @@ func TestRelationshipSearchFindsTimelineHeadings(t *testing.T) {
 	assertCompanyQuery("Email & meeting timeline (2)")
 }
 
+func TestRelationshipSearchFindsSectionCounts(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	quiet := makeCompany("Count Quiet")
+	mail := makeCompany("Count Mail")
+	person := makeCompany("Count Person")
+	promise := makeCompany("Count Promise")
+	draft := makeCompany("Count Draft")
+	dismissed := makeCompany("Count Dismissed")
+	_ = quiet
+	if _, err := f.client.MailThread.Create().
+		SetUser(f.user).SetProviderThreadID("count-mail").
+		SetSubject("The count note").SetMessageCount(1).
+		SetRelationship(mail).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipParticipant.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(person).
+		SetDisplayName("Ada Count").SetRole("contact").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Commitment.Create().
+		SetWorkspace(ws).SetRelationship(promise).SetUser(f.user).
+		SetDirection("promised_by_them").SetText("Send the count packet").
+		SetStatus("fulfilled").SetConfidence(1).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	saveAction := func(rel *ent.Relationship, key, status string) {
+		t.Helper()
+		create := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetActionType("follow_up_task").SetChannel("task").SetDetector("manual").
+			SetDedupeKey(key).SetRevisionHash(key).SetReason("Mail the count excerpt").
+			SetPriorityScore(40).SetQueueStatus(status)
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveAction(draft, "count-draft", "open")
+	saveAction(dismissed, "count-dismissed", QueueDismissed)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Email activity (0)", "Count Quiet", "Count Person", "Count Promise", "Count Draft", "Count Dismissed")
+	assertCompanyQuery("Email activity (1)", "Count Mail")
+	assertCompanyQuery("People (0)", "Count Quiet", "Count Mail", "Count Promise", "Count Draft", "Count Dismissed")
+	assertCompanyQuery("People (1)", "Count Person")
+	assertCompanyQuery("Promises (0)", "Count Quiet", "Count Mail", "Count Person", "Count Draft", "Count Dismissed")
+	assertCompanyQuery("Promises (1)", "Count Promise")
+	assertCompanyQuery("Recommendations (0)", "Count Quiet", "Count Mail", "Count Person", "Count Promise")
+	assertCompanyQuery("Recommendations (1)", "Count Draft", "Count Dismissed")
+	assertCompanyQuery("1 open action", "Count Draft")
+	assertCompanyQuery("Email activity (2)")
+	assertCompanyQuery("People (1+)")
+}
+
 func TestRelationshipSearchFindsTheUnsupportedStateAnswer(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
