@@ -1627,18 +1627,7 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	assertionParam := make([]any, len(relationshipParam), len(relationshipParam)+1)
-	copy(assertionParam, relationshipParam)
-	assertionParam = append(assertionParam, obj{"name": "assertionId", "in": "path", "required": true, "description": "User-correction assertion id.", "schema": obj{"type": "string", "format": "uuid"}})
-	paths["/v1/relationships/{relationshipId}/assertions/{assertionId}/retract"] = obj{"post": operation("Relationship Intelligence", "Retract a relationship correction", "Ends one active user correction without rewriting its immutable history, then reprojects at the same explicit evaluation time.", "retractRelationshipAssertion", bearer(), assertionParam, jsonRequest("Retraction.", objectSchema("Correction retraction.", obj{
-		"reason": stringSchema("Why the correction is being retracted.", "The correction was entered against the wrong customer call."),
-	}, "reason"), obj{"reason": "The correction was entered against the wrong customer call."}), obj{
-		"200": jsonResponse("Reprojected relationship.", ref("RevenueRelationship"), nil),
-		"400": responseRef("400"),
-		"401": responseRef("401"),
-		"404": responseRef("404"),
-		"409": responseRef("409"),
-	})}
+	paths["/v1/relationships/{relationshipId}/assertions/{assertionId}/retract"] = obj{"post": retractedCorrectionOperation()}
 	paths["/v1/relationships/{relationshipId}/conversation-corrections"] = obj{"post": operation("Relationship Intelligence", "Correct reviewed conversation evidence", "Resolves a focused word, speaker, entity, or material-claim review item. State-affecting corrections append a top-precedence user assertion and reproject deterministically.", "correctConversationEvidence", bearer(), relationshipParam, jsonRequest("Focused correction.", objectSchema("Conversation correction.", obj{
 		"reviewItemId":   stringSchema("Focused review item id.", conversationReviewItemID(conversationObservationID, conversationClaimID, "speaker")),
 		"correctedValue": stringSchema("Human-corrected value.", "Avery Chen"),

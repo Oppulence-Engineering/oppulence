@@ -27570,25 +27570,29 @@
     },
     "/v1/relationships/{relationshipId}/assertions/{assertionId}/retract": {
       "post": {
-        "description": "Ends one active user correction without rewriting its immutable history, then reprojects at the same explicit evaluation time.",
+        "description": "Confirm retraction ends a correction on this company. It sends the reason, and the company comes back without that correction.",
         "operationId": "retractRelationshipAssertion",
         "parameters": [
           {
-            "description": "Relationship id.",
+            "description": "Company this correction belongs to.",
             "in": "path",
             "name": "relationshipId",
             "required": true,
             "schema": {
+              "description": "Company id.",
+              "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
           },
           {
-            "description": "User-correction assertion id.",
+            "description": "Correction this button ends.",
             "in": "path",
             "name": "assertionId",
             "required": true,
             "schema": {
+              "description": "Correction id.",
+              "example": "7c8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -27604,12 +27608,14 @@
                 "description": "Correction retraction.",
                 "properties": {
                   "reason": {
-                    "description": "Why the correction is being retracted.",
+                    "description": "Why this correction is no longer valid.",
                     "example": "The correction was entered against the wrong customer call.",
                     "type": "string"
                   }
                 },
-                "required": ["reason"],
+                "required": [
+                  "reason"
+                ],
                 "type": "object"
               }
             }
@@ -27621,12 +27627,35 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "categories": [],
+                  "commitmentCount": 0,
+                  "displayName": "Acme",
+                  "emailThreadCount": 0,
+                  "engagement": "declining",
+                  "health": "needs_attention",
+                  "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "kind": "company",
+                  "lastChangedAt": "2026-07-25T16:00:00Z",
+                  "lifecycle": "evaluation",
+                  "milestones": [],
+                  "peopleCount": 0,
+                  "projectedAt": "2026-07-25T16:00:00Z",
+                  "projectorVersion": 2,
+                  "resourceRefs": [],
+                  "risks": [],
+                  "sentiment": "mixed",
+                  "stateHash": "sha256:ab12cd34",
+                  "stateReason": "Security review was promised, but no owner or meeting exists.",
+                  "stateVersion": 5,
+                  "status": "active"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueRelationship"
                 }
               }
             },
-            "description": "Reprojected relationship."
+            "description": "Company after the correction ends."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -27646,8 +27675,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Retract a relationship correction",
-        "tags": ["Relationship Intelligence"]
+        "summary": "Confirm retraction",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/changes": {

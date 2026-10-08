@@ -2122,8 +2122,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Retract a relationship correction
-     * @description Ends one active user correction without rewriting its immutable history, then reprojects at the same explicit evaluation time.
+     * Confirm retraction
+     * @description Confirm retraction ends a correction on this company. It sends the reason, and the company comes back without that correction.
      */
     post: operations["retractRelationshipAssertion"];
     delete?: never;
@@ -21891,9 +21891,9 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /** @description Company this correction belongs to. */
         relationshipId: string;
-        /** @description User-correction assertion id. */
+        /** @description Correction this button ends. */
         assertionId: string;
       };
       cookie?: never;
@@ -21908,7 +21908,7 @@ export interface operations {
          */
         "application/json": {
           /**
-           * @description Why the correction is being retracted.
+           * @description Why this correction is no longer valid.
            * @example The correction was entered against the wrong customer call.
            */
           reason: string;
@@ -21916,12 +21916,37 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Reprojected relationship. */
+      /** @description Company after the correction ends. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "categories": [],
+           *       "commitmentCount": 0,
+           *       "displayName": "Acme",
+           *       "emailThreadCount": 0,
+           *       "engagement": "declining",
+           *       "health": "needs_attention",
+           *       "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "kind": "company",
+           *       "lastChangedAt": "2026-07-25T16:00:00Z",
+           *       "lifecycle": "evaluation",
+           *       "milestones": [],
+           *       "peopleCount": 0,
+           *       "projectedAt": "2026-07-25T16:00:00Z",
+           *       "projectorVersion": 2,
+           *       "resourceRefs": [],
+           *       "risks": [],
+           *       "sentiment": "mixed",
+           *       "stateHash": "sha256:ab12cd34",
+           *       "stateReason": "Security review was promised, but no owner or meeting exists.",
+           *       "stateVersion": 5,
+           *       "status": "active"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueRelationship"];
         };
       };

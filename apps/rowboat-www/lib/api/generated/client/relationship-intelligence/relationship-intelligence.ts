@@ -1571,8 +1571,8 @@ export const getRetractRelationshipAssertionUrl = (relationshipId: string, asser
 };
 
 /**
- * Ends one active user correction without rewriting its immutable history, then reprojects at the same explicit evaluation time.
- * @summary Retract a relationship correction
+ * Confirm retraction ends a correction on this company. It sends the reason, and the company comes back without that correction.
+ * @summary Confirm retraction
  */
 export const retractRelationshipAssertion = async (
   relationshipId: string,

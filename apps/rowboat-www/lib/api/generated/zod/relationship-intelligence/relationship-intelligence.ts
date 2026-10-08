@@ -4529,17 +4529,17 @@ export const AcknowledgeMissionControl409Response = zod
   );
 
 /**
- * Ends one active user correction without rewriting its immutable history, then reprojects at the same explicit evaluation time.
- * @summary Retract a relationship correction
+ * Confirm retraction ends a correction on this company. It sends the reason, and the company comes back without that correction.
+ * @summary Confirm retraction
  */
 export const RetractRelationshipAssertionParams = zod.object({
-  relationshipId: zod.uuid().describe("Relationship id."),
-  assertionId: zod.uuid().describe("User-correction assertion id."),
+  relationshipId: zod.uuid().describe("Company this correction belongs to."),
+  assertionId: zod.uuid().describe("Correction this button ends."),
 });
 
 export const RetractRelationshipAssertionBody = zod
   .strictObject({
-    reason: zod.string().describe("Why the correction is being retracted."),
+    reason: zod.string().describe("Why this correction is no longer valid."),
   })
   .describe("Correction retraction.");
 

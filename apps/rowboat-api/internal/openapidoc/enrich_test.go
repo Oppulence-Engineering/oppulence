@@ -5295,6 +5295,66 @@ func assertTaskList(t *testing.T, spec obj) {
 	if action["actionType"] != "follow_up_task" || action["channel"] != "task" || action["queueStatus"] != "open" || action["dueAt"] != taskListDue {
 		t.Fatalf("task list row: %#v", action)
 	}
+
+	assertRetractedCorrection(t, spec)
+}
+
+func TestRetractedCorrectionSamplesTheCompany(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertRetractedCorrection(t, spec)
+}
+
+func assertRetractedCorrection(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/assertions/{assertionId}/retract"])["post"])
+	if op["summary"] != "Confirm retraction" || op["operationId"] != "retractRelationshipAssertion" || op["description"] != retractedCorrectionDescription {
+		t.Fatalf("retraction copy: summary=%#v id=%#v description=%#v", op["summary"], op["operationId"], op["description"])
+	}
+	examples := map[string]string{}
+	for _, param := range op["parameters"].([]any) {
+		item := asObj(param)
+		name, _ := item["name"].(string)
+		raw, err := json.Marshal(asObj(item["schema"])["example"])
+		if err != nil {
+			t.Fatal(err)
+		}
+		examples[name] = string(raw)
+	}
+	if examples["relationshipId"] != `"`+retractedCorrectionRelationship+`"` || examples["assertionId"] != `"`+retractedCorrectionAssertion+`"` {
+		t.Fatalf("retraction path examples: %#v", examples)
+	}
+	request := asObj(asObj(asObj(op["requestBody"])["content"])["application/json"])["example"]
+	gotRequest, err := json.Marshal(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantRequest, err := json.Marshal(retractedCorrectionRequest())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotRequest) != string(wantRequest) {
+		t.Fatalf("retraction request:\n%s\nwant:\n%s", gotRequest, wantRequest)
+	}
+	example := asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(retractedCorrectionCompany())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("retraction company:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "acta_") || strings.Contains(string(got), "\"token\"") || strings.Contains(string(got), "approvedAt") {
+		t.Fatalf("retraction includes a live approval: %s", got)
+	}
+	company := asObj(example)
+	if company["displayName"] != "Acme" || company["health"] != "needs_attention" || company["kind"] != "company" {
+		t.Fatalf("retraction company state: %#v", company)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

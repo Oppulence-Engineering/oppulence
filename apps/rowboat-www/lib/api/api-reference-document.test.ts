@@ -3892,6 +3892,41 @@ describe("API reference document", () => {
     expect(presented.paths["/v1/revenue-actions"].post.summary).toBe("Create a manual action");
   });
 
+  it("samples the company Confirm retraction returns", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation =
+      presented.paths["/v1/relationships/{relationshipId}/assertions/{assertionId}/retract"].post;
+    expect(operation.summary).toBe("Confirm retraction");
+    expect(operation.operationId).toBe("retractRelationshipAssertion");
+    expect(operation.description).toBe(
+      "Confirm retraction ends a correction on this company. It sends the reason, and the company comes back without that correction.",
+    );
+    const examples = Object.fromEntries(
+      operation.parameters.map((parameter: { name: string; schema?: { example?: unknown } }) => [
+        parameter.name,
+        parameter.schema?.example,
+      ]),
+    );
+    expect(examples).toEqual({
+      relationshipId: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      assertionId: "7c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+    });
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      reason: "The correction was entered against the wrong customer call.",
+    });
+    const company = operation.responses["200"].content["application/json"].example;
+    expect(company).toMatchObject({
+      id: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      kind: "company",
+      displayName: "Acme",
+      health: "needs_attention",
+      stateReason: "Security review was promised, but no owner or meeting exists.",
+    });
+    const encoded = JSON.stringify(company);
+    expect(encoded).not.toContain("acta_");
+    expect(encoded).not.toContain('"token"');
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
