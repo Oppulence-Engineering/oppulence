@@ -372,6 +372,17 @@ export function sessionWorkspaceCopy(organizationId: string | undefined): {
 }
 
 /**
+ * A blank session role is not the Member role. The line names a role only
+ * when the session actually has one.
+ */
+export function sessionRoleCopy(role: string | undefined, permissions: readonly string[]): string {
+  const named = role?.trim() ?? "";
+  const access = permissions.length ? permissions.join(", ") : "Standard workspace access";
+  if (!named) return `No role is attached to this session. ${access}`;
+  return `${named} · ${access}`;
+}
+
+/**
  * The success badge means an organization is attached. An empty organization
  * is not a granted workspace, so the badge stays off until an id exists.
  */
@@ -1199,10 +1210,7 @@ function PermissionsSection({
           <div className="settings-row-copy">
             <p className="settings-row-label">Workspace role</p>
             <p className="settings-row-description">
-              {session.user.role || "Member"} ·{" "}
-              {session.user.permissions.length
-                ? session.user.permissions.join(", ")
-                : "Standard workspace access"}
+              {sessionRoleCopy(session.user.role, session.user.permissions)}
             </p>
           </div>
           <ShieldCheck className="size-4 text-[var(--settings-success)]" />
@@ -1255,7 +1263,11 @@ function AccountSection({ session }: { session: SessionShape }) {
             label="Organization"
             value={session.user.organizationId}
           />
-          <ValueRow empty="Member" label="Role" value={session.user.role} />
+          <ValueRow
+            empty="No role is attached to this session."
+            label="Role"
+            value={session.user.role}
+          />
         </div>
       </SettingsRow>
       <PlanSection session={session} />
