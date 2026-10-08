@@ -3927,6 +3927,46 @@ describe("API reference document", () => {
     expect(encoded).not.toContain('"token"');
   });
 
+  it("samples the company Use this value returns", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation =
+      presented.paths["/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve"].post;
+    expect(operation.summary).toBe("Use this value");
+    expect(operation.operationId).toBe("resolveRelationshipContradiction");
+    expect(operation.description).toBe(
+      "Use this value closes a disagreement on this company. It sends the evidence you picked and why, and the company comes back with that value current.",
+    );
+    const examples = Object.fromEntries(
+      operation.parameters.map((parameter: { name: string; schema?: { example?: unknown } }) => [
+        parameter.name,
+        parameter.schema?.example,
+      ]),
+    );
+    expect(examples).toEqual({
+      relationshipId: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      caseId: "contradiction:d109218617da1fbea89bb5d6",
+    });
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      reason: "You chose the value from Gmail.",
+      selectedAssertionId: "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+    });
+    const result = operation.responses["201"].content["application/json"].example;
+    expect(result.relationship).toMatchObject({
+      id: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      kind: "company",
+      displayName: "Acme",
+      health: "needs_attention",
+    });
+    expect(result.intelligence.contradictionCases[0]).toMatchObject({
+      status: "user_resolved",
+      reason: "You chose the value from Gmail.",
+    });
+    const encoded = JSON.stringify(result);
+    expect(encoded).not.toContain("acta_");
+    expect(encoded).not.toContain('"token"');
+    expect(encoded).not.toContain("assertion:ab12");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

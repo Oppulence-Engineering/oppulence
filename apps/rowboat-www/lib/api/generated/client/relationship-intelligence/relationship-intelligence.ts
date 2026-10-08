@@ -2028,8 +2028,8 @@ export const getResolveRelationshipContradictionUrl = (relationshipId: string, c
 };
 
 /**
- * Records the user's selected evidence side as a top-authority correction without rewriting either source.
- * @summary Resolve a typed contradiction
+ * Use this value closes a disagreement on this company. It sends the evidence you picked and why, and the company comes back with that value current.
+ * @summary Use this value
  */
 export const resolveRelationshipContradiction = async (
   relationshipId: string,
