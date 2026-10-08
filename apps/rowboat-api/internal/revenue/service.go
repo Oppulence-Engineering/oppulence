@@ -946,6 +946,12 @@ func (s *Service) ListRelationshipsFiltered(
 		if title := relationshipSheetActivityTitleMatch(needle); title != nil {
 			parts = append(parts, title)
 		}
+		if from := relationshipSheetActivityFromMatch(needle); from != nil {
+			parts = append(parts, from)
+		}
+		if to := relationshipSheetActivityToMatch(needle); to != nil {
+			parts = append(parts, to)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -1953,6 +1959,20 @@ func relationshipSheetActivitySubjectMatch(needle string) predicate.Relationship
 // again. local-user is not a title.
 func relationshipSheetActivityTitleMatch(needle string) predicate.Relationship {
 	return relationshipSheetActivityFactMatch(needle, "title: ", "title")
+}
+
+// relationshipSheetActivityFromMatch is "From: …" on an opened activity.
+// The address is a fact on the note. A from-line that repeats the summary is
+// not printed again. local-user is not a sender.
+func relationshipSheetActivityFromMatch(needle string) predicate.Relationship {
+	return relationshipSheetActivityFactMatch(needle, "from: ", "from")
+}
+
+// relationshipSheetActivityToMatch is "To: …" on an opened activity.
+// The address is a fact on the note. A to-line that repeats the summary is
+// not printed again. meeting-counterparty is not a recipient.
+func relationshipSheetActivityToMatch(needle string) predicate.Relationship {
+	return relationshipSheetActivityFactMatch(needle, "to: ", "to")
 }
 
 func relationshipSheetActivityFactMatch(needle, marker, key string) predicate.Relationship {
