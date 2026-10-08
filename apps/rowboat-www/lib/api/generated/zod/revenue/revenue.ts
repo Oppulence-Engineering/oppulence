@@ -903,11 +903,7 @@ export const GetRevenueActionAudit200Response = zod
               .describe("Research sub-result snapshot."),
             revision: zod.int().describe("Action revision the decision is about."),
             revisionHash: zod.string().describe("Revision hash the decision is bound to."),
-            status: zod
-              .enum(["passed", "review_required", "blocked"])
-              .describe(
-                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-              ),
+            status: zod.enum(["passed", "review_required", "blocked"]).describe("Decision status."),
             suppression: zod
               .record(zod.string(), zod.unknown())
               .optional()
@@ -1377,8 +1373,8 @@ export const EditRevenueAction409Response = zod
   );
 
 /**
- * Requests or retries the OutboundConsole preflight for the current revision and stores the immutable decision snapshot. A fresh unexpired decision for the same revision is returned without provider cost. Facade unavailability keeps the action pending (fail closed).
- * @summary Request policy preflight
+ * Re-check policy posts no request body. The stored decision passed for the current revision, with no reason codes, and it expires the next day.
+ * @summary Re-check policy
  */
 export const EvaluateRevenueActionParams = zod.object({
   actionId: zod.uuid().describe("Action id."),
@@ -1407,11 +1403,7 @@ export const EvaluateRevenueAction200Response = zod
       .describe("Research sub-result snapshot."),
     revision: zod.int().describe("Action revision the decision is about."),
     revisionHash: zod.string().describe("Revision hash the decision is bound to."),
-    status: zod
-      .enum(["passed", "review_required", "blocked"])
-      .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-      ),
+    status: zod.enum(["passed", "review_required", "blocked"]).describe("Decision status."),
     suppression: zod
       .record(zod.string(), zod.unknown())
       .optional()

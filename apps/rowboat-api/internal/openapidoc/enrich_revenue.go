@@ -1929,8 +1929,9 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/revenue-actions/{actionId}/evaluate"] = obj{"post": operation("Revenue", "Request policy preflight", "Requests or retries the OutboundConsole preflight for the current revision and stores the immutable decision snapshot. A fresh unexpired decision for the same revision is returned without provider cost. Facade unavailability keeps the action pending (fail closed).", "evaluateRevenueAction", bearer(), actionParam, nil, obj{
-		"200": jsonResponse("Decision snapshot.", ref("RevenuePolicyDecision"), nil),
+	recheckActionParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Action id.", "schema": obj{"type": "string", "format": "uuid", "example": documentedRecheckedActionID}}}
+	paths["/v1/revenue-actions/{actionId}/evaluate"] = obj{"post": operation("Revenue", "Re-check policy", "Re-check policy posts no request body. The stored decision passed for the current revision, with no reason codes, and it expires the next day.", "evaluateRevenueAction", bearer(), recheckActionParam, nil, obj{
+		"200": jsonResponse("Decision snapshot.", ref("RevenuePolicyDecision"), documentedPolicyRecheck()),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 		"503": problemResponse("Policy facade unavailable; the action stays pending.", ref("ErrorEnvelope"), problemExample(503, "Service Unavailable", "policy preflight unavailable; the action stays pending", "facade_unavailable")),
@@ -2117,5 +2118,19 @@ func documentedDisconnectedSource() obj {
 		"missingScopes":          []any{},
 		"retryCount":             0,
 		"disconnectedAt":         "2026-07-31T14:00:00Z",
+	}
+}
+
+const documentedRecheckedActionID = "1a8dfa9b-a7b2-46ea-982c-622a914c00e5"
+
+func documentedPolicyRecheck() obj {
+	return obj{
+		"id":           "2b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+		"revision":     1,
+		"revisionHash": "sha256:ab12...",
+		"status":       "passed",
+		"reasonCodes":  []any{},
+		"evaluatedAt":  "2026-07-12T12:00:00Z",
+		"expiresAt":    "2026-07-13T12:00:00Z",
 	}
 }

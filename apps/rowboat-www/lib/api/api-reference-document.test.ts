@@ -1540,6 +1540,30 @@ describe("API reference document", () => {
     expect(presented.components.schemas.RevenueAction.properties.approvalStatus.example).toBe("pending");
   });
 
+  it("samples the passed decision Re-check policy stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-actions/{actionId}/evaluate"].post;
+    expect(operation.summary).toBe("Re-check policy");
+    expect(operation.operationId).toBe("evaluateRevenueAction");
+    expect(operation.requestBody).toBeUndefined();
+    expect(operation.responses["200"].content["application/json"].example).toEqual({
+      id: "2b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      revision: 1,
+      revisionHash: "sha256:ab12...",
+      status: "passed",
+      reasonCodes: [],
+      evaluatedAt: "2026-07-12T12:00:00Z",
+      expiresAt: "2026-07-13T12:00:00Z",
+    });
+    expect(presented.components.schemas.RevenuePolicyDecision.properties.status).toMatchObject({
+      description: "Decision status.",
+      example: "passed",
+    });
+    expect(
+      presented.components.schemas.RevenuePolicyDecision.properties.reasonCodes.items.example,
+    ).toBe("suppression.opted_out");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

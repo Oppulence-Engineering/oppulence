@@ -1639,6 +1639,40 @@ func openAPIIntEqual(value any, want int) bool {
 	}
 }
 
+func TestPolicyRecheckStoresPassedDecision(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertPolicyRecheck(t, spec)
+}
+
+func assertPolicyRecheck(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/revenue-actions/{actionId}/evaluate"])["post"])
+	if op["summary"] != "Re-check policy" || op["operationId"] != "evaluateRevenueAction" {
+		t.Fatalf("recheck operation: summary=%#v id=%#v", op["summary"], op["operationId"])
+	}
+	if op["requestBody"] != nil {
+		t.Fatalf("recheck sends no body: %#v", op["requestBody"])
+	}
+	description, _ := op["description"].(string)
+	if !strings.Contains(description, "no request body") || !strings.Contains(description, "no reason codes") {
+		t.Fatalf("recheck description: %q", description)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	if example["status"] != "passed" || example["id"] != "2b8dfa9b-a7b2-46ea-982c-622a914c00e5" || example["expiresAt"] != "2026-07-13T12:00:00Z" || !openAPIIntEqual(example["revision"], 1) || !reflect.DeepEqual(example["reasonCodes"], []any{}) {
+		t.Fatalf("recheck decision: %#v", example)
+	}
+	props := asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenuePolicyDecision"])["properties"])
+	status := asObj(props["status"])
+	if status["example"] != "passed" || status["description"] != "Decision status." {
+		t.Fatalf("shared decision status changed: %#v", status)
+	}
+	reasons := asObj(props["reasonCodes"])
+	if asObj(reasons["items"])["example"] != "suppression.opted_out" {
+		t.Fatalf("shared reason code changed: %#v", reasons["items"])
+	}
+}
+
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)

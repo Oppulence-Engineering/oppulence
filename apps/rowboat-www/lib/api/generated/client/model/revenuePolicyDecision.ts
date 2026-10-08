@@ -31,7 +31,7 @@ export interface RevenuePolicyDecision {
   revision: number;
   /** Revision hash the decision is bound to. */
   revisionHash: string;
-  /** Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped. */
+  /** Decision status. */
   status: RevenuePolicyDecisionStatus;
   /** Suppression sub-result snapshot. */
   suppression?: RevenuePolicyDecisionSuppression;

@@ -2526,8 +2526,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Request policy preflight
-     * @description Requests or retries the OutboundConsole preflight for the current revision and stores the immutable decision snapshot. A fresh unexpired decision for the same revision is returned without provider cost. Facade unavailability keeps the action pending (fail closed).
+     * Re-check policy
+     * @description Re-check policy posts no request body. The stored decision passed for the current revision, with no reason codes, and it expires the next day.
      */
     post: operations["evaluateRevenueAction"];
     delete?: never;
@@ -11731,8 +11731,8 @@ export interface components {
        */
       revisionHash: string;
       /**
-       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
-       * @example active
+       * @description Decision status.
+       * @example passed
        * @enum {string}
        */
       status: "passed" | "review_required" | "blocked";
@@ -21127,6 +21127,17 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "evaluatedAt": "2026-07-12T12:00:00Z",
+           *       "expiresAt": "2026-07-13T12:00:00Z",
+           *       "id": "2b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "reasonCodes": [],
+           *       "revision": 1,
+           *       "revisionHash": "sha256:ab12...",
+           *       "status": "passed"
+           *     }
+           */
           "application/json": components["schemas"]["RevenuePolicyDecision"];
         };
       };

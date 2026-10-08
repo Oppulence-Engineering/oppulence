@@ -475,8 +475,8 @@ export const getEvaluateRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Requests or retries the OutboundConsole preflight for the current revision and stores the immutable decision snapshot. A fresh unexpired decision for the same revision is returned without provider cost. Facade unavailability keeps the action pending (fail closed).
- * @summary Request policy preflight
+ * Re-check policy posts no request body. The stored decision passed for the current revision, with no reason codes, and it expires the next day.
+ * @summary Re-check policy
  */
 export const evaluateRevenueAction = async (
   actionId: string,
