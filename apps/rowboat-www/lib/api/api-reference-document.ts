@@ -326,7 +326,7 @@ const API_REFERENCE_FIELD_NOTES: ReadonlyArray<readonly [string, string]> = [
   ],
   [
     "Mapping between the Oppulence workspace and the canonical sending workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.",
-    "Mapping between the Oppulence workspace and the sending workspace. Without a link, drafts still work and sending stays off.",
+    "Mapping between the Oppulence workspace and the sending workspace. Without a link, sending stays off. A draft can land only after Gmail is connected.",
   ],
   [
     "Revision conflict returned when the caller edits a stale task, artifact, or run revision. Clients should refetch, merge, and retry with currentRevision.",
