@@ -226,9 +226,6 @@ export function statusFieldCopy(values: readonly string[]): string {
  * One stored sample, "active", is copied onto every status column. A background
  * run cannot be active. The sample stays only when the field lists it.
  */
-const GENERIC_STATUS_DESCRIPTION =
-  "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.";
-
 /** The published sample, or the first allowed value when that sample is not allowed. */
 export function statusSample(values: readonly string[], example: string): string {
   return values.includes(example) ? example : (values[0] ?? example);
@@ -632,13 +629,19 @@ function presentDescriptions(node: unknown): void {
   const record = node as Record<string, unknown>;
   if (typeof record.description === "string") {
     const values = record.enum;
-    record.description =
+    if (record.description === GENERIC_HISTORY_REF_DESCRIPTION && record.format !== "uuid") {
+      record.description = EXTERNAL_RECORD_REF;
+      record.example = EXTERNAL_RECORD_EXAMPLE;
+    } else if (
       record.description === GENERIC_STATUS_DESCRIPTION &&
       Array.isArray(values) &&
       values.length > 0 &&
       values.every((value) => typeof value === "string")
-        ? statusFieldCopy(values)
-        : presentReferenceProse(record.description);
+    ) {
+      record.description = statusFieldCopy(values);
+    } else {
+      record.description = presentReferenceProse(record.description);
+    }
   }
   // Sample values render beside the field. Identifiers such as rowboat-desktop
   // do not match these phrases and stay as the API published them.
