@@ -71,6 +71,9 @@ const (
 // The queue Dismiss button sends this reason, and the server stores it on the action.
 const documentedQueueDismissReason = "not_relevant"
 
+// Confirm reject sends this reason when the optional box is empty.
+const documentedRejectReason = "not_appropriate"
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
@@ -1432,8 +1435,8 @@ func addRevenuePaths(paths obj) {
 		"409": problemResponse("Invariant violation: blocked, no decision, expired decision, or review required.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "action is blocked by policy", "blocked")),
 	})}
 	paths["/v1/revenue-actions/{actionId}/reject"] = obj{"post": operation("Revenue", "Reject an action", "Rejects the current revision with a reason.", "rejectRevenueAction", bearer(), actionParam, jsonRequest("Rejection reason.", objectSchema("Reject request.", obj{
-		"reason": stringSchema("Reason.", "wrong_recipient"),
-	}), obj{"reason": "wrong_recipient"}), obj{
+		"reason": stringSchema("Reason.", documentedRejectReason),
+	}), obj{"reason": documentedRejectReason}), obj{
 		"200": jsonResponse("Rejected action.", ref("RevenueAction"), nil),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
