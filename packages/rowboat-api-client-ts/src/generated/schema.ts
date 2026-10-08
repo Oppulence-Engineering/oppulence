@@ -2832,8 +2832,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get the open promises report
-     * @description Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.
+     * Download the report
+     * @description Download the report saves this audit as Markdown. The request uses format md. The file names the open promises, who owes them, and the message that created each one.
      */
     get: operations["getOpenPromisesReport"];
     put?: never;
@@ -24365,26 +24365,66 @@ export interface operations {
   getOpenPromisesReport: {
     parameters: {
       query?: {
-        /** @description md for Markdown; JSON otherwise. */
+        /**
+         * @description md for the file Download the report saves.
+         * @example md
+         */
         format?: string;
       };
       header?: never;
       path: {
-        /** @description Scan id. */
+        /**
+         * @description Scan id.
+         * @example 4d8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         scanId: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description The open promises report. */
+      /** @description The report. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "byAccount": {
+           *         "Acme": 1
+           *       },
+           *       "generatedAt": "2026-09-09T12:00:00Z",
+           *       "inboundCount": 0,
+           *       "items": [
+           *         {
+           *           "account": "Acme",
+           *           "commitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "direction": "promised_by_me",
+           *           "dueAt": "2026-09-14T17:00:00Z",
+           *           "duePhrase": "by the 14th",
+           *           "occurredAt": "2026-09-06T12:00:00Z",
+           *           "owner": "alex@example.com",
+           *           "sourceQuote": "We will have the migration live by the 14th.",
+           *           "sourceUri": "https://mail.google.com/thread-1",
+           *           "state": "at_risk",
+           *           "text": "Migration live by the 14th"
+           *         }
+           *       ],
+           *       "lookbackDays": 180,
+           *       "outboundCount": 1,
+           *       "scanStatus": "completed",
+           *       "threadsSeen": 412,
+           *       "truncated": false
+           *     }
+           */
           "application/json": {
-            /** @description Open promise count by account. */
+            /**
+             * @description Open promise count by account.
+             * @example {
+             *       "Acme": 1
+             *     }
+             */
             byAccount: {
               [key: string]: number;
             };
@@ -24396,7 +24436,7 @@ export interface operations {
             generatedAt: string;
             /**
              * @description Promises made to us.
-             * @example 5
+             * @example 0
              */
             inboundCount: number;
             /** @description Open promises, at risk first. */
@@ -24466,7 +24506,7 @@ export interface operations {
             lookbackDays: number;
             /**
              * @description Promises we made.
-             * @example 12
+             * @example 1
              */
             outboundCount: number;
             /**
@@ -24485,6 +24525,34 @@ export interface operations {
              */
             truncated: boolean;
           };
+          /**
+           * @example # Open promises
+           *
+           *     Promises from the last 180 days with no evidence they were kept.
+           *
+           *     - **1** promises we made
+           *     - **0** promises made to us
+           *     - **412** conversations read
+           *
+           *     | Company | Open promises |
+           *     |---|---|
+           *     | Acme | 1 |
+           *
+           *     ## The promises
+           *
+           *     ### Acme — Migration live by the 14th
+           *
+           *     We owe · state **At risk** · due 2026-09-14 · owner alex@example.com
+           *
+           *     > We will have the migration live by the 14th.
+           *
+           *     Source observed 2026-09-06T12:00:00Z · https://mail.google.com/thread-1
+           *
+           *
+           *     ---
+           *
+           *     Generated 2026-09-09T12:00:00Z. Every promise above includes the source evidence available at scan time.
+           */
           "text/markdown": string;
         };
       };
