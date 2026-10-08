@@ -104,16 +104,10 @@ func openedCompanySheetExample() obj {
 
 func openedCompanyIntelligence(empty []any) obj {
 	return obj{
-		"claims":             empty,
-		"reviewItems":        empty,
-		"governanceReceipts": empty,
-		"delta": obj{
-			"fromVersion":       0,
-			"toVersion":         1,
-			"changes":           empty,
-			"uncertainClaimIds": empty,
-			"contradictions":    empty,
-		},
+		"claims":                    empty,
+		"reviewItems":               empty,
+		"governanceReceipts":        empty,
+		"delta":                     relationshipChangeExample(),
 		"liveCues":                  []any{suggestionCueExample()},
 		"contradictionCases":        empty,
 		"recoveryEvaluations":       empty,

@@ -2184,6 +2184,16 @@ func enrichEntitySchemas(schemas obj) {
 			}
 		}
 	}
+	// delta is a credit amount only on CreditLedger. A company change reuses the
+	// name for the before and after values the sheet lists.
+	if intelligence := asObj(schemas["RelationshipIntelligence"]); intelligence != nil {
+		if props := asObj(intelligence["properties"]); props != nil {
+			if delta := asObj(props["delta"]); delta != nil {
+				delta["description"] = relationshipChangeDescription
+				delta["example"] = relationshipChangeExample()
+			}
+		}
+	}
 	// reason is a credit-ledger code only on CreditLedger. Promise transitions,
 	// person removals, and share grants reuse the name with different values.
 	if ledger := asObj(schemas["CreditLedger"]); ledger != nil {

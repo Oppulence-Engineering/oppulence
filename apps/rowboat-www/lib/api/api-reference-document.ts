@@ -222,7 +222,6 @@ export function statusFieldCopy(values: readonly string[]): string {
   return `${sentence.charAt(0).toUpperCase()}${sentence.slice(1)}.`;
 }
 
-/** The published sample, or the first allowed value when that sample is not allowed. */
 export function statusSample(values: readonly string[], example: string): string {
   return values.includes(example) ? example : (values[0] ?? example);
 }

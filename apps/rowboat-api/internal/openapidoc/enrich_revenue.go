@@ -129,6 +129,30 @@ func suggestionCueSchema() obj {
 	return schema
 }
 
+const relationshipChangeDescription = "Exact before/after values, uncertain claim ids, contradictions, and recommendation reason."
+
+func relationshipChangeExample() obj {
+	return obj{
+		"changes": []any{obj{
+			"after":        "needs_attention",
+			"assertionIds": []any{"6b8dfa9b-a7b2-46ea-982c-622a914c00e5"},
+			"before":       "healthy",
+			"dimension":    "health",
+			"reason":       "Champion engagement declined after pricing.",
+		}},
+		"contradictions":    []any{},
+		"fromVersion":       0,
+		"toVersion":         1,
+		"uncertainClaimIds": []any{},
+	}
+}
+
+func relationshipChangeSchema() obj {
+	schema := freeFormSchema(relationshipChangeDescription)
+	schema["example"] = relationshipChangeExample()
+	return schema
+}
+
 const (
 	graphExecutionStatusDescription = "Needs reconcile when this execution is ambiguous."
 	graphExecutionStatusExample     = "ambiguous"
@@ -648,7 +672,7 @@ func addRevenueSchemas(schemas obj) {
 		"claims":                    arraySchema("Material quote-backed claims.", ref("ConversationClaim")),
 		"reviewItems":               arraySchema("Only low-confidence review items.", ref("ConversationReviewItem")),
 		"governanceReceipts":        arraySchema("Transcript governance receipts.", ref("ConversationGovernanceReceipt")),
-		"delta":                     freeFormSchema("Exact before/after values, uncertain claim ids, contradictions, and recommendation reason."),
+		"delta":                     relationshipChangeSchema(),
 		"liveCues":                  suggestionCueSchema(),
 		"contradictionCases":        arraySchema("Typed durable conflicts.", freeFormSchema("Contradiction case.")),
 		"recoveryEvaluations":       arraySchema("Bounded commitment recovery evaluations.", freeFormSchema("Recovery evaluation.")),
