@@ -6,7 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * Mutual action plan.
- */
-export type ApproveMutualActionPlan200 = { [key: string]: unknown };
+export type ListAgentSessionsParams = {
+  /**
+   * How many conversations to skip. Show earlier conversations skips the newest 50.
+   * @minimum 0
+   */
+  offset?: number;
+};

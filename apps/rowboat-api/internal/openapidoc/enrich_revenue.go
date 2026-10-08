@@ -329,7 +329,7 @@ func addRevenueSchemas(schemas obj) {
 		"version":           intSchema("Relationship state version.", 4),
 		"state":             freeFormSchema("Projected state at this version."),
 		"stateHash":         stringSchema("Stable hash of canonical state and winning assertions.", documentedRelationshipStateHash),
-		"projectorVersion":  intSchema("Projector version used for this snapshot.", 1),
+		"projectorVersion":  intSchema("Projector version used for this snapshot.", 2),
 		"evaluatedAt":       stringSchema("Explicit evaluation time used by the projector.", "2026-07-25T16:00:00Z", obj{"format": "date-time"}),
 		"changedDimensions": arraySchema("Material dimensions that changed.", stringSchema("Dimension.", "health")),
 		"assertionIds":      assertionIDs,
@@ -401,9 +401,9 @@ func addRevenueSchemas(schemas obj) {
 	schemas["RelationshipIdentityLineage"] = objectSchema("Immutable graph lineage produced by an identity decision.", obj{
 		"id": uuidSchema("Lineage event id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "kind": stringSchema("Lineage kind.", "merged"),
 		"actorId": uuidSchema("User who recorded this change.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"), "reason": stringSchema("Reason.", "Confirmed duplicate."),
-		"observationIds":        arraySchema("Moved observation ids.", stringSchema("Observation id.", "observation:1")),
+		"observationIds":        movedObservations,
 		"identityIds":           movedIdentities,
-		"movedObjectRefs":       arraySchema("All moved graph objects.", stringSchema("Object ref.", "relationship-observation:1")),
+		"movedObjectRefs":       movedObjects,
 		"beforeRelationshipIds": withExample(arraySchema("Relationship ids before.", stringSchema("Relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5")), []any{"9c8dfa9b-a7b2-46ea-982c-622a914c00e5", "3a196c5e-b10e-46cb-a177-7c001f7be573"}),
 		"afterRelationshipIds":  withExample(arraySchema("Relationship ids after.", stringSchema("Relationship id.", "3a196c5e-b10e-46cb-a177-7c001f7be573")), []any{"3a196c5e-b10e-46cb-a177-7c001f7be573"}),
 		"occurredAt":            stringSchema("Event time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
@@ -429,12 +429,12 @@ func addRevenueSchemas(schemas obj) {
 		"id": uuidSchema("Attention id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "version": intSchema("Optimistic version.", 1),
 		"relationshipId": uuidSchema("Relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"), "relationshipName": stringSchema("Relationship name.", "Acme"),
 		"reasonCode": stringSchema("Detector reason.", "overdue_commitment"), "explanation": stringSchema("Readable explanation.", "A confirmed promise is overdue by two days."),
-		"triggeringObjectRef": stringSchema("Triggering object.", "commitment:8b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "evidenceRefs": arraySchema("Evidence refs.", stringSchema("Evidence ref.", "relationship-observation:1")),
+		"triggeringObjectRef": stringSchema("Triggering object.", "commitment:8b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "evidenceRefs": attentionEvidence,
 		"urgencyBand": stringEnum("Urgency.", "high", "low", "normal", "high", "critical"), "rankScore": intSchema("Internal deterministic rank.", 82), "rankFactors": freeFormSchema("Readable factor contributions."),
 		"sourceRequirements": arraySchema("Fresh sources required.", stringSchema("Source.", "google")), "recommendationId": uuidSchema("Recommendation id.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "recommendationRevision": intSchema("Recommendation revision.", 2),
-		"ownerId": uuidSchema("Assigned user id.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"), "status": stringEnum("Triage state.", "open", "open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved"), "stateReason": stringSchema("Why this item was acknowledged, snoozed, or dismissed. Empty while it is still open.", nil),
+		"ownerId": uuidSchema("Assigned user id.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"), "status": stringEnum("Triage state.", "open", "open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved"), "stateReason": stringSchema("Why this item was acknowledged, snoozed, or dismissed. Empty while it is still open.", documentedAttentionAcknowledgeReason),
 		"snoozedUntil": stringSchema("Snooze time.", "2026-08-07T14:00:00Z", obj{"format": "date-time"}, nullable()), "expiresAt": stringSchema("Expiry time.", "2026-08-07T14:00:00Z", obj{"format": "date-time"}, nullable()),
-		"detectorVersion": intSchema("Detector version.", 1), "projectorVersion": intSchema("Projector version.", 1), "relationshipStateVersion": intSchema("Relationship version evaluated.", 4),
+		"detectorVersion": intSchema("Detector version.", 1), "projectorVersion": intSchema("Projector version.", 2), "relationshipStateVersion": intSchema("Relationship version evaluated.", 4),
 		"acknowledgedBy": stringSchema("User who acknowledged this item. Empty until it is acknowledged.", nil, obj{"format": "uuid"}, nullable()), "acknowledgedAt": stringSchema("When this item was acknowledged. Empty until then.", nil, obj{"format": "date-time"}, nullable()),
 		"dismissedBy": stringSchema("User who dismissed this item. Empty until it is dismissed.", nil, obj{"format": "uuid"}, nullable()), "dismissedAt": stringSchema("When this item was dismissed. Empty until then.", nil, obj{"format": "date-time"}, nullable()),
 		"createdAt": stringSchema("Created time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}), "updatedAt": stringSchema("Updated time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
@@ -470,7 +470,7 @@ func addRevenueSchemas(schemas obj) {
 
 	schemas["MissionControlReadModel"] = objectSchema("One server-owned, version-consistent answer to state, change, evidence, action, completeness, and control.", obj{
 		"contractVersion": stringSchema("Read-contract version.", "tfa-r1.1-2026-08-26"), "aggregateHash": stringSchema("Stable hash of every material answer in this aggregate.", "sha256:cd34"), "asOf": stringSchema("Explicit response boundary.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
-		"stateVersion": intSchema("Relationship state version.", 4), "stateHash": stringSchema("Stable state hash.", documentedRelationshipStateHash), "projectorVersion": intSchema("Projector version.", 1), "detectorVersion": intSchema("Detector version.", 1),
+		"stateVersion": intSchema("Relationship state version.", 4), "stateHash": stringSchema("Stable state hash.", documentedRelationshipStateHash), "projectorVersion": intSchema("Projector version.", 2), "detectorVersion": intSchema("Detector version.", 1),
 		"freshnessBoundary": stringSchema("Earliest source freshness boundary.", "2026-07-31T14:30:00Z", obj{"format": "date-time"}, nullable()), "previousReviewedStateVersion": intSchema("Last acknowledged version.", 3), "changedSinceReview": boolSchema("Whether material state changed.", true),
 		"changes": arraySchema("Dimension-level changes.", freeFormSchema("Mission Control change.")), "evidence": obj{"type": "object", "description": "Dimension-keyed winning typed assertions and evidence references.", "additionalProperties": ref("MissionControlDimensionEvidence")},
 		"completeness": freeFormSchema("Source coverage, missing dimensions, ambiguity, and external-action safety."), "activeRecommendation": freeFormSchema("Active revision-bound recommendation and factors."),
@@ -863,6 +863,7 @@ func addRevenueSchemas(schemas obj) {
 // overlay. Runtime schemas may reuse names such as status and reason with
 // domain-specific semantics, so their contract must win over entity defaults.
 func restoreRevenueSchemaOverrides(schemas obj) {
+	restoreConversationReviewIdentifiers(schemas)
 	if evidence := asObj(schemas["MissionControlDimensionEvidence"]); evidence != nil {
 		properties := asObj(evidence["properties"])
 		properties["reason"] = stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won.")
@@ -872,11 +873,41 @@ func restoreRevenueSchemaOverrides(schemas obj) {
 			"proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active",
 		)
 	}
+	// The generic overlay calls every provider an LLM vendor and samples openai.
+	// A stored mail thread or body can only come from Gmail.
+	for _, name := range []string{"MailThread", "MailBodyCache"} {
+		if properties := asObj(asObj(schemas[name])["properties"]); properties != nil && properties["provider"] != nil {
+			properties["provider"] = stringEnum("Mailbox this row came from. Only Gmail is stored.", "gmail", "gmail")
+		}
+	}
+	// The generic overlay calls every email the signed-in person's WorkOS address.
+	// These rows are someone on a relationship or a message.
+	for _, item := range []struct{ name, description string }{
+		{"RelationshipParticipant", "Normalized email."},
+		{"CommunicationParticipant", "Address of someone on this message."},
+	} {
+		if properties := asObj(asObj(schemas[item.name])["properties"]); properties != nil && properties["email"] != nil {
+			properties["email"] = stringSchema(item.description, "avery@acme.com")
+		}
+	}
+	// Generic field docs rewrite every status example to "active". These
+	// statuses have their own lifecycles.
+	if properties := asObj(asObj(schemas["RevenueLeakScan"])["properties"]); properties != nil {
+		properties["status"] = stringEnum("Scan status.", "running", "pending", "running", "completed", "failed")
+		properties["lookbackDays"] = intSchema("Historical lookback in days.", 180)
+	}
+	if properties := asObj(asObj(schemas["RevenuePolicyDecision"])["properties"]); properties != nil {
+		properties["status"] = stringEnum("Decision status.", "passed", "passed", "review_required", "blocked")
+	}
+	if status := asObj(asObj(asObj(schemas["RelationshipSourceStatus"])["properties"])["status"]); status != nil {
+		status["description"] = "Connection lifecycle."
+		status["example"] = "live"
+	}
 	// The generic overlay used to stamp the credit-ledger enum onto every
 	// property named reason. These fields are not ledger entries.
 	setSchemaReason(schemas, "ActionProposal", stringSchema("Reason recorded when this proposal is rejected or fails.", "The invoice was already paid."))
 	setSchemaReason(schemas, "CommitmentEvent", stringSchema("Transition rationale.", "Counterparty accepted in writing."))
-	setSchemaReason(schemas, "CommunicationAccess", stringSchema("Decision reason.", "owner_default"))
+	setSchemaReason(schemas, "CommunicationAccess", stringSchema("Decision reason.", "mailbox_owner"))
 	setSchemaReason(schemas, "CommunicationShareGrant", stringSchema("Why this content was shared.", "The account owner asked for the thread."))
 	setSchemaReason(schemas, "ConnectorAuditEvent", stringSchema("Why this connector decision was recorded.", "subscription_ended"))
 	setSchemaReason(schemas, "ConsentEntitlement", stringSchema("Machine-readable denial reason.", "scope_not_in_plan", nullable()))
@@ -1280,74 +1311,6 @@ const (
 	documentedSavedNoteStateHash      = "sha256:e42c0202f5034a1965e117a1a6c7065bcd09e1439493cea57074fa06572905c9"
 )
 
-func documentedSavedNoteFacts() obj {
-	return obj{
-		"noteId": "note-1",
-		"title":  "Renewal context",
-		"body":   "Use the updated terms.",
-		"content": []any{obj{
-			"type":     "p",
-			"children": []any{obj{"text": "Use the updated terms."}},
-		}},
-		"meetingLinked": false,
-	}
-}
-
-func documentedSavedNoteRequest() obj {
-	return obj{"observations": []any{obj{
-		"relationshipId":  documentedSavedNoteRelationshipID,
-		"source":          "desktop_note",
-		"externalId":      documentedSavedNoteExternalID,
-		"sourceVersion":   "1",
-		"eventType":       "note",
-		"occurredAt":      documentedSavedNoteOccurredAt,
-		"summary":         "Renewal context",
-		"normalizedFacts": documentedSavedNoteFacts(),
-	}}}
-}
-
-func documentedSavedNoteResponse() obj {
-	return obj{"results": []any{obj{
-		"observation": obj{
-			"id":              documentedSavedNoteObservationID,
-			"source":          "desktop_note",
-			"externalId":      documentedSavedNoteExternalID,
-			"sourceVersion":   "1",
-			"eventType":       "note",
-			"occurredAt":      documentedSavedNoteOccurredAt,
-			"receivedAt":      documentedSavedNoteOccurredAt,
-			"summary":         "Renewal context",
-			"normalizedFacts": documentedSavedNoteFacts(),
-			"contentHash":     documentedSavedNoteContentHash,
-		},
-		"relationship": obj{
-			"id":               documentedSavedNoteRelationshipID,
-			"kind":             "company",
-			"displayName":      "Cedar Notes",
-			"status":           "active",
-			"lastTouchAt":      documentedSavedNoteOccurredAt,
-			"peopleCount":      0,
-			"emailThreadCount": 0,
-			"commitmentCount":  0,
-			"lifecycle":        "prospect",
-			"engagement":       "unknown",
-			"sentiment":        "unknown",
-			"health":           "unknown",
-			"stateVersion":     0,
-			"stateHash":        documentedSavedNoteStateHash,
-			"projectorVersion": 2,
-			"projectedAt":      documentedSavedNoteOccurredAt,
-			"risks":            []any{},
-			"milestones":       []any{},
-			"resourceRefs":     []any{},
-			"categories":       []any{},
-		},
-		"duplicate":        false,
-		"projectionStatus": "completed",
-		"projectionJobId":  documentedSavedNoteProjectionJob,
-	}}}
-}
-
 const documentedApprovedRecommendationID = "1a8dfa9b-a7b2-46ea-982c-622a914c00e5"
 
 func documentedApprovedRecommendation() obj {
@@ -1383,17 +1346,14 @@ func documentedApprovedRecommendation() obj {
 func addRevenuePaths(paths obj) {
 	actionParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Action id.", "schema": obj{"type": "string", "format": "uuid"}}}
 
-	paths["/v1/revenue-workspaces/current"] = obj{"get": operation("Revenue", "Get current revenue workspace", "Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.", "getRevenueWorkspace", bearer(), nil, nil, obj{
-		"200": jsonResponse("Current workspace.", ref("RevenueWorkspace"), nil),
-		"401": responseRef("401"),
-	})}
+	paths["/v1/revenue-workspaces/current"] = obj{"get": localModeOperation()}
 	// Add rule leaves Protected address selected and posts the address typed
 	// into the field. The placeholder that field shows is buyer@example.com.
 	const privacyRuleKind = "protected_address"
 	const privacyRuleValue = "buyer@example.com"
 	const privacyRuleID = "3b8dfa9b-a7b2-46ea-982c-622a914c00e5"
 	const privacyRuleHash = "sha256:6a6c26195c3682faa816966af789717c3bfa834eee6c599d667d2b3429c27cfd"
-	paths["/v1/revenue-workspaces/current/communication-privacy-rules"] = obj{"post": operation("Revenue", "Add rule", "Add rule sends kind protected_address and value buyer@example.com. The server lowercases the address, stores an active rule, and returns that rule with the sha256 of the stored address.", "createCommunicationPrivacyRule", bearer(), nil, jsonRequest("Privacy rule.", objectSchema("Privacy rule.", obj{
+	mergePath(paths, "/v1/revenue-workspaces/current/communication-privacy-rules", obj{"post": operation("Revenue", "Add rule", "Add rule sends kind protected_address and value buyer@example.com. The server lowercases the address, stores an active rule, and returns that rule with the sha256 of the stored address.", "createCommunicationPrivacyRule", bearer(), nil, jsonRequest("Privacy rule.", objectSchema("Privacy rule.", obj{
 		"kind":  stringEnum("Rule kind. Add rule leaves the default protected address selected.", privacyRuleKind, "protected_address", "protected_domain", "blocked_address", "blocked_domain"),
 		"value": stringSchema("Address or domain typed into the rule field.", privacyRuleValue),
 	}, "kind", "value"), obj{"kind": privacyRuleKind, "value": privacyRuleValue}), obj{
@@ -1409,12 +1369,12 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"403": responseRef("403"),
-	})}
-	paths["/v1/revenue-workspaces/link"] = obj{"post": operation("Revenue", "Link the OutboundConsole workspace", "Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.", "linkRevenueWorkspace", bearer(), nil, jsonRequest("OutboundConsole identifiers.", objectSchema("Link request.", obj{
-		"outboundOrganizationId": stringSchema("OutboundConsole organization id.", "org_01ABC"),
-		"outboundWorkspaceId":    stringSchema("OutboundConsole workspace id.", "ws_01ABC"),
-	}, "outboundWorkspaceId"), obj{"outboundOrganizationId": "org_01ABC", "outboundWorkspaceId": "ws_01ABC"}), obj{
-		"200": jsonResponse("Linked workspace.", ref("RevenueWorkspace"), nil),
+	})})
+	paths["/v1/revenue-workspaces/link"] = obj{"post": operation("Revenue", "Link workspace", "Link workspace sends the sending workspace id and the organization id from the form. The stored workspace keeps those ids, switches to linked, and turns the sending check on.", "linkRevenueWorkspace", bearer(), nil, jsonRequest("Sending workspace id and organization id.", objectSchema("Link request.", obj{
+		"outboundOrganizationId": stringSchema("Organization id.", linkedOrganizationID),
+		"outboundWorkspaceId":    stringSchema("Sending workspace id.", linkedSendingWorkspaceID),
+	}, "outboundWorkspaceId"), linkedWorkspaceRequest()), obj{
+		"200": jsonResponse("The linked workspace Link workspace stores.", ref("RevenueWorkspace"), linkedWorkspace()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"503": problemResponse("Checked sending is not configured, so the link stays off.", ref("ErrorEnvelope"), problemExample(503, "Service Unavailable", "policy preflight unavailable; the action stays pending", "facade_unavailable")),
@@ -1445,14 +1405,14 @@ func addRevenuePaths(paths obj) {
 	})}
 
 	paths["/v1/revenue-leak-scans"] = obj{
-		"get": operation("Revenue", "List revenue leak scans", "Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions. A full page is the end of the history when hasMore is false.", "listRevenueLeakScans", bearer(), []any{
-			obj{"name": "limit", "in": "query", "required": false, "description": "Maximum scans to return (default 10, max 100).", "schema": obj{"type": "integer", "minimum": 1, "maximum": 100}},
-			obj{"name": "offset", "in": "query", "required": false, "description": "Page offset.", "schema": obj{"type": "integer", "minimum": 0}},
+		"get": operation("Revenue", "Audits", auditsPageDescription, "listRevenueLeakScans", bearer(), []any{
+			obj{"name": "limit", "in": "query", "required": false, "description": "Page size (max 100). Audits asks for 10.", "example": 10, "schema": obj{"type": "integer", "minimum": 1, "maximum": 100, "example": 10}},
+			obj{"name": "offset", "in": "query", "required": false, "description": "How many audits to skip. Audits does not send this on the first page.", "schema": obj{"type": "integer", "minimum": 0}},
 		}, nil, obj{
-			"200": jsonResponse("Audit history.", objectSchema("Audit history. A full page is the end of the history when hasMore is false.", obj{
-				"hasMore": obj{"description": "Another audit exists beyond this page.", "type": "boolean"},
+			"200": jsonResponse("Empty audit page, newest first.", objectSchema("Audit history.", obj{
 				"scans":   arraySchema("Scans newest first.", ref("RevenueLeakScan")),
-			}, "scans"), nil),
+				"hasMore": boolSchema("Whether another audit exists past this page.", false),
+			}, "scans", "hasMore"), auditsPage()),
 			"400": responseRef("400"),
 			"401": responseRef("401"),
 		}),
@@ -1525,25 +1485,7 @@ func addRevenuePaths(paths obj) {
 		}, "id", "generatedAt", "account", "direction", "text", "state", "confidence", "evidence", "history"), exportedCommitmentMarkdown),
 		"401": responseRef("401"), "404": responseRef("404"),
 	})}
-	paths["/v1/revenue-leak-scans/{scanId}/report"] = obj{"get": operation("Revenue", "Get the open promises report", "Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.", "getOpenPromisesReport", bearer(), []any{
-		obj{"name": "scanId", "in": "path", "required": true, "description": "Scan id.", "schema": obj{"type": "string", "format": "uuid"}},
-		obj{"name": "format", "in": "query", "required": false, "description": "md for Markdown; JSON otherwise.", "schema": obj{"type": "string"}},
-	}, nil, obj{
-		"200": jsonOrMarkdownResponse("The open promises report.", objectSchema("Open promises report.", obj{
-			"generatedAt":   stringSchema("When the report was produced.", "2026-09-09T12:00:00Z", obj{"format": "date-time"}),
-			"lookbackDays":  intSchema("Scan window in days.", 180),
-			"threadsSeen":   intSchema("Conversations read.", 412),
-			"scanStatus":    stringSchema("Scan status.", "completed"),
-			"outboundCount": intSchema("Promises we made.", 12),
-			"inboundCount":  intSchema("Promises made to us.", 5),
-			"byAccount":     obj{"type": "object", "additionalProperties": obj{"type": "integer"}, "description": "Open promise count by account."},
-			"truncated":     boolSchema("Whether more than 200 matching promises exist.", false),
-			"items": arraySchema("Open promises, at risk first.", objectSchema("Open promise.", obj{
-				"commitmentId": stringSchema("Commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "account": stringSchema("Counterparty account.", "Acme"), "direction": stringSchema("Who owes the promise.", "promised_by_me"), "text": stringSchema("The obligation.", "Migration live by the 14th"), "state": stringSchema("Register state.", "at_risk"), "dueAt": stringSchema("Resolved due time.", "2026-09-14T17:00:00Z", obj{"format": "date-time"}, nullable()), "duePhrase": stringSchema("Due condition as stated.", "by the 14th"), "owner": stringSchema("Promise owner.", "alex@example.com"), "sourceQuote": stringSchema("The exact message that created it.", "We will have the migration live by the 14th."), "sourceUri": stringSchema("Link to the source.", "https://mail.google.com/thread-1"), "occurredAt": stringSchema("When the source was created.", "2026-09-06T12:00:00Z", obj{"format": "date-time"}),
-			}, "commitmentId", "account", "direction", "text", "state")),
-		}, "generatedAt", "lookbackDays", "threadsSeen", "scanStatus", "outboundCount", "inboundCount", "byAccount", "items", "truncated"), nil),
-		"401": responseRef("401"), "404": responseRef("404"),
-	})}
+	paths["/v1/revenue-leak-scans/{scanId}/report"] = obj{"get": openPromisesReportOperation()}
 
 	paths["/v1/relationships"] = obj{
 		"get": operation("Relationship Intelligence", "All companies", companyDirectoryDescription, "listRelationships", bearer(), []any{
@@ -1620,10 +1562,10 @@ func addRevenuePaths(paths obj) {
 		"404": responseRef("404"),
 	})}
 	paths["/v1/relationships/{relationshipId}/conversation-review"] = obj{"get": earlierEvidenceOperation()}
-	paths["/v1/relationships/{relationshipId}/acknowledgements"] = obj{"post": operation("Relationship Intelligence", "Acknowledge Mission Control state", "Records the exact state version and hash the actor reviewed. A stale acknowledgement fails with 409.", "acknowledgeMissionControl", bearer(), relationshipParam, jsonRequest("Review boundary.", objectSchema("Mission Control acknowledgement.", obj{
-		"stateVersion": intSchema("Reviewed state version.", 4), "stateHash": stringSchema("Reviewed state hash.", documentedRelationshipStateHash),
-	}, "stateVersion", "stateHash"), obj{"stateVersion": 4, "stateHash": documentedRelationshipStateHash}), obj{
-		"201": jsonResponse("Acknowledgement.", objectSchema("Mission Control acknowledgement result.", obj{"id": uuidSchema("Acknowledgement id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "stateVersion": intSchema("Reviewed state version.", 4), "stateHash": stringSchema("Reviewed hash.", documentedRelationshipStateHash), "acknowledgedAt": stringSchema("Review time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"})}, "id", "stateVersion", "stateHash", "acknowledgedAt"), nil),
+	paths["/v1/relationships/{relationshipId}/acknowledgements"] = obj{"post": operation("Relationship Intelligence", "Acknowledge Mission Control state", "Mark as reviewed sends the company id and the state version and hash that company is showing. A stale review fails with 409.", "acknowledgeMissionControl", bearer(), reviewedCompanyParams(), jsonRequest("Review boundary.", objectSchema("Mission Control acknowledgement.", obj{
+		"stateVersion": intSchema("Reviewed state version.", reviewedCompanyVersion), "stateHash": stringSchema("Reviewed state hash.", reviewedCompanyHash),
+	}, "stateVersion", "stateHash"), reviewedCompanyRequest()), obj{
+		"201": jsonResponse("Acknowledgement.", objectSchema("Mission Control acknowledgement result.", obj{"id": uuidSchema("Acknowledgement id.", reviewedAcknowledgementID), "stateVersion": intSchema("Reviewed state version.", reviewedCompanyVersion), "stateHash": stringSchema("Reviewed hash.", reviewedCompanyHash), "acknowledgedAt": stringSchema("Review time.", reviewedCompanyAt, obj{"format": "date-time"})}, "id", "stateVersion", "stateHash", "acknowledgedAt"), reviewedCompanyResponse()),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
 	paths["/v1/relationships/{relationshipId}/evidence/{evidenceId}"] = obj{"get": operation("Relationship Intelligence", "Open the original detail", originalDetailDescription, "getRelationshipEvidence", bearer(), []any{
@@ -1634,37 +1576,26 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/relationships/{relationshipId}/corrections"] = obj{"post": operation("Relationship Intelligence", "Correct relationship state", "Appends a user correction assertion and deterministically reprojects the relationship. Source evidence is never overwritten.", "correctRelationship", bearer(), relationshipParam, jsonRequest("Correction.", objectSchema("Relationship correction.", obj{
-		"dimension":             stringEnum("Corrected state dimension.", "health", "lifecycle", "engagement", "sentiment", "health", "summary", "next_action", "risk", "milestone"),
-		"value":                 stringSchema("Correct value.", "healthy"),
-		"reason":                stringSchema("Why the model is wrong.", "The review happened yesterday."),
-		"supersedesAssertionId": stringSchema("Optional active assertion on the same relationship and dimension that this correction permanently replaces.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5", obj{"format": "uuid"}),
-		"validTo":               stringSchema("Optional exclusive expiry boundary for a temporary correction.", "2026-08-31T17:00:00Z", obj{"format": "date-time"}, nullable()),
-	}, "dimension", "value", "reason"), obj{"dimension": "health", "value": "healthy", "reason": "The review happened yesterday."}), obj{
-		"201": jsonResponse("Reprojected relationship.", ref("RevenueRelationship"), nil),
-		"400": responseRef("400"),
-		"401": responseRef("401"),
-		"404": responseRef("404"),
-	})}
+	paths["/v1/relationships/{relationshipId}/corrections"] = obj{"post": correctDetailOperation()}
 	paths["/v1/relationships/{relationshipId}/assertions/{assertionId}/retract"] = obj{"post": retractedCorrectionOperation()}
-	paths["/v1/relationships/{relationshipId}/conversation-corrections"] = obj{"post": operation("Relationship Intelligence", "Correct reviewed conversation evidence", "Resolves a focused word, speaker, entity, or material-claim review item. State-affecting corrections append a top-precedence user assertion and reproject deterministically.", "correctConversationEvidence", bearer(), relationshipParam, jsonRequest("Focused correction.", objectSchema("Conversation correction.", obj{
-		"reviewItemId":   stringSchema("Focused review item id.", conversationReviewItemID(conversationObservationID, conversationClaimID, "speaker")),
-		"correctedValue": stringSchema("Human-corrected value.", "Avery Chen"),
-		"reason":         stringSchema("Correction reason.", "Avery was the speaker."),
-	}, "reviewItemId", "correctedValue", "reason"), obj{"reviewItemId": conversationReviewItemID(conversationObservationID, conversationClaimID, "speaker"), "correctedValue": "Avery Chen", "reason": "Avery was the speaker."}), obj{
-		"201": jsonResponse("Corrected relationship and refreshed intelligence.", objectSchema("Correction result.", obj{"relationship": ref("RevenueRelationship"), "intelligence": ref("RelationshipIntelligence")}, "relationship", "intelligence"), nil),
+	paths["/v1/relationships/{relationshipId}/conversation-corrections"] = obj{"post": operation("Relationship Intelligence", "Correct reviewed conversation evidence", "Correct sends the company id, the review item id, and the edited value. It always sends the focused-review reason.", "correctConversationEvidence", bearer(), conversationCorrectionParams(), jsonRequest("Focused correction.", objectSchema("Conversation correction.", obj{
+		"reviewItemId":   stringSchema("Focused review item id.", conversationCorrectionReviewID()),
+		"correctedValue": stringSchema("Human-corrected value.", conversationCorrectionValue),
+		"reason":         stringSchema("Correction reason.", conversationCorrectionReason),
+	}, "reviewItemId", "correctedValue", "reason"), conversationCorrectionRequest()), obj{
+		"201": jsonResponse("Corrected relationship and refreshed intelligence.", objectSchema("Correction result.", obj{"relationship": ref("RevenueRelationship"), "intelligence": ref("RelationshipIntelligence")}, "relationship", "intelligence"), conversationCorrectionResponse()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/relationships/{relationshipId}/conversation-decisions"] = obj{"post": operation("Relationship Intelligence", "Decide a proposed conversation change", "Approves, corrects, rejects, or defers one evidence-backed semantic candidate. A stale baseline returns 409 and no state mutation.", "decideConversationChange", bearer(), relationshipParam, jsonRequest("Review decision.", objectSchema("Conversation review decision.", obj{
+	paths["/v1/relationships/{relationshipId}/conversation-decisions"] = obj{"post": operation("Relationship Intelligence", "Approve", approveChangeDescription, "decideConversationChange", bearer(), approveChangeParams(), jsonRequest("Review decision.", objectSchema("Conversation review decision.", obj{
 		"reviewItemId":   stringSchema("Review item id.", conversationReviewItemID(conversationObservationID, conversationClaimID, "speaker")),
 		"kind":           stringEnum("Decision kind.", "approve", "approve", "correct", "reject", "defer"),
 		"correctedValue": stringSchema("Required replacement for correct.", "Security review is complete."),
 		"reason":         stringSchema("Decision reason.", documentedConversationDecisionReason),
 		"deferUntil":     stringSchema("Future reminder for defer.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
-	}, "reviewItemId", "kind"), obj{"reviewItemId": conversationReviewItemID(conversationObservationID, conversationClaimID, "speaker"), "kind": "approve", "reason": "Customer stated this directly."}), obj{
-		"201": jsonResponse("Updated relationship and refreshed review queue.", objectSchema("Decision result.", obj{"relationship": ref("RevenueRelationship"), "intelligence": ref("RelationshipIntelligence")}, "relationship", "intelligence"), nil),
+	}, "reviewItemId", "kind"), obj{"reviewItemId": conversationReviewItemID(conversationObservationID, conversationClaimID, "speaker"), "kind": "approve", "reason": documentedConversationDecisionReason}), obj{
+		"201": jsonResponse("The proposed change is accepted, and the review queue is refreshed.", objectSchema("Decision result.", obj{"relationship": ref("RevenueRelationship"), "intelligence": ref("RelationshipIntelligence")}, "relationship", "intelligence"), approveChangeResult()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
@@ -1673,13 +1604,7 @@ func addRevenuePaths(paths obj) {
 	caseParam := make([]any, len(relationshipParam), len(relationshipParam)+1)
 	copy(caseParam, relationshipParam)
 	caseParam = append(caseParam, obj{"name": "caseId", "in": "path", "required": true, "description": "Contradiction case id.", "schema": obj{"type": "string"}})
-	paths["/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve"] = obj{"post": operation("Relationship Intelligence", "Resolve a typed contradiction", "Records the user's selected evidence side as a top-authority correction without rewriting either source.", "resolveRelationshipContradiction", bearer(), caseParam, jsonRequest("Resolution.", objectSchema("Contradiction resolution.", obj{
-		"selectedAssertionId": uuidSchema("Selected assertion id.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-		"reason":              stringSchema("Optional rationale.", "CRM was updated after the meeting."),
-	}, "selectedAssertionId"), obj{"selectedAssertionId": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"}), obj{
-		"201": jsonResponse("Updated relationship and intelligence.", freeFormSchema("Relationship detail result."), nil),
-		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
-	})}
+	paths["/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve"] = obj{"post": useThisValueOperation()}
 	const reconcileCommitmentID = "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"
 	const reconcileEvaluationID = "recovery:7cb1669953b1015129545ab3"
 	paths["/v1/relationships/{relationshipId}/commitment-recovery/run"] = obj{"post": operation("Relationship Intelligence", "Reconcile now", "Reconcile now sends an empty body. A past-due promise with nothing newer comes back as classification forgotten, and the company sheet reads that as a forgotten promise.", "runCommitmentRecovery", bearer(), relationshipParam, jsonRequestOptional("Empty request.", objectSchema("Recovery request.", obj{}), obj{}), obj{
@@ -1722,7 +1647,7 @@ func addRevenuePaths(paths obj) {
 		"blocker":        stringSchema("Blocker detail.", "Waiting on legal."),
 		"evidenceRefs":   arraySchema("Evidence references. An omitted list is stored as this transition.", stringSchema("Reference.", documentedQueueAcceptEvidence)),
 	}, "kind", "idempotencyKey"), obj{"kind": "accepted", "idempotencyKey": documentedQueueAcceptKey, "reason": documentedQueueAcceptReason}), obj{
-		"200": jsonResponse("Updated commitment.", ref("RelationshipCommitment"), nil),
+		"201": jsonResponse("The promise is accepted and still open.", ref("RelationshipCommitment"), theyAcceptedCommitment()),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
 	paths["/v1/relationships/{relationshipId}/commitment-dependencies"] = obj{"post": operation("Relationship Intelligence", "Create a commitment dependency", "Creates an evidence-backed dependency after enforcing tenant and relationship scope and rejecting graph cycles.", "createCommitmentDependency", bearer(), relationshipParam, jsonRequest("Dependency.", objectSchema("Commitment dependency request.", obj{
@@ -1771,20 +1696,11 @@ func addRevenuePaths(paths obj) {
 		"409": responseRef("409"),
 		"503": responseRef("503"),
 	})}
-	paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/approve"] = obj{"post": operation("Relationship Intelligence", "Approve a plan revision", "Binds internal approval to the exact current revision hash.", "approveMutualActionPlan", bearer(), planParam, jsonRequestOptional("Empty request.", objectSchema("Plan approval request.", obj{}), obj{}), obj{
-		"200": jsonResponse("Approved plan.", freeFormSchema("Mutual action plan."), nil),
+	paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/approve"] = obj{"post": operation("Relationship Intelligence", "Approve this plan", "Approve this plan posts an empty body. The stored plan status is internally_approved, which the company sheet reads as Approved in this workspace.", "approveMutualActionPlan", bearer(), planParam, jsonRequestOptional("Empty request.", objectSchema("Plan approval request.", obj{}), obj{}), obj{
+		"201": jsonResponse("Approved plan.", mutualActionPlanSchema("internally_approved", "not_issued"), documentedMutualActionPlan("internally_approved", "not_issued", "")),
 		"401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
-	paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share"] = obj{"post": operation("Relationship Intelligence", "Draft an email to share this plan", "Draft an email to share this plan posts an empty body. The stored plan status is shared, the token state is active, and responseToken is the one-time token. The server keeps only the hash of that token.", "shareMutualActionPlan", bearer(), planParam, jsonRequestOptional("Empty request.", objectSchema("Plan share request.", obj{}), obj{}), obj{
-		"201": jsonResponse("Shared plan and one-time token.", objectSchema("Plan share result.", obj{
-			"plan":          mutualActionPlanSchema("shared", "active"),
-			"responseToken": stringSchema("One-time token for the shared plan. The server stores only its hash.", documentedPlanResponseToken),
-		}, "plan", "responseToken"), obj{
-			"plan":          documentedMutualActionPlan("shared", "active", documentedPlanDecisionID),
-			"responseToken": documentedPlanResponseToken,
-		}),
-		"401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
-	})}
+	paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share"] = obj{"post": sharePlanOperation()}
 	paths["/v1/relationships/{relationshipId}/conversation-policy"] = obj{
 		"get": operation("Relationship Intelligence", "Inspect conversation policy", "Returns all applicable layers and the monotonically resolved effective policy.", "getConversationPolicy", bearer(), relationshipParam, nil, obj{
 			"200": jsonResponse("Policy layers and effective policy.", freeFormSchema("Conversation policy result."), nil), "401": responseRef("401"), "404": responseRef("404"),
@@ -1827,10 +1743,10 @@ func addRevenuePaths(paths obj) {
 		"409": responseRef("409"),
 		"503": responseRef("503"),
 	})}
-	paths["/v1/relationships/{relationshipId}/conversation-deletion"] = obj{"post": operation("Relationship Intelligence", "Request conversation deletion", "Evaluates legal hold at execution time, removes server-side content transactionally, and returns an idempotent per-target receipt. Device and provider work remains pending until separately verified.", "requestConversationDeletion", bearer(), relationshipParam, jsonRequest("Deletion request.", objectSchema("Deletion request.", obj{
+	paths["/v1/relationships/{relationshipId}/conversation-deletion"] = obj{"post": operation("Relationship Intelligence", "Confirm delete", confirmDeleteDescription, "requestConversationDeletion", bearer(), confirmDeleteParams(), jsonRequest("Deletion request.", objectSchema("Deletion request.", obj{
 		"requestId": stringSchema("Idempotency key.", documentedDeletionRequestID, obj{"format": "uuid"}),
 	}, "requestId"), obj{"requestId": documentedDeletionRequestID}), obj{
-		"202": jsonResponse("Deletion receipt.", ref("ConversationDeletionReceipt"), nil),
+		"202": jsonResponse("Conversation evidence stored here is deleted. Device and mailbox copies are still waiting.", ref("ConversationDeletionReceipt"), confirmDeleteReceipt()),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
 	personParam := []any{obj{"name": "personId", "in": "path", "required": true, "description": "Person id.", "schema": obj{"type": "string", "format": "uuid"}}}
@@ -1882,7 +1798,7 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"403": responseRef("403"),
 	})}
-	paths["/v1/relationship-observations/batch"] = obj{"post": operation("Relationship Intelligence", "Ingest relationship observations", "Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.", "ingestRelationshipObservations", bearer(), nil, jsonRequest("Observation batch.", objectSchema("Observation batch.", obj{
+	paths["/v1/relationship-observations/batch"] = obj{"post": operation("Relationship Intelligence", "Ingest relationship observations", "New person sends the new person id, source user, and event person_added. The summary is that person's name followed by added by the user.", "ingestRelationshipObservations", bearer(), nil, jsonRequest("Observation batch.", objectSchema("Observation batch.", obj{
 		"observations": arraySchema("Provider-neutral observations.", objectSchema("Observation input.", obj{
 			"relationshipId":  uuidSchema("Known relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 			"displayName":     stringSchema("Account display name for first ingestion.", "Acme"),
@@ -1926,8 +1842,8 @@ func addRevenuePaths(paths obj) {
 			"channel":   stringEnum("Interaction channel.", "email", "email", "meeting", "call", "chat", "note", "crm"),
 			"direction": stringEnum("Interaction direction.", "inbound", "inbound", "outbound", "internal"),
 		}, "source", "externalId", "eventType")),
-	}, "observations"), documentedSavedNoteRequest()), obj{
-		"201": jsonResponse("Stored note.", freeFormSchema("Observation, relationship, and duplicate status per input."), documentedSavedNoteResponse()),
+	}, "observations"), addedPersonRequest()), obj{
+		"201": jsonResponse("Ingestion results.", freeFormSchema("Observation, relationship, and duplicate status per input."), addedPersonResponse()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"409": responseRef("409"),
@@ -1982,20 +1898,19 @@ func addRevenuePaths(paths obj) {
 	})}
 	planTokenParam := []any{obj{"name": "X-Oppulence-Plan-Token", "in": "header", "required": true, "description": "Scoped plan response token. Never put this token in a URL or query parameter.", "schema": obj{"type": "string"}}}
 	paths["/v1/public/mutual-action-plan"] = obj{"get": openPlanOperation()}
-	paths["/v1/public/mutual-action-plan/responses"] = obj{"post": operation("Relationship Intelligence", "Respond to a scoped plan", "Appends an idempotent external response for internal review; it never directly changes canonical commitments.", "respondPublicMutualActionPlan", nil, planTokenParam, jsonRequest("External response.", objectSchema("Plan response.", obj{
-		"responseId":    stringSchema("Counterparty-generated idempotency key.", documentedPlanResponseID, obj{"format": "uuid"}),
+	paths["/v1/public/mutual-action-plan/responses"] = obj{"post": operation("Relationship Intelligence", "Confirm plan", confirmPlanDescription, "respondPublicMutualActionPlan", nil, planTokenParam, jsonRequest(confirmPlanRequestDescription, objectSchema("Plan response.", obj{
+		"responseId":    stringSchema("Counterparty-generated idempotency key.", confirmPlanResponseID, obj{"format": "uuid"}),
 		"kind":          stringEnum("Response kind.", "confirm", "confirm", "correct", "blocked", "completed", "comment"),
 		"itemId":        stringSchema("Plan item id when applicable.", documentedPlanItemID),
 		"proposedValue": stringSchema("Proposed correction.", "Move due date to Friday."),
 		"comment":       stringSchema("Counterparty comment.", "Waiting on legal."),
-	}, "responseId", "kind"), obj{"responseId": documentedPlanResponseID, "kind": "confirm", "comment": ""}), obj{
-		"201": jsonResponse("Recorded response.", freeFormSchema("Response receipt."), nil), "400": responseRef("400"), "404": responseRef("404"),
+	}, "responseId", "kind"), confirmPlanRequestExample()), obj{
+		"201": jsonResponse(confirmPlanRecorded, confirmPlanResponseSchema(), confirmPlanResponseExample()),
+		"400": responseRef("400"),
+		"404": responseRef("404"),
 	})}
 	paths["/v1/relationship-sources"] = obj{"get": sourceInventoryOperation()}
-	paths["/v1/relationship-sources/status"] = obj{"get": operation("Relationship Intelligence", "Get source health", "Returns authorization, backfill, freshness, failure, repair, revocation, and disconnect state for each relationship evidence source.", "getRelationshipSourceStatuses", bearer(), nil, nil, obj{
-		"200": jsonResponse("Evidence source health.", objectSchema("Source status list.", obj{"sources": arraySchema("Sources.", ref("RelationshipSourceStatus"))}), nil),
-		"401": responseRef("401"),
-	})}
+	paths["/v1/relationship-sources/status"] = obj{"get": sourceStatusOperation()}
 	paths["/v1/relationship-beta/diagnostics"] = obj{"get": operation("Relationship Intelligence", "Download support file", "Download support file saves the redacted support file for this workspace. Names, addresses, evidence, and secrets are left out.", "getRelationshipBetaDiagnostics", bearer(), nil, nil, obj{
 		"200": jsonResponse("Support file.", ref("BetaDiagnostics"), supportFileExample()), "401": responseRef("401"), "403": responseRef("403"),
 	})}
@@ -2035,9 +1950,9 @@ func addRevenuePaths(paths obj) {
 	}, "candidates", "hasMore"), pendingDuplicatesPage()), "400": responseRef("400"), "401": responseRef("401")})}
 	candidateParam := []any{obj{"name": "candidateId", "in": "path", "required": true, "description": "Identity candidate id.", "schema": obj{"type": "string", "format": "uuid"}}}
 	paths["/v1/relationship-identity-candidates/{candidateId}"] = obj{"get": operation("Relationship Intelligence", "Inspect identity candidate", "Returns exact anchors, provider records, evidence range, impact, advisory confidence, immutable decisions, and lineage.", "getRelationshipIdentityCandidate", bearer(), candidateParam, nil, obj{"200": jsonResponse("Identity candidate.", ref("RelationshipIdentityCandidate"), nil), "401": responseRef("401"), "404": responseRef("404")})}
-	paths["/v1/relationship-identity-candidates/{candidateId}/decisions"] = obj{"post": operation("Relationship Intelligence", "Decide identity candidate", "Applies merge, keep-separate, move-evidence, split, defer, or compensating undo once at the expected optimistic version.", "decideRelationshipIdentityCandidate", bearer(), candidateParam, jsonRequest("Identity decision.", objectSchema("Identity decision request.", obj{
-		"decision": stringEnum("Decision.", "merge", "merge", "keep_separate", "move_evidence", "split", "defer", "undo"), "reason": stringSchema("Actor reason.", documentedIdentityDecisionReason), "expectedVersion": intSchema("Expected candidate version.", 1), "idempotencyKey": stringSchema("Stable client idempotency key.", documentedIdentityDecisionKey, obj{"format": "uuid"}),
-	}, "decision", "expectedVersion", "idempotencyKey"), obj{"decision": "merge", "expectedVersion": 1, "reason": documentedIdentityDecisionReason, "idempotencyKey": documentedIdentityDecisionKey}), obj{"200": jsonResponse("Resolved candidate.", ref("RelationshipIdentityCandidate"), nil), "400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409")})}
+	paths["/v1/relationship-identity-candidates/{candidateId}/decisions"] = obj{"post": operation("Relationship Intelligence", "Merge", mergeDescription, "decideRelationshipIdentityCandidate", bearer(), mergeParams(), jsonRequest("Identity decision.", objectSchema("Identity decision request.", obj{
+		"decision": stringEnum("Decision.", "merge", "merge", "keep_separate", "move_evidence", "split", "defer", "undo"), "reason": stringSchema("Actor reason.", mergeReason), "expectedVersion": intSchema("Expected candidate version.", 1), "idempotencyKey": stringSchema("Stable client idempotency key.", mergeIdempotencyKey, obj{"format": "uuid"}),
+	}, "decision", "expectedVersion", "idempotencyKey"), obj{"decision": "merge", "expectedVersion": 1, "reason": mergeReason, "idempotencyKey": mergeIdempotencyKey}), obj{"200": jsonResponse("The duplicate is merged into the existing company.", ref("RelationshipIdentityCandidate"), mergedCandidate()), "400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409")})}
 
 	paths["/v1/relationship-attention"] = obj{"get": operation("Relationship Intelligence", "Attention queue", attentionQueueDescription, "listRelationshipAttention", bearer(), []any{
 		obj{"name": "status", "in": "query", "required": false, "description": "open is the queue. Attention queue asks for open.", "example": "open", "schema": obj{"type": "string", "enum": []any{"open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved", "all"}, "example": "open"}},
@@ -2049,10 +1964,9 @@ func addRevenuePaths(paths obj) {
 		"items":           arraySchema("Attention items.", ref("RelationshipAttentionItem")),
 		"hasMore":         boolSchema("Another company exists beyond this page of the queue.", false),
 	}, "contractVersion", "asOf", "items", "hasMore"), attentionQueuePage()), "401": responseRef("401")})}
-	attentionParam := []any{obj{"name": "attentionId", "in": "path", "required": true, "description": "Attention item id.", "schema": obj{"type": "string", "format": "uuid"}}}
-	paths["/v1/relationship-attention/{attentionId}/decisions"] = obj{"post": operation("Relationship Intelligence", "Decide attention item", "Acknowledges, snoozes, or dismisses at the expected optimistic version. Materially new evidence reopens the item.", "decideRelationshipAttention", bearer(), attentionParam, jsonRequest("Attention decision.", objectSchema("Attention decision request.", obj{
-		"decision": stringEnum("Decision.", "acknowledge", "acknowledge", "snooze", "dismiss"), "reason": stringSchema("Decision reason.", documentedAttentionAcknowledgeReason), "expectedVersion": intSchema("Expected version.", 1), "snoozedUntil": stringSchema("Bounded future wake time.", "2026-08-07T14:00:00Z", obj{"format": "date-time"}, nullable()),
-	}, "decision", "expectedVersion"), obj{"decision": "acknowledge", "reason": documentedAttentionAcknowledgeReason, "expectedVersion": 1}), obj{"200": jsonResponse("Updated attention item.", ref("RelationshipAttentionItem"), nil), "400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409")})}
+	paths["/v1/relationship-attention/{attentionId}/decisions"] = obj{"post": operation("Relationship Intelligence", "Review", reviewDescription, "decideRelationshipAttention", bearer(), reviewParams(), jsonRequest("Attention decision.", objectSchema("Attention decision request.", obj{
+		"decision": stringEnum("Decision.", "acknowledge", "acknowledge", "snooze", "dismiss"), "reason": stringSchema("Decision reason.", reviewReason), "expectedVersion": intSchema("Expected version.", 1), "snoozedUntil": stringSchema("Bounded future wake time.", "2026-08-07T14:00:00Z", obj{"format": "date-time"}, nullable()),
+	}, "decision", "expectedVersion"), obj{"decision": "acknowledge", "reason": reviewReason, "expectedVersion": 1}), obj{"200": jsonResponse("This item is reviewed and leaves the open queue.", ref("RelationshipAttentionItem"), reviewedAttention()), "400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409")})}
 	approveRecommendationParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Recommendation/action id.", "schema": obj{"type": "string", "format": "uuid", "example": documentedApprovedRecommendationID}}}
 	paths["/v1/relationship-recommendations/{actionId}/approve"] = obj{"post": operation("Relationship Intelligence", "Approve", "Approve posts acceptRisk false. The stored recommendation is approved for its current revision, and the approval time is recorded. The queue stays open.", "approveRelationshipRecommendation", bearer(), approveRecommendationParam, jsonRequestOptional("Approval options.", objectSchema("Approve request.", obj{"acceptRisk": boolSchema("Explicitly accept a review-required decision.", false)}), obj{"acceptRisk": false}), obj{
 		"200": jsonResponse("Approved recommendation.", ref("RevenueAction"), documentedApprovedRecommendation()),
@@ -2068,50 +1982,10 @@ func addRevenuePaths(paths obj) {
 	})}
 
 	paths["/v1/revenue-actions"] = obj{
-		"get": operation("Revenue", "Recovery", recoveryQueueDescription, "listRevenueActions", bearer(), []any{
-			obj{"name": "queueStatus", "in": "query", "required": false, "description": "Queue status filter, or all.", "example": "open", "schema": obj{"type": "string", "enum": []any{"open", "snoozed", "dismissed", "handled", "all"}, "example": "open"}},
-			obj{"name": "limit", "in": "query", "required": false, "description": "Page size (max 100). Recovery asks for 100.", "example": 100, "schema": obj{"type": "integer", "example": 100}},
-			obj{"name": "offset", "in": "query", "required": false, "description": "How many actions to skip. Recovery does not send this on the first page.", "schema": obj{"type": "integer", "minimum": 0}},
-			obj{"name": "surface", "in": "query", "required": false, "description": "recovery keeps every action that is not a follow-up task. task keeps follow-up tasks.", "example": "recovery", "schema": obj{"type": "string", "enum": []any{"recovery", "task"}, "example": "recovery"}},
-		}, nil, obj{
-			"200": jsonResponse("Queue page.", objectSchema("Action list. A full page is the end of the queue when hasMore is false.", obj{
-				"actions": arraySchema("Actions.", ref("RevenueAction")),
-				"hasMore": boolSchema("Another task or follow-up exists beyond this page.", false),
-			}, "actions"), recoveryQueuePage()),
-			"401": responseRef("401"),
-		}),
-		"post": operation("Revenue", "Create a manual action", "Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.", "createRevenueAction", bearer(), nil, jsonRequest("Action.", objectSchema("Create request.", obj{
-			"relationshipId":     uuidSchema("Owning relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-			"actionType":         stringEnum("Action type.", "follow_up_task", "warm_follow_up", "proposal_nudge", "referral_reconnect", "customer_risk", "meeting_follow_up", "meeting_recap", "crm_update", "follow_up_task", "calendar_hold", "commitment_rescue"),
-			"channel":            stringEnum("Delivery channel.", "task", "email", "slack", "call", "crm_task", "crm", "task", "calendar"),
-			"reason":             stringSchema("Evidence-backed reason.", documentedGraphFollowUpReason),
-			"recipientEmail":     stringSchema("Recipient email.", "buyer@example.com"),
-			"proposedSubject":    stringSchema("Proposed subject.", "Following up as promised"),
-			"proposedMessage":    stringSchema("Proposed body.", documentedGraphFollowUpMessage),
-			"senderAccountRef":   stringSchema("Sender account reference.", "gmail:me@company.com"),
-			"executionMode":      stringEnum("Execution mode.", "draft", "draft", "send"),
-			"priorityScore":      intSchema("Priority (0-100).", 80),
-			"priorityComponents": freeFormSchema("Per-component priority breakdown."),
-			"dueAt":              stringSchema("Due time.", "2026-07-15T00:00:00Z", obj{"format": "date-time"}, nullable()),
-		}, "relationshipId", "actionType", "channel", "reason"), obj{
-			"relationshipId":  "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-			"actionType":      "follow_up_task",
-			"channel":         "task",
-			"executionMode":   "draft",
-			"reason":          documentedGraphFollowUpReason,
-			"proposedMessage": documentedGraphFollowUpMessage,
-		}), obj{
-			"201": jsonResponse("Created action.", ref("RevenueAction"), nil),
-			"400": responseRef("400"),
-			"401": responseRef("401"),
-			"404": responseRef("404"),
-		}),
+		"get":  taskListOperation(),
+		"post": createdTaskOperation(),
 	}
-	paths["/v1/revenue-actions/{actionId}"] = obj{"get": operation("Revenue", "Get an action", "Returns one action with relationship context.", "getRevenueAction", bearer(), actionParam, nil, obj{
-		"200": jsonResponse("Action.", ref("RevenueAction"), nil),
-		"401": responseRef("401"),
-		"404": responseRef("404"),
-	})}
+	paths["/v1/revenue-actions/{actionId}"] = obj{"get": reloadedActionOperation()}
 	paths["/v1/revenue-actions/{actionId}/audit"] = obj{"get": operation("Revenue", "Get action history", "History loads the action, its revisions, the policy decisions, and the outcomes.", "getRevenueActionAudit", bearer(), actionHistoryParams(), nil, obj{
 		"200": jsonResponse("Action history.", objectSchema("Action history.", obj{
 			"action":    ref("RevenueAction"),
@@ -2155,10 +2029,10 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/revenue-actions/{actionId}/dismiss"] = obj{"post": operation("Revenue", "Dismiss an action", "Dismisses the action with a reason label and records the dismissed outcome.", "dismissRevenueAction", bearer(), actionParam, jsonRequest("Dismissal reason.", objectSchema("Dismiss request.", obj{
-		"reason": stringSchema("Reason label.", documentedQueueDismissReason),
-	}), obj{"reason": documentedQueueDismissReason}), obj{
-		"200": jsonResponse("Dismissed action.", ref("RevenueAction"), nil),
+	paths["/v1/revenue-actions/{actionId}/dismiss"] = obj{"post": operation("Revenue", "Dismiss", dismissDescription, "dismissRevenueAction", bearer(), dismissParams(), jsonRequest("Dismissal reason.", objectSchema("Dismiss request.", obj{
+		"reason": stringSchema("Reason label.", dismissReason),
+	}), obj{"reason": dismissReason}), obj{
+		"200": jsonResponse("The follow-up is dismissed.", ref("RevenueAction"), dismissedAction()),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
@@ -2172,10 +2046,10 @@ func addRevenuePaths(paths obj) {
 		"404": responseRef("404"),
 		"409": problemResponse("Invariant violation: blocked, no decision, expired decision, or review required.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "action is blocked by policy", "blocked")),
 	})}
-	paths["/v1/revenue-actions/{actionId}/reject"] = obj{"post": operation("Revenue", "Reject an action", "Rejects the current revision with a reason.", "rejectRevenueAction", bearer(), actionParam, jsonRequest("Rejection reason.", objectSchema("Reject request.", obj{
-		"reason": stringSchema("Reason.", documentedRejectReason),
-	}), obj{"reason": documentedRejectReason}), obj{
-		"200": jsonResponse("Rejected action.", ref("RevenueAction"), nil),
+	paths["/v1/revenue-actions/{actionId}/reject"] = obj{"post": operation("Revenue", "Reject", rejectDescription, "rejectRevenueAction", bearer(), rejectParams(), jsonRequest("Rejection reason.", objectSchema("Reject request.", obj{
+		"reason": stringSchema("Reason.", rejectReason),
+	}), obj{"reason": rejectReason}), obj{
+		"200": jsonResponse("The follow-up is rejected and still open.", ref("RevenueAction"), rejectedAction()),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 		"409": responseRef("409"),
@@ -2198,7 +2072,7 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/revenue-workspaces/current/communication-policy/{sourceAccountId}"] = obj{"get": operation("Relationship Intelligence", "Mailbox policy", "Email & Calendar privacy loads this mailbox policy after the mailbox account is entered. Metadata stays workspace-visible, subject lines are shared, and bodies and attachments stay private.", "getCommunicationPolicy", bearer(), []any{obj{
+	mergePath(paths, "/v1/revenue-workspaces/current/communication-policy/{sourceAccountId}", obj{"get": operation("Relationship Intelligence", "Mailbox policy", "Email & Calendar privacy loads this mailbox policy after the mailbox account is entered. Metadata stays workspace-visible, subject lines are shared, and bodies and attachments stay private.", "getCommunicationPolicy", bearer(), []any{obj{
 		"name": "sourceAccountId", "in": "path", "required": true, "description": "Mailbox account email.",
 		"schema": stringSchema("Mailbox account email.", "you@company.com"),
 	}}, nil, obj{
@@ -2216,7 +2090,7 @@ func addRevenuePaths(paths obj) {
 		}, "id", "sourceAccountId", "metadataVisibility", "shareSubject", "shareBody", "shareAttachments", "signatureEnrichment", "modelContactExtraction", "retentionDays", "version"), documentedMailboxPolicy()),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
-	})}
+	})})
 
 	paths["/v1/revenue-workspaces/current/communication-privacy-rules/{ruleId}"] = obj{"delete": operation("Relationship Intelligence", "Remove", "Remove deletes one protected or blocked address and returns no response body.", "deleteCommunicationPrivacyRule", bearer(), []any{
 		obj{"name": "ruleId", "in": "path", "required": true, "description": "Privacy rule id.", "schema": obj{"type": "string", "format": "uuid", "example": "3b8dfa9b-a7b2-46ea-982c-622a914c00e5"}},
@@ -2287,7 +2161,7 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
-	paths["/v1/revenue-workspaces/current/communication-policy/{sourceAccountId}"] = obj{"put": operation("Relationship Intelligence", "Save mailbox policy", "Save mailbox policy sends the sharing choices already on screen and leaves out the policy id, the mailbox account, and the current version. The stored policy keeps those choices and advances the version.", "putCommunicationPolicy", bearer(), []any{obj{
+	mergePath(paths, "/v1/revenue-workspaces/current/communication-policy/{sourceAccountId}", obj{"put": operation("Relationship Intelligence", "Save mailbox policy", "Save mailbox policy sends the sharing choices already on screen and leaves out the policy id, the mailbox account, and the current version. The stored policy keeps those choices and advances the version.", "putCommunicationPolicy", bearer(), []any{obj{
 		"name": "sourceAccountId", "in": "path", "required": true, "description": "Mailbox account email.",
 		"schema": stringSchema("Mailbox account email.", "you@company.com"),
 	}}, jsonRequest("Mailbox sharing choices.", objectSchema("Mailbox policy save.", obj{
@@ -2315,7 +2189,7 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"403": responseRef("403"),
 		"404": responseRef("404"),
-	})}
+	})})
 }
 
 const savedMailboxPolicyID = "db8dfa9b-a7b2-46ea-982c-622a914c00e5"
@@ -2724,13 +2598,6 @@ func companyDirectoryPage() obj {
 }
 
 const recoveryQueueDescription = "Recovery loads the open queue. The request asks for open actions, one hundred at a time, on the recovery list, and it does not ask for an older page. Acme has no open recovery action, so the page is empty."
-
-func recoveryQueuePage() obj {
-	return obj{
-		"actions": []any{},
-		"hasMore": false,
-	}
-}
 
 const impactCountsDescription = "Impact loads the home counts. The request sends no filter. Overdue promises, open recovery, and companies at risk are zero, and there is no reply rate or meeting rate yet."
 

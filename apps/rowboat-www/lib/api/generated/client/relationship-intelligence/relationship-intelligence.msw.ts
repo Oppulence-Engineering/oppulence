@@ -10,7 +10,7 @@ import type { RequestHandlerOptions } from "msw";
 
 import type {
   AcknowledgeMissionControl201,
-  ApproveMutualActionPlan200,
+  ApproveMutualActionPlan201,
   BetaDiagnostics,
   CloudResearchConsentState,
   CommitmentDependency,
@@ -25,6 +25,7 @@ import type {
   GetCommitmentEvents200,
   GetCommunicationAttachmentContent200,
   GetCommunicationInteractionBody200,
+  GetCommunicationPolicy200,
   GetCompanyResearchEstimate200,
   GetConversationPolicy200,
   GetPersonResearchEstimate200,
@@ -85,6 +86,7 @@ import {
   getGetCommitmentEventsResponseMock,
   getGetCommunicationAttachmentContentResponseMock,
   getGetCommunicationInteractionBodyResponseMock,
+  getGetCommunicationPolicyResponseMock,
   getGetCompanyResearchEstimateResponseMock,
   getGetConversationPolicyResponseMock,
   getGetPersonResearchEstimateResponseMock,
@@ -182,6 +184,7 @@ export {
   getGetPersonResearchEstimateResponseMock,
   getListPendingPersonEnrichmentResponseMock,
   getGetResearchStatusResponseMock,
+  getGetCommunicationPolicyResponseMock,
   getPutCommunicationPolicyResponseMock,
   getGetCommunicationAttachmentContentResponseMock,
   getGetCommunicationInteractionBodyResponseMock,
@@ -954,7 +957,7 @@ export const getAppendCommitmentTransitionMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getAppendCommitmentTransitionResponseMock(),
-        { status: 200 },
+        { status: 201 },
       );
     },
     options,
@@ -1251,10 +1254,10 @@ export const getReviseMutualActionPlanMockHandler = (
 
 export const getApproveMutualActionPlanMockHandler = (
   overrideResponse?:
-    | ApproveMutualActionPlan200
+    | ApproveMutualActionPlan201
     | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Promise<ApproveMutualActionPlan200> | ApproveMutualActionPlan200),
+      ) => Promise<ApproveMutualActionPlan201> | ApproveMutualActionPlan201),
   options?: RequestHandlerOptions,
 ) => {
   return http.post(
@@ -1266,7 +1269,7 @@ export const getApproveMutualActionPlanMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getApproveMutualActionPlanResponseMock(),
-        { status: 200 },
+        { status: 201 },
       );
     },
     options,
@@ -1513,6 +1516,30 @@ export const getGetResearchStatusMockHandler = (
   );
 };
 
+export const getGetCommunicationPolicyMockHandler = (
+  overrideResponse?:
+    | GetCommunicationPolicy200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<GetCommunicationPolicy200> | GetCommunicationPolicy200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/revenue-workspaces/current/communication-policy/:sourceAccountId",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetCommunicationPolicyResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
 export const getPutCommunicationPolicyMockHandler = (
   overrideResponse?:
     | PutCommunicationPolicy200
@@ -1682,6 +1709,7 @@ export const getRelationshipIntelligenceMock = () => [
   getGetPersonResearchEstimateMockHandler(),
   getListPendingPersonEnrichmentMockHandler(),
   getGetResearchStatusMockHandler(),
+  getGetCommunicationPolicyMockHandler(),
   getPutCommunicationPolicyMockHandler(),
   getDeleteCommunicationPrivacyRuleMockHandler(),
   getGetCommunicationAttachmentContentMockHandler(),

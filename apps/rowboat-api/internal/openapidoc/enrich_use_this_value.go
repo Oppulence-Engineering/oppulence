@@ -148,7 +148,7 @@ func useThisValueOperation() obj {
 			pathParam("caseId", "Disagreement this button closes.", stringSchema("Disagreement id.", useThisValueCaseID)),
 		},
 		jsonRequest("Choice.", objectSchema("The value you picked.", obj{
-			"selectedAssertionId": uuidSchema("Evidence you picked.", useThisValueAssertion),
+			"selectedAssertionId": uuidSchema("Selected assertion id.", useThisValueAssertion),
 			"reason":              stringSchema("Why this value is current.", useThisValueReason),
 		}, "selectedAssertionId"), useThisValueRequest()),
 		obj{

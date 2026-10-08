@@ -81,14 +81,15 @@ export function relationshipRows(
   page: RelationshipDirectoryPage | readonly RevenueRelationship[] | undefined,
 ): RevenueRelationship[] {
   if (!page) return [];
-  return Array.isArray(page) ? [...page] : page.relationships;
+  if (Array.isArray(page)) return [...page];
+  return "relationships" in page ? page.relationships : [];
 }
 
 export function relationshipPageHasMore(
   page: RelationshipDirectoryPage | readonly RevenueRelationship[] | undefined,
 ): boolean {
   if (!page || Array.isArray(page)) return false;
-  return page.hasMore;
+  return "hasMore" in page && Boolean(page.hasMore);
 }
 
 export async function loadRelationships(
@@ -210,7 +211,7 @@ export function identityCandidateRows(
 ): RelationshipIdentityCandidate[] {
   if (!page) return [];
   if (Array.isArray(page)) return [...page];
-  return page.candidates ?? [];
+  return "candidates" in page ? (page.candidates ?? []) : [];
 }
 
 /** True only when the server says another duplicate exists past this page. */
@@ -218,7 +219,7 @@ export function identityCandidatePageHasMore(
   page: IdentityCandidatePage | readonly RelationshipIdentityCandidate[] | null | undefined,
 ): boolean {
   if (!page || Array.isArray(page)) return false;
-  return Boolean(page.hasMore);
+  return "hasMore" in page && Boolean(page.hasMore);
 }
 
 export async function loadIdentityCandidates(
@@ -259,7 +260,7 @@ export function attentionRows(
 ): RelationshipAttentionItem[] {
   if (!page) return [];
   if (Array.isArray(page)) return [...page];
-  return page.items ?? [];
+  return "items" in page ? (page.items ?? []) : [];
 }
 
 /** True only when the server says another company exists past this page. */
@@ -267,7 +268,7 @@ export function attentionPageHasMore(
   page: AttentionPage | readonly RelationshipAttentionItem[] | null | undefined,
 ): boolean {
   if (!page || Array.isArray(page)) return false;
-  return Boolean(page.hasMore);
+  return "hasMore" in page && Boolean(page.hasMore);
 }
 
 export async function loadRelationshipAttention(
@@ -357,7 +358,7 @@ export function personRows(
 ): RelationshipPerson[] {
   if (!page) return [];
   if (Array.isArray(page)) return [...page];
-  return page.persons ?? [];
+  return "persons" in page ? (page.persons ?? []) : [];
 }
 
 /** True only when the server says another person exists past this page. */
@@ -365,7 +366,7 @@ export function personPageHasMore(
   page: PersonPage | readonly RelationshipPerson[] | null | undefined,
 ): boolean {
   if (!page || Array.isArray(page)) return false;
-  return Boolean(page.hasMore);
+  return "hasMore" in page && Boolean(page.hasMore);
 }
 
 export async function loadPersons(
@@ -388,10 +389,6 @@ export async function loadPersons(
   };
 }
 
-export function fetchPersons(
-  query = "",
-  signal?: AbortSignal,
-  offset = 0,
-): Promise<PersonPage> {
+export function fetchPersons(query = "", signal?: AbortSignal, offset = 0): Promise<PersonPage> {
   return loadPersons(requestJson, query, signal, offset);
 }

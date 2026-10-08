@@ -5,18 +5,18 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { ShareMutualActionPlan201PlanCurrentRevision } from "./shareMutualActionPlan201PlanCurrentRevision";
-import type { ShareMutualActionPlan201PlanStatus } from "./shareMutualActionPlan201PlanStatus";
-import type { ShareMutualActionPlan201PlanTokenState } from "./shareMutualActionPlan201PlanTokenState";
+import type { ApproveMutualActionPlan201CurrentRevision } from "./approveMutualActionPlan201CurrentRevision";
+import type { ApproveMutualActionPlan201Status } from "./approveMutualActionPlan201Status";
+import type { ApproveMutualActionPlan201TokenState } from "./approveMutualActionPlan201TokenState";
 
 /**
  * The plan the company sheet reads.
  */
-export type ShareMutualActionPlan201Plan = {
+export type ApproveMutualActionPlan201 = {
   /** The other party. */
   counterpartyRef: string;
   /** The revision this approval is bound to. */
-  currentRevision: ShareMutualActionPlan201PlanCurrentRevision;
+  currentRevision: ApproveMutualActionPlan201CurrentRevision;
   /** Person who owns the plan inside this workspace. */
   internalOwnerRef: string;
   /** Plan id. */
@@ -26,7 +26,7 @@ export type ShareMutualActionPlan201Plan = {
   /** Decision recorded when the plan was shared. */
   sharePolicyDecisionId?: string;
   /** Plan status. */
-  status: ShareMutualActionPlan201PlanStatus;
+  status: ApproveMutualActionPlan201Status;
   /** Share token state. */
-  tokenState: ShareMutualActionPlan201PlanTokenState;
+  tokenState: ApproveMutualActionPlan201TokenState;
 };

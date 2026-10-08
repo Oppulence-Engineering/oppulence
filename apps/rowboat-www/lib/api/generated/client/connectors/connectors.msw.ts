@@ -18,6 +18,7 @@ import type {
   ListComposioConnections200,
   ListComposioToolkits200,
   MCPTokenResponse,
+  StartComposioConnection200,
 } from "../model";
 
 import {
@@ -31,6 +32,7 @@ import {
   getListConnectorsResponseMock,
   getSearchHubSpotResponseMock,
   getSetConnectionAPIKeyResponseMock,
+  getStartComposioConnectionResponseMock,
   getStartConnectionResponseMock,
   getStartConnectorResponseMock,
 } from "./connectors.faker";
@@ -38,6 +40,7 @@ import {
 export {
   getGetConnectorBrokerJWKSResponseMock,
   getListComposioConnectionsResponseMock,
+  getStartComposioConnectionResponseMock,
   getListComposioToolkitsResponseMock,
   getSetConnectionAPIKeyResponseMock,
   getClaimConnectionResponseMock,
@@ -91,6 +94,30 @@ export const getListComposioConnectionsMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getListComposioConnectionsResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getStartComposioConnectionMockHandler = (
+  overrideResponse?:
+    | StartComposioConnection200
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<StartComposioConnection200> | StartComposioConnection200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/composio/connections",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getStartComposioConnectionResponseMock(),
         { status: 200 },
       );
     },
@@ -430,6 +457,7 @@ export const getListCommunicationPrivacyRulesMockHandler = (
 export const getConnectorsMock = () => [
   getGetConnectorBrokerJWKSMockHandler(),
   getListComposioConnectionsMockHandler(),
+  getStartComposioConnectionMockHandler(),
   getDeleteComposioConnectionMockHandler(),
   getListComposioToolkitsMockHandler(),
   getDeleteConnectionMockHandler(),

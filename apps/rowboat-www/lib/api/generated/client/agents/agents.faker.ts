@@ -7,7 +7,34 @@
  */
 import { faker } from "@faker-js/faker";
 
-import type { CreateAgent201, GetAgent200, PutAgent200, PutAgent201 } from "../model";
+import type {
+  CreateAgent201,
+  GetAgent200,
+  ListAgents200,
+  PutAgent200,
+  PutAgent201,
+} from "../model";
+
+export const getListAgentsResponseMock = (
+  overrideResponse: Partial<Extract<ListAgents200, object>> = {},
+): ListAgents200 => ({
+  agents: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => ({
+      enabledTools: Array.from(
+        { length: faker.number.int({ min: 1, max: 10 }) },
+        (_, i) => i + 1,
+      ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+      instructions: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      name: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      slug: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      source: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    }),
+  ),
+  ...overrideResponse,
+});
 
 export const getCreateAgentResponseMock = (
   overrideResponse: Partial<Extract<CreateAgent201, object>> = {},

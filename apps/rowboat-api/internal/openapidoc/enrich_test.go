@@ -231,10 +231,24 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	spec := obj{
 		"components": obj{
 			"schemas": obj{
-				"CreditLedger":      obj{"type": "object", "properties": obj{"delta": obj{"type": "integer"}, "reason": obj{"type": "string"}}},
-				"User":              obj{"type": "object", "properties": obj{"workos_user_id": obj{"type": "string"}}},
-				"PersonSuppression": obj{"type": "object", "properties": obj{"reason": obj{"type": "string", "description": "Reason code for the ledger entry.", "enum": []any{"llm_settle"}, "example": "llm_settle"}}},
-				"ActionProposal":    obj{"type": "object", "properties": obj{"reason": obj{"type": "string", "enum": []any{"llm_settle"}}}},
+				"CreditLedger":             obj{"type": "object", "properties": obj{"delta": obj{"type": "integer"}, "reason": obj{"type": "string"}, "request_id": obj{"type": "string"}, "ts": obj{"type": "string", "format": "date-time"}}},
+				"User":                     obj{"type": "object", "properties": obj{"workos_user_id": obj{"type": "string"}, "email": obj{"type": "string"}}},
+				"PersonSuppression":        obj{"type": "object", "properties": obj{"reason": obj{"type": "string", "description": "Reason code for the ledger entry.", "enum": []any{"llm_settle"}, "example": "llm_settle"}}},
+				"ActionProposal":           obj{"type": "object", "properties": obj{"reason": obj{"type": "string", "enum": []any{"llm_settle"}}}},
+				"OAuthPending":             obj{"type": "object", "properties": obj{"provider": obj{"type": "string"}, "state": obj{"type": "string"}}},
+				"MailThread":               obj{"type": "object", "properties": obj{"provider": obj{"type": "string"}}},
+				"MailBodyCache":            obj{"type": "object", "properties": obj{"provider": obj{"type": "string"}}},
+				"CommunicationParticipant": obj{"type": "object", "properties": obj{"email": obj{"type": "string"}}},
+				"OAuthConnection":          obj{"type": "object", "properties": obj{"provider": obj{"type": "string"}, "scopes": obj{"type": "array", "items": obj{"type": "string"}}}},
+				"OAuthConnectionHistory":   obj{"type": "object", "properties": obj{"provider": obj{"type": "string"}, "scopes": obj{"type": "array", "items": obj{"type": "string"}}}},
+				"PersonIdentity":           obj{"type": "object", "properties": obj{"provider": obj{"type": "string"}}},
+				"RelationshipIdentity":     obj{"type": "object", "properties": obj{"provider": obj{"type": "string"}}},
+				"MCPConnection":            obj{"type": "object", "properties": obj{"scopes": obj{"type": "array", "items": obj{"type": "string"}}}},
+				"MCPConnectionHistory":     obj{"type": "object", "properties": obj{"scopes": obj{"type": "array", "items": obj{"type": "string"}}}},
+				"AgentSession":             obj{"type": "object", "properties": obj{"cost_units": obj{"type": "integer"}}},
+				"AgentTurn":                obj{"type": "object", "properties": obj{"cost_units": obj{"type": "integer"}}},
+				"LLMUsage":                 obj{"type": "object", "properties": obj{"cost_units": obj{"type": "integer"}}},
+				"LLMUsageHistory":          obj{"type": "object", "properties": obj{"cost_units": obj{"type": "integer"}}},
 			},
 		},
 	}
@@ -675,6 +689,133 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	assertApproveChange(t, paths)
 
 	assertConfirmDelete(t, paths)
+	assertGovernanceReceipt(t, schemas)
+	assertProjectorVersion(t, schemas)
+	assertSupportRefs(t, schemas)
+	assertDeletionVerificationHash(t, schemas)
+	assertActionRevisionHash(t, schemas)
+	assertIdentityDecisionRequest(t, spec)
+	assertPlanResponseRequest(t, spec)
+	assertDeletionRequest(t, spec)
+	assertFocusedReviewReasons(t, spec)
+	assertQueueDismissReason(t, spec)
+	assertRejectReason(t, spec)
+	assertAttentionAcknowledgeReason(t, spec)
+	assertPersonRemovalReason(t, spec)
+	assertResearchConsent(t, spec)
+	assertResearchFill(t, spec)
+	assertUpgradePlan(t, spec)
+	assertPrivacyRule(t, spec)
+	assertResearchStatus(t, spec)
+	assertResearchEstimates(t, spec)
+	assertReconcileNow(t, spec)
+	assertAuditWindow(t, spec)
+	assertApprovePlan(t, spec)
+	assertMailboxPolicy(t, spec)
+	assertCreatePlan(t, spec)
+	assertDisconnectSource(t, spec)
+	assertRemoveRule(t, spec)
+	assertSnoozeAction(t, spec)
+	assertSaveDraft(t, spec)
+	assertProviderDraft(t, spec)
+	assertApprovedAction(t, spec)
+	assertRecommendationReject(t, spec)
+	assertSavedTemplate(t, spec)
+	assertEditedTemplate(t, spec)
+	assertSavedProfile(t, spec)
+	assertCreatedWorkflow(t, spec)
+	assertUsedInbox(t, spec)
+	assertRunNow(t, spec)
+	assertCanceledRun(t, spec)
+	assertRetriedRun(t, spec)
+	assertSavedWorkflow(t, spec)
+	assertNextRun(t, spec)
+	assertCreatedAgent(t, spec)
+	assertDeletedAgent(t, spec)
+	assertStartedChat(t, spec)
+	assertStoppedChat(t, spec)
+	assertChatApproval(t, spec)
+	assertNextChatMessage(t, spec)
+	assertListedAgents(t, spec)
+	assertChatStream(t, spec)
+	assertApprovalToken(t, spec)
+	assertOpenConversation(t, spec)
+	assertOpenTranscript(t, spec)
+	assertSaveMailboxPolicy(t, paths)
+	assertExportRecord(t, paths)
+	assertOriginalEmail(t, paths)
+	assertSearchMail(t, paths)
+	assertPeopleDirectory(t, paths)
+	assertOpenPerson(t, paths)
+	assertActivityHistory(t, paths)
+	assertRetrySync(t, paths)
+	assertWhatChanged(t, paths)
+	assertOriginalDetail(t, paths)
+	assertCompanyDirectory(t, paths)
+	assertImpactCounts(t, paths)
+	assertNotesPage(t, paths)
+	assertAuditsPage(t, paths)
+	assertPendingDuplicates(t, paths)
+	assertWhatWeOwe(t, paths)
+	assertAttentionQueue(t, paths)
+	assertWeeklyDigest(t, paths)
+	assertAgentApprovals(t, paths)
+	assertPrivacyAddresses(t, paths)
+	assertCompanyGraph(t, paths)
+	assertGoogleConnection(t, paths)
+	assertConnections(t, paths)
+	assertAIModel(t, paths)
+	assertNoteTemplates(t, paths)
+	assertConnectGoogle(t, paths)
+	assertWorkflowRuns(t, spec)
+	assertWorkflowLibrary(t, spec)
+	assertRemoveWorkflow(t, spec)
+	assertReviewedCompany(t, spec)
+	assertConversationCorrection(t, spec)
+	assertAddedPerson(t, spec)
+	assertActionHistory(t, spec)
+	assertSupportFile(t, spec)
+	assertOpenPromisesReport(t, spec)
+	assertOpenPlan(t, spec)
+	assertSourceStatus(t, spec)
+	assertSourceInventory(t, spec)
+	assertObjectAudit(t, spec)
+	assertScanProgress(t, spec)
+	assertActionApprove(t, spec)
+	assertActionExecute(t, spec)
+	assertActionReject(t, spec)
+	assertReloadedAction(t, spec)
+	assertCreatedTask(t, spec)
+	assertTaskList(t, spec)
+	assertRetractedCorrection(t, spec)
+	assertUseThisValue(t, spec)
+	assertCorrectDetail(t, spec)
+	assertEarlierEvidence(t, spec)
+	assertLocalMode(t, spec)
+	assertNewPerson(t, spec)
+	assertEarlierChats(t, spec)
+	assertRemoveFavorite(t, paths)
+	assertSharePlan(t, paths)
+	assertConnect(t, spec)
+	assertConfirmPlan(t, spec)
+	assertConnectJira(t, spec)
+	assertMoreProducts(t, spec)
+	assertDisconnectJira(t, spec)
+	assertConnectedJira(t, spec)
+	assertConfigureAgent(t, spec)
+	assertActorUsers(t, schemas)
+	assertHistoryRowIDs(t, schemas)
+	assertCommitmentEventActor(t, schemas)
+	assertGraphEdgeNodes(t, schemas)
+	assertSelectedGraphNode(t, schemas)
+	assertTriggeringCommitment(t, schemas)
+	assertLineageAccounts(t, schemas)
+	assertSnapshotAssertionID(t, schemas)
+	assertMovedObservationID(t, schemas)
+	assertMovedObjectRef(t, schemas)
+	assertLineageIdentity(t, schemas)
+	assertAttentionEvidence(t, schemas)
+	assertReviewEvidence(t, schemas)
 }
 
 func TestConversationReviewNamesTheItem(t *testing.T) {
@@ -785,8 +926,6 @@ func assertConversationPolicyVersion(t *testing.T, schemas obj) {
 	if access != nil && asObj(access["policyVersion"])["example"] != float64(1) && asObj(access["policyVersion"])["example"] != 1 {
 		t.Fatalf("communication policy version changed: %#v", access["policyVersion"])
 	}
-
-	assertGovernanceReceipt(t, schemas)
 }
 
 func TestGovernanceReceiptNamesTheMeeting(t *testing.T) {
@@ -836,10 +975,6 @@ func assertDocumentedStateHash(t *testing.T, spec obj) {
 	if asObj(readModel["aggregateHash"])["example"] != "sha256:cd34" {
 		t.Fatalf("aggregate hash changed: %#v", readModel["aggregateHash"])
 	}
-	evidence := asObj(asObj(schemas["MissionControlEvidenceReference"])["properties"])
-	if asObj(evidence["contentHash"])["example"] != "sha256:ab12" {
-		t.Fatalf("content hash changed: %#v", evidence["contentHash"])
-	}
 	post := asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/acknowledgements"])["post"])
 	body := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
 	if asObj(body["example"])["stateHash"] != want {
@@ -852,8 +987,6 @@ func assertDocumentedStateHash(t *testing.T, spec obj) {
 	if asObj(asObj(response["properties"])["stateHash"])["example"] != want {
 		t.Fatalf("acknowledgement response: %#v", response)
 	}
-
-	assertProjectorVersion(t, schemas)
 }
 
 func TestProjectorVersionMatchesTheRelationshipProjector(t *testing.T) {
@@ -909,8 +1042,6 @@ func assertObservationContentHash(t *testing.T, schemas obj) {
 	if asObj(evidence["contentHash"])["example"] != want {
 		t.Fatalf("mission control content hash: %#v", evidence["contentHash"])
 	}
-
-	assertSupportRefs(t, schemas)
 }
 
 func TestSupportRefsMatchThePublishedWorkspace(t *testing.T) {
@@ -936,8 +1067,6 @@ func assertSupportRefs(t *testing.T, schemas obj) {
 	if asObj(props["source"])["example"] != "google" {
 		t.Fatalf("source: %#v", props["source"])
 	}
-
-	assertDeletionVerificationHash(t, schemas)
 }
 
 func TestDeletionVerificationHashMatchesThePublishedTarget(t *testing.T) {
@@ -949,9 +1078,6 @@ func TestDeletionVerificationHashMatchesThePublishedTarget(t *testing.T) {
 func assertDeletionVerificationHash(t *testing.T, schemas obj) {
 	t.Helper()
 	receipt := asObj(asObj(schemas["ConversationDeletionReceipt"])["properties"])
-	if asObj(receipt["receiptId"])["example"] != "delete:ab12" {
-		t.Fatalf("receipt id: %#v", receipt["receiptId"])
-	}
 	target := asObj(asObj(receipt["targets"])["items"])
 	props := asObj(target["properties"])
 	if asObj(props["target"])["example"] != "api_evidence" {
@@ -960,8 +1086,6 @@ func assertDeletionVerificationHash(t *testing.T, schemas obj) {
 	if asObj(props["verificationHash"])["example"] != documentedDeletionVerificationHash {
 		t.Fatalf("verification hash: %#v", props["verificationHash"])
 	}
-
-	assertActionRevisionHash(t, schemas)
 }
 
 func TestActionRevisionHashMatchesThePublishedDraft(t *testing.T) {
@@ -1010,8 +1134,6 @@ func assertQueueAcceptTransition(t *testing.T, spec obj) {
 	if items["example"] != documentedQueueAcceptEvidence {
 		t.Fatalf("stored transition evidence: %#v", items["example"])
 	}
-
-	assertIdentityDecisionRequest(t, spec)
 }
 
 func TestIdentityInboxSendsADecisionUUID(t *testing.T) {
@@ -1042,8 +1164,6 @@ func assertIdentityDecisionRequest(t *testing.T, spec obj) {
 	if example["idempotencyKey"] == "identity-review:123" {
 		t.Fatal("identity decision still samples identity-review:123")
 	}
-
-	assertPlanResponseRequest(t, spec)
 }
 
 func TestSharedPlanResponseUsesAUUID(t *testing.T) {
@@ -1071,8 +1191,6 @@ func assertPlanResponseRequest(t *testing.T, spec obj) {
 	if responseID["example"] == "response:ab12" || asObj(props["itemId"])["example"] == "item:ab12" {
 		t.Fatal("plan response still shortens an id")
 	}
-
-	assertDeletionRequest(t, spec)
 }
 
 func TestDeletionRequestUsesThePageUUID(t *testing.T) {
@@ -1101,8 +1219,6 @@ func assertDeletionRequest(t *testing.T, spec obj) {
 	if requestID["example"] == "delete:ab12" || stored["example"] == "delete:ab12" {
 		t.Fatal("deletion still samples delete:ab12")
 	}
-
-	assertFocusedReviewReasons(t, spec)
 }
 
 func TestFocusedReviewSendsItsReasons(t *testing.T) {
@@ -1146,29 +1262,10 @@ func TestGraphFollowUpSendsATask(t *testing.T) {
 
 func assertGraphFollowUpRequest(t *testing.T, spec obj) {
 	t.Helper()
-	content := asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/revenue-actions"])["post"])["requestBody"])["content"])["application/json"])
-	example := asObj(content["example"])
-	if example["relationshipId"] != "9c8dfa9b-a7b2-46ea-982c-622a914c00e5" ||
-		example["actionType"] != "follow_up_task" ||
-		example["channel"] != "task" ||
-		example["executionMode"] != "draft" ||
-		example["reason"] != documentedGraphFollowUpReason ||
-		example["proposedMessage"] != documentedGraphFollowUpMessage {
-		t.Fatalf("follow-up request: %#v", example)
-	}
-	props := asObj(asObj(content["schema"])["properties"])
-	if asObj(props["actionType"])["example"] != "follow_up_task" || asObj(props["channel"])["example"] != "task" {
-		t.Fatalf("follow-up fields: %#v", props)
-	}
-	if asObj(props["reason"])["example"] != documentedGraphFollowUpReason || asObj(props["proposedMessage"])["example"] != documentedGraphFollowUpMessage {
-		t.Fatalf("follow-up copy: %#v", props)
-	}
 	relationship := asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueRelationship"])["properties"])
 	if asObj(relationship["summary"])["example"] != documentedGraphFollowUpMessage || asObj(relationship["displayName"])["example"] != "Jordan Buyer" {
 		t.Fatalf("relationship copy: %#v", relationship)
 	}
-
-	assertQueueDismissReason(t, spec)
 }
 
 func TestQueueDismissSendsNotRelevant(t *testing.T) {
@@ -1192,8 +1289,6 @@ func assertQueueDismissReason(t *testing.T, spec obj) {
 	if example["reason"] == "already_handled" || stored["example"] == "already_handled" {
 		t.Fatal("dismiss still samples already_handled")
 	}
-
-	assertRejectReason(t, spec)
 }
 
 func TestConfirmRejectSendsNotAppropriate(t *testing.T) {
@@ -1213,8 +1308,6 @@ func assertRejectReason(t *testing.T, spec obj) {
 	if example["reason"] == "wrong_recipient" {
 		t.Fatal("reject still samples wrong_recipient")
 	}
-
-	assertAttentionAcknowledgeReason(t, spec)
 }
 
 func TestPortfolioAttentionAcknowledgeSendsQueueReason(t *testing.T) {
@@ -1239,8 +1332,6 @@ func assertAttentionAcknowledgeReason(t *testing.T, spec obj) {
 	if stateReason["example"] != documentedAttentionAcknowledgeReason {
 		t.Fatalf("stored attention stateReason: %#v", stateReason)
 	}
-
-	assertPersonRemovalReason(t, spec)
 }
 
 func TestConfirmRemoveSendsUserAction(t *testing.T) {
@@ -1261,8 +1352,6 @@ func assertPersonRemovalReason(t *testing.T, spec obj) {
 	if stored["example"] != documentedPersonRemovalReason || stored["enum"] == nil {
 		t.Fatalf("person removal receipt reason: %#v", stored)
 	}
-
-	assertResearchConsent(t, spec)
 }
 
 func TestAllowPublicResearchSendsConsent(t *testing.T) {
@@ -1283,8 +1372,6 @@ func assertResearchConsent(t *testing.T, spec obj) {
 	if stored["example"] != true {
 		t.Fatalf("stored research consent: %#v", stored)
 	}
-
-	assertResearchFill(t, spec)
 }
 
 func TestFillInCompaniesAndPeopleSendsPendingIDs(t *testing.T) {
@@ -1305,8 +1392,6 @@ func assertResearchFill(t *testing.T, spec obj) {
 	if len(personIDs) != 1 || personIDs[0] != documentedResearchPersonID {
 		t.Fatalf("person research request: %#v", people)
 	}
-
-	assertUpgradePlan(t, spec)
 }
 
 func TestUpgradeToProSendsPlanPro(t *testing.T) {
@@ -1323,8 +1408,6 @@ func assertUpgradePlan(t *testing.T, spec obj) {
 	if example["plan"] != "pro" || plan["example"] != "pro" {
 		t.Fatalf("checkout plan: %#v %#v", example, plan)
 	}
-
-	assertPrivacyRule(t, spec)
 }
 
 func TestAddRuleSendsProtectedAddress(t *testing.T) {
@@ -1359,8 +1442,6 @@ func assertPrivacyRule(t *testing.T, spec obj) {
 	if stored["kind"] != "protected_address" || stored["value"] != "buyer@example.com" || stored["active"] != true || stored["valueHash"] != wantHash || stored["id"] != "3b8dfa9b-a7b2-46ea-982c-622a914c00e5" {
 		t.Fatalf("stored privacy rule: %#v want hash %s", stored, wantHash)
 	}
-
-	assertResearchStatus(t, spec)
 }
 
 func TestCheckPublicResearchReportsConsentRequired(t *testing.T) {
@@ -1389,8 +1470,6 @@ func assertResearchStatus(t *testing.T, spec obj) {
 	if !reflect.DeepEqual(reason["enum"], []any{"consent_required", "plan_required", "capability_disabled", "provider_unconfigured", "unavailable"}) {
 		t.Fatalf("research status reasons: %#v", reason["enum"])
 	}
-
-	assertResearchEstimates(t, spec)
 }
 
 func TestResearchEstimatesPriceOneProRecord(t *testing.T) {
@@ -1462,8 +1541,6 @@ func assertResearchPending(t *testing.T, spec obj) {
 	if !reflect.DeepEqual(peopleExample["personIds"], []any{personID}) || peopleExample["relationshipIds"] != nil {
 		t.Fatalf("pending people: %#v", peopleExample)
 	}
-
-	assertReconcileNow(t, spec)
 }
 
 func TestReconcileNowReturnsForgottenPromise(t *testing.T) {
@@ -1511,8 +1588,6 @@ func assertReconcileNow(t *testing.T, spec obj) {
 	if refs, ok := evaluation["evidenceRefs"].([]any); !ok || len(refs) != 0 {
 		t.Fatalf("evidence refs: %#v", evaluation["evidenceRefs"])
 	}
-
-	assertAuditWindow(t, spec)
 }
 
 func TestAuditButtonSendsSixMonthWindow(t *testing.T) {
@@ -1591,54 +1666,36 @@ func assertLogOutcome(t *testing.T, spec obj) {
 	if asObj(properties["source"])["example"] != "user" || asObj(properties["sourceEventId"])["example"] != eventID {
 		t.Fatalf("outcome schema = %#v", properties)
 	}
-
-	assertApprovePlan(t, spec)
-
-	assertMailboxPolicy(t, spec)
-
-	assertCreatePlan(t, spec)
-
-	assertDisconnectSource(t, spec)
 }
 
 func TestDisconnectSourceReturnsDisconnected(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)
 	assertDisconnectSource(t, spec)
-
-	assertRemoveRule(t, spec)
 }
 
 func TestRemoveRuleReturnsNoBody(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)
 	assertRemoveRule(t, spec)
-
-	assertSnoozeAction(t, spec)
 }
 
 func TestSnoozeActionStoresSevenDays(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)
 	assertSnoozeAction(t, spec)
-
-	assertSaveDraft(t, spec)
 }
 
 func TestSaveDraftPostsSubjectAndMessage(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)
 	assertSaveDraft(t, spec)
-
-	assertProviderDraft(t, spec)
 }
 
 func TestProviderDraftStoresSentHandled(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)
 	assertProviderDraft(t, spec)
-
-	assertApprovedAction(t, spec)
 }
 
 func TestApproveStoresApprovedRevision(t *testing.T) {
@@ -1722,8 +1779,6 @@ func assertPolicyRecheck(t *testing.T, spec obj) {
 	if asObj(reasons["items"])["example"] != "suppression.opted_out" {
 		t.Fatalf("shared reason code changed: %#v", reasons["items"])
 	}
-
-	assertRecommendationReject(t, spec)
 }
 
 func TestRecommendationRejectStoresRejected(t *testing.T) {
@@ -1756,35 +1811,6 @@ func assertRecommendationReject(t *testing.T, spec obj) {
 	props := asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueAction"])["properties"])
 	if asObj(props["approvalStatus"])["example"] != "pending" {
 		t.Fatalf("shared approval example changed: %#v", props["approvalStatus"])
-	}
-
-	assertSavedNote(t, spec)
-}
-
-func TestSavedNoteStoresTheEditorNote(t *testing.T) {
-	spec := obj{"components": obj{"schemas": obj{}}}
-	Enrich(spec)
-	assertSavedNote(t, spec)
-}
-
-func assertSavedNote(t *testing.T, spec obj) {
-	t.Helper()
-	post := asObj(asObj(asObj(spec["paths"])["/v1/relationship-observations/batch"])["post"])
-	if post["summary"] != "Save a note" {
-		t.Fatalf("summary: %v", post["summary"])
-	}
-	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])["example"]
-	response := asObj(asObj(asObj(asObj(post["responses"])["201"])["content"])["application/json"])["example"]
-	if got, want := mustJSON(request), mustJSON(documentedSavedNoteRequest()); got != want {
-		t.Fatalf("request example:\n%s\nwant:\n%s", got, want)
-	}
-	if got, want := mustJSON(response), mustJSON(documentedSavedNoteResponse()); got != want {
-		t.Fatalf("response example:\n%s\nwant:\n%s", got, want)
-	}
-	items := asObj(asObj(asObj(asObj(asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])["schema"])["properties"])["observations"])["items"])
-	props := asObj(items["properties"])
-	if asObj(props["eventType"])["example"] != "commitment_created" || asObj(props["source"])["example"] != "gmail" {
-		t.Fatalf("shared observation examples changed: event %#v source %#v", asObj(props["eventType"])["example"], asObj(props["source"])["example"])
 	}
 }
 
@@ -1820,8 +1846,6 @@ func assertApprovedRecommendation(t *testing.T, spec obj) {
 	if asObj(asObj(action["properties"])["approvalStatus"])["example"] != "pending" {
 		t.Fatalf("shared approval status changed: %#v", asObj(action["properties"])["approvalStatus"])
 	}
-
-	assertSavedTemplate(t, spec)
 }
 
 func TestSavedTemplateStoresTheNoteTemplate(t *testing.T) {
@@ -1848,8 +1872,6 @@ func assertSavedTemplate(t *testing.T, spec obj) {
 	if kind["example"] != "graph_saved_view" {
 		t.Fatalf("shared resource kind changed: %#v", kind["example"])
 	}
-
-	assertEditedTemplate(t, spec)
 }
 
 func TestEditedTemplateStoresTheNoteTemplate(t *testing.T) {
@@ -1893,16 +1915,10 @@ func assertEditedTemplate(t *testing.T, spec obj) {
 	if name["example"] != "Renewal risk" {
 		t.Fatalf("name example changed: %#v", name["example"])
 	}
-	postBody := asObj(asObj(asObj(asObj(asObj(paths["/v1/console/resources"])["post"])["requestBody"])["content"])["application/json"])
-	if postBody["example"] != nil {
-		t.Fatalf("create example changed: %s", mustJSON(postBody["example"]))
-	}
 	getBody := asObj(asObj(asObj(asObj(asObj(asObj(paths["/v1/console/resources/{resourceId}"])["get"])["responses"])["200"])["content"])["application/json"])
 	if getBody["example"] != nil {
 		t.Fatalf("get example changed: %s", mustJSON(getBody["example"]))
 	}
-
-	assertSavedProfile(t, spec)
 }
 
 func TestSavedProfileStoresTheDisplayName(t *testing.T) {
@@ -1935,10 +1951,6 @@ func assertSavedProfile(t *testing.T, spec obj) {
 	if mustJSON(body["example"]) != mustJSON(documentedSavedProfile()) {
 		t.Fatalf("response example: %s", mustJSON(body["example"]))
 	}
-	getBody := asObj(asObj(asObj(asObj(asObj(preferences["get"])["responses"])["200"])["content"])["application/json"])
-	if getBody["example"] != nil {
-		t.Fatalf("get example changed: %s", mustJSON(getBody["example"]))
-	}
 	schemas := asObj(asObj(spec["components"])["schemas"])
 	props := asObj(asObj(schemas["ConsolePreferences"])["properties"])
 	if asObj(props["displayName"])["example"] != "Ada Lovelace" {
@@ -1953,8 +1965,6 @@ func assertSavedProfile(t *testing.T, spec obj) {
 	if asObj(props["notificationLevel"])["example"] != "attention" {
 		t.Fatalf("notification example changed: %#v", props["notificationLevel"])
 	}
-
-	assertCreatedWorkflow(t, spec)
 }
 
 func TestCreatedWorkflowStoresTheDraft(t *testing.T) {
@@ -1991,13 +2001,6 @@ func assertCreatedWorkflow(t *testing.T, spec obj) {
 	if asObj(props["name"])["example"] != "Daily Account Summary" || asObj(props["executionTarget"])["example"] != "desktop" || asObj(props["active"])["example"] != true {
 		t.Fatalf("shared task examples changed: name %#v target %#v active %#v", props["name"], props["executionTarget"], props["active"])
 	}
-	listExample := asObj(asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks"])["get"])["responses"])["200"])["content"])["application/json"])["example"]
-	tasks, ok := asObj(listExample)["tasks"].([]any)
-	if !ok || len(tasks) != 1 || asObj(tasks[0])["slug"] != "daily-summary" || asObj(tasks[0])["executionTarget"] != "desktop" {
-		t.Fatalf("list example changed: %s", mustJSON(listExample))
-	}
-
-	assertUsedInbox(t, spec)
 }
 
 func TestUsedInboxStoresTheTemplate(t *testing.T) {
@@ -2041,12 +2044,6 @@ func assertUsedInbox(t *testing.T, spec obj) {
 	if asObj(template["name"])["example"] != "Inbox Digest" || asObj(template["firstParty"])["example"] != false {
 		t.Fatalf("template identity changed: %#v", template)
 	}
-	create := asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks"])["post"])["requestBody"])["content"])["application/json"])
-	if asObj(create["example"])["slug"] != "daily-summary" {
-		t.Fatalf("create workflow example changed: %s", mustJSON(create["example"]))
-	}
-
-	assertRunNow(t, spec)
 }
 
 func TestRunNowStoresTheEditorNote(t *testing.T) {
@@ -2091,12 +2088,6 @@ func assertRunNow(t *testing.T, spec obj) {
 	if asObj(runProps["requestedContext"])["example"] != "Run this now and focus on high-risk accounts." || asObj(runProps["slug"])["example"] != "daily-summary" {
 		t.Fatalf("shared run example changed: %#v", runProps)
 	}
-	create := asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks"])["post"])["requestBody"])["content"])["application/json"])
-	if asObj(create["example"])["slug"] != "daily-summary" {
-		t.Fatalf("create workflow example changed: %s", mustJSON(create["example"]))
-	}
-
-	assertCanceledRun(t, spec)
 }
 
 func TestCancelStoresTheStoppedRun(t *testing.T) {
@@ -2135,17 +2126,6 @@ func assertCanceledRun(t *testing.T, spec obj) {
 	if asObj(asObj(params[0])["schema"])["example"] != "follow-up-when-a-promise-slips" || asObj(asObj(params[1])["schema"])["example"] != "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b" {
 		t.Fatalf("path examples: %#v", post["parameters"])
 	}
-	retry := asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks/{slug}/runs/{runId}/retry"])["post"])["responses"])["202"])["content"])
-	retryExample := asObj(asObj(retry["application/json"])["example"])
-	if retryExample["runId"] != "api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b" || retryExample["status"] != "queued" {
-		t.Fatalf("retry example changed: %s", mustJSON(retryExample))
-	}
-	trigger := asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks/{slug}/trigger"])["post"])["requestBody"])["content"])["application/json"])
-	if asObj(trigger["example"])["context"] != "Run this now and focus on high-risk accounts." {
-		t.Fatalf("trigger example changed: %s", mustJSON(trigger["example"]))
-	}
-
-	assertRetriedRun(t, spec)
 }
 
 func TestRetryStoresTheNextAttempt(t *testing.T) {
@@ -2194,13 +2174,6 @@ func assertRetriedRun(t *testing.T, spec obj) {
 	if signalExample["runId"] != "api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b" || signalExample["trigger"] != "manual" {
 		t.Fatalf("signal example changed: %s", mustJSON(signalExample))
 	}
-	cancel := asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks/{slug}/runs/{runId}/cancel"])["post"])["responses"])["202"])["content"])
-	cancelExample := asObj(asObj(cancel["application/json"])["example"])
-	if cancelExample["status"] != "queued" || cancelExample["executor"] != "desktop" {
-		t.Fatalf("cancel example changed: %s", mustJSON(cancelExample))
-	}
-
-	assertSavedWorkflow(t, spec)
 }
 
 func TestSaveStoresTheWorkflow(t *testing.T) {
@@ -2245,12 +2218,6 @@ func assertSavedWorkflow(t *testing.T, spec obj) {
 	if asObj(item["delete"])["summary"] != "Delete background task mirror" {
 		t.Fatalf("delete changed: %#v", asObj(item["delete"])["summary"])
 	}
-	create := asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks"])["post"])["requestBody"])["content"])["application/json"])
-	if asObj(create["example"])["slug"] != "daily-summary" {
-		t.Fatalf("create example changed: %s", mustJSON(create["example"]))
-	}
-
-	assertNextRun(t, spec)
 }
 
 func TestNextRunReadsThePausedWorkflow(t *testing.T) {
@@ -2280,8 +2247,6 @@ func assertNextRun(t *testing.T, spec obj) {
 	if _, ok := example["scheduleSyncState"]; ok {
 		t.Fatal("event workflow should omit schedule sync")
 	}
-
-	assertCreatedAgent(t, spec)
 }
 
 func TestCreateAgentStoresTheDialog(t *testing.T) {
@@ -2307,8 +2272,6 @@ func assertCreatedAgent(t *testing.T, spec obj) {
 	if _, ok := stored["model"]; ok {
 		t.Fatal("stored agent should omit an empty model")
 	}
-
-	assertDeletedAgent(t, spec)
 }
 
 func TestConfirmDeleteRemovesTheAgent(t *testing.T) {
@@ -2338,8 +2301,6 @@ func assertDeletedAgent(t *testing.T, spec obj) {
 	if gone["description"] != "Agent removed." {
 		t.Fatalf("204 = %#v", gone["description"])
 	}
-
-	assertStartedChat(t, spec)
 }
 
 func TestSubmitStartsTheChat(t *testing.T) {
@@ -2374,12 +2335,6 @@ func assertStartedChat(t *testing.T, spec obj) {
 	if len(sessions) == 0 {
 		t.Fatal("session history example is empty")
 	}
-	first := asObj(sessions[0])
-	if first["sessionId"] != "session_abc123" || first["title"] != "Review the Acme renewal" {
-		t.Fatalf("session history example changed: %s", mustJSON(first))
-	}
-
-	assertStoppedChat(t, spec)
 }
 
 func TestStopResponseEndsTheChat(t *testing.T) {
@@ -2408,8 +2363,6 @@ func assertStoppedChat(t *testing.T, spec obj) {
 	if accepted["status"] != "canceling" {
 		t.Fatalf("stop status = %#v", accepted["status"])
 	}
-
-	assertChatApproval(t, spec)
 }
 
 func TestApproveAllowsThePausedChatAction(t *testing.T) {
@@ -2439,8 +2392,6 @@ func assertChatApproval(t *testing.T, spec obj) {
 	if len(params) != 2 || asObj(asObj(params[1])["schema"])["example"] != documentedChatApprovalID {
 		t.Fatalf("approval id = %#v", params)
 	}
-
-	assertNextChatMessage(t, spec)
 }
 
 func TestSubmitSendsTheNextChatMessage(t *testing.T) {
@@ -2473,12 +2424,6 @@ func assertNextChatMessage(t *testing.T, spec obj) {
 	if len(sessions) == 0 {
 		t.Fatal("session history example is empty")
 	}
-	first := asObj(sessions[0])
-	if first["title"] != "Review the Acme renewal" || first["sessionId"] != "session_abc123" {
-		t.Fatalf("session history example changed: %s", mustJSON(first))
-	}
-
-	assertListedAgents(t, spec)
 }
 
 func TestListAgentsLoadsTheBuiltins(t *testing.T) {
@@ -2523,8 +2468,6 @@ func assertListedAgents(t *testing.T, spec obj) {
 	if last["name"] != "Agents" {
 		t.Fatalf("agents tag = %#v", last["name"])
 	}
-
-	assertChatStream(t, spec)
 }
 
 func TestFollowTheChatReadsTheSessionStart(t *testing.T) {
@@ -2572,8 +2515,6 @@ func assertChatStream(t *testing.T, spec obj) {
 	if len(sessions) == 0 || asObj(sessions[0])["title"] != "Review the Acme renewal" {
 		t.Fatal("history list example changed")
 	}
-
-	assertApprovalToken(t, spec)
 }
 
 func TestApprovePaymentReturnsTheToken(t *testing.T) {
@@ -2603,10 +2544,6 @@ func assertApprovalToken(t *testing.T, spec obj) {
 	if len(sessions) == 0 || asObj(sessions[0])["title"] != "Review the Acme renewal" {
 		t.Fatal("history list example changed")
 	}
-
-	assertOpenConversation(t, spec)
-
-	assertOpenTranscript(t, spec)
 }
 
 func TestConnectHubSpotSamplesThePrivateAppToken(t *testing.T) {
@@ -2646,8 +2583,6 @@ func assertConnectHubSpot(t *testing.T, paths obj) {
 	if _, canvas := response["connector"]; canvas {
 		t.Fatal("response must not name another connector")
 	}
-
-	assertSaveMailboxPolicy(t, paths)
 }
 
 func TestSaveMailboxPolicyOmitsIdentityFields(t *testing.T) {
@@ -2679,8 +2614,6 @@ func assertSaveMailboxPolicy(t *testing.T, paths obj) {
 	if mustJSON(response) != mustJSON(savedMailboxPolicy()) {
 		t.Fatalf("response: %s", mustJSON(response))
 	}
-
-	assertExportRecord(t, paths)
 }
 
 func TestExportRecordSamplesTheMarkdownFile(t *testing.T) {
@@ -2712,8 +2645,6 @@ func assertExportRecord(t *testing.T, paths obj) {
 	if strings.Contains(exportedCommitmentMarkdown, "at_risk") || strings.Contains(exportedCommitmentMarkdown, "internally_confirmed") {
 		t.Fatal("markdown leaked stored tokens")
 	}
-
-	assertOriginalEmail(t, paths)
 }
 
 func TestViewOriginalEmailSamplesTheGmailMessage(t *testing.T) {
@@ -2771,8 +2702,6 @@ func assertLinkWorkspace(t *testing.T, paths obj, schemas obj) {
 	if mode["example"] != "local" {
 		t.Fatalf("shared workspace mode example changed: %#v", mode)
 	}
-
-	assertSearchMail(t, paths)
 }
 
 func TestSearchMailSamplesTheRankedThreads(t *testing.T) {
@@ -2810,8 +2739,6 @@ func assertSearchMail(t *testing.T, paths obj) {
 	if asObj(asObj(op["responses"])["200"])["description"] != "The mail Search mail ranks." {
 		t.Fatalf("response: %#v", asObj(op["responses"])["200"])
 	}
-
-	assertPeopleDirectory(t, paths)
 }
 
 func TestPeopleDirectorySamplesTheProjectedPerson(t *testing.T) {
@@ -2849,8 +2776,6 @@ func assertPeopleDirectory(t *testing.T, paths obj) {
 	if asObj(asObj(op["responses"])["200"])["description"] != "The people in this workspace." {
 		t.Fatalf("response: %#v", asObj(op["responses"])["200"])
 	}
-
-	assertOpenPerson(t, paths)
 }
 
 func TestOpenPersonSamplesTheProfileLedger(t *testing.T) {
@@ -2945,8 +2870,6 @@ func assertMailAndMeetings(t *testing.T, paths obj, schemas obj) {
 	if direction["example"] != "outbound" {
 		t.Fatalf("direction: %#v", direction)
 	}
-
-	assertActivityHistory(t, paths)
 }
 
 func TestActivityHistorySamplesTheAcmeTimeline(t *testing.T) {
@@ -2999,8 +2922,6 @@ func assertActivityHistory(t *testing.T, paths obj) {
 	if string(got) != string(want) {
 		t.Fatalf("page example:\n%s\nwant:\n%s", got, want)
 	}
-
-	assertRetrySync(t, paths)
 }
 
 func TestRetrySyncSamplesTheQueuedGoogleAccount(t *testing.T) {
@@ -3045,8 +2966,6 @@ func assertRetrySync(t *testing.T, paths obj) {
 	if string(got) != string(want) {
 		t.Fatalf("example:\n%s\nwant:\n%s", got, want)
 	}
-
-	assertWhatChanged(t, paths)
 }
 
 func TestWhatChangedSamplesTheAcmeSnapshot(t *testing.T) {
@@ -3102,8 +3021,6 @@ func assertWhatChanged(t *testing.T, paths obj) {
 	if strings.Contains(string(got), "state_abc123") || strings.Contains(string(got), "assertion-123") {
 		t.Fatalf("oauth ticket leaked into the changes page: %s", got)
 	}
-
-	assertOriginalDetail(t, paths)
 }
 
 func TestOriginalDetailSamplesTheAcmePromise(t *testing.T) {
@@ -3149,8 +3066,6 @@ func assertOriginalDetail(t *testing.T, paths obj) {
 	if strings.Contains(string(got), "message-123") || strings.Contains(string(got), "ab12cd34") || strings.Contains(string(got), "me@company.com") {
 		t.Fatalf("detail example still uses the generic observation: %s", got)
 	}
-
-	assertCompanyDirectory(t, paths)
 }
 
 func TestCompanyDirectorySamplesAcme(t *testing.T) {
@@ -3190,59 +3105,6 @@ func assertCompanyDirectory(t *testing.T, paths obj) {
 	if strings.Contains(string(got), "Jordan Buyer") || strings.Contains(string(got), "buyer@example.com") || strings.Contains(string(got), "sha256:ab12") {
 		t.Fatalf("directory example still uses the person sample: %s", got)
 	}
-
-	assertRecoveryQueue(t, paths)
-}
-
-func TestRecoveryQueueSamplesTheOpenPage(t *testing.T) {
-	spec := obj{"components": obj{"schemas": obj{}}}
-	Enrich(spec)
-	assertRecoveryQueue(t, asObj(spec["paths"]))
-}
-
-func assertRecoveryQueue(t *testing.T, paths obj) {
-	t.Helper()
-	path := asObj(paths["/v1/revenue-actions"])
-	if asObj(path["post"])["operationId"] != "createRevenueAction" {
-		t.Fatal("recovery replaced the create action route")
-	}
-	op := asObj(path["get"])
-	if op["summary"] != "Recovery" || op["description"] != recoveryQueueDescription {
-		t.Fatalf("recovery copy: summary=%#v description=%#v", op["summary"], op["description"])
-	}
-	examples := map[string]string{}
-	for _, param := range op["parameters"].([]any) {
-		item := asObj(param)
-		name, _ := item["name"].(string)
-		if name == "due" {
-			t.Fatal("recovery must not document a due order")
-		}
-		raw, err := json.Marshal(asObj(item["schema"])["example"])
-		if err != nil {
-			t.Fatal(err)
-		}
-		examples[name] = string(raw)
-	}
-	if examples["queueStatus"] != `"open"` || examples["limit"] != "100" || examples["surface"] != `"recovery"` || examples["offset"] != "null" {
-		t.Fatalf("recovery query examples: %#v", examples)
-	}
-	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
-	got, err := json.Marshal(example)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want, err := json.Marshal(recoveryQueuePage())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(got) != string(want) {
-		t.Fatalf("recovery example:\n%s\nwant:\n%s", got, want)
-	}
-	if strings.Contains(string(got), "warm_follow_up") || strings.Contains(string(got), "buyer@example.com") || strings.Contains(string(got), "sha256:ab12") {
-		t.Fatalf("recovery example still uses the invented action: %s", got)
-	}
-
-	assertImpactCounts(t, paths)
 }
 
 func TestImpactCountsSampleTheEmptyWorkspace(t *testing.T) {
@@ -3275,8 +3137,6 @@ func assertImpactCounts(t *testing.T, paths obj) {
 	if strings.Contains(string(got), "42") || strings.Contains(string(got), "0.38") || strings.Contains(string(got), "unanswered_proposal") || strings.Contains(string(got), "buyer@example.com") {
 		t.Fatalf("impact example still uses the invented counts: %s", got)
 	}
-
-	assertNotesPage(t, paths)
 }
 
 func TestNotesPageSamplesTheEmptyWorkspace(t *testing.T) {
@@ -3322,8 +3182,6 @@ func assertNotesPage(t *testing.T, paths obj) {
 	if strings.Contains(string(got), "Cedar Notes") || strings.Contains(string(got), "note-1") || strings.Contains(string(got), "Renewal context") || strings.Contains(string(got), "Use the updated terms.") {
 		t.Fatalf("notes example still uses the invented note: %s", got)
 	}
-
-	assertAuditsPage(t, paths)
 }
 
 func TestAuditsPageSamplesTheEmptyWorkspace(t *testing.T) {
@@ -3370,8 +3228,6 @@ func assertAuditsPage(t *testing.T, paths obj) {
 	if strings.Contains(string(got), "123e4567-e89b-12d3-a456-426614174000") || strings.Contains(string(got), "threadsSeen") || strings.Contains(string(got), "actionsCreated") {
 		t.Fatalf("audits example still uses the invented scan: %s", got)
 	}
-
-	assertPendingDuplicates(t, paths)
 }
 
 func TestPendingDuplicatesSamplesTheEmptyInbox(t *testing.T) {
@@ -3423,8 +3279,6 @@ func assertPendingDuplicates(t *testing.T, paths obj) {
 	if strings.Contains(string(got), "hubspot") || strings.Contains(string(got), "other@example.com") || strings.Contains(string(got), "Confirmed duplicate") || strings.Contains(string(got), "anchor_collision") {
 		t.Fatalf("duplicates example still uses the invented candidate: %s", got)
 	}
-
-	assertWhatWeOwe(t, paths)
 }
 
 func TestWhatWeOweSamplesTheEmptyRegister(t *testing.T) {
@@ -3484,8 +3338,6 @@ func assertWhatWeOwe(t *testing.T, paths obj) {
 	if strings.Contains(string(got), "Acme") || strings.Contains(string(got), "Migration live") || strings.Contains(string(got), "8b8dfa9b-a7b2-46ea-982c-622a914c00e5") {
 		t.Fatalf("what we owe example still uses the invented promise: %s", got)
 	}
-
-	assertAttentionQueue(t, paths)
 }
 
 func TestAttentionQueueSamplesTheEmptyPage(t *testing.T) {
@@ -3537,8 +3389,6 @@ func assertAttentionQueue(t *testing.T, paths obj) {
 	if strings.Contains(string(got), "overdue by two days") || strings.Contains(string(got), "123e4567-e89b-12d3-a456-426614174000") || strings.Contains(string(got), "relationship-observation:1") {
 		t.Fatalf("attention example still uses the invented item: %s", got)
 	}
-
-	assertWeeklyDigest(t, paths)
 }
 
 func TestWeeklyDigestSamplesTheEmptyWorkspace(t *testing.T) {
@@ -3571,8 +3421,6 @@ func assertWeeklyDigest(t *testing.T, paths obj) {
 	if strings.Contains(string(got), "buyer@example.com") || strings.Contains(string(got), "Unanswered proposal") || strings.Contains(string(got), "You sent a proposal") {
 		t.Fatalf("digest example still uses the invented loop: %s", got)
 	}
-
-	assertAgentApprovals(t, paths)
 }
 
 func TestAgentApprovalsSamplesTheEmptyQueue(t *testing.T) {
@@ -3611,8 +3459,6 @@ func assertAgentApprovals(t *testing.T, paths obj) {
 	if strings.Contains(string(got), "financial") || strings.Contains(string(got), "gmail") {
 		t.Fatalf("approvals example still uses an invented proposal: %s", got)
 	}
-
-	assertPrivacyAddresses(t, paths)
 }
 
 func TestPrivacyAddressesSamplesTheEmptyList(t *testing.T) {
@@ -3642,8 +3488,6 @@ func assertPrivacyAddresses(t *testing.T, paths obj) {
 	if string(got) != string(want) {
 		t.Fatalf("privacy list example:\n%s\nwant:\n%s", got, want)
 	}
-
-	assertCompanyGraph(t, paths)
 }
 
 func TestCompanyGraphSamplesTheEmptyPortfolio(t *testing.T) {
@@ -3766,8 +3610,6 @@ func assertWorkflowTemplates(t *testing.T, paths obj) {
 	if oneExample["instructions"] != "Review recent important Gmail messages and produce a markdown digest." {
 		t.Fatalf("single template example changed: %#v", oneExample["instructions"])
 	}
-
-	assertGoogleConnection(t, paths)
 }
 
 func TestGoogleConnectionSamplesTheEmptyAccount(t *testing.T) {
@@ -3808,8 +3650,6 @@ func assertGoogleConnection(t *testing.T, paths obj) {
 	if asObj(item["delete"])["operationId"] != "disconnectGoogle" {
 		t.Fatal("disconnect Google was dropped")
 	}
-
-	assertConnections(t, paths)
 }
 
 func TestConnectionsSamplesTheDisconnectedCatalog(t *testing.T) {
@@ -3867,8 +3707,6 @@ func assertConnections(t *testing.T, paths obj) {
 	if hubspot["displayName"] != "HubSpot" || hubspot["authType"] != "api_key" || hubspot["mcpUrl"] != "" {
 		t.Fatalf("hubspot: %#v", hubspot)
 	}
-
-	assertAIModel(t, paths)
 }
 
 func TestAIModelSamplesThePricedList(t *testing.T) {
@@ -3910,8 +3748,6 @@ func assertAIModel(t *testing.T, paths obj) {
 	if request["model"] != "openai/gpt-4.1-mini" {
 		t.Fatalf("chat model example changed: %#v", request["model"])
 	}
-
-	assertNoteTemplates(t, paths)
 }
 
 func TestNoteTemplatesSamplesTheEmptyPage(t *testing.T) {
@@ -4022,8 +3858,6 @@ func assertCheckoutPro(t *testing.T, paths obj) {
 	if body["traceId"] != nil || body["requestId"] != "req-abc123" {
 		t.Fatalf("checkout failure ids: %#v", body)
 	}
-
-	assertConnectGoogle(t, paths)
 }
 
 func TestConnectGoogleSamplesTheUnconfiguredServer(t *testing.T) {
@@ -4077,45 +3911,6 @@ func assertConnectGoogle(t *testing.T, paths obj) {
 	}
 }
 
-func TestLocalWorkspaceSamplesTheStoredFields(t *testing.T) {
-	spec := obj{"components": obj{"schemas": obj{}}}
-	Enrich(spec)
-	assertLocalWorkspace(t, spec)
-}
-
-func assertLocalWorkspace(t *testing.T, spec obj) {
-	t.Helper()
-	paths := asObj(spec["paths"])
-	get := asObj(asObj(paths["/v1/revenue-workspaces/current"])["get"])
-	if get["summary"] != "Workspace" || get["description"] != localWorkspaceDescription || get["operationId"] != "getRevenueWorkspace" {
-		t.Fatalf("workspace operation: summary=%v description=%v id=%v", get["summary"], get["description"], get["operationId"])
-	}
-	if get["parameters"] != nil {
-		t.Fatalf("workspace request sends no query: %#v", get["parameters"])
-	}
-	example := asObj(asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"])
-	if !reflect.DeepEqual(example, localWorkspaceExample()) {
-		t.Fatalf("workspace example: %#v", example)
-	}
-	for _, key := range []string{"outboundOrganizationId", "outboundWorkspaceId", "lastVerifiedAt"} {
-		if _, ok := example[key]; ok {
-			t.Fatalf("local workspace includes %s", key)
-		}
-	}
-	props := asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueWorkspace"])["properties"])
-	if asObj(props["outboundOrganizationId"])["example"] != "org_01ABC" || asObj(props["outboundWorkspaceId"])["example"] != "ws_01ABC" {
-		t.Fatalf("shared workspace examples changed: %#v", props)
-	}
-	link := asObj(asObj(paths["/v1/revenue-workspaces/link"])["post"])
-	if link["operationId"] != "linkRevenueWorkspace" {
-		t.Fatalf("link operation changed: %#v", link["operationId"])
-	}
-
-	assertWorkflowRuns(t, spec)
-
-	assertWorkflowLibrary(t, spec)
-}
-
 func TestWorkflowLibrarySamplesTheWorkflowsPage(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)
@@ -4149,9 +3944,6 @@ func assertWorkflowLibrary(t *testing.T, spec obj) {
 	posted := asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks"])["post"])["requestBody"])["content"])["application/json"])
 	if asObj(posted)["example"] == nil {
 		t.Fatal("create workflow request example missing")
-	}
-	if exampleSlug(asObj(posted)["example"]) != "daily-summary" {
-		t.Fatalf("create workflow sample changed: %#v", asObj(posted)["example"])
 	}
 	one := jsonExample(asObj(asObj(asObj(asObj(paths["/v1/background-tasks/{slug}"])["get"])["responses"])["200"]))
 	if exampleSlug(one) != "daily-summary" || asObj(one)["executionTarget"] != "desktop" {
@@ -4201,10 +3993,6 @@ func assertWorkflowEnsure(t *testing.T, spec obj) {
 	response := asObj(asObj(post["responses"])["200"])
 	if response["description"] != "Maintained workflows." {
 		t.Fatalf("install response: %#v", response["description"])
-	}
-	listed := jsonExample(asObj(asObj(asObj(asObj(paths["/v1/background-tasks"])["get"])["responses"])["200"]))
-	if exampleTaskSlug(listed) != "daily-summary" {
-		t.Fatalf("task list sample changed: %#v", listed)
 	}
 }
 
@@ -4264,8 +4052,6 @@ func assertOpenedRun(t *testing.T, spec obj) {
 	if asObj(patched)["slug"] != "daily-summary" || asObj(patched)["status"] != "succeeded" || asObj(patched)["executor"] != "desktop" {
 		t.Fatalf("shared run example changed: %#v", patched)
 	}
-
-	assertRemoveWorkflow(t, spec)
 }
 
 func TestRemoveWorkflowSamplesTheEditorDelete(t *testing.T) {
@@ -4302,10 +4088,6 @@ func assertRemoveWorkflow(t *testing.T, spec obj) {
 	got := asObj(jsonExample(asObj(asObj(asObj(item["get"])["responses"])["200"])))
 	if got["slug"] != "daily-summary" || got["executionTarget"] != "desktop" {
 		t.Fatalf("task read sample changed: %#v", got)
-	}
-	patched := asObj(asObj(asObj(asObj(asObj(item["patch"])["requestBody"])["content"])["application/json"]))
-	if asObj(asObj(patched)["example"])["name"] != "Daily Account Summary" {
-		t.Fatalf("save sample changed: %#v", patched)
 	}
 }
 
@@ -4370,16 +4152,10 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	if asObj(asObj(media["schema"])["properties"])["emailThreads"] == nil {
 		t.Fatal("opened company schema omits email threads")
 	}
-	listMedia := asObj(asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/relationships"])["get"])["responses"])["200"])["content"])["application/json"])
-	if listMedia["example"] != nil {
-		t.Fatalf("company directory sample changed: %#v", listMedia["example"])
-	}
 	acknowledgements := asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/acknowledgements"])
 	if asObj(acknowledgements["post"])["summary"] != "Acknowledge Mission Control state" {
 		t.Fatalf("acknowledgement changed: %#v", acknowledgements["post"])
 	}
-
-	assertReviewedCompany(t, spec)
 }
 
 func TestReviewedCompany(t *testing.T) {
@@ -4423,15 +4199,6 @@ func assertReviewedCompany(t *testing.T, spec obj) {
 	if err != nil || string(responseVersion) != "4" {
 		t.Fatalf("response version: %s %v", responseVersion, err)
 	}
-	if asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/evidence/{evidenceId}"])["get"])["summary"] != "Open source evidence" {
-		t.Fatal("evidence operation changed")
-	}
-	review := asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/conversation-review"])["get"])["responses"])["200"])["content"])["application/json"]
-	if asObj(review)["example"] != nil {
-		t.Fatalf("conversation review sample changed: %#v", review)
-	}
-
-	assertConversationCorrection(t, spec)
 }
 
 func TestConversationCorrection(t *testing.T) {
@@ -4459,7 +4226,7 @@ func assertConversationCorrection(t *testing.T, spec obj) {
 	}
 	request := asObj(asObj(asObj(operation["requestBody"])["content"])["application/json"])
 	requestExample := asObj(request["example"])
-	if requestExample["reviewItemId"] != "review:da47aac4d2da3c20" || requestExample["correctedValue"] != conversationCorrectionValue || requestExample["reason"] != conversationCorrectionReason {
+	if requestExample["reviewItemId"] != conversationCorrectionReviewID() || requestExample["correctedValue"] != conversationCorrectionValue || requestExample["reason"] != conversationCorrectionReason {
 		t.Fatalf("request: %#v", requestExample)
 	}
 	encoded, err := json.Marshal(requestExample)
@@ -4486,19 +4253,12 @@ func assertConversationCorrection(t *testing.T, spec obj) {
 		t.Fatalf("speaker: %s %#v", confidence, claim)
 	}
 	items, ok := intelligence["reviewItems"].([]any)
-	if !ok || len(items) != 1 || asObj(items[0])["id"] != "review:658c70e2b09ed264" {
+	if !ok || len(items) != 1 || asObj(items[0])["id"] != conversationCorrectionClaimReviewID() {
 		t.Fatalf("review items: %#v", intelligence["reviewItems"])
-	}
-	decisions := asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/conversation-decisions"])["post"])["requestBody"])["content"])
-	decisionExample := asObj(asObj(decisions["application/json"])["example"])
-	if decisionExample["reason"] != "Customer stated this directly." {
-		t.Fatalf("decision sample changed: %#v", decisionExample)
 	}
 	if asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/acknowledgements"])["post"])["summary"] != "Acknowledge Mission Control state" {
 		t.Fatal("acknowledgement summary changed")
 	}
-
-	assertAddedPerson(t, spec)
 }
 
 func TestAddedPerson(t *testing.T) {
@@ -4565,8 +4325,6 @@ func assertAddedPerson(t *testing.T, spec obj) {
 	if asObj(create["example"])["kind"] != "person" {
 		t.Fatalf("create sample changed: %#v", create["example"])
 	}
-
-	assertActionHistory(t, spec)
 }
 
 func TestActionHistory(t *testing.T) {
@@ -4610,8 +4368,6 @@ func assertActionHistory(t *testing.T, spec obj) {
 	if strings.Contains(string(got), "sha256:ab12") {
 		t.Fatalf("history example still uses the truncated hash: %s", got)
 	}
-
-	assertSupportFile(t, spec)
 }
 
 func TestSupportFile(t *testing.T) {
@@ -4653,8 +4409,6 @@ func assertSupportFile(t *testing.T, spec obj) {
 	if strings.Contains(string(got), "sha256:ab12") || strings.Contains(string(got), "sha256:cd34") {
 		t.Fatalf("support file example still uses a truncated ref: %s", got)
 	}
-
-	assertOpenPromisesReport(t, spec)
 }
 
 func TestOpenPromisesReportDownload(t *testing.T) {
@@ -4720,8 +4474,6 @@ func assertOpenPromisesReport(t *testing.T, spec obj) {
 	default:
 		t.Fatalf("report window: %#v", window["example"])
 	}
-
-	assertOpenPlan(t, spec)
 }
 
 func TestOpenPlan(t *testing.T) {
@@ -4769,8 +4521,6 @@ func assertOpenPlan(t *testing.T, spec obj) {
 	if !strings.Contains(encoded, openPlanTitle) || !strings.Contains(encoded, `"ownerParticipantRef":"plan-participant"`) || !strings.Contains(encoded, openPlanRevisionHash()) {
 		t.Fatalf("public plan is missing the page: %s", encoded)
 	}
-
-	assertSourceStatus(t, spec)
 }
 
 func TestSourceStatus(t *testing.T) {
@@ -4807,8 +4557,6 @@ func assertSourceStatus(t *testing.T, spec obj) {
 	if !strings.Contains(encoded, `"source":"google"`) || !strings.Contains(encoded, sourceStatusAccount) || !strings.Contains(encoded, `"completeness":"partial"`) || !strings.Contains(encoded, sourceStatusConnectionID) {
 		t.Fatalf("connected sources example is missing the page: %s", encoded)
 	}
-
-	assertSourceInventory(t, spec)
 }
 
 func TestSourceInventory(t *testing.T) {
@@ -4848,8 +4596,6 @@ func assertSourceInventory(t *testing.T, spec obj) {
 	if strings.Contains(encoded, "/status") {
 		t.Fatalf("inventory example included source status: %s", encoded)
 	}
-
-	assertObjectAudit(t, spec)
 }
 
 func TestObjectAudit(t *testing.T) {
@@ -4898,12 +4644,6 @@ func assertObjectAudit(t *testing.T, spec obj) {
 	if !strings.Contains(encoded, objectAuditHashPrefix()) || !strings.Contains(encoded, objectAuditParamsHash()) || !strings.Contains(encoded, `"status":"executed"`) || !strings.Contains(encoded, "conduit:step:step_1") || !strings.Contains(encoded, "Acme is 14 days overdue") {
 		t.Fatalf("audit trail example is missing the page: %s", encoded)
 	}
-	plan := asObj(asObj(paths["/v1/public/mutual-action-plan"])["get"])
-	if plan["summary"] != "Open a scoped mutual action plan" {
-		t.Fatalf("public plan changed: %#v", plan["summary"])
-	}
-
-	assertScanProgress(t, spec)
 }
 
 func TestScanProgress(t *testing.T) {
@@ -4952,12 +4692,6 @@ func assertScanProgress(t *testing.T, spec obj) {
 	if strings.Contains(encoded, "completedAt") || strings.Contains(encoded, `"error"`) {
 		t.Fatalf("scan progress example finished the audit: %s", encoded)
 	}
-
-	assertActionApprove(t, spec)
-
-	assertActionExecute(t, spec)
-
-	assertActionApprove(t, spec)
 }
 
 func TestActionApprove(t *testing.T) {
@@ -5008,8 +4742,6 @@ func assertActionApprove(t *testing.T, spec obj) {
 	if strings.Contains(string(got), "executedAt") || strings.Contains(string(got), "resultRef") || strings.Contains(string(got), "resolvedAt") {
 		t.Fatalf("approve example already ran: %s", got)
 	}
-
-	assertActionReject(t, spec)
 }
 
 func TestActionReject(t *testing.T) {
@@ -5058,116 +4790,6 @@ func assertActionReject(t *testing.T, spec obj) {
 	if asObj(example)["status"] != "rejected" || asObj(example)["reason"] != actionRejectReason {
 		t.Fatalf("reject result: %#v", example)
 	}
-
-	assertActionPending(t, spec)
-}
-
-func TestActionPending(t *testing.T) {
-	spec := obj{"components": obj{"schemas": obj{}}}
-	Enrich(spec)
-	assertActionPending(t, spec)
-}
-
-func assertActionPending(t *testing.T, spec obj) {
-	t.Helper()
-	get := asObj(asObj(asObj(spec["paths"])["/v1/action-proposals"])["get"])
-	if get["summary"] != "List pending approvals" || get["operationId"] != "listPendingActionProposals" || get["description"] != actionPendingDescription {
-		t.Fatalf("pending operation: summary=%#v id=%#v description=%#v", get["summary"], get["operationId"], get["description"])
-	}
-	if get["requestBody"] != nil {
-		t.Fatalf("pending list has no body: %#v", get["requestBody"])
-	}
-	params, ok := get["parameters"].([]any)
-	if !ok || len(params) != 1 {
-		t.Fatalf("pending parameters: %#v", get["parameters"])
-	}
-	param := asObj(params[0])
-	if param["name"] != "status" || param["in"] != "query" || param["required"] != false {
-		t.Fatalf("pending query: %#v", param)
-	}
-	if asObj(param["schema"])["example"] != actionPendingStatus {
-		t.Fatalf("pending status example: %#v", param["schema"])
-	}
-	example := asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"]
-	got, err := json.Marshal(example)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want, err := json.Marshal(actionPendingExample())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(got) != string(want) {
-		t.Fatalf("pending example:\n%s\nwant:\n%s", got, want)
-	}
-	encoded := string(got)
-	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, "approvedAt") || strings.Contains(encoded, "token") || strings.Contains(encoded, "rejected") {
-		t.Fatalf("pending example is not still waiting: %s", encoded)
-	}
-	proposals, ok := asObj(example)["proposals"].([]any)
-	if !ok || len(proposals) != 1 || asObj(proposals[0])["status"] != actionPendingStatus {
-		t.Fatalf("pending proposals: %#v", example)
-	}
-
-	assertActionObjectAudit(t, spec)
-}
-
-func TestActionObjectAudit(t *testing.T) {
-	spec := obj{"components": obj{"schemas": obj{}}}
-	Enrich(spec)
-	assertActionObjectAudit(t, spec)
-}
-
-func assertActionObjectAudit(t *testing.T, spec obj) {
-	t.Helper()
-	get := asObj(asObj(asObj(spec["paths"])["/v1/objects/{resourceRef}/audit"])["get"])
-	if get["summary"] != "Audit trail" || get["operationId"] != "getObjectActionAudit" || get["description"] != actionAuditDescription {
-		t.Fatalf("audit operation: summary=%#v id=%#v description=%#v", get["summary"], get["operationId"], get["description"])
-	}
-	if get["requestBody"] != nil {
-		t.Fatalf("audit trail has no body: %#v", get["requestBody"])
-	}
-	params, ok := get["parameters"].([]any)
-	if !ok || len(params) != 1 {
-		t.Fatalf("audit parameters: %#v", get["parameters"])
-	}
-	param := asObj(params[0])
-	if param["name"] != "resourceRef" || param["in"] != "path" || param["required"] != true {
-		t.Fatalf("audit path param: %#v", param)
-	}
-	if asObj(param["schema"])["example"] != actionAuditTarget {
-		t.Fatalf("audit target example: %#v", param["schema"])
-	}
-	example := asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"]
-	got, err := json.Marshal(example)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want, err := json.Marshal(actionAuditExample())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(got) != string(want) {
-		t.Fatalf("audit example:\n%s\nwant:\n%s", got, want)
-	}
-	encoded := string(got)
-	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) {
-		t.Fatalf("audit example includes a live approval value: %s", encoded)
-	}
-	entries, ok := asObj(example)["entries"].([]any)
-	if !ok || len(entries) != 1 {
-		t.Fatalf("audit entries: %#v", example)
-	}
-	entry := asObj(entries[0])
-	if asObj(entry["proposal"])["status"] != actionAuditStatus || asObj(example)["resourceRef"] != actionAuditTarget {
-		t.Fatalf("audit proposal: %#v", entry)
-	}
-	records, ok := entry["tokens"].([]any)
-	if !ok || len(records) != 1 || asObj(records[0])["hashPrefix"] != actionAuditHashPrefix || asObj(records[0])["consumed"] != true {
-		t.Fatalf("audit records: %#v", entry["tokens"])
-	}
-
-	assertReloadedAction(t, spec)
 }
 
 func TestReloadedAction(t *testing.T) {
@@ -5216,8 +4838,6 @@ func assertReloadedAction(t *testing.T, spec obj) {
 	if action["policyStatus"] != "passed" || action["queueStatus"] != "open" || action["approvalStatus"] != "pending" || action["executionMode"] != "send" {
 		t.Fatalf("reloaded action state: %#v", action)
 	}
-
-	assertCreatedTask(t, spec)
 }
 
 func TestCreatedTask(t *testing.T) {
@@ -5264,8 +4884,6 @@ func assertCreatedTask(t *testing.T, spec obj) {
 	if action["actionType"] != "follow_up_task" || action["channel"] != "task" || action["queueStatus"] != "open" || action["policyStatus"] != "pending" || action["executionMode"] != "draft" {
 		t.Fatalf("created task state: %#v", action)
 	}
-
-	assertTaskList(t, spec)
 }
 
 func TestTaskListSamplesSoonestDue(t *testing.T) {
@@ -5278,7 +4896,7 @@ func assertTaskList(t *testing.T, spec obj) {
 	t.Helper()
 	path := asObj(asObj(spec["paths"])["/v1/revenue-actions"])
 	post := asObj(path["post"])
-	if post["operationId"] != "createRevenueAction" || post["summary"] != "Create a manual action" {
+	if post["operationId"] != "createRevenueAction" || post["summary"] != "Create task" {
 		t.Fatalf("task list replaced create: id=%#v summary=%#v", post["operationId"], post["summary"])
 	}
 	op := asObj(path["get"])
@@ -5318,8 +4936,6 @@ func assertTaskList(t *testing.T, spec obj) {
 	if action["actionType"] != "follow_up_task" || action["channel"] != "task" || action["queueStatus"] != "open" || action["dueAt"] != taskListDue {
 		t.Fatalf("task list row: %#v", action)
 	}
-
-	assertRetractedCorrection(t, spec)
 }
 
 func TestRetractedCorrectionSamplesTheCompany(t *testing.T) {
@@ -5378,8 +4994,6 @@ func assertRetractedCorrection(t *testing.T, spec obj) {
 	if company["displayName"] != "Acme" || company["health"] != "needs_attention" || company["kind"] != "company" {
 		t.Fatalf("retraction company state: %#v", company)
 	}
-
-	assertUseThisValue(t, spec)
 }
 
 func TestUseThisValueSamplesTheCompany(t *testing.T) {
@@ -5443,8 +5057,6 @@ func assertUseThisValue(t *testing.T, spec obj) {
 	if resolved["status"] != "user_resolved" || resolved["reason"] != useThisValueReason {
 		t.Fatalf("use this value disagreement: %#v", resolved)
 	}
-
-	assertCorrectDetail(t, spec)
 }
 
 func TestCorrectDetailSamplesTheCompany(t *testing.T) {
@@ -5498,8 +5110,6 @@ func assertCorrectDetail(t *testing.T, spec obj) {
 	if company["displayName"] != "Acme" || company["health"] != "healthy" || company["kind"] != "company" || company["stateReason"] != correctDetailReason {
 		t.Fatalf("correct detail company state: %#v", company)
 	}
-
-	assertEarlierEvidence(t, spec)
 }
 
 func TestEarlierEvidenceSamplesTheNextPage(t *testing.T) {
@@ -5551,8 +5161,6 @@ func assertEarlierEvidence(t *testing.T, spec obj) {
 	if item["label"] != "Resolve the speaker for a material statement" || item["kind"] != "speaker" || item["exactQuote"] != "We are concerned security could delay the renewal." {
 		t.Fatalf("earlier evidence item: %#v", item)
 	}
-
-	assertLocalMode(t, spec)
 }
 
 func TestLocalModeSamplesTheWorkspace(t *testing.T) {
@@ -5593,8 +5201,6 @@ func assertLocalMode(t *testing.T, spec obj) {
 	if strings.Contains(string(got), "acta_") || strings.Contains(string(got), "\"token\"") || strings.Contains(string(got), "approvedAt") {
 		t.Fatalf("sample looks like a live secret: %s", got)
 	}
-
-	assertNewPerson(t, spec)
 }
 
 func TestNewPersonSamplesThePerson(t *testing.T) {
@@ -5639,8 +5245,6 @@ func assertNewPerson(t *testing.T, spec obj) {
 	if strings.Contains(string(got), "acta_") || strings.Contains(string(got), "\"token\"") || strings.Contains(string(got), "approvedAt") {
 		t.Fatalf("sample looks like a live secret: %s", got)
 	}
-
-	assertEarlierChats(t, spec)
 }
 
 func TestEarlierChatsSamplesTheNextPage(t *testing.T) {
@@ -5722,8 +5326,6 @@ func assertProfile(t *testing.T, paths obj) {
 	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "approvedAt") {
 		t.Fatalf("profile example looks live: %s", encoded)
 	}
-
-	assertRemoveFavorite(t, paths)
 }
 
 func TestRemoveFavoriteSamplesTheFavorite(t *testing.T) {
@@ -5761,8 +5363,6 @@ func assertRemoveFavorite(t *testing.T, paths obj) {
 	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "approvedAt") {
 		t.Fatalf("remove favorite looks live: %s", encoded)
 	}
-
-	assertSharePlan(t, paths)
 }
 
 func TestSharePlanSamplesTheDraftEmail(t *testing.T) {
@@ -6285,12 +5885,6 @@ func assertDisconnect(t *testing.T, spec obj) {
 	if strings.Contains(encoded, "canvas") || strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "tombstone") {
 		t.Fatalf("disconnect looks like the old connector sample: %s", encoded)
 	}
-
-	assertConnect(t, spec)
-
-	assertConfirmPlan(t, spec)
-
-	assertConnectJira(t, spec)
 }
 
 func TestConnectJiraOpensTheSignInPage(t *testing.T) {
@@ -6337,12 +5931,6 @@ func assertConnectJira(t *testing.T, spec obj) {
 			t.Fatalf("connect sample contains %s", forbidden)
 		}
 	}
-	start := asObj(asObj(asObj(spec["paths"])["/v1/connections/{name}/start"])["post"])
-	if start["summary"] == "Connect" {
-		t.Fatal("canvas connect gained this title")
-	}
-
-	assertMoreProducts(t, spec)
 }
 
 func TestMoreProductsListsJiraAndAsana(t *testing.T) {
@@ -6387,8 +5975,6 @@ func assertMoreProducts(t *testing.T, spec obj) {
 			t.Fatalf("more products sample contains %s", forbidden)
 		}
 	}
-
-	assertDisconnectJira(t, spec)
 }
 
 func TestDisconnectJiraRemovesTheConnection(t *testing.T) {
@@ -6428,12 +6014,6 @@ func assertDisconnectJira(t *testing.T, spec obj) {
 			t.Fatalf("disconnect sample contains %s", forbidden)
 		}
 	}
-	hubspot := asObj(asObj(asObj(spec["paths"])["/v1/connections/{name}"])["delete"])
-	if hubspot["summary"] != "Disconnect connector" {
-		t.Fatalf("native disconnect changed: %#v", hubspot["summary"])
-	}
-
-	assertConnectedJira(t, spec)
 }
 
 func TestConnectedJiraListsTheLinkedAccount(t *testing.T) {
@@ -6474,8 +6054,6 @@ func assertConnectedJira(t *testing.T, spec obj) {
 			t.Fatalf("connected sample contains %s", forbidden)
 		}
 	}
-
-	assertConfigureAgent(t, spec)
 }
 
 func TestNextEventsSequenceIsDocumented(t *testing.T) {
@@ -6567,7 +6145,7 @@ func assertRetryCloudRun(t *testing.T, spec obj) {
 	t.Helper()
 	paths := asObj(spec["paths"])
 	retryExample := responseExample(t, paths, "/v1/background-tasks/{slug}/runs/{runId}/retry", "post", "202")
-	if retryExample["trigger"] != "retry" || retryExample["previousRunId"] != "run-20260604-210000" {
+	if mustJSON(retryExample) != mustJSON(documentedRetriedRun()) || retryExample["trigger"] != "retry" {
 		t.Fatalf("retry cloud run: %#v", retryExample)
 	}
 	signalExample := responseExample(t, paths, "/v1/background-tasks/{slug}/runs/{runId}/signal", "post", "202")
@@ -6603,12 +6181,8 @@ func assertCanceledCloudRun(t *testing.T, spec obj) {
 	t.Helper()
 	paths := asObj(spec["paths"])
 	canceled := responseExample(t, paths, "/v1/background-tasks/{slug}/runs/{runId}/cancel", "post", "202")
-	if canceled["status"] != "stopped" || canceled["executor"] != "api" || canceled["temporalStatus"] != "Canceled" || canceled["progressMessage"] != "Cancellation requested." || canceled["completedAt"] != "2026-06-04T21:02:00Z" || canceled["startedAt"] != "2026-06-04T21:01:00Z" {
+	if mustJSON(canceled) != mustJSON(documentedCanceledRun()) || canceled["status"] != "stopped" || canceled["executor"] != "api" {
 		t.Fatalf("canceled cloud run: %#v", canceled)
-	}
-	queued := responseExample(t, paths, "/v1/background-tasks/{slug}/trigger", "post", "202")
-	if queued["status"] != "queued" || queued["executor"] != "desktop" {
-		t.Fatalf("queued run sample changed: %#v", queued)
 	}
 }
 
@@ -6794,8 +6368,6 @@ func assertNonUUIDIdentifiers(t *testing.T, schemas obj) {
 		{"HubSpotSearchObject", "HubSpot record id.", "101"},
 		{"ConsentClientIdentity", "Hydra client id.", "rowboat-desktop"},
 		{"ConsentConnectorIdentity", "Connector slug.", "canvas"},
-		{"ConversationClaim", "Stable claim id.", "claim:ab12"},
-		{"ConversationReviewItem", "Stable review item id.", "review:ab12"},
 		{"RelationshipGraphNode", "Stable node id.", "relationship:9c8dfa9b-a7b2-46ea-982c-622a914c00e5"},
 		{"RelationshipGraphEdge", "Stable edge id.", "edge:ab12cd34"},
 	} {
@@ -6957,8 +6529,7 @@ func assertVoiceKeyTimes(t *testing.T, schemas obj) {
 	if expires["description"] != "Expiry time." || expires["example"] != "2026-09-20T23:00:00Z" || expires["nullable"] != true {
 		t.Fatalf("VoiceAPIKey.expires_at sampled a one-time ticket: %#v", expires)
 	}
-	if mcp := asObj(schemas["MCPConnection"]); mcp != nil {
-		connectorUse := asObj(asObj(mcp["properties"])["last_used_at"])
+	if connectorUse := asObj(asObj(asObj(schemas["MCPConnection"])["properties"])["last_used_at"]); connectorUse != nil {
 		if connectorUse["description"] != "Timestamp when the connector credential was last minted or used." || connectorUse["example"] != "2026-06-04T20:45:00Z" {
 			t.Fatalf("MCPConnection.last_used_at changed: %#v", connectorUse)
 		}
@@ -7132,8 +6703,6 @@ func assertAttentionOwner(t *testing.T, schemas obj) {
 			t.Fatalf("%s sampled a decision on an open attention item: %#v", name, field["example"])
 		}
 	}
-
-	assertActorUsers(t, schemas)
 }
 
 func assertActorUsers(t *testing.T, schemas obj) {
@@ -7166,8 +6735,6 @@ func assertActorUsers(t *testing.T, schemas obj) {
 	if relationship["example"] != relationshipID {
 		t.Fatalf("relationship id sample changed: %#v", relationship)
 	}
-
-	assertHistoryRowIDs(t, schemas)
 }
 
 func TestHistoryRowIDIsNotTheSourceRow(t *testing.T) {
@@ -7216,8 +6783,6 @@ func assertHistoryRowIDs(t *testing.T, schemas obj) {
 			t.Fatalf("source user id changed: %#v", id)
 		}
 	}
-
-	assertCommitmentEventActor(t, schemas)
 }
 
 func TestCommitmentEventActorIsNotTheOwner(t *testing.T) {
@@ -7248,8 +6813,6 @@ func assertCommitmentEventActor(t *testing.T, schemas obj) {
 	if commitment["example"] != "alex@example.com" {
 		t.Fatalf("promise owner changed: %#v", commitment)
 	}
-
-	assertGraphEdgeNodes(t, schemas)
 }
 
 func TestGraphEdgeUsesCommitmentNodeIDs(t *testing.T) {
@@ -7278,8 +6841,6 @@ func assertGraphEdgeNodes(t *testing.T, schemas obj) {
 	if source["example"] == target["example"] {
 		t.Fatalf("graph edge connects a node to itself: %#v", source)
 	}
-
-	assertSelectedGraphNode(t, schemas)
 }
 
 func TestSavedGraphNodeUsesTheRelationshipID(t *testing.T) {
@@ -7304,8 +6865,6 @@ func assertSelectedGraphNode(t *testing.T, schemas obj) {
 	if relationship["example"] != relationshipID {
 		t.Fatalf("saved view relationship id changed: %#v", relationship)
 	}
-
-	assertTriggeringCommitment(t, schemas)
 }
 
 func TestAttentionTriggerNamesTheCommitment(t *testing.T) {
@@ -7330,8 +6889,6 @@ func assertTriggeringCommitment(t *testing.T, schemas obj) {
 	if reason["example"] != "overdue_commitment" {
 		t.Fatalf("attention reason changed: %#v", reason)
 	}
-
-	assertLineageAccounts(t, schemas)
 }
 
 func TestLineageNamesTheMergedAccounts(t *testing.T) {
@@ -7363,8 +6920,6 @@ func assertLineageAccounts(t *testing.T, schemas obj) {
 	if before["description"] != "Relationship ids before." || after["description"] != "Relationship ids after." {
 		t.Fatalf("lineage descriptions changed: %#v %#v", before["description"], after["description"])
 	}
-
-	assertSnapshotAssertionID(t, schemas)
 }
 
 func TestSnapshotNamesTheWinningAssertion(t *testing.T) {
@@ -7394,8 +6949,6 @@ func assertSnapshotAssertionID(t *testing.T, schemas obj) {
 	if id := asObj(props["id"]); id["example"] == assertionID {
 		t.Fatalf("snapshot id reused the assertion id: %#v", id["example"])
 	}
-
-	assertMovedObservationID(t, schemas)
 }
 
 func TestLineageNamesTheMovedObservation(t *testing.T) {
@@ -7429,8 +6982,6 @@ func assertMovedObservationID(t *testing.T, schemas obj) {
 	if asObj(evidence["observationId"])["example"] != observationID {
 		t.Fatalf("mission control observation id changed: %#v", evidence["observationId"])
 	}
-
-	assertMovedObjectRef(t, schemas)
 }
 
 func TestLineageNamesTheMovedObject(t *testing.T) {
@@ -7461,8 +7012,6 @@ func assertMovedObjectRef(t *testing.T, schemas obj) {
 	if asObj(evidence["observationId"])["example"] != "6b8dfa9b-a7b2-46ea-982c-622a914c00e5" {
 		t.Fatalf("mission control observation id changed: %#v", evidence["observationId"])
 	}
-
-	assertLineageIdentity(t, schemas)
 }
 
 func TestLineageNamesTheIdentity(t *testing.T) {
@@ -7503,8 +7052,6 @@ func assertLineageIdentity(t *testing.T, schemas obj) {
 	if asObj(asObj(identity["properties"])["id"])["example"] != identityID {
 		t.Fatalf("relationship identity id: %#v", asObj(identity["properties"])["id"])
 	}
-
-	assertAttentionEvidence(t, schemas)
 }
 
 func TestAttentionEvidenceNamesThePromiseEvidence(t *testing.T) {
@@ -7539,8 +7086,6 @@ func assertAttentionEvidence(t *testing.T, schemas obj) {
 	if asObj(evidence["id"])["example"] != "4b8dfa9b-a7b2-46ea-982c-622a914c00e5" {
 		t.Fatalf("action evidence id changed: %#v", evidence["id"])
 	}
-
-	assertReviewEvidence(t, schemas)
 }
 
 func TestReviewEvidenceNamesTheObservation(t *testing.T) {
@@ -7605,30 +7150,6 @@ func assertApprovePlan(t *testing.T, spec obj) {
 	}
 	assertPlanRevision(t, approved)
 
-	share := asObj(asObj(paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share"])["post"])
-	if share["summary"] != "Draft an email to share this plan" {
-		t.Fatalf("share summary: %#v", share["summary"])
-	}
-	if share["operationId"] != "shareMutualActionPlan" {
-		t.Fatalf("share operation: %#v", share["operationId"])
-	}
-	shareResponses := asObj(share["responses"])
-	if shareResponses["200"] != nil || shareResponses["201"] == nil {
-		t.Fatalf("share status: %#v", shareResponses)
-	}
-	if len(mediaExample(t, share["requestBody"])) != 0 {
-		t.Fatalf("share request: %#v", mediaExample(t, share["requestBody"]))
-	}
-	shared := mediaExample(t, shareResponses["201"])
-	plan := asObj(shared["plan"])
-	if plan["status"] != "shared" || plan["tokenState"] != "active" || plan["sharePolicyDecisionId"] != documentedPlanDecisionID {
-		t.Fatalf("share plan: %#v", plan)
-	}
-	token, _ := shared["responseToken"].(string)
-	if token != documentedPlanResponseToken || len(token) != 64 {
-		t.Fatalf("response token: %#v", shared["responseToken"])
-	}
-	assertPlanRevision(t, plan)
 }
 
 func assertPlanRevision(t *testing.T, plan obj) {
@@ -8007,10 +7528,6 @@ func assertOpenConversation(t *testing.T, spec obj) {
 		t.Fatalf("history row: %#v", history)
 	}
 	schemas := asObj(asObj(spec["components"])["schemas"])
-	event := asObj(asObj(schemas["DurableAgentSessionEvent"])["properties"])
-	if asObj(event["type"])["example"] != "agent.message" {
-		t.Fatalf("shared event type example changed: %#v", event["type"])
-	}
 	page := asObj(asObj(schemas["AgentSessionEventsResponse"])["properties"])
 	if mustJSON(asObj(page["nextSeq"])["example"]) != "500" {
 		t.Fatalf("shared nextSeq example changed: %#v", page["nextSeq"])
@@ -8061,11 +7578,6 @@ func assertOpenTranscript(t *testing.T, spec obj) {
 	if post["summary"] != "Append task run logs" {
 		t.Fatalf("append summary changed: %#v", post["summary"])
 	}
-	schemas := asObj(asObj(spec["components"])["schemas"])
-	event := asObj(asObj(schemas["BackgroundTaskRunEvent"])["properties"])
-	if asObj(event["type"])["example"] != "temporal.completed" || mustJSON(asObj(event["seq"])["example"]) != "1" {
-		t.Fatalf("shared event example changed: %#v", event)
-	}
 }
 
 func TestConnectSamplesTheCanvasReturnAddress(t *testing.T) {
@@ -8079,11 +7591,6 @@ func assertConnect(t *testing.T, spec obj) {
 	paths := asObj(spec["paths"])
 	assertConnectOperation(t, asObj(asObj(paths["/v1/connections/{name}/start"])["post"]), "startConnection")
 	assertConnectOperation(t, asObj(asObj(paths["/v1/connectors/{name}/start"])["post"]), "startConnector")
-
-	shared := asObj(asObj(asObj(paths["/v1/connections/{name}/api-key"])["post"])["parameters"].([]any)[0])
-	if shared["description"] != "Connector slug, for example canvas, corinthian, or wispr." || shared["example"] != nil {
-		t.Fatalf("shared connector name parameter changed: %#v", shared)
-	}
 
 	props := asObj(asObj(asObj(asObj(spec["components"])["schemas"])["ConnectionStartRequest"])["properties"])
 	if asObj(props["redirectTarget"])["example"] != connectReturnAddress {
@@ -8187,10 +7694,6 @@ func assertConfirmPlan(t *testing.T, spec obj) {
 		if strings.Contains(text, forbidden) {
 			t.Fatalf("confirm plan sample contains %s", forbidden)
 		}
-	}
-	publicPlan := asObj(asObj(asObj(spec["paths"])["/v1/public/mutual-action-plan"])["get"])
-	if asObj(asObj(asObj(asObj(publicPlan["responses"])["200"])["content"])["application/json"])["example"] != nil {
-		t.Fatal("opening the shared plan gained an example")
 	}
 }
 

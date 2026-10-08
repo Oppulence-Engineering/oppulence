@@ -7,23 +7,11 @@
  */
 
 /**
- * One step on the plan.
+ * Accepted stop.
  */
-export type ShareMutualActionPlan201PlanCurrentRevisionItemsItem = {
-  /** Commitment this step came from. */
-  commitmentId?: string;
-  /** Steps this one waits on. */
-  dependencyItemIds: string[];
-  /** When the step is due. */
-  dueAt?: string;
-  /** Evidence for the step. */
-  evidenceRefs: string[];
-  /** Step id. */
-  itemId: string;
-  /** Who owns the step. */
-  ownerParticipantRef: string;
-  /** Step status. */
+export type CancelAgentSession202 = {
+  /** Session that is stopping. */
+  sessionId: string;
+  /** Stop acknowledgement. */
   status: string;
-  /** Step title. */
-  title: string;
 };

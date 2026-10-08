@@ -9,7 +9,7 @@ import type {
   AcknowledgeMissionControl201,
   AcknowledgeMissionControlBody,
   AppendCommitmentTransitionBody,
-  ApproveMutualActionPlan200,
+  ApproveMutualActionPlan201,
   ApproveMutualActionPlanBody,
   ApproveRelationshipRecommendationBody,
   BetaDiagnostics,
@@ -38,6 +38,7 @@ import type {
   GetCommitmentEvents200,
   GetCommunicationAttachmentContent200,
   GetCommunicationInteractionBody200,
+  GetCommunicationPolicy200,
   GetCompanyResearchEstimate200,
   GetConversationPolicy200,
   GetPersonResearchEstimate200,
@@ -318,8 +319,8 @@ export const getRespondPublicMutualActionPlanUrl = () => {
 };
 
 /**
- * Appends an idempotent external response for internal review; it never directly changes canonical commitments.
- * @summary Respond to a scoped plan
+ * Confirm plan records that the other person confirmed the shared plan. The owner's records stay unchanged.
+ * @summary Confirm plan
  */
 export const respondPublicMutualActionPlan = async (
   respondPublicMutualActionPlanBody: RespondPublicMutualActionPlanBody,
@@ -442,8 +443,8 @@ export const getDecideRelationshipAttentionUrl = (attentionId: string) => {
 };
 
 /**
- * Acknowledges, snoozes, or dismisses at the expected optimistic version. Materially new evidence reopens the item.
- * @summary Decide attention item
+ * Review records that this attention item was reviewed. It leaves the open queue.
+ * @summary Review
  */
 export const decideRelationshipAttention = async (
   attentionId: string,
@@ -689,8 +690,8 @@ export const getDecideRelationshipIdentityCandidateUrl = (candidateId: string) =
 };
 
 /**
- * Applies merge, keep-separate, move-evidence, split, defer, or compensating undo once at the expected optimistic version.
- * @summary Decide identity candidate
+ * Merge combines this possible duplicate into the company that already exists. The extra company is archived.
+ * @summary Merge
  */
 export const decideRelationshipIdentityCandidate = async (
   candidateId: string,
@@ -754,7 +755,7 @@ export const getIngestRelationshipObservationsUrl = () => {
 };
 
 /**
- * Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.
+ * New person sends the new person id, source user, and event person_added. The summary is that person's name followed by added by the user.
  * @summary Ingest relationship observations
  */
 export const ingestRelationshipObservations = async (
@@ -1166,8 +1167,8 @@ export const getGetRelationshipSourceStatusesUrl = () => {
 };
 
 /**
- * Returns authorization, backfill, freshness, failure, repair, revocation, and disconnect state for each relationship evidence source.
- * @summary Get source health
+ * Connected sources lists each account connected to this workspace. The page shows the account and whether its history is still syncing.
+ * @summary Connected sources
  */
 export const getRelationshipSourceStatuses = async (
   options?: RequestInit,
@@ -1647,7 +1648,7 @@ export const getAcknowledgeMissionControlUrl = (relationshipId: string) => {
 };
 
 /**
- * Records the exact state version and hash the actor reviewed. A stale acknowledgement fails with 409.
+ * Mark as reviewed sends the company id and the state version and hash that company is showing. A stale review fails with 409.
  * @summary Acknowledge Mission Control state
  */
 export const acknowledgeMissionControl = async (
@@ -1979,9 +1980,9 @@ export const getCommitmentEvents = async (
   return { data, status: res.status, headers: res.headers } as getCommitmentEventsResponse;
 };
 
-export type appendCommitmentTransitionResponse200 = {
+export type appendCommitmentTransitionResponse201 = {
   data: RelationshipCommitment;
-  status: 200;
+  status: 201;
 };
 
 export type appendCommitmentTransitionResponse400 = {
@@ -2004,7 +2005,7 @@ export type appendCommitmentTransitionResponse409 = {
   status: 409;
 };
 
-export type appendCommitmentTransitionResponseSuccess = appendCommitmentTransitionResponse200 & {
+export type appendCommitmentTransitionResponseSuccess = appendCommitmentTransitionResponse201 & {
   headers: Headers;
 };
 export type appendCommitmentTransitionResponseError = (
@@ -2171,8 +2172,8 @@ export const getResolveRelationshipContradictionUrl = (relationshipId: string, c
 };
 
 /**
- * Records the user's selected evidence side as a top-authority correction without rewriting either source.
- * @summary Resolve a typed contradiction
+ * Use this value closes a disagreement on this company. It sends the evidence you picked and why, and the company comes back with that value current.
+ * @summary Use this value
  */
 export const resolveRelationshipContradiction = async (
   relationshipId: string,
@@ -2236,7 +2237,7 @@ export const getCorrectConversationEvidenceUrl = (relationshipId: string) => {
 };
 
 /**
- * Resolves a focused word, speaker, entity, or material-claim review item. State-affecting corrections append a top-precedence user assertion and reproject deterministically.
+ * Correct sends the company id, the review item id, and the edited value. It always sends the focused-review reason.
  * @summary Correct reviewed conversation evidence
  */
 export const correctConversationEvidence = async (
@@ -2302,8 +2303,8 @@ export const getDecideConversationChangeUrl = (relationshipId: string) => {
 };
 
 /**
- * Approves, corrects, rejects, or defers one evidence-backed semantic candidate. A stale baseline returns 409 and no state mutation.
- * @summary Decide a proposed conversation change
+ * Approve accepts this proposed conversation change. The company and its review queue refresh.
+ * @summary Approve
  */
 export const decideConversationChange = async (
   relationshipId: string,
@@ -2368,8 +2369,8 @@ export const getRequestConversationDeletionUrl = (relationshipId: string) => {
 };
 
 /**
- * Evaluates legal hold at execution time, removes server-side content transactionally, and returns an idempotent per-target receipt. Device and provider work remains pending until separately verified.
- * @summary Request conversation deletion
+ * Confirm delete removes this company's conversation evidence from Oppulence. Copies on this device and at the mailbox stay until they are checked.
+ * @summary Confirm delete
  */
 export const requestConversationDeletion = async (
   relationshipId: string,
@@ -2614,8 +2615,8 @@ export const getCorrectRelationshipUrl = (relationshipId: string) => {
 };
 
 /**
- * Appends a user correction assertion and deterministically reprojects the relationship. Source evidence is never overwritten.
- * @summary Correct relationship state
+ * Correct a detail replaces one field on this company. It sends the field, the new value, and why, and the company comes back with that value.
+ * @summary Correct a detail
  */
 export const correctRelationship = async (
   relationshipId: string,
@@ -2819,9 +2820,9 @@ export const reviseMutualActionPlan = async (
   return { data, status: res.status, headers: res.headers } as reviseMutualActionPlanResponse;
 };
 
-export type approveMutualActionPlanResponse200 = {
-  data: ApproveMutualActionPlan200;
-  status: 200;
+export type approveMutualActionPlanResponse201 = {
+  data: ApproveMutualActionPlan201;
+  status: 201;
 };
 
 export type approveMutualActionPlanResponse401 = {
@@ -2839,7 +2840,7 @@ export type approveMutualActionPlanResponse409 = {
   status: 409;
 };
 
-export type approveMutualActionPlanResponseSuccess = approveMutualActionPlanResponse200 & {
+export type approveMutualActionPlanResponseSuccess = approveMutualActionPlanResponse201 & {
   headers: Headers;
 };
 export type approveMutualActionPlanResponseError = (
@@ -2858,8 +2859,8 @@ export const getApproveMutualActionPlanUrl = (relationshipId: string, planId: st
 };
 
 /**
- * Binds internal approval to the exact current revision hash.
- * @summary Approve a plan revision
+ * Approve this plan posts an empty body. The stored plan status is internally_approved, which the company sheet reads as Approved in this workspace.
+ * @summary Approve this plan
  */
 export const approveMutualActionPlan = async (
   relationshipId: string,
@@ -2919,7 +2920,7 @@ export const getShareMutualActionPlanUrl = (relationshipId: string, planId: stri
 };
 
 /**
- * Draft an email to share this plan posts an empty body. The stored plan status is shared, the token state is active, and responseToken is the one-time token. The server keeps only the hash of that token.
+ * Draft an email to share this plan marks that approved plan as shared and writes a draft email. The email is not sent.
  * @summary Draft an email to share this plan
  */
 export const shareMutualActionPlan = async (
@@ -3545,6 +3546,56 @@ export const getResearchStatus = async (
 
   const data: getResearchStatusResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as getResearchStatusResponse;
+};
+
+export type getCommunicationPolicyResponse200 = {
+  data: GetCommunicationPolicy200;
+  status: 200;
+};
+
+export type getCommunicationPolicyResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getCommunicationPolicyResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type getCommunicationPolicyResponseSuccess = getCommunicationPolicyResponse200 & {
+  headers: Headers;
+};
+export type getCommunicationPolicyResponseError = (
+  getCommunicationPolicyResponse401 | getCommunicationPolicyResponse404
+) & {
+  headers: Headers;
+};
+
+export type getCommunicationPolicyResponse =
+  getCommunicationPolicyResponseSuccess | getCommunicationPolicyResponseError;
+
+export const getGetCommunicationPolicyUrl = (sourceAccountId: string) => {
+  return `/v1/revenue-workspaces/current/communication-policy/${sourceAccountId}`;
+};
+
+/**
+ * Email & Calendar privacy loads this mailbox policy after the mailbox account is entered. Metadata stays workspace-visible, subject lines are shared, and bodies and attachments stay private.
+ * @summary Mailbox policy
+ */
+export const getCommunicationPolicy = async (
+  sourceAccountId: string,
+  options?: RequestInit,
+): Promise<getCommunicationPolicyResponse> => {
+  const res = await fetch(getGetCommunicationPolicyUrl(sourceAccountId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCommunicationPolicyResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as getCommunicationPolicyResponse;
 };
 
 export type putCommunicationPolicyResponse200 = {

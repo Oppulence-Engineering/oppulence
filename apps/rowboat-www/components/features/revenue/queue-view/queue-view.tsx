@@ -15,6 +15,7 @@ import { useRevenueActions } from "@/hooks/queries/use-revenue-actions";
 import {
   ACTION_QUEUE_PAGE,
   actionPageHasMore,
+  type ActionPage,
   actionRows,
   fetchRevenueActions,
   prependCreatedAction,
@@ -387,7 +388,7 @@ export function QueueView({
 
   const removeFromQueue = React.useCallback(
     (id: string) => {
-      queryClient.setQueryData(actionsQueryKey, (current) =>
+      queryClient.setQueryData<ActionPage | RevenueAction[]>(actionsQueryKey, (current) =>
         replaceActionPage(
           current,
           actionRows(current).filter((action) => action.id !== id),
@@ -401,7 +402,7 @@ export function QueueView({
 
   const patchAction = React.useCallback(
     (updated: RevenueAction) => {
-      queryClient.setQueryData(actionsQueryKey, (current) =>
+      queryClient.setQueryData<ActionPage | RevenueAction[]>(actionsQueryKey, (current) =>
         replaceActionPage(
           current,
           actionRows(current).map((action) => (action.id === updated.id ? updated : action)),
@@ -526,34 +527,34 @@ export function QueueView({
           )
         ) : (
           <>
-          <ul className="flex flex-col gap-3 p-3">
-            {actions.map((action) => (
-              <li key={action.id}>
-                <ActionCard
-                  action={action}
-                  onAudit={() => setAuditFor(action)}
-                  onError={onError}
-                  onOptimisticRemove={removeFromQueue}
-                  onReview={() => {
-                    capture(RevenueEvents.ActionReviewed, { detector: action.detector });
-                    setSelected(action);
-                  }}
-                />
-              </li>
-            ))}
-          </ul>
-          {hasMoreRecovery ? (
-            <Button
-              className="m-3"
-              disabled={loadingMoreRecovery}
-              onClick={() => void loadMoreRecovery()}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              {recoveryRemainderLabel()}
-            </Button>
-          ) : null}
+            <ul className="flex flex-col gap-3 p-3">
+              {actions.map((action) => (
+                <li key={action.id}>
+                  <ActionCard
+                    action={action}
+                    onAudit={() => setAuditFor(action)}
+                    onError={onError}
+                    onOptimisticRemove={removeFromQueue}
+                    onReview={() => {
+                      capture(RevenueEvents.ActionReviewed, { detector: action.detector });
+                      setSelected(action);
+                    }}
+                  />
+                </li>
+              ))}
+            </ul>
+            {hasMoreRecovery ? (
+              <Button
+                className="m-3"
+                disabled={loadingMoreRecovery}
+                onClick={() => void loadMoreRecovery()}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                {recoveryRemainderLabel()}
+              </Button>
+            ) : null}
           </>
         )}
       </SimProductPanel>
@@ -587,7 +588,7 @@ export function QueueView({
             setCreating(false);
             onNotice("Action created.");
             if (filter === "open") {
-              queryClient.setQueryData(actionsQueryKey, (current) =>
+              queryClient.setQueryData<ActionPage | RevenueAction[]>(actionsQueryKey, (current) =>
                 prependCreatedAction(current, a),
               );
             }

@@ -45,14 +45,20 @@ describe("loadRelationshipSourceStatuses", () => {
   });
 
   it("treats a list of only observation sources as no connectors", async () => {
-    const sources = await loadRelationshipSourceStatuses(requestReturning({ sources: [userSource] }));
+    const sources = await loadRelationshipSourceStatuses(
+      requestReturning({ sources: [userSource] }),
+    );
     expect(sources).toEqual([]);
   });
 
   // Ingest stores a Gmail note as source "google" with no consent. That row
   // used to be the only sidebar source, so a saved note read as "1 source is behind".
   it("drops a Google row that is only evidence from an observation", async () => {
-    const noted = { ...userSource, connectionId: "6af76170-66ad-40e9-9318-dd95cdea19ab", source: "google" };
+    const noted = {
+      ...userSource,
+      connectionId: "6af76170-66ad-40e9-9318-dd95cdea19ab",
+      source: "google",
+    };
     const sources = await loadRelationshipSourceStatuses(requestReturning({ sources: [noted] }));
     expect(sources).toEqual([]);
   });

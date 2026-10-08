@@ -189,8 +189,11 @@ describe("revenue panel after an audit", () => {
     const onOpenConnectors = renderPanel("scans");
 
     // The header and the empty list both offer the audit; both become the fix.
-    const buttons = await screen.findAllByRole("button", { name: /Reconnect Google/ });
-    expect(buttons).toHaveLength(2);
+    // The empty list waits for the known-promise count, so it renders after the header.
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: /Reconnect Google/ })).toHaveLength(2);
+    });
+    const buttons = screen.getAllByRole("button", { name: /Reconnect Google/ });
     expect(screen.queryByRole("button", { name: /Run/ })).not.toBeInTheDocument();
     await userEvent.click(buttons[0]);
 

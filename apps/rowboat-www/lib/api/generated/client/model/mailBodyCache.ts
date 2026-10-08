@@ -15,7 +15,7 @@ export interface MailBodyCache {
   expires_at: string;
   /** Stable UUID primary key. */
   id: string;
-  /** Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend. */
+  /** Mailbox this row came from. Only Gmail is stored. */
   provider: MailBodyCacheProvider;
   provider_message_id: string;
   sealed_body: string;

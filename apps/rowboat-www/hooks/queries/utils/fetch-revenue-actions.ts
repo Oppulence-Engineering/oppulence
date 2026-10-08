@@ -22,7 +22,7 @@ export function actionRows(
 ): RevenueAction[] {
   if (!page) return [];
   if (Array.isArray(page)) return [...page];
-  return page.actions ?? [];
+  return "actions" in page ? (page.actions ?? []) : [];
 }
 
 /** True only when the server says another action exists past this page. */
@@ -30,7 +30,7 @@ export function actionPageHasMore(
   page: ActionPage | readonly RevenueAction[] | null | undefined,
 ): boolean {
   if (!page || Array.isArray(page)) return false;
-  return Boolean(page.hasMore);
+  return "hasMore" in page && Boolean(page.hasMore);
 }
 
 /** Keeps the server flag while the visible rows change. */

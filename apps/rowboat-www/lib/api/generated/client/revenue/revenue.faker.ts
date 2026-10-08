@@ -9,6 +9,7 @@ import { faker } from "@faker-js/faker";
 
 import type {
   ApproveActionProposal200,
+  CreateCommunicationPrivacyRule201,
   ExecuteActionProposal200,
   GetObjectAudit200,
   GetOpenPromisesReport200One,
@@ -1973,7 +1974,7 @@ export const getGetRevenueImpactResponseMock = (
 export const getListRevenueLeakScansResponseMock = (
   overrideResponse: Partial<Extract<ListRevenueLeakScans200, object>> = {},
 ): ListRevenueLeakScans200 => ({
-  hasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
+  hasMore: faker.datatype.boolean(),
   scans: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
     actionsCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
     candidatesSeen: faker.helpers.arrayElement([faker.number.int(), undefined]),
@@ -2183,6 +2184,22 @@ export const getGetRevenueWorkspaceResponseMock = (
   ]),
   preflightAvailable: faker.datatype.boolean(),
   status: faker.helpers.arrayElement(["active", "disconnected", "repair_required"] as const),
+  ...overrideResponse,
+});
+
+export const getCreateCommunicationPrivacyRuleResponseMock = (
+  overrideResponse: Partial<Extract<CreateCommunicationPrivacyRule201, object>> = {},
+): CreateCommunicationPrivacyRule201 => ({
+  active: faker.datatype.boolean(),
+  id: faker.string.uuid(),
+  kind: faker.helpers.arrayElement([
+    "protected_address",
+    "protected_domain",
+    "blocked_address",
+    "blocked_domain",
+  ] as const),
+  value: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  valueHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
   ...overrideResponse,
 });
 

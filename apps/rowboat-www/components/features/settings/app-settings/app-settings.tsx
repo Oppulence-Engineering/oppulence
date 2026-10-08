@@ -34,7 +34,6 @@ import {
 import { DeleteAccountRow } from "@/components/features/account/delete-account-row/delete-account-row";
 import { CommunicationPrivacySettings } from "@/components/features/connectors/communication-privacy-settings/communication-privacy-settings";
 import { ConnectorSettings } from "@/components/features/connectors/connector-settings/connector-settings";
-import { useGoogleConnectionStatus } from "@/hooks/queries/use-google-oauth";
 import { capture, RevenueEvents, setAnalyticsConsent } from "@/lib/analytics/analytics";
 import { billingStatusLabel, planLabel } from "@/lib/product/plan-label";
 import {

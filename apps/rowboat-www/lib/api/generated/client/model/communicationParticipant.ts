@@ -12,7 +12,7 @@ export interface CommunicationParticipant {
   /** Row creation timestamp. */
   created_at: string;
   display_name?: string;
-  /** Best-known WorkOS primary email for the user. */
+  /** Address of someone on this message. */
   email: string;
   external: boolean;
   /** Stable UUID primary key. */

@@ -416,7 +416,7 @@ export function personDirectoryRole(person: {
   seniority?: string | null;
   participantRoles?: readonly string[] | null;
 }): string {
-  const title = person.title?.trim() || personSeniorityLabel(person.seniority);
+  const title = person.title?.trim() || personSeniorityLabel(person.seniority ?? undefined);
   const roles = [
     ...new Set(
       (person.participantRoles ?? [])
@@ -683,7 +683,14 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
     } finally {
       setLoadingMorePeople(false);
     }
-  }, [debouncedQuery, extraPeople.length, hasMorePeople, loadingMorePeople, onError, peoplePage.length]);
+  }, [
+    debouncedQuery,
+    extraPeople.length,
+    hasMorePeople,
+    loadingMorePeople,
+    onError,
+    peoplePage.length,
+  ]);
 
   const loadPersonAttributes = async (person: RelationshipPerson, recover = false) => {
     const samePerson = selected?.id === person.id;
@@ -791,7 +798,10 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
           learnMore={
             directoryTitle.filtered
               ? []
-              : [{ label: "See who you are talking to" }, { label: "Fill in their role and company" }]
+              : [
+                  { label: "See who you are talking to" },
+                  { label: "Fill in their role and company" },
+                ]
           }
           title="People"
         >
@@ -1095,10 +1105,7 @@ function PersonSheet({
   ];
   if (aliasNames) sheetFacts.push(["Also known as", aliasNames]);
   if (person.employmentStatus && person.employmentStatus !== "unknown") {
-    sheetFacts.push([
-      "Employment",
-      personFactValue("employment_status", person.employmentStatus),
-    ]);
+    sheetFacts.push(["Employment", personFactValue("employment_status", person.employmentStatus)]);
   }
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
@@ -1614,76 +1621,78 @@ export function NotesView({
       {/* Sort, layout, and favorites change the note list. On Templates they
           only restyled themselves. */}
       {tab === "notes" ? (
-      <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-3">
-        <Button
-          type="button"
-          className="h-8 rounded-none border border-border bg-background px-3 text-[13px] text-primary/60 hover:bg-background-100"
-          variant="ghost"
-          onClick={() => chooseNoteOrder(!newestFirst)}
-        >
-          <List className="size-4" /> Sorted by{" "}
-          <Label className="font-normal text-primary">
-            {newestFirst ? "Newest first" : "Oldest first"}
-          </Label>
-          <CaretDown className={cn("size-3 transition-transform", !newestFirst && "rotate-180")} />
-        </Button>
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 border border-border bg-background p-0.5">
+        <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-3">
+          <Button
+            type="button"
+            className="h-8 rounded-none border border-border bg-background px-3 text-[13px] text-primary/60 hover:bg-background-100"
+            variant="ghost"
+            onClick={() => chooseNoteOrder(!newestFirst)}
+          >
+            <List className="size-4" /> Sorted by{" "}
+            <Label className="font-normal text-primary">
+              {newestFirst ? "Newest first" : "Oldest first"}
+            </Label>
+            <CaretDown
+              className={cn("size-3 transition-transform", !newestFirst && "rotate-180")}
+            />
+          </Button>
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 border border-border bg-background p-0.5">
+              <Button
+                aria-label="List view"
+                type="button"
+                className={cn(
+                  "size-7 rounded-none p-0",
+                  layout === "list" ? "bg-background-200 text-primary" : "text-primary/45",
+                )}
+                size="icon-xs"
+                variant="ghost"
+                onClick={() => setLayout("list")}
+              >
+                <List className="size-4" />
+              </Button>
+              <Button
+                aria-label="Grid view"
+                type="button"
+                className={cn(
+                  "size-7 rounded-none p-0",
+                  layout === "grid" ? "bg-background-200 text-primary" : "text-primary/45",
+                )}
+                size="icon-xs"
+                variant="ghost"
+                onClick={() => setLayout("grid")}
+              >
+                <GridFour className="size-4" />
+              </Button>
+            </div>
+            <details className="relative">
+              <summary className="flex h-8 cursor-pointer list-none items-center gap-2 border border-border bg-background px-3 text-[13px] text-primary hover:bg-background-100">
+                <SlidersHorizontal className="size-4" /> View settings
+              </summary>
+              <div className="absolute right-0 z-20 mt-1 w-52 border border-border bg-background p-3 shadow-xl">
+                <label
+                  htmlFor="notes-show-favorites"
+                  className="flex cursor-pointer items-center justify-between gap-4 text-[13px] text-primary/70"
+                >
+                  Show favorites
+                  <Checkbox
+                    id="notes-show-favorites"
+                    aria-label="Show favorites"
+                    checked={showFavorites}
+                    onCheckedChange={(checked) => setShowFavorites(checked === true)}
+                  />
+                </label>
+              </div>
+            </details>
             <Button
-              aria-label="List view"
-              type="button"
-              className={cn(
-                "size-7 rounded-none p-0",
-                layout === "list" ? "bg-background-200 text-primary" : "text-primary/45",
-              )}
-              size="icon-xs"
-              variant="ghost"
-              onClick={() => setLayout("list")}
+              className="h-8 bg-[#3478f6] px-3 text-white hover:bg-[#2f6fe6]"
+              size="sm"
+              onClick={() => setEditing({})}
             >
-              <List className="size-4" />
-            </Button>
-            <Button
-              aria-label="Grid view"
-              type="button"
-              className={cn(
-                "size-7 rounded-none p-0",
-                layout === "grid" ? "bg-background-200 text-primary" : "text-primary/45",
-              )}
-              size="icon-xs"
-              variant="ghost"
-              onClick={() => setLayout("grid")}
-            >
-              <GridFour className="size-4" />
+              <Plus /> New note
             </Button>
           </div>
-          <details className="relative">
-            <summary className="flex h-8 cursor-pointer list-none items-center gap-2 border border-border bg-background px-3 text-[13px] text-primary hover:bg-background-100">
-              <SlidersHorizontal className="size-4" /> View settings
-            </summary>
-            <div className="absolute right-0 z-20 mt-1 w-52 border border-border bg-background p-3 shadow-xl">
-              <label
-                htmlFor="notes-show-favorites"
-                className="flex cursor-pointer items-center justify-between gap-4 text-[13px] text-primary/70"
-              >
-                Show favorites
-                <Checkbox
-                  id="notes-show-favorites"
-                  aria-label="Show favorites"
-                  checked={showFavorites}
-                  onCheckedChange={(checked) => setShowFavorites(checked === true)}
-                />
-              </label>
-            </div>
-          </details>
-          <Button
-            className="h-8 bg-[#3478f6] px-3 text-white hover:bg-[#2f6fe6]"
-            size="sm"
-            onClick={() => setEditing({})}
-          >
-            <Plus /> New note
-          </Button>
         </div>
-      </div>
       ) : null}
       {tab === "notes" && notesQuery.isError && notesQuery.data != null ? (
         <ListRefreshFailure
@@ -1845,10 +1854,7 @@ export function NotesView({
             )
           }
           image="notes"
-          learnMore={[
-            { label: "Link notes to companies" },
-            { label: "Turn notes into promises" },
-          ]}
+          learnMore={[{ label: "Link notes to companies" }, { label: "Turn notes into promises" }]}
           title="Notes"
         />
       ) : (
@@ -1879,27 +1885,27 @@ export function NotesView({
                     />
                   ) : null}
                   {favoriteNotes.length ? (
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-2">
-                  {favoriteNotes.map((note) => (
-                    <Button
-                      className="h-auto justify-start border p-3 text-left"
-                      key={note.externalId}
-                      onClick={() => setEditing(note)}
-                      variant="outline"
-                    >
-                      <BookmarkSimple weight="fill" />
-                      <span className="truncate">{noteTitleLabel(note.title)}</span>
-                    </Button>
-                  ))}
-                </div>
-              ) : (
-                <Card className="flex h-28 items-center justify-center border-dashed py-0 text-center">
-                  <CardContent>
-                    <CardDescription>
-                      {favoriteNotesEmptyCopy(unresolvedFavorites, hasEarlierNotes)}
-                    </CardDescription>
-                  </CardContent>
-                </Card>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-2">
+                      {favoriteNotes.map((note) => (
+                        <Button
+                          className="h-auto justify-start border p-3 text-left"
+                          key={note.externalId}
+                          onClick={() => setEditing(note)}
+                          variant="outline"
+                        >
+                          <BookmarkSimple weight="fill" />
+                          <span className="truncate">{noteTitleLabel(note.title)}</span>
+                        </Button>
+                      ))}
+                    </div>
+                  ) : (
+                    <Card className="flex h-28 items-center justify-center border-dashed py-0 text-center">
+                      <CardContent>
+                        <CardDescription>
+                          {favoriteNotesEmptyCopy(unresolvedFavorites, hasEarlierNotes)}
+                        </CardDescription>
+                      </CardContent>
+                    </Card>
                   )}
                 </>
               )}
@@ -2744,10 +2750,7 @@ export function noteCompanyLabel(name: string): string {
  * A note is stored on a company. With no companies, the menu cannot link one.
  * With companies, the note still starts unlinked so it is not filed on the first.
  */
-export function noteNeedsCompanyCopy(
-  surface: "status" | "notice",
-  hasCompanies: boolean,
-): string {
+export function noteNeedsCompanyCopy(surface: "status" | "notice", hasCompanies: boolean): string {
   if (hasCompanies) {
     return surface === "status"
       ? "Link a company to save this note."
@@ -2968,9 +2971,7 @@ export function TasksView({
         <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
           <p className="text-[13px] text-primary/70">{taskCompaniesFailureCopy()}</p>
           <Button
-            onClick={() =>
-              void refetchClearingBanner(() => relationshipsQuery.refetch(), onError)
-            }
+            onClick={() => void refetchClearingBanner(() => relationshipsQuery.refetch(), onError)}
             size="sm"
             type="button"
             variant="outline"
@@ -3045,88 +3046,87 @@ export function TasksView({
           image="tasks"
           learnMore={
             filter === "all"
-              ? [
-                  { label: "Link a task to a company" },
-                  { label: "Complete a task from the list" },
-                ]
+              ? [{ label: "Link a task to a company" }, { label: "Complete a task from the list" }]
               : []
           }
           title="Tasks"
         />
       ) : (
         <>
-        <ul className="divide-y divide-border">
-          {visible.map((task) => {
-            const overdue = taskIsOverdue(task.dueAt, now);
-            const companyName = taskCompanyName(
-              names.get(task.relationshipId || ""),
-              task.relationshipName,
-            );
-            return (
-              <li
-                key={task.id}
-                className="grid min-h-12 grid-cols-[36px_minmax(0,1fr)_220px_150px] items-center gap-3 px-3 hover:bg-background-100/70"
-              >
-                <Button
-                  aria-label={`Complete ${task.reason}`}
-                  className="size-5 rounded-none border border-border p-0 text-primary/40 hover:border-[#3478f6] hover:bg-transparent hover:text-[#3478f6]"
-                  disabled={busy === task.id}
-                  onClick={() => void complete(task)}
-                  size="icon-xs"
-                  type="button"
-                  variant="ghost"
+          <ul className="divide-y divide-border">
+            {visible.map((task) => {
+              const overdue = taskIsOverdue(task.dueAt, now);
+              const companyName = taskCompanyName(
+                names.get(task.relationshipId || ""),
+                task.relationshipName,
+              );
+              return (
+                <li
+                  key={task.id}
+                  className="grid min-h-12 grid-cols-[36px_minmax(0,1fr)_220px_150px] items-center gap-3 px-3 hover:bg-background-100/70"
                 >
-                  {busy === task.id ? <Spinner className="size-3" /> : null}
-                </Button>
-                <Label className="truncate text-[13px] font-medium text-primary">
-                  {task.reason}
-                </Label>
-                {companyName && onOpenCompany && task.relationshipId ? (
                   <Button
-                    aria-label={noteCompanyLabel(companyName)}
-                    className="h-auto max-w-full justify-start truncate rounded-none px-0 py-0 text-[12px] font-normal text-primary/55 underline hover:bg-transparent hover:text-primary"
-                    onClick={() => onOpenCompany(task.relationshipId)}
+                    aria-label={`Complete ${task.reason}`}
+                    className="size-5 rounded-none border border-border p-0 text-primary/40 hover:border-[#3478f6] hover:bg-transparent hover:text-[#3478f6]"
+                    disabled={busy === task.id}
+                    onClick={() => void complete(task)}
+                    size="icon-xs"
                     type="button"
                     variant="ghost"
                   >
-                    {companyName}
+                    {busy === task.id ? <Spinner className="size-3" /> : null}
                   </Button>
-                ) : (
-                  <CardDescription className="truncate text-[12px]">
-                    {companyName || "Unlinked"}
-                  </CardDescription>
-                )}
-                <Badge
-                  className={cn(
-                    "ml-auto justify-end text-[12px] font-normal",
-                    overdue ? "text-red-500" : "text-primary/45",
+                  <Label className="truncate text-[13px] font-medium text-primary">
+                    {task.reason}
+                  </Label>
+                  {companyName && onOpenCompany && task.relationshipId ? (
+                    <Button
+                      aria-label={noteCompanyLabel(companyName)}
+                      className="h-auto max-w-full justify-start truncate rounded-none px-0 py-0 text-[12px] font-normal text-primary/55 underline hover:bg-transparent hover:text-primary"
+                      onClick={() => {
+                        if (task.relationshipId) onOpenCompany(task.relationshipId);
+                      }}
+                      type="button"
+                      variant="ghost"
+                    >
+                      {companyName}
+                    </Button>
+                  ) : (
+                    <CardDescription className="truncate text-[12px]">
+                      {companyName || "Unlinked"}
+                    </CardDescription>
                   )}
-                  variant="secondary"
-                >
-                  {task.dueAt
-                    ? new Date(task.dueAt).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })
-                    : "No due date"}
-                </Badge>
-              </li>
-            );
-          })}
-        </ul>
-        {hasMoreTasks ? (
-          <Button
-            className="m-3"
-            disabled={loadingMoreTasks}
-            onClick={() => void loadMoreTasks()}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            {taskRemainderLabel()}
-          </Button>
-        ) : null}
+                  <Badge
+                    className={cn(
+                      "ml-auto justify-end text-[12px] font-normal",
+                      overdue ? "text-red-500" : "text-primary/45",
+                    )}
+                    variant="secondary"
+                  >
+                    {task.dueAt
+                      ? new Date(task.dueAt).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : "No due date"}
+                  </Badge>
+                </li>
+              );
+            })}
+          </ul>
+          {hasMoreTasks ? (
+            <Button
+              className="m-3"
+              disabled={loadingMoreTasks}
+              onClick={() => void loadMoreTasks()}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {taskRemainderLabel()}
+            </Button>
+          ) : null}
         </>
       )}
       {creating ? (

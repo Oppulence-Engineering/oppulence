@@ -10,6 +10,7 @@ import type {
   CreateAgentBody,
   ErrorEnvelope,
   GetAgent200,
+  ListAgents200,
   N400Response,
   N401Response,
   N404Response,
@@ -19,6 +20,50 @@ import type {
   PutAgent201,
   PutAgentBody,
 } from "../model";
+
+export type listAgentsResponse200 = {
+  data: ListAgents200;
+  status: 200;
+};
+
+export type listAgentsResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listAgentsResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type listAgentsResponseSuccess = listAgentsResponse200 & {
+  headers: Headers;
+};
+export type listAgentsResponseError = (listAgentsResponse401 | listAgentsResponse500) & {
+  headers: Headers;
+};
+
+export type listAgentsResponse = listAgentsResponseSuccess | listAgentsResponseError;
+
+export const getListAgentsUrl = () => {
+  return `/v1/agents`;
+};
+
+/**
+ * The agents page loads the built-in agents when this workspace has none of its own. The first one is Assistant, short name assistant, source builtin.
+ * @summary List agents
+ */
+export const listAgents = async (options?: RequestInit): Promise<listAgentsResponse> => {
+  const res = await fetch(getListAgentsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAgentsResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listAgentsResponse;
+};
 
 export type createAgentResponse201 = {
   data: CreateAgent201;
@@ -79,6 +124,60 @@ export const createAgent = async (
 
   const data: createAgentResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as createAgentResponse;
+};
+
+export type deleteAgentResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type deleteAgentResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type deleteAgentResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type deleteAgentResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type deleteAgentResponseSuccess = deleteAgentResponse204 & {
+  headers: Headers;
+};
+export type deleteAgentResponseError = (
+  deleteAgentResponse401 | deleteAgentResponse404 | deleteAgentResponse500
+) & {
+  headers: Headers;
+};
+
+export type deleteAgentResponse = deleteAgentResponseSuccess | deleteAgentResponseError;
+
+export const getDeleteAgentUrl = (slug: string) => {
+  return `/v1/agents/${slug}`;
+};
+
+/**
+ * Confirm delete removes the agent named customer-concierge. Only an agent created in this workspace can be removed.
+ * @summary Confirm delete
+ */
+export const deleteAgent = async (
+  slug: string,
+  options?: RequestInit,
+): Promise<deleteAgentResponse> => {
+  const res = await fetch(getDeleteAgentUrl(slug), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteAgentResponse["data"] = body ? JSON.parse(body) : undefined;
+  return { data, status: res.status, headers: res.headers } as deleteAgentResponse;
 };
 
 export type getAgentResponse200 = {

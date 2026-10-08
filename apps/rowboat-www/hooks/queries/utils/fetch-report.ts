@@ -27,7 +27,7 @@ export function auditRows(
 ): RevenueLeakScan[] {
   if (!page) return [];
   if (Array.isArray(page)) return [...page];
-  return page.scans ?? [];
+  return "scans" in page ? (page.scans ?? []) : [];
 }
 
 /** True only when the server says another audit exists past this page. */
@@ -35,7 +35,7 @@ export function auditPageHasMore(
   page: AuditHistoryPage | readonly RevenueLeakScan[] | null | undefined,
 ): boolean {
   if (!page || Array.isArray(page)) return false;
-  return Boolean(page.hasMore);
+  return "hasMore" in page && Boolean(page.hasMore);
 }
 
 function reportScanPath(scanId: string): string {
@@ -87,10 +87,7 @@ export async function loadOpenPromisesReport(
   } as OpenPromisesReport;
 }
 
-export function fetchReportScans(
-  signal?: AbortSignal,
-  offset = 0,
-): Promise<AuditHistoryPage> {
+export function fetchReportScans(signal?: AbortSignal, offset = 0): Promise<AuditHistoryPage> {
   return loadReportScans(requestJson, signal, offset);
 }
 

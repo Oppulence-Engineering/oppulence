@@ -101,9 +101,7 @@ describe("loadWorkspaceNotes", () => {
       timelineCursors: first.timelineCursors,
     });
 
-    expect(first.timelineCursors).toEqual([
-      { relationshipId: "__workspace_notes__", before: "1" },
-    ]);
+    expect(first.timelineCursors).toEqual([{ relationshipId: "__workspace_notes__", before: "1" }]);
     expect(paths.filter((path) => path.includes("/timeline"))).toEqual([]);
     expect(paths.filter((path) => path.startsWith("/workspace-notes"))).toEqual([
       `/workspace-notes?limit=${String(WORKSPACE_NOTE_PAGE)}`,
@@ -134,9 +132,7 @@ describe("loadWorkspaceNotes", () => {
       const offset = new URLSearchParams(input.path.split("?")[1] ?? "").get("offset");
       if (offset === "200") {
         return {
-          relationships: [
-            { id: "company-hidden", kind: "company", displayName: "Cedar Hidden" },
-          ],
+          relationships: [{ id: "company-hidden", kind: "company", displayName: "Cedar Hidden" }],
           hasMore: false,
         };
       }

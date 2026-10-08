@@ -28,7 +28,7 @@ export interface RelationshipIntelligence {
   contradictionCases: RelationshipIntelligenceContradictionCasesItem[];
   /** Deletion status and verification. */
   deletionReceipts: ConversationDeletionReceipt[];
-  /** Credit delta. Negative values consume/reserve credits; positive values grant or refund credits. */
+  /** Exact before/after values, uncertain claim ids, contradictions, and recommendation reason. */
   delta: RelationshipIntelligenceDelta;
   effectivePolicy: ResolvedConversationPolicy;
   /** Immutable checkpoint decisions. */

@@ -86,7 +86,7 @@ describe("getRelationshipGraph", () => {
         }),
       )
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ relationships: [] }), {
+        new Response(JSON.stringify({ relationships: [], hasMore: false }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         }),
@@ -143,6 +143,7 @@ describe("getRelationshipGraph", () => {
               stateVersion: 1,
               status: "active",
             })),
+            hasMore: false,
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
         ),
@@ -177,7 +178,7 @@ describe("listScans", () => {
       lookbackDays: 90,
     };
     mockFetch.mockResolvedValueOnce(
-      new Response(JSON.stringify({ scans: [scan] }), {
+      new Response(JSON.stringify({ scans: [scan], hasMore: false }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       }),

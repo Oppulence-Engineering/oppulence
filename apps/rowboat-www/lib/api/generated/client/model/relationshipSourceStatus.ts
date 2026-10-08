@@ -101,7 +101,7 @@ export interface RelationshipSourceStatus {
   source: RelationshipSourceStatusSource;
   /** Provider account or workspace id. */
   sourceAccountId: string;
-  /** Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped. */
+  /** Connection lifecycle. */
   status: RelationshipSourceStatusStatus;
   /**
    * Backfill start.

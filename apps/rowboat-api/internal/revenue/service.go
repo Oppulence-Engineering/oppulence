@@ -844,7 +844,7 @@ func (s *Service) ListRelationshipsFiltered(
 		if columns := relationshipDirectoryColumnMatch(value, s.now()); columns != nil {
 			parts = append(parts, columns)
 		}
-		if window, ok := visibleActivityWindow(value, time.Now()); ok {
+		if window, ok := visibleActivityWindow(value, time.Now().UTC()); ok {
 			parts = append(parts, relationship.And(
 				relationship.LastTouchAtNotNil(),
 				relationship.LastTouchAtGT(window.after),
@@ -867,7 +867,11 @@ func (s *Service) ListRelationshipsFiltered(
 
 		// The directory button is "Show the next companies" only when another
 		// company sits past this page. A full page of 200 is the whole list.
-		if labelPhraseMatches("show the next companies", needle) {
+		// The queue and the task dialog print longer buttons that start with the
+		// same words; those have their own matches below.
+		if labelPhraseMatches("show the next companies", needle) &&
+			!labelPhraseMatches("show the next companies in the queue", needle) &&
+			!labelPhraseMatches("show the next companies before saving.", needle) {
 			parts = append(parts, relationshipDirectoryHasAnotherPage())
 		}
 
@@ -1014,7 +1018,7 @@ func (s *Service) ListRelationshipsFiltered(
 		if evidence := relationshipSheetEvidenceChangeMatch(u.ID, needle); evidence != nil {
 			parts = append(parts, evidence)
 		}
-		searchedAt := time.Now()
+		searchedAt := time.Now().UTC()
 		if sheetPhraseMatches("no supported answer yet", needle) {
 			// An open confirmed promise is the answer on the sheet. A company
 			// that shows that promise is not "No supported answer yet."
@@ -1251,6 +1255,11 @@ func (s *Service) ListRelationshipsFiltered(
 			parts = append(parts, excerpt)
 		}
 
+		// A membership with no name and no address reads "Unknown person".
+		// A named header, or an address, is the line the sheet prints instead.
+		if unknown := relationshipSheetUnknownPersonMatch(needle); unknown != nil {
+			parts = append(parts, unknown)
+		}
 		if accepted := relationshipSheetAcceptedPromiseMatch(needle); accepted != nil {
 			parts = append(parts, accepted)
 		}
@@ -2522,7 +2531,7 @@ func writeActivityFactTrim(b *sql.Builder, s *sql.Selector, facts, key string) {
 	b.WriteString(facts)
 	b.WriteString(", '$.")
 	b.WriteString(key)
-	b.WriteString("'), ''))")
+	b.WriteString("') AS TEXT), ''))")
 }
 
 func writeNormalizedActivityFact(b *sql.Builder, s *sql.Selector, facts, key string) {
@@ -6056,7 +6065,7 @@ func writeOverdueCueCount(b *sql.Builder, s *sql.Selector, now time.Time) {
 	b.WriteString(" IS NOT NULL AND promised.")
 	b.WriteString(commitment.FieldDueAt)
 	b.WriteString(" < ")
-	b.Arg(now)
+	b.Arg(now.UTC())
 	b.WriteString(")")
 }
 
@@ -8607,6 +8616,11 @@ func sheetEmptySentenceOwnsActivity(needle string) bool {
 		"nothing recorded yet.",
 		"no commitments recorded for this company yet.",
 		"none recorded.",
+		// "1 Gmail thread is linked." names the Gmail heading too. The sentence
+		// is the unsupported-detail paragraph, not every company with mail.
+		"gmail thread is linked",
+		"gmail threads are linked",
+		"health and status still need a clearer source.",
 	} {
 		if labelPhraseMatches(phrase, needle) {
 			return true
@@ -9204,13 +9218,13 @@ func relationshipHasSupportedStateAnswer(now time.Time) predicate.Relationship {
 				relationshipassertion.FieldStatus,
 				relationshipassertion.FieldValidFrom,
 			))
-			b.Arg(now)
+			b.Arg(now.UTC())
 			b.WriteString(fmt.Sprintf(
 				" AND (%s IS NULL OR %s > ",
 				relationshipassertion.FieldValidTo,
 				relationshipassertion.FieldValidTo,
 			))
-			b.Arg(now)
+			b.Arg(now.UTC())
 			b.WriteString(fmt.Sprintf(
 				") AND (%s = 'user_correction' OR %s IS NOT NULL OR %s))",
 				relationshipassertion.FieldSourceType,
@@ -9227,7 +9241,7 @@ func relationshipHasSupportedStateAnswer(now time.Time) predicate.Relationship {
 // exists, so a correction with nothing to open reads "0 of 8".
 func relationshipSheetDetailCountMatch(needle string) predicate.Relationship {
 	total := len(relationshipProjectionDimensions)
-	now := time.Now()
+	now := time.Now().UTC()
 	var preds []predicate.Relationship
 	for n := 0; n <= total; n++ {
 		// The badge says "0 of 8 account details have a source". A shared
@@ -9280,13 +9294,13 @@ func relationshipOpenableDetailCount(n int, now time.Time) predicate.Relationshi
 			b.WriteString(" IN ('accepted', 'active') AND open_assertion.")
 			b.WriteString(relationshipassertion.FieldValidFrom)
 			b.WriteString(" <= ")
-			b.Arg(now)
+			b.Arg(now.UTC())
 			b.WriteString(" AND (open_assertion.")
 			b.WriteString(relationshipassertion.FieldValidTo)
 			b.WriteString(" IS NULL OR open_assertion.")
 			b.WriteString(relationshipassertion.FieldValidTo)
 			b.WriteString(" > ")
-			b.Arg(now)
+			b.Arg(now.UTC())
 			b.WriteString(") AND EXISTS (SELECT 1 FROM ")
 			b.WriteString(relationshipobservation.Table)
 			b.WriteString(" AS open_obs WHERE open_obs.")
@@ -9355,7 +9369,7 @@ func relationshipSupportedDetailCount(n int, now time.Time) predicate.Relationsh
 // detail shows "Retract correction". A claim with no observation says there
 // is nothing to open. An empty detail says nothing connected has filled it in.
 func relationshipSheetDetailSourceMatch(needle string) predicate.Relationship {
-	now := time.Now()
+	now := time.Now().UTC()
 	var preds []predicate.Relationship
 	for phrase, sourceType := range map[string]string{
 		"confirmed by a person":   "user_correction",
@@ -9456,13 +9470,13 @@ func relationshipShowsNeedsRefresh(now time.Time) predicate.Relationship {
 			b.WriteString(" IN ('accepted', 'active') AND fresh_assertion.")
 			b.WriteString(relationshipassertion.FieldValidFrom)
 			b.WriteString(" <= ")
-			b.Arg(now)
+			b.Arg(now.UTC())
 			b.WriteString(" AND (fresh_assertion.")
 			b.WriteString(relationshipassertion.FieldValidTo)
 			b.WriteString(" IS NULL OR fresh_assertion.")
 			b.WriteString(relationshipassertion.FieldValidTo)
 			b.WriteString(" > ")
-			b.Arg(now)
+			b.Arg(now.UTC())
 			b.WriteString(") AND ")
 			writeCanonicalSourceSQL(b, "fresh_obs."+relationshipobservation.FieldSource)
 			b.WriteString(" IN ('google', 'slack', 'hubspot') AND ")
@@ -9631,13 +9645,13 @@ func writeCurrentAssertionWindow(b *sql.Builder, now time.Time) {
 	b.WriteString(" IN ('accepted', 'active') AND ")
 	b.WriteString(relationshipassertion.FieldValidFrom)
 	b.WriteString(" <= ")
-	b.Arg(now)
+	b.Arg(now.UTC())
 	b.WriteString(" AND (")
 	b.WriteString(relationshipassertion.FieldValidTo)
 	b.WriteString(" IS NULL OR ")
 	b.WriteString(relationshipassertion.FieldValidTo)
 	b.WriteString(" > ")
-	b.Arg(now)
+	b.Arg(now.UTC())
 	b.WriteByte(')')
 }
 
@@ -9730,13 +9744,13 @@ func writeSupportedAssertionTail(b *sql.Builder, s *sql.Selector, now time.Time)
 	b.WriteString(" IN ('accepted', 'active') AND ")
 	b.WriteString(relationshipassertion.FieldValidFrom)
 	b.WriteString(" <= ")
-	b.Arg(now)
+	b.Arg(now.UTC())
 	b.WriteString(" AND (")
 	b.WriteString(relationshipassertion.FieldValidTo)
 	b.WriteString(" IS NULL OR ")
 	b.WriteString(relationshipassertion.FieldValidTo)
 	b.WriteString(" > ")
-	b.Arg(now)
+	b.Arg(now.UTC())
 	b.WriteString(") AND (")
 	b.WriteString(relationshipassertion.FieldSourceType)
 	b.WriteString(" = 'user_correction' OR ")
@@ -9751,7 +9765,7 @@ func writeSupportedAssertionTail(b *sql.Builder, s *sql.Selector, now time.Time)
 // company that already names one says the remaining details have no evidence.
 // A short fragment such as "source" is not that sentence.
 func relationshipSheetCompletenessMatch(needle string) predicate.Relationship {
-	now := time.Now()
+	now := time.Now().UTC()
 	var preds []predicate.Relationship
 	if gmail := relationshipGmailClearerSourceMatch(needle, now); gmail != nil {
 		preds = append(preds, gmail)
@@ -10470,7 +10484,7 @@ func writeMissingScopesEmpty(b *sql.Builder, s *sql.Selector) {
 // "Health and status still need a clearer source." A supported account detail
 // replaces that paragraph, and a company with no Gmail thread does not say it.
 func relationshipSheetGmailLinkedMatch(needle string) predicate.Relationship {
-	unsupported := relationshipSupportedDetailCount(0, time.Now())
+	unsupported := relationshipSupportedDetailCount(0, time.Now().UTC())
 	if n, ok := gmailLinkedThreadCount(needle); ok {
 		return relationship.And(relationshipMailThreadCount("=", n), unsupported)
 	}
@@ -10678,7 +10692,7 @@ func relationshipProjectionIn(now time.Time, statuses ...string) predicate.Relat
 				s.C(relationship.FieldID),
 				relationshipprojectionjob.FieldEvaluatedAt,
 			))
-			b.Arg(now)
+			b.Arg(now.UTC())
 			b.WriteString(fmt.Sprintf(" AND %s IN (", relationshipprojectionjob.FieldStatus))
 			for i, status := range statuses {
 				if i > 0 {

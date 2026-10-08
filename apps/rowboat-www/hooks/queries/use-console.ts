@@ -25,16 +25,16 @@ export function useConsolePreferences() {
   });
 }
 
-export function useConsoleResources<T = ConsoleResource>(
+export function useConsoleResources<T>(
   kind: ConsoleResourceKind,
-  select?: (resources: ConsoleResource[]) => T,
+  select: (resources: ConsoleResource[]) => T[],
 ) {
   return useQuery({
     queryKey: consoleKeys.resourceKind(kind),
     queryFn: ({ signal }) => fetchConsoleResources(kind, signal),
     staleTime: CONSOLE_RESOURCE_STALE_TIME,
     select: (page) => ({
-      items: select ? select(consoleResourceRows(page)) : consoleResourceRows(page),
+      items: select(consoleResourceRows(page)),
       hasMore: consoleResourcePageHasMore(page),
     }),
   });

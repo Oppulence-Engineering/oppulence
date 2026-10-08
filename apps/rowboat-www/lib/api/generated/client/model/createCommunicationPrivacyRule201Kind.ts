@@ -7,12 +7,14 @@
  */
 
 /**
- * Share token state.
+ * Stored rule kind.
  */
-export type ShareMutualActionPlan201PlanTokenState =
-  (typeof ShareMutualActionPlan201PlanTokenState)[keyof typeof ShareMutualActionPlan201PlanTokenState];
+export type CreateCommunicationPrivacyRule201Kind =
+  (typeof CreateCommunicationPrivacyRule201Kind)[keyof typeof CreateCommunicationPrivacyRule201Kind];
 
-export const ShareMutualActionPlan201PlanTokenState = {
-  not_issued: "not_issued",
-  active: "active",
+export const CreateCommunicationPrivacyRule201Kind = {
+  protected_address: "protected_address",
+  protected_domain: "protected_domain",
+  blocked_address: "blocked_address",
+  blocked_domain: "blocked_domain",
 } as const;

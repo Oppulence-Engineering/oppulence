@@ -43,7 +43,7 @@ function isProviderConnection(item: Record<string, unknown>): boolean {
   ) {
     return true;
   }
-  // A missed cadence can relabel a real mailbox as stale and leave its scopes
+  // A missed cadence can mark a real mailbox stale and leave its scopes
   // empty. A sync error is the record that this row is the connector, not a
   // note stored under the same source name.
   const errorCode = String(item.errorCode ?? "").trim();
@@ -66,7 +66,7 @@ function connectorSourceRows(body: unknown): unknown {
   return {
     sources: (parsed.data.sources ?? []).filter((item) => {
       if (!item || typeof item !== "object") return false;
-      return isProviderConnection(item as Record<string, unknown>);
+      return isProviderConnection(Object.fromEntries(Object.entries(item)));
     }),
   };
 }

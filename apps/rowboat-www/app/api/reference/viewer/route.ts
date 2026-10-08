@@ -11,14 +11,13 @@ import { createHash } from "node:crypto";
 
 import { connection } from "next/server";
 
-const VIEWER_URL =
-  "https://unpkg.com/@scalar/api-reference@1.72.2/dist/browser/standalone.js";
+const VIEWER_URL = "https://unpkg.com/@scalar/api-reference@1.72.2/dist/browser/standalone.js";
 
 const VIEWER_SHA256 = "b6564fd22226b587bbb7b02cfa6910b1e0f52b2e4b9e2cdaa950145ca574f5e7";
 
-let cached: Promise<Uint8Array> | undefined;
+let cached: Promise<Uint8Array<ArrayBuffer>> | undefined;
 
-function loadViewer(): Promise<Uint8Array> {
+function loadViewer(): Promise<Uint8Array<ArrayBuffer>> {
   cached ??= fetch(VIEWER_URL)
     .then(async (response) => {
       if (!response.ok) {

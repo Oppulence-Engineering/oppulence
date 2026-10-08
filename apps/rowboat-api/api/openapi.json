@@ -3853,7 +3853,7 @@
           },
           "reason": {
             "description": "Decision reason.",
-            "example": "owner_default",
+            "example": "mailbox_owner",
             "type": "string"
           },
           "subject": {
@@ -4059,8 +4059,8 @@
             "type": "string"
           },
           "email": {
-            "description": "Best-known WorkOS primary email for the user.",
-            "example": "user@example.com",
+            "description": "Address of someone on this message.",
+            "example": "avery@acme.com",
             "type": "string"
           },
           "external": {
@@ -5627,7 +5627,7 @@
           },
           "id": {
             "description": "Stable claim id.",
-            "example": "claim:ab12",
+            "example": "claim-risk",
             "type": "string"
           },
           "kind": {
@@ -5999,7 +5999,7 @@
           },
           "id": {
             "description": "Stable review item id.",
-            "example": "review:ab12",
+            "example": "review:9abf3ca4a5e5eff1",
             "type": "string"
           },
           "kind": {
@@ -8018,9 +8018,9 @@
             "type": "string"
           },
           "provider": {
-            "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
+            "description": "Mailbox this row came from. Only Gmail is stored.",
             "enum": ["gmail"],
-            "example": "openai",
+            "example": "gmail",
             "type": "string"
           },
           "provider_message_id": {
@@ -8224,9 +8224,9 @@
             "type": "integer"
           },
           "provider": {
-            "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
+            "description": "Mailbox this row came from. Only Gmail is stored.",
             "enum": ["gmail"],
-            "example": "openai",
+            "example": "gmail",
             "type": "string"
           },
           "provider_thread_id": {
@@ -8593,7 +8593,7 @@
           },
           "projectorVersion": {
             "description": "Projector version.",
-            "example": 1,
+            "example": 2,
             "type": "integer"
           },
           "stateHash": {
@@ -10323,9 +10323,10 @@
           },
           "evidenceRefs": {
             "description": "Evidence refs.",
+            "example": ["revenue-evidence:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"],
             "items": {
               "description": "Evidence ref.",
-              "example": "relationship-observation:1",
+              "example": "revenue-evidence:4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "type": "string"
             },
             "type": "array"
@@ -10356,7 +10357,7 @@
           },
           "projectorVersion": {
             "description": "Projector version.",
-            "example": 1,
+            "example": 2,
             "type": "integer"
           },
           "rankFactors": {
@@ -10419,6 +10420,7 @@
           },
           "stateReason": {
             "description": "Why this item was acknowledged, snoozed, or dismissed. Empty while it is still open.",
+            "example": "Reviewed from the portfolio attention queue.",
             "type": "string"
           },
           "status": {
@@ -11272,18 +11274,20 @@
           },
           "movedObjectRefs": {
             "description": "All moved graph objects.",
+            "example": ["relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"],
             "items": {
               "description": "Object ref.",
-              "example": "relationship-observation:1",
+              "example": "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "type": "string"
             },
             "type": "array"
           },
           "observationIds": {
             "description": "Moved observation ids.",
+            "example": ["6b8dfa9b-a7b2-46ea-982c-622a914c00e5"],
             "items": {
               "description": "Observation id.",
-              "example": "observation:1",
+              "example": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "type": "string"
             },
             "type": "array"
@@ -11341,8 +11345,7 @@
           },
           "delta": {
             "additionalProperties": true,
-            "description": "Credit delta. Negative values consume/reserve credits; positive values grant or refund credits.",
-            "example": -42,
+            "description": "Exact before/after values, uncertain claim ids, contradictions, and recommendation reason.",
             "type": "object"
           },
           "effectivePolicy": {
@@ -11616,8 +11619,8 @@
             "type": "string"
           },
           "email": {
-            "description": "Best-known WorkOS primary email for the user.",
-            "example": "user@example.com",
+            "description": "Normalized email.",
+            "example": "avery@acme.com",
             "type": "string"
           },
           "externalRefs": {
@@ -12077,7 +12080,7 @@
             "type": "string"
           },
           "status": {
-            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "description": "Connection lifecycle.",
             "enum": [
               "not_connected",
               "authorizing",
@@ -12090,7 +12093,7 @@
               "reconnect_required",
               "disconnected"
             ],
-            "example": "active",
+            "example": "live",
             "type": "string"
           },
           "syncStartedAt": {
@@ -12161,7 +12164,7 @@
           },
           "projectorVersion": {
             "description": "Projector version used for this snapshot.",
-            "example": 1,
+            "example": 2,
             "type": "integer"
           },
           "state": {
@@ -13084,9 +13087,9 @@
             "type": "string"
           },
           "status": {
-            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "description": "Scan status.",
             "enum": ["pending", "running", "completed", "failed"],
-            "example": "active",
+            "example": "running",
             "type": "string"
           },
           "threadsDeepRead": {
@@ -13298,9 +13301,9 @@
             "type": "string"
           },
           "status": {
-            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "description": "Decision status.",
             "enum": ["passed", "review_required", "blocked"],
-            "example": "active",
+            "example": "passed",
             "type": "string"
           },
           "suppression": {
@@ -16475,22 +16478,38 @@
     },
     "/v1/agent-sessions": {
       "get": {
-        "description": "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.",
+        "description": "Show earlier conversations loads the next page of History. It skips the newest 50 conversations. This page has one older conversation, and no conversation after it.",
         "operationId": "listAgentSessions",
+        "parameters": [
+          {
+            "description": "How many conversations to skip. Show earlier conversations skips the newest 50.",
+            "example": 50,
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "example": 50,
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "example": {
+                  "hasMore": false,
                   "sessions": [
                     {
                       "agent": "assistant",
                       "channel": "web",
-                      "continuationToken": "agt_example",
+                      "continuationToken": "",
                       "costUnits": 45,
                       "createdAt": "2026-09-02T15:00:00Z",
+                      "lastActivityAt": "2026-09-02T15:01:00Z",
                       "llmCalls": 3,
-                      "sessionId": "session_abc123",
+                      "sessionId": "c8dfa9b6-a7b2-46ea-982c-622a914c00e5",
                       "status": "active",
                       "title": "Review the Acme renewal",
                       "toolCalls": 1,
@@ -16503,7 +16522,7 @@
                 }
               }
             },
-            "description": "Recent agent conversations."
+            "description": "Older conversations from History."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -16517,7 +16536,7 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List agent sessions",
+        "summary": "Show earlier conversations",
         "tags": ["Agent Sessions"]
       },
       "post": {
@@ -16605,6 +16624,107 @@
           }
         ],
         "summary": "Submit",
+        "tags": ["Agent Sessions"]
+      }
+    },
+    "/v1/agent-sessions/{id}/approvals/{approvalId}": {
+      "post": {
+        "description": "Approve allows the paused chat action. It posts decision granted for approval session_abc123/turn/0/approval/0. The response repeats that approval and decision granted.",
+        "operationId": "approveAgentSession",
+        "parameters": [
+          {
+            "description": "Stable session id.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session id.",
+              "example": "session_abc123",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Approval id.",
+            "in": "path",
+            "name": "approvalId",
+            "required": true,
+            "schema": {
+              "description": "Approval id.",
+              "example": "session_abc123/turn/0/approval/0",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "decision": "granted"
+              },
+              "schema": {
+                "description": "Chat approval decision.",
+                "properties": {
+                  "decision": {
+                    "description": "Granted or denied.",
+                    "enum": ["granted", "denied"],
+                    "example": "granted",
+                    "type": "string"
+                  }
+                },
+                "required": ["decision"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Approval decision.",
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "approvalId": "session_abc123/turn/0/approval/0",
+                  "decision": "granted"
+                },
+                "schema": {
+                  "description": "Accepted approval.",
+                  "properties": {
+                    "approvalId": {
+                      "description": "Approval that was decided.",
+                      "example": "session_abc123/turn/0/approval/0",
+                      "type": "string"
+                    },
+                    "decision": {
+                      "description": "Decision that was stored.",
+                      "enum": ["granted", "denied"],
+                      "example": "granted",
+                      "type": "string"
+                    }
+                  },
+                  "required": ["approvalId", "decision"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Approval granted."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Approve",
         "tags": ["Agent Sessions"]
       }
     },
@@ -16696,9 +16816,74 @@
         "tags": ["Agent Sessions"]
       }
     },
+    "/v1/agent-sessions/{id}/cancel": {
+      "post": {
+        "description": "Stop response ends the open chat. The request has no body. The response names that session and reports status canceling.",
+        "operationId": "cancelAgentSession",
+        "parameters": [
+          {
+            "description": "Stable session id.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session id.",
+              "example": "session_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "sessionId": "session_abc123",
+                  "status": "canceling"
+                },
+                "schema": {
+                  "description": "Accepted stop.",
+                  "properties": {
+                    "sessionId": {
+                      "description": "Session that is stopping.",
+                      "example": "session_abc123",
+                      "type": "string"
+                    },
+                    "status": {
+                      "description": "Stop acknowledgement.",
+                      "example": "canceling",
+                      "type": "string"
+                    }
+                  },
+                  "required": ["sessionId", "status"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Stop accepted."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Stop response",
+        "tags": ["Agent Sessions"]
+      }
+    },
     "/v1/agent-sessions/{id}/events": {
       "get": {
-        "description": "Returns ordered durable events used to reconstruct a conversation after navigation or reload.",
+        "description": "Open conversation reads the history row Review the Acme renewal. The first read asks for 1000 events and sends no cursor. The stored page starts at sequence 0 for Assistant, includes both completed turns, the relationship.read tool call, and three model calls on anthropic/claude-sonnet-4-5, and does not name another page.",
         "operationId": "listAgentSessionEvents",
         "parameters": [
           {
@@ -16919,7 +17104,7 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List agent session events",
+        "summary": "Open conversation",
         "tags": ["Agent Sessions"]
       }
     },
@@ -16999,7 +17184,270 @@
         "tags": ["Agent Sessions"]
       }
     },
+    "/v1/agent-sessions/{id}/turns": {
+      "post": {
+        "description": "Submit sends the next message in the open chat. It posts only \"Ask about a company, a promise, or the next step.\" The opening message already took sequence 0, so this turn is accepted as sequence 1.",
+        "operationId": "submitAgentSessionTurn",
+        "parameters": [
+          {
+            "description": "Stable session id.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session id.",
+              "example": "session_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "input": "Ask about a company, a promise, or the next step."
+              },
+              "schema": {
+                "description": "Next chat message.",
+                "properties": {
+                  "input": {
+                    "description": "Message text.",
+                    "example": "Ask about a company, a promise, or the next step.",
+                    "type": "string"
+                  }
+                },
+                "required": ["input"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Next chat message.",
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "accepted": true,
+                  "turnSeq": 1
+                },
+                "schema": {
+                  "description": "Accepted turn.",
+                  "properties": {
+                    "accepted": {
+                      "description": "The turn was queued.",
+                      "example": true,
+                      "type": "boolean"
+                    },
+                    "turnSeq": {
+                      "description": "Sequence of the accepted turn.",
+                      "example": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["accepted", "turnSeq"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Turn accepted."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Submit",
+        "tags": ["Agent Sessions"]
+      }
+    },
     "/v1/agents": {
+      "get": {
+        "description": "The agents page loads the built-in agents when this workspace has none of its own. The first one is Assistant, short name assistant, source builtin.",
+        "operationId": "listAgents",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "agents": [
+                    {
+                      "enabledTools": [
+                        "current_time",
+                        "echo",
+                        "web.search",
+                        "tool_result.read",
+                        "run_history.read",
+                        "workflow.read",
+                        "workspace.read",
+                        "relationship.read",
+                        "relationship.create",
+                        "relationship.correct",
+                        "relationship.assertion.retract",
+                        "relationship.review.acknowledge",
+                        "relationship.identity.decide",
+                        "relationship.attention.decide",
+                        "conversation.delete",
+                        "source.retry_sync",
+                        "task.create",
+                        "task.update",
+                        "task.complete",
+                        "task.snooze",
+                        "recommendation.create",
+                        "recommendation.dismiss",
+                        "recommendation.snooze",
+                        "recommendation.update",
+                        "action.audit",
+                        "action.outcome.record",
+                        "commitment.export",
+                        "commitment.accept",
+                        "commitment.block",
+                        "commitment.confirm",
+                        "commitment.correct",
+                        "commitment.complete",
+                        "commitment.dispute",
+                        "commitment.unblock",
+                        "person.create",
+                        "person.correct",
+                        "person.attribute.retract",
+                        "person.identity.decide",
+                        "person.delete",
+                        "note.create",
+                        "note.update",
+                        "note.delete",
+                        "action_proposal.read",
+                        "action.propose",
+                        "connector.read.gmail",
+                        "connector.write.gmail_draft",
+                        "connector.write.gmail_send",
+                        "connector.read.calendar",
+                        "connector.read.composio_tool_search",
+                        "connector.read.composio_tool_describe",
+                        "connector.write.composio_tool_execute"
+                      ],
+                      "instructions": "You are a helpful, careful cloud assistant running as a durable Rowboat agent.\n\n- Answer the user's request directly and concisely.\n- Use the tools provided in this request when they help; never claim to have used a tool you did not call.\n- Only use the tools advertised to you. If a capability you need is not available, say so plainly.\n- Do not fabricate data. If required information is unavailable, state what is missing.\n- Use workflow.read when the user asks which workflows exist, are active, when they run, whether schedules are synchronized, or what their latest stored result was. It never starts, edits, enables, or disables a workflow.\n- Use run_history.read when the user asks what workflows ran, failed, succeeded, or are still active. Filter by slug or status when useful; report stored failure details without retrying or changing a workflow.\n- Use workspace.read with view workspaces to list every accessible workspace. For summary, members, or features, pass the exact workspaceId when more than one is accessible; never choose a default workspace for the user. It reads existing Oppulence access metadata and never changes or backfills workspace settings.\n- Use workspace.read with view billing when the user asks about their Oppulence plan or AI credit balance. Billing is account-scoped, does not select a workspace, and does not report or change a third-party AI provider's balance.\n- Use connector.read.gmail with mailboxProfile true when the user asks which Gmail account is connected or for live mailbox totals. Use listLabels true to discover exact Gmail label names and IDs, then pass one returned id as labelId or up to 20 as labelIds to read their live message/thread totals and unread counts. Use query with countOnly true to count matching messages and distinct threads without content; report both as lower bounds if complete is false. Use query alone to search Gmail and see each result's sender, reply-to address when supplied, delivered-to mailbox or alias, To, Cc, and Bcc recipients, subject, timestamp, estimated sizeBytes, labels, direction, snippet, mailing-list metadata, rfc822MessageId, and inReplyToMessageId; rfc822MessageId is the standards-based message identity for correlation with external mail and ticketing systems, inReplyToMessageId identifies the exact parent email when supplied, and id remains Gmail's provider identity. listId identifies the mailing list, listUnsubscribe preserves its provider-supplied unsubscribe target, and unsubscribeOneClick reports the standard one-click header. Use replyTo instead of from when addressing a reply, while deliveredTo identifies the receiving address and is not a reply target. Add groupByThread true to return distinct conversations with chronological headers and snippets, includeAttachments true for attachment metadata and sealed references without message bodies, or includeBodies true for complete plain-text messages and attachment metadata. Query results keep the 10-message or thread limit and pagination. If it returns nextPageToken, repeat the same query, mode, and limit with pageToken to read older matches. Call it again with a returned threadId for chronological headers and snippets, add includeAttachments true for every message's attachment metadata and sealed references without bodies, add includeBodies true for every complete plain-text message and attachment metadata, or use a returned messageId for one full message. Pass one returned attachmentRef to read UTF-8 text, JSON, XML, CSV, HTML, or calendar content up to 256 KiB; binary attachments remain metadata-only. All modes are read-only.\n- Use connector.read.calendar with exact time bounds and countOnly true to count event instances without event details, or countByDay true to group those counts by date in the primary calendar's timezone. Report matchingEvents and daily counts as lower bounds if complete is false. Use time bounds or query to list events; id is Google's provider identity while iCalUID is the standards-based identity for correlation with other calendar systems, allDay explicitly distinguishes date-only events, eventType preserves Google's event classification, creator identifies who made the event while organizer identifies who owns it, createdAt and updatedAt preserve Google's provenance timestamps, blocksTime applies the same cancelled/transparent rules as availability, recurringEventId identifies the parent series, originalStartAt identifies that occurrence, and recurrenceRules preserves Google's RRULE, RDATE, and EXDATE entries on the recurring master. To explain an occurrence's schedule, read its recurringEventId as an exact event. usesDefaultReminders reports whether the event inherits the calendar default; reminderOverrides lists only explicit method and minutes values, so do not infer the default reminder time. attendeeResponses maps attendee emails to Google's RSVP status, selfResponseStatus is the signed-in user's response, attachments provide meeting-material titles, MIME types, and links, and conferenceProvider identifies the structured conference service. conferenceLink prefers Google's direct hangout link and otherwise uses its structured video entry. If it returns nextPageToken, repeat the same list filters with pageToken to read the next page. Add durationMinutes to exact time bounds to return busyMinutes, timedBusyMinutes, allDayBusyEvents, and free windows without event details; timedBusyMinutes is timed calendar load, not proven meeting time, while busyMinutes also includes opaque all-day blocks. Overlapping busy events count once and transparent or cancelled events do not count. Call it again with a returned eventId for iCalUID, allDay, eventType, creator, createdAt, updatedAt, blocksTime, recurring-series metadata, recurrenceRules, usesDefaultReminders, reminderOverrides, description, location, organizer, status, attendees, attendeeResponses, attachments, conferenceProvider, and conferenceLink. All modes are read-only.\n- Use relationship.create only when the user asks to add a company. Get the exact workspaceId from workspace.read first, and pass the requested company name plus only the domain, primary email, and context the user supplied. It creates one retry-safe internal Oppulence record and never contacts a provider or creates an external record.\n- Use relationship.correct only when the user explicitly asks to correct lifecycle, engagement, sentiment, or health on an internal Oppulence relationship. It preserves source evidence and never contacts anyone.\n- Use relationship.read with view mission_control when the user asks for an account brief, what needs attention, or whether evidence is complete enough to act. It reads the server-owned state, changes, evidence, freshness, pending work, and active recommendation without contacting the provider.\n- Use relationship.read with view graph when the user asks how accounts, people, commitments, actions, evidence, and sources connect. Use portfolio scope for the workspace or pass a relationshipId for one account; use asOf only for an explicit historical question. It reads the same versioned graph as the web and desktop views and never changes data.\n- Use relationship.review.acknowledge only when the user explicitly says they reviewed the exact state returned by mission_control. Pass its stateVersion and stateHash unchanged; stale state is rejected and no external system is changed.\n- Use relationship.read with view timeline when the user asks what happened in an account or why a relationship state exists. It reads the stored normalized history and evidence references without contacting the provider.\n- Use relationship.read with view assertions to show the exact provenance and assertion ID behind relationship state before changing it.\n- Use relationship.read with view identity_reviews when the user asks about possible duplicate or conflicting accounts. Show both candidate relationships, impact, evidence references, recommendation, and version; never infer or apply an identity decision from confidence alone.\n- Use relationship.read with view person_identity_reviews when the user asks whether two contact profiles might be the same person. Show both people, safe anchor labels, confidence, recommendation, status, and exact version; never infer or apply a merge from confidence alone.\n- Use relationship.identity.decide only when the user explicitly chooses merge, keep_separate, move_evidence, split, defer, or undo for a specific identity candidate and gives a reason. Pass the exact version from identity_reviews; explain that merge and move_evidence relocate internal account history before invoking it. It never changes the provider.\n- Use relationship.attention.decide only when the user explicitly asks to acknowledge, snooze, or dismiss a specific attention item and gives a reason. Pass its exact version from relationship.read with view attention; snooze also requires an exact future time. It never changes a provider or executes the related recommendation.\n- Use conversation.delete only when the user explicitly asks to delete conversation-derived data for a relationship. Read the relationship immediately before the request, pass its exact name, and explain that approval is required, a legal hold can block deletion, and the receipt may leave local-device or provider cleanup pending. It never deletes Gmail messages, calendar events, or other provider data.\n- Use relationship.assertion.retract only when the user explicitly asks to withdraw a specific user correction and gives a reason. It preserves the correction in the audit trail, restores the next valid projected value, and never changes the source system.\n- Use source.retry_sync only when the user explicitly asks to retry an existing source sync. It keeps the current connection and never starts OAuth or reconnects a provider.\n- Use task.create only when the user asks to create an internal Oppulence task. It never sends a message or creates a calendar event.\n- Use task.update only when the user asks to edit an existing internal Oppulence task. It can change its title, due time, or priority and never sends anything externally.\n- Use task.complete only when the user asks to complete an internal Oppulence task. It cannot dismiss other action types and never sends anything externally.\n- Use task.snooze only when the user asks to snooze an internal Oppulence task. It cannot snooze other action types and never sends anything externally.\n- Use recommendation.create only when the user asks to add an internal recommendation draft for an existing relationship. It derives the recipient from that relationship, adds the draft to Oppulence's review queue, and never creates a provider draft or sends anything.\n- Use recommendation.dismiss only when the user explicitly asks to dismiss an internal Oppulence recommendation and gives a reason. It cannot dismiss tasks and never executes or sends anything.\n- Use recommendation.snooze only when the user explicitly asks to snooze an internal Oppulence recommendation until a specific time. It cannot snooze tasks and never executes or sends anything.\n- Use recommendation.update only when the user asks to edit an internal recommendation draft. It can change the subject or message, invalidates prior approval when content changes, and never executes or sends anything.\n- Use action.audit when the user asks why an internal task or recommendation exists or what happened to it. It reads evidence and lifecycle history without changing anything.\n- Use action.outcome.record only when the user explicitly says an outcome happened for an internal task or recommendation. It records user-confirmed history in Oppulence and never contacts anyone.\n- Use action_proposal.read when the user asks which closed-loop finance actions are pending, approved, rejected, executed, failed, unconfirmed, or expired. It returns no approval token and never approves, rejects, or executes an action.\n- Use commitment.export when the user asks to review or export an internal commitment record. It returns the record and Markdown with evidence and history, but never shares or uploads it.\n- Use commitment.accept only when the user explicitly says an internal commitment was accepted. It records the transition in Oppulence and never contacts anyone.\n- Use commitment.block only when the user explicitly identifies what is blocking an accepted internal commitment. It records the blocker in Oppulence and never contacts anyone.\n- Use commitment.confirm only when the user explicitly confirms that an extracted internal commitment is accurate. It preserves source evidence and never contacts anyone.\n- Use commitment.correct only when the user explicitly asks to correct an internal commitment's text or due time. It preserves source evidence and never contacts anyone.\n- Use commitment.complete only when the user explicitly says an internal commitment was fulfilled. It records the transition in Oppulence and never contacts anyone.\n- Use commitment.dispute only when the user explicitly says an accepted or offered internal commitment is disputed and gives a reason. It records the reason in Oppulence and never contacts anyone.\n- Use commitment.unblock only when the user explicitly says an internal commitment's blocker was resolved. It clears the blocker in Oppulence and never contacts anyone.\n- Use person.create only when the user asks to add a person. Get the exact workspaceId from workspace.read first, and pass the requested full name plus only the email they supplied. It creates one retry-safe internal Oppulence contact and never contacts the person or changes a provider.\n- Use person.correct only when the user explicitly asks to correct an internal person profile fact. It preserves the source evidence and never contacts anyone.\n- Use person.attribute.retract only when the user explicitly asks to withdraw a specific profile fact and gives a reason. It preserves the fact in the audit trail and never changes the source system.\n- Use person.identity.decide only when the user explicitly chooses merge, keep_separate, defer, or undo for a specific person identity candidate and gives a reason. Pass the exact version from person_identity_reviews; for undo, read the resolved candidate first. Before merge, explain that Oppulence will move internal identity anchors, profile facts, account-participant links, and interaction history to the surviving person and tombstone the duplicate. Before undo, explain that Oppulence will restore that internal split and refuse if interaction history changed after the merge. Neither decision changes the provider.\n- Use person.delete only when the user explicitly asks to permanently remove a person. Read the person immediately before the request, pass its exact display name, distinguish user_action from subject_request, and explain that approval will remove the internal merged profile family and suppress its identity anchors so later syncs cannot recreate it. It never deletes mail, calendar events, or provider contacts.\n- Use note.create only when the user asks to create an internal Oppulence note. It never sends a message or creates an external event.\n- Use note.update only when the user asks to edit an existing internal Oppulence note. It keeps unspecified fields unchanged and never sends anything externally.\n- Use note.delete only when the user explicitly asks to delete an internal Oppulence note. It keeps a tombstone in history and never sends anything externally.\n- Use action.propose only when the user asks to prepare a finance action; it records a pending proposal and never approves or executes it.\n- For any action that requires approval, explain what you intend to do and why before requesting it.\n- Finish each turn with a short, plain-language summary of what you did or found.",
+                      "name": "Assistant",
+                      "slug": "assistant",
+                      "source": "builtin"
+                    },
+                    {
+                      "enabledTools": [
+                        "current_time",
+                        "echo",
+                        "demo.payment",
+                        "subagent.delegate",
+                        "connector.read.hubspot_search",
+                        "connector.write.hubspot_note",
+                        "connector.write.hubspot_task",
+                        "connector.read.composio_tool_search",
+                        "connector.read.composio_tool_describe",
+                        "connector.write.composio_tool_execute"
+                      ],
+                      "instructions": "You are a concierge agent that can take actions on the user's behalf and delegate research to subagents.\n\n- Break a request into steps. For self-contained research or drafting, delegate to a subagent via subagent.delegate and incorporate its summary.\n- Any money-moving action (e.g. demo.payment) requires explicit human approval. Describe the exact action and amount before requesting it, and never retry an approval that was denied — explain and adapt.\n- Use read-only tools freely. Keep the user informed with a short summary at the end of each turn.",
+                      "name": "Concierge",
+                      "slug": "concierge",
+                      "source": "builtin",
+                      "subagentRefs": ["assistant"]
+                    },
+                    {
+                      "enabledTools": [
+                        "current_time",
+                        "slack.read_thread",
+                        "slack.post_message",
+                        "connector.read.gmail",
+                        "connector.read.calendar",
+                        "connector.write.gmail_draft",
+                        "web.search",
+                        "conduit.read",
+                        "eigen.simulate",
+                        "connector.read.composio_tool_search",
+                        "connector.read.composio_tool_describe",
+                        "connector.write.composio_tool_execute"
+                      ],
+                      "instructions": "You are Rowboat's Slack concierge. A teammate has tagged you (@-mentioned) in a\nSlack thread to do work on their behalf. You run as a durable cloud agent.\n\n- Read the thread first when the request refers to \"this\", \"the above\", or the\n  conversation: call slack.read_thread to load the messages, then act.\n- Answer the request directly and concisely. Your final message each turn is\n  posted back into the Slack thread automatically — write it as the reply the\n  teammate should see, not as a status note to yourself.\n- Use slack.post_message only for an EXTRA message or to post into a DIFFERENT\n  channel; do not use it to repeat your final answer (that is delivered for you).\n  Posting requires human approval.\n- Only use the tools advertised to you. If a capability you need is not available\n  (e.g. a connector is not connected, or a scope is missing), say so plainly and\n  tell the teammate what to connect or grant.\n- Never fabricate data or claim to have used a tool you did not call.\n- Keep replies short and skimmable — Slack is a chat surface. Lead with the\n  answer; add detail only if it helps.",
+                      "name": "Slack Concierge",
+                      "slug": "concierge-slack",
+                      "source": "builtin"
+                    }
+                  ]
+                },
+                "schema": {
+                  "description": "Agent list.",
+                  "properties": {
+                    "agents": {
+                      "description": "Agents ordered with workspace agents first, then built-ins.",
+                      "items": {
+                        "description": "One agent.",
+                        "properties": {
+                          "enabledTools": {
+                            "description": "Tools this agent can use.",
+                            "items": {
+                              "description": "Tool name.",
+                              "example": "workspace.read",
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "instructions": {
+                            "description": "Purpose stored for this agent.",
+                            "example": "You are a helpful, careful cloud assistant running as a durable Rowboat agent.",
+                            "type": "string"
+                          },
+                          "name": {
+                            "description": "Display name.",
+                            "example": "Assistant",
+                            "type": "string"
+                          },
+                          "slug": {
+                            "description": "Short name.",
+                            "example": "assistant",
+                            "type": "string"
+                          },
+                          "source": {
+                            "description": "Where this agent comes from.",
+                            "example": "builtin",
+                            "type": "string"
+                          }
+                        },
+                        "required": ["slug", "name", "source", "enabledTools"],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["agents"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Built-in agents."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List agents",
+        "tags": ["Agents"]
+      },
       "post": {
         "description": "Create agent posts the display name Customer concierge, the short name customer-concierge, and the purpose from the dialog. The stored agent keeps that name, that short name, that purpose, source tenant, and no tools.",
         "operationId": "createAgent",
@@ -17215,6 +17663,44 @@
       }
     },
     "/v1/agents/{slug}": {
+      "delete": {
+        "description": "Confirm delete removes the agent named customer-concierge. Only an agent created in this workspace can be removed.",
+        "operationId": "deleteAgent",
+        "parameters": [
+          {
+            "description": "Agent to remove.",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "description": "Short name.",
+              "example": "customer-concierge",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Agent removed."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Confirm delete",
+        "tags": ["Agents"]
+      },
       "get": {
         "description": "Configure loads this agent's name, purpose, model, and tools.",
         "operationId": "getAgent",
@@ -20982,6 +21468,89 @@
         ],
         "summary": "Connected",
         "tags": ["Connectors"]
+      },
+      "post": {
+        "description": "Connect opens the Jira sign-in page. The account is linked only after that page is finished.",
+        "operationId": "startComposioConnection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "toolkit": "jira"
+              },
+              "schema": {
+                "description": "Product to connect.",
+                "properties": {
+                  "toolkit": {
+                    "description": "Product name.",
+                    "example": "jira",
+                    "type": "string"
+                  }
+                },
+                "required": ["toolkit"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "The product Connect opens.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "connectionId": "ca_8b8dfa9ba7b246ea982c622a914c00e5",
+                  "expiresAt": "2026-07-15T16:05:00Z",
+                  "redirectUrl": "https://connect.composio.dev/link/lk_8b8dfa9b"
+                },
+                "schema": {
+                  "description": "Hosted sign-in page for the product.",
+                  "properties": {
+                    "connectionId": {
+                      "description": "The account this page will link.",
+                      "example": "ca_8b8dfa9ba7b246ea982c622a914c00e5",
+                      "type": "string"
+                    },
+                    "expiresAt": {
+                      "description": "When the sign-in page stops working.",
+                      "example": "2026-07-15T16:05:00Z",
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "redirectUrl": {
+                      "description": "Address of the sign-in page.",
+                      "example": "https://connect.composio.dev/link/lk_8b8dfa9b",
+                      "type": "string"
+                    }
+                  },
+                  "required": ["connectionId", "redirectUrl"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The Jira sign-in page is ready."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Connect",
+        "tags": ["Connectors"]
       }
     },
     "/v1/composio/connections/{connectionID}": {
@@ -22475,18 +23044,26 @@
     },
     "/v1/console/preferences": {
       "get": {
-        "description": "Returns defaults before the caller's first write.",
+        "description": "Profile loads the saved display name, the default agent, and whether usage data is shared. Before a name is saved, the name and the agent are empty, usage sharing is off, notifications are off, and the theme follows the system.",
         "operationId": "getConsolePreferences",
         "responses": {
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "defaultAgentSlug": "",
+                  "displayName": "",
+                  "notificationLevel": "off",
+                  "shareUsageData": false,
+                  "showModelReasoning": false,
+                  "theme": "system"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/ConsolePreferences"
                 }
               }
             },
-            "description": "Current preferences."
+            "description": "Preferences Profile loads before a name is saved."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -22542,7 +23119,7 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Get console preferences",
+        "summary": "Profile",
         "tags": ["Console"]
       },
       "patch": {
@@ -25298,7 +25875,7 @@
     },
     "/v1/public/mutual-action-plan/responses": {
       "post": {
-        "description": "Appends an idempotent external response for internal review; it never directly changes canonical commitments.",
+        "description": "Confirm plan records that the other person confirmed the shared plan. The owner's records stay unchanged.",
         "operationId": "respondPublicMutualActionPlan",
         "parameters": [
           {
@@ -25355,21 +25932,38 @@
               }
             }
           },
-          "description": "External response.",
+          "description": "Confirmation of the shared plan.",
           "required": true
         },
         "responses": {
           "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "recorded": true,
+                  "responseId": "db8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                },
                 "schema": {
-                  "additionalProperties": true,
-                  "description": "Response receipt.",
+                  "description": "Recorded plan confirmation.",
+                  "properties": {
+                    "recorded": {
+                      "description": "The confirmation is stored for the plan owner.",
+                      "example": true,
+                      "type": "boolean"
+                    },
+                    "responseId": {
+                      "description": "The response that was recorded.",
+                      "example": "db8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "format": "uuid",
+                      "type": "string"
+                    }
+                  },
+                  "required": ["responseId", "recorded"],
                   "type": "object"
                 }
               }
             },
-            "description": "Recorded response."
+            "description": "The confirmation is recorded."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -25378,7 +25972,7 @@
             "$ref": "#/components/responses/404"
           }
         },
-        "summary": "Respond to a scoped plan",
+        "summary": "Confirm plan",
         "tags": ["Relationship Intelligence"]
       }
     },
@@ -25488,15 +26082,18 @@
     },
     "/v1/relationship-attention/{attentionId}/decisions": {
       "post": {
-        "description": "Acknowledges, snoozes, or dismisses at the expected optimistic version. Materially new evidence reopens the item.",
+        "description": "Review records that this attention item was reviewed. It leaves the open queue.",
         "operationId": "decideRelationshipAttention",
         "parameters": [
           {
             "description": "Attention item id.",
+            "example": "da8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "attentionId",
             "required": true,
             "schema": {
+              "description": "Attention item id.",
+              "example": "da8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -25549,12 +26146,38 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "acknowledgedAt": "2026-07-31T14:00:00Z",
+                  "acknowledgedBy": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "createdAt": "2026-07-29T14:00:00Z",
+                  "detectorVersion": 1,
+                  "evidenceRefs": ["revenue-evidence:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"],
+                  "explanation": "A confirmed promise is overdue by two days.",
+                  "id": "da8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "projectorVersion": 1,
+                  "rankFactors": {
+                    "confirmed_commitment": 70,
+                    "overdue_days": 6
+                  },
+                  "rankScore": 76,
+                  "reasonCode": "overdue_commitment",
+                  "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "relationshipName": "Acme",
+                  "relationshipStateVersion": 4,
+                  "sourceRequirements": ["google"],
+                  "stateReason": "Reviewed from the portfolio attention queue.",
+                  "status": "acknowledged",
+                  "triggeringObjectRef": "commitment:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "updatedAt": "2026-07-31T14:00:00Z",
+                  "urgencyBand": "high",
+                  "version": 2
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RelationshipAttentionItem"
                 }
               }
             },
-            "description": "Updated attention item."
+            "description": "This item is reviewed and leaves the open queue."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -25574,7 +26197,7 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Decide attention item",
+        "summary": "Review",
         "tags": ["Relationship Intelligence"]
       }
     },
@@ -25836,15 +26459,18 @@
     },
     "/v1/relationship-identity-candidates/{candidateId}/decisions": {
       "post": {
-        "description": "Applies merge, keep-separate, move-evidence, split, defer, or compensating undo once at the expected optimistic version.",
+        "description": "Merge combines this possible duplicate into the company that already exists. The extra company is archived.",
         "operationId": "decideRelationshipIdentityCandidate",
         "parameters": [
           {
             "description": "Identity candidate id.",
+            "example": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "candidateId",
             "required": true,
             "schema": {
+              "description": "Identity candidate id.",
+              "example": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -25897,12 +26523,101 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "anchorKind": "provider_resource",
+                  "anchorPreview": "contact …123",
+                  "anchorProvider": "hubspot",
+                  "candidateType": "anchor_collision",
+                  "conflictingAnchors": [],
+                  "decidedAt": "2026-07-31T14:00:00Z",
+                  "decision": "merge",
+                  "decisionActorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "decisionReason": "Reviewed in the identity inbox: merge.",
+                  "decisions": [
+                    {
+                      "actorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "candidateVersion": 2,
+                      "decidedAt": "2026-07-31T14:00:00Z",
+                      "decision": "merge",
+                      "id": "aa8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "reason": "Reviewed in the identity inbox: merge."
+                    }
+                  ],
+                  "evidenceCount": 1,
+                  "evidenceRefs": ["relationship-observation:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"],
+                  "existingRelationship": {
+                    "accountDomain": "example.com",
+                    "categories": [],
+                    "commitmentCount": 0,
+                    "displayName": "Acme",
+                    "emailThreadCount": 0,
+                    "engagement": "steady",
+                    "health": "needs_attention",
+                    "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "kind": "company",
+                    "lifecycle": "evaluation",
+                    "milestones": [],
+                    "peopleCount": 0,
+                    "projectorVersion": 2,
+                    "resourceRefs": [],
+                    "risks": [],
+                    "sentiment": "mixed",
+                    "stateVersion": 4,
+                    "status": "active"
+                  },
+                  "id": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "impact": {
+                    "evidence": 1
+                  },
+                  "lineage": [
+                    {
+                      "actorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "afterRelationshipIds": ["9c8dfa9b-a7b2-46ea-982c-622a914c00e5"],
+                      "beforeRelationshipIds": [
+                        "fa8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                      ],
+                      "id": "ba8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "identityIds": [],
+                      "kind": "merged",
+                      "movedObjectRefs": [],
+                      "observationIds": [],
+                      "occurredAt": "2026-07-31T14:00:00Z",
+                      "reason": "Reviewed in the identity inbox: merge."
+                    }
+                  ],
+                  "matchingAnchors": ["hubspot:contact:123"],
+                  "proposedRelationship": {
+                    "accountDomain": "example.com",
+                    "categories": [],
+                    "commitmentCount": 0,
+                    "displayName": "Acme Inc.",
+                    "emailThreadCount": 0,
+                    "engagement": "steady",
+                    "health": "needs_attention",
+                    "id": "fa8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "kind": "company",
+                    "lifecycle": "evaluation",
+                    "milestones": [],
+                    "peopleCount": 0,
+                    "projectorVersion": 2,
+                    "resourceRefs": [],
+                    "risks": [],
+                    "sentiment": "mixed",
+                    "stateVersion": 4,
+                    "status": "archived"
+                  },
+                  "recommendationConfidence": 0.5,
+                  "recommendedDecision": "merge",
+                  "status": "resolved",
+                  "version": 2
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RelationshipIdentityCandidate"
                 }
               }
             },
-            "description": "Resolved candidate."
+            "description": "The duplicate is merged into the existing company."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -25922,13 +26637,13 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Decide identity candidate",
+        "summary": "Merge",
         "tags": ["Relationship Intelligence"]
       }
     },
     "/v1/relationship-observations/batch": {
       "post": {
-        "description": "Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.",
+        "description": "New person sends the new person id, source user, and event person_added. The summary is that person's name followed by added by the user.",
         "operationId": "ingestRelationshipObservations",
         "requestBody": {
           "content": {
@@ -25936,29 +26651,20 @@
               "example": {
                 "observations": [
                   {
-                    "eventType": "note",
-                    "externalId": "c18dfa9b-a7b2-46ea-982c-622a914c00e5",
-                    "normalizedFacts": {
-                      "body": "Use the updated terms.",
-                      "content": [
-                        {
-                          "children": [
-                            {
-                              "text": "Use the updated terms."
-                            }
-                          ],
-                          "type": "p"
-                        }
-                      ],
-                      "meetingLinked": false,
-                      "noteId": "note-1",
-                      "title": "Renewal context"
-                    },
-                    "occurredAt": "2026-09-01T12:00:00Z",
+                    "eventType": "person_added",
+                    "externalId": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "normalizedFacts": {},
+                    "occurredAt": "2026-07-31T14:00:00Z",
+                    "participants": [
+                      {
+                        "displayName": "Jordan Buyer",
+                        "email": "buyer@example.com",
+                        "role": "contact"
+                      }
+                    ],
                     "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                    "source": "desktop_note",
-                    "sourceVersion": "1",
-                    "summary": "Renewal context"
+                    "source": "user",
+                    "summary": "Jordan Buyer added by the user"
                   }
                 ]
               },
@@ -26232,55 +26938,46 @@
                     {
                       "duplicate": false,
                       "observation": {
-                        "contentHash": "cb2c6d9de0a502140de524129b786b3c768a4fe3f4c59a7aba3eef7724474d47",
-                        "eventType": "note",
-                        "externalId": "c18dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "contentHash": "a9ca4ce2e0cf65ff92d605d96c2f6ac649e3fadd83c402ac59e9c481e7aa67ef",
+                        "eventType": "person_added",
+                        "externalId": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
                         "id": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                        "normalizedFacts": {
-                          "body": "Use the updated terms.",
-                          "content": [
-                            {
-                              "children": [
-                                {
-                                  "text": "Use the updated terms."
-                                }
-                              ],
-                              "type": "p"
-                            }
-                          ],
-                          "meetingLinked": false,
-                          "noteId": "note-1",
-                          "title": "Renewal context"
-                        },
-                        "occurredAt": "2026-09-01T12:00:00Z",
-                        "receivedAt": "2026-09-01T12:00:00Z",
-                        "source": "desktop_note",
+                        "normalizedFacts": {},
+                        "occurredAt": "2026-07-31T14:00:00Z",
+                        "receivedAt": "2026-07-31T14:00:00Z",
+                        "source": "user",
                         "sourceVersion": "1",
-                        "summary": "Renewal context"
+                        "summary": "Jordan Buyer added by the user"
                       },
-                      "projectionJobId": "d18dfa9b-a7b2-46ea-982c-622a914c00e5",
                       "projectionStatus": "completed",
                       "relationship": {
-                        "categories": [],
-                        "commitmentCount": 0,
-                        "displayName": "Cedar Notes",
-                        "emailThreadCount": 0,
-                        "engagement": "unknown",
-                        "health": "unknown",
+                        "accountDomain": "example.com",
+                        "categories": ["Artificial intelligence"],
+                        "commitmentCount": 4,
+                        "displayName": "Jordan Buyer",
+                        "emailThreadCount": 12,
+                        "engagement": "declining",
+                        "health": "needs_attention",
                         "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                        "kind": "company",
-                        "lastTouchAt": "2026-09-01T12:00:00Z",
-                        "lifecycle": "prospect",
-                        "milestones": [],
-                        "peopleCount": 0,
-                        "projectedAt": "2026-09-01T12:00:00Z",
+                        "kind": "person",
+                        "lastChangedAt": "2026-07-25T16:00:00Z",
+                        "lastTouchAt": "2026-04-10T15:00:00Z",
+                        "lifecycle": "evaluation",
+                        "milestones": ["Proposal shared."],
+                        "nextAction": "Confirm the security review owner.",
+                        "nextActionAt": "2026-07-01T00:00:00Z",
+                        "peopleCount": 3,
+                        "primaryEmail": "buyer@example.com",
+                        "projectedAt": "2026-07-25T16:00:00Z",
                         "projectorVersion": 2,
-                        "resourceRefs": [],
-                        "risks": [],
-                        "sentiment": "unknown",
-                        "stateHash": "sha256:e42c0202f5034a1965e117a1a6c7065bcd09e1439493cea57074fa06572905c9",
-                        "stateVersion": 0,
-                        "status": "active"
+                        "resourceRefs": ["hubspot:company:123"],
+                        "risks": ["Security review has no owner."],
+                        "sentiment": "mixed",
+                        "stateHash": "sha256:ab12cd34",
+                        "stateReason": "Security review was promised, but no owner or meeting exists.",
+                        "stateVersion": 4,
+                        "status": "active",
+                        "summary": "Asked for pricing in April; wants a follow-up in July."
                       }
                     }
                   ]
@@ -26292,7 +26989,7 @@
                 }
               }
             },
-            "description": "Stored note."
+            "description": "Ingestion results."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -27070,12 +27767,41 @@
     },
     "/v1/relationship-sources/status": {
       "get": {
-        "description": "Returns authorization, backfill, freshness, failure, repair, revocation, and disconnect state for each relationship evidence source.",
+        "description": "Connected sources lists each account connected to this workspace. The page shows the account and whether its history is still syncing.",
         "operationId": "getRelationshipSourceStatuses",
         "responses": {
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "sources": [
+                    {
+                      "backfillCompleted": 250,
+                      "backfillPhase": "live",
+                      "backfillTotal": 1000,
+                      "completeness": "partial",
+                      "connectionId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "consentingActorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "expectedCadenceSeconds": 900,
+                      "grantedScopes": [
+                        "https://www.googleapis.com/auth/gmail.readonly",
+                        "https://www.googleapis.com/auth/calendar.events.readonly"
+                      ],
+                      "lagSeconds": 42,
+                      "lastSuccessAt": "2026-07-31T14:00:00Z",
+                      "lastSyncAt": "2026-07-31T14:00:00Z",
+                      "missingScopes": [],
+                      "requiredScopes": [
+                        "https://www.googleapis.com/auth/gmail.readonly",
+                        "https://www.googleapis.com/auth/calendar.events.readonly"
+                      ],
+                      "retryCount": 0,
+                      "source": "google",
+                      "sourceAccountId": "me@company.com",
+                      "status": "live"
+                    }
+                  ]
+                },
                 "schema": {
                   "description": "Source status list.",
                   "properties": {
@@ -27091,7 +27817,7 @@
                 }
               }
             },
-            "description": "Evidence source health."
+            "description": "Connected sources."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -27102,7 +27828,7 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Get source health",
+        "summary": "Connected sources",
         "tags": ["Relationship Intelligence"]
       }
     },
@@ -28016,15 +28742,17 @@
     },
     "/v1/relationships/{relationshipId}/acknowledgements": {
       "post": {
-        "description": "Records the exact state version and hash the actor reviewed. A stale acknowledgement fails with 409.",
+        "description": "Mark as reviewed sends the company id and the state version and hash that company is showing. A stale review fails with 409.",
         "operationId": "acknowledgeMissionControl",
         "parameters": [
           {
-            "description": "Relationship id.",
+            "description": "Company marked reviewed.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "relationshipId",
             "required": true,
             "schema": {
+              "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -28063,6 +28791,12 @@
           "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "acknowledgedAt": "2026-07-31T14:00:00Z",
+                  "id": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "stateHash": "sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1",
+                  "stateVersion": 4
+                },
                 "schema": {
                   "description": "Mission Control acknowledgement result.",
                   "properties": {
@@ -28786,15 +29520,32 @@
           "required": true
         },
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "acceptance": "accepted",
+                  "beneficiaryParticipantRef": "customer:acme",
+                  "confidence": 0.94,
+                  "counterpartyParticipantRef": "jordan@example.com",
+                  "currentEventVersion": 4,
+                  "direction": "promised_by_me",
+                  "dueAt": "2026-07-22T17:00:00Z",
+                  "duePhrase": "by Friday",
+                  "dueTimezone": "America/Los_Angeles",
+                  "id": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "ownerParticipantRef": "alex@example.com",
+                  "sourcePhrase": "I will send it by Friday.",
+                  "status": "open",
+                  "text": "Send the security packet.",
+                  "userConfirmed": true
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RelationshipCommitment"
                 }
               }
             },
-            "description": "Updated commitment."
+            "description": "The promise is accepted and still open."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -28925,25 +29676,29 @@
     },
     "/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve": {
       "post": {
-        "description": "Records the user's selected evidence side as a top-authority correction without rewriting either source.",
+        "description": "Use this value closes a disagreement on this company. It sends the evidence you picked and why, and the company comes back with that value current.",
         "operationId": "resolveRelationshipContradiction",
         "parameters": [
           {
-            "description": "Relationship id.",
+            "description": "Company this disagreement belongs to.",
             "in": "path",
             "name": "relationshipId",
             "required": true,
             "schema": {
+              "description": "Company id.",
+              "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
           },
           {
-            "description": "Contradiction case id.",
+            "description": "Disagreement this button closes.",
             "in": "path",
             "name": "caseId",
             "required": true,
             "schema": {
+              "description": "Disagreement id.",
+              "example": "contradiction:d109218617da1fbea89bb5d6",
               "type": "string"
             }
           }
@@ -28952,14 +29707,15 @@
           "content": {
             "application/json": {
               "example": {
+                "reason": "You chose the value from Gmail.",
                 "selectedAssertionId": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"
               },
               "schema": {
-                "description": "Contradiction resolution.",
+                "description": "The value you picked.",
                 "properties": {
                   "reason": {
-                    "description": "Optional rationale.",
-                    "example": "CRM was updated after the meeting.",
+                    "description": "Why this value is current.",
+                    "example": "You chose the value from Gmail.",
                     "type": "string"
                   },
                   "selectedAssertionId": {
@@ -28974,21 +29730,151 @@
               }
             }
           },
-          "description": "Resolution.",
+          "description": "Choice.",
           "required": true
         },
         "responses": {
           "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "intelligence": {
+                    "claims": [],
+                    "contradictionCases": [
+                      {
+                        "caseId": "contradiction:d109218617da1fbea89bb5d6",
+                        "dimension": "health",
+                        "openedAt": "2026-07-20T16:00:00Z",
+                        "reason": "You chose the value from Gmail.",
+                        "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "resolutionAssertionId": "7e8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "resolvedAt": "2026-07-25T16:00:00Z",
+                        "sides": [
+                          {
+                            "assertionId": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                            "evidenceRefs": [
+                              "relationship-observation:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                            ],
+                            "identityConfidence": 1,
+                            "observedAt": "2026-07-20T16:00:00Z",
+                            "source": "gmail",
+                            "sourceType": "source_fact",
+                            "validFrom": "2026-07-20T16:00:00Z",
+                            "value": {
+                              "kind": "enum",
+                              "value": "needs_attention"
+                            }
+                          },
+                          {
+                            "assertionId": "7d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                            "evidenceRefs": [
+                              "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                            ],
+                            "identityConfidence": 0.5,
+                            "observedAt": "2026-07-10T16:00:00Z",
+                            "source": "meeting",
+                            "sourceType": "ai_inference",
+                            "validFrom": "2026-07-10T16:00:00Z",
+                            "value": {
+                              "kind": "enum",
+                              "value": "healthy"
+                            }
+                          }
+                        ],
+                        "status": "user_resolved",
+                        "subjectRef": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                      }
+                    ],
+                    "deletionReceipts": [],
+                    "delta": {
+                      "changes": [
+                        {
+                          "after": "needs_attention",
+                          "assertionIds": ["7e8dfa9b-a7b2-46ea-982c-622a914c00e5"],
+                          "before": "healthy",
+                          "dimension": "health",
+                          "reason": "Security review was promised, but no owner or meeting exists."
+                        }
+                      ],
+                      "contradictions": [
+                        {
+                          "contradictedAssertionId": "7d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "contradictedValue": "healthy",
+                          "currentAssertionId": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "currentValue": "needs_attention",
+                          "dimension": "health"
+                        }
+                      ],
+                      "fromVersion": 4,
+                      "recommendationReason": "Security review was promised, but no owner or meeting exists.",
+                      "toVersion": 5,
+                      "uncertainClaimIds": []
+                    },
+                    "effectivePolicy": {
+                      "capture": "require_consent",
+                      "externalShare": true,
+                      "legalHold": false,
+                      "modelRoute": "hosted_allowed",
+                      "policyVersion": "policy:9373cc30008dcb712c236fc9",
+                      "publishEvidence": true,
+                      "redactionClasses": [
+                        "credentials",
+                        "financial",
+                        "health",
+                        "personal_identifier"
+                      ],
+                      "resolvedAt": "2026-07-25T16:00:00Z",
+                      "retentionDays": 30,
+                      "sourceLayerIds": ["builtin:conversation-policy-v1"]
+                    },
+                    "governanceDecisions": [],
+                    "governanceReceipts": [],
+                    "liveCues": [],
+                    "mutualActionPlans": [],
+                    "recommendationEvaluations": [],
+                    "recoveryEvaluations": [],
+                    "reviewItems": []
+                  },
+                  "relationship": {
+                    "categories": [],
+                    "commitmentCount": 0,
+                    "displayName": "Acme",
+                    "emailThreadCount": 0,
+                    "engagement": "declining",
+                    "health": "needs_attention",
+                    "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "kind": "company",
+                    "lastChangedAt": "2026-07-25T16:00:00Z",
+                    "lifecycle": "evaluation",
+                    "milestones": [],
+                    "peopleCount": 0,
+                    "projectedAt": "2026-07-25T16:00:00Z",
+                    "projectorVersion": 2,
+                    "resourceRefs": [],
+                    "risks": [],
+                    "sentiment": "mixed",
+                    "stateHash": "sha256:ab12cd34",
+                    "stateReason": "Security review was promised, but no owner or meeting exists.",
+                    "stateVersion": 5,
+                    "status": "active"
+                  }
+                },
                 "schema": {
-                  "additionalProperties": true,
-                  "description": "Relationship detail result.",
+                  "description": "Company after the chosen value is current.",
+                  "properties": {
+                    "intelligence": {
+                      "$ref": "#/components/schemas/RelationshipIntelligence"
+                    },
+                    "relationship": {
+                      "$ref": "#/components/schemas/RevenueRelationship"
+                    }
+                  },
+                  "required": ["relationship", "intelligence"],
                   "type": "object"
                 }
               }
             },
-            "description": "Updated relationship and intelligence."
+            "description": "Company after you pick the current value."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -29008,21 +29894,23 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Resolve a typed contradiction",
+        "summary": "Use this value",
         "tags": ["Relationship Intelligence"]
       }
     },
     "/v1/relationships/{relationshipId}/conversation-corrections": {
       "post": {
-        "description": "Resolves a focused word, speaker, entity, or material-claim review item. State-affecting corrections append a top-precedence user assertion and reproject deterministically.",
+        "description": "Correct sends the company id, the review item id, and the edited value. It always sends the focused-review reason.",
         "operationId": "correctConversationEvidence",
         "parameters": [
           {
             "description": "Relationship id.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "relationshipId",
             "required": true,
             "schema": {
+              "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -29033,7 +29921,7 @@
             "application/json": {
               "example": {
                 "correctedValue": "Avery Chen",
-                "reason": "Avery was the speaker.",
+                "reason": "User corrected conversation evidence during focused review.",
                 "reviewItemId": "review:9abf3ca4a5e5eff1"
               },
               "schema": {
@@ -29046,7 +29934,7 @@
                   },
                   "reason": {
                     "description": "Correction reason.",
-                    "example": "Avery was the speaker.",
+                    "example": "User corrected conversation evidence during focused review.",
                     "type": "string"
                   },
                   "reviewItemId": {
@@ -29067,6 +29955,102 @@
           "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "intelligence": {
+                    "claims": [
+                      {
+                        "captureCaveats": ["Remote channel may contain multiple speakers."],
+                        "confidence": 0.72,
+                        "endMs": 16000,
+                        "exactQuote": "We are concerned security could delay the renewal.",
+                        "id": "claim-risk",
+                        "kind": "risk",
+                        "material": true,
+                        "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "speakerConfidence": 1,
+                        "speakerId": "anonymous:remote-channel",
+                        "speakerLabel": "Avery Chen",
+                        "startMs": 12000,
+                        "stateDimension": "risk",
+                        "value": "Security review may delay renewal."
+                      }
+                    ],
+                    "contradictionCases": [],
+                    "deletionReceipts": [],
+                    "delta": {
+                      "changes": [],
+                      "contradictions": [],
+                      "fromVersion": 0,
+                      "recommendationReason": "Security review was promised, but no owner or meeting exists.",
+                      "toVersion": 4,
+                      "uncertainClaimIds": ["claim-risk"]
+                    },
+                    "effectivePolicy": {
+                      "capture": "require_consent",
+                      "externalShare": true,
+                      "legalHold": false,
+                      "modelRoute": "local_only",
+                      "policyVersion": "policy:ab12",
+                      "publishEvidence": true,
+                      "redactionClasses": ["personal_identifier"],
+                      "resolvedAt": "2026-07-31T14:00:00Z",
+                      "retentionDays": 30,
+                      "sourceLayerIds": ["workspace:default"]
+                    },
+                    "governanceDecisions": [],
+                    "governanceReceipts": [],
+                    "liveCues": [],
+                    "mutualActionPlans": [],
+                    "observationPageHasMore": false,
+                    "recommendationEvaluations": [],
+                    "recoveryEvaluations": [],
+                    "reviewItems": [
+                      {
+                        "claimId": "claim-risk",
+                        "confidence": 0.72,
+                        "currentValue": "Security review may delay renewal.",
+                        "exactQuote": "We are concerned security could delay the renewal.",
+                        "id": "review:1fecc8d36f097595",
+                        "kind": "claim",
+                        "label": "Low-confidence material claim",
+                        "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "stateDimension": "risk"
+                      }
+                    ]
+                  },
+                  "relationship": {
+                    "accountDomain": "example.com",
+                    "categories": ["Artificial intelligence"],
+                    "commitmentCount": 4,
+                    "companyDescription": "Builds AI infrastructure for customer operations.",
+                    "companyEnrichedAt": "2026-09-06T08:00:00Z",
+                    "displayName": "Jordan Buyer",
+                    "emailThreadCount": 12,
+                    "engagement": "declining",
+                    "health": "needs_attention",
+                    "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "kind": "person",
+                    "lastChangedAt": "2026-07-25T16:00:00Z",
+                    "lastTouchAt": "2026-04-10T15:00:00Z",
+                    "lifecycle": "evaluation",
+                    "linkedinUrl": "https://www.linkedin.com/company/acme",
+                    "milestones": ["Proposal shared."],
+                    "nextAction": "Confirm the security review owner.",
+                    "nextActionAt": "2026-07-01T00:00:00Z",
+                    "peopleCount": 3,
+                    "primaryEmail": "buyer@example.com",
+                    "projectedAt": "2026-07-25T16:00:00Z",
+                    "projectorVersion": 2,
+                    "resourceRefs": ["hubspot:company:123"],
+                    "risks": ["Security review has no owner."],
+                    "sentiment": "mixed",
+                    "stateHash": "sha256:ab12cd34",
+                    "stateReason": "Security review was promised, but no owner or meeting exists.",
+                    "stateVersion": 4,
+                    "status": "active",
+                    "summary": "Asked for pricing in April; wants a follow-up in July."
+                  }
+                },
                 "schema": {
                   "description": "Correction result.",
                   "properties": {
@@ -29105,15 +30089,18 @@
     },
     "/v1/relationships/{relationshipId}/conversation-decisions": {
       "post": {
-        "description": "Approves, corrects, rejects, or defers one evidence-backed semantic candidate. A stale baseline returns 409 and no state mutation.",
+        "description": "Approve accepts this proposed conversation change. The company and its review queue refresh.",
         "operationId": "decideConversationChange",
         "parameters": [
           {
             "description": "Relationship id.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "relationshipId",
             "required": true,
             "schema": {
+              "description": "Relationship id.",
+              "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -29124,7 +30111,7 @@
             "application/json": {
               "example": {
                 "kind": "approve",
-                "reason": "Customer stated this directly.",
+                "reason": "User decided a proposed conversation change.",
                 "reviewItemId": "review:9abf3ca4a5e5eff1"
               },
               "schema": {
@@ -29170,6 +30157,82 @@
           "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "intelligence": {
+                    "claims": [
+                      {
+                        "captureCaveats": ["Remote channel may contain multiple speakers."],
+                        "confidence": 0.5,
+                        "endMs": 16000,
+                        "exactQuote": "We are concerned security could delay the renewal.",
+                        "id": "claim:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "kind": "risk",
+                        "material": true,
+                        "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "speakerConfidence": 0.5,
+                        "speakerId": "anonymous:remote-channel",
+                        "speakerLabel": "Other",
+                        "startMs": 12000,
+                        "stateDimension": "risk",
+                        "value": "Security review may delay renewal."
+                      }
+                    ],
+                    "contradictionCases": [],
+                    "deletionReceipts": [],
+                    "delta": {
+                      "changes": [],
+                      "contradictions": [],
+                      "fromVersion": 4,
+                      "toVersion": 5,
+                      "uncertainClaimIds": []
+                    },
+                    "effectivePolicy": {
+                      "capture": "require_consent",
+                      "externalShare": true,
+                      "legalHold": false,
+                      "modelRoute": "local_only",
+                      "policyVersion": "policy:9373cc30008dcb712c236fc9",
+                      "publishEvidence": true,
+                      "redactionClasses": ["personal_identifier"],
+                      "resolvedAt": "2026-07-31T14:00:00Z",
+                      "retentionDays": 30,
+                      "sourceLayerIds": ["workspace:default"]
+                    },
+                    "governanceDecisions": [],
+                    "governanceReceipts": [],
+                    "liveCues": [],
+                    "mutualActionPlans": [],
+                    "recommendationEvaluations": [],
+                    "recoveryEvaluations": [],
+                    "reviewItems": []
+                  },
+                  "relationship": {
+                    "accountDomain": "example.com",
+                    "categories": ["Artificial intelligence"],
+                    "commitmentCount": 4,
+                    "displayName": "Acme",
+                    "emailThreadCount": 12,
+                    "engagement": "steady",
+                    "health": "needs_attention",
+                    "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "kind": "company",
+                    "lastChangedAt": "2026-07-25T16:00:00Z",
+                    "lifecycle": "evaluation",
+                    "milestones": ["Proposal shared."],
+                    "nextAction": "Confirm the security review owner.",
+                    "peopleCount": 3,
+                    "projectedAt": "2026-07-25T16:00:00Z",
+                    "projectorVersion": 2,
+                    "resourceRefs": ["hubspot:company:123"],
+                    "risks": ["Security review has no owner."],
+                    "sentiment": "mixed",
+                    "stateHash": "sha256:ab12cd34",
+                    "stateReason": "The proposed conversation change was accepted.",
+                    "stateVersion": 5,
+                    "status": "active",
+                    "summary": "Asked for pricing in April; wants a follow-up in July."
+                  }
+                },
                 "schema": {
                   "description": "Decision result.",
                   "properties": {
@@ -29185,7 +30248,7 @@
                 }
               }
             },
-            "description": "Updated relationship and refreshed review queue."
+            "description": "The proposed change is accepted, and the review queue is refreshed."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -29205,21 +30268,24 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Decide a proposed conversation change",
+        "summary": "Approve",
         "tags": ["Relationship Intelligence"]
       }
     },
     "/v1/relationships/{relationshipId}/conversation-deletion": {
       "post": {
-        "description": "Evaluates legal hold at execution time, removes server-side content transactionally, and returns an idempotent per-target receipt. Device and provider work remains pending until separately verified.",
+        "description": "Confirm delete removes this company's conversation evidence from Oppulence. Copies on this device and at the mailbox stay until they are checked.",
         "operationId": "requestConversationDeletion",
         "parameters": [
           {
             "description": "Relationship id.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "relationshipId",
             "required": true,
             "schema": {
+              "description": "Relationship id.",
+              "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -29253,12 +30319,60 @@
           "202": {
             "content": {
               "application/json": {
+                "example": {
+                  "legalHold": false,
+                  "receiptId": "delete:ab12",
+                  "requestedAt": "2026-07-31T14:00:00Z",
+                  "scopeRef": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "status": "partial",
+                  "targets": [
+                    {
+                      "attempts": 0,
+                      "status": "pending",
+                      "target": "local_recording"
+                    },
+                    {
+                      "attempts": 0,
+                      "status": "pending",
+                      "target": "local_note"
+                    },
+                    {
+                      "attempts": 1,
+                      "status": "not_found",
+                      "target": "outbox",
+                      "verificationHash": "sha256:72a0d4998415278ba8231bc4d13ec4fd9de6cb620395d3bf33d1655078836ab6"
+                    },
+                    {
+                      "attempts": 1,
+                      "status": "deleted",
+                      "target": "api_evidence",
+                      "verificationHash": "sha256:78de8eebd548d26e7a0e5d8444016899d995ababc2e0f58d6e38586017df69ae"
+                    },
+                    {
+                      "attempts": 1,
+                      "status": "not_found",
+                      "target": "embedding",
+                      "verificationHash": "sha256:436ec9c35d2e6b7c1663caaf6933892865df01d599138b640447bd5211d3b7ea"
+                    },
+                    {
+                      "attempts": 1,
+                      "status": "not_found",
+                      "target": "plan_share",
+                      "verificationHash": "sha256:d55b014616776abb8ea3e9fc743a4a4b5692507a962914ce476624c7aba2e4de"
+                    },
+                    {
+                      "attempts": 0,
+                      "status": "pending",
+                      "target": "provider"
+                    }
+                  ]
+                },
                 "schema": {
                   "$ref": "#/components/schemas/ConversationDeletionReceipt"
                 }
               }
             },
-            "description": "Deletion receipt."
+            "description": "Conversation evidence stored here is deleted. Device and mailbox copies are still waiting."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -29278,7 +30392,7 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Request conversation deletion",
+        "summary": "Confirm delete",
         "tags": ["Relationship Intelligence"]
       }
     },
@@ -29449,11 +30563,11 @@
                   "hasMore": false,
                   "reviewItems": [
                     {
-                      "claimId": "claim:ab12",
+                      "claimId": "claim-risk",
                       "confidence": 0.5,
                       "currentValue": "Other",
                       "exactQuote": "We are concerned security could delay the renewal.",
-                      "id": "review:ab12cd34ef567890",
+                      "id": "review:9abf3ca4a5e5eff1",
                       "kind": "speaker",
                       "label": "Resolve the speaker for a material statement",
                       "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
@@ -29512,15 +30626,17 @@
     },
     "/v1/relationships/{relationshipId}/corrections": {
       "post": {
-        "description": "Appends a user correction assertion and deterministically reprojects the relationship. Source evidence is never overwritten.",
+        "description": "Correct a detail replaces one field on this company. It sends the field, the new value, and why, and the company comes back with that value.",
         "operationId": "correctRelationship",
         "parameters": [
           {
-            "description": "Relationship id.",
+            "description": "Company this detail belongs to.",
             "in": "path",
             "name": "relationshipId",
             "required": true,
             "schema": {
+              "description": "Company id.",
+              "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -29535,10 +30651,10 @@
                 "value": "healthy"
               },
               "schema": {
-                "description": "Relationship correction.",
+                "description": "Company detail correction.",
                 "properties": {
                   "dimension": {
-                    "description": "Corrected state dimension.",
+                    "description": "The detail this form corrects.",
                     "enum": [
                       "lifecycle",
                       "engagement",
@@ -29553,25 +30669,25 @@
                     "type": "string"
                   },
                   "reason": {
-                    "description": "Why the model is wrong.",
+                    "description": "Why this is wrong.",
                     "example": "The review happened yesterday.",
                     "type": "string"
                   },
                   "supersedesAssertionId": {
-                    "description": "Optional active assertion on the same relationship and dimension that this correction permanently replaces.",
+                    "description": "Earlier evidence on this same detail that this correction replaces.",
                     "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
                     "format": "uuid",
                     "type": "string"
                   },
                   "validTo": {
-                    "description": "Optional exclusive expiry boundary for a temporary correction.",
+                    "description": "When a temporary correction stops applying.",
                     "example": "2026-08-31T17:00:00Z",
                     "format": "date-time",
                     "nullable": true,
                     "type": "string"
                   },
                   "value": {
-                    "description": "Correct value.",
+                    "description": "The value you chose.",
                     "example": "healthy",
                     "type": "string"
                   }
@@ -29588,12 +30704,35 @@
           "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "categories": [],
+                  "commitmentCount": 0,
+                  "displayName": "Acme",
+                  "emailThreadCount": 0,
+                  "engagement": "declining",
+                  "health": "healthy",
+                  "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "kind": "company",
+                  "lastChangedAt": "2026-07-26T16:00:00Z",
+                  "lifecycle": "evaluation",
+                  "milestones": [],
+                  "peopleCount": 0,
+                  "projectedAt": "2026-07-26T16:00:00Z",
+                  "projectorVersion": 2,
+                  "resourceRefs": [],
+                  "risks": [],
+                  "sentiment": "mixed",
+                  "stateHash": "sha256:ab12cd34",
+                  "stateReason": "The review happened yesterday.",
+                  "stateVersion": 5,
+                  "status": "active"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueRelationship"
                 }
               }
             },
-            "description": "Reprojected relationship."
+            "description": "Company after the detail is corrected."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -29610,7 +30749,7 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Correct relationship state",
+        "summary": "Correct a detail",
         "tags": ["Relationship Intelligence"]
       }
     },
@@ -30057,7 +31196,7 @@
     },
     "/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/approve": {
       "post": {
-        "description": "Binds internal approval to the exact current revision hash.",
+        "description": "Approve this plan posts an empty body. The stored plan status is internally_approved, which the company sheet reads as Approved in this workspace.",
         "operationId": "approveMutualActionPlan",
         "parameters": [
           {
@@ -30095,12 +31234,212 @@
           "required": false
         },
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "counterpartyRef": "jordan@example.com",
+                  "currentRevision": {
+                    "createdAt": "2026-07-31T14:00:00Z",
+                    "createdBy": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "items": [
+                      {
+                        "commitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "dependencyItemIds": [],
+                        "dueAt": "2026-09-14T17:00:00Z",
+                        "evidenceRefs": ["revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"],
+                        "itemId": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "ownerParticipantRef": "alex@example.com",
+                        "status": "open",
+                        "title": "Send the security packet."
+                      }
+                    ],
+                    "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "revisionHash": "sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966",
+                    "revisionId": "revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "version": 1
+                  },
+                  "internalOwnerRef": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "status": "internally_approved",
+                  "tokenState": "not_issued"
+                },
                 "schema": {
-                  "additionalProperties": true,
-                  "description": "Mutual action plan.",
+                  "description": "The plan the company sheet reads.",
+                  "properties": {
+                    "counterpartyRef": {
+                      "description": "The other party.",
+                      "example": "jordan@example.com",
+                      "type": "string"
+                    },
+                    "currentRevision": {
+                      "description": "The revision this approval is bound to.",
+                      "properties": {
+                        "createdAt": {
+                          "description": "When this revision was written.",
+                          "example": "2026-07-31T14:00:00Z",
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "createdBy": {
+                          "description": "Who wrote this revision.",
+                          "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "items": {
+                          "description": "Plan steps.",
+                          "items": {
+                            "description": "One step on the plan.",
+                            "properties": {
+                              "commitmentId": {
+                                "description": "Commitment this step came from.",
+                                "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "dependencyItemIds": {
+                                "description": "Steps this one waits on.",
+                                "items": {
+                                  "description": "Step id.",
+                                  "example": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                                  "type": "string"
+                                },
+                                "type": "array"
+                              },
+                              "dueAt": {
+                                "description": "When the step is due.",
+                                "example": "2026-09-14T17:00:00Z",
+                                "format": "date-time",
+                                "type": "string"
+                              },
+                              "evidenceRefs": {
+                                "description": "Evidence for the step.",
+                                "items": {
+                                  "description": "Evidence reference.",
+                                  "example": "revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                                  "type": "string"
+                                },
+                                "type": "array"
+                              },
+                              "itemId": {
+                                "description": "Step id.",
+                                "example": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                                "type": "string"
+                              },
+                              "ownerParticipantRef": {
+                                "description": "Who owns the step.",
+                                "example": "alex@example.com",
+                                "type": "string"
+                              },
+                              "status": {
+                                "description": "Step status.",
+                                "example": "open",
+                                "type": "string"
+                              },
+                              "title": {
+                                "description": "Step title.",
+                                "example": "Send the security packet.",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "itemId",
+                              "title",
+                              "ownerParticipantRef",
+                              "dependencyItemIds",
+                              "status",
+                              "evidenceRefs"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "planId": {
+                          "description": "Plan id.",
+                          "example": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "type": "string"
+                        },
+                        "revisionHash": {
+                          "description": "Hash of the steps.",
+                          "example": "sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966",
+                          "type": "string"
+                        },
+                        "revisionId": {
+                          "description": "Revision id.",
+                          "example": "revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "type": "string"
+                        },
+                        "version": {
+                          "description": "Revision number.",
+                          "example": 1,
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "revisionId",
+                        "planId",
+                        "version",
+                        "revisionHash",
+                        "createdAt",
+                        "createdBy",
+                        "items"
+                      ],
+                      "type": "object"
+                    },
+                    "internalOwnerRef": {
+                      "description": "Person who owns the plan inside this workspace.",
+                      "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "planId": {
+                      "description": "Plan id.",
+                      "example": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "type": "string"
+                    },
+                    "relationshipId": {
+                      "description": "Company id.",
+                      "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "sharePolicyDecisionId": {
+                      "description": "Decision recorded when the plan was shared.",
+                      "example": "governance:ab8dfa9ba7b246ea982c622a",
+                      "type": "string"
+                    },
+                    "status": {
+                      "description": "Plan status.",
+                      "enum": [
+                        "draft",
+                        "revised",
+                        "internally_approved",
+                        "shared",
+                        "counterparty_responded",
+                        "completed",
+                        "cancelled"
+                      ],
+                      "example": "internally_approved",
+                      "type": "string"
+                    },
+                    "tokenState": {
+                      "description": "Share token state.",
+                      "enum": ["not_issued", "active"],
+                      "example": "not_issued",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "planId",
+                    "relationshipId",
+                    "internalOwnerRef",
+                    "counterpartyRef",
+                    "status",
+                    "currentRevision",
+                    "tokenState"
+                  ],
                   "type": "object"
                 }
               }
@@ -30122,31 +31461,37 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Approve a plan revision",
+        "summary": "Approve this plan",
         "tags": ["Relationship Intelligence"]
       }
     },
     "/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share": {
       "post": {
-        "description": "Draft an email to share this plan posts an empty body. The stored plan status is shared, the token state is active, and responseToken is the one-time token. The server keeps only the hash of that token.",
+        "description": "Draft an email to share this plan marks that approved plan as shared and writes a draft email. The email is not sent.",
         "operationId": "shareMutualActionPlan",
         "parameters": [
           {
             "description": "Relationship id.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "relationshipId",
             "required": true,
             "schema": {
+              "description": "Relationship id.",
+              "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
           },
           {
             "description": "Mutual action plan id.",
+            "example": "plan:f8dfa9b6-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "planId",
             "required": true,
             "schema": {
+              "description": "Mutual action plan id.",
+              "example": "plan:f8dfa9b6-a7b2-46ea-982c-622a914c00e5",
               "type": "string"
             }
           }
@@ -30173,226 +31518,42 @@
                   "plan": {
                     "counterpartyRef": "jordan@example.com",
                     "currentRevision": {
-                      "createdAt": "2026-07-31T14:00:00Z",
-                      "createdBy": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "createdAt": "2026-07-15T16:00:00Z",
+                      "createdBy": "0c8dfa9b-a7b2-46ea-982c-622a914c00e5",
                       "items": [
                         {
                           "commitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
                           "dependencyItemIds": [],
-                          "dueAt": "2026-09-14T17:00:00Z",
-                          "evidenceRefs": ["revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"],
+                          "dueAt": "2026-07-15T17:00:00Z",
+                          "evidenceRefs": ["revenue-evidence:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"],
                           "itemId": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                          "ownerParticipantRef": "alex@example.com",
+                          "ownerParticipantRef": "jordan@example.com",
                           "status": "open",
-                          "title": "Send the security packet."
+                          "title": "Follow up on the proposal"
                         }
                       ],
-                      "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                      "revisionHash": "sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966",
-                      "revisionId": "revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "planId": "plan:f8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+                      "revisionHash": "sha256:c7ba0b5e53805088b4435a27848fb9a5c899287b4aac146b86d4709eaef49dc0",
+                      "revisionId": "revision:d8dfa9b6-a7b2-46ea-982c-622a914c00e5",
                       "version": 1
                     },
-                    "internalOwnerRef": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                    "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "internalOwnerRef": "0c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "planId": "plan:f8dfa9b6-a7b2-46ea-982c-622a914c00e5",
                     "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                    "sharePolicyDecisionId": "governance:ab8dfa9ba7b246ea982c622a",
+                    "sharePolicyDecisionId": "governance:ab12cd34ef56789012345678",
                     "status": "shared",
                     "tokenState": "active"
                   },
                   "responseToken": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
                 },
                 "schema": {
-                  "description": "Plan share result.",
-                  "properties": {
-                    "plan": {
-                      "description": "The plan the company sheet reads.",
-                      "properties": {
-                        "counterpartyRef": {
-                          "description": "The other party.",
-                          "example": "jordan@example.com",
-                          "type": "string"
-                        },
-                        "currentRevision": {
-                          "description": "The revision this approval is bound to.",
-                          "properties": {
-                            "createdAt": {
-                              "description": "When this revision was written.",
-                              "example": "2026-07-31T14:00:00Z",
-                              "format": "date-time",
-                              "type": "string"
-                            },
-                            "createdBy": {
-                              "description": "Who wrote this revision.",
-                              "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                              "format": "uuid",
-                              "type": "string"
-                            },
-                            "items": {
-                              "description": "Plan steps.",
-                              "items": {
-                                "description": "One step on the plan.",
-                                "properties": {
-                                  "commitmentId": {
-                                    "description": "Commitment this step came from.",
-                                    "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                                    "format": "uuid",
-                                    "type": "string"
-                                  },
-                                  "dependencyItemIds": {
-                                    "description": "Steps this one waits on.",
-                                    "items": {
-                                      "description": "Step id.",
-                                      "example": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                                      "type": "string"
-                                    },
-                                    "type": "array"
-                                  },
-                                  "dueAt": {
-                                    "description": "When the step is due.",
-                                    "example": "2026-09-14T17:00:00Z",
-                                    "format": "date-time",
-                                    "type": "string"
-                                  },
-                                  "evidenceRefs": {
-                                    "description": "Evidence for the step.",
-                                    "items": {
-                                      "description": "Evidence reference.",
-                                      "example": "revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                                      "type": "string"
-                                    },
-                                    "type": "array"
-                                  },
-                                  "itemId": {
-                                    "description": "Step id.",
-                                    "example": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                                    "type": "string"
-                                  },
-                                  "ownerParticipantRef": {
-                                    "description": "Who owns the step.",
-                                    "example": "alex@example.com",
-                                    "type": "string"
-                                  },
-                                  "status": {
-                                    "description": "Step status.",
-                                    "example": "open",
-                                    "type": "string"
-                                  },
-                                  "title": {
-                                    "description": "Step title.",
-                                    "example": "Send the security packet.",
-                                    "type": "string"
-                                  }
-                                },
-                                "required": [
-                                  "itemId",
-                                  "title",
-                                  "ownerParticipantRef",
-                                  "dependencyItemIds",
-                                  "status",
-                                  "evidenceRefs"
-                                ],
-                                "type": "object"
-                              },
-                              "type": "array"
-                            },
-                            "planId": {
-                              "description": "Plan id.",
-                              "example": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                              "type": "string"
-                            },
-                            "revisionHash": {
-                              "description": "Hash of the steps.",
-                              "example": "sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966",
-                              "type": "string"
-                            },
-                            "revisionId": {
-                              "description": "Revision id.",
-                              "example": "revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                              "type": "string"
-                            },
-                            "version": {
-                              "description": "Revision number.",
-                              "example": 1,
-                              "type": "integer"
-                            }
-                          },
-                          "required": [
-                            "revisionId",
-                            "planId",
-                            "version",
-                            "revisionHash",
-                            "createdAt",
-                            "createdBy",
-                            "items"
-                          ],
-                          "type": "object"
-                        },
-                        "internalOwnerRef": {
-                          "description": "Person who owns the plan inside this workspace.",
-                          "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "planId": {
-                          "description": "Plan id.",
-                          "example": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                          "type": "string"
-                        },
-                        "relationshipId": {
-                          "description": "Company id.",
-                          "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-                          "format": "uuid",
-                          "type": "string"
-                        },
-                        "sharePolicyDecisionId": {
-                          "description": "Decision recorded when the plan was shared.",
-                          "example": "governance:ab8dfa9ba7b246ea982c622a",
-                          "type": "string"
-                        },
-                        "status": {
-                          "description": "Plan status.",
-                          "enum": [
-                            "draft",
-                            "revised",
-                            "internally_approved",
-                            "shared",
-                            "counterparty_responded",
-                            "completed",
-                            "cancelled"
-                          ],
-                          "example": "shared",
-                          "type": "string"
-                        },
-                        "tokenState": {
-                          "description": "Share token state.",
-                          "enum": ["not_issued", "active"],
-                          "example": "active",
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "planId",
-                        "relationshipId",
-                        "internalOwnerRef",
-                        "counterpartyRef",
-                        "status",
-                        "currentRevision",
-                        "tokenState"
-                      ],
-                      "type": "object"
-                    },
-                    "responseToken": {
-                      "description": "One-time token for the shared plan. The server stores only its hash.",
-                      "example": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-                      "type": "string"
-                    }
-                  },
-                  "required": ["plan", "responseToken"],
+                  "additionalProperties": true,
+                  "description": "Shared plan and one-time value.",
                   "type": "object"
                 }
               }
             },
-            "description": "Shared plan and one-time token."
+            "description": "The approved plan is shared, and a draft email is ready."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -31163,7 +32324,7 @@
     },
     "/v1/revenue-actions": {
       "get": {
-        "description": "Recovery loads the open queue. The request asks for open actions, one hundred at a time, on the recovery list, and it does not ask for an older page. Acme has no open recovery action, so the page is empty.",
+        "description": "Tasks loads open follow-ups with the soonest due date first. It asks for open tasks, one hundred at a time, and does not ask for an older page. The first task is Follow up on the proposal, due on July 15.",
         "operationId": "listRevenueActions",
         "parameters": [
           {
@@ -31179,7 +32340,7 @@
             }
           },
           {
-            "description": "Page size (max 100). Recovery asks for 100.",
+            "description": "Page size (max 100). Tasks asks for 100.",
             "example": 100,
             "in": "query",
             "name": "limit",
@@ -31190,7 +32351,7 @@
             }
           },
           {
-            "description": "How many actions to skip. Recovery does not send this on the first page.",
+            "description": "How many tasks to skip. Tasks does not send this on the first page.",
             "in": "query",
             "name": "offset",
             "required": false,
@@ -31200,14 +32361,26 @@
             }
           },
           {
-            "description": "recovery keeps every action that is not a follow-up task. task keeps follow-up tasks.",
-            "example": "recovery",
+            "description": "task keeps follow-up tasks. recovery keeps every other action.",
+            "example": "task",
             "in": "query",
             "name": "surface",
             "required": false,
             "schema": {
-              "enum": ["recovery", "task"],
-              "example": "recovery",
+              "enum": ["task", "recovery"],
+              "example": "task",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Soonest due first is asc. Latest due is desc.",
+            "example": "asc",
+            "in": "query",
+            "name": "due",
+            "required": false,
+            "schema": {
+              "enum": ["asc", "desc"],
+              "example": "asc",
               "type": "string"
             }
           }
@@ -31217,7 +32390,30 @@
             "content": {
               "application/json": {
                 "example": {
-                  "actions": [],
+                  "actions": [
+                    {
+                      "actionType": "follow_up_task",
+                      "approvalStatus": "pending",
+                      "channel": "task",
+                      "createdAt": "2026-07-15T16:00:00Z",
+                      "detector": "manual",
+                      "dueAt": "2026-07-15T17:00:00Z",
+                      "evidence": [],
+                      "executionMode": "draft",
+                      "executionOwner": "rowboat",
+                      "executionStatus": "pending",
+                      "id": "3a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "policyStatus": "pending",
+                      "priorityScore": 30,
+                      "queueStatus": "open",
+                      "reason": "Follow up on the proposal",
+                      "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "relationshipName": "Acme",
+                      "revision": 1,
+                      "revisionHash": "sha256:ab12...",
+                      "updatedAt": "2026-07-15T16:00:00Z"
+                    }
+                  ],
                   "hasMore": false
                 },
                 "schema": {
@@ -31252,11 +32448,11 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Recovery",
+        "summary": "Tasks",
         "tags": ["Revenue"]
       },
       "post": {
-        "description": "Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.",
+        "description": "Create task saves a follow-up on a company. It sends the title, the due time, and a priority of 30.",
         "operationId": "createRevenueAction",
         "requestBody": {
           "content": {
@@ -31264,9 +32460,9 @@
               "example": {
                 "actionType": "follow_up_task",
                 "channel": "task",
-                "executionMode": "draft",
-                "proposedMessage": "Asked for pricing in April; wants a follow-up in July.",
-                "reason": "Follow up on company: Jordan Buyer",
+                "dueAt": "2026-07-15T17:00:00Z",
+                "priorityScore": 30,
+                "reason": "Follow up on the proposal",
                 "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
               },
               "schema": {
@@ -31297,7 +32493,7 @@
                   },
                   "dueAt": {
                     "description": "Due time.",
-                    "example": "2026-07-15T00:00:00Z",
+                    "example": "2026-07-15T17:00:00Z",
                     "format": "date-time",
                     "nullable": true,
                     "type": "string"
@@ -31315,7 +32511,7 @@
                   },
                   "priorityScore": {
                     "description": "Priority (0-100).",
-                    "example": 80,
+                    "example": 30,
                     "type": "integer"
                   },
                   "proposedMessage": {
@@ -31329,8 +32525,8 @@
                     "type": "string"
                   },
                   "reason": {
-                    "description": "Evidence-backed reason.",
-                    "example": "Follow up on company: Jordan Buyer",
+                    "description": "Task title.",
+                    "example": "Follow up on the proposal",
                     "type": "string"
                   },
                   "recipientEmail": {
@@ -31339,7 +32535,7 @@
                     "type": "string"
                   },
                   "relationshipId": {
-                    "description": "Owning relationship id.",
+                    "description": "Company the task is for.",
                     "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
                     "format": "uuid",
                     "type": "string"
@@ -31355,19 +32551,41 @@
               }
             }
           },
-          "description": "Action.",
+          "description": "Task.",
           "required": true
         },
         "responses": {
           "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "actionType": "follow_up_task",
+                  "approvalStatus": "pending",
+                  "channel": "task",
+                  "createdAt": "2026-07-15T16:00:00Z",
+                  "detector": "manual",
+                  "dueAt": "2026-07-15T17:00:00Z",
+                  "evidence": [],
+                  "executionMode": "draft",
+                  "executionOwner": "rowboat",
+                  "executionStatus": "pending",
+                  "id": "3a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "policyStatus": "pending",
+                  "priorityScore": 30,
+                  "queueStatus": "open",
+                  "reason": "Follow up on the proposal",
+                  "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "relationshipName": "Acme",
+                  "revision": 1,
+                  "revisionHash": "sha256:ab12...",
+                  "updatedAt": "2026-07-15T16:00:00Z"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueAction"
                 }
               }
             },
-            "description": "Created action."
+            "description": "Created task."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -31384,21 +32602,23 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Create a manual action",
+        "summary": "Create task",
         "tags": ["Revenue"]
       }
     },
     "/v1/revenue-actions/{actionId}": {
       "get": {
-        "description": "Returns one action with relationship context.",
+        "description": "Re-check policy reloads this action. The sheet shows the company, the follow-up, and that the check passed.",
         "operationId": "getRevenueAction",
         "parameters": [
           {
-            "description": "Action id.",
+            "description": "Action the sheet reloads.",
             "in": "path",
             "name": "actionId",
             "required": true,
             "schema": {
+              "description": "Action id.",
+              "example": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -31408,12 +32628,55 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "actionType": "warm_follow_up",
+                  "approvalStatus": "pending",
+                  "channel": "email",
+                  "createdAt": "2026-07-12T12:00:00Z",
+                  "detector": "requested_follow_up_due",
+                  "dueAt": "2026-07-15T00:00:00Z",
+                  "evidence": [
+                    {
+                      "excerpt": "Can you circle back this month?",
+                      "externalEvidenceRefs": ["gmail:message:msg_01"],
+                      "id": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "occurredAt": "2026-07-01T14:00:00Z",
+                      "source": "gmail",
+                      "sourceRecordId": "gmail:thread:thr_01"
+                    }
+                  ],
+                  "executionMode": "send",
+                  "executionOwner": "rowboat",
+                  "executionStatus": "pending",
+                  "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "policyStatus": "passed",
+                  "priorityComponents": {
+                    "commitment_urgency": 40,
+                    "recency_signal": 12,
+                    "relationship_value": 30
+                  },
+                  "priorityScore": 82,
+                  "proposedMessage": "Hi Jordan — you asked me to circle back this month...",
+                  "proposedSubject": "Following up as promised",
+                  "queueStatus": "open",
+                  "reason": "They asked for a follow-up in July.",
+                  "recipientEmail": "buyer@example.com",
+                  "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "relationshipName": "Acme",
+                  "revision": 1,
+                  "revisionHash": "sha256:ab12...",
+                  "senderAccountRef": "gmail:me@company.com",
+                  "updatedAt": "2026-07-12T12:00:00Z"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueAction"
                 }
               }
             },
-            "description": "Action."
+            "description": "The action the sheet shows after the check."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -31427,7 +32690,7 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Get an action",
+        "summary": "Reload the checked action",
         "tags": ["Revenue"]
       }
     },
@@ -31702,15 +32965,18 @@
     },
     "/v1/revenue-actions/{actionId}/dismiss": {
       "post": {
-        "description": "Dismisses the action with a reason label and records the dismissed outcome.",
+        "description": "Dismiss removes this follow-up from the queue and stores the reason.",
         "operationId": "dismissRevenueAction",
         "parameters": [
           {
             "description": "Action id.",
+            "example": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "actionId",
             "required": true,
             "schema": {
+              "description": "Action id.",
+              "example": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -31742,12 +33008,45 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "actionType": "warm_follow_up",
+                  "approvalStatus": "pending",
+                  "channel": "email",
+                  "createdAt": "2026-07-12T12:00:00Z",
+                  "detector": "waiting_on_me",
+                  "dismissReason": "not_relevant",
+                  "evidence": [
+                    {
+                      "excerpt": "We are concerned security could delay renewal.",
+                      "externalEvidenceRefs": ["timestamp:12000-16000"],
+                      "id": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "occurredAt": "2026-07-31T14:00:00Z",
+                      "source": "meeting",
+                      "sourceRecordId": "oppulence:session-42:claim:claim-risk"
+                    }
+                  ],
+                  "executionMode": "draft",
+                  "executionOwner": "rowboat",
+                  "executionStatus": "pending",
+                  "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "policyStatus": "pending",
+                  "priorityScore": 82,
+                  "proposedSubject": "Following up as promised",
+                  "queueStatus": "dismissed",
+                  "reason": "They asked for a follow-up in July.",
+                  "recipientEmail": "buyer@example.com",
+                  "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "relationshipName": "Acme",
+                  "revision": 1,
+                  "revisionHash": "sha256:ab12cd34ef567890",
+                  "updatedAt": "2026-07-15T16:05:00Z"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueAction"
                 }
               }
             },
-            "description": "Dismissed action."
+            "description": "The follow-up is dismissed."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -31761,7 +33060,7 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Dismiss an action",
+        "summary": "Dismiss",
         "tags": ["Revenue"]
       }
     },
@@ -32221,15 +33520,18 @@
     },
     "/v1/revenue-actions/{actionId}/reject": {
       "post": {
-        "description": "Rejects the current revision with a reason.",
+        "description": "Reject declines this follow-up. The decision is stored and the follow-up stays open.",
         "operationId": "rejectRevenueAction",
         "parameters": [
           {
             "description": "Action id.",
+            "example": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "actionId",
             "required": true,
             "schema": {
+              "description": "Action id.",
+              "example": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -32261,12 +33563,44 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "actionType": "warm_follow_up",
+                  "approvalStatus": "rejected",
+                  "channel": "email",
+                  "createdAt": "2026-07-12T12:00:00Z",
+                  "detector": "waiting_on_me",
+                  "evidence": [
+                    {
+                      "excerpt": "We are concerned security could delay renewal.",
+                      "externalEvidenceRefs": ["timestamp:12000-16000"],
+                      "id": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "occurredAt": "2026-07-31T14:00:00Z",
+                      "source": "meeting",
+                      "sourceRecordId": "oppulence:session-42:claim:claim-risk"
+                    }
+                  ],
+                  "executionMode": "draft",
+                  "executionOwner": "rowboat",
+                  "executionStatus": "pending",
+                  "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "policyStatus": "pending",
+                  "priorityScore": 82,
+                  "proposedSubject": "Following up as promised",
+                  "queueStatus": "open",
+                  "reason": "They asked for a follow-up in July.",
+                  "recipientEmail": "buyer@example.com",
+                  "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "relationshipName": "Acme",
+                  "revision": 1,
+                  "revisionHash": "sha256:ab12cd34ef567890",
+                  "updatedAt": "2026-07-15T16:05:00Z"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueAction"
                 }
               }
             },
-            "description": "Rejected action."
+            "description": "The follow-up is rejected and still open."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -32283,7 +33617,7 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Reject an action",
+        "summary": "Reject",
         "tags": ["Revenue"]
       }
     },
@@ -32530,22 +33864,24 @@
     },
     "/v1/revenue-leak-scans": {
       "get": {
-        "description": "Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions. A full page is the end of the history when hasMore is false.",
+        "description": "Audits loads the newest page. The request asks for 10 audits and does not ask for an older page. This workspace has no audit, so the page is empty.",
         "operationId": "listRevenueLeakScans",
         "parameters": [
           {
-            "description": "Maximum scans to return (default 10, max 100).",
+            "description": "Page size (max 100). Audits asks for 10.",
+            "example": 10,
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
+              "example": 10,
               "maximum": 100,
               "minimum": 1,
               "type": "integer"
             }
           },
           {
-            "description": "Page offset.",
+            "description": "How many audits to skip. Audits does not send this on the first page.",
             "in": "query",
             "name": "offset",
             "required": false,
@@ -32559,11 +33895,16 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "hasMore": false,
+                  "scans": []
+                },
                 "schema": {
-                  "description": "Audit history. A full page is the end of the history when hasMore is false.",
+                  "description": "Audit history.",
                   "properties": {
                     "hasMore": {
-                      "description": "Another audit exists beyond this page.",
+                      "description": "Whether another audit exists past this page.",
+                      "example": false,
                       "type": "boolean"
                     },
                     "scans": {
@@ -32574,12 +33915,12 @@
                       "type": "array"
                     }
                   },
-                  "required": ["scans"],
+                  "required": ["scans", "hasMore"],
                   "type": "object"
                 }
               }
             },
-            "description": "Audit history."
+            "description": "Empty audit page, newest first."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -32593,7 +33934,7 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List revenue leak scans",
+        "summary": "Audits",
         "tags": ["Revenue"]
       },
       "post": {
@@ -32743,25 +34084,30 @@
     },
     "/v1/revenue-leak-scans/{scanId}/report": {
       "get": {
-        "description": "Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.",
+        "description": "Download the report saves this audit as Markdown. The request uses format md. The file names the open promises, who owes them, and the message that created each one.",
         "operationId": "getOpenPromisesReport",
         "parameters": [
           {
             "description": "Scan id.",
+            "example": "4d8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "scanId",
             "required": true,
             "schema": {
+              "example": "4d8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
           },
           {
-            "description": "md for Markdown; JSON otherwise.",
+            "description": "md for the file Download the report saves.",
+            "example": "md",
             "in": "query",
             "name": "format",
             "required": false,
             "schema": {
+              "description": "Export format.",
+              "example": "md",
               "type": "string"
             }
           }
@@ -32770,6 +34116,33 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "byAccount": {
+                    "Acme": 1
+                  },
+                  "generatedAt": "2026-09-09T12:00:00Z",
+                  "inboundCount": 0,
+                  "items": [
+                    {
+                      "account": "Acme",
+                      "commitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "direction": "promised_by_me",
+                      "dueAt": "2026-09-14T17:00:00Z",
+                      "duePhrase": "by the 14th",
+                      "occurredAt": "2026-09-06T12:00:00Z",
+                      "owner": "alex@example.com",
+                      "sourceQuote": "We will have the migration live by the 14th.",
+                      "sourceUri": "https://mail.google.com/thread-1",
+                      "state": "at_risk",
+                      "text": "Migration live by the 14th"
+                    }
+                  ],
+                  "lookbackDays": 180,
+                  "outboundCount": 1,
+                  "scanStatus": "completed",
+                  "threadsSeen": 412,
+                  "truncated": false
+                },
                 "schema": {
                   "description": "Open promises report.",
                   "properties": {
@@ -32778,6 +34151,9 @@
                         "type": "integer"
                       },
                       "description": "Open promise count by account.",
+                      "example": {
+                        "Acme": 1
+                      },
                       "type": "object"
                     },
                     "generatedAt": {
@@ -32788,7 +34164,7 @@
                     },
                     "inboundCount": {
                       "description": "Promises made to us.",
-                      "example": 5,
+                      "example": 0,
                       "type": "integer"
                     },
                     "items": {
@@ -32867,7 +34243,7 @@
                     },
                     "outboundCount": {
                       "description": "Promises we made.",
-                      "example": 12,
+                      "example": 1,
                       "type": "integer"
                     },
                     "scanStatus": {
@@ -32901,12 +34277,13 @@
                 }
               },
               "text/markdown": {
+                "example": "# Open promises\n\nPromises from the last 180 days with no evidence they were kept.\n\n- **1** promises we made\n- **0** promises made to us\n- **412** conversations read\n\n| Company | Open promises |\n|---|---|\n| Acme | 1 |\n\n## The promises\n\n### Acme — Migration live by the 14th\n\nWe owe · state **At risk** · due 2026-09-14 · owner alex@example.com\n\n\u003e We will have the migration live by the 14th.\n\nSource observed 2026-09-06T12:00:00Z · https://mail.google.com/thread-1\n\n\n---\n\nGenerated 2026-09-09T12:00:00Z. Every promise above includes the source evidence available at scan time.\n",
                 "schema": {
                   "type": "string"
                 }
               }
             },
-            "description": "The open promises report."
+            "description": "The report."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -32920,7 +34297,7 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Get the open promises report",
+        "summary": "Download the report",
         "tags": ["Revenue"]
       }
     },
@@ -33048,18 +34425,24 @@
     },
     "/v1/revenue-workspaces/current": {
       "get": {
-        "description": "Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.",
+        "description": "Local mode is the workspace Connected sources opens before a sending workspace is linked. It comes back local and active, and the sending check stays off.",
         "operationId": "getRevenueWorkspace",
         "responses": {
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "id": "0b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "mode": "local",
+                  "preflightAvailable": false,
+                  "status": "active"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueWorkspace"
                 }
               }
             },
-            "description": "Current workspace."
+            "description": "This workspace before it is linked."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -33070,11 +34453,132 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Get current revenue workspace",
+        "summary": "Local mode",
         "tags": ["Revenue"]
       }
     },
     "/v1/revenue-workspaces/current/communication-policy/{sourceAccountId}": {
+      "get": {
+        "description": "Email \u0026 Calendar privacy loads this mailbox policy after the mailbox account is entered. Metadata stays workspace-visible, subject lines are shared, and bodies and attachments stay private.",
+        "operationId": "getCommunicationPolicy",
+        "parameters": [
+          {
+            "description": "Mailbox account email.",
+            "in": "path",
+            "name": "sourceAccountId",
+            "required": true,
+            "schema": {
+              "description": "Mailbox account email.",
+              "example": "you@company.com",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "id": "db8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "metadataVisibility": "workspace",
+                  "modelContactExtraction": true,
+                  "retentionDays": 540,
+                  "shareAttachments": false,
+                  "shareBody": false,
+                  "shareSubject": true,
+                  "signatureEnrichment": true,
+                  "sourceAccountId": "you@company.com",
+                  "version": 1
+                },
+                "schema": {
+                  "description": "Mailbox policy.",
+                  "properties": {
+                    "id": {
+                      "description": "Policy id.",
+                      "example": "db8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "metadataVisibility": {
+                      "description": "Who can see mailbox metadata.",
+                      "enum": ["private", "workspace"],
+                      "example": "workspace",
+                      "type": "string"
+                    },
+                    "modelContactExtraction": {
+                      "description": "Extract contacts from mail.",
+                      "example": true,
+                      "type": "boolean"
+                    },
+                    "retentionDays": {
+                      "description": "Days mailbox content is kept.",
+                      "example": 540,
+                      "type": "integer"
+                    },
+                    "shareAttachments": {
+                      "description": "Share attachments by default.",
+                      "example": false,
+                      "type": "boolean"
+                    },
+                    "shareBody": {
+                      "description": "Share bodies by default.",
+                      "example": false,
+                      "type": "boolean"
+                    },
+                    "shareSubject": {
+                      "description": "Share subject lines by default.",
+                      "example": true,
+                      "type": "boolean"
+                    },
+                    "signatureEnrichment": {
+                      "description": "Read email signatures.",
+                      "example": true,
+                      "type": "boolean"
+                    },
+                    "sourceAccountId": {
+                      "description": "Mailbox account email.",
+                      "example": "you@company.com",
+                      "type": "string"
+                    },
+                    "version": {
+                      "description": "Policy version.",
+                      "example": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "sourceAccountId",
+                    "metadataVisibility",
+                    "shareSubject",
+                    "shareBody",
+                    "shareAttachments",
+                    "signatureEnrichment",
+                    "modelContactExtraction",
+                    "retentionDays",
+                    "version"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Stored mailbox policy."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Mailbox policy",
+        "tags": ["Relationship Intelligence"]
+      },
       "put": {
         "description": "Save mailbox policy sends the sharing choices already on screen and leaves out the policy id, the mailbox account, and the current version. The stored policy keeps those choices and advances the version.",
         "operationId": "putCommunicationPolicy",
@@ -33312,6 +34816,116 @@
         ],
         "summary": "Protected or blocked addresses",
         "tags": ["Connectors"]
+      },
+      "post": {
+        "description": "Add rule sends kind protected_address and value buyer@example.com. The server lowercases the address, stores an active rule, and returns that rule with the sha256 of the stored address.",
+        "operationId": "createCommunicationPrivacyRule",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "kind": "protected_address",
+                "value": "buyer@example.com"
+              },
+              "schema": {
+                "description": "Privacy rule.",
+                "properties": {
+                  "kind": {
+                    "description": "Rule kind. Add rule leaves the default protected address selected.",
+                    "enum": [
+                      "protected_address",
+                      "protected_domain",
+                      "blocked_address",
+                      "blocked_domain"
+                    ],
+                    "example": "protected_address",
+                    "type": "string"
+                  },
+                  "value": {
+                    "description": "Address or domain typed into the rule field.",
+                    "example": "buyer@example.com",
+                    "type": "string"
+                  }
+                },
+                "required": ["kind", "value"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Privacy rule.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "active": true,
+                  "id": "3b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "kind": "protected_address",
+                  "value": "buyer@example.com",
+                  "valueHash": "sha256:6a6c26195c3682faa816966af789717c3bfa834eee6c599d667d2b3429c27cfd"
+                },
+                "schema": {
+                  "description": "Stored privacy rule.",
+                  "properties": {
+                    "active": {
+                      "description": "New rules are stored active.",
+                      "example": true,
+                      "type": "boolean"
+                    },
+                    "id": {
+                      "description": "Rule id.",
+                      "example": "3b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "kind": {
+                      "description": "Stored rule kind.",
+                      "enum": [
+                        "protected_address",
+                        "protected_domain",
+                        "blocked_address",
+                        "blocked_domain"
+                      ],
+                      "example": "protected_address",
+                      "type": "string"
+                    },
+                    "value": {
+                      "description": "Normalized address or domain.",
+                      "example": "buyer@example.com",
+                      "type": "string"
+                    },
+                    "valueHash": {
+                      "description": "sha256 of the normalized value.",
+                      "example": "sha256:6a6c26195c3682faa816966af789717c3bfa834eee6c599d667d2b3429c27cfd",
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id", "kind", "value", "valueHash", "active"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Stored privacy rule."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Add rule",
+        "tags": ["Revenue"]
       }
     },
     "/v1/revenue-workspaces/current/communication-privacy-rules/{ruleId}": {
@@ -33485,26 +35099,26 @@
     },
     "/v1/revenue-workspaces/link": {
       "post": {
-        "description": "Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.",
+        "description": "Link workspace sends the sending workspace id and the organization id from the form. The stored workspace keeps those ids, switches to linked, and turns the sending check on.",
         "operationId": "linkRevenueWorkspace",
         "requestBody": {
           "content": {
             "application/json": {
               "example": {
-                "outboundOrganizationId": "org_01ABC",
-                "outboundWorkspaceId": "ws_01ABC"
+                "outboundOrganizationId": "org_1",
+                "outboundWorkspaceId": "ws_1"
               },
               "schema": {
                 "description": "Link request.",
                 "properties": {
                   "outboundOrganizationId": {
-                    "description": "OutboundConsole organization id.",
-                    "example": "org_01ABC",
+                    "description": "Organization id.",
+                    "example": "org_1",
                     "type": "string"
                   },
                   "outboundWorkspaceId": {
-                    "description": "OutboundConsole workspace id.",
-                    "example": "ws_01ABC",
+                    "description": "Sending workspace id.",
+                    "example": "ws_1",
                     "type": "string"
                   }
                 },
@@ -33513,19 +35127,28 @@
               }
             }
           },
-          "description": "OutboundConsole identifiers.",
+          "description": "Sending workspace id and organization id.",
           "required": true
         },
         "responses": {
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "id": "0b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "lastVerifiedAt": "2026-07-12T12:00:00Z",
+                  "mode": "linked",
+                  "outboundOrganizationId": "org_1",
+                  "outboundWorkspaceId": "ws_1",
+                  "preflightAvailable": true,
+                  "status": "active"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueWorkspace"
                 }
               }
             },
-            "description": "Linked workspace."
+            "description": "The linked workspace Link workspace stores."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -33557,7 +35180,7 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Link the OutboundConsole workspace",
+        "summary": "Link workspace",
         "tags": ["Revenue"]
       }
     },
@@ -34689,10 +36312,6 @@
     },
     {
       "description": "Agents you create and reuse in chat.",
-      "name": "Agents"
-    },
-    {
-      "description": "Agents available in this workspace.",
       "name": "Agents"
     }
   ]

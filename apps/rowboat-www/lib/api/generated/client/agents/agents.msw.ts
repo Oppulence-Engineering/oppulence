@@ -8,19 +8,51 @@
 import { HttpResponse, http } from "msw";
 import type { RequestHandlerOptions } from "msw";
 
-import type { CreateAgent201, GetAgent200, PutAgent200, PutAgent201 } from "../model";
+import type {
+  CreateAgent201,
+  GetAgent200,
+  ListAgents200,
+  PutAgent200,
+  PutAgent201,
+} from "../model";
 
 import {
   getCreateAgentResponseMock,
   getGetAgentResponseMock,
+  getListAgentsResponseMock,
   getPutAgentResponseMock,
 } from "./agents.faker";
 
 export {
+  getListAgentsResponseMock,
   getCreateAgentResponseMock,
   getGetAgentResponseMock,
   getPutAgentResponseMock,
 } from "./agents.faker";
+
+export const getListAgentsMockHandler = (
+  overrideResponse?:
+    | ListAgents200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListAgents200> | ListAgents200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/agents",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListAgentsResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 
 export const getCreateAgentMockHandler = (
   overrideResponse?:
@@ -41,6 +73,24 @@ export const getCreateAgentMockHandler = (
           : getCreateAgentResponseMock(),
         { status: 201 },
       );
+    },
+    options,
+  );
+};
+
+export const getDeleteAgentMockHandler = (
+  overrideResponse?:
+    void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void),
+  options?: RequestHandlerOptions,
+) => {
+  return http.delete(
+    "*/v1/agents/:slug",
+    async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+      if (typeof overrideResponse === "function") {
+        await overrideResponse(info);
+      }
+
+      return new HttpResponse(null, { status: 204 });
     },
     options,
   );
@@ -93,7 +143,9 @@ export const getPutAgentMockHandler = (
   );
 };
 export const getAgentsMock = () => [
+  getListAgentsMockHandler(),
   getCreateAgentMockHandler(),
+  getDeleteAgentMockHandler(),
   getGetAgentMockHandler(),
   getPutAgentMockHandler(),
 ];

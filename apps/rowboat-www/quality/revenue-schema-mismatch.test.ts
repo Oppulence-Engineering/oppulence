@@ -41,7 +41,7 @@ describe("a response that does not match its contract", () => {
 
   it("still returns the rows when the contract is met", async () => {
     const { listCommitments } = await import("@/lib/revenue/revenue");
-    respond({ commitments: [] });
+    respond({ commitments: [], hasMore: false });
 
     await expect(listCommitments()).resolves.toEqual([]);
   });

@@ -10,6 +10,7 @@ import type { RequestHandlerOptions } from "msw";
 
 import type {
   ApproveActionProposal200,
+  CreateCommunicationPrivacyRule201,
   ExecuteActionProposal200,
   GetObjectAudit200,
   GetOpenPromisesReport200One,
@@ -32,6 +33,7 @@ import type {
 import {
   getApproveActionProposalResponseMock,
   getApproveRevenueActionResponseMock,
+  getCreateCommunicationPrivacyRuleResponseMock,
   getCreateRevenueActionResponseMock,
   getDismissRevenueActionResponseMock,
   getEditRevenueActionResponseMock,
@@ -86,6 +88,7 @@ export {
   getGetOpenPromisesReportResponseMock,
   getRevenueSemanticSearchResponseMock,
   getGetRevenueWorkspaceResponseMock,
+  getCreateCommunicationPrivacyRuleResponseMock,
   getLinkRevenueWorkspaceResponseMock,
 } from "./revenue.faker";
 
@@ -718,6 +721,30 @@ export const getGetRevenueWorkspaceMockHandler = (
   );
 };
 
+export const getCreateCommunicationPrivacyRuleMockHandler = (
+  overrideResponse?:
+    | CreateCommunicationPrivacyRule201
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<CreateCommunicationPrivacyRule201> | CreateCommunicationPrivacyRule201),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/revenue-workspaces/current/communication-privacy-rules",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getCreateCommunicationPrivacyRuleResponseMock(),
+        { status: 201 },
+      );
+    },
+    options,
+  );
+};
+
 export const getLinkRevenueWorkspaceMockHandler = (
   overrideResponse?:
     | RevenueWorkspace
@@ -768,5 +795,6 @@ export const getRevenueMock = () => [
   getGetOpenPromisesReportMockHandler(),
   getRevenueSemanticSearchMockHandler(),
   getGetRevenueWorkspaceMockHandler(),
+  getCreateCommunicationPrivacyRuleMockHandler(),
   getLinkRevenueWorkspaceMockHandler(),
 ];

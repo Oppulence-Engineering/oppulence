@@ -10,6 +10,6 @@ export type ListRevenueActionsSurface =
   (typeof ListRevenueActionsSurface)[keyof typeof ListRevenueActionsSurface];
 
 export const ListRevenueActionsSurface = {
-  recovery: "recovery",
   task: "task",
+  recovery: "recovery",
 } as const;

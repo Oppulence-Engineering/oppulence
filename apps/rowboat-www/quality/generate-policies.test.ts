@@ -91,6 +91,7 @@ function gatedProductUnits(): GatedUnit[] {
     if (
       /^use-.*\.ts$/.test(base) &&
       !base.endsWith(".lit.ts") &&
+      !base.endsWith(".test.ts") &&
       !filename.includes(`${path.sep}utils${path.sep}`)
     ) {
       take(filename, filename.replace(/\.ts$/, ".lit.ts"));
@@ -155,7 +156,7 @@ describe("growth-standard generator policies", () => {
   it("WEB025 keeps new query hooks on the fetcher/key split", () => {
     const hooks = filesBelow(path.join(appRoot, "hooks/queries"))
       .filter((filename) => /^use-.*\.ts$/.test(path.basename(filename)))
-      .filter((filename) => !filename.endsWith(".lit.ts"))
+      .filter((filename) => !filename.endsWith(".lit.ts") && !filename.endsWith(".test.ts"))
       .map(relativeAppPath);
     const legacy = new Set(baseline.queryHooks);
     for (const filename of legacy) {

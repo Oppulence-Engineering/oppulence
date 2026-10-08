@@ -5,18 +5,18 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { ShareMutualActionPlan201PlanCurrentRevisionItemsItem } from "./shareMutualActionPlan201PlanCurrentRevisionItemsItem";
+import type { ApproveMutualActionPlan201CurrentRevisionItemsItem } from "./approveMutualActionPlan201CurrentRevisionItemsItem";
 
 /**
  * The revision this approval is bound to.
  */
-export type ShareMutualActionPlan201PlanCurrentRevision = {
+export type ApproveMutualActionPlan201CurrentRevision = {
   /** When this revision was written. */
   createdAt: string;
   /** Who wrote this revision. */
   createdBy: string;
   /** Plan steps. */
-  items: ShareMutualActionPlan201PlanCurrentRevisionItemsItem[];
+  items: ApproveMutualActionPlan201CurrentRevisionItemsItem[];
   /** Plan id. */
   planId: string;
   /** Hash of the steps. */

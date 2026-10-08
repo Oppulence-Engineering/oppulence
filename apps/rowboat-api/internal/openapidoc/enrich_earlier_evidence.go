@@ -11,13 +11,13 @@ const (
 func earlierEvidencePage() obj {
 	return obj{
 		"reviewItems": []any{obj{
-			"id":             "review:ab12cd34ef567890",
+			"id":             conversationReviewItemID(earlierEvidenceObservation, conversationClaimID, "speaker"),
 			"kind":           "speaker",
 			"label":          "Resolve the speaker for a material statement",
 			"currentValue":   "Other",
 			"confidence":     0.5,
 			"observationId":  earlierEvidenceObservation,
-			"claimId":        "claim:ab12",
+			"claimId":        conversationClaimID,
 			"stateDimension": "risk",
 			"exactQuote":     "We are concerned security could delay the renewal.",
 		}},

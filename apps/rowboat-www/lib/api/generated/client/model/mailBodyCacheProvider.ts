@@ -7,7 +7,7 @@
  */
 
 /**
- * Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
+ * Mailbox this row came from. Only Gmail is stored.
  */
 export type MailBodyCacheProvider =
   (typeof MailBodyCacheProvider)[keyof typeof MailBodyCacheProvider];

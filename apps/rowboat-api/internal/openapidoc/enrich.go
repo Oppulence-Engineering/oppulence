@@ -70,8 +70,6 @@ func Enrich(spec obj) {
 		obj{"name": "Internal", "description": "Server-to-server APIs. Most use X-Internal-Secret; connector invalidation uses individually scoped HMAC/JWT service principals."},
 		obj{"name": "GraphQL", "description": "Internal admin GraphQL over the ent graph."},
 		obj{"name": "Agents", "description": "Agents you create and reuse in chat."},
-
-		obj{"name": "Agents", "description": "Agents available in this workspace."},
 	}
 
 	components := ensureObj(spec, "components")
@@ -1084,9 +1082,6 @@ func addRuntimePaths(paths obj) {
 
 	addActionRejectPath(paths)
 
-	addActionPendingPath(paths)
-
-	addActionObjectAuditPath(paths)
 	addCloudEventPaths(paths)
 	addRevenuePaths(paths)
 	addActionPaths(paths)
@@ -1100,7 +1095,17 @@ func addRuntimePaths(paths obj) {
 }
 
 func addAgentPaths(paths obj) {
-	paths["/v1/agents"] = obj{
+	mergePath(paths, "/v1/agents/{slug}", obj{
+		"delete": operation("Agents", "Confirm delete", "Confirm delete removes the agent named customer-concierge. Only an agent created in this workspace can be removed.", "deleteAgent", bearer(), []any{
+			pathParam("slug", "Agent to remove.", stringSchema("Short name.", "customer-concierge")),
+		}, nil, obj{
+			"204": obj{"description": "Agent removed."},
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+			"500": responseRef("500"),
+		}),
+	})
+	mergePath(paths, "/v1/agents", obj{
 		"post": operation("Agents", "Create agent", "Create agent posts the display name Customer concierge, the short name customer-concierge, and the purpose from the dialog. The stored agent keeps that name, that short name, that purpose, source tenant, and no tools.", "createAgent", bearer(), nil, jsonRequest("New agent.", documentedCreatedAgentSchema(true), documentedCreatedAgentRequest()), obj{
 			"201": jsonResponse("Stored agent.", documentedCreatedAgentSchema(false), documentedCreatedAgent()),
 			"400": responseRef("400"),
@@ -1108,7 +1113,20 @@ func addAgentPaths(paths obj) {
 			"409": problemResponse("An agent with this short name already exists.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "an agent with this slug already exists", "conflict")),
 			"500": responseRef("500"),
 		}),
-	}
+	})
+	mergePath(paths, "/v1/agents", obj{"get": operation("Agents", "List agents", "The agents page loads the built-in agents when this workspace has none of its own. The first one is Assistant, short name assistant, source builtin.", "listAgents", bearer(), nil, nil, obj{
+		"200": jsonResponse("Built-in agents.", objectSchema("Agent list.", obj{
+			"agents": arraySchema("Agents ordered with workspace agents first, then built-ins.", objectSchema("One agent.", obj{
+				"slug":         stringSchema("Short name.", "assistant"),
+				"name":         stringSchema("Display name.", "Assistant"),
+				"source":       stringSchema("Where this agent comes from.", "builtin"),
+				"instructions": stringSchema("Purpose stored for this agent.", "You are a helpful, careful cloud assistant running as a durable Rowboat agent."),
+				"enabledTools": arraySchema("Tools this agent can use.", stringSchema("Tool name.", "workspace.read")),
+			}, "slug", "name", "source", "enabledTools")),
+		}, "agents"), documentedAgentList()),
+		"401": responseRef("401"),
+		"500": responseRef("500"),
+	})})
 }
 
 const firstChatMessage = "Ask about a company, a promise, or the next step."
@@ -1191,11 +1209,7 @@ func documentedAgentList() obj {
 
 func addAgentSessionPaths(paths obj) {
 	paths["/v1/agent-sessions"] = obj{
-		"get": operation("Agent Sessions", "List agent sessions", "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.", "listAgentSessions", bearer(), nil, nil, obj{
-			"200": jsonResponse("Recent agent conversations.", ref("AgentSessionListResponse"), obj{"sessions": []any{obj{"sessionId": "session_abc123", "agent": "assistant", "status": "active", "channel": "web", "title": "Review the Acme renewal", "turns": 2, "llmCalls": 3, "toolCalls": 1, "costUnits": 45, "continuationToken": "agt_example", "createdAt": "2026-09-02T15:00:00Z"}}}),
-			"401": responseRef("401"),
-			"500": responseRef("500"),
-		}),
+		"get": earlierChatsOperation(),
 		"post": operation("Agent Sessions", "Submit", "Submit sends the first chat message. It posts agent assistant, channel web, and \"Ask about a company, a promise, or the next step.\" as both the message and the title. The stored session is active, with no completed turns yet.", "createAgentSession", bearer(), nil, jsonRequest("First chat message.", documentedStartedChatRequestSchema(), documentedStartedChatRequest()), obj{
 			"201": jsonResponse("Stored session.", ref("DurableAgentSessionView"), documentedStartedChat()),
 			"400": responseRef("400"),
@@ -1203,13 +1217,51 @@ func addAgentSessionPaths(paths obj) {
 			"502": responseRef("502"),
 		}),
 	}
-	paths["/v1/agent-sessions/{id}/events"] = obj{"get": operation("Agent Sessions", "List agent session events", "Returns ordered durable events used to reconstruct a conversation after navigation or reload.", "listAgentSessionEvents", bearer(), []any{
+	paths["/v1/agent-sessions/{id}/events"] = obj{"get": operation("Agent Sessions", "Open conversation", "Open conversation reads the history row Review the Acme renewal. The first read asks for 1000 events and sends no cursor. The stored page starts at sequence 0 for Assistant, includes both completed turns, the relationship.read tool call, and three model calls on anthropic/claude-sonnet-4-5, and does not name another page.", "listAgentSessionEvents", bearer(), []any{
 		pathParam("id", "Stable session id.", stringSchema("Session id.", "session_abc123")),
 		queryParam("afterSeq", "Return events after this sequence. The first read omits this.", false, obj{"type": "integer", "minimum": 0, "description": "Sequence cursor."}),
 		queryParam("limit", "Maximum events to return (up to 1000).", false, intSchema("Page size.", 1000)),
 	}, nil, obj{
 		"200": jsonResponse("Stored conversation.", ref("AgentSessionEventsResponse"), documentedConversationPage()),
 		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+		"500": responseRef("500"),
+	})}
+	paths["/v1/agent-sessions/{id}/turns"] = obj{"post": operation("Agent Sessions", "Submit", "Submit sends the next message in the open chat. It posts only \"Ask about a company, a promise, or the next step.\" The opening message already took sequence 0, so this turn is accepted as sequence 1.", "submitAgentSessionTurn", bearer(), []any{
+		pathParam("id", "Stable session id.", stringSchema("Session id.", "session_abc123")),
+	}, jsonRequest("Next chat message.", objectSchema("Next chat message.", obj{
+		"input": stringSchema("Message text.", nextChatMessage),
+	}, "input"), documentedNextChatMessage()), obj{
+		"202": jsonResponse("Turn accepted.", objectSchema("Accepted turn.", obj{
+			"accepted": boolSchema("The turn was queued.", true),
+			"turnSeq":  intSchema("Sequence of the accepted turn.", 1),
+		}, "accepted", "turnSeq"), documentedAcceptedChatTurn()),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+	})}
+	paths["/v1/agent-sessions/{id}/approvals/{approvalId}"] = obj{"post": operation("Agent Sessions", "Approve", "Approve allows the paused chat action. It posts decision granted for approval session_abc123/turn/0/approval/0. The response repeats that approval and decision granted.", "approveAgentSession", bearer(), []any{
+		pathParam("id", "Stable session id.", stringSchema("Session id.", "session_abc123")),
+		pathParam("approvalId", "Approval id.", stringSchema("Approval id.", documentedChatApprovalID)),
+	}, jsonRequest("Approval decision.", objectSchema("Chat approval decision.", obj{
+		"decision": stringEnum("Granted or denied.", "granted", "granted", "denied"),
+	}, "decision"), documentedChatApprovalRequest()), obj{
+		"202": jsonResponse("Approval granted.", objectSchema("Accepted approval.", obj{
+			"approvalId": stringSchema("Approval that was decided.", documentedChatApprovalID),
+			"decision":   stringEnum("Decision that was stored.", "granted", "granted", "denied"),
+		}, "approvalId", "decision"), documentedChatApproval()),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+	})}
+	paths["/v1/agent-sessions/{id}/cancel"] = obj{"post": operation("Agent Sessions", "Stop response", "Stop response ends the open chat. The request has no body. The response names that session and reports status canceling.", "cancelAgentSession", bearer(), []any{
+		pathParam("id", "Stable session id.", stringSchema("Session id.", "session_abc123")),
+	}, nil, obj{
+		"202": jsonResponse("Stop accepted.", objectSchema("Accepted stop.", obj{
+			"sessionId": stringSchema("Session that is stopping.", "session_abc123"),
+			"status":    stringSchema("Stop acknowledgement.", "canceling"),
+		}, "sessionId", "status"), documentedStoppedChat()),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 		"500": responseRef("500"),
@@ -1843,7 +1895,7 @@ func addGoogleOAuthPaths(paths obj) {
 		"502": responseRef("502"),
 		"503": responseRef("503"),
 	})}
-	paths["/v1/composio/connections"] = obj{"get": connectedJiraOperation()}
+	mergePath(paths, "/v1/composio/connections", obj{"get": connectedJiraOperation()})
 }
 
 func addSlackOAuthPaths(paths obj) {
@@ -1970,6 +2022,7 @@ func addConnectorPaths(paths obj) {
 		"200": jsonResponse("Connector broker JSON Web Key Set.", freeFormSchema("RFC 7517 JSON Web Key Set."), obj{"keys": []any{obj{"kty": "RSA", "use": "sig", "alg": "RS256", "kid": "broker-2026-08", "n": "...", "e": "AQAB"}}}),
 		"503": responseRef("503"),
 	})}
+	mergePath(paths, "/v1/composio/connections", obj{"post": connectJiraOperation()})
 	paths["/v1/connections/{name}"] = obj{"delete": operation("Connectors", "Disconnect", disconnectDescription, "deleteConnection", bearer(), disconnectParams(), nil, disconnectResponses())}
 	aliasConnectorPath(paths, "/v1/connections/{name}/start", "/v1/connectors/{name}/start", "post", "startConnector")
 	aliasConnectorPath(paths, "/v1/connections/{name}/callback", "/v1/connectors/{name}/callback", "get", "handleConnectorCallback")
@@ -2082,7 +2135,6 @@ func enrichEntitySchemas(schemas obj) {
 		"sanctioned_credits":      {"description": "Credits granted by the current subscription.", "example": 10000},
 		"stripe_customer_id":      {"description": "Stripe customer id when billing is backed by Stripe.", "example": "cus_123"},
 		"stripe_subscription_id":  {"description": "Stripe subscription id when billing is backed by Stripe.", "example": "sub_123"},
-		"delta":                   {"description": "Credit delta. Negative values consume/reserve credits; positive values grant or refund credits.", "example": -42},
 		"request_id":              {"description": "Idempotency and trace anchor for a metered request.", "example": "9e2fb15a-936d-4f39-9372-73cfe0476ca8"},
 		"ts":                      {"description": "Usage or ledger event timestamp.", "example": "2026-06-04T20:38:00Z"},
 		"model":                   {"description": "Desktop-facing LLM model id.", "example": "openai/gpt-4.1-mini"},
@@ -2209,8 +2261,6 @@ func enrichEntitySchemas(schemas obj) {
 		{"HubSpotSearchObject", "HubSpot record id.", "101"},
 		{"ConsentClientIdentity", "Hydra client id.", "rowboat-desktop"},
 		{"ConsentConnectorIdentity", "Connector slug.", "canvas"},
-		{"ConversationClaim", "Stable claim id.", "claim:ab12"},
-		{"ConversationReviewItem", "Stable review item id.", "review:ab12"},
 		{"RelationshipGraphNode", "Stable node id.", "relationship:9c8dfa9b-a7b2-46ea-982c-622a914c00e5"},
 		{"RelationshipGraphEdge", "Stable edge id.", "edge:ab12cd34"},
 	} {
@@ -2619,10 +2669,6 @@ func runListQueryParams(includeSlug bool) []any {
 		params = append(params, queryParam("slug", "Optional task slug filter for account-wide run polling.", false, stringSchema("Task slug.", "daily-summary")))
 	}
 	return params
-}
-
-func revisionQueryParam() any {
-	return queryParam("revision", "Current task revision required for delete.", true, intSchema("Task revision.", 2))
 }
 
 func operation(tag, summary, description, id string, security []any, parameters []any, requestBody any, responses obj) obj {
@@ -3093,25 +3139,6 @@ func documentedRetriedRun() obj {
 	}
 }
 
-func backgroundTaskRetryRunExample() obj {
-	run := backgroundTaskAPIRunExample()
-	run["previousRunId"] = "run-20260604-210000"
-	run["trigger"] = "retry"
-	return run
-}
-
-func backgroundTaskCanceledRunExample() obj {
-	run := backgroundTaskAPIRunExample()
-	run["status"] = "stopped"
-	run["temporalStatus"] = "Canceled"
-	run["progressMessage"] = "Cancellation requested."
-	run["summary"] = ""
-	run["startedAt"] = "2026-06-04T21:01:00Z"
-	run["completedAt"] = "2026-06-04T21:02:00Z"
-	run["revision"] = 3
-	return run
-}
-
 func backgroundTaskAPIRunExample() obj {
 	run := backgroundTaskRunExample()
 	run["runId"] = "api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b"
@@ -3204,21 +3231,6 @@ func documentedCanceledRun() obj {
 		"updatedAt":          "2026-06-04T21:03:00Z",
 		"revision":           3,
 	}
-}
-
-func backgroundTaskQueuedRunExample() obj {
-	run := backgroundTaskRunExample()
-	run["runId"] = "remote-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b"
-	run["localRunId"] = ""
-	run["executor"] = "desktop"
-	run["trigger"] = "manual"
-	run["status"] = "queued"
-	run["requestedContext"] = "Run this now and focus on high-risk accounts."
-	run["summary"] = ""
-	run["startedAt"] = nil
-	run["completedAt"] = nil
-	run["revision"] = 1
-	return run
 }
 
 const (
@@ -3378,4 +3390,17 @@ func asObj(v any) obj {
 		return m
 	}
 	return nil
+}
+
+// mergePath adds operations to a path without dropping methods another
+// enricher already documented on it.
+func mergePath(paths obj, path string, ops obj) {
+	existing := asObj(paths[path])
+	if existing == nil {
+		paths[path] = ops
+		return
+	}
+	for method, op := range ops {
+		existing[method] = op
+	}
 }

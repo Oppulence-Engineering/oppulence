@@ -239,6 +239,9 @@ func TestConversationEvidenceMaterializesEvidenceActionsReviewDeltaAndCues(t *te
 func TestConversationRecommendationRankingLearnsFromOutcomesWithoutChangingState(t *testing.T) {
 	f := newFixture(t)
 	now := time.Date(2026, 7, 31, 14, 0, 0, 0, time.UTC)
+	// Learning decays with age, so read the outcomes on the day of the second
+	// session instead of the wall clock.
+	f.svc.now = func() time.Time { return now.Add(24 * time.Hour) }
 	firstInput := compiledConversationInput(now, "oppulence:session-1", "v1")
 	first, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{firstInput})
 	if err != nil {

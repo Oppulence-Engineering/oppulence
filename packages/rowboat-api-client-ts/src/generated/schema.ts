@@ -372,8 +372,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List agent sessions
-     * @description Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.
+     * Show earlier conversations
+     * @description Show earlier conversations loads the next page of History. It skips the newest 50 conversations. This page has one older conversation, and no conversation after it.
      */
     get: operations["listAgentSessions"];
     put?: never;
@@ -382,6 +382,26 @@ export interface paths {
      * @description Submit sends the first chat message. It posts agent assistant, channel web, and "Ask about a company, a promise, or the next step." as both the message and the title. The stored session is active, with no completed turns yet.
      */
     post: operations["createAgentSession"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/agent-sessions/{id}/approvals/{approvalId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve
+     * @description Approve allows the paused chat action. It posts decision granted for approval session_abc123/turn/0/approval/0. The response repeats that approval and decision granted.
+     */
+    post: operations["approveAgentSession"];
     delete?: never;
     options?: never;
     head?: never;
@@ -408,6 +428,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/agent-sessions/{id}/cancel": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Stop response
+     * @description Stop response ends the open chat. The request has no body. The response names that session and reports status canceling.
+     */
+    post: operations["cancelAgentSession"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/agent-sessions/{id}/events": {
     parameters: {
       query?: never;
@@ -416,8 +456,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List agent session events
-     * @description Returns ordered durable events used to reconstruct a conversation after navigation or reload.
+     * Open conversation
+     * @description Open conversation reads the history row Review the Acme renewal. The first read asks for 1000 events and sends no cursor. The stored page starts at sequence 0 for Assistant, includes both completed turns, the relationship.read tool call, and three model calls on anthropic/claude-sonnet-4-5, and does not name another page.
      */
     get: operations["listAgentSessionEvents"];
     put?: never;
@@ -448,7 +488,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/agents": {
+  "/v1/agent-sessions/{id}/turns": {
     parameters: {
       query?: never;
       header?: never;
@@ -456,6 +496,30 @@ export interface paths {
       cookie?: never;
     };
     get?: never;
+    put?: never;
+    /**
+     * Submit
+     * @description Submit sends the next message in the open chat. It posts only "Ask about a company, a promise, or the next step." The opening message already took sequence 0, so this turn is accepted as sequence 1.
+     */
+    post: operations["submitAgentSessionTurn"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/agents": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List agents
+     * @description The agents page loads the built-in agents when this workspace has none of its own. The first one is Assistant, short name assistant, source builtin.
+     */
+    get: operations["listAgents"];
     put?: never;
     /**
      * Create agent
@@ -486,7 +550,11 @@ export interface paths {
      */
     put: operations["putAgent"];
     post?: never;
-    delete?: never;
+    /**
+     * Confirm delete
+     * @description Confirm delete removes the agent named customer-concierge. Only an agent created in this workspace can be removed.
+     */
+    delete: operations["deleteAgent"];
     options?: never;
     head?: never;
     patch?: never;
@@ -1053,7 +1121,11 @@ export interface paths {
      */
     get: operations["listComposioConnections"];
     put?: never;
-    post?: never;
+    /**
+     * Connect
+     * @description Connect opens the Jira sign-in page. The account is linked only after that page is finished.
+     */
+    post: operations["startComposioConnection"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1348,8 +1420,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get console preferences
-     * @description Returns defaults before the caller's first write.
+     * Profile
+     * @description Profile loads the saved display name, the default agent, and whether usage data is shared. Before a name is saved, the name and the agent are empty, usage sharing is off, notifications are off, and the theme follows the system.
      */
     get: operations["getConsolePreferences"];
     put?: never;
@@ -1902,8 +1974,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Respond to a scoped plan
-     * @description Appends an idempotent external response for internal review; it never directly changes canonical commitments.
+     * Confirm plan
+     * @description Confirm plan records that the other person confirmed the shared plan. The owner's records stay unchanged.
      */
     post: operations["respondPublicMutualActionPlan"];
     delete?: never;
@@ -1942,8 +2014,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Decide attention item
-     * @description Acknowledges, snoozes, or dismisses at the expected optimistic version. Materially new evidence reopens the item.
+     * Review
+     * @description Review records that this attention item was reviewed. It leaves the open queue.
      */
     post: operations["decideRelationshipAttention"];
     delete?: never;
@@ -2022,8 +2094,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Decide identity candidate
-     * @description Applies merge, keep-separate, move-evidence, split, defer, or compensating undo once at the expected optimistic version.
+     * Merge
+     * @description Merge combines this possible duplicate into the company that already exists. The extra company is archived.
      */
     post: operations["decideRelationshipIdentityCandidate"];
     delete?: never;
@@ -2043,7 +2115,7 @@ export interface paths {
     put?: never;
     /**
      * Ingest relationship observations
-     * @description Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.
+     * @description New person sends the new person id, source user, and event person_added. The summary is that person's name followed by added by the user.
      */
     post: operations["ingestRelationshipObservations"];
     delete?: never;
@@ -2180,8 +2252,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get source health
-     * @description Returns authorization, backfill, freshness, failure, repair, revocation, and disconnect state for each relationship evidence source.
+     * Connected sources
+     * @description Connected sources lists each account connected to this workspace. The page shows the account and whether its history is still syncing.
      */
     get: operations["getRelationshipSourceStatuses"];
     put?: never;
@@ -2327,7 +2399,7 @@ export interface paths {
     put?: never;
     /**
      * Acknowledge Mission Control state
-     * @description Records the exact state version and hash the actor reviewed. A stale acknowledgement fails with 409.
+     * @description Mark as reviewed sends the company id and the state version and hash that company is showing. A stale review fails with 409.
      */
     post: operations["acknowledgeMissionControl"];
     delete?: never;
@@ -2486,8 +2558,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Resolve a typed contradiction
-     * @description Records the user's selected evidence side as a top-authority correction without rewriting either source.
+     * Use this value
+     * @description Use this value closes a disagreement on this company. It sends the evidence you picked and why, and the company comes back with that value current.
      */
     post: operations["resolveRelationshipContradiction"];
     delete?: never;
@@ -2507,7 +2579,7 @@ export interface paths {
     put?: never;
     /**
      * Correct reviewed conversation evidence
-     * @description Resolves a focused word, speaker, entity, or material-claim review item. State-affecting corrections append a top-precedence user assertion and reproject deterministically.
+     * @description Correct sends the company id, the review item id, and the edited value. It always sends the focused-review reason.
      */
     post: operations["correctConversationEvidence"];
     delete?: never;
@@ -2526,8 +2598,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Decide a proposed conversation change
-     * @description Approves, corrects, rejects, or defers one evidence-backed semantic candidate. A stale baseline returns 409 and no state mutation.
+     * Approve
+     * @description Approve accepts this proposed conversation change. The company and its review queue refresh.
      */
     post: operations["decideConversationChange"];
     delete?: never;
@@ -2546,8 +2618,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Request conversation deletion
-     * @description Evaluates legal hold at execution time, removes server-side content transactionally, and returns an idempotent per-target receipt. Device and provider work remains pending until separately verified.
+     * Confirm delete
+     * @description Confirm delete removes this company's conversation evidence from Oppulence. Copies on this device and at the mailbox stay until they are checked.
      */
     post: operations["requestConversationDeletion"];
     delete?: never;
@@ -2610,8 +2682,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Correct relationship state
-     * @description Appends a user correction assertion and deterministically reprojects the relationship. Source evidence is never overwritten.
+     * Correct a detail
+     * @description Correct a detail replaces one field on this company. It sends the field, the new value, and why, and the company comes back with that value.
      */
     post: operations["correctRelationship"];
     delete?: never;
@@ -2690,8 +2762,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Approve a plan revision
-     * @description Binds internal approval to the exact current revision hash.
+     * Approve this plan
+     * @description Approve this plan posts an empty body. The stored plan status is internally_approved, which the company sheet reads as Approved in this workspace.
      */
     post: operations["approveMutualActionPlan"];
     delete?: never;
@@ -2711,7 +2783,7 @@ export interface paths {
     put?: never;
     /**
      * Draft an email to share this plan
-     * @description Draft an email to share this plan posts an empty body. The stored plan status is shared, the token state is active, and responseToken is the one-time token. The server keeps only the hash of that token.
+     * @description Draft an email to share this plan marks that approved plan as shared and writes a draft email. The email is not sent.
      */
     post: operations["shareMutualActionPlan"];
     delete?: never;
@@ -2908,14 +2980,14 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Recovery
-     * @description Recovery loads the open queue. The request asks for open actions, one hundred at a time, on the recovery list, and it does not ask for an older page. Acme has no open recovery action, so the page is empty.
+     * Tasks
+     * @description Tasks loads open follow-ups with the soonest due date first. It asks for open tasks, one hundred at a time, and does not ask for an older page. The first task is Follow up on the proposal, due on July 15.
      */
     get: operations["listRevenueActions"];
     put?: never;
     /**
-     * Create a manual action
-     * @description Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.
+     * Create task
+     * @description Create task saves a follow-up on a company. It sends the title, the due time, and a priority of 30.
      */
     post: operations["createRevenueAction"];
     delete?: never;
@@ -2932,8 +3004,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get an action
-     * @description Returns one action with relationship context.
+     * Reload the checked action
+     * @description Re-check policy reloads this action. The sheet shows the company, the follow-up, and that the check passed.
      */
     get: operations["getRevenueAction"];
     put?: never;
@@ -2994,8 +3066,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Dismiss an action
-     * @description Dismisses the action with a reason label and records the dismissed outcome.
+     * Dismiss
+     * @description Dismiss removes this follow-up from the queue and stores the reason.
      */
     post: operations["dismissRevenueAction"];
     delete?: never;
@@ -3094,8 +3166,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Reject an action
-     * @description Rejects the current revision with a reason.
+     * Reject
+     * @description Reject declines this follow-up. The decision is stored and the follow-up stays open.
      */
     post: operations["rejectRevenueAction"];
     delete?: never;
@@ -3192,8 +3264,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List revenue leak scans
-     * @description Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions. A full page is the end of the history when hasMore is false.
+     * Audits
+     * @description Audits loads the newest page. The request asks for 10 audits and does not ask for an older page. This workspace has no audit, so the page is empty.
      */
     get: operations["listRevenueLeakScans"];
     put?: never;
@@ -3236,8 +3308,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get the open promises report
-     * @description Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.
+     * Download the report
+     * @description Download the report saves this audit as Markdown. The request uses format md. The file names the open promises, who owes them, and the message that created each one.
      */
     get: operations["getOpenPromisesReport"];
     put?: never;
@@ -3276,8 +3348,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get current revenue workspace
-     * @description Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.
+     * Local mode
+     * @description Local mode is the workspace Connected sources opens before a sending workspace is linked. It comes back local and active, and the sending check stays off.
      */
     get: operations["getRevenueWorkspace"];
     put?: never;
@@ -3295,7 +3367,11 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /**
+     * Mailbox policy
+     * @description Email & Calendar privacy loads this mailbox policy after the mailbox account is entered. Metadata stays workspace-visible, subject lines are shared, and bodies and attachments stay private.
+     */
+    get: operations["getCommunicationPolicy"];
     /**
      * Save mailbox policy
      * @description Save mailbox policy sends the sharing choices already on screen and leaves out the policy id, the mailbox account, and the current version. The stored policy keeps those choices and advances the version.
@@ -3321,7 +3397,11 @@ export interface paths {
      */
     get: operations["listCommunicationPrivacyRules"];
     put?: never;
-    post?: never;
+    /**
+     * Add rule
+     * @description Add rule sends kind protected_address and value buyer@example.com. The server lowercases the address, stores an active rule, and returns that rule with the sha256 of the stored address.
+     */
+    post: operations["createCommunicationPrivacyRule"];
     delete?: never;
     options?: never;
     head?: never;
@@ -3398,8 +3478,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Link the OutboundConsole workspace
-     * @description Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.
+     * Link workspace
+     * @description Link workspace sends the sending workspace id and the organization id from the form. The stored workspace keeps those ids, switches to linked, and turns the sending check on.
      */
     post: operations["linkRevenueWorkspace"];
     delete?: never;
@@ -6195,7 +6275,7 @@ export interface components {
       protected?: boolean;
       /**
        * @description Decision reason.
-       * @example owner_default
+       * @example mailbox_owner
        */
       reason: string;
       /**
@@ -6294,8 +6374,8 @@ export interface components {
       created_at: string;
       display_name?: string;
       /**
-       * @description Best-known WorkOS primary email for the user.
-       * @example user@example.com
+       * @description Address of someone on this message.
+       * @example avery@acme.com
        */
       email: string;
       external: boolean;
@@ -7317,7 +7397,7 @@ export interface components {
       exactQuote: string;
       /**
        * @description Stable claim id.
-       * @example claim:ab12
+       * @example claim-risk
        */
       id: string;
       /**
@@ -7585,7 +7665,7 @@ export interface components {
       exactQuote?: string;
       /**
        * @description Stable review item id.
-       * @example review:ab12
+       * @example review:9abf3ca4a5e5eff1
        */
       id: string;
       /**
@@ -9026,8 +9106,8 @@ export interface components {
        */
       id: string;
       /**
-       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
-       * @example openai
+       * @description Mailbox this row came from. Only Gmail is stored.
+       * @example gmail
        * @enum {string}
        */
       provider: "gmail";
@@ -9128,8 +9208,8 @@ export interface components {
       messages?: components["schemas"]["MailMessageMeta"][];
       outbound_count: number;
       /**
-       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
-       * @example openai
+       * @description Mailbox this row came from. Only Gmail is stored.
+       * @example gmail
        * @enum {string}
        */
       provider: "gmail";
@@ -9390,7 +9470,7 @@ export interface components {
       previousReviewedStateVersion: number;
       /**
        * @description Projector version.
-       * @example 1
+       * @example 2
        */
       projectorVersion: number;
       /**
@@ -10283,7 +10363,12 @@ export interface components {
        * @description User who dismissed this item. Empty until it is dismissed.
        */
       dismissedBy?: string | null;
-      /** @description Evidence refs. */
+      /**
+       * @description Evidence refs.
+       * @example [
+       *       "revenue-evidence:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+       *     ]
+       */
       evidenceRefs: string[];
       /**
        * Format: date-time
@@ -10310,7 +10395,7 @@ export interface components {
       ownerId?: string;
       /**
        * @description Projector version.
-       * @example 1
+       * @example 2
        */
       projectorVersion: number;
       /** @description Readable factor contributions. */
@@ -10362,7 +10447,10 @@ export interface components {
       snoozedUntil?: string | null;
       /** @description Fresh sources required. */
       sourceRequirements: string[];
-      /** @description Why this item was acknowledged, snoozed, or dismissed. Empty while it is still open. */
+      /**
+       * @description Why this item was acknowledged, snoozed, or dismissed. Empty while it is still open.
+       * @example Reviewed from the portfolio attention queue.
+       */
       stateReason?: string;
       /**
        * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
@@ -10986,9 +11074,19 @@ export interface components {
        * @example merged
        */
       kind: string;
-      /** @description All moved graph objects. */
+      /**
+       * @description All moved graph objects.
+       * @example [
+       *       "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+       *     ]
+       */
       movedObjectRefs: string[];
-      /** @description Moved observation ids. */
+      /**
+       * @description Moved observation ids.
+       * @example [
+       *       "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+       *     ]
+       */
       observationIds: string[];
       /**
        * Format: date-time
@@ -11012,10 +11110,7 @@ export interface components {
       }[];
       /** @description Deletion status and verification. */
       deletionReceipts: components["schemas"]["ConversationDeletionReceipt"][];
-      /**
-       * @description Credit delta. Negative values consume/reserve credits; positive values grant or refund credits.
-       * @example -42
-       */
+      /** @description Exact before/after values, uncertain claim ids, contradictions, and recommendation reason. */
       delta: {
         [key: string]: unknown;
       };
@@ -11167,8 +11262,8 @@ export interface components {
        */
       displayName: string;
       /**
-       * @description Best-known WorkOS primary email for the user.
-       * @example user@example.com
+       * @description Normalized email.
+       * @example avery@acme.com
        */
       email?: string;
       /** @description Provider identity references. */
@@ -11461,8 +11556,8 @@ export interface components {
        */
       sourceAccountId: string;
       /**
-       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
-       * @example active
+       * @description Connection lifecycle.
+       * @example live
        * @enum {string}
        */
       status:
@@ -11514,7 +11609,7 @@ export interface components {
       id: string;
       /**
        * @description Projector version used for this snapshot.
-       * @example 1
+       * @example 2
        */
       projectorVersion: number;
       /** @description Projected state at this version. */
@@ -12198,8 +12293,8 @@ export interface components {
        */
       startedAt?: string | null;
       /**
-       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
-       * @example active
+       * @description Scan status.
+       * @example running
        * @enum {string}
        */
       status: "pending" | "running" | "completed" | "failed";
@@ -12350,8 +12445,8 @@ export interface components {
        */
       revisionHash: string;
       /**
-       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
-       * @example active
+       * @description Decision status.
+       * @example passed
        * @enum {string}
        */
       status: "passed" | "review_required" | "blocked";
@@ -14646,14 +14741,20 @@ export interface operations {
   };
   listAgentSessions: {
     parameters: {
-      query?: never;
+      query?: {
+        /**
+         * @description How many conversations to skip. Show earlier conversations skips the newest 50.
+         * @example 50
+         */
+        offset?: number;
+      };
       header?: never;
       path?: never;
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Recent agent conversations. */
+      /** @description Older conversations from History. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -14661,15 +14762,17 @@ export interface operations {
         content: {
           /**
            * @example {
+           *       "hasMore": false,
            *       "sessions": [
            *         {
            *           "agent": "assistant",
            *           "channel": "web",
-           *           "continuationToken": "agt_example",
+           *           "continuationToken": "",
            *           "costUnits": 45,
            *           "createdAt": "2026-09-02T15:00:00Z",
+           *           "lastActivityAt": "2026-09-02T15:01:00Z",
            *           "llmCalls": 3,
-           *           "sessionId": "session_abc123",
+           *           "sessionId": "c8dfa9b6-a7b2-46ea-982c-622a914c00e5",
            *           "status": "active",
            *           "title": "Review the Acme renewal",
            *           "toolCalls": 1,
@@ -14758,6 +14861,69 @@ export interface operations {
       502: components["responses"]["502"];
     };
   };
+  approveAgentSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Stable session id. */
+        id: string;
+        /** @description Approval id. */
+        approvalId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Approval decision. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "decision": "granted"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Granted or denied.
+           * @example granted
+           * @enum {string}
+           */
+          decision: "granted" | "denied";
+        };
+      };
+    };
+    responses: {
+      /** @description Approval granted. */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "approvalId": "session_abc123/turn/0/approval/0",
+           *       "decision": "granted"
+           *     }
+           */
+          "application/json": {
+            /**
+             * @description Approval that was decided.
+             * @example session_abc123/turn/0/approval/0
+             */
+            approvalId: string;
+            /**
+             * @description Decision that was stored.
+             * @example granted
+             * @enum {string}
+             */
+            decision: "granted" | "denied";
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
   mintAgentApprovalToken: {
     parameters: {
       query?: never;
@@ -14808,6 +14974,49 @@ export interface operations {
       403: components["responses"]["403"];
       404: components["responses"]["404"];
       409: components["responses"]["409"];
+      500: components["responses"]["500"];
+    };
+  };
+  cancelAgentSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Stable session id. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Stop accepted. */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "sessionId": "session_abc123",
+           *       "status": "canceling"
+           *     }
+           */
+          "application/json": {
+            /**
+             * @description Session that is stopping.
+             * @example session_abc123
+             */
+            sessionId: string;
+            /**
+             * @description Stop acknowledgement.
+             * @example canceling
+             */
+            status: string;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
       500: components["responses"]["500"];
     };
   };
@@ -15039,6 +15248,219 @@ export interface operations {
       };
       401: components["responses"]["401"];
       404: components["responses"]["404"];
+      500: components["responses"]["500"];
+    };
+  };
+  submitAgentSessionTurn: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Stable session id. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    /** @description Next chat message. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "input": "Ask about a company, a promise, or the next step."
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Message text.
+           * @example Ask about a company, a promise, or the next step.
+           */
+          input: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Turn accepted. */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "accepted": true,
+           *       "turnSeq": 1
+           *     }
+           */
+          "application/json": {
+            /**
+             * @description The turn was queued.
+             * @example true
+             */
+            accepted: boolean;
+            /**
+             * @description Sequence of the accepted turn.
+             * @example 1
+             */
+            turnSeq: number;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  listAgents: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Built-in agents. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "agents": [
+           *         {
+           *           "enabledTools": [
+           *             "current_time",
+           *             "echo",
+           *             "web.search",
+           *             "tool_result.read",
+           *             "run_history.read",
+           *             "workflow.read",
+           *             "workspace.read",
+           *             "relationship.read",
+           *             "relationship.create",
+           *             "relationship.correct",
+           *             "relationship.assertion.retract",
+           *             "relationship.review.acknowledge",
+           *             "relationship.identity.decide",
+           *             "relationship.attention.decide",
+           *             "conversation.delete",
+           *             "source.retry_sync",
+           *             "task.create",
+           *             "task.update",
+           *             "task.complete",
+           *             "task.snooze",
+           *             "recommendation.create",
+           *             "recommendation.dismiss",
+           *             "recommendation.snooze",
+           *             "recommendation.update",
+           *             "action.audit",
+           *             "action.outcome.record",
+           *             "commitment.export",
+           *             "commitment.accept",
+           *             "commitment.block",
+           *             "commitment.confirm",
+           *             "commitment.correct",
+           *             "commitment.complete",
+           *             "commitment.dispute",
+           *             "commitment.unblock",
+           *             "person.create",
+           *             "person.correct",
+           *             "person.attribute.retract",
+           *             "person.identity.decide",
+           *             "person.delete",
+           *             "note.create",
+           *             "note.update",
+           *             "note.delete",
+           *             "action_proposal.read",
+           *             "action.propose",
+           *             "connector.read.gmail",
+           *             "connector.write.gmail_draft",
+           *             "connector.write.gmail_send",
+           *             "connector.read.calendar",
+           *             "connector.read.composio_tool_search",
+           *             "connector.read.composio_tool_describe",
+           *             "connector.write.composio_tool_execute"
+           *           ],
+           *           "instructions": "You are a helpful, careful cloud assistant running as a durable Rowboat agent.\n\n- Answer the user's request directly and concisely.\n- Use the tools provided in this request when they help; never claim to have used a tool you did not call.\n- Only use the tools advertised to you. If a capability you need is not available, say so plainly.\n- Do not fabricate data. If required information is unavailable, state what is missing.\n- Use workflow.read when the user asks which workflows exist, are active, when they run, whether schedules are synchronized, or what their latest stored result was. It never starts, edits, enables, or disables a workflow.\n- Use run_history.read when the user asks what workflows ran, failed, succeeded, or are still active. Filter by slug or status when useful; report stored failure details without retrying or changing a workflow.\n- Use workspace.read with view workspaces to list every accessible workspace. For summary, members, or features, pass the exact workspaceId when more than one is accessible; never choose a default workspace for the user. It reads existing Oppulence access metadata and never changes or backfills workspace settings.\n- Use workspace.read with view billing when the user asks about their Oppulence plan or AI credit balance. Billing is account-scoped, does not select a workspace, and does not report or change a third-party AI provider's balance.\n- Use connector.read.gmail with mailboxProfile true when the user asks which Gmail account is connected or for live mailbox totals. Use listLabels true to discover exact Gmail label names and IDs, then pass one returned id as labelId or up to 20 as labelIds to read their live message/thread totals and unread counts. Use query with countOnly true to count matching messages and distinct threads without content; report both as lower bounds if complete is false. Use query alone to search Gmail and see each result's sender, reply-to address when supplied, delivered-to mailbox or alias, To, Cc, and Bcc recipients, subject, timestamp, estimated sizeBytes, labels, direction, snippet, mailing-list metadata, rfc822MessageId, and inReplyToMessageId; rfc822MessageId is the standards-based message identity for correlation with external mail and ticketing systems, inReplyToMessageId identifies the exact parent email when supplied, and id remains Gmail's provider identity. listId identifies the mailing list, listUnsubscribe preserves its provider-supplied unsubscribe target, and unsubscribeOneClick reports the standard one-click header. Use replyTo instead of from when addressing a reply, while deliveredTo identifies the receiving address and is not a reply target. Add groupByThread true to return distinct conversations with chronological headers and snippets, includeAttachments true for attachment metadata and sealed references without message bodies, or includeBodies true for complete plain-text messages and attachment metadata. Query results keep the 10-message or thread limit and pagination. If it returns nextPageToken, repeat the same query, mode, and limit with pageToken to read older matches. Call it again with a returned threadId for chronological headers and snippets, add includeAttachments true for every message's attachment metadata and sealed references without bodies, add includeBodies true for every complete plain-text message and attachment metadata, or use a returned messageId for one full message. Pass one returned attachmentRef to read UTF-8 text, JSON, XML, CSV, HTML, or calendar content up to 256 KiB; binary attachments remain metadata-only. All modes are read-only.\n- Use connector.read.calendar with exact time bounds and countOnly true to count event instances without event details, or countByDay true to group those counts by date in the primary calendar's timezone. Report matchingEvents and daily counts as lower bounds if complete is false. Use time bounds or query to list events; id is Google's provider identity while iCalUID is the standards-based identity for correlation with other calendar systems, allDay explicitly distinguishes date-only events, eventType preserves Google's event classification, creator identifies who made the event while organizer identifies who owns it, createdAt and updatedAt preserve Google's provenance timestamps, blocksTime applies the same cancelled/transparent rules as availability, recurringEventId identifies the parent series, originalStartAt identifies that occurrence, and recurrenceRules preserves Google's RRULE, RDATE, and EXDATE entries on the recurring master. To explain an occurrence's schedule, read its recurringEventId as an exact event. usesDefaultReminders reports whether the event inherits the calendar default; reminderOverrides lists only explicit method and minutes values, so do not infer the default reminder time. attendeeResponses maps attendee emails to Google's RSVP status, selfResponseStatus is the signed-in user's response, attachments provide meeting-material titles, MIME types, and links, and conferenceProvider identifies the structured conference service. conferenceLink prefers Google's direct hangout link and otherwise uses its structured video entry. If it returns nextPageToken, repeat the same list filters with pageToken to read the next page. Add durationMinutes to exact time bounds to return busyMinutes, timedBusyMinutes, allDayBusyEvents, and free windows without event details; timedBusyMinutes is timed calendar load, not proven meeting time, while busyMinutes also includes opaque all-day blocks. Overlapping busy events count once and transparent or cancelled events do not count. Call it again with a returned eventId for iCalUID, allDay, eventType, creator, createdAt, updatedAt, blocksTime, recurring-series metadata, recurrenceRules, usesDefaultReminders, reminderOverrides, description, location, organizer, status, attendees, attendeeResponses, attachments, conferenceProvider, and conferenceLink. All modes are read-only.\n- Use relationship.create only when the user asks to add a company. Get the exact workspaceId from workspace.read first, and pass the requested company name plus only the domain, primary email, and context the user supplied. It creates one retry-safe internal Oppulence record and never contacts a provider or creates an external record.\n- Use relationship.correct only when the user explicitly asks to correct lifecycle, engagement, sentiment, or health on an internal Oppulence relationship. It preserves source evidence and never contacts anyone.\n- Use relationship.read with view mission_control when the user asks for an account brief, what needs attention, or whether evidence is complete enough to act. It reads the server-owned state, changes, evidence, freshness, pending work, and active recommendation without contacting the provider.\n- Use relationship.read with view graph when the user asks how accounts, people, commitments, actions, evidence, and sources connect. Use portfolio scope for the workspace or pass a relationshipId for one account; use asOf only for an explicit historical question. It reads the same versioned graph as the web and desktop views and never changes data.\n- Use relationship.review.acknowledge only when the user explicitly says they reviewed the exact state returned by mission_control. Pass its stateVersion and stateHash unchanged; stale state is rejected and no external system is changed.\n- Use relationship.read with view timeline when the user asks what happened in an account or why a relationship state exists. It reads the stored normalized history and evidence references without contacting the provider.\n- Use relationship.read with view assertions to show the exact provenance and assertion ID behind relationship state before changing it.\n- Use relationship.read with view identity_reviews when the user asks about possible duplicate or conflicting accounts. Show both candidate relationships, impact, evidence references, recommendation, and version; never infer or apply an identity decision from confidence alone.\n- Use relationship.read with view person_identity_reviews when the user asks whether two contact profiles might be the same person. Show both people, safe anchor labels, confidence, recommendation, status, and exact version; never infer or apply a merge from confidence alone.\n- Use relationship.identity.decide only when the user explicitly chooses merge, keep_separate, move_evidence, split, defer, or undo for a specific identity candidate and gives a reason. Pass the exact version from identity_reviews; explain that merge and move_evidence relocate internal account history before invoking it. It never changes the provider.\n- Use relationship.attention.decide only when the user explicitly asks to acknowledge, snooze, or dismiss a specific attention item and gives a reason. Pass its exact version from relationship.read with view attention; snooze also requires an exact future time. It never changes a provider or executes the related recommendation.\n- Use conversation.delete only when the user explicitly asks to delete conversation-derived data for a relationship. Read the relationship immediately before the request, pass its exact name, and explain that approval is required, a legal hold can block deletion, and the receipt may leave local-device or provider cleanup pending. It never deletes Gmail messages, calendar events, or other provider data.\n- Use relationship.assertion.retract only when the user explicitly asks to withdraw a specific user correction and gives a reason. It preserves the correction in the audit trail, restores the next valid projected value, and never changes the source system.\n- Use source.retry_sync only when the user explicitly asks to retry an existing source sync. It keeps the current connection and never starts OAuth or reconnects a provider.\n- Use task.create only when the user asks to create an internal Oppulence task. It never sends a message or creates a calendar event.\n- Use task.update only when the user asks to edit an existing internal Oppulence task. It can change its title, due time, or priority and never sends anything externally.\n- Use task.complete only when the user asks to complete an internal Oppulence task. It cannot dismiss other action types and never sends anything externally.\n- Use task.snooze only when the user asks to snooze an internal Oppulence task. It cannot snooze other action types and never sends anything externally.\n- Use recommendation.create only when the user asks to add an internal recommendation draft for an existing relationship. It derives the recipient from that relationship, adds the draft to Oppulence's review queue, and never creates a provider draft or sends anything.\n- Use recommendation.dismiss only when the user explicitly asks to dismiss an internal Oppulence recommendation and gives a reason. It cannot dismiss tasks and never executes or sends anything.\n- Use recommendation.snooze only when the user explicitly asks to snooze an internal Oppulence recommendation until a specific time. It cannot snooze tasks and never executes or sends anything.\n- Use recommendation.update only when the user asks to edit an internal recommendation draft. It can change the subject or message, invalidates prior approval when content changes, and never executes or sends anything.\n- Use action.audit when the user asks why an internal task or recommendation exists or what happened to it. It reads evidence and lifecycle history without changing anything.\n- Use action.outcome.record only when the user explicitly says an outcome happened for an internal task or recommendation. It records user-confirmed history in Oppulence and never contacts anyone.\n- Use action_proposal.read when the user asks which closed-loop finance actions are pending, approved, rejected, executed, failed, unconfirmed, or expired. It returns no approval token and never approves, rejects, or executes an action.\n- Use commitment.export when the user asks to review or export an internal commitment record. It returns the record and Markdown with evidence and history, but never shares or uploads it.\n- Use commitment.accept only when the user explicitly says an internal commitment was accepted. It records the transition in Oppulence and never contacts anyone.\n- Use commitment.block only when the user explicitly identifies what is blocking an accepted internal commitment. It records the blocker in Oppulence and never contacts anyone.\n- Use commitment.confirm only when the user explicitly confirms that an extracted internal commitment is accurate. It preserves source evidence and never contacts anyone.\n- Use commitment.correct only when the user explicitly asks to correct an internal commitment's text or due time. It preserves source evidence and never contacts anyone.\n- Use commitment.complete only when the user explicitly says an internal commitment was fulfilled. It records the transition in Oppulence and never contacts anyone.\n- Use commitment.dispute only when the user explicitly says an accepted or offered internal commitment is disputed and gives a reason. It records the reason in Oppulence and never contacts anyone.\n- Use commitment.unblock only when the user explicitly says an internal commitment's blocker was resolved. It clears the blocker in Oppulence and never contacts anyone.\n- Use person.create only when the user asks to add a person. Get the exact workspaceId from workspace.read first, and pass the requested full name plus only the email they supplied. It creates one retry-safe internal Oppulence contact and never contacts the person or changes a provider.\n- Use person.correct only when the user explicitly asks to correct an internal person profile fact. It preserves the source evidence and never contacts anyone.\n- Use person.attribute.retract only when the user explicitly asks to withdraw a specific profile fact and gives a reason. It preserves the fact in the audit trail and never changes the source system.\n- Use person.identity.decide only when the user explicitly chooses merge, keep_separate, defer, or undo for a specific person identity candidate and gives a reason. Pass the exact version from person_identity_reviews; for undo, read the resolved candidate first. Before merge, explain that Oppulence will move internal identity anchors, profile facts, account-participant links, and interaction history to the surviving person and tombstone the duplicate. Before undo, explain that Oppulence will restore that internal split and refuse if interaction history changed after the merge. Neither decision changes the provider.\n- Use person.delete only when the user explicitly asks to permanently remove a person. Read the person immediately before the request, pass its exact display name, distinguish user_action from subject_request, and explain that approval will remove the internal merged profile family and suppress its identity anchors so later syncs cannot recreate it. It never deletes mail, calendar events, or provider contacts.\n- Use note.create only when the user asks to create an internal Oppulence note. It never sends a message or creates an external event.\n- Use note.update only when the user asks to edit an existing internal Oppulence note. It keeps unspecified fields unchanged and never sends anything externally.\n- Use note.delete only when the user explicitly asks to delete an internal Oppulence note. It keeps a tombstone in history and never sends anything externally.\n- Use action.propose only when the user asks to prepare a finance action; it records a pending proposal and never approves or executes it.\n- For any action that requires approval, explain what you intend to do and why before requesting it.\n- Finish each turn with a short, plain-language summary of what you did or found.",
+           *           "name": "Assistant",
+           *           "slug": "assistant",
+           *           "source": "builtin"
+           *         },
+           *         {
+           *           "enabledTools": [
+           *             "current_time",
+           *             "echo",
+           *             "demo.payment",
+           *             "subagent.delegate",
+           *             "connector.read.hubspot_search",
+           *             "connector.write.hubspot_note",
+           *             "connector.write.hubspot_task",
+           *             "connector.read.composio_tool_search",
+           *             "connector.read.composio_tool_describe",
+           *             "connector.write.composio_tool_execute"
+           *           ],
+           *           "instructions": "You are a concierge agent that can take actions on the user's behalf and delegate research to subagents.\n\n- Break a request into steps. For self-contained research or drafting, delegate to a subagent via subagent.delegate and incorporate its summary.\n- Any money-moving action (e.g. demo.payment) requires explicit human approval. Describe the exact action and amount before requesting it, and never retry an approval that was denied — explain and adapt.\n- Use read-only tools freely. Keep the user informed with a short summary at the end of each turn.",
+           *           "name": "Concierge",
+           *           "slug": "concierge",
+           *           "source": "builtin",
+           *           "subagentRefs": [
+           *             "assistant"
+           *           ]
+           *         },
+           *         {
+           *           "enabledTools": [
+           *             "current_time",
+           *             "slack.read_thread",
+           *             "slack.post_message",
+           *             "connector.read.gmail",
+           *             "connector.read.calendar",
+           *             "connector.write.gmail_draft",
+           *             "web.search",
+           *             "conduit.read",
+           *             "eigen.simulate",
+           *             "connector.read.composio_tool_search",
+           *             "connector.read.composio_tool_describe",
+           *             "connector.write.composio_tool_execute"
+           *           ],
+           *           "instructions": "You are Rowboat's Slack concierge. A teammate has tagged you (@-mentioned) in a\nSlack thread to do work on their behalf. You run as a durable cloud agent.\n\n- Read the thread first when the request refers to \"this\", \"the above\", or the\n  conversation: call slack.read_thread to load the messages, then act.\n- Answer the request directly and concisely. Your final message each turn is\n  posted back into the Slack thread automatically — write it as the reply the\n  teammate should see, not as a status note to yourself.\n- Use slack.post_message only for an EXTRA message or to post into a DIFFERENT\n  channel; do not use it to repeat your final answer (that is delivered for you).\n  Posting requires human approval.\n- Only use the tools advertised to you. If a capability you need is not available\n  (e.g. a connector is not connected, or a scope is missing), say so plainly and\n  tell the teammate what to connect or grant.\n- Never fabricate data or claim to have used a tool you did not call.\n- Keep replies short and skimmable — Slack is a chat surface. Lead with the\n  answer; add detail only if it helps.",
+           *           "name": "Slack Concierge",
+           *           "slug": "concierge-slack",
+           *           "source": "builtin"
+           *         }
+           *       ]
+           *     }
+           */
+          "application/json": {
+            /** @description Agents ordered with workspace agents first, then built-ins. */
+            agents: {
+              /** @description Tools this agent can use. */
+              enabledTools: string[];
+              /**
+               * @description Purpose stored for this agent.
+               * @example You are a helpful, careful cloud assistant running as a durable Rowboat agent.
+               */
+              instructions?: string;
+              /**
+               * @description Display name.
+               * @example Assistant
+               */
+              name: string;
+              /**
+               * @description Short name.
+               * @example assistant
+               */
+              slug: string;
+              /**
+               * @description Where this agent comes from.
+               * @example builtin
+               */
+              source: string;
+            }[];
+          };
+        };
+      };
+      401: components["responses"]["401"];
       500: components["responses"]["500"];
     };
   };
@@ -15473,6 +15895,30 @@ export interface operations {
       400: components["responses"]["400"];
       401: components["responses"]["401"];
       409: components["responses"]["409"];
+      500: components["responses"]["500"];
+    };
+  };
+  deleteAgent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Agent to remove. */
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Agent removed. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
       500: components["responses"]["500"];
     };
   };
@@ -18111,6 +18557,70 @@ export interface operations {
       503: components["responses"]["503"];
     };
   };
+  startComposioConnection: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description The product Connect opens. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "toolkit": "jira"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Product name.
+           * @example jira
+           */
+          toolkit: string;
+        };
+      };
+    };
+    responses: {
+      /** @description The Jira sign-in page is ready. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "connectionId": "ca_8b8dfa9ba7b246ea982c622a914c00e5",
+           *       "expiresAt": "2026-07-15T16:05:00Z",
+           *       "redirectUrl": "https://connect.composio.dev/link/lk_8b8dfa9b"
+           *     }
+           */
+          "application/json": {
+            /**
+             * @description The account this page will link.
+             * @example ca_8b8dfa9ba7b246ea982c622a914c00e5
+             */
+            connectionId: string;
+            /**
+             * Format: date-time
+             * @description When the sign-in page stops working.
+             * @example 2026-07-15T16:05:00Z
+             */
+            expiresAt?: string;
+            /**
+             * @description Address of the sign-in page.
+             * @example https://connect.composio.dev/link/lk_8b8dfa9b
+             */
+            redirectUrl: string;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      502: components["responses"]["502"];
+      503: components["responses"]["503"];
+    };
+  };
   deleteComposioConnection: {
     parameters: {
       query?: never;
@@ -19322,12 +19832,22 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Current preferences. */
+      /** @description Preferences Profile loads before a name is saved. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "defaultAgentSlug": "",
+           *       "displayName": "",
+           *       "notificationLevel": "off",
+           *       "shareUsageData": false,
+           *       "showModelReasoning": false,
+           *       "theme": "system"
+           *     }
+           */
           "application/json": components["schemas"]["ConsolePreferences"];
         };
       };
@@ -21449,7 +21969,7 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
-    /** @description External response. */
+    /** @description Confirmation of the shared plan. */
     requestBody: {
       content: {
         /**
@@ -21491,14 +22011,30 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Recorded response. */
+      /** @description The confirmation is recorded. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "recorded": true,
+           *       "responseId": "db8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *     }
+           */
           "application/json": {
-            [key: string]: unknown;
+            /**
+             * @description The confirmation is stored for the plan owner.
+             * @example true
+             */
+            recorded: boolean;
+            /**
+             * Format: uuid
+             * @description The response that was recorded.
+             * @example db8dfa9b-a7b2-46ea-982c-622a914c00e5
+             */
+            responseId: string;
           };
         };
       };
@@ -21579,7 +22115,10 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Attention item id. */
+        /**
+         * @description Attention item id.
+         * @example da8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         attentionId: string;
       };
       cookie?: never;
@@ -21621,12 +22160,44 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Updated attention item. */
+      /** @description This item is reviewed and leaves the open queue. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "acknowledgedAt": "2026-07-31T14:00:00Z",
+           *       "acknowledgedBy": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "createdAt": "2026-07-29T14:00:00Z",
+           *       "detectorVersion": 1,
+           *       "evidenceRefs": [
+           *         "revenue-evidence:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *       ],
+           *       "explanation": "A confirmed promise is overdue by two days.",
+           *       "id": "da8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "projectorVersion": 1,
+           *       "rankFactors": {
+           *         "confirmed_commitment": 70,
+           *         "overdue_days": 6
+           *       },
+           *       "rankScore": 76,
+           *       "reasonCode": "overdue_commitment",
+           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "relationshipName": "Acme",
+           *       "relationshipStateVersion": 4,
+           *       "sourceRequirements": [
+           *         "google"
+           *       ],
+           *       "stateReason": "Reviewed from the portfolio attention queue.",
+           *       "status": "acknowledged",
+           *       "triggeringObjectRef": "commitment:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "updatedAt": "2026-07-31T14:00:00Z",
+           *       "urgencyBand": "high",
+           *       "version": 2
+           *     }
+           */
           "application/json": components["schemas"]["RelationshipAttentionItem"];
         };
       };
@@ -21820,7 +22391,10 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Identity candidate id. */
+        /**
+         * @description Identity candidate id.
+         * @example 6b8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         candidateId: string;
       };
       cookie?: never;
@@ -21863,12 +22437,109 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Resolved candidate. */
+      /** @description The duplicate is merged into the existing company. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "anchorKind": "provider_resource",
+           *       "anchorPreview": "contact …123",
+           *       "anchorProvider": "hubspot",
+           *       "candidateType": "anchor_collision",
+           *       "conflictingAnchors": [],
+           *       "decidedAt": "2026-07-31T14:00:00Z",
+           *       "decision": "merge",
+           *       "decisionActorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "decisionReason": "Reviewed in the identity inbox: merge.",
+           *       "decisions": [
+           *         {
+           *           "actorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "candidateVersion": 2,
+           *           "decidedAt": "2026-07-31T14:00:00Z",
+           *           "decision": "merge",
+           *           "id": "aa8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "reason": "Reviewed in the identity inbox: merge."
+           *         }
+           *       ],
+           *       "evidenceCount": 1,
+           *       "evidenceRefs": [
+           *         "relationship-observation:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *       ],
+           *       "existingRelationship": {
+           *         "accountDomain": "example.com",
+           *         "categories": [],
+           *         "commitmentCount": 0,
+           *         "displayName": "Acme",
+           *         "emailThreadCount": 0,
+           *         "engagement": "steady",
+           *         "health": "needs_attention",
+           *         "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "kind": "company",
+           *         "lifecycle": "evaluation",
+           *         "milestones": [],
+           *         "peopleCount": 0,
+           *         "projectorVersion": 2,
+           *         "resourceRefs": [],
+           *         "risks": [],
+           *         "sentiment": "mixed",
+           *         "stateVersion": 4,
+           *         "status": "active"
+           *       },
+           *       "id": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "impact": {
+           *         "evidence": 1
+           *       },
+           *       "lineage": [
+           *         {
+           *           "actorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "afterRelationshipIds": [
+           *             "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *           ],
+           *           "beforeRelationshipIds": [
+           *             "fa8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *           ],
+           *           "id": "ba8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "identityIds": [],
+           *           "kind": "merged",
+           *           "movedObjectRefs": [],
+           *           "observationIds": [],
+           *           "occurredAt": "2026-07-31T14:00:00Z",
+           *           "reason": "Reviewed in the identity inbox: merge."
+           *         }
+           *       ],
+           *       "matchingAnchors": [
+           *         "hubspot:contact:123"
+           *       ],
+           *       "proposedRelationship": {
+           *         "accountDomain": "example.com",
+           *         "categories": [],
+           *         "commitmentCount": 0,
+           *         "displayName": "Acme Inc.",
+           *         "emailThreadCount": 0,
+           *         "engagement": "steady",
+           *         "health": "needs_attention",
+           *         "id": "fa8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "kind": "company",
+           *         "lifecycle": "evaluation",
+           *         "milestones": [],
+           *         "peopleCount": 0,
+           *         "projectorVersion": 2,
+           *         "resourceRefs": [],
+           *         "risks": [],
+           *         "sentiment": "mixed",
+           *         "stateVersion": 4,
+           *         "status": "archived"
+           *       },
+           *       "recommendationConfidence": 0.5,
+           *       "recommendedDecision": "merge",
+           *       "status": "resolved",
+           *       "version": 2
+           *     }
+           */
           "application/json": components["schemas"]["RelationshipIdentityCandidate"];
         };
       };
@@ -21892,29 +22563,20 @@ export interface operations {
          * @example {
          *       "observations": [
          *         {
-         *           "eventType": "note",
-         *           "externalId": "c18dfa9b-a7b2-46ea-982c-622a914c00e5",
-         *           "normalizedFacts": {
-         *             "body": "Use the updated terms.",
-         *             "content": [
-         *               {
-         *                 "children": [
-         *                   {
-         *                     "text": "Use the updated terms."
-         *                   }
-         *                 ],
-         *                 "type": "p"
-         *               }
-         *             ],
-         *             "meetingLinked": false,
-         *             "noteId": "note-1",
-         *             "title": "Renewal context"
-         *           },
-         *           "occurredAt": "2026-09-01T12:00:00Z",
+         *           "eventType": "person_added",
+         *           "externalId": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+         *           "normalizedFacts": {},
+         *           "occurredAt": "2026-07-31T14:00:00Z",
+         *           "participants": [
+         *             {
+         *               "displayName": "Jordan Buyer",
+         *               "email": "buyer@example.com",
+         *               "role": "contact"
+         *             }
+         *           ],
          *           "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-         *           "source": "desktop_note",
-         *           "sourceVersion": "1",
-         *           "summary": "Renewal context"
+         *           "source": "user",
+         *           "summary": "Jordan Buyer added by the user"
          *         }
          *       ]
          *     }
@@ -22124,7 +22786,7 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Stored note. */
+      /** @description Ingestion results. */
       201: {
         headers: {
           [name: string]: unknown;
@@ -22136,55 +22798,54 @@ export interface operations {
            *         {
            *           "duplicate": false,
            *           "observation": {
-           *             "contentHash": "cb2c6d9de0a502140de524129b786b3c768a4fe3f4c59a7aba3eef7724474d47",
-           *             "eventType": "note",
-           *             "externalId": "c18dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "contentHash": "a9ca4ce2e0cf65ff92d605d96c2f6ac649e3fadd83c402ac59e9c481e7aa67ef",
+           *             "eventType": "person_added",
+           *             "externalId": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
            *             "id": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *             "normalizedFacts": {
-           *               "body": "Use the updated terms.",
-           *               "content": [
-           *                 {
-           *                   "children": [
-           *                     {
-           *                       "text": "Use the updated terms."
-           *                     }
-           *                   ],
-           *                   "type": "p"
-           *                 }
-           *               ],
-           *               "meetingLinked": false,
-           *               "noteId": "note-1",
-           *               "title": "Renewal context"
-           *             },
-           *             "occurredAt": "2026-09-01T12:00:00Z",
-           *             "receivedAt": "2026-09-01T12:00:00Z",
-           *             "source": "desktop_note",
+           *             "normalizedFacts": {},
+           *             "occurredAt": "2026-07-31T14:00:00Z",
+           *             "receivedAt": "2026-07-31T14:00:00Z",
+           *             "source": "user",
            *             "sourceVersion": "1",
-           *             "summary": "Renewal context"
+           *             "summary": "Jordan Buyer added by the user"
            *           },
-           *           "projectionJobId": "d18dfa9b-a7b2-46ea-982c-622a914c00e5",
            *           "projectionStatus": "completed",
            *           "relationship": {
-           *             "categories": [],
-           *             "commitmentCount": 0,
-           *             "displayName": "Cedar Notes",
-           *             "emailThreadCount": 0,
-           *             "engagement": "unknown",
-           *             "health": "unknown",
+           *             "accountDomain": "example.com",
+           *             "categories": [
+           *               "Artificial intelligence"
+           *             ],
+           *             "commitmentCount": 4,
+           *             "displayName": "Jordan Buyer",
+           *             "emailThreadCount": 12,
+           *             "engagement": "declining",
+           *             "health": "needs_attention",
            *             "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *             "kind": "company",
-           *             "lastTouchAt": "2026-09-01T12:00:00Z",
-           *             "lifecycle": "prospect",
-           *             "milestones": [],
-           *             "peopleCount": 0,
-           *             "projectedAt": "2026-09-01T12:00:00Z",
+           *             "kind": "person",
+           *             "lastChangedAt": "2026-07-25T16:00:00Z",
+           *             "lastTouchAt": "2026-04-10T15:00:00Z",
+           *             "lifecycle": "evaluation",
+           *             "milestones": [
+           *               "Proposal shared."
+           *             ],
+           *             "nextAction": "Confirm the security review owner.",
+           *             "nextActionAt": "2026-07-01T00:00:00Z",
+           *             "peopleCount": 3,
+           *             "primaryEmail": "buyer@example.com",
+           *             "projectedAt": "2026-07-25T16:00:00Z",
            *             "projectorVersion": 2,
-           *             "resourceRefs": [],
-           *             "risks": [],
-           *             "sentiment": "unknown",
-           *             "stateHash": "sha256:e42c0202f5034a1965e117a1a6c7065bcd09e1439493cea57074fa06572905c9",
-           *             "stateVersion": 0,
-           *             "status": "active"
+           *             "resourceRefs": [
+           *               "hubspot:company:123"
+           *             ],
+           *             "risks": [
+           *               "Security review has no owner."
+           *             ],
+           *             "sentiment": "mixed",
+           *             "stateHash": "sha256:ab12cd34",
+           *             "stateReason": "Security review was promised, but no owner or meeting exists.",
+           *             "stateVersion": 4,
+           *             "status": "active",
+           *             "summary": "Asked for pricing in April; wants a follow-up in July."
            *           }
            *         }
            *       ]
@@ -22801,12 +23462,43 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Evidence source health. */
+      /** @description Connected sources. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "sources": [
+           *         {
+           *           "backfillCompleted": 250,
+           *           "backfillPhase": "live",
+           *           "backfillTotal": 1000,
+           *           "completeness": "partial",
+           *           "connectionId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "consentingActorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "expectedCadenceSeconds": 900,
+           *           "grantedScopes": [
+           *             "https://www.googleapis.com/auth/gmail.readonly",
+           *             "https://www.googleapis.com/auth/calendar.events.readonly"
+           *           ],
+           *           "lagSeconds": 42,
+           *           "lastSuccessAt": "2026-07-31T14:00:00Z",
+           *           "lastSyncAt": "2026-07-31T14:00:00Z",
+           *           "missingScopes": [],
+           *           "requiredScopes": [
+           *             "https://www.googleapis.com/auth/gmail.readonly",
+           *             "https://www.googleapis.com/auth/calendar.events.readonly"
+           *           ],
+           *           "retryCount": 0,
+           *           "source": "google",
+           *           "sourceAccountId": "me@company.com",
+           *           "status": "live"
+           *         }
+           *       ]
+           *     }
+           */
           "application/json": {
             /** @description Sources. */
             sources?: components["schemas"]["RelationshipSourceStatus"][];
@@ -23461,7 +24153,10 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /**
+         * @description Company marked reviewed.
+         * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         relationshipId: string;
       };
       cookie?: never;
@@ -23496,6 +24191,14 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "acknowledgedAt": "2026-07-31T14:00:00Z",
+           *       "id": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "stateHash": "sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1",
+           *       "stateVersion": 4
+           *     }
+           */
           "application/json": {
             /**
              * Format: date-time
@@ -23965,12 +24668,31 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Updated commitment. */
-      200: {
+      /** @description The promise is accepted and still open. */
+      201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "acceptance": "accepted",
+           *       "beneficiaryParticipantRef": "customer:acme",
+           *       "confidence": 0.94,
+           *       "counterpartyParticipantRef": "jordan@example.com",
+           *       "currentEventVersion": 4,
+           *       "direction": "promised_by_me",
+           *       "dueAt": "2026-07-22T17:00:00Z",
+           *       "duePhrase": "by Friday",
+           *       "dueTimezone": "America/Los_Angeles",
+           *       "id": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "ownerParticipantRef": "alex@example.com",
+           *       "sourcePhrase": "I will send it by Friday.",
+           *       "status": "open",
+           *       "text": "Send the security packet.",
+           *       "userConfirmed": true
+           *     }
+           */
           "application/json": components["schemas"]["RelationshipCommitment"];
         };
       };
@@ -24046,25 +24768,26 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /** @description Company this disagreement belongs to. */
         relationshipId: string;
-        /** @description Contradiction case id. */
+        /** @description Disagreement this button closes. */
         caseId: string;
       };
       cookie?: never;
     };
-    /** @description Resolution. */
+    /** @description Choice. */
     requestBody: {
       content: {
         /**
          * @example {
+         *       "reason": "You chose the value from Gmail.",
          *       "selectedAssertionId": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"
          *     }
          */
         "application/json": {
           /**
-           * @description Optional rationale.
-           * @example CRM was updated after the meeting.
+           * @description Why this value is current.
+           * @example You chose the value from Gmail.
            */
           reason?: string;
           /**
@@ -24077,14 +24800,143 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Updated relationship and intelligence. */
+      /** @description Company after you pick the current value. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "intelligence": {
+           *         "claims": [],
+           *         "contradictionCases": [
+           *           {
+           *             "caseId": "contradiction:d109218617da1fbea89bb5d6",
+           *             "dimension": "health",
+           *             "openedAt": "2026-07-20T16:00:00Z",
+           *             "reason": "You chose the value from Gmail.",
+           *             "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "resolutionAssertionId": "7e8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "resolvedAt": "2026-07-25T16:00:00Z",
+           *             "sides": [
+           *               {
+           *                 "assertionId": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *                 "evidenceRefs": [
+           *                   "relationship-observation:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *                 ],
+           *                 "identityConfidence": 1,
+           *                 "observedAt": "2026-07-20T16:00:00Z",
+           *                 "source": "gmail",
+           *                 "sourceType": "source_fact",
+           *                 "validFrom": "2026-07-20T16:00:00Z",
+           *                 "value": {
+           *                   "kind": "enum",
+           *                   "value": "needs_attention"
+           *                 }
+           *               },
+           *               {
+           *                 "assertionId": "7d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *                 "evidenceRefs": [
+           *                   "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *                 ],
+           *                 "identityConfidence": 0.5,
+           *                 "observedAt": "2026-07-10T16:00:00Z",
+           *                 "source": "meeting",
+           *                 "sourceType": "ai_inference",
+           *                 "validFrom": "2026-07-10T16:00:00Z",
+           *                 "value": {
+           *                   "kind": "enum",
+           *                   "value": "healthy"
+           *                 }
+           *               }
+           *             ],
+           *             "status": "user_resolved",
+           *             "subjectRef": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *           }
+           *         ],
+           *         "deletionReceipts": [],
+           *         "delta": {
+           *           "changes": [
+           *             {
+           *               "after": "needs_attention",
+           *               "assertionIds": [
+           *                 "7e8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *               ],
+           *               "before": "healthy",
+           *               "dimension": "health",
+           *               "reason": "Security review was promised, but no owner or meeting exists."
+           *             }
+           *           ],
+           *           "contradictions": [
+           *             {
+           *               "contradictedAssertionId": "7d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *               "contradictedValue": "healthy",
+           *               "currentAssertionId": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *               "currentValue": "needs_attention",
+           *               "dimension": "health"
+           *             }
+           *           ],
+           *           "fromVersion": 4,
+           *           "recommendationReason": "Security review was promised, but no owner or meeting exists.",
+           *           "toVersion": 5,
+           *           "uncertainClaimIds": []
+           *         },
+           *         "effectivePolicy": {
+           *           "capture": "require_consent",
+           *           "externalShare": true,
+           *           "legalHold": false,
+           *           "modelRoute": "hosted_allowed",
+           *           "policyVersion": "policy:9373cc30008dcb712c236fc9",
+           *           "publishEvidence": true,
+           *           "redactionClasses": [
+           *             "credentials",
+           *             "financial",
+           *             "health",
+           *             "personal_identifier"
+           *           ],
+           *           "resolvedAt": "2026-07-25T16:00:00Z",
+           *           "retentionDays": 30,
+           *           "sourceLayerIds": [
+           *             "builtin:conversation-policy-v1"
+           *           ]
+           *         },
+           *         "governanceDecisions": [],
+           *         "governanceReceipts": [],
+           *         "liveCues": [],
+           *         "mutualActionPlans": [],
+           *         "recommendationEvaluations": [],
+           *         "recoveryEvaluations": [],
+           *         "reviewItems": []
+           *       },
+           *       "relationship": {
+           *         "categories": [],
+           *         "commitmentCount": 0,
+           *         "displayName": "Acme",
+           *         "emailThreadCount": 0,
+           *         "engagement": "declining",
+           *         "health": "needs_attention",
+           *         "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "kind": "company",
+           *         "lastChangedAt": "2026-07-25T16:00:00Z",
+           *         "lifecycle": "evaluation",
+           *         "milestones": [],
+           *         "peopleCount": 0,
+           *         "projectedAt": "2026-07-25T16:00:00Z",
+           *         "projectorVersion": 2,
+           *         "resourceRefs": [],
+           *         "risks": [],
+           *         "sentiment": "mixed",
+           *         "stateHash": "sha256:ab12cd34",
+           *         "stateReason": "Security review was promised, but no owner or meeting exists.",
+           *         "stateVersion": 5,
+           *         "status": "active"
+           *       }
+           *     }
+           */
           "application/json": {
-            [key: string]: unknown;
+            intelligence: components["schemas"]["RelationshipIntelligence"];
+            relationship: components["schemas"]["RevenueRelationship"];
           };
         };
       };
@@ -24099,7 +24951,10 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /**
+         * @description Relationship id.
+         * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         relationshipId: string;
       };
       cookie?: never;
@@ -24110,7 +24965,7 @@ export interface operations {
         /**
          * @example {
          *       "correctedValue": "Avery Chen",
-         *       "reason": "Avery was the speaker.",
+         *       "reason": "User corrected conversation evidence during focused review.",
          *       "reviewItemId": "review:9abf3ca4a5e5eff1"
          *     }
          */
@@ -24122,7 +24977,7 @@ export interface operations {
           correctedValue: string;
           /**
            * @description Correction reason.
-           * @example Avery was the speaker.
+           * @example User corrected conversation evidence during focused review.
            */
           reason: string;
           /**
@@ -24140,6 +24995,120 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "intelligence": {
+           *         "claims": [
+           *           {
+           *             "captureCaveats": [
+           *               "Remote channel may contain multiple speakers."
+           *             ],
+           *             "confidence": 0.72,
+           *             "endMs": 16000,
+           *             "exactQuote": "We are concerned security could delay the renewal.",
+           *             "id": "claim-risk",
+           *             "kind": "risk",
+           *             "material": true,
+           *             "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "speakerConfidence": 1,
+           *             "speakerId": "anonymous:remote-channel",
+           *             "speakerLabel": "Avery Chen",
+           *             "startMs": 12000,
+           *             "stateDimension": "risk",
+           *             "value": "Security review may delay renewal."
+           *           }
+           *         ],
+           *         "contradictionCases": [],
+           *         "deletionReceipts": [],
+           *         "delta": {
+           *           "changes": [],
+           *           "contradictions": [],
+           *           "fromVersion": 0,
+           *           "recommendationReason": "Security review was promised, but no owner or meeting exists.",
+           *           "toVersion": 4,
+           *           "uncertainClaimIds": [
+           *             "claim-risk"
+           *           ]
+           *         },
+           *         "effectivePolicy": {
+           *           "capture": "require_consent",
+           *           "externalShare": true,
+           *           "legalHold": false,
+           *           "modelRoute": "local_only",
+           *           "policyVersion": "policy:ab12",
+           *           "publishEvidence": true,
+           *           "redactionClasses": [
+           *             "personal_identifier"
+           *           ],
+           *           "resolvedAt": "2026-07-31T14:00:00Z",
+           *           "retentionDays": 30,
+           *           "sourceLayerIds": [
+           *             "workspace:default"
+           *           ]
+           *         },
+           *         "governanceDecisions": [],
+           *         "governanceReceipts": [],
+           *         "liveCues": [],
+           *         "mutualActionPlans": [],
+           *         "observationPageHasMore": false,
+           *         "recommendationEvaluations": [],
+           *         "recoveryEvaluations": [],
+           *         "reviewItems": [
+           *           {
+           *             "claimId": "claim-risk",
+           *             "confidence": 0.72,
+           *             "currentValue": "Security review may delay renewal.",
+           *             "exactQuote": "We are concerned security could delay the renewal.",
+           *             "id": "review:1fecc8d36f097595",
+           *             "kind": "claim",
+           *             "label": "Low-confidence material claim",
+           *             "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "stateDimension": "risk"
+           *           }
+           *         ]
+           *       },
+           *       "relationship": {
+           *         "accountDomain": "example.com",
+           *         "categories": [
+           *           "Artificial intelligence"
+           *         ],
+           *         "commitmentCount": 4,
+           *         "companyDescription": "Builds AI infrastructure for customer operations.",
+           *         "companyEnrichedAt": "2026-09-06T08:00:00Z",
+           *         "displayName": "Jordan Buyer",
+           *         "emailThreadCount": 12,
+           *         "engagement": "declining",
+           *         "health": "needs_attention",
+           *         "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "kind": "person",
+           *         "lastChangedAt": "2026-07-25T16:00:00Z",
+           *         "lastTouchAt": "2026-04-10T15:00:00Z",
+           *         "lifecycle": "evaluation",
+           *         "linkedinUrl": "https://www.linkedin.com/company/acme",
+           *         "milestones": [
+           *           "Proposal shared."
+           *         ],
+           *         "nextAction": "Confirm the security review owner.",
+           *         "nextActionAt": "2026-07-01T00:00:00Z",
+           *         "peopleCount": 3,
+           *         "primaryEmail": "buyer@example.com",
+           *         "projectedAt": "2026-07-25T16:00:00Z",
+           *         "projectorVersion": 2,
+           *         "resourceRefs": [
+           *           "hubspot:company:123"
+           *         ],
+           *         "risks": [
+           *           "Security review has no owner."
+           *         ],
+           *         "sentiment": "mixed",
+           *         "stateHash": "sha256:ab12cd34",
+           *         "stateReason": "Security review was promised, but no owner or meeting exists.",
+           *         "stateVersion": 4,
+           *         "status": "active",
+           *         "summary": "Asked for pricing in April; wants a follow-up in July."
+           *       }
+           *     }
+           */
           "application/json": {
             intelligence: components["schemas"]["RelationshipIntelligence"];
             relationship: components["schemas"]["RevenueRelationship"];
@@ -24156,7 +25125,10 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /**
+         * @description Relationship id.
+         * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         relationshipId: string;
       };
       cookie?: never;
@@ -24167,7 +25139,7 @@ export interface operations {
         /**
          * @example {
          *       "kind": "approve",
-         *       "reason": "Customer stated this directly.",
+         *       "reason": "User decided a proposed conversation change.",
          *       "reviewItemId": "review:9abf3ca4a5e5eff1"
          *     }
          */
@@ -24203,12 +25175,104 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Updated relationship and refreshed review queue. */
+      /** @description The proposed change is accepted, and the review queue is refreshed. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "intelligence": {
+           *         "claims": [
+           *           {
+           *             "captureCaveats": [
+           *               "Remote channel may contain multiple speakers."
+           *             ],
+           *             "confidence": 0.5,
+           *             "endMs": 16000,
+           *             "exactQuote": "We are concerned security could delay the renewal.",
+           *             "id": "claim:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "kind": "risk",
+           *             "material": true,
+           *             "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "speakerConfidence": 0.5,
+           *             "speakerId": "anonymous:remote-channel",
+           *             "speakerLabel": "Other",
+           *             "startMs": 12000,
+           *             "stateDimension": "risk",
+           *             "value": "Security review may delay renewal."
+           *           }
+           *         ],
+           *         "contradictionCases": [],
+           *         "deletionReceipts": [],
+           *         "delta": {
+           *           "changes": [],
+           *           "contradictions": [],
+           *           "fromVersion": 4,
+           *           "toVersion": 5,
+           *           "uncertainClaimIds": []
+           *         },
+           *         "effectivePolicy": {
+           *           "capture": "require_consent",
+           *           "externalShare": true,
+           *           "legalHold": false,
+           *           "modelRoute": "local_only",
+           *           "policyVersion": "policy:9373cc30008dcb712c236fc9",
+           *           "publishEvidence": true,
+           *           "redactionClasses": [
+           *             "personal_identifier"
+           *           ],
+           *           "resolvedAt": "2026-07-31T14:00:00Z",
+           *           "retentionDays": 30,
+           *           "sourceLayerIds": [
+           *             "workspace:default"
+           *           ]
+           *         },
+           *         "governanceDecisions": [],
+           *         "governanceReceipts": [],
+           *         "liveCues": [],
+           *         "mutualActionPlans": [],
+           *         "recommendationEvaluations": [],
+           *         "recoveryEvaluations": [],
+           *         "reviewItems": []
+           *       },
+           *       "relationship": {
+           *         "accountDomain": "example.com",
+           *         "categories": [
+           *           "Artificial intelligence"
+           *         ],
+           *         "commitmentCount": 4,
+           *         "displayName": "Acme",
+           *         "emailThreadCount": 12,
+           *         "engagement": "steady",
+           *         "health": "needs_attention",
+           *         "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "kind": "company",
+           *         "lastChangedAt": "2026-07-25T16:00:00Z",
+           *         "lifecycle": "evaluation",
+           *         "milestones": [
+           *           "Proposal shared."
+           *         ],
+           *         "nextAction": "Confirm the security review owner.",
+           *         "peopleCount": 3,
+           *         "projectedAt": "2026-07-25T16:00:00Z",
+           *         "projectorVersion": 2,
+           *         "resourceRefs": [
+           *           "hubspot:company:123"
+           *         ],
+           *         "risks": [
+           *           "Security review has no owner."
+           *         ],
+           *         "sentiment": "mixed",
+           *         "stateHash": "sha256:ab12cd34",
+           *         "stateReason": "The proposed conversation change was accepted.",
+           *         "stateVersion": 5,
+           *         "status": "active",
+           *         "summary": "Asked for pricing in April; wants a follow-up in July."
+           *       }
+           *     }
+           */
           "application/json": {
             intelligence: components["schemas"]["RelationshipIntelligence"];
             relationship: components["schemas"]["RevenueRelationship"];
@@ -24226,7 +25290,10 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /**
+         * @description Relationship id.
+         * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         relationshipId: string;
       };
       cookie?: never;
@@ -24250,12 +25317,62 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Deletion receipt. */
+      /** @description Conversation evidence stored here is deleted. Device and mailbox copies are still waiting. */
       202: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "legalHold": false,
+           *       "receiptId": "delete:ab12",
+           *       "requestedAt": "2026-07-31T14:00:00Z",
+           *       "scopeRef": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "status": "partial",
+           *       "targets": [
+           *         {
+           *           "attempts": 0,
+           *           "status": "pending",
+           *           "target": "local_recording"
+           *         },
+           *         {
+           *           "attempts": 0,
+           *           "status": "pending",
+           *           "target": "local_note"
+           *         },
+           *         {
+           *           "attempts": 1,
+           *           "status": "not_found",
+           *           "target": "outbox",
+           *           "verificationHash": "sha256:72a0d4998415278ba8231bc4d13ec4fd9de6cb620395d3bf33d1655078836ab6"
+           *         },
+           *         {
+           *           "attempts": 1,
+           *           "status": "deleted",
+           *           "target": "api_evidence",
+           *           "verificationHash": "sha256:78de8eebd548d26e7a0e5d8444016899d995ababc2e0f58d6e38586017df69ae"
+           *         },
+           *         {
+           *           "attempts": 1,
+           *           "status": "not_found",
+           *           "target": "embedding",
+           *           "verificationHash": "sha256:436ec9c35d2e6b7c1663caaf6933892865df01d599138b640447bd5211d3b7ea"
+           *         },
+           *         {
+           *           "attempts": 1,
+           *           "status": "not_found",
+           *           "target": "plan_share",
+           *           "verificationHash": "sha256:d55b014616776abb8ea3e9fc743a4a4b5692507a962914ce476624c7aba2e4de"
+           *         },
+           *         {
+           *           "attempts": 0,
+           *           "status": "pending",
+           *           "target": "provider"
+           *         }
+           *       ]
+           *     }
+           */
           "application/json": components["schemas"]["ConversationDeletionReceipt"];
         };
       };
@@ -24373,11 +25490,11 @@ export interface operations {
            *       "hasMore": false,
            *       "reviewItems": [
            *         {
-           *           "claimId": "claim:ab12",
+           *           "claimId": "claim-risk",
            *           "confidence": 0.5,
            *           "currentValue": "Other",
            *           "exactQuote": "We are concerned security could delay the renewal.",
-           *           "id": "review:ab12cd34ef567890",
+           *           "id": "review:9abf3ca4a5e5eff1",
            *           "kind": "speaker",
            *           "label": "Resolve the speaker for a material statement",
            *           "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
@@ -24409,7 +25526,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /** @description Company this detail belongs to. */
         relationshipId: string;
       };
       cookie?: never;
@@ -24426,7 +25543,7 @@ export interface operations {
          */
         "application/json": {
           /**
-           * @description Corrected state dimension.
+           * @description The detail this form corrects.
            * @example health
            * @enum {string}
            */
@@ -24440,24 +25557,24 @@ export interface operations {
             | "risk"
             | "milestone";
           /**
-           * @description Why the model is wrong.
+           * @description Why this is wrong.
            * @example The review happened yesterday.
            */
           reason: string;
           /**
            * Format: uuid
-           * @description Optional active assertion on the same relationship and dimension that this correction permanently replaces.
+           * @description Earlier evidence on this same detail that this correction replaces.
            * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
            */
           supersedesAssertionId?: string;
           /**
            * Format: date-time
-           * @description Optional exclusive expiry boundary for a temporary correction.
+           * @description When a temporary correction stops applying.
            * @example 2026-08-31T17:00:00Z
            */
           validTo?: string | null;
           /**
-           * @description Correct value.
+           * @description The value you chose.
            * @example healthy
            */
           value: string;
@@ -24465,12 +25582,37 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Reprojected relationship. */
+      /** @description Company after the detail is corrected. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "categories": [],
+           *       "commitmentCount": 0,
+           *       "displayName": "Acme",
+           *       "emailThreadCount": 0,
+           *       "engagement": "declining",
+           *       "health": "healthy",
+           *       "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "kind": "company",
+           *       "lastChangedAt": "2026-07-26T16:00:00Z",
+           *       "lifecycle": "evaluation",
+           *       "milestones": [],
+           *       "peopleCount": 0,
+           *       "projectedAt": "2026-07-26T16:00:00Z",
+           *       "projectorVersion": 2,
+           *       "resourceRefs": [],
+           *       "risks": [],
+           *       "sentiment": "mixed",
+           *       "stateHash": "sha256:ab12cd34",
+           *       "stateReason": "The review happened yesterday.",
+           *       "stateVersion": 5,
+           *       "status": "active"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueRelationship"];
         };
       };
@@ -24783,13 +25925,164 @@ export interface operations {
     };
     responses: {
       /** @description Approved plan. */
-      200: {
+      201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "counterpartyRef": "jordan@example.com",
+           *       "currentRevision": {
+           *         "createdAt": "2026-07-31T14:00:00Z",
+           *         "createdBy": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "items": [
+           *           {
+           *             "commitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "dependencyItemIds": [],
+           *             "dueAt": "2026-09-14T17:00:00Z",
+           *             "evidenceRefs": [
+           *               "revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *             ],
+           *             "itemId": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "ownerParticipantRef": "alex@example.com",
+           *             "status": "open",
+           *             "title": "Send the security packet."
+           *           }
+           *         ],
+           *         "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "revisionHash": "sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966",
+           *         "revisionId": "revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "version": 1
+           *       },
+           *       "internalOwnerRef": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "status": "internally_approved",
+           *       "tokenState": "not_issued"
+           *     }
+           */
           "application/json": {
-            [key: string]: unknown;
+            /**
+             * @description The other party.
+             * @example jordan@example.com
+             */
+            counterpartyRef: string;
+            /** @description The revision this approval is bound to. */
+            currentRevision: {
+              /**
+               * Format: date-time
+               * @description When this revision was written.
+               * @example 2026-07-31T14:00:00Z
+               */
+              createdAt: string;
+              /**
+               * Format: uuid
+               * @description Who wrote this revision.
+               * @example 7b8dfa9b-a7b2-46ea-982c-622a914c00e5
+               */
+              createdBy: string;
+              /** @description Plan steps. */
+              items: {
+                /**
+                 * Format: uuid
+                 * @description Commitment this step came from.
+                 * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+                 */
+                commitmentId?: string;
+                /** @description Steps this one waits on. */
+                dependencyItemIds: string[];
+                /**
+                 * Format: date-time
+                 * @description When the step is due.
+                 * @example 2026-09-14T17:00:00Z
+                 */
+                dueAt?: string;
+                /** @description Evidence for the step. */
+                evidenceRefs: string[];
+                /**
+                 * @description Step id.
+                 * @example item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+                 */
+                itemId: string;
+                /**
+                 * @description Who owns the step.
+                 * @example alex@example.com
+                 */
+                ownerParticipantRef: string;
+                /**
+                 * @description Step status.
+                 * @example open
+                 */
+                status: string;
+                /**
+                 * @description Step title.
+                 * @example Send the security packet.
+                 */
+                title: string;
+              }[];
+              /**
+               * @description Plan id.
+               * @example plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5
+               */
+              planId: string;
+              /**
+               * @description Hash of the steps.
+               * @example sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966
+               */
+              revisionHash: string;
+              /**
+               * @description Revision id.
+               * @example revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5
+               */
+              revisionId: string;
+              /**
+               * @description Revision number.
+               * @example 1
+               */
+              version: number;
+            };
+            /**
+             * Format: uuid
+             * @description Person who owns the plan inside this workspace.
+             * @example 7b8dfa9b-a7b2-46ea-982c-622a914c00e5
+             */
+            internalOwnerRef: string;
+            /**
+             * @description Plan id.
+             * @example plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5
+             */
+            planId: string;
+            /**
+             * Format: uuid
+             * @description Company id.
+             * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+             */
+            relationshipId: string;
+            /**
+             * @description Decision recorded when the plan was shared.
+             * @example governance:ab8dfa9ba7b246ea982c622a
+             */
+            sharePolicyDecisionId?: string;
+            /**
+             * @description Plan status.
+             * @example internally_approved
+             * @enum {string}
+             */
+            status:
+              | "draft"
+              | "revised"
+              | "internally_approved"
+              | "shared"
+              | "counterparty_responded"
+              | "completed"
+              | "cancelled";
+            /**
+             * @description Share token state.
+             * @example not_issued
+             * @enum {string}
+             */
+            tokenState: "not_issued" | "active";
           };
         };
       };
@@ -24803,9 +26096,15 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /**
+         * @description Relationship id.
+         * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         relationshipId: string;
-        /** @description Mutual action plan id. */
+        /**
+         * @description Mutual action plan id.
+         * @example plan:f8dfa9b6-a7b2-46ea-982c-622a914c00e5
+         */
         planId: string;
       };
       cookie?: never;
@@ -24818,7 +26117,7 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Shared plan and one-time token. */
+      /** @description The approved plan is shared, and a draft email is ready. */
       201: {
         headers: {
           [name: string]: unknown;
@@ -24829,31 +26128,31 @@ export interface operations {
            *       "plan": {
            *         "counterpartyRef": "jordan@example.com",
            *         "currentRevision": {
-           *           "createdAt": "2026-07-31T14:00:00Z",
-           *           "createdBy": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "createdAt": "2026-07-15T16:00:00Z",
+           *           "createdBy": "0c8dfa9b-a7b2-46ea-982c-622a914c00e5",
            *           "items": [
            *             {
            *               "commitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
            *               "dependencyItemIds": [],
-           *               "dueAt": "2026-09-14T17:00:00Z",
+           *               "dueAt": "2026-07-15T17:00:00Z",
            *               "evidenceRefs": [
-           *                 "revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *                 "revenue-evidence:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"
            *               ],
            *               "itemId": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *               "ownerParticipantRef": "alex@example.com",
+           *               "ownerParticipantRef": "jordan@example.com",
            *               "status": "open",
-           *               "title": "Send the security packet."
+           *               "title": "Follow up on the proposal"
            *             }
            *           ],
-           *           "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *           "revisionHash": "sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966",
-           *           "revisionId": "revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "planId": "plan:f8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+           *           "revisionHash": "sha256:c7ba0b5e53805088b4435a27848fb9a5c899287b4aac146b86d4709eaef49dc0",
+           *           "revisionId": "revision:d8dfa9b6-a7b2-46ea-982c-622a914c00e5",
            *           "version": 1
            *         },
-           *         "internalOwnerRef": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *         "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "internalOwnerRef": "0c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "planId": "plan:f8dfa9b6-a7b2-46ea-982c-622a914c00e5",
            *         "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *         "sharePolicyDecisionId": "governance:ab8dfa9ba7b246ea982c622a",
+           *         "sharePolicyDecisionId": "governance:ab12cd34ef56789012345678",
            *         "status": "shared",
            *         "tokenState": "active"
            *       },
@@ -24861,134 +26160,7 @@ export interface operations {
            *     }
            */
           "application/json": {
-            /** @description The plan the company sheet reads. */
-            plan: {
-              /**
-               * @description The other party.
-               * @example jordan@example.com
-               */
-              counterpartyRef: string;
-              /** @description The revision this approval is bound to. */
-              currentRevision: {
-                /**
-                 * Format: date-time
-                 * @description When this revision was written.
-                 * @example 2026-07-31T14:00:00Z
-                 */
-                createdAt: string;
-                /**
-                 * Format: uuid
-                 * @description Who wrote this revision.
-                 * @example 7b8dfa9b-a7b2-46ea-982c-622a914c00e5
-                 */
-                createdBy: string;
-                /** @description Plan steps. */
-                items: {
-                  /**
-                   * Format: uuid
-                   * @description Commitment this step came from.
-                   * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
-                   */
-                  commitmentId?: string;
-                  /** @description Steps this one waits on. */
-                  dependencyItemIds: string[];
-                  /**
-                   * Format: date-time
-                   * @description When the step is due.
-                   * @example 2026-09-14T17:00:00Z
-                   */
-                  dueAt?: string;
-                  /** @description Evidence for the step. */
-                  evidenceRefs: string[];
-                  /**
-                   * @description Step id.
-                   * @example item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5
-                   */
-                  itemId: string;
-                  /**
-                   * @description Who owns the step.
-                   * @example alex@example.com
-                   */
-                  ownerParticipantRef: string;
-                  /**
-                   * @description Step status.
-                   * @example open
-                   */
-                  status: string;
-                  /**
-                   * @description Step title.
-                   * @example Send the security packet.
-                   */
-                  title: string;
-                }[];
-                /**
-                 * @description Plan id.
-                 * @example plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5
-                 */
-                planId: string;
-                /**
-                 * @description Hash of the steps.
-                 * @example sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966
-                 */
-                revisionHash: string;
-                /**
-                 * @description Revision id.
-                 * @example revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5
-                 */
-                revisionId: string;
-                /**
-                 * @description Revision number.
-                 * @example 1
-                 */
-                version: number;
-              };
-              /**
-               * Format: uuid
-               * @description Person who owns the plan inside this workspace.
-               * @example 7b8dfa9b-a7b2-46ea-982c-622a914c00e5
-               */
-              internalOwnerRef: string;
-              /**
-               * @description Plan id.
-               * @example plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5
-               */
-              planId: string;
-              /**
-               * Format: uuid
-               * @description Company id.
-               * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
-               */
-              relationshipId: string;
-              /**
-               * @description Decision recorded when the plan was shared.
-               * @example governance:ab8dfa9ba7b246ea982c622a
-               */
-              sharePolicyDecisionId?: string;
-              /**
-               * @description Plan status.
-               * @example shared
-               * @enum {string}
-               */
-              status:
-                | "draft"
-                | "revised"
-                | "internally_approved"
-                | "shared"
-                | "counterparty_responded"
-                | "completed"
-                | "cancelled";
-              /**
-               * @description Share token state.
-               * @example active
-               * @enum {string}
-               */
-              tokenState: "not_issued" | "active";
-            };
-            /**
-             * @description One-time token for the shared plan. The server stores only its hash.
-             * @example 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-             */
-            responseToken: string;
+            [key: string]: unknown;
           };
         };
       };
@@ -25514,17 +26686,22 @@ export interface operations {
          */
         queueStatus?: "open" | "snoozed" | "dismissed" | "handled" | "all";
         /**
-         * @description Page size (max 100). Recovery asks for 100.
+         * @description Page size (max 100). Tasks asks for 100.
          * @example 100
          */
         limit?: number;
-        /** @description How many actions to skip. Recovery does not send this on the first page. */
+        /** @description How many tasks to skip. Tasks does not send this on the first page. */
         offset?: number;
         /**
-         * @description recovery keeps every action that is not a follow-up task. task keeps follow-up tasks.
-         * @example recovery
+         * @description task keeps follow-up tasks. recovery keeps every other action.
+         * @example task
          */
-        surface?: "recovery" | "task";
+        surface?: "task" | "recovery";
+        /**
+         * @description Soonest due first is asc. Latest due is desc.
+         * @example asc
+         */
+        due?: "asc" | "desc";
       };
       header?: never;
       path?: never;
@@ -25540,7 +26717,30 @@ export interface operations {
         content: {
           /**
            * @example {
-           *       "actions": [],
+           *       "actions": [
+           *         {
+           *           "actionType": "follow_up_task",
+           *           "approvalStatus": "pending",
+           *           "channel": "task",
+           *           "createdAt": "2026-07-15T16:00:00Z",
+           *           "detector": "manual",
+           *           "dueAt": "2026-07-15T17:00:00Z",
+           *           "evidence": [],
+           *           "executionMode": "draft",
+           *           "executionOwner": "rowboat",
+           *           "executionStatus": "pending",
+           *           "id": "3a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "policyStatus": "pending",
+           *           "priorityScore": 30,
+           *           "queueStatus": "open",
+           *           "reason": "Follow up on the proposal",
+           *           "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "relationshipName": "Acme",
+           *           "revision": 1,
+           *           "revisionHash": "sha256:ab12...",
+           *           "updatedAt": "2026-07-15T16:00:00Z"
+           *         }
+           *       ],
            *       "hasMore": false
            *     }
            */
@@ -25565,16 +26765,16 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
-    /** @description Action. */
+    /** @description Task. */
     requestBody: {
       content: {
         /**
          * @example {
          *       "actionType": "follow_up_task",
          *       "channel": "task",
-         *       "executionMode": "draft",
-         *       "proposedMessage": "Asked for pricing in April; wants a follow-up in July.",
-         *       "reason": "Follow up on company: Jordan Buyer",
+         *       "dueAt": "2026-07-15T17:00:00Z",
+         *       "priorityScore": 30,
+         *       "reason": "Follow up on the proposal",
          *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
          *     }
          */
@@ -25604,7 +26804,7 @@ export interface operations {
           /**
            * Format: date-time
            * @description Due time.
-           * @example 2026-07-15T00:00:00Z
+           * @example 2026-07-15T17:00:00Z
            */
           dueAt?: string | null;
           /**
@@ -25619,7 +26819,7 @@ export interface operations {
           };
           /**
            * @description Priority (0-100).
-           * @example 80
+           * @example 30
            */
           priorityScore?: number;
           /**
@@ -25633,8 +26833,8 @@ export interface operations {
            */
           proposedSubject?: string;
           /**
-           * @description Evidence-backed reason.
-           * @example Follow up on company: Jordan Buyer
+           * @description Task title.
+           * @example Follow up on the proposal
            */
           reason: string;
           /**
@@ -25644,7 +26844,7 @@ export interface operations {
           recipientEmail?: string;
           /**
            * Format: uuid
-           * @description Owning relationship id.
+           * @description Company the task is for.
            * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
            */
           relationshipId: string;
@@ -25657,12 +26857,36 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Created action. */
+      /** @description Created task. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "actionType": "follow_up_task",
+           *       "approvalStatus": "pending",
+           *       "channel": "task",
+           *       "createdAt": "2026-07-15T16:00:00Z",
+           *       "detector": "manual",
+           *       "dueAt": "2026-07-15T17:00:00Z",
+           *       "evidence": [],
+           *       "executionMode": "draft",
+           *       "executionOwner": "rowboat",
+           *       "executionStatus": "pending",
+           *       "id": "3a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "policyStatus": "pending",
+           *       "priorityScore": 30,
+           *       "queueStatus": "open",
+           *       "reason": "Follow up on the proposal",
+           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "relationshipName": "Acme",
+           *       "revision": 1,
+           *       "revisionHash": "sha256:ab12...",
+           *       "updatedAt": "2026-07-15T16:00:00Z"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueAction"];
         };
       };
@@ -25676,22 +26900,67 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Action id. */
+        /** @description Action the sheet reloads. */
         actionId: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Action. */
+      /** @description The action the sheet shows after the check. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "actionType": "warm_follow_up",
+           *       "approvalStatus": "pending",
+           *       "channel": "email",
+           *       "createdAt": "2026-07-12T12:00:00Z",
+           *       "detector": "requested_follow_up_due",
+           *       "dueAt": "2026-07-15T00:00:00Z",
+           *       "evidence": [
+           *         {
+           *           "excerpt": "Can you circle back this month?",
+           *           "externalEvidenceRefs": [
+           *             "gmail:message:msg_01"
+           *           ],
+           *           "id": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "occurredAt": "2026-07-01T14:00:00Z",
+           *           "source": "gmail",
+           *           "sourceRecordId": "gmail:thread:thr_01"
+           *         }
+           *       ],
+           *       "executionMode": "send",
+           *       "executionOwner": "rowboat",
+           *       "executionStatus": "pending",
+           *       "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "policyStatus": "passed",
+           *       "priorityComponents": {
+           *         "commitment_urgency": 40,
+           *         "recency_signal": 12,
+           *         "relationship_value": 30
+           *       },
+           *       "priorityScore": 82,
+           *       "proposedMessage": "Hi Jordan — you asked me to circle back this month...",
+           *       "proposedSubject": "Following up as promised",
+           *       "queueStatus": "open",
+           *       "reason": "They asked for a follow-up in July.",
+           *       "recipientEmail": "buyer@example.com",
+           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "relationshipName": "Acme",
+           *       "revision": 1,
+           *       "revisionHash": "sha256:ab12...",
+           *       "senderAccountRef": "gmail:me@company.com",
+           *       "updatedAt": "2026-07-12T12:00:00Z"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueAction"];
         };
       };
+      400: components["responses"]["400"];
       401: components["responses"]["401"];
       404: components["responses"]["404"];
     };
@@ -25917,7 +27186,10 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Action id. */
+        /**
+         * @description Action id.
+         * @example 1a8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         actionId: string;
       };
       cookie?: never;
@@ -25940,12 +27212,49 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Dismissed action. */
+      /** @description The follow-up is dismissed. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "actionType": "warm_follow_up",
+           *       "approvalStatus": "pending",
+           *       "channel": "email",
+           *       "createdAt": "2026-07-12T12:00:00Z",
+           *       "detector": "waiting_on_me",
+           *       "dismissReason": "not_relevant",
+           *       "evidence": [
+           *         {
+           *           "excerpt": "We are concerned security could delay renewal.",
+           *           "externalEvidenceRefs": [
+           *             "timestamp:12000-16000"
+           *           ],
+           *           "id": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "occurredAt": "2026-07-31T14:00:00Z",
+           *           "source": "meeting",
+           *           "sourceRecordId": "oppulence:session-42:claim:claim-risk"
+           *         }
+           *       ],
+           *       "executionMode": "draft",
+           *       "executionOwner": "rowboat",
+           *       "executionStatus": "pending",
+           *       "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "policyStatus": "pending",
+           *       "priorityScore": 82,
+           *       "proposedSubject": "Following up as promised",
+           *       "queueStatus": "dismissed",
+           *       "reason": "They asked for a follow-up in July.",
+           *       "recipientEmail": "buyer@example.com",
+           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "relationshipName": "Acme",
+           *       "revision": 1,
+           *       "revisionHash": "sha256:ab12cd34ef567890",
+           *       "updatedAt": "2026-07-15T16:05:00Z"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueAction"];
         };
       };
@@ -26323,7 +27632,10 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Action id. */
+        /**
+         * @description Action id.
+         * @example 1a8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         actionId: string;
       };
       cookie?: never;
@@ -26346,12 +27658,48 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Rejected action. */
+      /** @description The follow-up is rejected and still open. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "actionType": "warm_follow_up",
+           *       "approvalStatus": "rejected",
+           *       "channel": "email",
+           *       "createdAt": "2026-07-12T12:00:00Z",
+           *       "detector": "waiting_on_me",
+           *       "evidence": [
+           *         {
+           *           "excerpt": "We are concerned security could delay renewal.",
+           *           "externalEvidenceRefs": [
+           *             "timestamp:12000-16000"
+           *           ],
+           *           "id": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "occurredAt": "2026-07-31T14:00:00Z",
+           *           "source": "meeting",
+           *           "sourceRecordId": "oppulence:session-42:claim:claim-risk"
+           *         }
+           *       ],
+           *       "executionMode": "draft",
+           *       "executionOwner": "rowboat",
+           *       "executionStatus": "pending",
+           *       "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "policyStatus": "pending",
+           *       "priorityScore": 82,
+           *       "proposedSubject": "Following up as promised",
+           *       "queueStatus": "open",
+           *       "reason": "They asked for a follow-up in July.",
+           *       "recipientEmail": "buyer@example.com",
+           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "relationshipName": "Acme",
+           *       "revision": 1,
+           *       "revisionHash": "sha256:ab12cd34ef567890",
+           *       "updatedAt": "2026-07-15T16:05:00Z"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueAction"];
         };
       };
@@ -26548,9 +27896,12 @@ export interface operations {
   listRevenueLeakScans: {
     parameters: {
       query?: {
-        /** @description Maximum scans to return (default 10, max 100). */
+        /**
+         * @description Page size (max 100). Audits asks for 10.
+         * @example 10
+         */
         limit?: number;
-        /** @description Page offset. */
+        /** @description How many audits to skip. Audits does not send this on the first page. */
         offset?: number;
       };
       header?: never;
@@ -26559,15 +27910,24 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Audit history. */
+      /** @description Empty audit page, newest first. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "hasMore": false,
+           *       "scans": []
+           *     }
+           */
           "application/json": {
-            /** @description Another audit exists beyond this page. */
-            hasMore?: boolean;
+            /**
+             * @description Whether another audit exists past this page.
+             * @example false
+             */
+            hasMore: boolean;
             /** @description Scans newest first. */
             scans: components["schemas"]["RevenueLeakScan"][];
           };
@@ -26700,26 +28060,66 @@ export interface operations {
   getOpenPromisesReport: {
     parameters: {
       query?: {
-        /** @description md for Markdown; JSON otherwise. */
+        /**
+         * @description md for the file Download the report saves.
+         * @example md
+         */
         format?: string;
       };
       header?: never;
       path: {
-        /** @description Scan id. */
+        /**
+         * @description Scan id.
+         * @example 4d8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         scanId: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description The open promises report. */
+      /** @description The report. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "byAccount": {
+           *         "Acme": 1
+           *       },
+           *       "generatedAt": "2026-09-09T12:00:00Z",
+           *       "inboundCount": 0,
+           *       "items": [
+           *         {
+           *           "account": "Acme",
+           *           "commitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "direction": "promised_by_me",
+           *           "dueAt": "2026-09-14T17:00:00Z",
+           *           "duePhrase": "by the 14th",
+           *           "occurredAt": "2026-09-06T12:00:00Z",
+           *           "owner": "alex@example.com",
+           *           "sourceQuote": "We will have the migration live by the 14th.",
+           *           "sourceUri": "https://mail.google.com/thread-1",
+           *           "state": "at_risk",
+           *           "text": "Migration live by the 14th"
+           *         }
+           *       ],
+           *       "lookbackDays": 180,
+           *       "outboundCount": 1,
+           *       "scanStatus": "completed",
+           *       "threadsSeen": 412,
+           *       "truncated": false
+           *     }
+           */
           "application/json": {
-            /** @description Open promise count by account. */
+            /**
+             * @description Open promise count by account.
+             * @example {
+             *       "Acme": 1
+             *     }
+             */
             byAccount: {
               [key: string]: number;
             };
@@ -26731,7 +28131,7 @@ export interface operations {
             generatedAt: string;
             /**
              * @description Promises made to us.
-             * @example 5
+             * @example 0
              */
             inboundCount: number;
             /** @description Open promises, at risk first. */
@@ -26801,7 +28201,7 @@ export interface operations {
             lookbackDays: number;
             /**
              * @description Promises we made.
-             * @example 12
+             * @example 1
              */
             outboundCount: number;
             /**
@@ -26820,6 +28220,34 @@ export interface operations {
              */
             truncated: boolean;
           };
+          /**
+           * @example # Open promises
+           *
+           *     Promises from the last 180 days with no evidence they were kept.
+           *
+           *     - **1** promises we made
+           *     - **0** promises made to us
+           *     - **412** conversations read
+           *
+           *     | Company | Open promises |
+           *     |---|---|
+           *     | Acme | 1 |
+           *
+           *     ## The promises
+           *
+           *     ### Acme — Migration live by the 14th
+           *
+           *     We owe · state **At risk** · due 2026-09-14 · owner alex@example.com
+           *
+           *     > We will have the migration live by the 14th.
+           *
+           *     Source observed 2026-09-06T12:00:00Z · https://mail.google.com/thread-1
+           *
+           *
+           *     ---
+           *
+           *     Generated 2026-09-09T12:00:00Z. Every promise above includes the source evidence available at scan time.
+           */
           "text/markdown": string;
         };
       };
@@ -26932,16 +28360,116 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Current workspace. */
+      /** @description This workspace before it is linked. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "id": "0b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "mode": "local",
+           *       "preflightAvailable": false,
+           *       "status": "active"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueWorkspace"];
         };
       };
       401: components["responses"]["401"];
+    };
+  };
+  getCommunicationPolicy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Mailbox account email. */
+        sourceAccountId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Stored mailbox policy. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "id": "db8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "metadataVisibility": "workspace",
+           *       "modelContactExtraction": true,
+           *       "retentionDays": 540,
+           *       "shareAttachments": false,
+           *       "shareBody": false,
+           *       "shareSubject": true,
+           *       "signatureEnrichment": true,
+           *       "sourceAccountId": "you@company.com",
+           *       "version": 1
+           *     }
+           */
+          "application/json": {
+            /**
+             * Format: uuid
+             * @description Policy id.
+             * @example db8dfa9b-a7b2-46ea-982c-622a914c00e5
+             */
+            id: string;
+            /**
+             * @description Who can see mailbox metadata.
+             * @example workspace
+             * @enum {string}
+             */
+            metadataVisibility: "private" | "workspace";
+            /**
+             * @description Extract contacts from mail.
+             * @example true
+             */
+            modelContactExtraction: boolean;
+            /**
+             * @description Days mailbox content is kept.
+             * @example 540
+             */
+            retentionDays: number;
+            /**
+             * @description Share attachments by default.
+             * @example false
+             */
+            shareAttachments: boolean;
+            /**
+             * @description Share bodies by default.
+             * @example false
+             */
+            shareBody: boolean;
+            /**
+             * @description Share subject lines by default.
+             * @example true
+             */
+            shareSubject: boolean;
+            /**
+             * @description Read email signatures.
+             * @example true
+             */
+            signatureEnrichment: boolean;
+            /**
+             * @description Mailbox account email.
+             * @example you@company.com
+             */
+            sourceAccountId: string;
+            /**
+             * @description Policy version.
+             * @example 1
+             */
+            version: number;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
     };
   };
   putCommunicationPolicy: {
@@ -27120,6 +28648,89 @@ export interface operations {
       401: components["responses"]["401"];
     };
   };
+  createCommunicationPrivacyRule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Privacy rule. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "kind": "protected_address",
+         *       "value": "buyer@example.com"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Rule kind. Add rule leaves the default protected address selected.
+           * @example protected_address
+           * @enum {string}
+           */
+          kind: "protected_address" | "protected_domain" | "blocked_address" | "blocked_domain";
+          /**
+           * @description Address or domain typed into the rule field.
+           * @example buyer@example.com
+           */
+          value: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Stored privacy rule. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "active": true,
+           *       "id": "3b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "kind": "protected_address",
+           *       "value": "buyer@example.com",
+           *       "valueHash": "sha256:6a6c26195c3682faa816966af789717c3bfa834eee6c599d667d2b3429c27cfd"
+           *     }
+           */
+          "application/json": {
+            /**
+             * @description New rules are stored active.
+             * @example true
+             */
+            active: boolean;
+            /**
+             * Format: uuid
+             * @description Rule id.
+             * @example 3b8dfa9b-a7b2-46ea-982c-622a914c00e5
+             */
+            id: string;
+            /**
+             * @description Stored rule kind.
+             * @example protected_address
+             * @enum {string}
+             */
+            kind: "protected_address" | "protected_domain" | "blocked_address" | "blocked_domain";
+            /**
+             * @description Normalized address or domain.
+             * @example buyer@example.com
+             */
+            value: string;
+            /**
+             * @description sha256 of the normalized value.
+             * @example sha256:6a6c26195c3682faa816966af789717c3bfa834eee6c599d667d2b3429c27cfd
+             */
+            valueHash: string;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+    };
+  };
   deleteCommunicationPrivacyRule: {
     parameters: {
       query?: never;
@@ -27232,36 +28843,47 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
-    /** @description OutboundConsole identifiers. */
+    /** @description Sending workspace id and organization id. */
     requestBody: {
       content: {
         /**
          * @example {
-         *       "outboundOrganizationId": "org_01ABC",
-         *       "outboundWorkspaceId": "ws_01ABC"
+         *       "outboundOrganizationId": "org_1",
+         *       "outboundWorkspaceId": "ws_1"
          *     }
          */
         "application/json": {
           /**
-           * @description OutboundConsole organization id.
-           * @example org_01ABC
+           * @description Organization id.
+           * @example org_1
            */
           outboundOrganizationId?: string;
           /**
-           * @description OutboundConsole workspace id.
-           * @example ws_01ABC
+           * @description Sending workspace id.
+           * @example ws_1
            */
           outboundWorkspaceId: string;
         };
       };
     };
     responses: {
-      /** @description Linked workspace. */
+      /** @description The linked workspace Link workspace stores. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "id": "0b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "lastVerifiedAt": "2026-07-12T12:00:00Z",
+           *       "mode": "linked",
+           *       "outboundOrganizationId": "org_1",
+           *       "outboundWorkspaceId": "ws_1",
+           *       "preflightAvailable": true,
+           *       "status": "active"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueWorkspace"];
         };
       };

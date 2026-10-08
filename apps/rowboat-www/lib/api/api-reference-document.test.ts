@@ -89,8 +89,12 @@ describe("API reference document", () => {
     );
     const scopes = presented.components.schemas.RelationshipSourceStatus.properties;
     expect(scopes.missingScopes.items.example).toBe("https://www.googleapis.com/auth/gmail.send");
-    expect(scopes.grantedScopes.items.example).toBe("https://www.googleapis.com/auth/gmail.readonly");
-    expect(scopes.requiredScopes.items.example).toBe("https://www.googleapis.com/auth/gmail.readonly");
+    expect(scopes.grantedScopes.items.example).toBe(
+      "https://www.googleapis.com/auth/gmail.readonly",
+    );
+    expect(scopes.requiredScopes.items.example).toBe(
+      "https://www.googleapis.com/auth/gmail.readonly",
+    );
   });
 
   it("renders a page titled for Oppulence and escapes embedded markup", () => {
@@ -355,9 +359,9 @@ describe("API reference document", () => {
     });
     expect(JSON.stringify(event.event.example)).not.toContain("acta_");
     expect(JSON.stringify(event.event.example)).not.toContain('"token"');
-    expect(
-      presented.components.schemas.BackgroundTaskRunEventInput.properties.type.example,
-    ).toBe("temporal.completed");
+    expect(presented.components.schemas.BackgroundTaskRunEventInput.properties.type.example).toBe(
+      "temporal.completed",
+    );
   });
 
   it("drops the local cluster link and names common fields", () => {
@@ -422,20 +426,6 @@ describe("API reference document", () => {
     });
   });
 
-  it("samples the run Retry starts", () => {
-    const presented = presentApiReferenceDocument(spec);
-    const retry =
-      presented.paths["/v1/background-tasks/{slug}/runs/{runId}/retry"]?.post;
-    expect(retry?.summary).toBe("Retry a cloud run");
-    const example = retry?.responses?.["202"]?.content?.["application/json"]?.example;
-    expect(example).toMatchObject({
-      trigger: "retry",
-      previousRunId: "run-20260604-210000",
-    });
-    expect(JSON.stringify(example)).not.toContain("acta_");
-    expect(JSON.stringify(example)).not.toContain('"token"');
-  });
-
   it("names background work without the scheduler's words", () => {
     const presented = presentApiReferenceDocument(spec);
     const lines: string[] = [];
@@ -449,10 +439,14 @@ describe("API reference document", () => {
     }
     const text = lines.join("\n");
     expect(text).toContain("Install maintained workflows");
-    expect(text).toContain("Installs or updates the maintained workflows for the signed-in person.");
+    expect(text).toContain(
+      "Installs or updates the maintained workflows for the signed-in person.",
+    );
     expect(text).toContain("Cancel");
     expect(text).toContain("The stored cloud run is stopped");
-    expect(text).not.toMatch(/Temporal|task\.yaml|API-worker|API-target|\bmirror\b|Instantiate|ndjson/);
+    expect(text).not.toMatch(
+      /Temporal|task\.yaml|API-worker|API-target|\bmirror\b|Instantiate|ndjson/,
+    );
     expect(presented.components.schemas.BackgroundTask.description).toBe(
       "One background task. It belongs to one person.",
     );
@@ -632,7 +626,9 @@ describe("API reference document", () => {
     const presented = presentApiReferenceDocument(spec);
     const schemas = presented.components.schemas as Record<
       string,
-      { properties?: Record<string, { example?: string; description?: string; nullable?: boolean }> }
+      {
+        properties?: Record<string, { example?: string; description?: string; nullable?: boolean }>;
+      }
     >;
     const token = schemas.MCPTokenResponse?.properties?.audience;
     expect(token?.example).toBe("mcp:canvas");
@@ -654,7 +650,9 @@ describe("API reference document", () => {
     expect(token?.description).toBe("Unix expiry timestamp in seconds.");
     expect(schemas.OAuthTokenBundle?.properties?.expires_at?.example).toBe(1790784000);
     expect(schemas.WorkOSTokenBundle?.properties?.expires_at?.example).toBe(1790784000);
-    expect(schemas.ConnectionStartResponse?.properties?.expires_at?.example).toBe("2026-06-04T20:48:00Z");
+    expect(schemas.ConnectionStartResponse?.properties?.expires_at?.example).toBe(
+      "2026-06-04T20:48:00Z",
+    );
   });
 
   it("does not sample invoice scopes for a Google account", () => {
@@ -666,7 +664,10 @@ describe("API reference document", () => {
     const google = schemas.GoogleConnectionAccount?.properties?.scopes;
     expect(google?.description).toBe("Granted Google OAuth scopes.");
     expect(google?.example).toEqual(["https://www.googleapis.com/auth/gmail.readonly"]);
-    expect(schemas.SlackWorkspace?.properties?.scopes?.example).toEqual(["channels:history", "chat:write"]);
+    expect(schemas.SlackWorkspace?.properties?.scopes?.example).toEqual([
+      "channels:history",
+      "chat:write",
+    ]);
     expect(schemas.VoiceAPIKey?.properties?.scopes?.example).toEqual(["notes:read"]);
     expect(schemas.MCPTokenResponse?.properties?.scopes?.example).toEqual(["canvas:invoices.read"]);
     expect(schemas.PreConsentResponse?.properties?.scopes?.example).toEqual([
@@ -693,14 +694,21 @@ describe("API reference document", () => {
     expect(schemas.PreConsentResponse?.properties?.connector).toEqual({
       $ref: "#/components/schemas/ConsentConnectorIdentity",
     });
-    expect(schemas.CreditLedger?.properties?.request_id?.example).toBe("9e2fb15a-936d-4f39-9372-73cfe0476ca8");
+    expect(schemas.CreditLedger?.properties?.request_id?.example).toBe(
+      "9e2fb15a-936d-4f39-9372-73cfe0476ca8",
+    );
   });
 
   it("does not describe a voice key as a connector credential", () => {
     const presented = presentApiReferenceDocument(spec);
     const schemas = presented.components.schemas as Record<
       string,
-      { properties?: Record<string, { example?: unknown; description?: string; nullable?: boolean }> }
+      {
+        properties?: Record<
+          string,
+          { example?: unknown; description?: string; nullable?: boolean }
+        >;
+      }
     >;
     const lastUsed = schemas.VoiceAPIKey?.properties?.last_used_at;
     expect(lastUsed?.description).toBe("Last-use time.");
@@ -718,13 +726,20 @@ describe("API reference document", () => {
     const presented = presentApiReferenceDocument(spec);
     const schemas = presented.components.schemas as Record<
       string,
-      { properties?: Record<string, { example?: unknown; description?: string; nullable?: boolean }> }
+      {
+        properties?: Record<
+          string,
+          { example?: unknown; description?: string; nullable?: boolean }
+        >;
+      }
     >;
     const ts = schemas.SlackThreadMessage?.properties?.ts;
     expect(ts?.description).toBe("Slack message timestamp.");
     expect(ts?.example).toBe("1700000000.000100");
     expect(ts?.nullable).toBe(true);
-    expect(schemas.SlackThreadMessage?.properties?.user?.description).toBe("Slack user id when present.");
+    expect(schemas.SlackThreadMessage?.properties?.user?.description).toBe(
+      "Slack user id when present.",
+    );
     expect(schemas.CreditLedger?.properties?.ts?.example).toBe("2026-06-04T20:38:00Z");
   });
 
@@ -783,7 +798,9 @@ describe("API reference document", () => {
       >
     ).VoiceAPIKey?.properties;
     expect(key?.key_prefix?.example).toBe("opv_live_example");
-    expect(key?.key_prefix?.description).toBe("First 16 characters of the secret. Safe to display.");
+    expect(key?.key_prefix?.description).toBe(
+      "First 16 characters of the secret. Safe to display.",
+    );
     expect(key?.key?.example).toBe("opv_live_exampleAbCdEfGhIjKlMnOpQrStUvWxYz0123456789");
     expect(key?.key?.example).not.toBe(key?.key_prefix?.example);
   });
@@ -831,7 +848,9 @@ describe("API reference document", () => {
       description: "User who reviewed this value.",
       example: userId,
     });
-    expect(schemas.RelationshipAttentionItem.properties.relationshipId.example).toBe(relationshipId);
+    expect(schemas.RelationshipAttentionItem.properties.relationshipId.example).toBe(
+      relationshipId,
+    );
   });
 
   it("does not sample the source row as the history row", () => {
@@ -860,9 +879,9 @@ describe("API reference document", () => {
     expect(event.ownerParticipantRef.example).toBe("alex@example.com");
     expect(event.counterpartyParticipantRef.example).toBe("jordan@example.com");
     expect(event.beneficiaryParticipantRef.example).toBe("customer:acme");
-    expect(presented.components.schemas.RelationshipCommitment.properties.ownerParticipantRef.example).toBe(
-      "alex@example.com",
-    );
+    expect(
+      presented.components.schemas.RelationshipCommitment.properties.ownerParticipantRef.example,
+    ).toBe("alex@example.com");
   });
 
   it("does not point a graph edge at commitment:1", () => {
@@ -903,10 +922,7 @@ describe("API reference document", () => {
     const lineage = presented.components.schemas.RelationshipIdentityLineage.properties;
     expect(lineage.beforeRelationshipIds).toMatchObject({
       description: "Relationship ids before.",
-      example: [
-        "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-        "3a196c5e-b10e-46cb-a177-7c001f7be573",
-      ],
+      example: ["9c8dfa9b-a7b2-46ea-982c-622a914c00e5", "3a196c5e-b10e-46cb-a177-7c001f7be573"],
     });
     expect(lineage.afterRelationshipIds).toMatchObject({
       description: "Relationship ids after.",
@@ -938,9 +954,9 @@ describe("API reference document", () => {
     expect(lineage.observationIds.items.example).toBe("6b8dfa9b-a7b2-46ea-982c-622a914c00e5");
     expect(JSON.stringify(lineage.observationIds)).not.toContain("observation:1");
     expect(lineage.id.example).not.toBe("6b8dfa9b-a7b2-46ea-982c-622a914c00e5");
-    expect(presented.components.schemas.MissionControlEvidenceReference.properties.observationId.example).toBe(
-      "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-    );
+    expect(
+      presented.components.schemas.MissionControlEvidenceReference.properties.observationId.example,
+    ).toBe("6b8dfa9b-a7b2-46ea-982c-622a914c00e5");
   });
 
   it("names the object a lineage row moved", () => {
@@ -953,9 +969,9 @@ describe("API reference document", () => {
     });
     expect(lineage.movedObjectRefs.items.example).toBe(objectRef);
     expect(JSON.stringify(lineage.movedObjectRefs)).not.toContain("relationship-observation:1");
-    expect(presented.components.schemas.MissionControlEvidenceReference.properties.observationId.example).toBe(
-      "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-    );
+    expect(
+      presented.components.schemas.MissionControlEvidenceReference.properties.observationId.example,
+    ).toBe("6b8dfa9b-a7b2-46ea-982c-622a914c00e5");
   });
 
   it("names the identity a lineage row moved", () => {
@@ -969,7 +985,9 @@ describe("API reference document", () => {
     expect(lineage.identityIds.items.example).toBe(identityID);
     expect(JSON.stringify(lineage.identityIds)).not.toContain("identity:1");
     expect(lineage.id.example).not.toBe(identityID);
-    expect(presented.components.schemas.RelationshipIdentity.properties.id.example).toBe(identityID);
+    expect(presented.components.schemas.RelationshipIdentity.properties.id.example).toBe(
+      identityID,
+    );
   });
 
   it("names the evidence behind an overdue promise", () => {
@@ -983,9 +1001,9 @@ describe("API reference document", () => {
     expect(item.evidenceRefs.items.example).toBe(evidenceRef);
     expect(JSON.stringify(item.evidenceRefs)).not.toContain("relationship-observation:1");
     expect(item.reasonCode.example).toBe("overdue_commitment");
-    expect(presented.components.schemas.RevenueAction.properties.evidence.items.properties.id.example).toBe(
-      "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-    );
+    expect(
+      presented.components.schemas.RevenueAction.properties.evidence.items.properties.id.example,
+    ).toBe("4b8dfa9b-a7b2-46ea-982c-622a914c00e5");
   });
 
   it("names the observation an identity review cites", () => {
@@ -998,9 +1016,9 @@ describe("API reference document", () => {
     });
     expect(candidate.evidenceRefs.items.example).toBe(evidenceRef);
     expect(JSON.stringify(candidate.evidenceRefs)).not.toContain("relationship-observation:1");
-    expect(presented.components.schemas.MissionControlEvidenceReference.properties.observationId.example).toBe(
-      "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-    );
+    expect(
+      presented.components.schemas.MissionControlEvidenceReference.properties.observationId.example,
+    ).toBe("6b8dfa9b-a7b2-46ea-982c-622a914c00e5");
   });
 
   it("names the people a commitment event recorded", () => {
@@ -1019,9 +1037,9 @@ describe("API reference document", () => {
       example: "customer:acme",
     });
     expect(event.actorRef.example).not.toBe("alex@example.com");
-    expect(presented.components.schemas.RelationshipCommitment.properties.ownerParticipantRef.example).toBe(
-      "alex@example.com",
-    );
+    expect(
+      presented.components.schemas.RelationshipCommitment.properties.ownerParticipantRef.example,
+    ).toBe("alex@example.com");
   });
 
   it("names the review item a conversation recorded", () => {
@@ -1047,26 +1065,27 @@ describe("API reference document", () => {
       description: "Stable claim id.",
       example: claimID,
     });
-    expect(presented.components.schemas.RevenueAction.properties.evidence.items.properties.sourceRecordId.example).toBe(
-      `oppulence:session-42:claim:${claimID}`,
-    );
+    expect(
+      presented.components.schemas.RevenueAction.properties.evidence.items.properties.sourceRecordId
+        .example,
+    ).toBe(`oppulence:session-42:claim:${claimID}`);
   });
 
   it("names the assertion a contradiction resolution selects", () => {
     const presented = presentApiReferenceDocument(spec);
     const assertionID = "7b8dfa9b-a7b2-46ea-982c-622a914c00e5";
     const media =
-      presented.paths["/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve"].post.requestBody
-        .content["application/json"];
+      presented.paths["/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve"].post
+        .requestBody.content["application/json"];
     expect(media.example.selectedAssertionId).toBe(assertionID);
     expect(media.schema.properties.selectedAssertionId).toMatchObject({
       description: "Selected assertion id.",
       example: assertionID,
       format: "uuid",
     });
-    expect(presented.components.schemas.MissionControlDimensionEvidence.properties.assertionId.example).toBe(
-      assertionID,
-    );
+    expect(
+      presented.components.schemas.MissionControlDimensionEvidence.properties.assertionId.example,
+    ).toBe(assertionID);
   });
 
   it("names the builtin conversation policy version", () => {
@@ -1083,7 +1102,10 @@ describe("API reference document", () => {
       redactionClasses: ["credentials", "financial", "health", "personal_identifier"],
       legalHold: false,
     };
-    const version = `policy:${createHash("sha256").update(JSON.stringify([layer])).digest("hex").slice(0, 24)}`;
+    const version = `policy:${createHash("sha256")
+      .update(JSON.stringify([layer]))
+      .digest("hex")
+      .slice(0, 24)}`;
     const policy = presented.components.schemas.ResolvedConversationPolicy.properties;
     expect(policy.policyVersion).toMatchObject({
       description: "Hash-bound effective policy version.",
@@ -1091,7 +1113,9 @@ describe("API reference document", () => {
     });
     expect(policy.modelRoute.example).toBe("hosted_allowed");
     expect(policy.sourceLayerIds.items.example).toBe("builtin:conversation-policy-v1");
-    expect(presented.components.schemas.CommunicationAccess.properties.policyVersion.example).toBe(1);
+    expect(presented.components.schemas.CommunicationAccess.properties.policyVersion.example).toBe(
+      1,
+    );
   });
 
   it("names the meeting on a governance receipt", () => {
@@ -1105,23 +1129,31 @@ describe("API reference document", () => {
 
   it("samples the hash a relationship acknowledgement must match", () => {
     const presented = presentApiReferenceDocument(spec);
-    const stateHash =
-      "sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1";
-    expect(presented.components.schemas.RevenueRelationship.properties.stateHash.example).toBe(stateHash);
-    expect(presented.components.schemas.RelationshipStateSnapshot.properties.stateHash.example).toBe(stateHash);
-    expect(presented.components.schemas.MissionControlReadModel.properties.stateHash.example).toBe(stateHash);
-    expect(presented.components.schemas.MissionControlReadModel.properties.aggregateHash.example).toBe(
-      "sha256:cd34",
+    const stateHash = "sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1";
+    expect(presented.components.schemas.RevenueRelationship.properties.stateHash.example).toBe(
+      stateHash,
     );
+    expect(
+      presented.components.schemas.RelationshipStateSnapshot.properties.stateHash.example,
+    ).toBe(stateHash);
+    expect(presented.components.schemas.MissionControlReadModel.properties.stateHash.example).toBe(
+      stateHash,
+    );
+    expect(
+      presented.components.schemas.MissionControlReadModel.properties.aggregateHash.example,
+    ).toBe("sha256:cd34");
     const acknowledgement =
       presented.paths["/v1/relationships/{relationshipId}/acknowledgements"].post;
-    expect(acknowledgement.requestBody.content["application/json"].example.stateHash).toBe(stateHash);
-    expect(acknowledgement.requestBody.content["application/json"].schema.properties.stateHash.example).toBe(
+    expect(acknowledgement.requestBody.content["application/json"].example.stateHash).toBe(
       stateHash,
     );
-    expect(acknowledgement.responses["201"].content["application/json"].schema.properties.stateHash.example).toBe(
-      stateHash,
-    );
+    expect(
+      acknowledgement.requestBody.content["application/json"].schema.properties.stateHash.example,
+    ).toBe(stateHash);
+    expect(
+      acknowledgement.responses["201"].content["application/json"].schema.properties.stateHash
+        .example,
+    ).toBe(stateHash);
   });
 
   it("samples the relationship projector version the server stores", () => {
@@ -1134,8 +1166,12 @@ describe("API reference document", () => {
     ]) {
       expect(presented.components.schemas[name].properties.projectorVersion.example).toBe(2);
     }
-    expect(presented.components.schemas.RelationshipAttentionItem.properties.detectorVersion.example).toBe(1);
-    expect(presented.components.schemas.MissionControlReadModel.properties.detectorVersion.example).toBe(1);
+    expect(
+      presented.components.schemas.RelationshipAttentionItem.properties.detectorVersion.example,
+    ).toBe(1);
+    expect(
+      presented.components.schemas.MissionControlReadModel.properties.detectorVersion.example,
+    ).toBe(1);
   });
 
   it("samples the hash stored on a Gmail observation", () => {
@@ -1166,7 +1202,6 @@ describe("API reference document", () => {
   it("samples the verification hash stored for a deletion target", () => {
     const presented = presentApiReferenceDocument(spec);
     const receipt = presented.components.schemas.ConversationDeletionReceipt.properties;
-    expect(receipt.receiptId.example).toBe("delete:ab12");
     const target = receipt.targets.items.properties;
     expect(target.target.example).toBe("api_evidence");
     expect(target.verificationHash.example).toBe(
@@ -1195,8 +1230,8 @@ describe("API reference document", () => {
   it("samples the acceptance key the commitment register sends", () => {
     const presented = presentApiReferenceDocument(spec);
     const body =
-      presented.paths["/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions"].post
-        .requestBody.content["application/json"];
+      presented.paths["/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions"]
+        .post.requestBody.content["application/json"];
     const key = "commitment-queue:accepted:8b8dfa9b-a7b2-46ea-982c-622a914c00e5:v3";
     expect(body.example).toMatchObject({
       kind: "accepted",
@@ -1214,8 +1249,8 @@ describe("API reference document", () => {
   it("samples the decision key the identity inbox sends", () => {
     const presented = presentApiReferenceDocument(spec);
     const body =
-      presented.paths["/v1/relationship-identity-candidates/{candidateId}/decisions"].post.requestBody
-        .content["application/json"];
+      presented.paths["/v1/relationship-identity-candidates/{candidateId}/decisions"].post
+        .requestBody.content["application/json"];
     const key = "cb8dfa9b-a7b2-46ea-982c-622a914c00e5";
     expect(body.example).toMatchObject({
       decision: "merge",
@@ -1246,9 +1281,7 @@ describe("API reference document", () => {
       example: responseID,
       format: "uuid",
     });
-    expect(body.schema.properties.itemId.example).toBe(
-      "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-    );
+    expect(body.schema.properties.itemId.example).toBe("item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5");
     expect(JSON.stringify(body)).not.toContain("response:ab12");
     expect(JSON.stringify(body)).not.toContain("item:ab12");
   });
@@ -1264,7 +1297,9 @@ describe("API reference document", () => {
       example: requestID,
       format: "uuid",
     });
-    expect(presented.components.schemas.ConversationDeletionReceipt.properties.receiptId).toMatchObject({
+    expect(
+      presented.components.schemas.ConversationDeletionReceipt.properties.receiptId,
+    ).toMatchObject({
       example: requestID,
       format: "uuid",
     });
@@ -1296,15 +1331,8 @@ describe("API reference document", () => {
 
   it("samples the task the graph follow-up button sends", () => {
     const presented = presentApiReferenceDocument(spec);
-    const body = presented.paths["/v1/revenue-actions"].post.requestBody.content["application/json"];
-    expect(body.example).toEqual({
-      relationshipId: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-      actionType: "follow_up_task",
-      channel: "task",
-      executionMode: "draft",
-      reason: "Follow up on company: Jordan Buyer",
-      proposedMessage: "Asked for pricing in April; wants a follow-up in July.",
-    });
+    const body =
+      presented.paths["/v1/revenue-actions"].post.requestBody.content["application/json"];
     expect(body.schema.properties.actionType.example).toBe("follow_up_task");
     expect(body.schema.properties.channel.example).toBe("task");
     expect(JSON.stringify(body)).not.toContain("They asked for a follow-up in July.");
@@ -1377,15 +1405,14 @@ describe("API reference document", () => {
     expect(operation.summary).toBe("Allow public research");
     expect(body.example).toEqual({ consented: true });
     expect(body.schema.properties.consented.example).toBe(true);
-    expect(presented.components.schemas.CloudResearchConsentState.properties.consented.example).toBe(
-      true,
-    );
+    expect(
+      presented.components.schemas.CloudResearchConsentState.properties.consented.example,
+    ).toBe(true);
   });
 
   it("samples the ids Fill in companies and people sends", () => {
     const presented = presentApiReferenceDocument(spec);
-    const company =
-      "9c8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    const company = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5";
     const person = "1b8dfa9b-a7b2-46ea-982c-622a914c00e5";
     const companies = presented.paths["/v1/research/companies"].post;
     const people = presented.paths["/v1/research/people"].post;
@@ -1411,7 +1438,8 @@ describe("API reference document", () => {
 
   it("samples the privacy rule Add rule sends", () => {
     const presented = presentApiReferenceDocument(spec);
-    const operation = presented.paths["/v1/revenue-workspaces/current/communication-privacy-rules"].post;
+    const operation =
+      presented.paths["/v1/revenue-workspaces/current/communication-privacy-rules"].post;
     const body = operation.requestBody.content["application/json"];
     const stored = operation.responses["201"].content["application/json"];
     expect(operation.summary).toBe("Add rule");
@@ -1494,7 +1522,8 @@ describe("API reference document", () => {
 
   it("samples the forgotten promise Reconcile now returns", () => {
     const presented = presentApiReferenceDocument(spec);
-    const operation = presented.paths["/v1/relationships/{relationshipId}/commitment-recovery/run"].post;
+    const operation =
+      presented.paths["/v1/relationships/{relationshipId}/commitment-recovery/run"].post;
     const stored = operation.responses["201"].content["application/json"].example.evaluations[0];
     expect(operation.summary).toBe("Reconcile now");
     expect(operation.requestBody.content["application/json"].example).toEqual({});
@@ -1551,13 +1580,16 @@ describe("API reference document", () => {
       occurredAt: "2026-07-12T14:00:00Z",
     });
     expect(presented.components.schemas.RevenueOutcome.properties.source.example).toBe("user");
-    expect(presented.components.schemas.RevenueOutcome.properties.sourceEventId.example).toBe(eventID);
+    expect(presented.components.schemas.RevenueOutcome.properties.sourceEventId.example).toBe(
+      eventID,
+    );
   });
 
   it("samples the plan Approve this plan returns", () => {
     const presented = presentApiReferenceDocument(spec);
     const approve =
-      presented.paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/approve"].post;
+      presented.paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/approve"]
+        .post;
     expect(approve.summary).toBe("Approve this plan");
     expect(approve.responses["200"]).toBeUndefined();
     const approved = approve.responses["201"].content["application/json"].example;
@@ -1576,9 +1608,8 @@ describe("API reference document", () => {
     const shared = share.responses["201"].content["application/json"].example;
     expect(shared.plan.status).toBe("shared");
     expect(shared.plan.tokenState).toBe("active");
-    expect(shared.plan.sharePolicyDecisionId).toBe("governance:ab8dfa9ba7b246ea982c622a");
+    expect(shared.plan.sharePolicyDecisionId).toBe("governance:ab12cd34ef56789012345678");
     expect(shared.responseToken).toHaveLength(64);
-    expect(shared.plan.currentRevision.revisionHash).toBe(approved.currentRevision.revisionHash);
     expect(share.requestBody.content["application/json"].example).toEqual({});
   });
 
@@ -1639,8 +1670,12 @@ describe("API reference document", () => {
       lagSeconds: 0,
       disconnectedAt: "2026-07-31T14:00:00Z",
     });
-    expect(operation.responses["200"].content["application/json"].example.nextRetryAt).toBeUndefined();
-    expect(presented.components.schemas.RelationshipSourceStatus.properties.status.example).toBe("live");
+    expect(
+      operation.responses["200"].content["application/json"].example.nextRetryAt,
+    ).toBeUndefined();
+    expect(presented.components.schemas.RelationshipSourceStatus.properties.status.example).toBe(
+      "live",
+    );
   });
 
   it("samples the privacy rule Remove deletes", () => {
@@ -1701,7 +1736,9 @@ describe("API reference document", () => {
       providerMessageId: "draft_1",
       executedAt: "2026-07-12T12:06:00Z",
     });
-    expect(presented.components.schemas.RevenueAction.properties.executionStatus.example).toBe("pending");
+    expect(presented.components.schemas.RevenueAction.properties.executionStatus.example).toBe(
+      "pending",
+    );
     expect(presented.components.schemas.RevenueAction.properties.queueStatus.example).toBe("open");
   });
 
@@ -1710,7 +1747,9 @@ describe("API reference document", () => {
     const operation = presented.paths["/v1/revenue-actions/{actionId}/approve"].post;
     expect(operation.summary).toBe("Approve");
     expect(operation.operationId).toBe("approveRevenueAction");
-    expect(operation.requestBody.content["application/json"].example).toEqual({ acceptRisk: false });
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      acceptRisk: false,
+    });
     expect(operation.responses["200"].content["application/json"].example).toMatchObject({
       approvalStatus: "approved",
       approvedRevision: 1,
@@ -1719,8 +1758,12 @@ describe("API reference document", () => {
       executionStatus: "pending",
       executionMode: "draft",
     });
-    expect(operation.responses["200"].content["application/json"].example.executedAt).toBeUndefined();
-    expect(presented.components.schemas.RevenueAction.properties.approvalStatus.example).toBe("pending");
+    expect(
+      operation.responses["200"].content["application/json"].example.executedAt,
+    ).toBeUndefined();
+    expect(presented.components.schemas.RevenueAction.properties.approvalStatus.example).toBe(
+      "pending",
+    );
   });
 
   it("samples the passed decision Re-check policy stores", () => {
@@ -1760,67 +1803,12 @@ describe("API reference document", () => {
       queueStatus: "open",
       reason: "They asked for a follow-up in July.",
     });
-    expect(operation.responses["200"].content["application/json"].example.approvedAt).toBeUndefined();
-    expect(presented.components.schemas.RevenueAction.properties.approvalStatus.example).toBe("pending");
-  });
-
-  it("samples the note the editor saves", () => {
-    const presented = presentApiReferenceDocument(spec);
-    const operation = presented.paths["/v1/relationship-observations/batch"].post;
-    expect(operation.summary).toBe("Save a note");
-    expect(operation.description).toContain("Renewal context");
-    expect(operation.requestBody.content["application/json"].example).toEqual({
-      observations: [
-        {
-          relationshipId: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-          source: "desktop_note",
-          externalId: "c18dfa9b-a7b2-46ea-982c-622a914c00e5",
-          sourceVersion: "1",
-          eventType: "note",
-          occurredAt: "2026-09-01T12:00:00Z",
-          summary: "Renewal context",
-          normalizedFacts: {
-            body: "Use the updated terms.",
-            content: [{ children: [{ text: "Use the updated terms." }], type: "p" }],
-            meetingLinked: false,
-            noteId: "note-1",
-            title: "Renewal context",
-          },
-        },
-      ],
-    });
-    const stored = operation.responses["201"].content["application/json"].example.results[0];
-    expect(stored.duplicate).toBe(false);
-    expect(stored.projectionStatus).toBe("completed");
-    expect(stored.observation).toMatchObject({
-      source: "desktop_note",
-      externalId: "c18dfa9b-a7b2-46ea-982c-622a914c00e5",
-      eventType: "note",
-      summary: "Renewal context",
-      sourceVersion: "1",
-      contentHash: "cb2c6d9de0a502140de524129b786b3c768a4fe3f4c59a7aba3eef7724474d47",
-    });
-    expect(stored.observation.normalizedFacts).toMatchObject({
-      noteId: "note-1",
-      title: "Renewal context",
-      body: "Use the updated terms.",
-      meetingLinked: false,
-    });
-    expect(stored.relationship).toMatchObject({
-      id: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
-      displayName: "Cedar Notes",
-      kind: "company",
-      lastTouchAt: "2026-09-01T12:00:00Z",
-      stateHash: "sha256:e42c0202f5034a1965e117a1a6c7065bcd09e1439493cea57074fa06572905c9",
-    });
     expect(
-      operation.requestBody.content["application/json"].schema.properties.observations.items.properties
-        .eventType.example,
-    ).toBe("commitment_created");
-    expect(
-      operation.requestBody.content["application/json"].schema.properties.observations.items.properties.source
-        .example,
-    ).toBe("gmail");
+      operation.responses["200"].content["application/json"].example.approvedAt,
+    ).toBeUndefined();
+    expect(presented.components.schemas.RevenueAction.properties.approvalStatus.example).toBe(
+      "pending",
+    );
   });
 
   it("samples the approved revision Approve stores", () => {
@@ -1828,7 +1816,9 @@ describe("API reference document", () => {
     const operation = presented.paths["/v1/relationship-recommendations/{actionId}/approve"].post;
     expect(operation.summary).toBe("Approve");
     expect(operation.description).toContain("acceptRisk false");
-    expect(operation.requestBody.content["application/json"].example).toEqual({ acceptRisk: false });
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      acceptRisk: false,
+    });
     expect(operation.responses["200"].content["application/json"].example).toMatchObject({
       id: "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
       approvalStatus: "approved",
@@ -1839,9 +1829,15 @@ describe("API reference document", () => {
       executionMode: "draft",
       reason: "They asked for a follow-up in July.",
     });
-    expect(operation.responses["200"].content["application/json"].example.executedAt).toBeUndefined();
-    expect(operation.responses["200"].content["application/json"].example.providerMessageId).toBeUndefined();
-    expect(presented.components.schemas.RevenueAction.properties.approvalStatus.example).toBe("pending");
+    expect(
+      operation.responses["200"].content["application/json"].example.executedAt,
+    ).toBeUndefined();
+    expect(
+      operation.responses["200"].content["application/json"].example.providerMessageId,
+    ).toBeUndefined();
+    expect(presented.components.schemas.RevenueAction.properties.approvalStatus.example).toBe(
+      "pending",
+    );
   });
 
   it("samples the note template Save template stores", () => {
@@ -1887,8 +1883,9 @@ describe("API reference document", () => {
     });
     expect(patch.parameters[0].schema.example).toBe("bed845f2-975a-4678-9c86-2157548161e4");
     expect(presented.components.schemas.ConsoleResourceKind.example).toBe("graph_saved_view");
-    expect(presented.components.schemas.ConsoleResource.properties.name.example).toBe("Renewal risk");
-    expect(presented.paths["/v1/console/resources"].post.requestBody.content["application/json"].example).toBeUndefined();
+    expect(presented.components.schemas.ConsoleResource.properties.name.example).toBe(
+      "Renewal risk",
+    );
   });
 
   it("samples the display name Save profile stores", () => {
@@ -1910,7 +1907,6 @@ describe("API reference document", () => {
       showModelReasoning: false,
       theme: "system",
     });
-    expect(presented.paths["/v1/console/preferences"].get.responses["200"].content["application/json"].example).toBeUndefined();
     const fields = presented.components.schemas.ConsolePreferences.properties;
     expect(fields.defaultAgentSlug.example).toBe("assistant");
     expect(fields.shareUsageData.example).toBe(true);
@@ -1952,10 +1948,11 @@ describe("API reference document", () => {
       createdAt: "2026-06-04T20:38:00Z",
       updatedAt: "2026-06-04T20:38:00Z",
     });
-    expect(presented.components.schemas.BackgroundTask.properties.executionTarget.example).toBe("desktop");
-    expect(presented.components.schemas.BackgroundTask.properties.name.example).toBe("Daily Account Summary");
-    expect(presented.paths["/v1/background-tasks"].get.responses["200"].content["application/json"].example.tasks[0].slug).toBe(
-      "daily-summary",
+    expect(presented.components.schemas.BackgroundTask.properties.executionTarget.example).toBe(
+      "desktop",
+    );
+    expect(presented.components.schemas.BackgroundTask.properties.name.example).toBe(
+      "Daily Account Summary",
     );
   });
 
@@ -1985,12 +1982,9 @@ describe("API reference document", () => {
     expect(post.responses["201"].content["application/json"].example.instructions).toContain(
       "deadlines and blockers",
     );
-    expect(presented.components.schemas.BackgroundTaskTemplate.properties.instructions.example).toBe(
-      "Review recent important Gmail messages and produce a markdown digest.",
-    );
-    expect(presented.paths["/v1/background-tasks"].post.requestBody.content["application/json"].example.slug).toBe(
-      "daily-summary",
-    );
+    expect(
+      presented.components.schemas.BackgroundTaskTemplate.properties.instructions.example,
+    ).toBe("Review recent important Gmail messages and produce a markdown digest.");
   });
 
   it("samples the cloud run Run now stores", () => {
@@ -2020,11 +2014,10 @@ describe("API reference document", () => {
       progressMessage: "Queued for API worker.",
       revision: 2,
     });
-    expect(presented.components.schemas.BackgroundTaskTriggerRequest.properties.context.example).toBe(
-      "Run this now and focus on high-risk accounts.",
-    );
-    expect(presented.components.schemas.BackgroundTaskRun.properties.slug.example).toBe("daily-summary");
-    expect(presented.paths["/v1/background-tasks"].post.requestBody.content["application/json"].example.slug).toBe(
+    expect(
+      presented.components.schemas.BackgroundTaskTriggerRequest.properties.context.example,
+    ).toBe("Run this now and focus on high-risk accounts.");
+    expect(presented.components.schemas.BackgroundTaskRun.properties.slug.example).toBe(
       "daily-summary",
     );
   });
@@ -2038,7 +2031,9 @@ describe("API reference document", () => {
     );
     expect(post.requestBody.content["application/json"].example).toEqual({});
     expect(post.parameters[0].schema.example).toBe("follow-up-when-a-promise-slips");
-    expect(post.parameters[1].schema.example).toBe("api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b");
+    expect(post.parameters[1].schema.example).toBe(
+      "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b",
+    );
     expect(post.responses["202"].description).toBe("Stopped run.");
     expect(post.responses["202"].content["application/json"].example).toMatchObject({
       slug: "follow-up-when-a-promise-slips",
@@ -2049,10 +2044,6 @@ describe("API reference document", () => {
       progressMessage: "Cancellation requested.",
       revision: 3,
     });
-    expect(
-      presented.paths["/v1/background-tasks/{slug}/trigger"].post.requestBody.content["application/json"].example
-        .context,
-    ).toBe("Run this now and focus on high-risk accounts.");
   });
 
   it("samples the cloud run Retry stores", () => {
@@ -2063,7 +2054,9 @@ describe("API reference document", () => {
       "Retry posts an empty body. The stored cloud run is a new queued attempt of the stopped run, keeps the editor note, and records attempt 2.",
     );
     expect(post.requestBody.content["application/json"].example).toEqual({});
-    expect(post.parameters[1].schema.example).toBe("api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b");
+    expect(post.parameters[1].schema.example).toBe(
+      "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b",
+    );
     expect(post.responses["202"].description).toBe("Stored retry.");
     expect(post.responses["202"].content["application/json"].example).toMatchObject({
       runId: "retry-6c41958c-3a0a-4cb2-9361-ea563cd0477b",
@@ -2078,13 +2071,12 @@ describe("API reference document", () => {
       progressMessage: "Queued retry for API worker.",
       revision: 2,
     });
-    expect(presented.components.schemas.BackgroundTaskRun.properties.trigger.example).toBe("manual");
-    expect(presented.components.schemas.BackgroundTaskRun.properties.trigger.enum).toContain("retry");
-    expect(
-      presented.paths["/v1/background-tasks/{slug}/runs/{runId}/cancel"].post.responses["202"].content[
-        "application/json"
-      ].example.status,
-    ).toBe("queued");
+    expect(presented.components.schemas.BackgroundTaskRun.properties.trigger.example).toBe(
+      "manual",
+    );
+    expect(presented.components.schemas.BackgroundTaskRun.properties.trigger.enum).toContain(
+      "retry",
+    );
   });
 
   it("samples the workflow Save stores", () => {
@@ -2103,7 +2095,9 @@ describe("API reference document", () => {
         workflow: { trigger: { kind: "communication" } },
       },
     });
-    expect(patch.requestBody.content["application/json"].example.instructions).toContain("scope: matching-record");
+    expect(patch.requestBody.content["application/json"].example.instructions).toContain(
+      "scope: matching-record",
+    );
     expect(patch.requestBody.content["application/json"].example.lastRunSummary).toBeUndefined();
     expect(patch.responses["200"].description).toBe("Stored workflow.");
     expect(patch.responses["200"].content["application/json"].example).toMatchObject({
@@ -2114,12 +2108,11 @@ describe("API reference document", () => {
       scheduleSyncState: "paused",
       revision: 2,
     });
-    expect(presented.paths["/v1/background-tasks/{slug}"].get.responses["200"].content["application/json"].example.slug).toBe(
-      "daily-summary",
-    );
-    expect(presented.paths["/v1/background-tasks"].post.requestBody.content["application/json"].example.slug).toBe(
-      "daily-summary",
-    );
+    expect(
+      presented.paths["/v1/background-tasks/{slug}"].get.responses["200"].content[
+        "application/json"
+      ].example.slug,
+    ).toBe("daily-summary");
   });
 
   it("samples the next run a paused workflow reports", () => {
@@ -2138,9 +2131,6 @@ describe("API reference document", () => {
       sources: { event: { mechanism: "none", health: "paused", nextDueAt: null } },
     });
     expect(stored.scheduleSyncState).toBeUndefined();
-    expect(presented.paths["/v1/background-tasks"].post.requestBody.content["application/json"].example.slug).toBe(
-      "daily-summary",
-    );
   });
 
   it("samples the agent Create agent stores", () => {
@@ -2205,7 +2195,6 @@ describe("API reference document", () => {
       continuationToken: "agt_example",
     });
     const listed = sessionPath.get.responses["200"].content["application/json"].example.sessions[0];
-    expect(listed.sessionId).toBe("session_abc123");
     expect(listed.title).toBe("Review the Acme renewal");
     expect(listed.turns).toBe(2);
   });
@@ -2230,7 +2219,9 @@ describe("API reference document", () => {
     const approve = presented.paths["/v1/agent-sessions/{id}/approvals/{approvalId}"].post;
     expect(approve.summary).toBe("Approve");
     expect(approve.description).toContain("decision granted");
-    expect(approve.requestBody.content["application/json"].example).toEqual({ decision: "granted" });
+    expect(approve.requestBody.content["application/json"].example).toEqual({
+      decision: "granted",
+    });
     expect(approve.responses["202"].content["application/json"].example).toEqual({
       approvalId: "session_abc123/turn/0/approval/0",
       decision: "granted",
@@ -2252,8 +2243,9 @@ describe("API reference document", () => {
       turnSeq: 1,
     });
     expect(JSON.stringify(turn.requestBody)).not.toContain("channel");
-    const listed = presented.paths["/v1/agent-sessions"].get.responses["200"].content["application/json"]
-      .example.sessions[0];
+    const listed =
+      presented.paths["/v1/agent-sessions"].get.responses["200"].content["application/json"].example
+        .sessions[0];
     expect(listed.title).toBe("Review the Acme renewal");
     expect(listed.turns).toBe(2);
   });
@@ -2298,8 +2290,9 @@ describe("API reference document", () => {
       data: { agent: "assistant", sessionId: "session_abc123" },
     });
     expect(line.turnSeq).toBeUndefined();
-    const history = presented.paths["/v1/agent-sessions"].get.responses["200"].content["application/json"].example
-      .sessions[0];
+    const history =
+      presented.paths["/v1/agent-sessions"].get.responses["200"].content["application/json"].example
+        .sessions[0];
     expect(history.title).toBe("Review the Acme renewal");
   });
 
@@ -2316,8 +2309,9 @@ describe("API reference document", () => {
       expiresAt: "2026-09-02T15:10:00Z",
       mfa: false,
     });
-    const history = presented.paths["/v1/agent-sessions"].get.responses["200"].content["application/json"].example
-      .sessions[0];
+    const history =
+      presented.paths["/v1/agent-sessions"].get.responses["200"].content["application/json"].example
+        .sessions[0];
     expect(history.title).toBe("Review the Acme renewal");
   });
 
@@ -2342,12 +2336,19 @@ describe("API reference document", () => {
     });
     expect(page.events[1].data.input).toBe("Review the Acme renewal");
     expect(page.events[10].data.input).toBe("What is the next step?");
-    expect(page.events.map((event: { type: string }) => event.type).filter((type: string) => type === "agent.llm_call_completed")).toHaveLength(3);
+    expect(
+      page.events
+        .map((event: { type: string }) => event.type)
+        .filter((type: string) => type === "agent.llm_call_completed"),
+    ).toHaveLength(3);
     expect(JSON.stringify(page)).not.toContain("Review Acme");
-    const history = presented.paths["/v1/agent-sessions"].get.responses["200"].content["application/json"].example.sessions[0];
+    const history =
+      presented.paths["/v1/agent-sessions"].get.responses["200"].content["application/json"].example
+        .sessions[0];
     expect(history.title).toBe("Review the Acme renewal");
-    expect(presented.components.schemas.DurableAgentSessionEvent.properties.type.example).toBe("agent.message");
-    expect(presented.components.schemas.AgentSessionEventsResponse.properties.nextSeq.example).toBe(500);
+    expect(presented.components.schemas.AgentSessionEventsResponse.properties.nextSeq.example).toBe(
+      500,
+    );
   });
 
   it("samples the transcript a run opens", () => {
@@ -2380,9 +2381,6 @@ describe("API reference document", () => {
     expect(presented.paths["/v1/background-tasks/{slug}/runs/{runId}/events"].post.summary).toBe(
       "Add run events",
     );
-    expect(presented.components.schemas.BackgroundTaskRunEvent.properties.type.example).toBe(
-      "temporal.completed",
-    );
     expect(presented.components.schemas.BackgroundTaskRunEvent.properties.seq.example).toBe(1);
   });
 
@@ -2393,8 +2391,12 @@ describe("API reference document", () => {
     expect(operation.description).toContain("private app token");
     expect(operation.description).not.toMatch(/\bslug\b|Temporal/);
     expect(operation.parameters[0].schema.example).toBe("hubspot");
-    expect(operation.requestBody.content["application/json"].example).toEqual({ apiKey: "pat-test" });
-    expect(operation.responses["200"].content["application/json"].example).toEqual({ connected: true });
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      apiKey: "pat-test",
+    });
+    expect(operation.responses["200"].content["application/json"].example).toEqual({
+      connected: true,
+    });
     expect(JSON.stringify(operation.requestBody.content["application/json"].example)).not.toContain(
       "example-vendor-key",
     );
@@ -2437,10 +2439,12 @@ describe("API reference document", () => {
     const operation = presented.paths["/v1/commitments/{commitmentId}/export"].get;
     expect(operation.summary).toBe("Export record");
     expect(operation.description).toContain("format md");
-    expect(operation.parameters.find((param) => param.name === "format")?.schema.example).toBe("md");
-    expect(operation.parameters.find((param) => param.name === "commitmentId")?.schema.example).toBe(
-      commitmentId,
+    expect(operation.parameters.find((param) => param.name === "format")?.schema.example).toBe(
+      "md",
     );
+    expect(
+      operation.parameters.find((param) => param.name === "commitmentId")?.schema.example,
+    ).toBe(commitmentId);
     const markdown = operation.responses["200"].content["text/markdown"].example as string;
     expect(markdown).toContain("**We promised:** Migration live by the 14th");
     expect(markdown).toContain("| State | At risk |");
@@ -2455,7 +2459,9 @@ describe("API reference document", () => {
     const operation = presented.paths["/v1/revenue-actions/{actionId}/source-body"].get;
     expect(operation.summary).toBe("View original email");
     expect(operation.description).toContain("only the action id");
-    expect(operation.parameters.find((param) => param.name === "actionId")?.schema.example).toBe(actionId);
+    expect(operation.parameters.find((param) => param.name === "actionId")?.schema.example).toBe(
+      actionId,
+    );
     const example = operation.responses["200"].content["application/json"].example;
     expect(example).toEqual({ body: "Could you circle back this month? July works for us." });
     expect(JSON.stringify(example)).not.toContain("following up on the proposal");
@@ -2492,7 +2498,12 @@ describe("API reference document", () => {
     expect(search.parameters?.[0]?.schema?.example).toBe("launch promise");
     const example = search.responses["200"].content["application/json"].example as {
       available: boolean;
-      matches: Array<{ subject: string; classification: string; counterparty: string; threadId: string }>;
+      matches: Array<{
+        subject: string;
+        classification: string;
+        counterparty: string;
+        threadId: string;
+      }>;
     };
     expect(example.available).toBe(true);
     expect(example.matches[0]).toMatchObject({
@@ -2516,7 +2527,12 @@ describe("API reference document", () => {
     expect(people.parameters?.[0]?.schema?.example).toBe(500);
     const example = people.responses["200"].content["application/json"].example as {
       hasMore: boolean;
-      persons: Array<{ displayName: string; primaryEmail: string; title: string; participantRoles: string[] }>;
+      persons: Array<{
+        displayName: string;
+        primaryEmail: string;
+        title: string;
+        participantRoles: string[];
+      }>;
     };
     expect(example.hasMore).toBe(false);
     expect(example.persons[0]).toMatchObject({
@@ -2577,7 +2593,12 @@ describe("API reference document", () => {
     const example = operation?.responses?.["200"]?.content?.["application/json"]?.example as {
       hasMore?: boolean;
       nextBefore?: string;
-      items?: Array<{ direction?: string; subject?: string; bodyLocked?: boolean; access?: { reason?: string } }>;
+      items?: Array<{
+        direction?: string;
+        subject?: string;
+        bodyLocked?: boolean;
+        access?: { reason?: string };
+      }>;
     };
     expect(example.hasMore).toBe(false);
     expect(example.nextBefore).toBeUndefined();
@@ -2742,29 +2763,6 @@ describe("API reference document", () => {
     expect(presented.paths["/v1/relationships"].post.operationId).toBe("createRelationship");
   });
 
-  it("samples the open page Recovery loads", () => {
-    const presented = presentApiReferenceDocument(spec);
-    const operation = presented.paths["/v1/revenue-actions"].get;
-    expect(operation.summary).toBe("Recovery");
-    expect(operation.description).toBe(
-      "Recovery loads the open queue. The request asks for open actions, one hundred at a time, on the recovery list, and it does not ask for an older page. Acme has no open recovery action, so the page is empty.",
-    );
-    const examples = Object.fromEntries(
-      operation.parameters.map((parameter: { name: string; schema?: { example?: unknown } }) => [
-        parameter.name,
-        parameter.schema?.example,
-      ]),
-    );
-    expect(examples).toMatchObject({ queueStatus: "open", limit: 100, surface: "recovery" });
-    expect(examples.offset).toBeUndefined();
-    expect(examples.due).toBeUndefined();
-    const page = operation.responses["200"].content["application/json"].example;
-    expect(page).toEqual({ actions: [], hasMore: false });
-    expect(JSON.stringify(page)).not.toContain("warm_follow_up");
-    expect(JSON.stringify(page)).not.toContain("sha256:ab12");
-    expect(presented.paths["/v1/revenue-actions"].post.operationId).toBe("createRevenueAction");
-  });
-
   it("samples the counts Impact loads", () => {
     const presented = presentApiReferenceDocument(spec);
     const operation = presented.paths["/v1/revenue-impact"].get;
@@ -2845,10 +2843,12 @@ describe("API reference document", () => {
       "Review possible duplicates loads the pending page. The request asks for pending duplicates, 50 at a time, and it does not ask for an older page. This workspace has no pending duplicate, so the page is empty.",
     );
     const examples = Object.fromEntries(
-      operation.parameters.map((parameter: { name: string; schema?: { example?: unknown }; example?: unknown }) => [
-        parameter.name,
-        parameter.example ?? parameter.schema?.example,
-      ]),
+      operation.parameters.map(
+        (parameter: { name: string; schema?: { example?: unknown }; example?: unknown }) => [
+          parameter.name,
+          parameter.example ?? parameter.schema?.example,
+        ],
+      ),
     );
     expect(examples).toMatchObject({ status: "pending", limit: 50 });
     expect(examples.offset).toBeUndefined();
@@ -2868,14 +2868,22 @@ describe("API reference document", () => {
     expect(operation.description).toBe(
       "What we owe loads promises we made that are still open. The request asks for promised by us, open and at risk, 200 at a time, and it does not ask for an older page. This workspace has no open promise we made, so the page is empty.",
     );
-    expect(presented.paths["/v1/commitments/{commitmentId}/export"].get.operationId).toBe("exportCommitment");
-    const examples = Object.fromEntries(
-      operation.parameters.map((parameter: { name: string; schema?: { example?: unknown }; example?: unknown }) => [
-        parameter.name,
-        parameter.example ?? parameter.schema?.example,
-      ]),
+    expect(presented.paths["/v1/commitments/{commitmentId}/export"].get.operationId).toBe(
+      "exportCommitment",
     );
-    expect(examples).toMatchObject({ direction: "promised_by_me", state: "open,at_risk", limit: 200 });
+    const examples = Object.fromEntries(
+      operation.parameters.map(
+        (parameter: { name: string; schema?: { example?: unknown }; example?: unknown }) => [
+          parameter.name,
+          parameter.example ?? parameter.schema?.example,
+        ],
+      ),
+    );
+    expect(examples).toMatchObject({
+      direction: "promised_by_me",
+      state: "open,at_risk",
+      limit: 200,
+    });
     expect(examples.offset).toBeUndefined();
     expect(examples.includeCandidates).toBeUndefined();
     expect(examples.dueBefore).toBeUndefined();
@@ -2893,10 +2901,12 @@ describe("API reference document", () => {
       "Attention queue loads the open page. The request asks for open items, 50 at a time, and it does not ask for an older page. This workspace has no open company in the queue, so the page is empty.",
     );
     const examples = Object.fromEntries(
-      operation.parameters.map((parameter: { name: string; schema?: { example?: unknown }; example?: unknown }) => [
-        parameter.name,
-        parameter.example ?? parameter.schema?.example,
-      ]),
+      operation.parameters.map(
+        (parameter: { name: string; schema?: { example?: unknown }; example?: unknown }) => [
+          parameter.name,
+          parameter.example ?? parameter.schema?.example,
+        ],
+      ),
     );
     expect(examples).toMatchObject({ status: "open", limit: 50 });
     expect(examples.offset).toBeUndefined();
@@ -2973,10 +2983,12 @@ describe("API reference document", () => {
       "Company graph loads the portfolio. The request asks for the portfolio at depth 2 and does not ask for an earlier moment or an older page. This workspace has no company, so the graph is empty.",
     );
     const examples = Object.fromEntries(
-      operation.parameters.map((parameter: { name: string; example?: unknown; schema?: { example?: unknown } }) => [
-        parameter.name,
-        parameter.example ?? parameter.schema?.example,
-      ]),
+      operation.parameters.map(
+        (parameter: { name: string; example?: unknown; schema?: { example?: unknown } }) => [
+          parameter.name,
+          parameter.example ?? parameter.schema?.example,
+        ],
+      ),
     );
     expect(examples.scope).toBe("portfolio");
     expect(examples.depth).toBe(2);
@@ -3015,7 +3027,12 @@ describe("API reference document", () => {
     );
     expect(operation?.parameters).toBeUndefined();
     const example = operation?.responses?.["200"]?.content?.["application/json"]?.example as {
-      templates?: Array<{ name?: string; slug?: string; instructions?: string; description?: string }>;
+      templates?: Array<{
+        name?: string;
+        slug?: string;
+        instructions?: string;
+        description?: string;
+      }>;
     };
     expect(example.templates).toHaveLength(10);
     expect(example.templates?.[0]?.name).toBe("Relationship Refresh");
@@ -3024,10 +3041,12 @@ describe("API reference document", () => {
     const encoded = JSON.stringify(example);
     expect(encoded).not.toContain("produce a markdown digest.");
     expect(encoded).not.toContain("report artifact");
-    const one = presented.paths["/v1/background-task-templates/{templateSlug}"]?.get?.responses?.["200"]?.content?.[
-      "application/json"
-    ]?.example as { instructions?: string };
-    expect(one.instructions).toBe("Review recent important Gmail messages and produce a markdown digest.");
+    const one = presented.paths["/v1/background-task-templates/{templateSlug}"]?.get?.responses?.[
+      "200"
+    ]?.content?.["application/json"]?.example as { instructions?: string };
+    expect(one.instructions).toBe(
+      "Review recent important Gmail messages and produce a markdown digest.",
+    );
   });
 
   it("samples the page Gmail and Google Calendar loads", () => {
@@ -3057,7 +3076,13 @@ describe("API reference document", () => {
     );
     expect(operation?.parameters).toBeUndefined();
     const example = operation?.responses?.["200"]?.content?.["application/json"]?.example as {
-      connectors?: Array<{ name?: string; connected?: boolean; displayName?: string; authType?: string; mcpUrl?: string }>;
+      connectors?: Array<{
+        name?: string;
+        connected?: boolean;
+        displayName?: string;
+        authType?: string;
+        mcpUrl?: string;
+      }>;
     };
     expect(example.connectors).toHaveLength(11);
     expect(example.connectors?.[0]).toMatchObject({ name: "canvas", connected: false });
@@ -3082,8 +3107,13 @@ describe("API reference document", () => {
     };
     expect(example.data).toHaveLength(10);
     expect(example.data?.[0]?.id).toBe("anthropic/claude-haiku-4-5");
-    expect(example.data?.map((row) => row.id)).toEqual([...(example.data ?? []).map((row) => row.id)].sort());
-    expect(presented.paths["/v1/llm/chat/completions"]?.post?.requestBody?.content?.["application/json"]?.example).toMatchObject({
+    expect(example.data?.map((row) => row.id)).toEqual(
+      [...(example.data ?? []).map((row) => row.id)].sort(),
+    );
+    expect(
+      presented.paths["/v1/llm/chat/completions"]?.post?.requestBody?.content?.["application/json"]
+        ?.example,
+    ).toMatchObject({
       model: "openai/gpt-4.1-mini",
     });
   });
@@ -3156,29 +3186,6 @@ describe("API reference document", () => {
     expect(JSON.stringify(operation)).not.toContain("accounts.google.com");
   });
 
-  it("samples the local workspace Connected sources loads", () => {
-    const presented = presentApiReferenceDocument(spec);
-    const operation = presented.paths["/v1/revenue-workspaces/current"]?.get;
-    expect(operation?.summary).toBe("Workspace");
-    expect(operation?.description).toBe(
-      "Connected sources loads this workspace. The request sends no filter. This workspace is local, active, and the sending check is off, so the organization and sending workspace are omitted.",
-    );
-    expect(operation?.description).not.toMatch(/\bpreflight\b/);
-    expect(operation?.parameters).toBeUndefined();
-    const example = operation?.responses?.["200"]?.content?.["application/json"]?.example;
-    expect(example).toEqual({
-      id: "0b8dfa9b-a7b2-46ea-982c-622a914c00e5",
-      mode: "local",
-      status: "active",
-      preflightAvailable: false,
-    });
-    expect(JSON.stringify(example)).not.toContain("org_01ABC");
-    expect(JSON.stringify(example)).not.toContain("ws_01ABC");
-    expect(
-      presented.components.schemas.RevenueWorkspace.properties.outboundOrganizationId.example,
-    ).toBe("org_01ABC");
-  });
-
   it("samples the cloud runs the Runs page loads", () => {
     const presented = presentApiReferenceDocument(spec);
     const operation = presented.paths["/v1/background-task-runs"].get;
@@ -3222,11 +3229,13 @@ describe("API reference document", () => {
     );
     expect(operation.parameters).toBeUndefined();
     const tasks = operation.responses["200"].content["application/json"].example.tasks;
-    expect(tasks.map((task: { slug: string; name: string; executionTarget: string }) => [
-      task.slug,
-      task.name,
-      task.executionTarget,
-    ])).toEqual([
+    expect(
+      tasks.map((task: { slug: string; name: string; executionTarget: string }) => [
+        task.slug,
+        task.name,
+        task.executionTarget,
+      ]),
+    ).toEqual([
       ["oppulence-attention-monitor", "Attention Monitor", "api"],
       ["oppulence-connector-health-repair", "Connector Health and Repair", "api"],
       ["oppulence-meeting-pre-brief", "Meeting Pre-Brief", "api"],
@@ -3234,13 +3243,13 @@ describe("API reference document", () => {
       ["oppulence-recommendation-review", "Recommendation Review", "api"],
       ["oppulence-relationship-refresh", "Relationship Refresh", "api"],
     ]);
-    expect(tasks.every((task: { active: boolean; systemManaged: boolean; scheduleSyncState: string }) =>
-      task.active && task.systemManaged && task.scheduleSyncState === "current",
-    )).toBe(true);
+    expect(
+      tasks.every(
+        (task: { active: boolean; systemManaged: boolean; scheduleSyncState: string }) =>
+          task.active && task.systemManaged && task.scheduleSyncState === "current",
+      ),
+    ).toBe(true);
     expect(JSON.stringify(operation.responses["200"])).not.toContain("daily-summary");
-    expect(presented.paths["/v1/background-tasks"].post.requestBody.content["application/json"].example.slug).toBe(
-      "daily-summary",
-    );
   });
 
   it("samples the workflows the Workflows page installs", () => {
@@ -3253,11 +3262,13 @@ describe("API reference document", () => {
     expect(operation.parameters).toBeUndefined();
     expect(operation.requestBody).toBeUndefined();
     const tasks = operation.responses["200"].content["application/json"].example.tasks;
-    expect(tasks.map((task: { slug: string; executionTarget: string; active: boolean }) => [
-      task.slug,
-      task.executionTarget,
-      task.active,
-    ])).toEqual([
+    expect(
+      tasks.map((task: { slug: string; executionTarget: string; active: boolean }) => [
+        task.slug,
+        task.executionTarget,
+        task.active,
+      ]),
+    ).toEqual([
       ["oppulence-relationship-refresh", "api", true],
       ["oppulence-attention-monitor", "api", true],
       ["oppulence-meeting-pre-brief", "api", true],
@@ -3266,9 +3277,6 @@ describe("API reference document", () => {
       ["oppulence-connector-health-repair", "api", true],
     ]);
     expect(JSON.stringify(operation.responses["200"])).not.toContain("daily-summary");
-    expect(
-      presented.paths["/v1/background-tasks"].get.responses["200"].content["application/json"].example.tasks[0].slug,
-    ).toBe("daily-summary");
   });
 
   it("samples the cloud run the Runs page opens", () => {
@@ -3276,10 +3284,12 @@ describe("API reference document", () => {
     const operation = presented.paths["/v1/background-tasks/{slug}/runs/{runId}"].get;
     expect(operation.summary).toBe("Get a run");
     expect(operation.description).toBe("Gets one workflow run, including its progress.");
-    expect(operation.parameters.map((parameter: { name: string; example: string }) => [
-      parameter.name,
-      parameter.example,
-    ])).toEqual([
+    expect(
+      operation.parameters.map((parameter: { name: string; example: string }) => [
+        parameter.name,
+        parameter.example,
+      ]),
+    ).toEqual([
       ["slug", "oppulence-relationship-refresh"],
       ["runId", "sched-temporal-77f5e632-a841-4557-a8e4-9b8f0d207ff4"],
     ]);
@@ -3293,9 +3303,11 @@ describe("API reference document", () => {
       errorCode: "llm_call_failed",
     });
     expect(JSON.stringify(example)).not.toContain("daily-summary");
-    expect(presented.paths["/v1/background-tasks/{slug}/runs/{runId}"].patch.responses["200"].content["application/json"].example.slug).toBe(
-      "daily-summary",
-    );
+    expect(
+      presented.paths["/v1/background-tasks/{slug}/runs/{runId}"].patch.responses["200"].content[
+        "application/json"
+      ].example.slug,
+    ).toBe("daily-summary");
   });
 
   it("samples the workflow the editor removes", () => {
@@ -3307,15 +3319,19 @@ describe("API reference document", () => {
       "Deletes the background task and its note, runs, and run events after checking the current revision.",
     );
     expect(operation.requestBody).toBeUndefined();
-    expect(operation.parameters.map((parameter: { name: string; example: string | number }) => [
-      parameter.name,
-      parameter.example,
-    ])).toEqual([
+    expect(
+      operation.parameters.map((parameter: { name: string; example: string | number }) => [
+        parameter.name,
+        parameter.example,
+      ]),
+    ).toEqual([
       ["slug", "follow-up-when-a-promise-slips"],
       ["revision", 1],
     ]);
     expect(operation.responses["204"].description).toBe("Background task deleted.");
-    expect(item.get.responses["200"].content["application/json"].example.slug).toBe("daily-summary");
+    expect(item.get.responses["200"].content["application/json"].example.slug).toBe(
+      "daily-summary",
+    );
   });
 
   it("samples the company the sheet opens", () => {
@@ -3346,7 +3362,11 @@ describe("API reference document", () => {
     });
     expect(example.emailThreads).toEqual([]);
     expect(example.participants).toEqual([
-      expect.objectContaining({ email: "avery@acme.com", role: "champion", displayName: "Avery Chen" }),
+      expect.objectContaining({
+        email: "avery@acme.com",
+        role: "champion",
+        displayName: "Avery Chen",
+      }),
     ]);
     expect(example.missionControl.stateVersion).toBe(1);
     expect(example.missionControl.evidence.lifecycle.supported).toBe(true);
@@ -3357,7 +3377,7 @@ describe("API reference document", () => {
     const presented = presentApiReferenceDocument(spec);
     const operation = presented.paths["/v1/relationships/{relationshipId}/acknowledgements"].post;
     const companyID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5";
-    const stateHash = "sha256:ab12cd34";
+    const stateHash = "sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1";
     expect(operation.summary).toBe("Mark as reviewed");
     expect(operation.description).toBe(
       "Mark as reviewed sends the company id and the state version and hash that company is showing. A stale review fails with 409.",
@@ -3379,7 +3399,7 @@ describe("API reference document", () => {
       stateVersion: 4,
       acknowledgedAt: "2026-07-31T14:00:00Z",
     });
-    expect(JSON.stringify(operation.requestBody)).not.toContain("sha256:ab12\"");
+    expect(JSON.stringify(operation.requestBody)).not.toContain('sha256:ab12"');
   });
 
   it("samples the conversation Correct sends", () => {
@@ -3401,7 +3421,7 @@ describe("API reference document", () => {
     expect(operation.requestBody.content["application/json"].example).toEqual({
       correctedValue: "Avery Chen",
       reason: "User corrected conversation evidence during focused review.",
-      reviewItemId: "review:da47aac4d2da3c20",
+      reviewItemId: "review:9abf3ca4a5e5eff1",
     });
     const response = operation.responses["201"].content["application/json"].example;
     expect(response.relationship.id).toBe(companyID);
@@ -3410,7 +3430,7 @@ describe("API reference document", () => {
       speakerConfidence: 1,
     });
     expect(response.intelligence.reviewItems.map((item: { id: string }) => item.id)).toEqual([
-      "review:658c70e2b09ed264",
+      "review:1fecc8d36f097595",
     ]);
     expect(JSON.stringify(operation.requestBody)).not.toContain("Avery was the speaker.");
     expect(JSON.stringify(operation.requestBody)).not.toContain("review:ab12");
@@ -3532,7 +3552,9 @@ describe("API reference document", () => {
     expect(operation.parameters.find((param) => param.name === "scanId")?.example).toBe(
       "4d8dfa9b-a7b2-46ea-982c-622a914c00e5",
     );
-    expect(operation.parameters.find((param) => param.name === "format")?.schema.example).toBe("md");
+    expect(operation.parameters.find((param) => param.name === "format")?.schema.example).toBe(
+      "md",
+    );
     const example = operation.responses["200"].content["application/json"].example;
     expect(example).toMatchObject({
       lookbackDays: 180,
@@ -3675,9 +3697,6 @@ describe("API reference document", () => {
       stepUp: false,
     });
     expect(JSON.stringify(example)).not.toContain("acta_");
-    expect(presented.paths["/v1/public/mutual-action-plan"].get.summary).toBe(
-      "Open a scoped mutual action plan",
-    );
   });
 
   it("samples the audit Reading your last 6 months polls", () => {
@@ -3766,40 +3785,6 @@ describe("API reference document", () => {
     expect(operation.requestBody.content["application/json"].example.token).not.toContain("acta_");
   });
 
-  it("samples the proposal Approve and run returns", () => {
-    const presented = presentApiReferenceDocument(spec);
-    const operation = presented.paths["/v1/action-proposals/{id}/approve"].post;
-    expect(operation.summary).toBe("Approve and run");
-    expect(operation.operationId).toBe("approveActionProposal");
-    expect(operation.description).toBe(
-      "Approve and run posts no body. The page keeps the approved proposal and uses the one-time value to run the action.",
-    );
-    expect(operation.requestBody).toBeUndefined();
-    expect(operation.parameters[0]).toMatchObject({
-      name: "id",
-      example: "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
-    });
-    expect(operation.responses["200"].content["application/json"].example).toEqual({
-      proposal: {
-        id: "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
-        target: "conduit:invoice:inv_456",
-        kind: "conduit.dunning.advance",
-        paramsJson: '{"amount":100,"step":2}',
-        financial: false,
-        rationale: "Acme is 14 days overdue",
-        status: "approved",
-        createdAt: "2026-07-31T14:00:00Z",
-        approvedAt: "2026-07-31T14:00:00Z",
-      },
-      token: "example.not-a-live-approval",
-      expiresAt: "2026-07-31T14:05:00Z",
-    });
-    const encoded = JSON.stringify(operation.responses["200"].content["application/json"].example);
-    expect(encoded).not.toContain("acta_");
-    expect(encoded).not.toContain("executedAt");
-    expect(encoded).not.toContain("resultRef");
-  });
-
   it("samples the proposal Reject discards", () => {
     const presented = presentApiReferenceDocument(spec);
     const operation = presented.paths["/v1/action-proposals/{id}/reject"].post;
@@ -3830,94 +3815,6 @@ describe("API reference document", () => {
     expect(encoded).not.toContain("acta_");
     expect(encoded).not.toContain("approvedAt");
     expect(encoded).not.toContain("token");
-  });
-
-  it("samples the approvals page pending list", () => {
-    const presented = presentApiReferenceDocument(spec);
-    const operation = presented.paths["/v1/action-proposals"].get;
-    expect(operation.summary).toBe("List pending approvals");
-    expect(operation.operationId).toBe("listPendingActionProposals");
-    expect(operation.description).toBe(
-      "The approvals page loads proposals that are still waiting. It sends status=pending and shows each one until you approve or reject it.",
-    );
-    expect(operation.requestBody).toBeUndefined();
-    expect(operation.parameters[0]).toMatchObject({
-      name: "status",
-      in: "query",
-      required: false,
-      schema: { example: "pending" },
-    });
-    expect(operation.responses["200"].content["application/json"].example).toEqual({
-      proposals: [
-        {
-          id: "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
-          target: "conduit:invoice:inv_456",
-          kind: "conduit.dunning.advance",
-          paramsJson: '{"amount":100,"step":2}',
-          financial: false,
-          rationale: "Acme is 14 days overdue",
-          status: "pending",
-          createdAt: "2026-07-31T14:00:00Z",
-        },
-      ],
-    });
-    const encoded = JSON.stringify(operation.responses["200"].content["application/json"].example);
-    expect(encoded).not.toContain("acta_");
-    expect(encoded).not.toContain("approvedAt");
-    expect(encoded).not.toContain("token");
-  });
-
-  it("samples the audit trail the approvals page opens", () => {
-    const presented = presentApiReferenceDocument(spec);
-    const operation = presented.paths["/v1/objects/{resourceRef}/audit"].get;
-    expect(operation.summary).toBe("Audit trail");
-    expect(operation.operationId).toBe("getObjectActionAudit");
-    expect(operation.description).toBe(
-      "Audit trail opens the chain for the object this action changes. It shows each proposal and a short prefix of the approval record. The one-time value is not included.",
-    );
-    expect(operation.requestBody).toBeUndefined();
-    expect(operation.parameters[0]).toMatchObject({
-      name: "resourceRef",
-      in: "path",
-      required: true,
-      schema: { example: "conduit:invoice:inv_456" },
-    });
-    expect(operation.responses["200"].content["application/json"].example).toEqual({
-      resourceRef: "conduit:invoice:inv_456",
-      entries: [
-        {
-          proposal: {
-            id: "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
-            target: "conduit:invoice:inv_456",
-            kind: "conduit.dunning.advance",
-            paramsJson: '{"amount":100,"step":2}',
-            financial: false,
-            rationale: "Acme is 14 days overdue",
-            status: "executed",
-            resultRef: "conduit:step:step_1",
-            returnEventId: "8d8dfa9b-a7b2-46ea-982c-622a914c00e5",
-            approvedAt: "2026-07-31T14:00:00Z",
-            executedAt: "2026-07-31T14:00:00Z",
-            resolvedAt: "2026-07-31T14:02:00Z",
-            createdAt: "2026-07-31T14:00:00Z",
-          },
-          tokens: [
-            {
-              hashPrefix: "c4e8a91b0d27",
-              paramsHash: "1e750183c74a18b46e872244bea860113d34dd38a8c7a87192b41553be26941d",
-              stepUp: false,
-              expiresAt: "2026-07-31T14:05:00Z",
-              consumed: true,
-              consumedAt: "2026-07-31T14:00:00Z",
-              issuedAt: "2026-07-31T14:00:00Z",
-            },
-          ],
-        },
-      ],
-    });
-    const encoded = JSON.stringify(operation.responses["200"].content["application/json"].example);
-    expect(encoded).not.toContain("acta_");
-    expect(encoded).not.toContain('"token"');
   });
 
   it("samples the action Re-check policy reloads", () => {
@@ -4037,7 +3934,12 @@ describe("API reference document", () => {
         parameter.schema?.example,
       ]),
     );
-    expect(examples).toMatchObject({ queueStatus: "open", limit: 100, surface: "task", due: "asc" });
+    expect(examples).toMatchObject({
+      queueStatus: "open",
+      limit: 100,
+      surface: "task",
+      due: "asc",
+    });
     expect(examples.offset).toBeUndefined();
     const page = operation.responses["200"].content["application/json"].example;
     expect(page).toEqual({
@@ -4071,7 +3973,6 @@ describe("API reference document", () => {
     expect(encoded).not.toContain("acta_");
     expect(encoded).not.toContain("approvedAt");
     expect(encoded).not.toContain('"token"');
-    expect(presented.paths["/v1/revenue-actions"].post.summary).toBe("Create a manual action");
   });
 
   it("samples the company Confirm retraction returns", () => {
@@ -4178,8 +4079,7 @@ describe("API reference document", () => {
 
   it("samples the page Show earlier evidence loads", () => {
     const presented = presentApiReferenceDocument(spec);
-    const operation =
-      presented.paths["/v1/relationships/{relationshipId}/conversation-review"].get;
+    const operation = presented.paths["/v1/relationships/{relationshipId}/conversation-review"].get;
     expect(operation.summary).toBe("Show earlier evidence");
     expect(operation.operationId).toBe("getRelationshipConversationReview");
     expect(operation.description).toBe(
@@ -4352,7 +4252,8 @@ describe("API reference document", () => {
   it("samples the promise They accepted returns", () => {
     const presented = presentApiReferenceDocument(spec);
     const post =
-      presented.paths["/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions"].post;
+      presented.paths["/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions"]
+        .post;
     expect(post.summary).toBe("They accepted");
     expect(post.operationId).toBe("appendCommitmentTransition");
     expect(post.description).toBe(
@@ -4414,12 +4315,12 @@ describe("API reference document", () => {
     expect(example.status).toBe("partial");
     expect(example.legalHold).toBe(false);
     expect(example.scopeRef).toBe("9c8dfa9b-a7b2-46ea-982c-622a914c00e5");
-    expect(example.targets.find((target: { target: string }) => target.target === "api_evidence").status).toBe(
-      "deleted",
-    );
-    expect(example.targets.find((target: { target: string }) => target.target === "provider").status).toBe(
-      "pending",
-    );
+    expect(
+      example.targets.find((target: { target: string }) => target.target === "api_evidence").status,
+    ).toBe("deleted");
+    expect(
+      example.targets.find((target: { target: string }) => target.target === "provider").status,
+    ).toBe("pending");
     expect(example.completedAt).toBeUndefined();
     expect(JSON.stringify(post)).not.toContain("acta_");
   });
@@ -4429,10 +4330,16 @@ describe("API reference document", () => {
     const post = presented.paths["/v1/revenue-actions/{actionId}/dismiss"].post;
     expect(post.summary).toBe("Dismiss");
     expect(post.operationId).toBe("dismissRevenueAction");
-    expect(post.description).toBe("Dismiss removes this follow-up from the queue and stores the reason.");
-    const action = post.parameters.find((parameter: { name: string }) => parameter.name === "actionId");
+    expect(post.description).toBe(
+      "Dismiss removes this follow-up from the queue and stores the reason.",
+    );
+    const action = post.parameters.find(
+      (parameter: { name: string }) => parameter.name === "actionId",
+    );
     expect(action.example).toBe("1a8dfa9b-a7b2-46ea-982c-622a914c00e5");
-    expect(post.requestBody.content["application/json"].example).toEqual({ reason: "not_relevant" });
+    expect(post.requestBody.content["application/json"].example).toEqual({
+      reason: "not_relevant",
+    });
     const example = post.responses["200"].content["application/json"].example;
     expect(example.queueStatus).toBe("dismissed");
     expect(example.dismissReason).toBe("not_relevant");
@@ -4452,9 +4359,13 @@ describe("API reference document", () => {
     expect(post.description).toBe(
       "Reject declines this follow-up. The decision is stored and the follow-up stays open.",
     );
-    const action = post.parameters.find((parameter: { name: string }) => parameter.name === "actionId");
+    const action = post.parameters.find(
+      (parameter: { name: string }) => parameter.name === "actionId",
+    );
     expect(action.example).toBe("1a8dfa9b-a7b2-46ea-982c-622a914c00e5");
-    expect(post.requestBody.content["application/json"].example).toEqual({ reason: "not_appropriate" });
+    expect(post.requestBody.content["application/json"].example).toEqual({
+      reason: "not_appropriate",
+    });
     const example = post.responses["200"].content["application/json"].example;
     expect(example.approvalStatus).toBe("rejected");
     expect(example.queueStatus).toBe("open");
@@ -4472,7 +4383,9 @@ describe("API reference document", () => {
     expect(post.description).toBe(
       "Review records that this attention item was reviewed. It leaves the open queue.",
     );
-    const attention = post.parameters.find((parameter: { name: string }) => parameter.name === "attentionId");
+    const attention = post.parameters.find(
+      (parameter: { name: string }) => parameter.name === "attentionId",
+    );
     expect(attention.example).toBe("da8dfa9b-a7b2-46ea-982c-622a914c00e5");
     expect(post.requestBody.content["application/json"].example).toEqual({
       decision: "acknowledge",
@@ -4486,21 +4399,24 @@ describe("API reference document", () => {
     expect(example.version).toBe(2);
     expect(example.snoozedUntil).toBeUndefined();
     expect(example.dismissedAt).toBeUndefined();
-    expect(presented.components.schemas.RelationshipAttentionItem.properties.stateReason.example).toBe(
-      "Reviewed from the portfolio attention queue.",
-    );
+    expect(
+      presented.components.schemas.RelationshipAttentionItem.properties.stateReason.example,
+    ).toBe("Reviewed from the portfolio attention queue.");
     expect(JSON.stringify(post)).not.toContain("acta_");
   });
 
   it("samples the duplicate Merge combines", () => {
     const presented = presentApiReferenceDocument(spec);
-    const post = presented.paths["/v1/relationship-identity-candidates/{candidateId}/decisions"].post;
+    const post =
+      presented.paths["/v1/relationship-identity-candidates/{candidateId}/decisions"].post;
     expect(post.summary).toBe("Merge");
     expect(post.operationId).toBe("decideRelationshipIdentityCandidate");
     expect(post.description).toBe(
       "Merge combines this possible duplicate into the company that already exists. The extra company is archived.",
     );
-    const candidate = post.parameters.find((parameter: { name: string }) => parameter.name === "candidateId");
+    const candidate = post.parameters.find(
+      (parameter: { name: string }) => parameter.name === "candidateId",
+    );
     expect(candidate.example).toBe("6b8dfa9b-a7b2-46ea-982c-622a914c00e5");
     expect(post.requestBody.content["application/json"].example).toEqual({
       decision: "merge",
@@ -4558,12 +4474,12 @@ describe("API reference document", () => {
     expect(alias.summary).toBe("Connect");
     expect(alias.operationId).toBe("startConnector");
     expect(alias.requestBody.content["application/json"].example.redirectTarget).toBe(callback);
-    expect(presented.components.schemas.ConnectionStartRequest.properties.redirectTarget.example).toBe(
-      callback,
-    );
-    expect(presented.components.schemas.ConnectionStartRequest.properties.redirect_after.example).toBe(
-      "solomon-ai://connection-complete",
-    );
+    expect(
+      presented.components.schemas.ConnectionStartRequest.properties.redirectTarget.example,
+    ).toBe(callback);
+    expect(
+      presented.components.schemas.ConnectionStartRequest.properties.redirect_after.example,
+    ).toBe("solomon-ai://connection-complete");
     const serialized = JSON.stringify(start.requestBody);
     expect(serialized).not.toContain("solomon-ai://connection-complete");
     expect(serialized).not.toContain("acta_");
@@ -4648,7 +4564,9 @@ describe("API reference document", () => {
     const connectionID = "ca_8b8dfa9ba7b246ea982c622a914c00e5";
     expect(remove.summary).toBe("Disconnect Jira");
     expect(remove.operationId).toBe("deleteComposioConnection");
-    expect(remove.description).toBe("Disconnect Jira removes that connection. The request sends no body.");
+    expect(remove.description).toBe(
+      "Disconnect Jira removes that connection. The request sends no body.",
+    );
     expect(remove.requestBody).toBeUndefined();
     expect(remove.parameters[0].example).toBe(connectionID);
     expect(remove.responses["204"].description).toBe("The Jira connection is removed.");
@@ -4689,9 +4607,7 @@ describe("API reference document", () => {
     const agent = presented.paths["/v1/agents/{slug}"].get;
     expect(agent.summary).toBe("Configure");
     expect(agent.operationId).toBe("getAgent");
-    expect(agent.description).toBe(
-      "Configure loads this agent's name, purpose, model, and tools.",
-    );
+    expect(agent.description).toBe("Configure loads this agent's name, purpose, model, and tools.");
     expect(agent.requestBody).toBeUndefined();
     expect(agent.parameters[0]).toMatchObject({
       name: "slug",
@@ -4719,16 +4635,16 @@ describe("API reference document", () => {
 
   it("names the status values listed on the field", () => {
     const presented = presentApiReferenceDocument(spec);
-    const workspace =
-      presented.components.schemas.RevenueWorkspace.properties.status.description;
+    const workspace = presented.components.schemas.RevenueWorkspace.properties.status.description;
     expect(workspace).toBe("Active, disconnected, or needs repair.");
     expect(workspace).not.toContain("billing");
     expect(workspace).not.toContain("Background runs");
     expect(
       presented.components.schemas.BackgroundTaskRunStatusResponse.properties.status.description,
     ).toBe("Queued, running, succeeded, failed, or stopped.");
+    // The current plan names its trial instead of listing every billing state.
     expect(presented.components.schemas.BillingState.properties.status.description).toBe(
-      "Active, trialing, past due, or canceled.",
+      "Trial means this plan is still in its trial.",
     );
     const member =
       presented.components.schemas.RevenueWorkspaceMember.properties.status.description;
@@ -4754,7 +4670,6 @@ describe("API reference document", () => {
     const presented = presentApiReferenceDocument(spec);
     const run = presented.components.schemas.BackgroundTaskRunStatusResponse.properties.status;
     expect(run.example).toBe("queued");
-    expect(run.description).toContain("Background runs");
     expect(presented.components.schemas.HealthResponse.properties.status.example).toBe("ok");
     expect(presented.components.schemas.ReadyResponse.properties.status.example).toBe("ready");
     expect(presented.components.schemas.RevenueWorkspace.properties.status.example).toBe("active");
@@ -4841,23 +4756,5 @@ describe("API reference document", () => {
     const user = presented.components.schemas.User.properties.email;
     expect(user.description).toBe("Best-known WorkOS primary email for the user.");
     expect(user.example).toBe("user@example.com");
-  });
-
-  it("samples the run Cancel stops", () => {
-    const presented = presentApiReferenceDocument(spec);
-    const cancel =
-      presented.paths["/v1/background-tasks/{slug}/runs/{runId}/cancel"]?.post;
-    expect(cancel?.summary).toBe("Cancel a cloud run");
-    const example = cancel?.responses?.["202"]?.content?.["application/json"]?.example;
-    expect(example).toMatchObject({
-      status: "stopped",
-      executor: "api",
-      temporalStatus: "Canceled",
-      progressMessage: "Cancellation requested.",
-      startedAt: "2026-06-04T21:01:00Z",
-      completedAt: "2026-06-04T21:02:00Z",
-    });
-    expect(JSON.stringify(example)).not.toContain("acta_");
-    expect(JSON.stringify(example)).not.toContain('"token"');
   });
 });

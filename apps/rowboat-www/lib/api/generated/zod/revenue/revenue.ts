@@ -441,8 +441,8 @@ export const GetObjectAudit500Response = zod
   );
 
 /**
- * Recovery loads the open queue. The request asks for open actions, one hundred at a time, on the recovery list, and it does not ask for an older page. Acme has no open recovery action, so the page is empty.
- * @summary Recovery
+ * Tasks loads open follow-ups with the soonest due date first. It asks for open tasks, one hundred at a time, and does not ask for an older page. The first task is Follow up on the proposal, due on July 15.
+ * @summary Tasks
  */
 export const listRevenueActionsQueryOffsetMin = 0;
 
@@ -451,23 +451,21 @@ export const ListRevenueActionsQueryParams = zod.object({
     .enum(["open", "snoozed", "dismissed", "handled", "all"])
     .optional()
     .describe("Queue status filter, or all."),
-  limit: zod.coerce
-    .number()
-    .int()
-    .optional()
-    .describe("Page size (max 100). Recovery asks for 100."),
+  limit: zod.coerce.number().int().optional().describe("Page size (max 100). Tasks asks for 100."),
   offset: zod.coerce
     .number()
     .int()
     .min(listRevenueActionsQueryOffsetMin)
     .optional()
-    .describe("How many actions to skip. Recovery does not send this on the first page."),
+    .describe("How many tasks to skip. Tasks does not send this on the first page."),
   surface: zod
-    .enum(["recovery", "task"])
+    .enum(["task", "recovery"])
     .optional()
-    .describe(
-      "recovery keeps every action that is not a follow-up task. task keeps follow-up tasks.",
-    ),
+    .describe("task keeps follow-up tasks. recovery keeps every other action."),
+  due: zod
+    .enum(["asc", "desc"])
+    .optional()
+    .describe("Soonest due first is asc. Latest due is desc."),
 });
 
 export const ListRevenueActions200Response = zod
@@ -628,8 +626,8 @@ export const ListRevenueActions401Response = zod
   );
 
 /**
- * Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.
- * @summary Create a manual action
+ * Create task saves a follow-up on a company. It sends the title, the due time, and a priority of 30.
+ * @summary Create task
  */
 export const CreateRevenueActionBody = zod
   .strictObject({
@@ -659,9 +657,9 @@ export const CreateRevenueActionBody = zod
     priorityScore: zod.int().optional().describe("Priority (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed body."),
     proposedSubject: zod.string().optional().describe("Proposed subject."),
-    reason: zod.string().describe("Evidence-backed reason."),
+    reason: zod.string().describe("Task title."),
     recipientEmail: zod.string().optional().describe("Recipient email."),
-    relationshipId: zod.uuid().describe("Owning relationship id."),
+    relationshipId: zod.uuid().describe("Company the task is for."),
     senderAccountRef: zod.string().optional().describe("Sender account reference."),
   })
   .describe("Create request.");
@@ -833,11 +831,11 @@ export const CreateRevenueAction404Response = zod
   );
 
 /**
- * Returns one action with relationship context.
- * @summary Get an action
+ * Re-check policy reloads this action. The sheet shows the company, the follow-up, and that the check passed.
+ * @summary Reload the checked action
  */
 export const GetRevenueActionParams = zod.object({
-  actionId: zod.uuid().describe("Action id."),
+  actionId: zod.uuid().describe("Action the sheet reloads."),
 });
 
 export const GetRevenueAction200Response = zod
@@ -959,6 +957,21 @@ export const GetRevenueAction200Response = zod
   })
   .describe(
     "One Revenue Action Queue item. State is split into independent dimensions: queue triage, policy preflight, approval, and execution. Every edit creates a new revision and invalidates the previous policy decision and approval.",
+  );
+
+export const GetRevenueAction400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
   );
 
 export const GetRevenueAction401Response = zod
@@ -1342,11 +1355,7 @@ export const GetRevenueActionAudit200Response = zod
               .describe("Research sub-result snapshot."),
             revision: zod.int().describe("Action revision the decision is about."),
             revisionHash: zod.string().describe("Revision hash the decision is bound to."),
-            status: zod
-              .enum(["passed", "review_required", "blocked"])
-              .describe(
-                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-              ),
+            status: zod.enum(["passed", "review_required", "blocked"]).describe("Decision status."),
             suppression: zod
               .record(zod.string(), zod.unknown())
               .optional()
@@ -1440,8 +1449,8 @@ export const GetRevenueActionAudit404Response = zod
   );
 
 /**
- * Dismisses the action with a reason label and records the dismissed outcome.
- * @summary Dismiss an action
+ * Dismiss removes this follow-up from the queue and stores the reason.
+ * @summary Dismiss
  */
 export const DismissRevenueActionParams = zod.object({
   actionId: zod.uuid().describe("Action id."),
@@ -1846,11 +1855,7 @@ export const EvaluateRevenueAction200Response = zod
       .describe("Research sub-result snapshot."),
     revision: zod.int().describe("Action revision the decision is about."),
     revisionHash: zod.string().describe("Revision hash the decision is bound to."),
-    status: zod
-      .enum(["passed", "review_required", "blocked"])
-      .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-      ),
+    status: zod.enum(["passed", "review_required", "blocked"]).describe("Decision status."),
     suppression: zod
       .record(zod.string(), zod.unknown())
       .optional()
@@ -2219,8 +2224,8 @@ export const RecordRevenueActionOutcome404Response = zod
   );
 
 /**
- * Rejects the current revision with a reason.
- * @summary Reject an action
+ * Reject declines this follow-up. The decision is stored and the follow-up stays open.
+ * @summary Reject
  */
 export const RejectRevenueActionParams = zod.object({
   actionId: zod.uuid().describe("Action id."),
@@ -2759,8 +2764,8 @@ export const GetRevenueImpact401Response = zod
   );
 
 /**
- * Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions. A full page is the end of the history when hasMore is false.
- * @summary List revenue leak scans
+ * Audits loads the newest page. The request asks for 10 audits and does not ask for an older page. This workspace has no audit, so the page is empty.
+ * @summary Audits
  */
 export const listRevenueLeakScansQueryLimitMax = 100;
 
@@ -2773,18 +2778,18 @@ export const ListRevenueLeakScansQueryParams = zod.object({
     .min(1)
     .max(listRevenueLeakScansQueryLimitMax)
     .optional()
-    .describe("Maximum scans to return (default 10, max 100)."),
+    .describe("Page size (max 100). Audits asks for 10."),
   offset: zod.coerce
     .number()
     .int()
     .min(listRevenueLeakScansQueryOffsetMin)
     .optional()
-    .describe("Page offset."),
+    .describe("How many audits to skip. Audits does not send this on the first page."),
 });
 
 export const ListRevenueLeakScans200Response = zod
   .strictObject({
-    hasMore: zod.boolean().optional().describe("Another audit exists beyond this page."),
+    hasMore: zod.boolean().describe("Whether another audit exists past this page."),
     scans: zod
       .array(
         zod
@@ -2806,9 +2811,7 @@ export const ListRevenueLeakScans200Response = zod
             startedAt: zod.iso.datetime({ offset: true }).nullish().describe("Start time."),
             status: zod
               .enum(["pending", "running", "completed", "failed"])
-              .describe(
-                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-              ),
+              .describe("Scan status."),
             threadsDeepRead: zod
               .int()
               .optional()
@@ -2829,7 +2832,7 @@ export const ListRevenueLeakScans200Response = zod
       )
       .describe("Scans newest first."),
   })
-  .describe("Audit history. A full page is the end of the history when hasMore is false.");
+  .describe("Audit history.");
 
 export const ListRevenueLeakScans400Response = zod
   .strictObject({
@@ -2893,11 +2896,7 @@ export const StartRevenueLeakScan202Response = zod
       .nullish()
       .describe("Newest source timestamp observed (incremental cursor)."),
     startedAt: zod.iso.datetime({ offset: true }).nullish().describe("Start time."),
-    status: zod
-      .enum(["pending", "running", "completed", "failed"])
-      .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-      ),
+    status: zod.enum(["pending", "running", "completed", "failed"]).describe("Scan status."),
     threadsDeepRead: zod
       .int()
       .optional()
@@ -2968,11 +2967,7 @@ export const GetRevenueLeakScan200Response = zod
       .nullish()
       .describe("Newest source timestamp observed (incremental cursor)."),
     startedAt: zod.iso.datetime({ offset: true }).nullish().describe("Start time."),
-    status: zod
-      .enum(["pending", "running", "completed", "failed"])
-      .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-      ),
+    status: zod.enum(["pending", "running", "completed", "failed"]).describe("Scan status."),
     threadsDeepRead: zod
       .int()
       .optional()
@@ -3019,15 +3014,15 @@ export const GetRevenueLeakScan404Response = zod
   );
 
 /**
- * Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.
- * @summary Get the open promises report
+ * Download the report saves this audit as Markdown. The request uses format md. The file names the open promises, who owes them, and the message that created each one.
+ * @summary Download the report
  */
 export const GetOpenPromisesReportParams = zod.object({
   scanId: zod.uuid().describe("Scan id."),
 });
 
 export const GetOpenPromisesReportQueryParams = zod.object({
-  format: zod.string().optional().describe("md for Markdown; JSON otherwise."),
+  format: zod.string().optional().describe("md for the file Download the report saves."),
 });
 
 export const GetOpenPromisesReport200Response = zod
@@ -3158,8 +3153,8 @@ export const RevenueSemanticSearch401Response = zod
   );
 
 /**
- * Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.
- * @summary Get current revenue workspace
+ * Local mode is the workspace Connected sources opens before a sending workspace is linked. It comes back local and active, and the sending check stays off.
+ * @summary Local mode
  */
 export const GetRevenueWorkspace200Response = zod
   .strictObject({
@@ -3200,13 +3195,83 @@ export const GetRevenueWorkspace401Response = zod
   );
 
 /**
- * Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.
- * @summary Link the OutboundConsole workspace
+ * Add rule sends kind protected_address and value buyer@example.com. The server lowercases the address, stores an active rule, and returns that rule with the sha256 of the stored address.
+ * @summary Add rule
+ */
+export const CreateCommunicationPrivacyRuleBody = zod
+  .strictObject({
+    kind: zod
+      .enum(["protected_address", "protected_domain", "blocked_address", "blocked_domain"])
+      .describe("Rule kind. Add rule leaves the default protected address selected."),
+    value: zod.string().describe("Address or domain typed into the rule field."),
+  })
+  .describe("Privacy rule.");
+
+export const CreateCommunicationPrivacyRule201Response = zod
+  .strictObject({
+    active: zod.boolean().describe("New rules are stored active."),
+    id: zod.uuid().describe("Rule id."),
+    kind: zod
+      .enum(["protected_address", "protected_domain", "blocked_address", "blocked_domain"])
+      .describe("Stored rule kind."),
+    value: zod.string().describe("Normalized address or domain."),
+    valueHash: zod.string().describe("sha256 of the normalized value."),
+  })
+  .describe("Stored privacy rule.");
+
+export const CreateCommunicationPrivacyRule400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const CreateCommunicationPrivacyRule401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const CreateCommunicationPrivacyRule403Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Link workspace sends the sending workspace id and the organization id from the form. The stored workspace keeps those ids, switches to linked, and turns the sending check on.
+ * @summary Link workspace
  */
 export const LinkRevenueWorkspaceBody = zod
   .strictObject({
-    outboundOrganizationId: zod.string().optional().describe("OutboundConsole organization id."),
-    outboundWorkspaceId: zod.string().describe("OutboundConsole workspace id."),
+    outboundOrganizationId: zod.string().optional().describe("Organization id."),
+    outboundWorkspaceId: zod.string().describe("Sending workspace id."),
   })
   .describe("Link request.");
 

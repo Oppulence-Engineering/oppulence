@@ -3,7 +3,7 @@ package openapidoc
 const (
 	conversationCorrectionCompanyID     = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
 	conversationCorrectionObservationID = "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
-	conversationCorrectionClaimID       = "claim:ab12"
+	conversationCorrectionClaimID       = conversationClaimID
 	conversationCorrectionValue         = "Avery Chen"
 	conversationCorrectionReason        = "User corrected conversation evidence during focused review."
 	conversationCorrectionStateReason   = "Security review was promised, but no owner or meeting exists."

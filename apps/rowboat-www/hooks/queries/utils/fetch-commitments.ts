@@ -28,7 +28,7 @@ export function commitmentRows(
 ): RegisterEntry[] {
   if (!page) return [];
   if (Array.isArray(page)) return [...page];
-  return page.commitments ?? [];
+  return "commitments" in page ? (page.commitments ?? []) : [];
 }
 
 /** True only when the server says another promise exists past this page. */
@@ -36,7 +36,7 @@ export function commitmentPageHasMore(
   page: CommitmentPage | readonly RegisterEntry[] | null | undefined,
 ): boolean {
   if (!page || Array.isArray(page)) return false;
-  return Boolean(page.hasMore);
+  return "hasMore" in page && Boolean(page.hasMore);
 }
 
 export async function loadCommitments(

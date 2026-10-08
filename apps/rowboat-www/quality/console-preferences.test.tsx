@@ -182,7 +182,7 @@ describe("synced console preferences", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Permissions" })).toBeVisible();
-    expect(screen.getByText(/Manage service-level access from Connections/)).toBeVisible();
+    expect(screen.getByText("Connected services")).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Open connections" }));
     expect(onNavigate).toHaveBeenCalledWith("connections");
   });

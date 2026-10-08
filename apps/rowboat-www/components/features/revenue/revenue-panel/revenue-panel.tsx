@@ -211,8 +211,7 @@ export function RevenuePanel({
       }),
     ];
   }, [commitmentQuery.data?.accounts, extraAccounts]);
-  const hasMoreAccounts =
-    laterAccountsHasMore ?? Boolean(commitmentQuery.data?.hasMoreAccounts);
+  const hasMoreAccounts = laterAccountsHasMore ?? Boolean(commitmentQuery.data?.hasMoreAccounts);
   const loadMoreAccounts = React.useCallback(async () => {
     if (loadingMoreAccounts || !hasMoreAccounts) return;
     const base = commitmentQuery.data?.relationshipPageCount ?? 0;
@@ -252,8 +251,7 @@ export function RevenuePanel({
     ];
   }, [extraEntries, registerPage]);
   const hasMorePromises =
-    laterRegisterHasMore ??
-    (registerPage.length > 0 && Boolean(commitmentQuery.data?.hasMore));
+    laterRegisterHasMore ?? (registerPage.length > 0 && Boolean(commitmentQuery.data?.hasMore));
   const loadMorePromises = React.useCallback(async () => {
     const filter = overdueBefore
       ? overdueRegisterFilter(overdueBefore)
@@ -312,9 +310,10 @@ export function RevenuePanel({
   }, [workspaceQuery.error]);
 
   React.useEffect(() => {
-    if (!scanListQuery.data) return;
+    const listed = scanListQuery.data;
+    if (!listed) return;
     setScans(() => {
-      const scansById = new Map(scanListQuery.data.map((scan) => [scan.id, scan]));
+      const scansById = new Map(listed.map((scan) => [scan.id, scan]));
       if (activeScan) scansById.set(activeScan.id, activeScan);
       return [...scansById.values()];
     });

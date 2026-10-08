@@ -8,6 +8,8 @@
 import type {
   ApproveActionProposal200,
   ApproveRevenueActionBody,
+  CreateCommunicationPrivacyRule201,
+  CreateCommunicationPrivacyRuleBody,
   CreateRevenueActionBody,
   DismissRevenueActionBody,
   EditRevenueActionBody,
@@ -417,8 +419,8 @@ export const getListRevenueActionsUrl = (params?: ListRevenueActionsParams) => {
 };
 
 /**
- * Recovery loads the open queue. The request asks for open actions, one hundred at a time, on the recovery list, and it does not ask for an older page. Acme has no open recovery action, so the page is empty.
- * @summary Recovery
+ * Tasks loads open follow-ups with the soonest due date first. It asks for open tasks, one hundred at a time, and does not ask for an older page. The first task is Follow up on the proposal, due on July 15.
+ * @summary Tasks
  */
 export const listRevenueActions = async (
   params?: ListRevenueActionsParams,
@@ -472,8 +474,8 @@ export const getCreateRevenueActionUrl = () => {
 };
 
 /**
- * Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.
- * @summary Create a manual action
+ * Create task saves a follow-up on a company. It sends the title, the due time, and a priority of 30.
+ * @summary Create task
  */
 export const createRevenueAction = async (
   createRevenueActionBody: CreateRevenueActionBody,
@@ -497,6 +499,11 @@ export type getRevenueActionResponse200 = {
   status: 200;
 };
 
+export type getRevenueActionResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
 export type getRevenueActionResponse401 = {
   data: N401Response;
   status: 401;
@@ -511,7 +518,7 @@ export type getRevenueActionResponseSuccess = getRevenueActionResponse200 & {
   headers: Headers;
 };
 export type getRevenueActionResponseError = (
-  getRevenueActionResponse401 | getRevenueActionResponse404
+  getRevenueActionResponse400 | getRevenueActionResponse401 | getRevenueActionResponse404
 ) & {
   headers: Headers;
 };
@@ -524,8 +531,8 @@ export const getGetRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Returns one action with relationship context.
- * @summary Get an action
+ * Re-check policy reloads this action. The sheet shows the company, the follow-up, and that the check passed.
+ * @summary Reload the checked action
  */
 export const getRevenueAction = async (
   actionId: string,
@@ -690,8 +697,8 @@ export const getDismissRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Dismisses the action with a reason label and records the dismissed outcome.
- * @summary Dismiss an action
+ * Dismiss removes this follow-up from the queue and stores the reason.
+ * @summary Dismiss
  */
 export const dismissRevenueAction = async (
   actionId: string,
@@ -994,8 +1001,8 @@ export const getRejectRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Rejects the current revision with a reason.
- * @summary Reject an action
+ * Reject declines this follow-up. The decision is stored and the follow-up stays open.
+ * @summary Reject
  */
 export const rejectRevenueAction = async (
   actionId: string,
@@ -1251,8 +1258,8 @@ export const getListRevenueLeakScansUrl = (params?: ListRevenueLeakScansParams) 
 };
 
 /**
- * Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions. A full page is the end of the history when hasMore is false.
- * @summary List revenue leak scans
+ * Audits loads the newest page. The request asks for 10 audits and does not ask for an older page. This workspace has no audit, so the page is empty.
+ * @summary Audits
  */
 export const listRevenueLeakScans = async (
   params?: ListRevenueLeakScansParams,
@@ -1425,8 +1432,8 @@ export const getGetOpenPromisesReportUrl = (
 };
 
 /**
- * Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.
- * @summary Get the open promises report
+ * Download the report saves this audit as Markdown. The request uses format md. The file names the open promises, who owes them, and the message that created each one.
+ * @summary Download the report
  */
 export const getOpenPromisesReport = async (
   scanId: string,
@@ -1536,8 +1543,8 @@ export const getGetRevenueWorkspaceUrl = () => {
 };
 
 /**
- * Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.
- * @summary Get current revenue workspace
+ * Local mode is the workspace Connected sources opens before a sending workspace is linked. It comes back local and active, and the sending check stays off.
+ * @summary Local mode
  */
 export const getRevenueWorkspace = async (
   options?: RequestInit,
@@ -1551,6 +1558,70 @@ export const getRevenueWorkspace = async (
 
   const data: getRevenueWorkspaceResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as getRevenueWorkspaceResponse;
+};
+
+export type createCommunicationPrivacyRuleResponse201 = {
+  data: CreateCommunicationPrivacyRule201;
+  status: 201;
+};
+
+export type createCommunicationPrivacyRuleResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type createCommunicationPrivacyRuleResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type createCommunicationPrivacyRuleResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type createCommunicationPrivacyRuleResponseSuccess =
+  createCommunicationPrivacyRuleResponse201 & {
+    headers: Headers;
+  };
+export type createCommunicationPrivacyRuleResponseError = (
+  | createCommunicationPrivacyRuleResponse400
+  | createCommunicationPrivacyRuleResponse401
+  | createCommunicationPrivacyRuleResponse403
+) & {
+  headers: Headers;
+};
+
+export type createCommunicationPrivacyRuleResponse =
+  createCommunicationPrivacyRuleResponseSuccess | createCommunicationPrivacyRuleResponseError;
+
+export const getCreateCommunicationPrivacyRuleUrl = () => {
+  return `/v1/revenue-workspaces/current/communication-privacy-rules`;
+};
+
+/**
+ * Add rule sends kind protected_address and value buyer@example.com. The server lowercases the address, stores an active rule, and returns that rule with the sha256 of the stored address.
+ * @summary Add rule
+ */
+export const createCommunicationPrivacyRule = async (
+  createCommunicationPrivacyRuleBody: CreateCommunicationPrivacyRuleBody,
+  options?: RequestInit,
+): Promise<createCommunicationPrivacyRuleResponse> => {
+  const res = await fetch(getCreateCommunicationPrivacyRuleUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createCommunicationPrivacyRuleBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createCommunicationPrivacyRuleResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createCommunicationPrivacyRuleResponse;
 };
 
 export type linkRevenueWorkspaceResponse200 = {
@@ -1592,8 +1663,8 @@ export const getLinkRevenueWorkspaceUrl = () => {
 };
 
 /**
- * Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.
- * @summary Link the OutboundConsole workspace
+ * Link workspace sends the sending workspace id and the organization id from the form. The stored workspace keeps those ids, switches to linked, and turns the sending check on.
+ * @summary Link workspace
  */
 export const linkRevenueWorkspace = async (
   linkRevenueWorkspaceBody: LinkRevenueWorkspaceBody,

@@ -288,36 +288,36 @@ export function ImpactView({
         ) : null}
         {digestFailed && digestTop.length === 0 ? <DigestLoadNotice onRetry={reload} /> : null}
         <EmptyBlock
-        body={impactEmptyBody({
-          needsConnect,
-          needsReconnect,
-          knownPromiseCount,
-          knownPromiseHasMore,
-        })}
-        image="impact"
-        learnMore={[{ label: "Track recovery outcomes" }, { label: "Measure company risk" }]}
-        title="Impact"
-      >
-        {onScan ? (
-          <Button
-            className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-            disabled={scanning}
-            onClick={onScan}
-            size="sm"
-            type="button"
-          >
-            {needsReconnect || needsConnect ? (
-              <>
-                <Plugs /> {auditLabel}
-              </>
-            ) : (
-              <>
-                {scanning ? <Spinner /> : <MagnifyingGlass />} {auditLabel}
-              </>
-            )}
-          </Button>
-        ) : null}
-      </EmptyBlock>
+          body={impactEmptyBody({
+            needsConnect,
+            needsReconnect,
+            knownPromiseCount,
+            knownPromiseHasMore,
+          })}
+          image="impact"
+          learnMore={[{ label: "Track recovery outcomes" }, { label: "Measure company risk" }]}
+          title="Impact"
+        >
+          {onScan ? (
+            <Button
+              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+              disabled={scanning}
+              onClick={onScan}
+              size="sm"
+              type="button"
+            >
+              {needsReconnect || needsConnect ? (
+                <>
+                  <Plugs /> {auditLabel}
+                </>
+              ) : (
+                <>
+                  {scanning ? <Spinner /> : <MagnifyingGlass />} {auditLabel}
+                </>
+              )}
+            </Button>
+          ) : null}
+        </EmptyBlock>
       </div>
     );
   }
@@ -440,7 +440,7 @@ export function ImpactView({
             ) : null}
             <ul className="flex flex-col gap-1.5">
               {digestTop.map((a, i) => {
-                const signal = digestSignalLabel(a.detector);
+                const signal = digestSignalLabel(a.detector ?? "");
                 return (
                   <li key={i} className="flex items-center justify-between gap-3 text-sm">
                     <Label className="truncate font-normal text-primary/75">
@@ -451,11 +451,8 @@ export function ImpactView({
                       ) : null}
                       {digestLoopCopy(a)}
                     </Label>
-                    <Badge
-                      className="shrink-0 font-normal text-primary/40"
-                      variant="secondary"
-                    >
-                      {priorityTone(a.priority).label}
+                    <Badge className="shrink-0 font-normal text-primary/40" variant="secondary">
+                      {priorityTone(a.priority ?? 0).label}
                     </Badge>
                   </li>
                 );

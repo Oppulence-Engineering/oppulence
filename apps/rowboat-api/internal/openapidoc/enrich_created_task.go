@@ -57,7 +57,7 @@ func createdTaskOperation() obj {
 		"reason":             stringSchema("Task title.", createdTaskTitle),
 		"recipientEmail":     stringSchema("Recipient email.", "buyer@example.com"),
 		"proposedSubject":    stringSchema("Proposed subject.", "Following up as promised"),
-		"proposedMessage":    stringSchema("Proposed body.", "Hi Jordan — circling back as promised..."),
+		"proposedMessage":    stringSchema("Proposed body.", documentedGraphFollowUpMessage),
 		"senderAccountRef":   stringSchema("Sender account reference.", "gmail:me@company.com"),
 		"executionMode":      stringEnum("Execution mode.", "draft", "draft", "send"),
 		"priorityScore":      intSchema("Priority (0-100).", 30),

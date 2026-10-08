@@ -10,9 +10,12 @@ import { faker } from "@faker-js/faker";
 import type {
   AgentSessionEventsResponse,
   AgentSessionListResponse,
+  ApproveAgentSession202,
+  CancelAgentSession202,
   DurableAgentSessionEvent,
   DurableAgentSessionView,
   MintAgentApprovalToken200,
+  SubmitAgentSessionTurn202,
 } from "../model";
 
 export const getListAgentSessionsResponseMock = (
@@ -110,12 +113,28 @@ export const getCreateAgentSessionResponseMock = (
   ...overrideResponse,
 });
 
+export const getApproveAgentSessionResponseMock = (
+  overrideResponse: Partial<Extract<ApproveAgentSession202, object>> = {},
+): ApproveAgentSession202 => ({
+  approvalId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  decision: faker.helpers.arrayElement(["granted", "denied"] as const),
+  ...overrideResponse,
+});
+
 export const getMintAgentApprovalTokenResponseMock = (
   overrideResponse: Partial<Extract<MintAgentApprovalToken200, object>> = {},
 ): MintAgentApprovalToken200 => ({
   approvalToken: faker.string.alpha({ length: { min: 10, max: 20 } }),
   expiresAt: faker.string.alpha({ length: { min: 10, max: 20 } }),
   mfa: faker.datatype.boolean(),
+  ...overrideResponse,
+});
+
+export const getCancelAgentSessionResponseMock = (
+  overrideResponse: Partial<Extract<CancelAgentSession202, object>> = {},
+): CancelAgentSession202 => ({
+  sessionId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  status: faker.string.alpha({ length: { min: 10, max: 20 } }),
   ...overrideResponse,
 });
 
@@ -150,5 +169,13 @@ export const getStreamAgentSessionResponseMock = (
     undefined,
   ]),
   type: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ...overrideResponse,
+});
+
+export const getSubmitAgentSessionTurnResponseMock = (
+  overrideResponse: Partial<Extract<SubmitAgentSessionTurn202, object>> = {},
+): SubmitAgentSessionTurn202 => ({
+  accepted: faker.datatype.boolean(),
+  turnSeq: faker.number.int(),
   ...overrideResponse,
 });

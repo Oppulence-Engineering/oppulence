@@ -17,6 +17,7 @@ import type {
   ListComposioConnections200,
   ListComposioToolkits200,
   MCPTokenResponse,
+  StartComposioConnection200,
 } from "../model";
 
 export const getGetConnectorBrokerJWKSResponseMock = (): GetConnectorBrokerJWKS200 => ({});
@@ -35,6 +36,18 @@ export const getListComposioConnectionsResponseMock = (
       toolkit: faker.string.alpha({ length: { min: 10, max: 20 } }),
     }),
   ),
+  ...overrideResponse,
+});
+
+export const getStartComposioConnectionResponseMock = (
+  overrideResponse: Partial<Extract<StartComposioConnection200, object>> = {},
+): StartComposioConnection200 => ({
+  connectionId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  expiresAt: faker.helpers.arrayElement([
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    undefined,
+  ]),
+  redirectUrl: faker.string.alpha({ length: { min: 10, max: 20 } }),
   ...overrideResponse,
 });
 

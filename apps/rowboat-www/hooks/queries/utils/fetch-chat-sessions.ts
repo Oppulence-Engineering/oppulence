@@ -31,7 +31,7 @@ export function chatSessionRows(
 ): SessionMeta[] {
   if (!page) return [];
   if (Array.isArray(page)) return [...page];
-  return page.sessions ?? [];
+  return "sessions" in page ? (page.sessions ?? []) : [];
 }
 
 /** True only when the server says another conversation exists past this page. */
@@ -39,7 +39,7 @@ export function chatSessionPageHasMore(
   page: ChatSessionPage | readonly SessionMeta[] | null | undefined,
 ): boolean {
   if (!page || Array.isArray(page)) return false;
-  return Boolean(page.hasMore);
+  return "hasMore" in page && Boolean(page.hasMore);
 }
 
 export async function loadChatSessions(
