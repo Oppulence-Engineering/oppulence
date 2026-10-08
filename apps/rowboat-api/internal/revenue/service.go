@@ -930,6 +930,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if quote := relationshipSheetActivityQuoteMatch(needle); quote != nil {
 			parts = append(parts, quote)
 		}
+
+		if promise := relationshipSheetActivityPromiseMatch(needle); promise != nil {
+			parts = append(parts, promise)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -2354,6 +2358,99 @@ func writeNormalizedJSONText(b *sql.Builder, s *sql.Selector, facts, key string)
 		b.WriteString(", '  ', ' ')")
 	}
 	b.WriteString(")")
+}
+
+// relationshipSheetActivityPromiseMatch is "Promise: …" on an opened activity.
+// The sheet reads commitment_text from the note. A token such as local-user
+// is not a promise, and a sentence that repeats the row summary is not printed
+// again. An encrypted payload can replace the stored facts.
+func relationshipSheetActivityPromiseMatch(needle string) predicate.Relationship {
+	const marker = "promise: "
+	index := strings.Index(needle, marker)
+	if index < 0 {
+		return nil
+	}
+	text := strings.TrimSpace(needle[index+len(marker):])
+	if text == "" {
+		return nil
+	}
+	return relationship.HasObservationsWith(observationFactPromise(text))
+}
+
+func observationFactPromise(text string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			payload := s.C(relationshipobservation.FieldPayloadCiphertext)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			b.WriteString(payload)
+			b.WriteString(" IS NULL OR length(")
+			b.WriteString(payload)
+			b.WriteString(") = 0) AND ")
+			writePromiseFactTrim(b, s, facts)
+			b.WriteString(" <> '' AND ")
+			writePromiseFactTrim(b, s, facts)
+			b.WriteString(" NOT IN ('local-user', 'meeting-counterparty') AND ")
+			writeNormalizedPromiseText(b, s, facts)
+			b.WriteString(" = ")
+			b.Arg(text)
+			b.WriteString(" AND (")
+			writePromiseIsStoredToken(b, s, facts)
+			b.WriteString(" OR ")
+			writePromiseFactTrim(b, s, facts)
+			b.WriteString(" <> ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", '')))")
+		}))
+	})
+}
+
+func writePromiseFactTrim(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(coalesce(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->>'commitment_text', ''))")
+		return
+	}
+	b.WriteString("trim(coalesce(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.commitment_text'), ''))")
+}
+
+func writeNormalizedPromiseText(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
+		writePromiseFactTrim(b, s, facts)
+		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
+		return
+	}
+	b.WriteString("trim(")
+	for range 4 {
+		b.WriteString("replace(")
+	}
+	b.WriteString("replace(replace(replace(lower(")
+	writePromiseFactTrim(b, s, facts)
+	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
+	for range 4 {
+		b.WriteString(", '  ', ' ')")
+	}
+	b.WriteString(")")
+}
+
+func writePromiseIsStoredToken(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		writePromiseFactTrim(b, s, facts)
+		b.WriteString(" ~ '^[a-z0-9_]*_[a-z0-9_]*$'")
+		return
+	}
+	writePromiseFactTrim(b, s, facts)
+	b.WriteString(" GLOB '[a-z0-9_]*_[a-z0-9_]*'")
 }
 
 func relationshipSheetActivityMatch(needle string) predicate.Relationship {
