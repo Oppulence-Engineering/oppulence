@@ -356,6 +356,9 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	assertDependencyEnds(t, schemas)
 	assertDependencyRequest(t, spec)
 
+	assertVoiceKeyPrefix(t, schemas)
+	assertVoiceKeyCreateExample(t, spec)
+
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
 	reason := asObj(evidenceProperties["reason"])
@@ -541,6 +544,9 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 
 	assertDependencyEnds(t, schemas)
 	assertDependencyRequest(t, spec)
+
+	assertVoiceKeyPrefix(t, schemas)
+	assertVoiceKeyCreateExample(t, spec)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -974,6 +980,33 @@ func assertDependencyEnds(t *testing.T, schemas obj) {
 	}
 	if dependency == from || dependency == to || dependency == relationship || dependency != "3b8dfa9b-a7b2-46ea-982c-622a914c00e5" {
 		t.Fatalf("dependency id sampled an endpoint: %#v", dependency)
+	}
+}
+
+func assertVoiceKeyPrefix(t *testing.T, schemas obj) {
+	t.Helper()
+	properties := asObj(asObj(schemas["VoiceAPIKey"])["properties"])
+	secret := asObj(properties["key"])
+	prefix := asObj(properties["key_prefix"])
+	secretExample, _ := secret["example"].(string)
+	prefixExample, _ := prefix["example"].(string)
+	if prefixExample != "opv_live_example" || len(prefixExample) != 16 || secretExample == prefixExample || len(secretExample) < 17 || secretExample[:16] != prefixExample {
+		t.Fatalf("voice key prefix sampled the whole secret: prefix=%#v secret=%#v", prefix["example"], secret["example"])
+	}
+	if prefix["description"] != "First 16 characters of the secret. Safe to display." {
+		t.Fatalf("voice key prefix description: %#v", prefix["description"])
+	}
+}
+
+func assertVoiceKeyCreateExample(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	operation := asObj(asObj(paths["/api/v1/keys/create"])["post"])
+	response := asObj(asObj(operation["responses"])["201"])
+	body := asObj(asObj(asObj(response["content"])["application/json"])["example"])
+	data := asObj(body["data"])
+	if data["key"] != "opv_live_exampleAbCdEfGhIjKlMnOpQrStUvWxYz0123456789" {
+		t.Fatalf("created voice key sampled the display prefix: %#v", data["key"])
 	}
 }
 

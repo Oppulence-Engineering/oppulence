@@ -590,6 +590,20 @@ describe("API reference document", () => {
     expect(dependency?.dependencyId?.example).toBe("3b8dfa9b-a7b2-46ea-982c-622a914c00e5");
   });
 
+  it("does not show the whole voice key as its display prefix", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const key = (
+      presented.components.schemas as Record<
+        string,
+        { properties?: Record<string, { example?: unknown; description?: string }> }
+      >
+    ).VoiceAPIKey?.properties;
+    expect(key?.key_prefix?.example).toBe("opv_live_example");
+    expect(key?.key_prefix?.description).toBe("First 16 characters of the secret. Safe to display.");
+    expect(key?.key?.example).toBe("opv_live_exampleAbCdEfGhIjKlMnOpQrStUvWxYz0123456789");
+    expect(key?.key?.example).not.toBe(key?.key_prefix?.example);
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

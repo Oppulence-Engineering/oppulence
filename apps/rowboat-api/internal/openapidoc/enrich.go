@@ -1080,9 +1080,9 @@ func addVoiceCloudSchemas(schemas obj) {
 	}, "name")
 	schemas["VoiceAPIKey"] = objectSchema("Oppulence Voice API-key metadata. key is returned only on creation.", obj{
 		"id":           uuidSchema("Key id.", "00000000-0000-4000-8000-000000000001"),
-		"key":          stringSchema("One-time bearer secret.", "opv_live_example", nullable()),
+		"key":          stringSchema("One-time bearer secret.", "opv_live_exampleAbCdEfGhIjKlMnOpQrStUvWxYz0123456789", nullable()),
 		"name":         stringSchema("Display name.", "Local automation"),
-		"key_prefix":   stringSchema("Safe display prefix.", "opv_live_example"),
+		"key_prefix":   stringSchema("First 16 characters of the secret. Safe to display.", "opv_live_example"),
 		"scopes":       arraySchema("Granted scopes.", stringSchema("Scope.", "notes:read")),
 		"last_used_at": stringSchema("Last-use time.", "2026-08-21T23:00:00Z", nullable()),
 		"expires_at":   stringSchema("Expiry time.", "2026-09-20T23:00:00Z", nullable()),
@@ -1124,7 +1124,7 @@ func addVoiceCloudPaths(paths obj) {
 	})}
 	paths["/api/v1/keys/create"] = obj{"post": operation("Oppulence Voice", "Create API key", "Creates an Oppulence-owned scoped key and returns its secret once.", "createVoiceAPIKey", bearer(), nil,
 		jsonRequest("Key options.", ref("VoiceAPIKeyCreateRequest"), obj{"name": "Local automation", "scopes": []any{"notes:read"}}), obj{
-			"201": jsonResponse("Created key.", freeFormSchema("Data-wrapped VoiceAPIKey."), obj{"data": obj{"key": "opv_live_example"}}), "400": responseRef("400"), "401": responseRef("401"), "500": responseRef("500"),
+			"201": jsonResponse("Created key.", freeFormSchema("Data-wrapped VoiceAPIKey."), obj{"data": obj{"key": "opv_live_exampleAbCdEfGhIjKlMnOpQrStUvWxYz0123456789"}}), "400": responseRef("400"), "401": responseRef("401"), "500": responseRef("500"),
 		})}
 	paths["/api/v1/keys/list"] = obj{"get": operation("Oppulence Voice", "List API keys", "Lists active key metadata without secret material.", "listVoiceAPIKeys", bearer(), nil, nil, obj{
 		"200": jsonResponse("Key list.", freeFormSchema("Data-wrapped key array."), obj{"data": []any{}}), "401": responseRef("401"), "500": responseRef("500"),
