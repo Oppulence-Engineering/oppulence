@@ -348,6 +348,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/agent-sessions/{id}/stream": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Follow the chat
+     * @description Follow the chat reads the open conversation. The first line is sequence 0, the session start for Assistant, with no turn yet.
+     */
+    get: operations["streamAgentSession"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/auth/workos/exchange": {
     parameters: {
       query?: never;
@@ -14013,6 +14033,48 @@ export interface operations {
         };
       };
       400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      500: components["responses"]["500"];
+    };
+  };
+  streamAgentSession: {
+    parameters: {
+      query?: {
+        /** @description Send the last sequence already shown when reconnecting. The first read omits this. */
+        afterSeq?: number;
+      };
+      header?: {
+        /** @description Ask for one event per line. */
+        Accept?: string;
+      };
+      path: {
+        /** @description Stable session id. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Session started. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "seq": 0,
+           *       "type": "agent.session_started",
+           *       "data": {
+           *         "agent": "assistant",
+           *         "sessionId": "session_abc123"
+           *       }
+           *     }
+           */
+          "application/x-ndjson": components["schemas"]["DurableAgentSessionEvent"];
+        };
+      };
       401: components["responses"]["401"];
       404: components["responses"]["404"];
       500: components["responses"]["500"];

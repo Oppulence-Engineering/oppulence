@@ -633,6 +633,7 @@ export * from "./snoozeRevenueActionBody";
 export * from "./startGoogleOAuth200";
 export * from "./startRevenueLeakScanBody";
 export * from "./startSlackOAuth200";
+export * from "./streamAgentSessionParams";
 export * from "./streamBackgroundTaskRunEventsParams";
 export * from "./submitAgentSessionTurn202";
 export * from "./submitAgentSessionTurnBody";

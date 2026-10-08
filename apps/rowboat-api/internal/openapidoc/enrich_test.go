@@ -55,6 +55,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/background-tasks/{slug}/runs/{runId}",
 		"/v1/background-tasks/{slug}/runs/{runId}/events",
 		"/v1/background-tasks/{slug}/runs/{runId}/events/stream",
+		"/v1/agent-sessions/{id}/stream",
 		"/v1/background-tasks/{slug}/trigger",
 		"/v1/agents",
 
@@ -2485,6 +2486,55 @@ func assertListedAgents(t *testing.T, spec obj) {
 	last := asObj(tags[len(tags)-1])
 	if last["name"] != "Agents" {
 		t.Fatalf("agents tag = %#v", last["name"])
+	}
+
+	assertChatStream(t, spec)
+}
+
+func TestFollowTheChatReadsTheSessionStart(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertChatStream(t, spec)
+}
+
+func assertChatStream(t *testing.T, spec obj) {
+	t.Helper()
+	get := asObj(asObj(asObj(spec["paths"])["/v1/agent-sessions/{id}/stream"])["get"])
+	if get["summary"] != "Follow the chat" || get["operationId"] != "streamAgentSession" {
+		t.Fatalf("chat stream operation = %#v", get["summary"])
+	}
+	if get["requestBody"] != nil {
+		t.Fatal("chat stream should have no body")
+	}
+	params, _ := get["parameters"].([]any)
+	var sawCursor bool
+	for _, raw := range params {
+		param := asObj(raw)
+		if param["name"] != "afterSeq" {
+			continue
+		}
+		sawCursor = true
+		if param["required"] == true {
+			t.Fatal("the first read does not require a cursor")
+		}
+		if asObj(param["schema"])["example"] != nil {
+			t.Fatal("the first read should not sample a cursor")
+		}
+	}
+	if !sawCursor {
+		t.Fatal("reconnect cursor is missing")
+	}
+	example := asObj(asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/x-ndjson"])["example"])
+	if mustJSON(example) != mustJSON(documentedChatStreamEvent()) {
+		t.Fatalf("chat stream example = %s", mustJSON(example))
+	}
+	if _, ok := example["turnSeq"]; ok {
+		t.Fatal("the session start has no turn")
+	}
+	history := asObj(asObj(asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/agent-sessions"])["get"])["responses"])["200"])["content"])["application/json"])["example"])
+	sessions, _ := history["sessions"].([]any)
+	if len(sessions) == 0 || asObj(sessions[0])["title"] != "Review the Acme renewal" {
+		t.Fatal("history list example changed")
 	}
 }
 
