@@ -111,7 +111,7 @@ export const ListRevenueActions200Response = zod
             priorityComponents: zod
               .record(zod.string(), zod.unknown())
               .optional()
-              .describe("Per-component priority breakdown; every component is stored and shown."),
+              .describe("Factors the review lists."),
             priorityScore: zod.int().describe("Explainable priority score (0-100)."),
             proposedMessage: zod.string().optional().describe("Proposed message body."),
             proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -303,7 +303,7 @@ export const CreateRevenueAction201Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -477,7 +477,7 @@ export const GetRevenueAction200Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -642,7 +642,7 @@ export const ApproveRevenueAction200Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -833,7 +833,7 @@ export const GetRevenueActionAudit200Response = zod
         priorityComponents: zod
           .record(zod.string(), zod.unknown())
           .optional()
-          .describe("Per-component priority breakdown; every component is stored and shown."),
+          .describe("Factors the review lists."),
         priorityScore: zod.int().describe("Explainable priority score (0-100)."),
         proposedMessage: zod.string().optional().describe("Proposed message body."),
         proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -1086,7 +1086,7 @@ export const DismissRevenueAction200Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -1267,7 +1267,7 @@ export const EditRevenueAction200Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -1550,7 +1550,7 @@ export const ExecuteRevenueAction200Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -1854,7 +1854,7 @@ export const RejectRevenueAction200Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -2036,7 +2036,7 @@ export const SnoozeRevenueAction200Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),

@@ -300,7 +300,7 @@ describe("API reference document", () => {
   it("names the observation a commitment event recorded", () => {
     const presented = presentApiReferenceDocument(spec);
     expect(presented.components.schemas.RevenueAction.properties.priorityComponents).toMatchObject({
-      description: "Per-component priority breakdown; every component is stored and shown.",
+      description: "Factors the review lists.",
       example: {
         commitment_urgency: 25,
         evidence_quality: 10,

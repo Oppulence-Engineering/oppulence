@@ -2008,7 +2008,7 @@ export const ApproveRelationshipRecommendation200Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -2175,7 +2175,7 @@ export const RejectRelationshipRecommendation200Response = zod
     priorityComponents: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Per-component priority breakdown; every component is stored and shown."),
+      .describe("Factors the review lists."),
     priorityScore: zod.int().describe("Explainable priority score (0-100)."),
     proposedMessage: zod.string().optional().describe("Proposed message body."),
     proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -3613,7 +3613,7 @@ export const GetRelationship200Response = zod
             priorityComponents: zod
               .record(zod.string(), zod.unknown())
               .optional()
-              .describe("Per-component priority breakdown; every component is stored and shown."),
+              .describe("Factors the review lists."),
             priorityScore: zod.int().describe("Explainable priority score (0-100)."),
             proposedMessage: zod.string().optional().describe("Proposed message body."),
             proposedSubject: zod.string().optional().describe("Proposed email subject."),
@@ -4201,7 +4201,7 @@ export const GetRelationship200Response = zod
             priorityComponents: zod
               .record(zod.string(), zod.unknown())
               .optional()
-              .describe("Per-component priority breakdown; every component is stored and shown."),
+              .describe("Factors the review lists."),
             priorityScore: zod.int().describe("Explainable priority score (0-100)."),
             proposedMessage: zod.string().optional().describe("Proposed message body."),
             proposedSubject: zod.string().optional().describe("Proposed email subject."),

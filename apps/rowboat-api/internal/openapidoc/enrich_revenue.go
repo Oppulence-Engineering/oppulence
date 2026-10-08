@@ -4,7 +4,7 @@ package openapidoc
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
 
-const priorityBreakdownDescription = "Per-component priority breakdown; every component is stored and shown."
+const priorityBreakdownDescription = "Factors the review lists."
 
 func priorityBreakdownExample() obj {
 	return obj{

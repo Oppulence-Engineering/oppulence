@@ -11099,7 +11099,7 @@ export interface components {
        */
       policyStatus: "pending" | "passed" | "review_required" | "blocked" | "stale";
       /**
-       * @description Per-component priority breakdown; every component is stored and shown.
+       * @description Factors the review lists.
        * @example {
        *       "commitment_urgency": 25,
        *       "evidence_quality": 10,

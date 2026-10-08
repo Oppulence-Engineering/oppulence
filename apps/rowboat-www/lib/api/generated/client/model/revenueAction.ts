@@ -65,7 +65,7 @@ export interface RevenueAction {
   id: string;
   /** Preflight state. Facade unavailability keeps pending (fail closed). */
   policyStatus: RevenueActionPolicyStatus;
-  /** Per-component priority breakdown; every component is stored and shown. */
+  /** Factors the review lists. */
   priorityComponents?: RevenueActionPriorityComponents;
   /** Explainable priority score (0-100). */
   priorityScore: number;
