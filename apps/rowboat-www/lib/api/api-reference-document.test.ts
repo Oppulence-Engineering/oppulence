@@ -361,4 +361,23 @@ describe("API reference document", () => {
     expect(page).toContain("The API reference could not be loaded.");
     expect(page).not.toContain("unpkg.com");
   });
+
+  it("names the status values listed on the field", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const workspace =
+      presented.components.schemas.RevenueWorkspace.properties.status.description;
+    expect(workspace).toBe("Active, disconnected, or needs repair.");
+    expect(workspace).not.toContain("billing");
+    expect(workspace).not.toContain("Background runs");
+    expect(
+      presented.components.schemas.BackgroundTaskRunStatusResponse.properties.status.description,
+    ).toBe("Queued, running, succeeded, failed, or stopped.");
+    expect(presented.components.schemas.BillingState.properties.status.description).toBe(
+      "Active, trialing, past due, or canceled.",
+    );
+    const member =
+      presented.components.schemas.RevenueWorkspaceMember.properties.status.description;
+    expect(member).toBe("Status for this record.");
+    expect(member).not.toContain("Plans use billing");
+  });
 });

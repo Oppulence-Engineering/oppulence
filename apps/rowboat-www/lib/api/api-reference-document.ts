@@ -187,11 +187,42 @@ function presentedTagName(name: string): string {
  * Field notes that stay after the phrase pass. Each one is a full sentence
  * from the published spec, matched after the older product names are gone.
  */
+/**
+ * One stored sentence is copied onto every status column. Billing plans and
+ * background runs are only two of those columns. A workspace status is
+ * active, disconnected, or repair required, so the shared sentence is wrong
+ * wherever the allowed values are different.
+ */
+const GENERIC_STATUS_DESCRIPTION =
+  "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.";
+
+const STATUS_WITHOUT_VALUES = "Status for this record.";
+
+const STATUS_VALUE_LABELS: Record<string, string> = {
+  not_connected: "not connected",
+  not_ready: "not ready",
+  past_due: "past due",
+  pending_review: "pending review",
+  reconnect_required: "needs reconnect",
+  repair_required: "needs repair",
+  review_required: "review required",
+};
+
+/** The values listed beside a status field, as one sentence. */
+export function statusFieldCopy(values: readonly string[]): string {
+  const labels = values.map((value) => STATUS_VALUE_LABELS[value] ?? value.replaceAll("_", " "));
+  if (labels.length === 0) return STATUS_WITHOUT_VALUES;
+  const sentence =
+    labels.length === 1
+      ? labels[0]
+      : labels.length === 2
+        ? `${labels[0]} or ${labels[1]}`
+        : `${labels.slice(0, -1).join(", ")}, or ${labels[labels.length - 1]}`;
+  return `${sentence.charAt(0).toUpperCase()}${sentence.slice(1)}.`;
+}
+
 const API_REFERENCE_FIELD_NOTES: ReadonlyArray<readonly [string, string]> = [
-  [
-    "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-    "Status. Plans use billing states. Background runs use queued, running, succeeded, failed, or stopped.",
-  ],
+  [GENERIC_STATUS_DESCRIPTION, STATUS_WITHOUT_VALUES],
   [
     "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
     "Which service this uses. That can be a sign-in service, a model provider, or where the work runs.",
@@ -537,7 +568,14 @@ function presentDescriptions(node: unknown): void {
   }
   const record = node as Record<string, unknown>;
   if (typeof record.description === "string") {
-    record.description = presentReferenceProse(record.description);
+    const values = record.enum;
+    record.description =
+      record.description === GENERIC_STATUS_DESCRIPTION &&
+      Array.isArray(values) &&
+      values.length > 0 &&
+      values.every((value) => typeof value === "string")
+        ? statusFieldCopy(values)
+        : presentReferenceProse(record.description);
   }
   // Sample values render beside the field. Identifiers such as rowboat-desktop
   // do not match these phrases and stay as the API published them.
