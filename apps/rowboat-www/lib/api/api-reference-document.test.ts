@@ -681,6 +681,19 @@ describe("API reference document", () => {
     );
   });
 
+  it("does not point a graph edge at commitment:1", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const edge = presented.components.schemas.RelationshipGraphEdge.properties;
+    expect(edge.source).toMatchObject({
+      description: "Source node id.",
+      example: "commitment:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+    });
+    expect(edge.target).toMatchObject({
+      description: "Target node id.",
+      example: "commitment:26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51",
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

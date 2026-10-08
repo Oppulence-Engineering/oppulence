@@ -1148,6 +1148,36 @@ func assertCommitmentEventActor(t *testing.T, schemas obj) {
 	if commitment["example"] != "alex@example.com" {
 		t.Fatalf("promise owner changed: %#v", commitment)
 	}
+
+	assertGraphEdgeNodes(t, schemas)
+}
+
+func TestGraphEdgeUsesCommitmentNodeIDs(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertGraphEdgeNodes(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertGraphEdgeNodes(t *testing.T, schemas obj) {
+	t.Helper()
+	edge := asObj(schemas["RelationshipGraphEdge"])
+	if edge == nil {
+		return
+	}
+	props := asObj(edge["properties"])
+	source := asObj(props["source"])
+	target := asObj(props["target"])
+	const from = "commitment:8b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	const to = "commitment:26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51"
+	if source["example"] != from || source["description"] != "Source node id." {
+		t.Fatalf("graph edge source is not a commitment node: %#v", source)
+	}
+	if target["example"] != to || target["description"] != "Target node id." {
+		t.Fatalf("graph edge target is not the other commitment: %#v", target)
+	}
+	if source["example"] == target["example"] {
+		t.Fatalf("graph edge connects a node to itself: %#v", source)
+	}
 }
 
 func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {

@@ -10559,12 +10559,12 @@
           },
           "source": {
             "description": "Source node id.",
-            "example": "commitment:1",
+            "example": "commitment:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "type": "string"
           },
           "target": {
             "description": "Target node id.",
-            "example": "commitment:2",
+            "example": "commitment:26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51",
             "type": "string"
           }
         },
