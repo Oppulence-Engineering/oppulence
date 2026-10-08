@@ -144,9 +144,7 @@ export const GetMe200Response = zod
         status: zod
           .enum(["active", "trialing", "past_due", "canceled"])
           .nullable()
-          .describe(
-            "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-          ),
+          .describe("Trial means this plan is still in its trial."),
         trialExpiresAt: zod
           .string()
           .nullable()

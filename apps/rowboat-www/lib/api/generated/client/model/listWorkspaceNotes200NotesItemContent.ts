@@ -7,15 +7,6 @@
  */
 
 /**
- * Trial means this plan is still in its trial.
- * @nullable
+ * Editor document, when one was saved.
  */
-export type BillingStateStatus =
-  (typeof BillingStateStatus)[keyof typeof BillingStateStatus] | null;
-
-export const BillingStateStatus = {
-  active: "active",
-  trialing: "trialing",
-  past_due: "past_due",
-  canceled: "canceled",
-} as const;
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };

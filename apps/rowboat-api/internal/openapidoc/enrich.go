@@ -289,8 +289,8 @@ func addBillingSchemas(schemas obj) {
 	}, "sanctionedCredits", "usedCredits", "availableCredits", "monthly", "daily")
 	schemas["BillingState"] = objectSchema("Current plan, status, trial, and usage for the authenticated user.", obj{
 		"plan":           stringSchema("Plan slug.", "free", obj{"enum": []any{"free", "starter", "pro", "intelligence"}}, nullable()),
-		"status":         stringSchema("Billing status.", "active", obj{"enum": []any{"active", "trialing", "past_due", "canceled"}}, nullable()),
-		"trialExpiresAt": stringSchema("Trial expiry as RFC3339 when trialing; null otherwise.", "2026-07-01T00:00:00.000Z", nullable()),
+		"status":         stringSchema(billingTrialStatusDescription, billingTrialStatusExample, obj{"enum": []any{"active", "trialing", "past_due", "canceled"}}, nullable()),
+		"trialExpiresAt": stringSchema("Trial expiry as RFC3339 when trialing; null otherwise.", billingTrialExpiresAtExample, nullable()),
 		"usage":          ref("BillingUsage"),
 	}, "plan", "status", "trialExpiresAt", "usage")
 	confirmSchema := stringSchema("Must be the literal value DELETE.", "DELETE")
@@ -1260,11 +1260,17 @@ func addAuthPaths(paths obj) {
 	paths["/v1/auth/workos/refresh"] = obj{"post": operation("Auth", "Refresh WorkOS token bundle", "Refreshes a WorkOS AuthKit access token using the server-held WorkOS API key.", "refreshWorkOSToken", nil, nil, jsonRequest("Refresh token payload.", ref("WorkOSRefreshRequest"), obj{"refreshToken": "refresh_token_123"}), tokenResponses("Refreshed WorkOS token bundle."))}
 }
 
+const (
+	billingTrialStatusDescription = "Trial means this plan is still in its trial."
+	billingTrialStatusExample     = "trialing"
+	billingTrialExpiresAtExample  = "2026-07-01T00:00:00.000Z"
+)
+
 func addBillingPaths(paths obj) {
 	paths["/v1/me"] = obj{"get": operation("Billing", "Get current user and billing state", "Returns the authenticated user's local identity, plan, subscription status, and credit totals. Credit totals include top-level, monthly, and daily buckets consumed by the desktop billing UI.", "getMe", bearer(), nil, nil, obj{
 		"200": jsonResponse("Current user and billing state.", ref("MeResponse"), obj{
 			"user":    obj{"id": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5", "email": "kind@solomon-ai.co"},
-			"billing": obj{"plan": "free", "status": "active", "trialExpiresAt": nil, "usage": obj{"sanctionedCredits": 10000, "usedCredits": 0, "availableCredits": 10000, "monthly": obj{"sanctionedCredits": 10000, "usedCredits": 0, "availableCredits": 10000}, "daily": obj{"sanctionedCredits": 10000, "usedCredits": 0, "availableCredits": 10000, "usageDay": "2026-06-04"}}},
+			"billing": obj{"plan": "free", "status": billingTrialStatusExample, "trialExpiresAt": billingTrialExpiresAtExample, "usage": obj{"sanctionedCredits": 10000, "usedCredits": 0, "availableCredits": 10000, "monthly": obj{"sanctionedCredits": 10000, "usedCredits": 0, "availableCredits": 10000}, "daily": obj{"sanctionedCredits": 10000, "usedCredits": 0, "availableCredits": 10000, "usageDay": "2026-06-04"}}},
 		}),
 		"401": responseRef("401"),
 		"500": responseRef("500"),
@@ -2001,6 +2007,14 @@ func enrichEntitySchemas(schemas obj) {
 			if p := asObj(props[name]); p != nil {
 				merge(p, doc)
 			}
+		}
+	}
+	// propDocs writes every status example as active. The current plan badge
+	// shows Trial only when this status is trialing.
+	if billing := asObj(schemas["BillingState"]); billing != nil {
+		if status := asObj(asObj(billing["properties"])["status"]); status != nil {
+			status["description"] = billingTrialStatusDescription
+			status["example"] = billingTrialStatusExample
 		}
 	}
 }

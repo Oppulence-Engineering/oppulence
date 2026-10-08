@@ -6,16 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * Trial means this plan is still in its trial.
- * @nullable
- */
-export type BillingStateStatus =
-  (typeof BillingStateStatus)[keyof typeof BillingStateStatus] | null;
-
-export const BillingStateStatus = {
-  active: "active",
-  trialing: "trialing",
-  past_due: "past_due",
-  canceled: "canceled",
-} as const;
+export type ListWorkspaceNotesParams = {
+  /**
+   * Maximum notes to return (default 50, max 100).
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * Number of collapsed notes to skip.
+   * @minimum 0
+   */
+  offset?: number;
+};
