@@ -8,6 +8,67 @@
 import * as zod from "zod";
 
 /**
+ * Upgrade to Pro opens checkout. The request asks for the Pro plan. This server has not configured checkout, so the request is refused.
+ * @summary Upgrade to Pro
+ */
+export const CreateCheckoutSessionBody = zod
+  .strictObject({
+    plan: zod.enum(["starter", "pro", "intelligence"]).describe("Checkout plan."),
+  })
+  .describe("Plan the Upgrade to Pro button sends.");
+
+export const CreateCheckoutSession200Response = zod
+  .strictObject({
+    url: zod.string().describe("Hosted checkout address."),
+  })
+  .describe("Address of the hosted checkout page.");
+
+export const CreateCheckoutSession400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const CreateCheckoutSession401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const CreateCheckoutSession502Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
  * Permanently deletes the authenticated account. An existing session is not sufficient: the caller must present a single-use step-up token from a fresh re-authentication or email code. The API then cancels every live Stripe subscription (an account that Stripe can still charge is never deleted), revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, revokes identity-provider sessions, and deletes the WorkOS identity.
  * @summary Delete the current account
  */

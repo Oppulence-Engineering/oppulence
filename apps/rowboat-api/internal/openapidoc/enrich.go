@@ -1485,6 +1485,7 @@ func addBillingPaths(paths obj) {
 			"403": problemResponse("The session is not a fresh re-authentication, the code is wrong, or MFA was required and not asserted.", ref("ErrorEnvelope"), problemExample(403, "Forbidden", "sign in again before deleting this account", "reauth_required")),
 			"404": problemResponse("Unknown or already finished challenge.", ref("ErrorEnvelope"), problemExample(404, "Not Found", "deletion challenge not found", "step_up_not_found")),
 		})}
+	paths["/v1/billing/checkout-session"] = checkoutProPath()
 }
 
 func addBackgroundTaskPaths(paths obj) {

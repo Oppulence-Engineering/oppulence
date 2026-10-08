@@ -12,10 +12,12 @@ import type {
   AccountDeletionChallenge,
   AccountDeletionReceipt,
   AccountDeletionStepUp,
+  CreateCheckoutSession200,
   MeResponse,
 } from "../model";
 
 import {
+  getCreateCheckoutSessionResponseMock,
   getDeleteMeResponseMock,
   getGetMeResponseMock,
   getStartAccountDeletionChallengeResponseMock,
@@ -23,11 +25,36 @@ import {
 } from "./billing.faker";
 
 export {
+  getCreateCheckoutSessionResponseMock,
   getDeleteMeResponseMock,
   getGetMeResponseMock,
   getStartAccountDeletionChallengeResponseMock,
   getVerifyAccountDeletionChallengeResponseMock,
 } from "./billing.faker";
+
+export const getCreateCheckoutSessionMockHandler = (
+  overrideResponse?:
+    | CreateCheckoutSession200
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<CreateCheckoutSession200> | CreateCheckoutSession200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/billing/checkout-session",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getCreateCheckoutSessionResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 
 export const getDeleteMeMockHandler = (
   overrideResponse?:
@@ -123,6 +150,7 @@ export const getVerifyAccountDeletionChallengeMockHandler = (
   );
 };
 export const getBillingMock = () => [
+  getCreateCheckoutSessionMockHandler(),
   getDeleteMeMockHandler(),
   getGetMeMockHandler(),
   getStartAccountDeletionChallengeMockHandler(),

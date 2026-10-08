@@ -23938,6 +23938,98 @@
         "tags": ["Billing"]
       }
     },
+    "/v1/billing/checkout-session": {
+      "post": {
+        "description": "Upgrade to Pro opens checkout. The request asks for the Pro plan. This server has not configured checkout, so the request is refused.",
+        "operationId": "createCheckoutSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "plan": "pro"
+              },
+              "schema": {
+                "description": "Plan the Upgrade to Pro button sends.",
+                "properties": {
+                  "plan": {
+                    "description": "Checkout plan.",
+                    "enum": [
+                      "starter",
+                      "pro",
+                      "intelligence"
+                    ],
+                    "example": "pro",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "plan"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Pro plan.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Address of the hosted checkout page.",
+                  "properties": {
+                    "url": {
+                      "description": "Hosted checkout address.",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "url"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Checkout address."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "502": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "provider_unconfigured",
+                  "detail": "Stripe checkout is not configured",
+                  "requestId": "req-abc123",
+                  "retryable": true,
+                  "status": 502,
+                  "title": "Bad Gateway",
+                  "type": "https://api.rowboat.dev/problems/provider_unconfigured"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Checkout is not configured."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Upgrade to Pro",
+        "tags": [
+          "Billing"
+        ]
+      }
+    },
     "/v1/me": {
       "delete": {
         "description": "Permanently deletes the authenticated account. An existing session is not sufficient: the caller must present a single-use step-up token from a fresh re-authentication or email code. The API then cancels every live Stripe subscription (an account that Stripe can still charge is never deleted), revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, revokes identity-provider sessions, and deletes the WorkOS identity.",

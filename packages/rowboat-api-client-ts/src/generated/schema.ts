@@ -1584,6 +1584,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/billing/checkout-session": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Upgrade to Pro
+     * @description Upgrade to Pro opens checkout. The request asks for the Pro plan. This server has not configured checkout, so the request is refused.
+     */
+    post: operations["createCheckoutSession"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/me": {
     parameters: {
       query?: never;
@@ -19331,6 +19351,68 @@ export interface operations {
       };
       401: components["responses"]["401"];
       503: components["responses"]["503"];
+    };
+  };
+  createCheckoutSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Pro plan. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "plan": "pro"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Checkout plan.
+           * @example pro
+           * @enum {string}
+           */
+          plan: "starter" | "pro" | "intelligence";
+        };
+      };
+    };
+    responses: {
+      /** @description Checkout address. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description Hosted checkout address. */
+            url: string;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      /** @description Checkout is not configured. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "provider_unconfigured",
+           *       "detail": "Stripe checkout is not configured",
+           *       "requestId": "req-abc123",
+           *       "retryable": true,
+           *       "status": 502,
+           *       "title": "Bad Gateway",
+           *       "type": "https://api.rowboat.dev/problems/provider_unconfigured"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
     };
   };
   getMe: {
