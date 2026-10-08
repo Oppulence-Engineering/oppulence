@@ -13,6 +13,8 @@ const (
 	openedCompanyReason        = "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation."
 	openedCompanyTouchedAt     = "2026-07-25T15:00:00Z"
 	openedCompanyProjectedAt   = "2026-07-25T16:00:00Z"
+	// The sheet Email row prints this address. With it missing the row says Not filled in.
+	openedCompanyEmail = "avery@acme.com"
 )
 
 func openedCompanyParams() []any {
@@ -37,6 +39,7 @@ func openedCompanySheetExample() obj {
 			"status":           "active",
 			"lastTouchAt":      openedCompanyTouchedAt,
 			"peopleCount":      1,
+			"primaryEmail":     openedCompanyEmail,
 			"emailThreadCount": 0,
 			"commitmentCount":  0,
 			"lifecycle":        "evaluation",
@@ -59,7 +62,7 @@ func openedCompanySheetExample() obj {
 		"participants": []any{obj{
 			"id":           openedCompanyParticipantID,
 			"displayName":  "Avery Chen",
-			"email":        "avery@acme.com",
+			"email":        openedCompanyEmail,
 			"role":         "champion",
 			"active":       true,
 			"externalRefs": empty,

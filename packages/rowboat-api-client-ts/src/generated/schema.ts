@@ -2377,7 +2377,7 @@ export interface paths {
     };
     /**
      * Open a company
-     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.
+     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The email is avery@acme.com.
      */
     get: operations["getRelationship"];
     put?: never;
@@ -24087,6 +24087,7 @@ export interface operations {
            *         "lifecycle": "evaluation",
            *         "milestones": [],
            *         "peopleCount": 1,
+           *         "primaryEmail": "avery@acme.com",
            *         "projectedAt": "2026-07-25T16:00:00Z",
            *         "projectorVersion": 2,
            *         "resourceRefs": [],
