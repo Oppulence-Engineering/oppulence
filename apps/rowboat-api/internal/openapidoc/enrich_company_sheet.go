@@ -13,6 +13,8 @@ const (
 	openedCompanyReason        = "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation."
 	openedCompanyTouchedAt     = "2026-07-25T15:00:00Z"
 	openedCompanyProjectedAt   = "2026-07-25T16:00:00Z"
+	// The sheet Milestones list prints this sentence. An empty list says None recorded.
+	openedCompanyMilestone = "Proposal shared."
 )
 
 func openedCompanyParams() []any {
@@ -50,7 +52,7 @@ func openedCompanySheetExample() obj {
 			"projectedAt":      openedCompanyProjectedAt,
 			"lastChangedAt":    openedCompanyProjectedAt,
 			"risks":            empty,
-			"milestones":       empty,
+			"milestones":       []any{openedCompanyMilestone},
 			"resourceRefs":     empty,
 			"categories":       empty,
 		},
