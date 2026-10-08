@@ -2655,6 +2655,30 @@ describe("API reference document", () => {
     expect(JSON.stringify(page)).not.toContain("threadsSeen");
   });
 
+  it("samples the page Review possible duplicates loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/relationship-identity-candidates"].get;
+    expect(operation.summary).toBe("Review possible duplicates");
+    expect(operation.description).toBe(
+      "Review possible duplicates loads the pending page. The request asks for pending duplicates, 50 at a time, and it does not ask for an older page. This workspace has no pending duplicate, so the page is empty.",
+    );
+    const examples = Object.fromEntries(
+      operation.parameters.map((parameter: { name: string; schema?: { example?: unknown }; example?: unknown }) => [
+        parameter.name,
+        parameter.example ?? parameter.schema?.example,
+      ]),
+    );
+    expect(examples).toMatchObject({ status: "pending", limit: 50 });
+    expect(examples.offset).toBeUndefined();
+    expect(examples.source).toBeUndefined();
+    expect(examples.relationshipId).toBeUndefined();
+    const page = operation.responses["200"].content["application/json"].example;
+    expect(page).toEqual({ candidates: [], hasMore: false });
+    expect(JSON.stringify(page)).not.toContain("hubspot");
+    expect(JSON.stringify(page)).not.toContain("other@example.com");
+    expect(JSON.stringify(page)).not.toContain("Confirmed duplicate");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

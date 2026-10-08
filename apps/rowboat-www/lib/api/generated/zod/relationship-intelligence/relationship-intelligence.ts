@@ -610,22 +610,32 @@ export const GetRelationshipBetaDiagnostics403Response = zod
   );
 
 /**
- * Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage. A full page is the end of the inbox when hasMore is false.
- * @summary List identity review candidates
+ * Review possible duplicates loads the pending page. The request asks for pending duplicates, 50 at a time, and it does not ask for an older page. This workspace has no pending duplicate, so the page is empty.
+ * @summary Review possible duplicates
  */
 export const listRelationshipIdentityCandidatesQueryOffsetMin = 0;
 
 export const ListRelationshipIdentityCandidatesQueryParams = zod.object({
-  status: zod.enum(["pending", "deferred", "resolving", "resolved", "undone"]).optional(),
-  source: zod.string().optional(),
-  relationshipId: zod.uuid().optional(),
-  limit: zod.coerce.number().int().optional(),
+  status: zod
+    .enum(["pending", "deferred", "resolving", "resolved", "undone"])
+    .optional()
+    .describe("pending is the inbox. Review possible duplicates asks for pending."),
+  source: zod.string().optional().describe("Provider. The inbox does not send this."),
+  relationshipId: zod
+    .uuid()
+    .optional()
+    .describe("Restrict to one company. The inbox does not send this."),
+  limit: zod.coerce
+    .number()
+    .int()
+    .optional()
+    .describe("Page size (max 100). The inbox asks for 50."),
   offset: zod.coerce
     .number()
     .int()
     .min(listRelationshipIdentityCandidatesQueryOffsetMin)
     .optional()
-    .describe("Page offset."),
+    .describe("How many duplicates to skip. The inbox does not send this on the first page."),
 });
 
 export const ListRelationshipIdentityCandidates200Response = zod
@@ -971,9 +981,9 @@ export const ListRelationshipIdentityCandidates200Response = zod
           .describe("Durable, optimistic-versioned exact-anchor ambiguity review."),
       )
       .describe("Candidates."),
-    hasMore: zod.boolean().optional().describe("Another duplicate exists beyond this page."),
+    hasMore: zod.boolean().describe("Another duplicate exists beyond this page."),
   })
-  .describe("Identity candidate list. A full page is the end of the inbox when hasMore is false.");
+  .describe("Pending duplicate page.");
 
 export const ListRelationshipIdentityCandidates400Response = zod
   .strictObject({

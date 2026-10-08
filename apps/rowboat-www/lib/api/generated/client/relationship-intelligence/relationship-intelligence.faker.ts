@@ -751,7 +751,7 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
       version: faker.number.int(),
     }),
   ),
-  hasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
+  hasMore: faker.datatype.boolean(),
   ...overrideResponse,
 });
 

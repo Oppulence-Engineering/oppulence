@@ -8,11 +8,11 @@
 import type { RelationshipIdentityCandidate } from "./relationshipIdentityCandidate";
 
 /**
- * Identity candidate list. A full page is the end of the inbox when hasMore is false.
+ * Pending duplicate page.
  */
 export type ListRelationshipIdentityCandidates200 = {
   /** Candidates. */
   candidates: RelationshipIdentityCandidate[];
   /** Another duplicate exists beyond this page. */
-  hasMore?: boolean;
+  hasMore: boolean;
 };

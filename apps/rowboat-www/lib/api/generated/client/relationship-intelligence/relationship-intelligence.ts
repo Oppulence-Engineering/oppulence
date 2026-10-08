@@ -550,8 +550,8 @@ export const getListRelationshipIdentityCandidatesUrl = (
 };
 
 /**
- * Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage. A full page is the end of the inbox when hasMore is false.
- * @summary List identity review candidates
+ * Review possible duplicates loads the pending page. The request asks for pending duplicates, 50 at a time, and it does not ask for an older page. This workspace has no pending duplicate, so the page is empty.
+ * @summary Review possible duplicates
  */
 export const listRelationshipIdentityCandidates = async (
   params?: ListRelationshipIdentityCandidatesParams,
