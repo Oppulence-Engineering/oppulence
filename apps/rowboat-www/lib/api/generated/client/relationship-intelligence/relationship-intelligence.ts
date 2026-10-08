@@ -1392,8 +1392,8 @@ export const getGetRelationshipGraphUrl = (params?: GetRelationshipGraphParams) 
 };
 
 /**
- * Returns the shared versioned graph read model for an account or the authorized portfolio. Historical asOf reads exclude later evidence and proposed actions.
- * @summary Get the relationship graph
+ * Company graph loads the portfolio. The request asks for the portfolio at depth 2 and does not ask for an earlier moment or an older page. This workspace has no company, so the graph is empty.
+ * @summary Company graph
  */
 export const getRelationshipGraph = async (
   params?: GetRelationshipGraphParams,

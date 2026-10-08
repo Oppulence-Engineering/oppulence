@@ -1537,28 +1537,7 @@ func addRevenuePaths(paths obj) {
 			"401": responseRef("401"),
 		}),
 	}
-	paths["/v1/relationships/graph"] = obj{"get": operation(
-		"Relationship Intelligence",
-		"Get the relationship graph",
-		"Returns the shared versioned graph read model for an account or the authorized portfolio. Historical asOf reads exclude later evidence and proposed actions.",
-		"getRelationshipGraph",
-		bearer(),
-		[]any{
-			obj{"name": "scope", "in": "query", "required": false, "description": "Portfolio or one relationship.", "schema": obj{"type": "string", "enum": []string{"portfolio", "relationship"}, "default": "portfolio"}},
-			obj{"name": "relationshipId", "in": "query", "required": false, "description": "Required when scope=relationship.", "schema": obj{"type": "string", "format": "uuid"}},
-			obj{"name": "depth", "in": "query", "required": false, "description": "Bounded graph expansion depth.", "schema": obj{"type": "integer", "minimum": 1, "maximum": 3, "default": 2}},
-			obj{"name": "asOf", "in": "query", "required": false, "description": "Historical evidence boundary; must not be in the future.", "schema": obj{"type": "string", "format": "date-time"}},
-			obj{"name": "offset", "in": "query", "required": false, "description": "Company offset. The first page is the 200 most recently updated companies.", "schema": obj{"type": "integer", "minimum": 0}},
-			obj{"name": "observationOffset", "in": "query", "required": false, "description": "Evidence offset. The first page is the newest conversations on each company.", "schema": obj{"type": "integer", "minimum": 0}},
-		},
-		nil,
-		obj{
-			"200": jsonResponse("Authorized relationship graph.", ref("RelationshipGraph"), nil),
-			"400": responseRef("400"),
-			"401": responseRef("401"),
-			"404": responseRef("404"),
-		},
-	)}
+	paths["/v1/relationships/graph"] = companyGraphPath()
 	relationshipParam := []any{obj{"name": "relationshipId", "in": "path", "required": true, "description": "Relationship id.", "schema": obj{"type": "string", "format": "uuid"}}}
 	paths["/v1/relationships/{relationshipId}"] = obj{"get": operation("Relationship Intelligence", "Get relationship mission control", "Returns living relationship state, governed recommendations, participants, and commitments.", "getRelationship", bearer(), relationshipParam, nil, obj{
 		"200": jsonResponse("Relationship detail.", objectSchema("Relationship detail.", obj{

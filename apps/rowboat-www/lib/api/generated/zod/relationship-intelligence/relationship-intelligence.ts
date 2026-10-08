@@ -3288,8 +3288,8 @@ export const CreateRelationship401Response = zod
   );
 
 /**
- * Returns the shared versioned graph read model for an account or the authorized portfolio. Historical asOf reads exclude later evidence and proposed actions.
- * @summary Get the relationship graph
+ * Company graph loads the portfolio. The request asks for the portfolio at depth 2 and does not ask for an earlier moment or an older page. This workspace has no company, so the graph is empty.
+ * @summary Company graph
  */
 export const getRelationshipGraphQueryScopeDefault = `portfolio`;
 export const getRelationshipGraphQueryDepthDefault = 2;
@@ -3303,31 +3303,36 @@ export const GetRelationshipGraphQueryParams = zod.object({
   scope: zod
     .enum(["portfolio", "relationship"])
     .default(getRelationshipGraphQueryScopeDefault)
-    .describe("Portfolio or one relationship."),
-  relationshipId: zod.uuid().optional().describe("Required when scope=relationship."),
+    .describe("portfolio is the whole workspace. Company graph asks for the portfolio."),
+  relationshipId: zod
+    .uuid()
+    .optional()
+    .describe("One company. Company graph does not send this for the portfolio."),
   depth: zod.coerce
     .number()
     .int()
     .min(1)
     .max(getRelationshipGraphQueryDepthMax)
     .default(getRelationshipGraphQueryDepthDefault)
-    .describe("Bounded graph expansion depth."),
+    .describe("How far the graph expands (1-3). Company graph asks for 2."),
   asOf: zod.iso
     .datetime({ offset: true })
     .optional()
-    .describe("Historical evidence boundary; must not be in the future."),
+    .describe("An earlier moment. Company graph does not send this on the first load."),
   offset: zod.coerce
     .number()
     .int()
     .min(getRelationshipGraphQueryOffsetMin)
     .optional()
-    .describe("Company offset. The first page is the 200 most recently updated companies."),
+    .describe("How many companies to skip. Company graph does not send this on the first page."),
   observationOffset: zod.coerce
     .number()
     .int()
     .min(getRelationshipGraphQueryObservationOffsetMin)
     .optional()
-    .describe("Evidence offset. The first page is the newest conversations on each company."),
+    .describe(
+      "How many conversations to skip. Company graph does not send this on the first page.",
+    ),
 });
 
 export const getRelationshipGraph200ResponseDepthMax = 3;
