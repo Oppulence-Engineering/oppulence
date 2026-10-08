@@ -1626,6 +1626,73 @@ export const StartConnector503Response = zod
   );
 
 /**
+ * More products lists Jira and Asana. Gmail, Google Calendar, and HubSpot stay on their own cards.
+ * @summary More products
+ */
+export const ListComposioToolkits200Response = zod
+  .strictObject({
+    toolkits: zod
+      .array(
+        zod
+          .strictObject({
+            managedAuth: zod
+              .boolean()
+              .describe("This product can be connected from More products."),
+            name: zod.string().describe("Name on the card."),
+            slug: zod.string().describe("Product id."),
+          })
+          .describe("One product on More products."),
+      )
+      .describe("Products offered here."),
+  })
+  .describe("Tools that can be connected from More products.");
+
+export const ListComposioToolkits401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ListComposioToolkits502Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ListComposioToolkits503Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
  * Searches contacts, companies, deals, or tickets through HubSpot's official server-side SDK. The connected private-app token remains sealed server-side.
  * @summary Search HubSpot CRM
  */

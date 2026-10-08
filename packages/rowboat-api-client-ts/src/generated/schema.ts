@@ -1232,6 +1232,26 @@ export interface paths {
     patch: operations["patchConsoleResource"];
     trace?: never;
   };
+  "/v1/composio/toolkits": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * More products
+     * @description More products lists Jira and Asana. Gmail, Google Calendar, and HubSpot stay on their own cards.
+     */
+    get: operations["listComposioToolkits"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/entities": {
     parameters: {
       query?: never;
@@ -18641,6 +18661,64 @@ export interface operations {
         };
       };
       500: components["responses"]["500"];
+    };
+  };
+  listComposioToolkits: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Jira and Asana are available to connect. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "toolkits": [
+           *         {
+           *           "managedAuth": true,
+           *           "name": "Jira",
+           *           "slug": "jira"
+           *         },
+           *         {
+           *           "managedAuth": true,
+           *           "name": "Asana",
+           *           "slug": "asana"
+           *         }
+           *       ]
+           *     }
+           */
+          "application/json": {
+            /** @description Products offered here. */
+            toolkits: {
+              /**
+               * @description This product can be connected from More products.
+               * @example true
+               */
+              managedAuth: boolean;
+              /**
+               * @description Name on the card.
+               * @example Jira
+               */
+              name: string;
+              /**
+               * @description Product id.
+               * @example jira
+               */
+              slug: string;
+            }[];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      502: components["responses"]["502"];
+      503: components["responses"]["503"];
     };
   };
   resolveEntityByRef: {
