@@ -5601,6 +5601,77 @@ func TestRelationshipSearchFindsEarlierActivity(t *testing.T) {
 	assertCompanyQuery("show")
 }
 
+func TestRelationshipSearchFindsEarlierMail(t *testing.T) {
+	f := newFixture(t)
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	none := makeCompany("Quill North")
+	page := makeCompany("Cedar Slide")
+	hidden := makeCompany("Birch Quiet")
+	more := makeCompany("Aspen Ledger")
+	_ = none
+
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	at := time.Date(2026, 10, 2, 12, 0, 0, 0, time.UTC)
+	internal := auth.WithInternal(context.Background())
+	writeMail := func(rel *ent.Relationship, objectID string, removed bool) {
+		t.Helper()
+		if _, err := f.client.CommunicationInteraction.Create().
+			SetWorkspace(ws).SetOwner(f.user).SetRelationshipID(rel.ID).
+			SetSource("gmail").SetSourceAccountID("owner@x.co").SetProviderObjectID(objectID).
+			SetInteractionType("email").SetDirection("inbound").SetSubject("Hello").
+			SetOccurredAt(at).SetReceivedAt(at).SetVisibility("metadata").
+			SetContentHash("sha256:" + objectID).SetMetadataJSON(`{}`).SetDeleted(removed).
+			Save(internal); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := 1; i <= 50; i++ {
+		writeMail(page, fmt.Sprintf("cedar-%d", i), false)
+		writeMail(hidden, fmt.Sprintf("birch-%d", i), false)
+	}
+	writeMail(hidden, "birch-deleted", true)
+	for i := 1; i <= 51; i++ {
+		writeMail(more, fmt.Sprintf("aspen-%d", i), false)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+
+	assertCompanyQuery("Show earlier mail and meetings", "Aspen Ledger")
+	assertCompanyQuery("which companies should I show earlier mail and meetings", "Aspen Ledger")
+	assertCompanyQuery("No Gmail or calendar events yet.", "Quill North")
+	assertCompanyQuery("show")
+	assertCompanyQuery("earlier")
+	assertCompanyQuery("mail")
+	assertCompanyQuery("meetings")
+}
+
 func TestRelationshipSearchFindsTheLastInteraction(t *testing.T) {
 	f := newFixture(t)
 	recent, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

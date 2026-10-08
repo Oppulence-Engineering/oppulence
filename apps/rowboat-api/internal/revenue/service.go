@@ -8124,6 +8124,13 @@ func relationshipSheetEmptyCopyMatch(needle string) predicate.Relationship {
 	if labelPhraseMatches("show earlier activity", needle) {
 		preds = append(preds, relationshipHasEarlierActivity())
 	}
+
+	// The mail timeline shows fifty events, then "Show earlier mail and meetings".
+	// Fifty visible events fill that page. A deleted event stays off the page.
+	// A fifty-first visible event is the button.
+	if labelPhraseMatches("show earlier mail and meetings", needle) {
+		preds = append(preds, relationshipHasEarlierMail())
+	}
 	// The promise card and the Promises section both use this line when
 	// the company has no commitments. "recorded" is also an activity heading.
 	if labelPhraseMatches("no commitments recorded for this company yet.", needle) {
@@ -8311,6 +8318,24 @@ func relationshipRowCount(table, column, compare string, n int, visibleOnly bool
 			b.WriteString(compare)
 			b.WriteString(" ")
 			b.Arg(n)
+		}))
+	})
+}
+
+func relationshipHasEarlierMail() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT count(*) FROM ")
+			b.WriteString(communicationinteraction.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(communicationinteraction.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND ")
+			b.WriteString(communicationinteraction.FieldDeleted)
+			b.WriteString(" = ")
+			b.Arg(false)
+			b.WriteString(") > 50")
 		}))
 	})
 }
