@@ -306,32 +306,34 @@ export const RespondPublicMutualActionPlan404Response = zod
   );
 
 /**
- * Returns deterministic relationship-native attention ordered by explicit factor contributions. A full page is the end of the queue when hasMore is false.
- * @summary List portfolio attention
+ * Attention queue loads the open page. The request asks for open items, 50 at a time, and it does not ask for an older page. This workspace has no open company in the queue, so the page is empty.
+ * @summary Attention queue
  */
 export const listRelationshipAttentionQueryOffsetMin = 0;
 
 export const ListRelationshipAttentionQueryParams = zod.object({
   status: zod
     .enum(["open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved", "all"])
-    .optional(),
-  limit: zod.coerce.number().int().optional(),
+    .optional()
+    .describe("open is the queue. Attention queue asks for open."),
+  limit: zod.coerce
+    .number()
+    .int()
+    .optional()
+    .describe("Page size (max 100). Attention queue asks for 50."),
   offset: zod.coerce
     .number()
     .int()
     .min(listRelationshipAttentionQueryOffsetMin)
     .optional()
-    .describe("Page offset."),
+    .describe("How many items to skip. Attention queue does not send this on the first page."),
 });
 
 export const ListRelationshipAttention200Response = zod
   .strictObject({
     asOf: zod.iso.datetime({ offset: true }).describe("Read boundary."),
     contractVersion: zod.string().describe("Contract version."),
-    hasMore: zod
-      .boolean()
-      .optional()
-      .describe("Another company exists beyond this page of the queue."),
+    hasMore: zod.boolean().describe("Another company exists beyond this page of the queue."),
     items: zod
       .array(
         zod
@@ -382,7 +384,7 @@ export const ListRelationshipAttention200Response = zod
       )
       .describe("Attention items."),
   })
-  .describe("Attention list. A full page is the end of the queue when hasMore is false.");
+  .describe("Attention queue page.");
 
 export const ListRelationshipAttention401Response = zod
   .strictObject({

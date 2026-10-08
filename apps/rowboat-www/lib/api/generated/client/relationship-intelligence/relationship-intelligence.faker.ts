@@ -214,7 +214,7 @@ export const getListRelationshipAttentionResponseMock = (
 ): ListRelationshipAttention200 => ({
   asOf: faker.date.past().toISOString().slice(0, 19) + "Z",
   contractVersion: faker.string.alpha({ length: { min: 10, max: 20 } }),
-  hasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
+  hasMore: faker.datatype.boolean(),
   items: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
     acknowledgedAt: faker.helpers.arrayElement([
       faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),

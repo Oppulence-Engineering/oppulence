@@ -364,8 +364,8 @@ export const getListRelationshipAttentionUrl = (params?: ListRelationshipAttenti
 };
 
 /**
- * Returns deterministic relationship-native attention ordered by explicit factor contributions. A full page is the end of the queue when hasMore is false.
- * @summary List portfolio attention
+ * Attention queue loads the open page. The request asks for open items, 50 at a time, and it does not ask for an older page. This workspace has no open company in the queue, so the page is empty.
+ * @summary Attention queue
  */
 export const listRelationshipAttention = async (
   params?: ListRelationshipAttentionParams,

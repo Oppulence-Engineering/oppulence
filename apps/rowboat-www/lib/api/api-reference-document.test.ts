@@ -2703,6 +2703,32 @@ describe("API reference document", () => {
     expect(JSON.stringify(page)).not.toContain("Migration live");
   });
 
+  it("samples the page Attention queue loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/relationship-attention"].get;
+    expect(operation.summary).toBe("Attention queue");
+    expect(operation.description).toBe(
+      "Attention queue loads the open page. The request asks for open items, 50 at a time, and it does not ask for an older page. This workspace has no open company in the queue, so the page is empty.",
+    );
+    const examples = Object.fromEntries(
+      operation.parameters.map((parameter: { name: string; schema?: { example?: unknown }; example?: unknown }) => [
+        parameter.name,
+        parameter.example ?? parameter.schema?.example,
+      ]),
+    );
+    expect(examples).toMatchObject({ status: "open", limit: 50 });
+    expect(examples.offset).toBeUndefined();
+    const page = operation.responses["200"].content["application/json"].example;
+    expect(page).toEqual({
+      asOf: "2026-07-31T14:00:00Z",
+      contractVersion: "relationship-attention.v1",
+      hasMore: false,
+      items: [],
+    });
+    expect(JSON.stringify(page)).not.toContain("overdue by two days");
+    expect(JSON.stringify(page)).not.toContain("123e4567-e89b-12d3-a456-426614174000");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
