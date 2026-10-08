@@ -1053,6 +1053,8 @@ func addRuntimePaths(paths obj) {
 	addSlackOAuthPaths(paths)
 	addConnectorPaths(paths)
 	addActionExecutePath(paths)
+
+	addActionApprovePath(paths)
 	addCloudEventPaths(paths)
 	addRevenuePaths(paths)
 	addActionPaths(paths)

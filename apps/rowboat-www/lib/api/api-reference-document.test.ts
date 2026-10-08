@@ -3584,6 +3584,40 @@ describe("API reference document", () => {
     expect(operation.requestBody.content["application/json"].example.token).not.toContain("acta_");
   });
 
+  it("samples the proposal Approve and run returns", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/action-proposals/{id}/approve"].post;
+    expect(operation.summary).toBe("Approve and run");
+    expect(operation.operationId).toBe("approveActionProposal");
+    expect(operation.description).toBe(
+      "Approve and run posts no body. The page keeps the approved proposal and uses the one-time value to run the action.",
+    );
+    expect(operation.requestBody).toBeUndefined();
+    expect(operation.parameters[0]).toMatchObject({
+      name: "id",
+      example: "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+    });
+    expect(operation.responses["200"].content["application/json"].example).toEqual({
+      proposal: {
+        id: "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+        target: "conduit:invoice:inv_456",
+        kind: "conduit.dunning.advance",
+        paramsJson: '{"amount":100,"step":2}',
+        financial: false,
+        rationale: "Acme is 14 days overdue",
+        status: "approved",
+        createdAt: "2026-07-31T14:00:00Z",
+        approvedAt: "2026-07-31T14:00:00Z",
+      },
+      token: "example.not-a-live-approval",
+      expiresAt: "2026-07-31T14:05:00Z",
+    });
+    const encoded = JSON.stringify(operation.responses["200"].content["application/json"].example);
+    expect(encoded).not.toContain("acta_");
+    expect(encoded).not.toContain("executedAt");
+    expect(encoded).not.toContain("resultRef");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

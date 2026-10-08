@@ -71,3 +71,31 @@ func actionApproveOperation() obj {
 func addActionApprovePath(paths obj) {
 	paths["/v1/action-proposals/{id}/approve"] = obj{"post": actionApproveOperation()}
 }
+
+func actionApproveProposal() obj {
+	return obj{
+		"id":         actionApproveProposalID,
+		"target":     actionApproveTarget,
+		"kind":       "conduit.dunning.advance",
+		"paramsJson": actionApproveParams,
+		"financial":  false,
+		"rationale":  "Acme is 14 days overdue",
+		"status":     "approved",
+		"createdAt":  actionApproveClock,
+		"approvedAt": actionApproveClock,
+	}
+}
+
+func actionApproveProposalSchema() obj {
+	return objectSchema("Approved proposal.", obj{
+		"id":         uuidSchema("Proposal id.", actionApproveProposalID),
+		"target":     stringSchema("Object the action changes.", actionApproveTarget),
+		"kind":       stringSchema("Action kind.", "conduit.dunning.advance"),
+		"paramsJson": stringSchema("JSON parameters.", actionApproveParams),
+		"financial":  boolSchema("Whether money moves.", false),
+		"rationale":  stringSchema("Why the action was proposed.", "Acme is 14 days overdue"),
+		"status":     stringSchema("Approved.", "approved"),
+		"createdAt":  stringSchema("When the proposal was created.", actionApproveClock, obj{"format": "date-time"}),
+		"approvedAt": stringSchema("When it was approved.", actionApproveClock, obj{"format": "date-time"}),
+	}, "id", "target", "kind", "financial", "status", "createdAt", "approvedAt")
+}
