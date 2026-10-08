@@ -1586,6 +1586,57 @@ func TestProviderDraftStoresSentHandled(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)
 	assertProviderDraft(t, spec)
+
+	assertApprovedAction(t, spec)
+}
+
+func TestApproveStoresApprovedRevision(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertApprovedAction(t, spec)
+}
+
+func assertApprovedAction(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/revenue-actions/{actionId}/approve"])["post"])
+	if op["summary"] != "Approve" || op["operationId"] != "approveRevenueAction" {
+		t.Fatalf("approve operation: summary=%#v id=%#v", op["summary"], op["operationId"])
+	}
+	description, _ := op["description"].(string)
+	if !strings.Contains(description, "acceptRisk false") || !strings.Contains(description, "approval time") {
+		t.Fatalf("approve description: %q", description)
+	}
+	request := asObj(asObj(asObj(asObj(op["requestBody"])["content"])["application/json"])["example"])
+	if request["acceptRisk"] != false {
+		t.Fatalf("approve request: %#v", request)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	if example["approvalStatus"] != "approved" || example["approvedAt"] != "2026-07-12T12:05:00Z" || example["queueStatus"] != "open" || example["executionStatus"] != "pending" || example["executionMode"] != "draft" || !openAPIIntEqual(example["approvedRevision"], 1) || !openAPIIntEqual(example["revision"], 1) {
+		t.Fatalf("approved action: %#v", example)
+	}
+	if _, ok := example["executedAt"]; ok {
+		t.Fatalf("approve does not execute: %#v", example["executedAt"])
+	}
+	if _, ok := example["providerMessageId"]; ok {
+		t.Fatalf("approve does not store a provider message: %#v", example["providerMessageId"])
+	}
+	props := asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueAction"])["properties"])
+	if asObj(props["approvalStatus"])["example"] != "pending" || asObj(props["queueStatus"])["example"] != "open" {
+		t.Fatalf("shared action examples changed: approval=%#v queue=%#v", props["approvalStatus"], props["queueStatus"])
+	}
+}
+
+func openAPIIntEqual(value any, want int) bool {
+	switch n := value.(type) {
+	case int:
+		return n == want
+	case int64:
+		return n == int64(want)
+	case float64:
+		return n == float64(want)
+	default:
+		return false
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -2751,19 +2802,6 @@ func assertDisconnectSource(t *testing.T, spec obj) {
 	status := asObj(asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RelationshipSourceStatus"])["properties"])["status"])
 	if status["example"] != "live" {
 		t.Fatalf("source health status example changed: %#v", status)
-	}
-}
-
-func openAPIIntEqual(v any, want int) bool {
-	switch n := v.(type) {
-	case int:
-		return n == want
-	case int64:
-		return n == int64(want)
-	case float64:
-		return n == float64(want)
-	default:
-		return false
 	}
 }
 

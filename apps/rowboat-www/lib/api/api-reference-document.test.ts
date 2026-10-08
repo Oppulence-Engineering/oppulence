@@ -1522,6 +1522,24 @@ describe("API reference document", () => {
     expect(presented.components.schemas.RevenueAction.properties.queueStatus.example).toBe("open");
   });
 
+  it("samples the approved revision Approve stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-actions/{actionId}/approve"].post;
+    expect(operation.summary).toBe("Approve");
+    expect(operation.operationId).toBe("approveRevenueAction");
+    expect(operation.requestBody.content["application/json"].example).toEqual({ acceptRisk: false });
+    expect(operation.responses["200"].content["application/json"].example).toMatchObject({
+      approvalStatus: "approved",
+      approvedRevision: 1,
+      approvedAt: "2026-07-12T12:05:00Z",
+      queueStatus: "open",
+      executionStatus: "pending",
+      executionMode: "draft",
+    });
+    expect(operation.responses["200"].content["application/json"].example.executedAt).toBeUndefined();
+    expect(presented.components.schemas.RevenueAction.properties.approvalStatus.example).toBe("pending");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

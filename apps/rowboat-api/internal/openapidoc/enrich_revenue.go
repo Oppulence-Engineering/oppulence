@@ -1167,6 +1167,38 @@ func documentedProviderDraft() obj {
 	}
 }
 
+const documentedApprovedActionID = "1a8dfa9b-a7b2-46ea-982c-622a914c00e5"
+
+func documentedApprovedAction() obj {
+	return obj{
+		"id":               documentedApprovedActionID,
+		"relationshipId":   "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+		"relationshipName": "Acme",
+		"actionType":       "warm_follow_up",
+		"channel":          "email",
+		"detector":         "requested_follow_up_due",
+		"revision":         1,
+		"revisionHash":     "sha256:ab12...",
+		"reason":           "They asked for a follow-up in July.",
+		"recipientEmail":   "buyer@example.com",
+		"proposedSubject":  "Following up as promised",
+		"proposedMessage":  "Hi Jordan — you asked me to circle back this month...",
+		"senderAccountRef": "gmail:me@company.com",
+		"priorityScore":    82,
+		"queueStatus":      "open",
+		"policyStatus":     "pending",
+		"approvalStatus":   "approved",
+		"executionStatus":  "pending",
+		"executionOwner":   "rowboat",
+		"executionMode":    "draft",
+		"approvedRevision": 1,
+		"approvedAt":       "2026-07-12T12:05:00Z",
+		"createdAt":        "2026-07-12T12:00:00Z",
+		"updatedAt":        "2026-07-12T12:05:00Z",
+		"evidence":         []any{},
+	}
+}
+
 func addRevenuePaths(paths obj) {
 	actionParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Action id.", "schema": obj{"type": "string", "format": "uuid"}}}
 
@@ -1936,10 +1968,11 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/revenue-actions/{actionId}/approve"] = obj{"post": operation("Revenue", "Approve an action", "Approves the current revision. Send-mode actions require a passed (or explicitly risk-accepted review_required) unexpired decision bound to the exact revision; blocked actions can never be approved.", "approveRevenueAction", bearer(), actionParam, jsonRequestOptional("Approval options.", objectSchema("Approve request.", obj{
+	approveActionParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Action id.", "schema": obj{"type": "string", "format": "uuid", "example": documentedApprovedActionID}}}
+	paths["/v1/revenue-actions/{actionId}/approve"] = obj{"post": operation("Revenue", "Approve", "Approve posts acceptRisk false. The stored action is approved for its current revision, and the approval time is recorded. Approve send uses this same call when the action is in send mode. A blocked action cannot be approved.", "approveRevenueAction", bearer(), approveActionParam, jsonRequestOptional("Approval options.", objectSchema("Approve request.", obj{
 		"acceptRisk": boolSchema("Explicitly accept a review_required decision.", false),
 	}), obj{"acceptRisk": false}), obj{
-		"200": jsonResponse("Approved action.", ref("RevenueAction"), nil),
+		"200": jsonResponse("Approved action.", ref("RevenueAction"), documentedApprovedAction()),
 		"401": responseRef("401"),
 		"402": problemResponse("Acting on actions requires a paid subscription.", ref("ErrorEnvelope"), problemExample(402, "Payment Required", "an active subscription is required to act on actions", "subscription_required")),
 		"404": responseRef("404"),
