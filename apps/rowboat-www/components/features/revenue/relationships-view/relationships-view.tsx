@@ -793,13 +793,17 @@ export function companyRecordLabel(value: string): string {
   }
 }
 
-/** Health and stage are comboboxes. The visible word is the choice, not the name. */
+/** Health and lifecycle are comboboxes. The visible word is the choice, not the name. */
 export function companyHealthFilterName(value: string): string {
   return comboboxFilterName("Health", value === "all" ? "Any health" : companyRecordLabel(value));
 }
 
-export function companyStageFilterName(value: string): string {
-  return comboboxFilterName("Stage", value === "all" ? "All stages" : companyRecordLabel(value));
+/** The list filters the same lifecycle the company sheet names. */
+export function companyLifecycleFilterName(value: string): string {
+  return comboboxFilterName(
+    "Lifecycle",
+    value === "all" ? "Any lifecycle" : companyRecordLabel(value),
+  );
 }
 
 export function RelationshipsView({
@@ -1263,14 +1267,14 @@ export function RelationshipsView({
             </Select>
             <Select value={lifecycle} onValueChange={setLifecycle}>
               <SelectTrigger
-                aria-label={companyStageFilterName(lifecycle)}
+                aria-label={companyLifecycleFilterName(lifecycle)}
                 className="h-8 w-40"
                 size="sm"
               >
-                <SelectValue placeholder="Stage" />
+                <SelectValue placeholder="Lifecycle" />
               </SelectTrigger>
               <SelectContent className="app-shell rounded-none">
-                <SelectItem value="all">All stages</SelectItem>
+                <SelectItem value="all">Any lifecycle</SelectItem>
                 {LIFECYCLE_OPTIONS.map((value) => (
                   <SelectItem key={value} value={value}>
                     {companyRecordLabel(value)}
