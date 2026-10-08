@@ -991,6 +991,24 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the revision hash stored for a published draft", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const hash = "sha256:746c1d9cd3925b8e632fc1b4bd539758514cb1aefdf31948fe8d1b45ce74c29d";
+    const action = presented.components.schemas.RevenueAction.properties;
+    expect(action.revisionHash).toMatchObject({
+      description: "Canonical hash of the revision content.",
+      example: hash,
+    });
+    expect(action.actionType.example).toBe("warm_follow_up");
+    expect(action.executionMode.example).toBe("draft");
+    expect(String(action.revisionHash.example)).not.toContain("...");
+    const decision = presented.components.schemas.RevenuePolicyDecision.properties;
+    expect(decision.revisionHash).toMatchObject({
+      description: "Revision hash the decision is bound to.",
+      example: hash,
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
