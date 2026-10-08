@@ -3894,6 +3894,96 @@ func TestRelationshipSearchFindsConsentReceipts(t *testing.T) {
 	assertCompanyQuery("Deletion is still running", "Lumen Packet")
 }
 
+func TestRelationshipSearchFindsNoneRecorded(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	addPerson := func(rel *ent.Relationship, name string) {
+		t.Helper()
+		person, err := f.client.Person.Create().
+			SetDisplayName(name).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.client.RelationshipParticipant.Create().
+			SetWorkspace(ws).SetUser(f.user).
+			SetRelationship(rel).SetPerson(person).
+			SetDisplayName(name).SetRole("contact").
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	fill := func(rel *ent.Relationship, risks, milestones []string) {
+		t.Helper()
+		if _, err := f.client.Relationship.UpdateOneID(rel.ID).
+			SetRisks(risks).SetMilestones(milestones).Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	quiet := makeCompany("Quay Quiet")
+	_ = quiet
+	risksOnly := makeCompany("Quay Risks")
+	fill(risksOnly, []string{"renewal slip"}, nil)
+	milesOnly := makeCompany("Quay Miles")
+	fill(milesOnly, nil, []string{"signed"})
+	peopleOnly := makeCompany("Quay People")
+	addPerson(peopleOnly, "Ada Mesa")
+	full := makeCompany("Quay Full")
+	fill(full, []string{"renewal slip"}, []string{"signed"})
+	addPerson(full, "Casey Quinn")
+	blank := makeCompany("Quay Blank")
+	fill(blank, []string{""}, []string{""})
+	addPerson(blank, "No Name")
+	observed := makeCompany("Quay Observed")
+	fill(observed, []string{"renewal slip"}, []string{"signed"})
+	addPerson(observed, "Jules Pike")
+	at := time.Date(2026, 10, 4, 12, 0, 0, 0, time.UTC)
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(observed).
+		SetSource("user").SetExternalID("quay-none-observed").
+		SetEventType("relationship.observed").SetOccurredAt(at).SetReceivedAt(at).
+		SetSummary("A recorded row").SetContentHash("quay-none-observed").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	emptyLists := []string{"Quay Quiet", "Quay Risks", "Quay Miles", "Quay People"}
+	assertCompanyQuery("None recorded.", emptyLists...)
+	assertCompanyQuery("which companies have none recorded", emptyLists...)
+	assertCompanyQuery("none")
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {

@@ -847,6 +847,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if empty := relationshipSheetEmptyCopyMatch(needle); empty != nil {
 			parts = append(parts, empty)
 		}
+		if none := relationshipSheetNoneRecordedMatch(needle); none != nil {
+			parts = append(parts, none)
+		}
 		// The subject and the address are the first two lines of each thread.
 		// Searching either word has to open that company.
 		parts = append(parts, relationship.HasMailThreadsWith(mailthread.Or(
@@ -874,9 +877,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if people := relationshipSheetPeopleMatch(needle); people != nil {
 			parts = append(parts, people)
 		}
-		// "Nothing recorded yet" contains "recorded", and the calendar
-		// sentence contains "calendar". Those words are also activity
-		// headings. The empty sentence is the company with no history.
+		// "Nothing recorded yet" and "None recorded." contain "recorded",
+		// and the calendar sentence contains "calendar". Those words are
+		// also activity headings. The empty sentence is the company that
+		// prints it.
 		if activity := relationshipSheetActivityMatch(needle); activity != nil && !sheetEmptySentenceOwnsActivity(needle) {
 			parts = append(parts, activity)
 		}
@@ -3690,16 +3694,30 @@ func overdueCommitmentEligible() predicate.Commitment {
 }
 
 func relationshipRiskCount(compare string, n int) predicate.Relationship {
+	return relationshipJSONArrayCount(relationship.FieldRisks, compare, n)
+}
+
+func relationshipMilestoneCount(compare string, n int) predicate.Relationship {
+	return relationshipJSONArrayCount(relationship.FieldMilestones, compare, n)
+}
+
+func relationshipJSONArrayCount(field, compare string, n int) predicate.Relationship {
 	if compare != "=" && compare != ">=" && compare != "<>" {
 		compare = "="
 	}
 	return predicate.Relationship(func(s *sql.Selector) {
 		s.Where(sql.P(func(b *sql.Builder) {
-			column := s.C(relationship.FieldRisks)
+			column := s.C(field)
+			// A correction that only fills one list stores the other as JSON
+			// null. The sheet still prints "None recorded." for that list.
+			// jsonb_array_length rejects the null, so a missing list counts as 0.
 			if s.Dialect() == dialect.Postgres {
-				b.WriteString(fmt.Sprintf("jsonb_array_length(coalesce(%s, '[]'::jsonb))", column))
+				b.WriteString(fmt.Sprintf(
+					"CASE WHEN jsonb_typeof(%s) = 'array' THEN jsonb_array_length(%s) ELSE 0 END",
+					column, column,
+				))
 			} else {
-				b.WriteString(fmt.Sprintf("json_array_length(coalesce(%s, '[]'))", column))
+				b.WriteString(fmt.Sprintf("coalesce(json_array_length(%s), 0)", column))
 			}
 			b.WriteString(" ")
 			b.WriteString(compare)
@@ -3998,6 +4016,20 @@ func relationshipSheetEmptyCopyMatch(needle string) predicate.Relationship {
 	}
 }
 
+// relationshipSheetNoneRecordedMatch matches "None recorded." Risks,
+// milestones, and the people section each print that line when the list
+// is empty. A company that has a risk, a milestone, and a person does not.
+func relationshipSheetNoneRecordedMatch(needle string) predicate.Relationship {
+	if !labelPhraseMatches("none recorded.", needle) {
+		return nil
+	}
+	return relationship.Or(
+		relationshipRiskCount("=", 0),
+		relationshipMilestoneCount("=", 0),
+		relationshipParticipantCount("=", 0),
+	)
+}
+
 // sheetEmptySentenceOwnsActivity is true when the query is an empty-sheet
 // sentence that happens to contain an activity heading. "recorded" and
 // "calendar" are those headings.
@@ -4006,6 +4038,7 @@ func sheetEmptySentenceOwnsActivity(needle string) bool {
 		"no gmail or calendar events yet.",
 		"nothing recorded yet.",
 		"no commitments recorded for this company yet.",
+		"none recorded.",
 	} {
 		if labelPhraseMatches(phrase, needle) {
 			return true
