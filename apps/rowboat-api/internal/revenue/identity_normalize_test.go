@@ -1709,6 +1709,81 @@ func TestRelationshipSearchFindsTheActivitySubject(t *testing.T) {
 	assertCompanyQuery("subject")
 }
 
+func TestRelationshipSearchFindsTheActivityDirection(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, facts string, payload []byte) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		create := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("desktop_note").SetExternalID(name).SetEventType("note").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary("Quiet note").
+			SetNormalizedFactsJSON(facts)
+		if len(payload) > 0 {
+			create.SetPayloadCiphertext(payload)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Side Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	saveNote("Side Packet", `{"commitment_direction":"promised_by_me"}`, nil)
+	saveNote("Side Reply", `{"commitment_direction":"promised_by_them"}`, nil)
+	saveNote("Side Joint", `{"commitment_direction":"mutual"}`, nil)
+	saveNote("Side Padded", `{"commitment_direction":" promised_by_me "}`, nil)
+	saveNote("Side Mixed", `{"commitment_direction":"Promised_By_Me"}`, nil)
+	saveNote("Side Other", `{"commitment_direction":"local-user"}`, nil)
+	saveNote("Side Sealed", `{"commitment_direction":"promised_by_me"}`, []byte{1, 2, 3})
+	card, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Side Card",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	seedCommitment(t, f, card, "promised_by_me", "Send the quay packet", "", nil)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Direction: We owe them", "Side Packet", "Side Padded", "Side Card")
+	assertCompanyQuery("We owe them", "Side Packet", "Side Padded", "Side Card")
+	assertCompanyQuery("which activity says direction: we owe them", "Side Packet", "Side Padded", "Side Card")
+	assertCompanyQuery("Direction: They owe us", "Side Reply")
+	assertCompanyQuery("They owe us", "Side Reply")
+	assertCompanyQuery("Direction: We both owe", "Side Joint")
+	assertCompanyQuery("We both owe", "Side Joint")
+	assertCompanyQuery("direction")
+	assertCompanyQuery("owed")
+}
+
 func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
