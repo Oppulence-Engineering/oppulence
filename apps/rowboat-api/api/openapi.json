@@ -27325,25 +27325,27 @@
     },
     "/v1/relationships/{relationshipId}/evidence/{evidenceId}": {
       "get": {
-        "description": "Returns one observation plus its decrypted raw payload. Tenant ownership is enforced before decryption.",
+        "description": "Open the original detail loads when an activity row opens. The request names that activity on Acme. The Gmail promise stores no provider body, and the response is that activity with a null payload.",
         "operationId": "getRelationshipEvidence",
         "parameters": [
           {
-            "description": "Relationship id.",
+            "description": "Company id.",
             "in": "path",
             "name": "relationshipId",
             "required": true,
             "schema": {
+              "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
           },
           {
-            "description": "Observation id.",
+            "description": "Activity id.",
             "in": "path",
             "name": "evidenceId",
             "required": true,
             "schema": {
+              "example": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -27353,6 +27355,23 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "observation": {
+                    "contentHash": "e57461826e791945b63630c2de4c026adb4459066470014cf50aadde9b6aafca",
+                    "eventType": "commitment_created",
+                    "externalId": "acme-security-promise",
+                    "id": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "normalizedFacts": {
+                      "adapter": "gmail"
+                    },
+                    "occurredAt": "2026-07-18T15:00:00Z",
+                    "receivedAt": "2026-07-25T16:00:00Z",
+                    "source": "gmail",
+                    "sourceVersion": "1",
+                    "summary": "We promised the security packet by July 22."
+                  },
+                  "payload": null
+                },
                 "schema": {
                   "description": "Evidence result.",
                   "properties": {
@@ -27361,7 +27380,7 @@
                     },
                     "payload": {
                       "additionalProperties": true,
-                      "description": "Decrypted provider payload.",
+                      "description": "Decrypted provider body. Empty when the activity stored none.",
                       "type": "object"
                     }
                   },
@@ -27369,7 +27388,7 @@
                 }
               }
             },
-            "description": "Source evidence."
+            "description": "Original detail."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -27383,8 +27402,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Open source evidence",
-        "tags": ["Relationship Intelligence"]
+        "summary": "Open the original detail",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/mutual-action-plans": {

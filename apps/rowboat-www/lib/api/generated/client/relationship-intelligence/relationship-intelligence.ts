@@ -2524,8 +2524,8 @@ export const getGetRelationshipEvidenceUrl = (relationshipId: string, evidenceId
 };
 
 /**
- * Returns one observation plus its decrypted raw payload. Tenant ownership is enforced before decryption.
- * @summary Open source evidence
+ * Open the original detail loads when an activity row opens. The request names that activity on Acme. The Gmail promise stores no provider body, and the response is that activity with a null payload.
+ * @summary Open the original detail
  */
 export const getRelationshipEvidence = async (
   relationshipId: string,

@@ -6734,12 +6734,12 @@ export const CorrectRelationship404Response = zod
   );
 
 /**
- * Returns one observation plus its decrypted raw payload. Tenant ownership is enforced before decryption.
- * @summary Open source evidence
+ * Open the original detail loads when an activity row opens. The request names that activity on Acme. The Gmail promise stores no provider body, and the response is that activity with a null payload.
+ * @summary Open the original detail
  */
 export const GetRelationshipEvidenceParams = zod.object({
-  relationshipId: zod.uuid().describe("Relationship id."),
-  evidenceId: zod.uuid().describe("Observation id."),
+  relationshipId: zod.uuid().describe("Company id."),
+  evidenceId: zod.uuid().describe("Activity id."),
 });
 
 export const GetRelationshipEvidence200Response = zod
@@ -6765,7 +6765,7 @@ export const GetRelationshipEvidence200Response = zod
     payload: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Decrypted provider payload."),
+      .describe("Decrypted provider body. Empty when the activity stored none."),
   })
   .describe("Evidence result.");
 

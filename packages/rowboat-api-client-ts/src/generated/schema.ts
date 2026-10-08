@@ -2364,8 +2364,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Open source evidence
-     * @description Returns one observation plus its decrypted raw payload. Tenant ownership is enforced before decryption.
+     * Open the original detail
+     * @description Open the original detail loads when an activity row opens. The request names that activity on Acme. The Gmail promise stores no provider body, and the response is that activity with a null payload.
      */
     get: operations["getRelationshipEvidence"];
     put?: never;
@@ -21000,24 +21000,43 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /** @description Company id. */
         relationshipId: string;
-        /** @description Observation id. */
+        /** @description Activity id. */
         evidenceId: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Source evidence. */
+      /** @description Original detail. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "observation": {
+           *         "contentHash": "e57461826e791945b63630c2de4c026adb4459066470014cf50aadde9b6aafca",
+           *         "eventType": "commitment_created",
+           *         "externalId": "acme-security-promise",
+           *         "id": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "normalizedFacts": {
+           *           "adapter": "gmail"
+           *         },
+           *         "occurredAt": "2026-07-18T15:00:00Z",
+           *         "receivedAt": "2026-07-25T16:00:00Z",
+           *         "source": "gmail",
+           *         "sourceVersion": "1",
+           *         "summary": "We promised the security packet by July 22."
+           *       },
+           *       "payload": null
+           *     }
+           */
           "application/json": {
             observation?: components["schemas"]["RelationshipObservation"];
-            /** @description Decrypted provider payload. */
+            /** @description Decrypted provider body. Empty when the activity stored none. */
             payload?: {
               [key: string]: unknown;
             };

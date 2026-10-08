@@ -13,6 +13,6 @@ import type { RelationshipObservation } from "./relationshipObservation";
  */
 export type GetRelationshipEvidence200 = {
   observation?: RelationshipObservation;
-  /** Decrypted provider payload. */
+  /** Decrypted provider body. Empty when the activity stored none. */
   payload?: GetRelationshipEvidence200Payload;
 };
