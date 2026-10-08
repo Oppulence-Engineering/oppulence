@@ -206,8 +206,13 @@ export const getExportCommitmentResponseMock = (
 
 export const getGetPublicMutualActionPlanResponseMock = (): GetPublicMutualActionPlan200 => ({});
 
-export const getRespondPublicMutualActionPlanResponseMock =
-  (): RespondPublicMutualActionPlan201 => ({});
+export const getRespondPublicMutualActionPlanResponseMock = (
+  overrideResponse: Partial<Extract<RespondPublicMutualActionPlan201, object>> = {},
+): RespondPublicMutualActionPlan201 => ({
+  recorded: faker.datatype.boolean(),
+  responseId: faker.string.uuid(),
+  ...overrideResponse,
+});
 
 export const getListRelationshipAttentionResponseMock = (
   overrideResponse: Partial<Extract<ListRelationshipAttention200, object>> = {},

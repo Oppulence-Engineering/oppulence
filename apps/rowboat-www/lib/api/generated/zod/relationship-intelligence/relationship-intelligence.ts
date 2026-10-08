@@ -250,8 +250,8 @@ export const GetPublicMutualActionPlan404Response = zod
   );
 
 /**
- * Appends an idempotent external response for internal review; it never directly changes canonical commitments.
- * @summary Respond to a scoped plan
+ * Confirm plan records that the other person confirmed the shared plan. The owner's records stay unchanged.
+ * @summary Confirm plan
  */
 export const RespondPublicMutualActionPlanHeader = zod.object({
   "X-Oppulence-Plan-Token": zod
@@ -267,13 +267,16 @@ export const RespondPublicMutualActionPlanBody = zod
       .enum(["confirm", "correct", "blocked", "completed", "comment"])
       .describe("Response kind."),
     proposedValue: zod.string().optional().describe("Proposed correction."),
-    responseId: zod.string().describe("Counterparty-generated idempotency key."),
+    responseId: zod.uuid().describe("Counterparty-generated idempotency key."),
   })
   .describe("Plan response.");
 
 export const RespondPublicMutualActionPlan201Response = zod
-  .record(zod.string(), zod.unknown())
-  .describe("Response receipt.");
+  .strictObject({
+    recorded: zod.boolean().describe("The confirmation is stored for the plan owner."),
+    responseId: zod.uuid().describe("The response that was recorded."),
+  })
+  .describe("Recorded plan confirmation.");
 
 export const RespondPublicMutualActionPlan400Response = zod
   .strictObject({

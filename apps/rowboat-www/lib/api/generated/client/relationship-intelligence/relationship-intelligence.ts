@@ -303,8 +303,8 @@ export const getRespondPublicMutualActionPlanUrl = () => {
 };
 
 /**
- * Appends an idempotent external response for internal review; it never directly changes canonical commitments.
- * @summary Respond to a scoped plan
+ * Confirm plan records that the other person confirmed the shared plan. The owner's records stay unchanged.
+ * @summary Confirm plan
  */
 export const respondPublicMutualActionPlan = async (
   respondPublicMutualActionPlanBody: RespondPublicMutualActionPlanBody,

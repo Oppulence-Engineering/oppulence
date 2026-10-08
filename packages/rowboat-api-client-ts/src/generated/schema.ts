@@ -1718,8 +1718,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Respond to a scoped plan
-     * @description Appends an idempotent external response for internal review; it never directly changes canonical commitments.
+     * Confirm plan
+     * @description Confirm plan records that the other person confirmed the shared plan. The owner's records stay unchanged.
      */
     post: operations["respondPublicMutualActionPlan"];
     delete?: never;
@@ -20108,13 +20108,14 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
-    /** @description External response. */
+    /** @description Confirmation of the shared plan. */
     requestBody: {
       content: {
         /**
          * @example {
+         *       "comment": "",
          *       "kind": "confirm",
-         *       "responseId": "response:ab12"
+         *       "responseId": "db8dfa9b-a7b2-46ea-982c-622a914c00e5"
          *     }
          */
         "application/json": {
@@ -20140,22 +20141,39 @@ export interface operations {
            */
           proposedValue?: string;
           /**
+           * Format: uuid
            * @description Counterparty-generated idempotency key.
-           * @example response:ab12
+           * @example db8dfa9b-a7b2-46ea-982c-622a914c00e5
            */
           responseId: string;
         };
       };
     };
     responses: {
-      /** @description Recorded response. */
+      /** @description The confirmation is recorded. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "recorded": true,
+           *       "responseId": "db8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *     }
+           */
           "application/json": {
-            [key: string]: unknown;
+            /**
+             * @description The confirmation is stored for the plan owner.
+             * @example true
+             */
+            recorded: boolean;
+            /**
+             * Format: uuid
+             * @description The response that was recorded.
+             * @example db8dfa9b-a7b2-46ea-982c-622a914c00e5
+             */
+            responseId: string;
           };
         };
       };

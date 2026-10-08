@@ -4388,6 +4388,32 @@ describe("API reference document", () => {
     expect(serialized).not.toContain('"token"');
   });
 
+  it("samples the confirmation Confirm plan records", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const respond = presented.paths["/v1/public/mutual-action-plan/responses"].post;
+    const responseID = "db8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    expect(respond.summary).toBe("Confirm plan");
+    expect(respond.operationId).toBe("respondPublicMutualActionPlan");
+    expect(respond.description).toBe(
+      "Confirm plan records that the other person confirmed the shared plan. The owner's records stay unchanged.",
+    );
+    expect(respond.requestBody.content["application/json"].example).toEqual({
+      responseId: responseID,
+      kind: "confirm",
+      comment: "",
+    });
+    expect(respond.responses["201"].description).toBe("The confirmation is recorded.");
+    expect(respond.responses["201"].content["application/json"].example).toEqual({
+      responseId: responseID,
+      recorded: true,
+    });
+    expect(respond.parameters[0].example).toBeUndefined();
+    const serialized = JSON.stringify(respond);
+    expect(serialized).not.toContain("response:ab12");
+    expect(serialized).not.toContain("acta_");
+    expect(serialized).not.toContain('"token"');
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
