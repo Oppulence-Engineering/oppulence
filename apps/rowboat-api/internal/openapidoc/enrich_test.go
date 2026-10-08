@@ -1797,6 +1797,59 @@ func assertSavedTemplate(t *testing.T, spec obj) {
 	if kind["example"] != "graph_saved_view" {
 		t.Fatalf("shared resource kind changed: %#v", kind["example"])
 	}
+
+	assertEditedTemplate(t, spec)
+}
+
+func TestEditedTemplateStoresTheNoteTemplate(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertEditedTemplate(t, spec)
+}
+
+func assertEditedTemplate(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	patch := asObj(asObj(paths["/v1/console/resources/{resourceId}"])["patch"])
+	if patch["summary"] != "Save template" {
+		t.Fatalf("summary: %#v", patch["summary"])
+	}
+	const description = "Save template posts the name and payload of an existing note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0, and the update time is later."
+	if patch["description"] != description {
+		t.Fatalf("description: %#v", patch["description"])
+	}
+	request := asObj(asObj(asObj(patch["requestBody"])["content"])["application/json"])
+	if mustJSON(request["example"]) != mustJSON(documentedEditedTemplateRequest()) {
+		t.Fatalf("request example: %s", mustJSON(request["example"]))
+	}
+	response := asObj(asObj(patch["responses"])["200"])
+	if response["description"] != "Stored template." {
+		t.Fatalf("response description: %#v", response["description"])
+	}
+	body := asObj(asObj(response["content"])["application/json"])
+	if mustJSON(body["example"]) != mustJSON(documentedEditedTemplate()) {
+		t.Fatalf("response example: %s", mustJSON(body["example"]))
+	}
+	params, ok := patch["parameters"].([]any)
+	if !ok || len(params) != 1 || asObj(asObj(params[0])["schema"])["example"] != documentedEditedTemplateID {
+		t.Fatalf("path id: %#v", patch["parameters"])
+	}
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	if asObj(schemas["ConsoleResourceKind"])["example"] != "graph_saved_view" {
+		t.Fatalf("kind example changed: %#v", asObj(schemas["ConsoleResourceKind"])["example"])
+	}
+	name := asObj(asObj(asObj(schemas["ConsoleResource"])["properties"])["name"])
+	if name["example"] != "Renewal risk" {
+		t.Fatalf("name example changed: %#v", name["example"])
+	}
+	postBody := asObj(asObj(asObj(asObj(asObj(paths["/v1/console/resources"])["post"])["requestBody"])["content"])["application/json"])
+	if postBody["example"] != nil {
+		t.Fatalf("create example changed: %s", mustJSON(postBody["example"]))
+	}
+	getBody := asObj(asObj(asObj(asObj(asObj(asObj(paths["/v1/console/resources/{resourceId}"])["get"])["responses"])["200"])["content"])["application/json"])
+	if getBody["example"] != nil {
+		t.Fatalf("get example changed: %s", mustJSON(getBody["example"]))
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

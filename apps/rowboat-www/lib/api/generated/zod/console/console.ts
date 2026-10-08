@@ -1341,8 +1341,8 @@ export const GetConsoleResource500Response = zod
   );
 
 /**
- * Validates the complete resulting kind-specific payload before updating.
- * @summary Patch console resource
+ * Save template posts the name and payload of an existing note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0, and the update time is later.
+ * @summary Save template
  */
 export const PatchConsoleResourceParams = zod.object({
   resourceId: zod.uuid().describe("Console resource id."),

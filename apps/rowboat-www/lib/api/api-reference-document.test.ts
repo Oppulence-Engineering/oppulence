@@ -1681,6 +1681,33 @@ describe("API reference document", () => {
     expect(presented.components.schemas.ConsoleResourceKind.example).toBe("graph_saved_view");
   });
 
+  it("samples the note template Save template stores on edit", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const patch = presented.paths["/v1/console/resources/{resourceId}"].patch;
+    expect(patch.summary).toBe("Save template");
+    expect(patch.description).toBe(
+      "Save template posts the name and payload of an existing note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0, and the update time is later.",
+    );
+    expect(patch.requestBody.content["application/json"].example).toEqual({
+      name: "Weekly account review",
+      payload: { title: "Weekly account review", body: "Agenda" },
+    });
+    expect(patch.responses["200"].description).toBe("Stored template.");
+    expect(patch.responses["200"].content["application/json"].example).toEqual({
+      id: "bed845f2-975a-4678-9c86-2157548161e4",
+      kind: "note_template",
+      name: "Weekly account review",
+      payload: { title: "Weekly account review", body: "Agenda" },
+      sortOrder: 0,
+      createdAt: "2026-09-17T20:00:00Z",
+      updatedAt: "2026-09-17T20:01:00Z",
+    });
+    expect(patch.parameters[0].schema.example).toBe("bed845f2-975a-4678-9c86-2157548161e4");
+    expect(presented.components.schemas.ConsoleResourceKind.example).toBe("graph_saved_view");
+    expect(presented.components.schemas.ConsoleResource.properties.name.example).toBe("Renewal risk");
+    expect(presented.paths["/v1/console/resources"].post.requestBody.content["application/json"].example).toBeUndefined();
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

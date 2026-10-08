@@ -124,6 +124,31 @@ func documentedSavedTemplate() obj {
 	}
 }
 
+const documentedEditedTemplateID = "bed845f2-975a-4678-9c86-2157548161e4"
+
+func documentedEditedTemplatePayload() obj {
+	return obj{"title": "Weekly account review", "body": "Agenda"}
+}
+
+func documentedEditedTemplateRequest() obj {
+	return obj{
+		"name":    "Weekly account review",
+		"payload": documentedEditedTemplatePayload(),
+	}
+}
+
+func documentedEditedTemplate() obj {
+	return obj{
+		"id":        documentedEditedTemplateID,
+		"kind":      "note_template",
+		"name":      "Weekly account review",
+		"payload":   documentedEditedTemplatePayload(),
+		"sortOrder": 0,
+		"createdAt": "2026-09-17T20:00:00Z",
+		"updatedAt": "2026-09-17T20:01:00Z",
+	}
+}
+
 func addConsolePaths(paths obj) {
 	authErrors := obj{
 		"400": responseRef("400"),
@@ -160,18 +185,20 @@ func addConsolePaths(paths obj) {
 	}
 
 	resourceID := []any{pathParam("resourceId", "Console resource id.", obj{"type": "string", "format": "uuid"})}
+	editedTemplateID := []any{pathParam("resourceId", "Console resource id.", uuidSchema("Console resource id.", documentedEditedTemplateID))}
 	getResponses := cloneResponses(authErrors)
 	getResponses["200"] = jsonResponse("Resource.", ref("ConsoleResource"), nil)
 	getResponses["404"] = consoleNotFoundResponse()
 	patchResponses := cloneResponses(getResponses)
+	patchResponses["200"] = jsonResponse("Stored template.", ref("ConsoleResource"), documentedEditedTemplate())
 	patchResponses["409"] = consoleConflictResponse()
 	deleteResponses := cloneResponses(authErrors)
 	deleteResponses["204"] = obj{"description": "Resource deleted."}
 	deleteResponses["404"] = consoleNotFoundResponse()
 	paths["/v1/console/resources/{resourceId}"] = obj{
 		"get": operation("Console", "Get console resource", "Returns one caller-owned resource.", "getConsoleResource", bearer(), resourceID, nil, getResponses),
-		"patch": operation("Console", "Patch console resource", "Validates the complete resulting kind-specific payload before updating.", "patchConsoleResource", bearer(), resourceID,
-			jsonRequest("Mutable resource fields.", ref("ConsoleResourcePatch"), nil), patchResponses),
+		"patch": operation("Console", "Save template", "Save template posts the name and payload of an existing note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0, and the update time is later.", "patchConsoleResource", bearer(), editedTemplateID,
+			jsonRequest("Mutable resource fields.", ref("ConsoleResourcePatch"), documentedEditedTemplateRequest()), patchResponses),
 		"delete": operation("Console", "Delete console resource", "Deletes one caller-owned resource.", "deleteConsoleResource", bearer(), resourceID, nil, deleteResponses),
 	}
 }

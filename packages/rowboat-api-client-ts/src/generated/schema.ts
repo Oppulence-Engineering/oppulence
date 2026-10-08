@@ -1142,8 +1142,8 @@ export interface paths {
     options?: never;
     head?: never;
     /**
-     * Patch console resource
-     * @description Validates the complete resulting kind-specific payload before updating.
+     * Save template
+     * @description Save template posts the name and payload of an existing note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0, and the update time is later.
      */
     patch: operations["patchConsoleResource"];
     trace?: never;
@@ -16673,16 +16673,39 @@ export interface operations {
     /** @description Mutable resource fields. */
     requestBody: {
       content: {
+        /**
+         * @example {
+         *       "name": "Weekly account review",
+         *       "payload": {
+         *         "body": "Agenda",
+         *         "title": "Weekly account review"
+         *       }
+         *     }
+         */
         "application/json": components["schemas"]["ConsoleResourcePatch"];
       };
     };
     responses: {
-      /** @description Resource. */
+      /** @description Stored template. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "createdAt": "2026-09-17T20:00:00Z",
+           *       "id": "bed845f2-975a-4678-9c86-2157548161e4",
+           *       "kind": "note_template",
+           *       "name": "Weekly account review",
+           *       "payload": {
+           *         "body": "Agenda",
+           *         "title": "Weekly account review"
+           *       },
+           *       "sortOrder": 0,
+           *       "updatedAt": "2026-09-17T20:01:00Z"
+           *     }
+           */
           "application/json": components["schemas"]["ConsoleResource"];
         };
       };
