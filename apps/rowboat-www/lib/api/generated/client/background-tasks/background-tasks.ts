@@ -38,6 +38,7 @@ import type {
   N500Response,
   N502Response,
   N503Response,
+  RetryBackgroundTaskRunBody,
   RevisionConflictEnvelope,
   StreamBackgroundTaskRunEventsParams,
 } from "../model";
@@ -1447,17 +1448,20 @@ export const getRetryBackgroundTaskRunUrl = (slug: string, runId: string) => {
 };
 
 /**
- * Creates a new API-worker run linked by previousRunId and starts a fresh Temporal workflow using the previous trigger/context.
- * @summary Retry API-worker run
+ * Retry posts an empty body. The stored cloud run is a new queued attempt of the stopped run, keeps the editor note, and records attempt 2.
+ * @summary Retry
  */
 export const retryBackgroundTaskRun = async (
   slug: string,
   runId: string,
+  retryBackgroundTaskRunBody?: RetryBackgroundTaskRunBody,
   options?: RequestInit,
 ): Promise<retryBackgroundTaskRunResponse> => {
   const res = await fetch(getRetryBackgroundTaskRunUrl(slug, runId), {
     ...options,
     method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(retryBackgroundTaskRunBody),
   });
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();

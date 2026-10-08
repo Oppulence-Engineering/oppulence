@@ -682,8 +682,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Retry API-worker run
-     * @description Creates a new API-worker run linked by previousRunId and starts a fresh Temporal workflow using the previous trigger/context.
+     * Retry
+     * @description Retry posts an empty body. The stored cloud run is a new queued attempt of the stopped run, keeps the editor note, and records attempt 2.
      */
     post: operations["retryBackgroundTaskRun"];
     delete?: never;
@@ -4153,6 +4153,11 @@ export interface components {
        */
       previousRunId?: string | null;
       /**
+       * @description Run id this attempt retries.
+       * @example run-20260604-210000
+       */
+      retryOfRunId?: string | null;
+      /**
        * @description Human-readable progress message for polling clients.
        * @example Building API-native task artifact.
        */
@@ -4241,7 +4246,7 @@ export interface components {
        * @example manual
        * @enum {string}
        */
-      trigger: "manual" | "cron" | "window" | "event";
+      trigger: "manual" | "cron" | "window" | "event" | "retry";
       /**
        * Format: date-time
        * @description Server row update timestamp.
@@ -4361,7 +4366,7 @@ export interface components {
        * @example manual
        * @enum {string}
        */
-      trigger?: "manual" | "cron" | "window" | "event";
+      trigger?: "manual" | "cron" | "window" | "event" | "retry";
       /**
        * @description High-level usage label.
        * @example background-task
@@ -4556,7 +4561,7 @@ export interface components {
        * @example manual
        * @enum {string}
        */
-      trigger?: "manual" | "cron" | "window" | "event";
+      trigger?: "manual" | "cron" | "window" | "event" | "retry";
       /**
        * @description High-level usage label.
        * @example background-task
@@ -15127,16 +15132,22 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Background task slug, matching bg-tasks/<slug> locally. */
+        /** @description Workflow to retry. */
         slug: string;
-        /** @description Cloud-visible run id for a background task run. */
+        /** @description Stopped run to retry. */
         runId: string;
       };
       cookie?: never;
     };
-    requestBody?: never;
+    /** @description Empty retry body. */
+    requestBody?: {
+      content: {
+        /** @example {} */
+        "application/json": Record<string, never>;
+      };
+    };
     responses: {
-      /** @description Retry run queued. */
+      /** @description Stored retry. */
       202: {
         headers: {
           [name: string]: unknown;
@@ -15144,30 +15155,24 @@ export interface operations {
         content: {
           /**
            * @example {
-           *       "completedAt": null,
-           *       "createdAt": "2026-06-04T21:00:30Z",
-           *       "error": "",
+           *       "attempt": 2,
+           *       "createdAt": "2026-06-04T21:04:00Z",
            *       "executor": "api",
-           *       "id": "77f5e632-a841-4557-a8e4-9b8f0d207ff4",
-           *       "localRunId": "",
-           *       "model": "openai/gpt-4.1-mini",
-           *       "previousRunId": "",
-           *       "progressMessage": "Queued for API worker.",
+           *       "id": "99f5e632-a841-4557-a8e4-9b8f0d207ff4",
+           *       "previousRunId": "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b",
+           *       "progressMessage": "Queued retry for API worker.",
            *       "progressPercent": 0,
-           *       "provider": "openai",
+           *       "requestedContext": "Started from the visual workflow editor.",
+           *       "retryOfRunId": "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b",
            *       "revision": 2,
-           *       "runId": "api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b",
-           *       "slug": "daily-summary",
-           *       "startedAt": null,
+           *       "runId": "retry-6c41958c-3a0a-4cb2-9361-ea563cd0477b",
+           *       "slug": "follow-up-when-a-promise-slips",
            *       "status": "queued",
-           *       "subUseCase": "daily-summary",
-           *       "summary": "No high-priority account changes.",
-           *       "temporalRunId": "00000000-0000-0000-0000-000000000001",
+           *       "temporalRunId": "00000000-0000-0000-0000-000000000003",
            *       "temporalStatus": "Started",
-           *       "temporalWorkflowId": "background-task/user/daily-summary/api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b",
-           *       "trigger": "manual",
-           *       "updatedAt": "2026-06-04T21:02:05Z",
-           *       "useCase": "background-task"
+           *       "temporalWorkflowId": "background-task/user/follow-up-when-a-promise-slips/retry-6c41958c-3a0a-4cb2-9361-ea563cd0477b",
+           *       "trigger": "retry",
+           *       "updatedAt": "2026-06-04T21:04:01Z"
            *     }
            */
           "application/json": components["schemas"]["BackgroundTaskRun"];

@@ -532,6 +532,7 @@ export * from "./respondPublicMutualActionPlanBody";
 export * from "./respondPublicMutualActionPlanBodyKind";
 export * from "./resyncRelationshipSourceBody";
 export * from "./retractRelationshipAssertionBody";
+export * from "./retryBackgroundTaskRunBody";
 export * from "./revenueAction";
 export * from "./revenueActionActionType";
 export * from "./revenueActionApprovalStatus";

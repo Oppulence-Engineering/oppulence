@@ -451,7 +451,7 @@ func addBackgroundTaskSchemas(schemas obj) {
 		"previousRunId":      stringSchema("Previous run id when this run was created by retry.", "run-20260604-205000", nullable()),
 		"localRunId":         stringSchema("Actual desktop run id once a queued remote trigger has been claimed and executed locally.", "local-run-42", nullable()),
 		"slug":               stringSchema("Task slug this run belongs to.", "daily-summary"),
-		"trigger":            stringEnum("Trigger source for this run.", "manual", "manual", "cron", "window", "event"),
+		"trigger":            stringEnum("Trigger source for this run.", "manual", "manual", "cron", "window", "event", "retry"),
 		"status":             stringEnum("Run lifecycle state.", "running", "queued", "running", "succeeded", "failed", "stopped"),
 		"executor":           stringEnum("Execution backend that owns this run.", "desktop", "desktop", "api"),
 		"model":              stringSchema("Model id used by this run.", "openai/gpt-4.1-mini", nullable()),
@@ -499,7 +499,7 @@ func addBackgroundTaskSchemas(schemas obj) {
 		"runId":              stringSchema("Cloud-visible run id from the desktop.", "run-20260604-210000"),
 		"previousRunId":      stringSchema("Previous run id when this is a retry.", "run-20260604-205000", nullable()),
 		"localRunId":         stringSchema("Desktop-local run id if different from runId.", "local-run-42", nullable()),
-		"trigger":            stringEnum("Trigger source. Defaults to manual.", "manual", "manual", "cron", "window", "event"),
+		"trigger":            stringEnum("Trigger source. Defaults to manual.", "manual", "manual", "cron", "window", "event", "retry"),
 		"status":             stringEnum("Initial status. Defaults to running.", "running", "queued", "running", "succeeded", "failed", "stopped"),
 		"executor":           stringEnum("Execution backend. Defaults from task.executionTarget.", "desktop", "desktop", "api"),
 		"model":              stringSchema("Model id used by this run.", "openai/gpt-4.1-mini", nullable()),
@@ -522,7 +522,7 @@ func addBackgroundTaskSchemas(schemas obj) {
 		"revision":           intSchema("Current run revision.", 1),
 		"previousRunId":      stringSchema("Previous run id when this is a retry.", "run-20260604-205000", nullable()),
 		"localRunId":         stringSchema("Desktop-local run id after a queued trigger is claimed.", "local-run-42", nullable()),
-		"trigger":            stringEnum("Trigger source.", "manual", "manual", "cron", "window", "event"),
+		"trigger":            stringEnum("Trigger source.", "manual", "manual", "cron", "window", "event", "retry"),
 		"status":             stringEnum("Run lifecycle state.", "succeeded", "queued", "running", "succeeded", "failed", "stopped"),
 		"executor":           stringEnum("Execution backend.", "api", "desktop", "api"),
 		"model":              stringSchema("Model id used by this run.", "openai/gpt-4.1-mini", nullable()),
@@ -1494,8 +1494,11 @@ func addBackgroundTaskPaths(paths obj) {
 		}),
 	}
 	paths["/v1/background-tasks/{slug}/runs/{runId}/retry"] = obj{
-		"post": operation("Background Tasks", "Retry API-worker run", "Creates a new API-worker run linked by previousRunId and starts a fresh Temporal workflow using the previous trigger/context.", "retryBackgroundTaskRun", bearer(), append(slugParam(), runIDParam()...), nil, obj{
-			"202": jsonResponse("Retry run queued.", ref("BackgroundTaskRun"), backgroundTaskAPIRunExample()),
+		"post": operation("Background Tasks", "Retry", "Retry posts an empty body. The stored cloud run is a new queued attempt of the stopped run, keeps the editor note, and records attempt 2.", "retryBackgroundTaskRun", bearer(), []any{
+			pathParam("slug", "Workflow to retry.", stringSchema("Workflow address.", "follow-up-when-a-promise-slips")),
+			pathParam("runId", "Stopped run to retry.", stringSchema("Run id.", "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b")),
+		}, jsonRequestOptional("Empty retry body.", obj{"type": "object"}, documentedRetriedRunRequest()), obj{
+			"202": jsonResponse("Stored retry.", ref("BackgroundTaskRun"), documentedRetriedRun()),
 			"400": responseRef("400"),
 			"401": responseRef("401"),
 			"404": responseRef("404"),
@@ -2702,6 +2705,35 @@ func backgroundTaskRunExample() obj {
 		"createdAt":       "2026-06-04T21:00:30Z",
 		"updatedAt":       "2026-06-04T21:02:05Z",
 		"revision":        2,
+	}
+}
+
+func documentedRetriedRunRequest() obj {
+	return obj{}
+}
+
+func documentedRetriedRun() obj {
+	const runID = "retry-6c41958c-3a0a-4cb2-9361-ea563cd0477b"
+	const previousRunID = "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b"
+	return obj{
+		"id":                 "99f5e632-a841-4557-a8e4-9b8f0d207ff4",
+		"runId":              runID,
+		"previousRunId":      previousRunID,
+		"retryOfRunId":       previousRunID,
+		"slug":               "follow-up-when-a-promise-slips",
+		"trigger":            "retry",
+		"status":             "queued",
+		"executor":           "api",
+		"attempt":            2,
+		"requestedContext":   "Started from the visual workflow editor.",
+		"temporalWorkflowId": "background-task/user/follow-up-when-a-promise-slips/" + runID,
+		"temporalRunId":      "00000000-0000-0000-0000-000000000003",
+		"temporalStatus":     "Started",
+		"progressPercent":    0,
+		"progressMessage":    "Queued retry for API worker.",
+		"createdAt":          "2026-06-04T21:04:00Z",
+		"updatedAt":          "2026-06-04T21:04:01Z",
+		"revision":           2,
 	}
 }
 
