@@ -31,6 +31,10 @@ type PersonFilter struct {
 
 const defaultPersonLimit = 100
 
+// personDirectoryPage is the people list the directory requests. The button
+// "Show the next people" stays hidden when that page is the whole list.
+const personDirectoryPage = 500
+
 // PersonListPage is one people-directory page. HasMore is true only when
 // another person exists past this page, so an exact page of 500 is not offered
 // as if a 501st person were waiting.
@@ -88,6 +92,11 @@ func (s *Service) ListPersons(
 		if labels := personVisibleLabelMatch(term); labels != nil {
 			parts = append(parts, labels)
 		}
+		// The directory button is "Show the next people" only when another
+		// active person sits past this page. A full page of 500 is the whole list.
+		if labelPhraseMatches("show the next people", normalizePersonSearch(term)) {
+			parts = append(parts, personDirectoryHasAnotherPage())
+		}
 		q = q.Where(person.Or(parts...))
 	}
 	rows, err := q.
@@ -108,6 +117,25 @@ func (s *Service) ListPersons(
 		rows = rows[:limit]
 	}
 	return &PersonListPage{Persons: rows, HasMore: hasMore}, nil
+}
+
+func personDirectoryHasAnotherPage() predicate.Person {
+	return predicate.Person(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(person.Table)
+			b.WriteString(" AS directory WHERE directory.")
+			b.WriteString(person.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(person.WorkspaceColumn))
+			b.WriteString(" AND directory.")
+			b.WriteString(person.FieldStatus)
+			b.WriteString(" = ")
+			b.Arg("active")
+			b.WriteString(") > ")
+			b.Arg(personDirectoryPage)
+		}))
+	})
 }
 
 // personNormalizedContains matches the words a teammate sees. A domain stored

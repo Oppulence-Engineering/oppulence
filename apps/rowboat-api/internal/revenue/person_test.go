@@ -563,6 +563,61 @@ func TestListPersonsExactPageIsNotAnotherPage(t *testing.T) {
 	}
 }
 
+func TestPersonSearchFindsNextPeople(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	create := func(name, status string) {
+		t.Helper()
+		if _, err := f.client.Person.Create().
+			SetDisplayName(name).
+			SetStatus(status).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := 1; i <= personDirectoryPage; i++ {
+		create(fmt.Sprintf("Directory Leaf %03d", i), "active")
+	}
+	create("Merged Quiet", "merged")
+	exact, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "Show the next people", Limit: personDirectoryPage})
+	if err != nil || exact == nil || exact.HasMore || len(exact.Persons) != 0 {
+		t.Fatalf("full page = %d hasMore=%v err=%v", len(exact.Persons), exact != nil && exact.HasMore, err)
+	}
+	for _, query := range []string{"show", "next", "people", "person", "show the next"} {
+		miss, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: query, Limit: personDirectoryPage})
+		if err != nil || miss == nil || miss.HasMore || len(miss.Persons) != 0 {
+			count := 0
+			if miss != nil {
+				count = len(miss.Persons)
+			}
+			t.Fatalf("%q = %d err=%v", query, count, err)
+		}
+	}
+	create("Zed Hidden", "active")
+	found, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{Query: "Show the next people", Limit: personDirectoryPage})
+	if err != nil || found == nil || !found.HasMore || len(found.Persons) != personDirectoryPage {
+		t.Fatalf("next people = %d hasMore=%v err=%v", len(found.Persons), found != nil && found.HasMore, err)
+	}
+	for _, row := range found.Persons {
+		if row.DisplayName == "Zed Hidden" {
+			t.Fatal("the person behind the button was already on the first page")
+		}
+	}
+	hidden, err := f.svc.ListPersons(f.ctx, f.user, PersonFilter{
+		Query:  "Show the next people",
+		Limit:  personDirectoryPage,
+		Offset: personDirectoryPage,
+	})
+	if err != nil || hidden == nil || hidden.HasMore || len(hidden.Persons) != 1 || hidden.Persons[0].DisplayName != "Zed Hidden" {
+		t.Fatalf("hidden person = %+v err=%v", hidden, err)
+	}
+}
+
 func TestPersonSearchSQLUsesPostgresPlaceholders(t *testing.T) {
 	selector := sql.Dialect(dialect.Postgres).Select().From(sql.Table(person.Table))
 	personNormalizedContains("Dogfood Label")(selector)
