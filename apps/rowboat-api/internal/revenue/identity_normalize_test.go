@@ -9467,6 +9467,121 @@ func TestRelationshipSearchFindsMailAccess(t *testing.T) {
 	assertCompanyQuery(f.ctx, f.user, "mailbox")
 }
 
+func TestRelationshipSearchFindsHiddenReceipts(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveNote := func(rel *ent.Relationship, externalID string, ago time.Duration, facts string) {
+		t.Helper()
+		now := time.Now().UTC()
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("user").SetExternalID(externalID).SetEventType("note").
+			SetOccurredAt(now.Add(-ago)).SetReceivedAt(now).SetSummary("A recorded note").
+			SetNormalizedFactsJSON(facts).SetContentHash(externalID).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	receiptFacts := func(id string) string {
+		t.Helper()
+		body, err := json.Marshal(map[string]any{
+			"governance_receipt": ConversationGovernanceReceipt{
+				ReceiptID: id, CapturePolicy: "manual_capture", Routing: "local_only",
+				Region: "local_device", Retention: "always", ParticipantDisclosure: "not_recorded",
+				DeletionOutcome: "not_applicable", EvidenceClip: "not_retained",
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(body)
+	}
+	fillReceipts := func(rel *ent.Relationship, prefix string, count int, older bool) {
+		t.Helper()
+		for i := 1; i <= count; i++ {
+			ago := time.Duration(i) * time.Second
+			if older {
+				ago = time.Duration(1000+i) * time.Second
+			}
+			saveNote(rel, fmt.Sprintf("%s-%02d", prefix, i), ago, receiptFacts(fmt.Sprintf("%s-%02d", prefix, i)))
+		}
+	}
+	quill := makeCompany("Quill North")
+	cedar := makeCompany("Cedar Slide")
+	aspen := makeCompany("Aspen Ledger")
+	birch := makeCompany("Birch Quiet")
+	makeCompany("Harbor Quiet")
+	fillReceipts(quill, "quill-receipt", governanceReceiptPage+1, false)
+	fillReceipts(cedar, "cedar-receipt", governanceReceiptPage, false)
+	fillReceipts(aspen, "aspen-receipt", governanceReceiptPage+2, false)
+	for i := 1; i <= intelligenceObservationPage; i++ {
+		saveNote(birch, fmt.Sprintf("birch-note-%03d", i), time.Duration(i)*time.Second, "{}")
+	}
+	fillReceipts(birch, "birch-receipt", governanceReceiptPage+1, true)
+
+	page := func(rel *ent.Relationship) (bool, int) {
+		t.Helper()
+		intelligence, err := f.svc.RelationshipIntelligenceFor(f.ctx, rel)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return intelligence.ObservationPageHasMore, len(intelligence.GovernanceReceipts)
+	}
+	if hasMore, receipts := page(quill); hasMore || receipts != governanceReceiptPage+1 {
+		t.Fatalf("quill page = hasMore %v receipts %d", hasMore, receipts)
+	}
+	if hasMore, receipts := page(cedar); hasMore || receipts != governanceReceiptPage {
+		t.Fatalf("cedar page = hasMore %v receipts %d", hasMore, receipts)
+	}
+	if hasMore, receipts := page(aspen); hasMore || receipts != governanceReceiptPage+2 {
+		t.Fatalf("aspen page = hasMore %v receipts %d", hasMore, receipts)
+	}
+	if hasMore, receipts := page(birch); !hasMore || receipts != 0 {
+		t.Fatalf("birch page = hasMore %v receipts %d", hasMore, receipts)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Show the other 1 receipt", "Quill North")
+	assertCompanyQuery("which companies show the other 1 receipt", "Quill North")
+	assertCompanyQuery("Show the other 2 receipts", "Aspen Ledger")
+	assertCompanyQuery("Consent and governance (6)", "Quill North")
+	assertCompanyQuery("Consent and governance (5)", "Cedar Slide")
+	assertCompanyQuery("Consent and governance (7)", "Aspen Ledger")
+	assertCompanyQuery("Consent and governance", "Quill North", "Cedar Slide", "Aspen Ledger")
+	assertCompanyQuery("Show the other 1 receipts")
+	assertCompanyQuery("show the other")
+	assertCompanyQuery("receipt")
+	assertCompanyQuery("receipts")
+}
+
 func hasName(names []string, want string) bool {
 	for _, name := range names {
 		if name == want {
