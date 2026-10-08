@@ -1460,6 +1460,18 @@ describe("API reference document", () => {
     expect(presented.components.schemas.RelationshipSourceStatus.properties.status.example).toBe("live");
   });
 
+  it("samples the privacy rule Remove deletes", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation =
+      presented.paths["/v1/revenue-workspaces/current/communication-privacy-rules/{ruleId}"].delete;
+    expect(operation.summary).toBe("Remove");
+    expect(operation.operationId).toBe("deleteCommunicationPrivacyRule");
+    expect(operation.requestBody).toBeUndefined();
+    expect(operation.responses["204"].description).toBe("Privacy rule removed.");
+    expect(operation.responses["200"]).toBeUndefined();
+    expect(operation.parameters[0].schema.example).toBe("3b8dfa9b-a7b2-46ea-982c-622a914c00e5");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

@@ -1554,6 +1554,14 @@ func TestDisconnectSourceReturnsDisconnected(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)
 	assertDisconnectSource(t, spec)
+
+	assertRemoveRule(t, spec)
+}
+
+func TestRemoveRuleReturnsNoBody(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertRemoveRule(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -2732,6 +2740,25 @@ func openAPIIntEqual(v any, want int) bool {
 		return n == float64(want)
 	default:
 		return false
+	}
+}
+
+func assertRemoveRule(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/revenue-workspaces/current/communication-privacy-rules/{ruleId}"])["delete"])
+	if op["summary"] != "Remove" || op["operationId"] != "deleteCommunicationPrivacyRule" {
+		t.Fatalf("remove rule operation: %#v", op)
+	}
+	if op["requestBody"] != nil {
+		t.Fatalf("remove sends no body: %#v", op["requestBody"])
+	}
+	responses := asObj(op["responses"])
+	if responses["204"] == nil || responses["200"] != nil {
+		t.Fatalf("remove responses: %#v", responses)
+	}
+	params, _ := op["parameters"].([]any)
+	if len(params) != 1 || asObj(asObj(params[0])["schema"])["example"] != "3b8dfa9b-a7b2-46ea-982c-622a914c00e5" {
+		t.Fatalf("remove rule id: %#v", op["parameters"])
 	}
 }
 

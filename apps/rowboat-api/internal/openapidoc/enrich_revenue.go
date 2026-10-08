@@ -1875,6 +1875,15 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
+
+	paths["/v1/revenue-workspaces/current/communication-privacy-rules/{ruleId}"] = obj{"delete": operation("Relationship Intelligence", "Remove", "Remove deletes one protected or blocked address and returns no response body.", "deleteCommunicationPrivacyRule", bearer(), []any{
+		obj{"name": "ruleId", "in": "path", "required": true, "description": "Privacy rule id.", "schema": obj{"type": "string", "format": "uuid", "example": "3b8dfa9b-a7b2-46ea-982c-622a914c00e5"}},
+	}, nil, obj{
+		"204": obj{"description": "Privacy rule removed."},
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+	})}
 	paths["/v1/revenue-workspaces/current/communications/{interactionId}/body"] = obj{"get": operation("Relationship Intelligence", "Get authorized communication body", "Returns the plain-text body for one interaction when policy and grants allow it.", "getCommunicationInteractionBody", bearer(), []any{
 		obj{"name": "interactionId", "in": "path", "required": true, "description": "Interaction id.", "schema": obj{"type": "string", "format": "uuid"}},
 	}, nil, obj{
