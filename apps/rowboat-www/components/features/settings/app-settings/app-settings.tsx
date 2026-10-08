@@ -17,6 +17,8 @@ import {
 } from "@/lib/icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAgentSummaries } from "@/hooks/queries/use-agents";
+import { useConnectors } from "@/hooks/queries/use-connectors";
+import { useGoogleConnectionStatus } from "@/hooks/queries/use-google-oauth";
 import { shownDefaultAgent } from "@/hooks/dashboard/use-agent-catalog";
 import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { visibleAgentLabel } from "@/lib/agents/agent-schemas";
@@ -380,6 +382,43 @@ export function sessionRoleCopy(role: string | undefined, permissions: readonly 
   const access = permissions.length ? permissions.join(", ") : "Standard workspace access";
   if (!named) return `No role is attached to this session. ${access}`;
   return `${named} · ${access}`;
+}
+
+/**
+
+ * Service access used to talk about removing a connection before any service
+ * was connected. The sentence follows the Google grant and the connector list.
+ */
+export function serviceAccessDetail(input: {
+  googleConnected: boolean | null;
+  connectorConnected: number | null;
+  loading: boolean;
+  failed: boolean;
+}): { label: string; detail: string } {
+  if (input.loading) {
+    return {
+      label: "Connected services",
+      detail: "Checking which services are connected.",
+    };
+  }
+  if (input.failed || input.googleConnected == null || input.connectorConnected == null) {
+    return {
+      label: "Connected services",
+      detail: "We could not check which services are connected.",
+    };
+  }
+  if (input.googleConnected || input.connectorConnected > 0) {
+    return {
+      label: "Connected services",
+      detail:
+        "Manage service-level access from Connections. Removing a connection stops new mail and calendar updates from entering this workspace.",
+    };
+  }
+  return {
+    label: "No services connected",
+    detail:
+      "Nothing is connected. Connect a service before mail or calendar updates can enter this workspace.",
+  };
 }
 
 /**
@@ -1182,6 +1221,20 @@ function PermissionsSection({
   onNavigate: (section: SettingsSection) => void;
 }) {
   const copy = sessionWorkspaceCopy(session.user.organizationId);
+  const google = useGoogleConnectionStatus();
+  const connectors = useConnectors();
+  const googleStatus = google.data;
+  const connectorRows = connectors.data;
+  const failed =
+    (google.isError && googleStatus == null) || (connectors.isError && connectorRows == null);
+  const serviceAccess = serviceAccessDetail({
+    googleConnected: googleStatus != null ? Boolean(googleStatus.connected) : null,
+    connectorConnected: connectorRows
+      ? connectorRows.filter((connector) => connector.connected).length
+      : null,
+    loading: !failed && (googleStatus == null || connectorRows == null),
+    failed,
+  });
   return (
     <>
       <PageIntro
@@ -1222,11 +1275,8 @@ function PermissionsSection({
       >
         <div className="settings-row">
           <div className="settings-row-copy">
-            <p className="settings-row-label">Connected services</p>
-            <p className="settings-row-description">
-              Manage service-level access from Connections. Removing a connection stops new mail and
-              calendar updates from entering this workspace.
-            </p>
+            <p className="settings-row-label">{serviceAccess.label}</p>
+            <p className="settings-row-description">{serviceAccess.detail}</p>
           </div>
           <Button
             onClick={() => onNavigate("connections")}

@@ -9,6 +9,8 @@ import {
   preferenceFormIsHidden,
   preferenceRefreshCopy,
   sessionRoleCopy,
+
+  serviceAccessDetail,
   sessionWorkspaceCopy,
 } from "@/components/features/settings/app-settings/app-settings";
 
@@ -85,6 +87,43 @@ describe("SettingsView", () => {
     expect(source.match(/session\.user\.email\?\.trim\(\)/g)).toHaveLength(2);
     expect(source).toContain("No email is attached to this session.");
     expect(source).toContain("Oppulence only uses what connected services return.");
+    expect(serviceAccessDetail({
+      googleConnected: false,
+      connectorConnected: 0,
+      loading: false,
+      failed: false,
+    })).toEqual({
+      label: "No services connected",
+      detail:
+        "Nothing is connected. Connect a service before mail or calendar updates can enter this workspace.",
+    });
+    expect(serviceAccessDetail({
+      googleConnected: true,
+      connectorConnected: 0,
+      loading: false,
+      failed: false,
+    }).detail).toContain("Removing a connection stops new mail");
+    expect(serviceAccessDetail({
+      googleConnected: false,
+      connectorConnected: 1,
+      loading: false,
+      failed: false,
+    }).label).toBe("Connected services");
+    expect(serviceAccessDetail({
+      googleConnected: null,
+      connectorConnected: null,
+      loading: true,
+      failed: false,
+    }).detail).toBe("Checking which services are connected.");
+    expect(serviceAccessDetail({
+      googleConnected: null,
+      connectorConnected: null,
+      loading: false,
+      failed: true,
+    }).detail).toBe("We could not check which services are connected.");
+    expect(source).toContain("{serviceAccess.label}");
+    expect(source).toContain("{serviceAccess.detail}");
+    expect(source).not.toContain(">Connected services</p>");
     expect(source).toContain("if (!organizationId) return null");
     expect(source).toContain(">Signed in</SettingsStatus>");
     expect(source).not.toContain(">Authorized</SettingsStatus>");
