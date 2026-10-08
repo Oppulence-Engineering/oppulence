@@ -1252,6 +1252,24 @@ func assertResearchFill(t *testing.T, spec obj) {
 	if len(personIDs) != 1 || personIDs[0] != documentedResearchPersonID {
 		t.Fatalf("person research request: %#v", people)
 	}
+
+	assertUpgradePlan(t, spec)
+}
+
+func TestUpgradeToProSendsPlanPro(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertUpgradePlan(t, spec)
+}
+
+func assertUpgradePlan(t *testing.T, spec obj) {
+	t.Helper()
+	content := asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/billing/checkout-session"])["post"])["requestBody"])["content"])["application/json"])
+	example := asObj(content["example"])
+	plan := asObj(asObj(asObj(content["schema"])["properties"])["plan"])
+	if example["plan"] != "pro" || plan["example"] != "pro" {
+		t.Fatalf("checkout plan: %#v %#v", example, plan)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

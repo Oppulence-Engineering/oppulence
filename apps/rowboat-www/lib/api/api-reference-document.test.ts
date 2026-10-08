@@ -1216,6 +1216,16 @@ describe("API reference document", () => {
     });
   });
 
+  it("samples the plan Upgrade to Pro sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/billing/checkout-session"].post;
+    const body = operation.requestBody.content["application/json"];
+    expect(operation.summary).toBe("Upgrade to Pro");
+    expect(body.example).toEqual({ plan: "pro" });
+    expect(body.schema.properties.plan.example).toBe("pro");
+    expect(body.schema.properties.plan.enum).toEqual(["starter", "pro", "intelligence"]);
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
