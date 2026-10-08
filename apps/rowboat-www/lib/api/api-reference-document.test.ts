@@ -3373,6 +3373,47 @@ describe("API reference document", () => {
     expect(markdown).toContain("We will have the migration live by the 14th.");
   });
 
+  it("samples the plan Review the shared plan opens", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/public/mutual-action-plan"].get;
+    expect(operation.summary).toBe("Review the shared plan");
+    expect(operation.operationId).toBe("getPublicMutualActionPlan");
+    expect(operation.description).toBe(
+      "Review the shared plan opens this plan. The page shows the version and each item title.",
+    );
+    expect(operation.requestBody).toBeUndefined();
+    const token = operation.parameters.find((param) => param.name === "X-Oppulence-Plan-Token");
+    expect(token?.example).toBeUndefined();
+    expect(token?.schema.example).toBeUndefined();
+    const example = operation.responses["200"].content["application/json"].example;
+    expect(example).toMatchObject({
+      plan: {
+        planId: "plan:5e8dfa9b-a7b2-46ea-982c-622a914c00e5",
+        relationshipId: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+        status: "shared",
+        tokenState: "active",
+        internalOwnerRef: "internal-owner",
+        counterpartyRef: "counterparty",
+        currentRevision: {
+          version: 1,
+          items: [
+            {
+              itemId: "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+              title: "Migration live by the 14th",
+              ownerParticipantRef: "plan-participant",
+              dueAt: "2026-09-14T17:00:00Z",
+              status: "open",
+              evidenceRefs: null,
+            },
+          ],
+        },
+      },
+    });
+    expect(JSON.stringify(example)).not.toContain("commitmentId");
+    expect(JSON.stringify(example)).not.toContain("responseToken");
+    expect(JSON.stringify(example)).not.toContain("alex@example.com");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

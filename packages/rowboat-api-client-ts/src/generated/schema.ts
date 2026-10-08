@@ -1676,8 +1676,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Open a scoped mutual action plan
-     * @description Returns only the externally authorized plan revision with internal evidence references removed and policy redactions applied.
+     * Review the shared plan
+     * @description Review the shared plan opens this plan. The page shows the version and each item title.
      */
     get: operations["getPublicMutualActionPlan"];
     put?: never;
@@ -19946,12 +19946,43 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Scoped public plan. */
+      /** @description The shared plan. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "plan": {
+           *         "counterpartyRef": "counterparty",
+           *         "currentRevision": {
+           *           "createdAt": "2026-07-31T14:00:00Z",
+           *           "createdBy": "0b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "items": [
+           *             {
+           *               "dependencyItemIds": [],
+           *               "dueAt": "2026-09-14T17:00:00Z",
+           *               "evidenceRefs": null,
+           *               "itemId": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *               "ownerParticipantRef": "plan-participant",
+           *               "status": "open",
+           *               "title": "Migration live by the 14th"
+           *             }
+           *           ],
+           *           "planId": "plan:5e8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "revisionHash": "sha256:56cafcce68380d13e783f0f9da4d0777a9416dc0fa72895d6cafc67f5cfddedf",
+           *           "revisionId": "revision:5e8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "version": 1
+           *         },
+           *         "internalOwnerRef": "internal-owner",
+           *         "planId": "plan:5e8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "status": "shared",
+           *         "tokenState": "active"
+           *       }
+           *     }
+           */
           "application/json": {
             [key: string]: unknown;
           };

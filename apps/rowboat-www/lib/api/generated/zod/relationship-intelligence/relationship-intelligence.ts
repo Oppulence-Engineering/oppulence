@@ -221,8 +221,8 @@ export const ExportCommitment404Response = zod
   );
 
 /**
- * Returns only the externally authorized plan revision with internal evidence references removed and policy redactions applied.
- * @summary Open a scoped mutual action plan
+ * Review the shared plan opens this plan. The page shows the version and each item title.
+ * @summary Review the shared plan
  */
 export const GetPublicMutualActionPlanHeader = zod.object({
   "X-Oppulence-Plan-Token": zod
