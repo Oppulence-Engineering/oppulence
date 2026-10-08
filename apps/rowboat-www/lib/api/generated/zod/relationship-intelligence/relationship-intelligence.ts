@@ -5796,8 +5796,8 @@ export const ResolveRelationshipContradiction201Response = zod
           )
           .describe("Transcript governance receipts."),
         liveCues: zod
-          .array(zod.record(zod.string(), zod.unknown()).describe("Cue card."))
-          .describe("Account-history cue cards for the next\/live meeting."),
+          .array(zod.record(zod.string(), zod.unknown()).describe("One suggestion."))
+          .describe("Suggestions the company sheet lists."),
         mutualActionPlans: zod
           .array(zod.record(zod.string(), zod.unknown()).describe("Mutual action plan."))
           .describe("Revision-bound bilateral plans."),
