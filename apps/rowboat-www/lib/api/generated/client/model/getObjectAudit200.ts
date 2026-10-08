@@ -7,6 +7,18 @@
  */
 
 /**
+<<<<<<<< HEAD:apps/rowboat-www/lib/api/generated/client/model/getObjectAudit200.ts
  * Audit trail.
+|||||||| 3eb6b5b90:apps/rowboat-www/lib/api/generated/client/model/shareMutualActionPlan200.ts
+ * Plan share result.
+========
+ * Shared plan and one-time value.
+>>>>>>>> a1e1c9bb14aa7422f207dd9cc241d03e83658476:apps/rowboat-www/lib/api/generated/client/model/shareMutualActionPlan201.ts
  */
+<<<<<<<< HEAD:apps/rowboat-www/lib/api/generated/client/model/getObjectAudit200.ts
 export type GetObjectAudit200 = { [key: string]: unknown };
+|||||||| 3eb6b5b90:apps/rowboat-www/lib/api/generated/client/model/shareMutualActionPlan200.ts
+export type ShareMutualActionPlan200 = { [key: string]: unknown };
+========
+export type ShareMutualActionPlan201 = { [key: string]: unknown };
+>>>>>>>> a1e1c9bb14aa7422f207dd9cc241d03e83658476:apps/rowboat-www/lib/api/generated/client/model/shareMutualActionPlan201.ts

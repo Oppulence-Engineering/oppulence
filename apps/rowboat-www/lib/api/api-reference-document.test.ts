@@ -4137,6 +4137,36 @@ describe("API reference document", () => {
     expect(operation.responses["204"].content).toBeUndefined();
   });
 
+  it("samples the plan Draft an email to share this plan returns", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation =
+      presented.paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share"].post;
+    expect(operation.summary).toBe("Draft an email to share this plan");
+    expect(operation.operationId).toBe("shareMutualActionPlan");
+    expect(operation.description).toBe(
+      "Draft an email to share this plan marks that approved plan as shared and writes a draft email. The email is not sent.",
+    );
+    expect(operation.parameters).toEqual([
+      expect.objectContaining({
+        name: "relationshipId",
+        example: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      }),
+      expect.objectContaining({
+        name: "planId",
+        example: "plan:f8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+      }),
+    ]);
+    expect(operation.responses["200"]).toBeUndefined();
+    const created = operation.responses["201"].content["application/json"].example;
+    expect(created.plan.status).toBe("shared");
+    expect(created.plan.tokenState).toBe("active");
+    expect(created.plan.currentRevision.items[0].title).toBe("Follow up on the proposal");
+    expect(created.responseToken).toBe(
+      "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    );
+    expect(JSON.stringify(created)).not.toContain("acta_");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

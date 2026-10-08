@@ -5740,6 +5740,76 @@ func assertRemoveFavorite(t *testing.T, paths obj) {
 	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "approvedAt") {
 		t.Fatalf("remove favorite looks live: %s", encoded)
 	}
+
+	assertSharePlan(t, paths)
+}
+
+func TestSharePlanSamplesTheDraftEmail(t *testing.T) {
+	spec := obj{"paths": obj{}, "components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSharePlan(t, asObj(spec["paths"]))
+}
+
+func assertSharePlan(t *testing.T, paths obj) {
+	t.Helper()
+	post := asObj(asObj(paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share"])["post"])
+	if post["summary"] != "Draft an email to share this plan" || post["operationId"] != "shareMutualActionPlan" || post["description"] != sharePlanDescription {
+		t.Fatalf("share plan operation: summary=%#v description=%#v id=%#v", post["summary"], post["description"], post["operationId"])
+	}
+	params, _ := post["parameters"].([]any)
+	if len(params) != 2 {
+		t.Fatalf("share plan parameters: %#v", post["parameters"])
+	}
+	relationship := asObj(params[0])
+	plan := asObj(params[1])
+	if relationship["name"] != "relationshipId" || relationship["example"] != sharePlanRelationshipID || asObj(relationship["schema"])["example"] != sharePlanRelationshipID {
+		t.Fatalf("share plan relationship: %#v", relationship)
+	}
+	if plan["name"] != "planId" || plan["example"] != sharePlanID || asObj(plan["schema"])["example"] != sharePlanID {
+		t.Fatalf("share plan id: %#v", plan)
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
+	if !reflect.DeepEqual(request["example"], obj{}) && !reflect.DeepEqual(request["example"], map[string]any{}) {
+		t.Fatalf("share plan request: %#v", request["example"])
+	}
+	responses := asObj(post["responses"])
+	if responses["200"] != nil {
+		t.Fatalf("share plan still documents 200: %#v", responses["200"])
+	}
+	created := asObj(asObj(asObj(responses["201"])["content"])["application/json"])
+	if created["description"] != nil {
+		t.Fatalf("share plan media: %#v", created)
+	}
+	if asObj(responses["201"])["description"] != "The approved plan is shared, and a draft email is ready." {
+		t.Fatalf("share plan response: %#v", responses["201"])
+	}
+	if !reflect.DeepEqual(normalizedJSON(t, created["example"]), normalizedJSON(t, sharePlanResult())) {
+		t.Fatalf("share plan example: %#v", created["example"])
+	}
+	raw, err := json.Marshal(post)
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded := string(raw)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "approvedAt") || strings.Contains(encoded, "tokenHash") || strings.Contains(encoded, "tokenExpiresAt") {
+		t.Fatalf("share plan looks live: %s", encoded)
+	}
+	if len(sharePlanResponseValue) != 64 {
+		t.Fatalf("share plan value length: %d", len(sharePlanResponseValue))
+	}
+}
+
+func normalizedJSON(t *testing.T, value any) any {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out any
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+	return out
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
