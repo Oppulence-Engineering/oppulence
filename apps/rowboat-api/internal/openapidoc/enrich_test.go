@@ -654,6 +654,8 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	assertConnectHubSpot(t, paths)
 
 	assertProfile(t, paths)
+
+	assertTheyAccepted(t, paths)
 }
 
 func TestConversationReviewNamesTheItem(t *testing.T) {
@@ -5800,6 +5802,68 @@ func assertSharePlan(t *testing.T, paths obj) {
 }
 
 func normalizedJSON(t *testing.T, value any) any {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out any
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+func TestTheyAcceptedSamplesThePromise(t *testing.T) {
+	spec := obj{"paths": obj{}, "components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertTheyAccepted(t, asObj(spec["paths"]))
+}
+
+func assertTheyAccepted(t *testing.T, paths obj) {
+	t.Helper()
+	post := asObj(asObj(paths["/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions"])["post"])
+	if post["summary"] != "They accepted" || post["operationId"] != "appendCommitmentTransition" || post["description"] != theyAcceptedDescription {
+		t.Fatalf("they accepted operation: summary=%#v description=%#v id=%#v", post["summary"], post["description"], post["operationId"])
+	}
+	params, _ := post["parameters"].([]any)
+	if len(params) != 2 {
+		t.Fatalf("they accepted parameters: %#v", post["parameters"])
+	}
+	relationship := asObj(params[0])
+	commitment := asObj(params[1])
+	if relationship["name"] != "relationshipId" || relationship["example"] != theyAcceptedRelationshipID || asObj(relationship["schema"])["example"] != theyAcceptedRelationshipID {
+		t.Fatalf("they accepted relationship: %#v", relationship)
+	}
+	if commitment["name"] != "commitmentId" || commitment["example"] != theyAcceptedCommitmentID || asObj(commitment["schema"])["example"] != theyAcceptedCommitmentID {
+		t.Fatalf("they accepted commitment: %#v", commitment)
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
+	if asObj(request["example"])["kind"] != "accepted" {
+		t.Fatalf("they accepted request: %#v", request["example"])
+	}
+	responses := asObj(post["responses"])
+	if responses["200"] != nil {
+		t.Fatalf("they accepted still documents 200: %#v", responses["200"])
+	}
+	if asObj(responses["201"])["description"] != "The promise is accepted and still open." {
+		t.Fatalf("they accepted response: %#v", responses["201"])
+	}
+	created := asObj(asObj(asObj(responses["201"])["content"])["application/json"])
+	if !reflect.DeepEqual(normalizedTheyAccepted(t, created["example"]), normalizedTheyAccepted(t, theyAcceptedCommitment())) {
+		t.Fatalf("they accepted example: %#v", created["example"])
+	}
+	raw, err := json.Marshal(post)
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded := string(raw)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "approvedAt") {
+		t.Fatalf("they accepted looks live: %s", encoded)
+	}
+}
+
+func normalizedTheyAccepted(t *testing.T, value any) any {
 	t.Helper()
 	raw, err := json.Marshal(value)
 	if err != nil {

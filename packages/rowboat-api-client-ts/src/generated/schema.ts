@@ -2222,8 +2222,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Append a commitment transition
-     * @description Validates the state machine and appends one idempotent event before atomically updating the materialized projection.
+     * They accepted
+     * @description They accepted records that the other party accepted this promise. The promise stays open.
      */
     post: operations["appendCommitmentTransition"];
     delete?: never;
@@ -22163,9 +22163,15 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /**
+         * @description Relationship id.
+         * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         relationshipId: string;
-        /** @description Commitment id. */
+        /**
+         * @description Commitment id.
+         * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         commitmentId: string;
       };
       cookie?: never;
@@ -22235,12 +22241,31 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Updated commitment. */
-      200: {
+      /** @description The promise is accepted and still open. */
+      201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "acceptance": "accepted",
+           *       "beneficiaryParticipantRef": "customer:acme",
+           *       "confidence": 0.94,
+           *       "counterpartyParticipantRef": "jordan@example.com",
+           *       "currentEventVersion": 4,
+           *       "direction": "promised_by_me",
+           *       "dueAt": "2026-07-22T17:00:00Z",
+           *       "duePhrase": "by Friday",
+           *       "dueTimezone": "America/Los_Angeles",
+           *       "id": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "ownerParticipantRef": "alex@example.com",
+           *       "sourcePhrase": "I will send it by Friday.",
+           *       "status": "open",
+           *       "text": "Send the security packet.",
+           *       "userConfirmed": true
+           *     }
+           */
           "application/json": components["schemas"]["RelationshipCommitment"];
         };
       };

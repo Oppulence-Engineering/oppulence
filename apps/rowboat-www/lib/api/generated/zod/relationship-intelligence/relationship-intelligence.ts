@@ -5099,8 +5099,8 @@ export const GetCommitmentEvents404Response = zod
   );
 
 /**
- * Validates the state machine and appends one idempotent event before atomically updating the materialized projection.
- * @summary Append a commitment transition
+ * They accepted records that the other party accepted this promise. The promise stays open.
+ * @summary They accepted
  */
 export const AppendCommitmentTransitionParams = zod.object({
   relationshipId: zod.uuid().describe("Relationship id."),
@@ -5139,7 +5139,7 @@ export const AppendCommitmentTransitionBody = zod
   })
   .describe("Commitment transition.");
 
-export const AppendCommitmentTransition200Response = zod
+export const AppendCommitmentTransition201Response = zod
   .strictObject({
     acceptance: zod
       .enum(["candidate", "internally_confirmed", "offered", "accepted", "disputed"])

@@ -1836,9 +1836,9 @@ export const getCommitmentEvents = async (
   return { data, status: res.status, headers: res.headers } as getCommitmentEventsResponse;
 };
 
-export type appendCommitmentTransitionResponse200 = {
+export type appendCommitmentTransitionResponse201 = {
   data: RelationshipCommitment;
-  status: 200;
+  status: 201;
 };
 
 export type appendCommitmentTransitionResponse400 = {
@@ -1861,7 +1861,7 @@ export type appendCommitmentTransitionResponse409 = {
   status: 409;
 };
 
-export type appendCommitmentTransitionResponseSuccess = appendCommitmentTransitionResponse200 & {
+export type appendCommitmentTransitionResponseSuccess = appendCommitmentTransitionResponse201 & {
   headers: Headers;
 };
 export type appendCommitmentTransitionResponseError = (
@@ -1881,8 +1881,8 @@ export const getAppendCommitmentTransitionUrl = (relationshipId: string, commitm
 };
 
 /**
- * Validates the state machine and appends one idempotent event before atomically updating the materialized projection.
- * @summary Append a commitment transition
+ * They accepted records that the other party accepted this promise. The promise stays open.
+ * @summary They accepted
  */
 export const appendCommitmentTransition = async (
   relationshipId: string,

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import {
-  AppendCommitmentTransition200Response,
+  AppendCommitmentTransition201Response,
   AppendCommitmentTransitionBody,
 } from "@/lib/api/generated/zod/relationship-intelligence/relationship-intelligence";
 import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
@@ -12,7 +12,7 @@ export type AppendCommitmentTransitionInput = z.infer<typeof AppendCommitmentTra
 /**
  * @oppulence-gen kind=mutation
  * Same-origin BFF write for Append commitment transition. Validates the response with
- * AppendCommitmentTransition200Response. Do not cast the parsed result. Owned by `use-append-commitment-transition.lit.ts`.
+ * AppendCommitmentTransition201Response. Do not cast the parsed result. Owned by `use-append-commitment-transition.lit.ts`.
  */
 export function appendCommitmentTransitionPath(
   relationshipId: string,
@@ -31,7 +31,7 @@ export async function loadAppendCommitmentTransition(
   return request({
     path: appendCommitmentTransitionPath(relationshipId, commitmentId),
     method: "POST",
-    schema: AppendCommitmentTransition200Response,
+    schema: AppendCommitmentTransition201Response,
     body,
     signal,
   });

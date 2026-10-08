@@ -1675,7 +1675,7 @@ func addRevenuePaths(paths obj) {
 		"200": jsonResponse("Commitment events.", objectSchema("Commitment history.", obj{"events": arraySchema("Ordered immutable events.", ref("CommitmentEvent"))}, "events"), nil),
 		"401": responseRef("401"), "404": responseRef("404"),
 	})}
-	paths["/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions"] = obj{"post": operation("Relationship Intelligence", "Append a commitment transition", "Validates the state machine and appends one idempotent event before atomically updating the materialized projection.", "appendCommitmentTransition", bearer(), commitmentParam, jsonRequest("Transition.", objectSchema("Commitment transition.", obj{
+	paths["/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions"] = obj{"post": operation("Relationship Intelligence", "They accepted", theyAcceptedDescription, "appendCommitmentTransition", bearer(), theyAcceptedParams(), jsonRequest("Transition.", objectSchema("Commitment transition.", obj{
 		"kind":           stringEnum("Event kind.", "accepted", "internally_confirmed", "offered", "accepted", "disputed", "blocked", "unblocked", "corrected", "due_date_changed", "renegotiated", "fulfilled", "missed", "waived", "cancelled", "superseded"),
 		"idempotencyKey": stringSchema("Stable source event id.", documentedQueueAcceptKey),
 		"reason":         stringSchema("Optional reason.", documentedQueueAcceptReason),

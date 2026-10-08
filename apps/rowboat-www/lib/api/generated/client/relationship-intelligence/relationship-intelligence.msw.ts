@@ -876,7 +876,7 @@ export const getAppendCommitmentTransitionMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getAppendCommitmentTransitionResponseMock(),
-        { status: 200 },
+        { status: 201 },
       );
     },
     options,
