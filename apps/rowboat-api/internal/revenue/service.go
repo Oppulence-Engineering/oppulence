@@ -751,6 +751,14 @@ const (
 	attentionQueueScreen = 10
 )
 
+// attentionQueuePage is the open queue the companies page loads. Its table
+// starts with attentionQueueScreen rows. "Show the other N companies" is the
+// companies that first appear past that screen on the loaded page.
+const (
+	attentionQueuePage   = 50
+	attentionQueueScreen = 10
+)
+
 // ListRelationships returns the workspace's relationships, most recent
 // interaction first. A company with no interaction follows those, newest
 // edit first. Each row includes its open queue actions so the caller can
@@ -901,6 +909,10 @@ func (s *Service) ListRelationshipsFiltered(
 
 		if labelPhraseMatches("show the other reasons", needle) {
 			parts = append(parts, relationshipHasHiddenAttentionReasons())
+		}
+
+		if hidden, ok := exactHiddenAttentionCompanyCount(needle); ok {
+			parts = append(parts, relationshipHasHiddenAttentionCompanies(hidden))
 		}
 		if labelPhraseMatches("no activity", needle) {
 			parts = append(parts, relationship.LastTouchAtIsNil())
@@ -10964,6 +10976,46 @@ func writeAttentionRankOrder(b *sql.Builder) {
 	b.WriteString(" ASC, directory.")
 	b.WriteString(relationshipattentionitem.FieldID)
 	b.WriteString(" ASC")
+}
+
+// exactHiddenAttentionCompanyCount reads "Show the other 1 company" and
+// "Show the other N companies". The plural form is only for two or more.
+// "Show the other 1 companies" is not the button.
+func exactHiddenAttentionCompanyCount(needle string) (int, bool) {
+	var n int
+	if _, err := fmt.Sscanf(needle, "show the other %d compan", &n); err != nil || n < 1 {
+		return 0, false
+	}
+	label := fmt.Sprintf("show the other %d companies", n)
+	if n == 1 {
+		label = "show the other 1 company"
+	}
+	if needle != label {
+		return 0, false
+	}
+	return n, true
+}
+
+// relationshipHasHiddenAttentionCompanies is the count of companies that
+// first appear past the queue's first screen. Extra reasons about a company
+// already on that screen stay on "Show the other reasons".
+func relationshipHasHiddenAttentionCompanies(n int) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT COUNT(DISTINCT loaded.company_id) FROM (SELECT directory.")
+			b.WriteString(relationshipattentionitem.RelationshipColumn)
+			b.WriteString(" AS company_id FROM ")
+			writeOpenCompanyAttention(b, s)
+			writeAttentionRankOrder(b)
+			b.WriteString(fmt.Sprintf(" LIMIT %d) AS loaded WHERE loaded.company_id NOT IN (SELECT shown.company_id FROM (SELECT directory.", attentionQueuePage))
+			b.WriteString(relationshipattentionitem.RelationshipColumn)
+			b.WriteString(" AS company_id FROM ")
+			writeOpenCompanyAttention(b, s)
+			writeAttentionRankOrder(b)
+			b.WriteString(fmt.Sprintf(" LIMIT %d) AS shown)) = ", attentionQueueScreen))
+			b.Arg(n)
+		}))
+	})
 }
 
 // labelPhraseMatches is the sentence on the company row, or a longer question
