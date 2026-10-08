@@ -25192,7 +25192,7 @@
     },
     "/v1/relationship-sources/{source}/resync": {
       "post": {
-        "description": "Explicitly starts or resumes a durable source backfill and immediately marks relationship completeness rebuilding.",
+        "description": "Retry sync, Refresh now, and Resync post the connected account and queue a fresh read. The stored answer marks that account backfilling, with the read queued and completeness rebuilding.",
         "operationId": "resyncRelationshipSource",
         "parameters": [
           {
@@ -25201,7 +25201,12 @@
             "name": "source",
             "required": true,
             "schema": {
-              "enum": ["google", "slack", "hubspot"],
+              "enum": [
+                "google",
+                "slack",
+                "hubspot"
+              ],
+              "example": "google",
               "type": "string"
             }
           }
@@ -25210,18 +25215,20 @@
           "content": {
             "application/json": {
               "example": {
-                "sourceAccountId": "me@company.com"
+                "sourceAccountId": "owner@example.com"
               },
               "schema": {
                 "description": "Source resync request.",
                 "properties": {
                   "sourceAccountId": {
                     "description": "Provider account id.",
-                    "example": "me@company.com",
+                    "example": "owner@example.com",
                     "type": "string"
                   }
                 },
-                "required": ["sourceAccountId"],
+                "required": [
+                  "sourceAccountId"
+                ],
                 "type": "object"
               }
             }
@@ -25233,6 +25240,30 @@
           "202": {
             "content": {
               "application/json": {
+                "example": {
+                  "authorizedAt": "2026-07-31T13:01:00Z",
+                  "backfillCompleted": 0,
+                  "backfillPhase": "queued",
+                  "backfillTotal": 0,
+                  "completeness": "rebuilding",
+                  "connectionId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "expectedCadenceSeconds": 900,
+                  "grantedScopes": [
+                    "https://www.googleapis.com/auth/gmail.readonly",
+                    "https://www.googleapis.com/auth/calendar.events.readonly"
+                  ],
+                  "lagSeconds": 0,
+                  "missingScopes": [],
+                  "requiredScopes": [
+                    "https://www.googleapis.com/auth/gmail.readonly",
+                    "https://www.googleapis.com/auth/calendar.events.readonly"
+                  ],
+                  "retryCount": 0,
+                  "source": "google",
+                  "sourceAccountId": "owner@example.com",
+                  "status": "backfilling",
+                  "syncStartedAt": "2026-07-31T14:00:00Z"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RelationshipSourceStatus"
                 }
@@ -25256,7 +25287,9 @@
           }
         ],
         "summary": "Resync a source",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-sources/{source}/{sourceAccountId}/disconnect": {

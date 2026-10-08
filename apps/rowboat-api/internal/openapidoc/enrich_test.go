@@ -2972,6 +2972,52 @@ func assertActivityHistory(t *testing.T, paths obj) {
 	if string(got) != string(want) {
 		t.Fatalf("page example:\n%s\nwant:\n%s", got, want)
 	}
+
+	assertRetrySync(t, paths)
+}
+
+func TestRetrySyncSamplesTheQueuedGoogleAccount(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertRetrySync(t, asObj(spec["paths"]))
+}
+
+func assertRetrySync(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/relationship-sources/{source}/resync"])["post"])
+	if op["summary"] != "Resync a source" {
+		t.Fatalf("summary: %#v", op["summary"])
+	}
+	const wantDescription = "Retry sync, Refresh now, and Resync post the connected account and queue a fresh read. The stored answer marks that account backfilling, with the read queued and completeness rebuilding."
+	if op["description"] != wantDescription {
+		t.Fatalf("description: %#v", op["description"])
+	}
+	var sourceExample any
+	for _, param := range op["parameters"].([]any) {
+		item := asObj(param)
+		if item["name"] == "source" {
+			sourceExample = asObj(item["schema"])["example"]
+		}
+	}
+	if sourceExample != "google" {
+		t.Fatalf("source: %#v", sourceExample)
+	}
+	request := asObj(asObj(asObj(asObj(op["requestBody"])["content"])["application/json"])["example"])
+	if request["sourceAccountId"] != retrySyncAccount || len(request) != 1 {
+		t.Fatalf("request: %#v", request)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["202"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(retrySyncStatus())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("example:\n%s\nwant:\n%s", got, want)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

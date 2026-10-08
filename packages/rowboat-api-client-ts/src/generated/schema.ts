@@ -1959,7 +1959,7 @@ export interface paths {
     put?: never;
     /**
      * Resync a source
-     * @description Explicitly starts or resumes a durable source backfill and immediately marks relationship completeness rebuilding.
+     * @description Retry sync, Refresh now, and Resync post the connected account and queue a fresh read. The stored answer marks that account backfilling, with the read queued and completeness rebuilding.
      */
     post: operations["resyncRelationshipSource"];
     delete?: never;
@@ -19904,13 +19904,13 @@ export interface operations {
       content: {
         /**
          * @example {
-         *       "sourceAccountId": "me@company.com"
+         *       "sourceAccountId": "owner@example.com"
          *     }
          */
         "application/json": {
           /**
            * @description Provider account id.
-           * @example me@company.com
+           * @example owner@example.com
            */
           sourceAccountId: string;
         };
@@ -19923,6 +19923,32 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "authorizedAt": "2026-07-31T13:01:00Z",
+           *       "backfillCompleted": 0,
+           *       "backfillPhase": "queued",
+           *       "backfillTotal": 0,
+           *       "completeness": "rebuilding",
+           *       "connectionId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "expectedCadenceSeconds": 900,
+           *       "grantedScopes": [
+           *         "https://www.googleapis.com/auth/gmail.readonly",
+           *         "https://www.googleapis.com/auth/calendar.events.readonly"
+           *       ],
+           *       "lagSeconds": 0,
+           *       "missingScopes": [],
+           *       "requiredScopes": [
+           *         "https://www.googleapis.com/auth/gmail.readonly",
+           *         "https://www.googleapis.com/auth/calendar.events.readonly"
+           *       ],
+           *       "retryCount": 0,
+           *       "source": "google",
+           *       "sourceAccountId": "owner@example.com",
+           *       "status": "backfilling",
+           *       "syncStartedAt": "2026-07-31T14:00:00Z"
+           *     }
+           */
           "application/json": components["schemas"]["RelationshipSourceStatus"];
         };
       };

@@ -1151,7 +1151,7 @@ export const getResyncRelationshipSourceUrl = (source: "google" | "slack" | "hub
 };
 
 /**
- * Explicitly starts or resumes a durable source backfill and immediately marks relationship completeness rebuilding.
+ * Retry sync, Refresh now, and Resync post the connected account and queue a fresh read. The stored answer marks that account backfilling, with the read queued and completeness rebuilding.
  * @summary Resync a source
  */
 export const resyncRelationshipSource = async (

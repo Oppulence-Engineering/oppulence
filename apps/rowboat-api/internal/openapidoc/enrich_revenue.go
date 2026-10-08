@@ -2021,8 +2021,9 @@ func addRevenuePaths(paths obj) {
 	}, "state"), obj{"sourceAccountId": "me@company.com", "state": "completed", "grantedScopes": []any{"https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/calendar.events.readonly"}}), obj{
 		"200": jsonResponse("Updated authorization lifecycle.", ref("RelationshipSourceStatus"), nil), "400": responseRef("400"), "401": responseRef("401"), "403": responseRef("403"),
 	})}
-	paths["/v1/relationship-sources/{source}/resync"] = obj{"post": operation("Relationship Intelligence", "Resync a source", "Explicitly starts or resumes a durable source backfill and immediately marks relationship completeness rebuilding.", "resyncRelationshipSource", bearer(), sourceParam, jsonRequest("Source account.", objectSchema("Source resync request.", obj{"sourceAccountId": stringSchema("Provider account id.", "me@company.com")}, "sourceAccountId"), obj{"sourceAccountId": "me@company.com"}), obj{
-		"202": jsonResponse("Queued source lifecycle.", ref("RelationshipSourceStatus"), nil), "400": responseRef("400"), "401": responseRef("401"), "403": responseRef("403"),
+	resyncSourceParam := []any{obj{"name": "source", "in": "path", "required": true, "description": "Beta source provider.", "schema": obj{"type": "string", "enum": []any{"google", "slack", "hubspot"}, "example": "google"}}}
+	paths["/v1/relationship-sources/{source}/resync"] = obj{"post": operation("Relationship Intelligence", "Resync a source", "Retry sync, Refresh now, and Resync post the connected account and queue a fresh read. The stored answer marks that account backfilling, with the read queued and completeness rebuilding.", "resyncRelationshipSource", bearer(), resyncSourceParam, jsonRequest("Source account.", objectSchema("Source resync request.", obj{"sourceAccountId": stringSchema("Provider account id.", retrySyncAccount)}, "sourceAccountId"), obj{"sourceAccountId": retrySyncAccount}), obj{
+		"202": jsonResponse("Queued source lifecycle.", ref("RelationshipSourceStatus"), retrySyncStatus()), "400": responseRef("400"), "401": responseRef("401"), "403": responseRef("403"),
 	})}
 	disconnectSourceParam := []any{
 		obj{"name": "source", "in": "path", "required": true, "description": "Beta source provider.", "schema": obj{"type": "string", "enum": []any{"google", "slack", "hubspot"}, "example": "google"}},
@@ -2582,5 +2583,37 @@ func activityObservation(id, source, externalID, eventType, occurredAt, summary,
 		"summary":         summary,
 		"normalizedFacts": obj{"adapter": source},
 		"contentHash":     contentHash,
+	}
+}
+
+const (
+	retrySyncConnectionID = "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	retrySyncAccount      = "owner@example.com"
+	retrySyncStartedAt    = "2026-07-31T14:00:00Z"
+	retrySyncAuthorizedAt = "2026-07-31T13:01:00Z"
+)
+
+func retrySyncStatus() obj {
+	scopes := []any{
+		"https://www.googleapis.com/auth/gmail.readonly",
+		"https://www.googleapis.com/auth/calendar.events.readonly",
+	}
+	return obj{
+		"connectionId":           retrySyncConnectionID,
+		"source":                 "google",
+		"sourceAccountId":        retrySyncAccount,
+		"status":                 "backfilling",
+		"backfillPhase":          "queued",
+		"backfillCompleted":      0,
+		"backfillTotal":          0,
+		"completeness":           "rebuilding",
+		"expectedCadenceSeconds": 900,
+		"lagSeconds":             0,
+		"requiredScopes":         scopes,
+		"grantedScopes":          scopes,
+		"missingScopes":          []any{},
+		"retryCount":             0,
+		"authorizedAt":           retrySyncAuthorizedAt,
+		"syncStartedAt":          retrySyncStartedAt,
 	}
 }
