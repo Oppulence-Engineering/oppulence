@@ -2076,6 +2076,29 @@ describe("API reference document", () => {
     expect(listed.turns).toBe(2);
   });
 
+  it("samples the agents page list", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const list = presented.paths["/v1/agents"].get;
+    expect(list.summary).toBe("List agents");
+    expect(list.description).toContain("Assistant");
+    expect(list.description).toContain("builtin");
+    expect(list.requestBody).toBeUndefined();
+    const agents = list.responses["200"].content["application/json"].example.agents;
+    expect(agents).toHaveLength(3);
+    expect(agents[0]).toMatchObject({
+      slug: "assistant",
+      name: "Assistant",
+      source: "builtin",
+    });
+    expect(agents[0].enabledTools).toContain("workspace.read");
+    expect(agents[1]).toMatchObject({ slug: "concierge", name: "Concierge", source: "builtin" });
+    expect(agents[2]).toMatchObject({
+      slug: "concierge-slack",
+      name: "Slack Concierge",
+      source: "builtin",
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

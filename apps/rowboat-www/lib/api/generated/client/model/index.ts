@@ -366,6 +366,8 @@ export * from "./internalInvalidateRequest";
 export * from "./internalInvalidateRequestReason";
 export * from "./internalInvalidateResponse";
 export * from "./linkRevenueWorkspaceBody";
+export * from "./listAgents200";
+export * from "./listAgents200AgentsItem";
 export * from "./listAgentSessionEventsParams";
 export * from "./listAgentSessionsParams";
 export * from "./listBackgroundTaskRunEventsParams";

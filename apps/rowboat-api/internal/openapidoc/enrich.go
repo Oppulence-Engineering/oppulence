@@ -70,6 +70,8 @@ func Enrich(spec obj) {
 		obj{"name": "Internal", "description": "Server-to-server APIs. Most use X-Internal-Secret; connector invalidation uses individually scoped HMAC/JWT service principals."},
 		obj{"name": "GraphQL", "description": "Internal admin GraphQL over the ent graph."},
 		obj{"name": "Agents", "description": "Agents you create and reuse in chat."},
+
+		obj{"name": "Agents", "description": "Agents available in this workspace."},
 	}
 
 	components := ensureObj(spec, "components")
@@ -1135,6 +1137,14 @@ func documentedAcceptedChatTurn() obj {
 		"accepted": true,
 		"turnSeq":  1,
 	}
+}
+
+func documentedAgentList() obj {
+	var body obj
+	if err := json.Unmarshal([]byte(documentedAgentListJSON), &body); err != nil {
+		panic(err)
+	}
+	return body
 }
 
 func addAgentSessionPaths(paths obj) {
