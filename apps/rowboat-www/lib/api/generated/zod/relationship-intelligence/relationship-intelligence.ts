@@ -402,8 +402,8 @@ export const ListRelationshipAttention401Response = zod
   );
 
 /**
- * Acknowledges, snoozes, or dismisses at the expected optimistic version. Materially new evidence reopens the item.
- * @summary Decide attention item
+ * Review records that this attention item was reviewed. It leaves the open queue.
+ * @summary Review
  */
 export const DecideRelationshipAttentionParams = zod.object({
   attentionId: zod.uuid().describe("Attention item id."),

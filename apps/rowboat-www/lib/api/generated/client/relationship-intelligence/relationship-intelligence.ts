@@ -427,8 +427,8 @@ export const getDecideRelationshipAttentionUrl = (attentionId: string) => {
 };
 
 /**
- * Acknowledges, snoozes, or dismisses at the expected optimistic version. Materially new evidence reopens the item.
- * @summary Decide attention item
+ * Review records that this attention item was reviewed. It leaves the open queue.
+ * @summary Review
  */
 export const decideRelationshipAttention = async (
   attentionId: string,

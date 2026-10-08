@@ -1758,8 +1758,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Decide attention item
-     * @description Acknowledges, snoozes, or dismisses at the expected optimistic version. Materially new evidence reopens the item.
+     * Review
+     * @description Review records that this attention item was reviewed. It leaves the open queue.
      */
     post: operations["decideRelationshipAttention"];
     delete?: never;
@@ -9904,7 +9904,7 @@ export interface components {
       sourceRequirements: string[];
       /**
        * @description Triage reason.
-       * @example Reviewed with account owner.
+       * @example Reviewed from the portfolio attention queue.
        */
       stateReason?: string;
       /**
@@ -20211,7 +20211,10 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Attention item id. */
+        /**
+         * @description Attention item id.
+         * @example da8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         attentionId: string;
       };
       cookie?: never;
@@ -20222,7 +20225,8 @@ export interface operations {
         /**
          * @example {
          *       "decision": "acknowledge",
-         *       "expectedVersion": 1
+         *       "expectedVersion": 1,
+         *       "reason": "Reviewed from the portfolio attention queue."
          *     }
          */
         "application/json": {
@@ -20239,7 +20243,7 @@ export interface operations {
           expectedVersion: number;
           /**
            * @description Decision reason.
-           * @example Reviewed with the account owner.
+           * @example Reviewed from the portfolio attention queue.
            */
           reason?: string;
           /**
@@ -20252,12 +20256,44 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Updated attention item. */
+      /** @description This item is reviewed and leaves the open queue. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "acknowledgedAt": "2026-07-31T14:00:00Z",
+           *       "acknowledgedBy": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "createdAt": "2026-07-29T14:00:00Z",
+           *       "detectorVersion": 1,
+           *       "evidenceRefs": [
+           *         "revenue-evidence:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *       ],
+           *       "explanation": "A confirmed promise is overdue by two days.",
+           *       "id": "da8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "projectorVersion": 1,
+           *       "rankFactors": {
+           *         "confirmed_commitment": 70,
+           *         "overdue_days": 6
+           *       },
+           *       "rankScore": 76,
+           *       "reasonCode": "overdue_commitment",
+           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "relationshipName": "Acme",
+           *       "relationshipStateVersion": 4,
+           *       "sourceRequirements": [
+           *         "google"
+           *       ],
+           *       "stateReason": "Reviewed from the portfolio attention queue.",
+           *       "status": "acknowledged",
+           *       "triggeringObjectRef": "commitment:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "updatedAt": "2026-07-31T14:00:00Z",
+           *       "urgencyBand": "high",
+           *       "version": 2
+           *     }
+           */
           "application/json": components["schemas"]["RelationshipAttentionItem"];
         };
       };
