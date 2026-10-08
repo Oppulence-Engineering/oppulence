@@ -28,6 +28,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
+
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
@@ -766,6 +768,11 @@ const (
 // past that page. A favorite is a different list.
 const noteTemplatePage = 100
 
+// noteFavoritePage is the favorite list the notes page asks for. The button
+// is "Show the next favorites" when another favorite this person saved sits
+// past that page. A template is a different list.
+const noteFavoritePage = 100
+
 // ListRelationships returns the workspace's relationships, most recent
 // interaction first. A company with no interaction follows those, newest
 // edit first. Each row includes its open queue actions so the caller can
@@ -924,6 +931,10 @@ func (s *Service) ListRelationshipsFiltered(
 
 		if labelPhraseMatches("show the next templates", needle) {
 			parts = append(parts, relationshipHasAnotherTemplatePage(u.ID))
+		}
+
+		if labelPhraseMatches("show the next favorites", needle) {
+			parts = append(parts, relationshipHasAnotherFavoritePage(u.ID))
 		}
 		if labelPhraseMatches("no activity", needle) {
 			parts = append(parts, relationship.LastTouchAtIsNil())
@@ -11051,6 +11062,32 @@ func relationshipHasAnotherTemplatePage(userID uuid.UUID) predicate.Relationship
 			b.Arg("note_template")
 			b.WriteString(") > ")
 			b.Arg(noteTemplatePage)
+		}))
+	})
+}
+
+// relationshipHasAnotherFavoritePage is true when this person has another
+// page of note favorites in the same workspace. The notes page prints
+// "Show the next favorites" in that case.
+func relationshipHasAnotherFavoritePage(userID uuid.UUID) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(consoleresource.Table)
+			b.WriteString(" AS directory WHERE directory.")
+			b.WriteString(consoleresource.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND directory.")
+			b.WriteString(consoleresource.UserColumn)
+			b.WriteString(" = ")
+			b.Arg(userID.String())
+			b.WriteString(" AND directory.")
+			b.WriteString(consoleresource.FieldKind)
+			b.WriteString(" = ")
+			b.Arg("note_favorite")
+			b.WriteString(") > ")
+			b.Arg(noteFavoritePage)
 		}))
 	})
 }
