@@ -31,7 +31,7 @@ export interface RevenueRelationship {
    * @nullable
    */
   companyEnrichedAt?: string | null;
-  /** Cited public-web company facts keyed by enrichment field. */
+  /** Facts the company list shows. */
   companyEnrichmentData?: RevenueRelationshipCompanyEnrichmentData;
   /** Citation URLs keyed by enriched company field. */
   companyEnrichmentRefs?: RevenueRelationshipCompanyEnrichmentRefs;

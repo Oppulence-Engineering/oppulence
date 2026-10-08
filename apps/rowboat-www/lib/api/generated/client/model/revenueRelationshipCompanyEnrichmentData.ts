@@ -7,6 +7,6 @@
  */
 
 /**
- * Cited public-web company facts keyed by enrichment field.
+ * Facts the company list shows.
  */
 export type RevenueRelationshipCompanyEnrichmentData = { [key: string]: unknown };

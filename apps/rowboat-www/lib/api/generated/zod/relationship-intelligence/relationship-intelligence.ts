@@ -704,7 +704,7 @@ export const ListRelationshipIdentityCandidates200Response = zod
                 companyEnrichmentData: zod
                   .record(zod.string(), zod.unknown())
                   .optional()
-                  .describe("Cited public-web company facts keyed by enrichment field."),
+                  .describe("Facts the company list shows."),
                 companyEnrichmentRefs: zod
                   .record(zod.string(), zod.unknown())
                   .optional()
@@ -865,7 +865,7 @@ export const ListRelationshipIdentityCandidates200Response = zod
                 companyEnrichmentData: zod
                   .record(zod.string(), zod.unknown())
                   .optional()
-                  .describe("Cited public-web company facts keyed by enrichment field."),
+                  .describe("Facts the company list shows."),
                 companyEnrichmentRefs: zod
                   .record(zod.string(), zod.unknown())
                   .optional()
@@ -1076,7 +1076,7 @@ export const GetRelationshipIdentityCandidate200Response = zod
         companyEnrichmentData: zod
           .record(zod.string(), zod.unknown())
           .optional()
-          .describe("Cited public-web company facts keyed by enrichment field."),
+          .describe("Facts the company list shows."),
         companyEnrichmentRefs: zod
           .record(zod.string(), zod.unknown())
           .optional()
@@ -1218,7 +1218,7 @@ export const GetRelationshipIdentityCandidate200Response = zod
         companyEnrichmentData: zod
           .record(zod.string(), zod.unknown())
           .optional()
-          .describe("Cited public-web company facts keyed by enrichment field."),
+          .describe("Facts the company list shows."),
         companyEnrichmentRefs: zod
           .record(zod.string(), zod.unknown())
           .optional()
@@ -1421,7 +1421,7 @@ export const DecideRelationshipIdentityCandidate200Response = zod
         companyEnrichmentData: zod
           .record(zod.string(), zod.unknown())
           .optional()
-          .describe("Cited public-web company facts keyed by enrichment field."),
+          .describe("Facts the company list shows."),
         companyEnrichmentRefs: zod
           .record(zod.string(), zod.unknown())
           .optional()
@@ -1563,7 +1563,7 @@ export const DecideRelationshipIdentityCandidate200Response = zod
         companyEnrichmentData: zod
           .record(zod.string(), zod.unknown())
           .optional()
-          .describe("Cited public-web company facts keyed by enrichment field."),
+          .describe("Facts the company list shows."),
         companyEnrichmentRefs: zod
           .record(zod.string(), zod.unknown())
           .optional()
@@ -3012,7 +3012,7 @@ export const ListRelationships200Response = zod
             companyEnrichmentData: zod
               .record(zod.string(), zod.unknown())
               .optional()
-              .describe("Cited public-web company facts keyed by enrichment field."),
+              .describe("Facts the company list shows."),
             companyEnrichmentRefs: zod
               .record(zod.string(), zod.unknown())
               .optional()
@@ -3155,7 +3155,7 @@ export const CreateRelationship201Response = zod
     companyEnrichmentData: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Cited public-web company facts keyed by enrichment field."),
+      .describe("Facts the company list shows."),
     companyEnrichmentRefs: zod
       .record(zod.string(), zod.unknown())
       .optional()
@@ -4278,7 +4278,7 @@ export const GetRelationship200Response = zod
         companyEnrichmentData: zod
           .record(zod.string(), zod.unknown())
           .optional()
-          .describe("Cited public-web company facts keyed by enrichment field."),
+          .describe("Facts the company list shows."),
         companyEnrichmentRefs: zod
           .record(zod.string(), zod.unknown())
           .optional()
@@ -4511,7 +4511,7 @@ export const RetractRelationshipAssertion200Response = zod
     companyEnrichmentData: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Cited public-web company facts keyed by enrichment field."),
+      .describe("Facts the company list shows."),
     companyEnrichmentRefs: zod
       .record(zod.string(), zod.unknown())
       .optional()
@@ -5600,7 +5600,7 @@ export const CorrectConversationEvidence201Response = zod
         companyEnrichmentData: zod
           .record(zod.string(), zod.unknown())
           .optional()
-          .describe("Cited public-web company facts keyed by enrichment field."),
+          .describe("Facts the company list shows."),
         companyEnrichmentRefs: zod
           .record(zod.string(), zod.unknown())
           .optional()
@@ -5998,7 +5998,7 @@ export const DecideConversationChange201Response = zod
         companyEnrichmentData: zod
           .record(zod.string(), zod.unknown())
           .optional()
-          .describe("Cited public-web company facts keyed by enrichment field."),
+          .describe("Facts the company list shows."),
         companyEnrichmentRefs: zod
           .record(zod.string(), zod.unknown())
           .optional()
@@ -6566,7 +6566,7 @@ export const CorrectRelationship201Response = zod
     companyEnrichmentData: zod
       .record(zod.string(), zod.unknown())
       .optional()
-      .describe("Cited public-web company facts keyed by enrichment field."),
+      .describe("Facts the company list shows."),
     companyEnrichmentRefs: zod
       .record(zod.string(), zod.unknown())
       .optional()
