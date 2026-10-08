@@ -961,6 +961,38 @@ func assertQueueAcceptTransition(t *testing.T, spec obj) {
 	if items["example"] != documentedQueueAcceptEvidence {
 		t.Fatalf("stored transition evidence: %#v", items["example"])
 	}
+
+	assertIdentityDecisionRequest(t, spec)
+}
+
+func TestIdentityInboxSendsADecisionUUID(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertIdentityDecisionRequest(t, spec)
+}
+
+func assertIdentityDecisionRequest(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/relationship-identity-candidates/{candidateId}/decisions"])["post"])
+	content := asObj(asObj(asObj(operation["requestBody"])["content"])["application/json"])
+	example := asObj(content["example"])
+	if example["decision"] != "merge" || example["expectedVersion"] != 1 && example["expectedVersion"] != float64(1) {
+		t.Fatalf("identity decision example: %#v", example)
+	}
+	if example["idempotencyKey"] != documentedIdentityDecisionKey || example["reason"] != documentedIdentityDecisionReason {
+		t.Fatalf("identity inbox request: %#v", example)
+	}
+	props := asObj(asObj(content["schema"])["properties"])
+	key := asObj(props["idempotencyKey"])
+	if key["example"] != documentedIdentityDecisionKey || key["format"] != "uuid" {
+		t.Fatalf("idempotency key: %#v", key)
+	}
+	if asObj(props["reason"])["example"] != documentedIdentityDecisionReason {
+		t.Fatalf("reason: %#v", props["reason"])
+	}
+	if example["idempotencyKey"] == "identity-review:123" {
+		t.Fatal("identity decision still samples identity-review:123")
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
