@@ -476,7 +476,7 @@ export function personSheetDetail(
     if (href) return { text: "View profile", href };
     return { text: "Not known" };
   }
-  if (label === "Domain") {
+  if (label === personEvidenceLabel("org_domain")) {
     const trimmed = value?.trim() ?? "";
     const href = webAddressHref(trimmed);
     if (href) return { text: trimmed, href };
@@ -1095,7 +1095,7 @@ function PersonSheet({
   const aliasNames = personAliasNames(person.aliases);
   const sheetFacts: Array<[string, string | undefined]> = [
     ["Company", personCompanyTitle(person) || undefined],
-    ["Domain", person.orgDomain],
+    [personEvidenceLabel("org_domain"), person.orgDomain],
     ["Role", personDirectoryRole(person)],
     ["Seniority", personSeniorityLabel(person.seniority)],
     ["Department", person.department],

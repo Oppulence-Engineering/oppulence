@@ -1086,14 +1086,15 @@ describe("people directory labels", () => {
     });
     expect(personSheetDetail("LinkedIn", "javascript:alert(1)")).toEqual({ text: "Not known" });
     expect(personSheetDetail("LinkedIn", "")).toEqual({ text: "Not known" });
-    expect(personSheetDetail("Domain", "acme.com")).toEqual({
+    expect(personEvidenceLabel("org_domain")).toBe("Company domain");
+    expect(personSheetDetail("Company domain", "acme.com")).toEqual({
       text: "acme.com",
       href: "https://acme.com",
     });
-    expect(personSheetDetail("Domain", "javascript:alert(1)")).toEqual({
+    expect(personSheetDetail("Company domain", "javascript:alert(1)")).toEqual({
       text: "javascript:alert(1)",
     });
-    expect(personSheetDetail("Domain", "")).toEqual({ text: "Not known" });
+    expect(personSheetDetail("Company domain", "")).toEqual({ text: "Not known" });
     expect(personSheetDetail("Role", "")).toEqual({ text: "Not known" });
     expect(personSheetDetail("Role", "Founder")).toEqual({ text: "Founder" });
     expect(
@@ -1641,7 +1642,8 @@ describe("people directory copy", () => {
     expect(source).toContain('[personEvidenceLabel("timezone"), person.timezone]');
     expect(source).toContain('[personEvidenceLabel("locale"), person.locale]');
     expect(source).not.toContain('["Timezone", person.timezone]');
-    expect(source).toContain('["Domain", person.orgDomain]');
+    expect(source).toContain('[personEvidenceLabel("org_domain"), person.orgDomain]');
+    expect(source).not.toContain('["Domain", person.orgDomain]');
     expect(source).not.toContain("person.orgName || person.orgDomain");
     expect(source).toContain("company timeline");
     expect(source).not.toContain("relationship-aware");
