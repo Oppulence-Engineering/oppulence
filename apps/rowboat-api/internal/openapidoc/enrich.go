@@ -3076,6 +3076,13 @@ func documentedRetriedRun() obj {
 	}
 }
 
+func backgroundTaskRetryRunExample() obj {
+	run := backgroundTaskAPIRunExample()
+	run["previousRunId"] = "run-20260604-210000"
+	run["trigger"] = "retry"
+	return run
+}
+
 func backgroundTaskAPIRunExample() obj {
 	run := backgroundTaskRunExample()
 	run["runId"] = "api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b"
