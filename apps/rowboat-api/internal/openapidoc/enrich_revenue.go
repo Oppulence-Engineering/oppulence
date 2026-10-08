@@ -115,7 +115,7 @@ func addRevenueSchemas(schemas obj) {
 		"version":                    obj{"type": "integer", "minimum": 1},
 		"kind":                       stringEnum("Transition kind.", "accepted", "proposed", "internally_confirmed", "offered", "accepted", "disputed", "blocked", "unblocked", "corrected", "due_date_changed", "renegotiated", "fulfilled", "missed", "waived", "cancelled", "superseded"),
 		"actorType":                  stringEnum("Transition authority.", "user", "user", "source_fact", "deterministic_rule", "ai_candidate"),
-		"actorRef":                   stringSchema("Actor reference.", "participant:owner"),
+		"actorRef":                   stringSchema("User who recorded this change.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
 		"occurredAt":                 stringSchema("Event time.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
 		"sourceObservationId":        stringSchema("Source observation id.", eventObservationID),
 		"evidenceRefs":               eventEvidence,
@@ -782,7 +782,7 @@ func addRevenuePaths(paths obj) {
 				"source": stringSchema("Source system.", "gmail"), "excerpt": stringSchema("Verbatim quote.", "We will have the migration live by the 14th."), "occurredAt": stringSchema("When the source was created.", "2026-09-06T12:00:00Z", obj{"format": "date-time"}), "contentHash": stringSchema("Content hash of the source.", "sha256:abc123"), "sourceUri": stringSchema("Link to the source.", "https://mail.google.com/thread-1"),
 			}, "source", "excerpt", "occurredAt", "contentHash")),
 			"history": arraySchema("Ordered state changes.", objectSchema("Transition.", obj{
-				"version": intSchema("Event version.", 2), "kind": stringSchema("Event kind.", "internally_confirmed"), "actorType": stringSchema("Who caused it.", "user"), "actorRef": stringSchema("Actor reference.", "alex@example.com"), "occurredAt": stringSchema("When.", "2026-09-07T09:00:00Z", obj{"format": "date-time"}),
+				"version": intSchema("Event version.", 2), "kind": stringSchema("Event kind.", "internally_confirmed"), "actorType": stringSchema("Who caused it.", "user"), "actorRef": stringSchema("User who recorded this change.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"), "occurredAt": stringSchema("When.", "2026-09-07T09:00:00Z", obj{"format": "date-time"}),
 			}, "version", "kind", "actorType", "occurredAt")),
 		}, "id", "generatedAt", "account", "direction", "text", "state", "confidence", "evidence", "history"), nil),
 		"401": responseRef("401"), "404": responseRef("404"),

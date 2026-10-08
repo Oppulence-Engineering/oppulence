@@ -666,6 +666,21 @@ describe("API reference document", () => {
     );
   });
 
+  it("does not sample the promise owner as the person who recorded the change", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const event = presented.components.schemas.CommitmentEvent.properties;
+    expect(event.actorRef).toMatchObject({
+      description: "User who recorded this change.",
+      example: "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+    });
+    expect(event.ownerParticipantRef.example).toBe("alex@example.com");
+    expect(event.counterpartyParticipantRef.example).toBe("jordan@example.com");
+    expect(event.beneficiaryParticipantRef.example).toBe("customer:acme");
+    expect(presented.components.schemas.RelationshipCommitment.properties.ownerParticipantRef.example).toBe(
+      "alex@example.com",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
