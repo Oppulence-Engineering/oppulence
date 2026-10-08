@@ -2333,7 +2333,7 @@ export interface paths {
     };
     /**
      * All companies
-     * @description All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention.
+     * @description All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention. The category is Artificial intelligence.
      */
     get: operations["listRelationships"];
     put?: never;
@@ -23722,7 +23722,9 @@ export interface operations {
            *       "relationships": [
            *         {
            *           "accountDomain": "acme.com",
-           *           "categories": [],
+           *           "categories": [
+           *             "Artificial intelligence"
+           *           ],
            *           "commitmentCount": 0,
            *           "displayName": "Acme",
            *           "emailThreadCount": 0,
