@@ -560,6 +560,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/background-tasks/{slug}/schedule-state": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Next run
+     * @description Next run reads the open workflow. A paused communication workflow reports health paused, mechanism none, no next time, and event as its only trigger.
+     */
+    get: operations["getBackgroundTaskScheduleState"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/background-tasks/{slug}/runs": {
     parameters: {
       query?: never;
@@ -14649,6 +14669,132 @@ export interface operations {
           "application/problem+json": components["schemas"]["RevisionConflictEnvelope"];
         };
       };
+      500: components["responses"]["500"];
+    };
+  };
+  getBackgroundTaskScheduleState: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Workflow to read. */
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Next run. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "health": "paused",
+           *       "lastEvaluatedAt": null,
+           *       "lastTriggeredAt": null,
+           *       "mechanism": "none",
+           *       "nextDueAt": null,
+           *       "sources": {
+           *         "event": {
+           *           "health": "paused",
+           *           "lastEvaluatedAt": null,
+           *           "lastTriggeredAt": null,
+           *           "mechanism": "none",
+           *           "nextDueAt": null
+           *         }
+           *       },
+           *       "target": "api",
+           *       "triggerSources": [
+           *         "event"
+           *       ]
+           *     }
+           */
+          "application/json": {
+            /**
+             * @description Whether the next run is ready.
+             * @example paused
+             * @enum {string}
+             */
+            health: "paused" | "current" | "failed" | "unknown" | "syncing";
+            /**
+             * Format: date-time
+             * @description When the schedule was last checked.
+             */
+            lastEvaluatedAt?: string | null;
+            /**
+             * Format: date-time
+             * @description When it last started.
+             */
+            lastTriggeredAt?: string | null;
+            /**
+             * @description What owns the schedule.
+             * @example none
+             * @enum {string}
+             */
+            mechanism: "none" | "desktop_loop" | "rowboat_loop" | "temporal_schedule";
+            /**
+             * Format: date-time
+             * @description When it is due next.
+             */
+            nextDueAt?: string | null;
+            /**
+             * @description Whether a timed cloud schedule matches the workflow.
+             * @enum {string}
+             */
+            scheduleSyncState?: "current" | "syncing" | "failed" | "paused";
+            /** @description One entry for each trigger. */
+            sources?: {
+              [key: string]: {
+                /**
+                 * @description Whether this trigger is ready.
+                 * @example paused
+                 * @enum {string}
+                 */
+                health: "paused" | "current" | "failed" | "unknown" | "syncing";
+                /**
+                 * Format: date-time
+                 * @description When this trigger was last checked.
+                 */
+                lastEvaluatedAt?: string | null;
+                /**
+                 * Format: date-time
+                 * @description When this trigger last started a run.
+                 */
+                lastTriggeredAt?: string | null;
+                /**
+                 * @description What owns this trigger.
+                 * @example none
+                 * @enum {string}
+                 */
+                mechanism: "none" | "desktop_loop" | "rowboat_loop" | "temporal_schedule";
+                /**
+                 * Format: date-time
+                 * @description When this trigger is due.
+                 */
+                nextDueAt?: string | null;
+              };
+            };
+            /**
+             * @description Where this workflow runs.
+             * @example api
+             * @enum {string}
+             */
+            target: "api" | "desktop";
+            /**
+             * @description What can start this workflow.
+             * @example [
+             *       "event"
+             *     ]
+             */
+            triggerSources: ("cron" | "window" | "event")[];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
       500: components["responses"]["500"];
     };
   };

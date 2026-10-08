@@ -50,6 +50,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/background-tasks/first-party/ensure",
 		"/v1/background-tasks/{slug}",
 		"/v1/background-tasks/{slug}/artifact",
+		"/v1/background-tasks/{slug}/schedule-state",
 		"/v1/background-tasks/{slug}/runs",
 		"/v1/background-tasks/{slug}/runs/{runId}",
 		"/v1/background-tasks/{slug}/runs/{runId}/events",
@@ -2197,6 +2198,37 @@ func assertSavedWorkflow(t *testing.T, spec obj) {
 	create := asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks"])["post"])["requestBody"])["content"])["application/json"])
 	if asObj(create["example"])["slug"] != "daily-summary" {
 		t.Fatalf("create example changed: %s", mustJSON(create["example"]))
+	}
+
+	assertNextRun(t, spec)
+}
+
+func TestNextRunReadsThePausedWorkflow(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertNextRun(t, spec)
+}
+
+func assertNextRun(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/background-tasks/{slug}/schedule-state"])["get"])
+	if op["summary"] != "Next run" {
+		t.Fatalf("summary = %#v", op["summary"])
+	}
+	if op["description"] != "Next run reads the open workflow. A paused communication workflow reports health paused, mechanism none, no next time, and event as its only trigger." {
+		t.Fatalf("description = %#v", op["description"])
+	}
+	params := op["parameters"].([]any)
+	slug := asObj(asObj(params[0])["schema"])
+	if slug["example"] != "follow-up-when-a-promise-slips" {
+		t.Fatalf("path example = %#v", slug["example"])
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	if mustJSON(example) != mustJSON(documentedNextRun()) {
+		t.Fatalf("next run = %s", mustJSON(example))
+	}
+	if _, ok := example["scheduleSyncState"]; ok {
+		t.Fatal("event workflow should omit schedule sync")
 	}
 }
 

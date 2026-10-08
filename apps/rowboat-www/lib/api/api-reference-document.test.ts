@@ -1940,6 +1940,27 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the next run a paused workflow reports", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const read = presented.paths["/v1/background-tasks/{slug}/schedule-state"].get;
+    expect(read.summary).toBe("Next run");
+    expect(read.description).toContain("health paused");
+    expect(read.parameters[0].schema.example).toBe("follow-up-when-a-promise-slips");
+    const stored = read.responses["200"].content["application/json"].example;
+    expect(stored).toMatchObject({
+      target: "api",
+      triggerSources: ["event"],
+      health: "paused",
+      mechanism: "none",
+      nextDueAt: null,
+      sources: { event: { mechanism: "none", health: "paused", nextDueAt: null } },
+    });
+    expect(stored.scheduleSyncState).toBeUndefined();
+    expect(presented.paths["/v1/background-tasks"].post.requestBody.content["application/json"].example.slug).toBe(
+      "daily-summary",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
