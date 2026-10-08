@@ -4851,6 +4851,115 @@ func TestRelationshipSearchFindsPromisesToKeepLooking(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsCompaniesBeforeSaving(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	touch := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	for i := 1; i <= relationshipListLimit; i++ {
+		if _, err := f.client.Relationship.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("45000001-0000-4000-8000-%012x", i))).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetKind("person").
+			SetDisplayName(fmt.Sprintf("Directory leaf %03d", i)).
+			SetResourceRefs([]string{}).
+			SetRisks([]string{}).
+			SetMilestones([]string{}).
+			SetLastTouchAt(touch).
+			SetCreatedAt(touch).
+			SetUpdatedAt(touch).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	for _, query := range []string{
+		"Show the next companies before saving.",
+		"Show the next companies",
+		"before saving",
+		"show the next",
+	} {
+		assertCompanyQuery(query)
+	}
+	older := touch.Add(-24 * time.Hour)
+	for _, company := range []struct {
+		id   string
+		name string
+	}{
+		{"45000002-0000-4000-8000-000000000001", "Quill North"},
+		{"45000002-0000-4000-8000-000000000002", "Cedar Slide"},
+	} {
+		if _, err := f.client.Relationship.Create().
+			SetID(uuid.MustParse(company.id)).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetKind("company").
+			SetDisplayName(company.name).
+			SetResourceRefs([]string{}).
+			SetRisks([]string{}).
+			SetMilestones([]string{}).
+			SetCreatedAt(older).
+			SetUpdatedAt(older).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	assertCompanyQuery("Show the next companies before saving.", "Quill North", "Cedar Slide")
+	assertCompanyQuery("Please show the next companies before saving.", "Quill North", "Cedar Slide")
+	assertCompanyQuery("Show the next companies")
+	assertCompanyQuery("before saving")
+	first, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !first.HasMore || len(first.Relationships) != relationshipListLimit {
+		t.Fatalf("directory page = %d hasMore=%v", len(first.Relationships), first.HasMore)
+	}
+	for _, row := range first.Relationships {
+		if row.Kind != "person" {
+			t.Fatalf("first page included %s %s", row.Kind, row.DisplayName)
+		}
+	}
+	rest, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Offset: relationshipListLimit})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rest.HasMore || len(rest.Relationships) != 2 {
+		t.Fatalf("next directory page = %v hasMore=%v", namesOf(rest.Relationships), rest.HasMore)
+	}
+	if _, err := f.client.Relationship.UpdateOneID(uuid.MustParse("45000002-0000-4000-8000-000000000002")).
+		SetLastTouchAt(touch.Add(time.Hour)).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	assertCompanyQuery("Show the next companies before saving.")
+	onPage, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !hasName(namesOf(onPage.Relationships), "Cedar Slide") {
+		t.Fatal("the touched company left the first page")
+	}
+}
+
 func TestRelationshipSearchFindsThePeopleOnTheCompany(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)

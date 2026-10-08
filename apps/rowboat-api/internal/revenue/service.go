@@ -945,6 +945,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if labelPhraseMatches("show the next promises to keep looking.", needle) {
 			parts = append(parts, relationshipHasAnotherPromisePage())
 		}
+
+		if labelPhraseMatches("show the next companies before saving.", needle) {
+			parts = append(parts, relationshipCompaniesSitPastTheDirectoryPage())
+		}
 		if labelPhraseMatches("no activity", needle) {
 			parts = append(parts, relationship.LastTouchAtIsNil())
 		}
@@ -11132,6 +11136,48 @@ func relationshipHasAnotherPromisePage() predicate.Relationship {
 			b.Arg(promiseRegisterPage)
 		}))
 	})
+}
+
+// relationshipCompaniesSitPastTheDirectoryPage matches a company when the
+// task dialog has no company on the loaded directory page and that page is
+// not the last one. People fill the page without becoming a company the
+// dialog can save against, so it prints "Show the next companies before
+// saving." A company already on the page leaves that sentence hidden.
+func relationshipCompaniesSitPastTheDirectoryPage() predicate.Relationship {
+	return relationship.And(
+		relationship.KindEQ("company"),
+		predicate.Relationship(func(s *sql.Selector) {
+			s.Where(sql.P(func(b *sql.Builder) {
+				b.WriteString("((SELECT COUNT(*) FROM (SELECT page.")
+				b.WriteString(relationship.FieldKind)
+				b.WriteString(" AS kind FROM ")
+				b.WriteString(relationship.Table)
+				b.WriteString(" AS page WHERE page.")
+				b.WriteString(relationship.WorkspaceColumn)
+				b.WriteString(" = ")
+				b.WriteString(s.C(relationship.WorkspaceColumn))
+				b.WriteString(" ORDER BY page.")
+				b.WriteString(relationship.FieldLastTouchAt)
+				b.WriteString(" DESC NULLS LAST, page.")
+				b.WriteString(relationship.FieldUpdatedAt)
+				b.WriteString(" DESC, page.")
+				b.WriteString(relationship.FieldID)
+				b.WriteString(" DESC LIMIT ")
+				b.Arg(relationshipListLimit)
+				b.WriteString(") AS first WHERE first.kind <> ")
+				b.Arg("person")
+				b.WriteString(") = 0 AND (SELECT COUNT(*) FROM ")
+				b.WriteString(relationship.Table)
+				b.WriteString(" AS directory WHERE directory.")
+				b.WriteString(relationship.WorkspaceColumn)
+				b.WriteString(" = ")
+				b.WriteString(s.C(relationship.WorkspaceColumn))
+				b.WriteString(") > ")
+				b.Arg(relationshipListLimit)
+				b.WriteString(")")
+			}))
+		}),
+	)
 }
 
 // labelPhraseMatches is the sentence on the company row, or a longer question
