@@ -911,6 +911,15 @@ describe("API reference document", () => {
     expect(presented.components.schemas.CommunicationAccess.properties.policyVersion.example).toBe(1);
   });
 
+  it("names the meeting on a governance receipt", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const receipt = presented.components.schemas.ConversationGovernanceReceipt.properties;
+    expect(receipt.receiptId).toMatchObject({
+      description: "Receipt id.",
+      example: `governance:session-42:${receipt.capturedAt.example}`,
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

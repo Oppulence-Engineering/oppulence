@@ -736,6 +736,30 @@ func assertConversationPolicyVersion(t *testing.T, schemas obj) {
 	if access != nil && asObj(access["policyVersion"])["example"] != float64(1) && asObj(access["policyVersion"])["example"] != 1 {
 		t.Fatalf("communication policy version changed: %#v", access["policyVersion"])
 	}
+
+	assertGovernanceReceipt(t, schemas)
+}
+
+func TestGovernanceReceiptNamesTheMeeting(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertGovernanceReceipt(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertGovernanceReceipt(t *testing.T, schemas obj) {
+	t.Helper()
+	receipt := asObj(asObj(schemas["ConversationGovernanceReceipt"])["properties"])
+	if receipt == nil {
+		return
+	}
+	capturedAt, _ := asObj(receipt["capturedAt"])["example"].(string)
+	if capturedAt == "" {
+		t.Fatal("capture time missing")
+	}
+	want := "governance:session-42:" + capturedAt
+	if asObj(receipt["receiptId"])["example"] != want || asObj(receipt["receiptId"])["description"] != "Receipt id." {
+		t.Fatalf("receipt id: %#v", receipt["receiptId"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
