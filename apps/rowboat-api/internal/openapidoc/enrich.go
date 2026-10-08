@@ -69,6 +69,7 @@ func Enrich(spec obj) {
 		obj{"name": "Entities", "description": "Org-scoped minimal entity identity spine (RFC 022)."},
 		obj{"name": "Internal", "description": "Server-to-server APIs. Most use X-Internal-Secret; connector invalidation uses individually scoped HMAC/JWT service principals."},
 		obj{"name": "GraphQL", "description": "Internal admin GraphQL over the ent graph."},
+		obj{"name": "Agents", "description": "Agents you create and reuse in chat."},
 	}
 
 	components := ensureObj(spec, "components")
@@ -1041,6 +1042,7 @@ func addRuntimePaths(paths obj) {
 	addAuthPaths(paths)
 	addBillingPaths(paths)
 	addBackgroundTaskPaths(paths)
+	addAgentPaths(paths)
 	addAgentSessionPaths(paths)
 	addLLMPaths(paths)
 	addVendorProxyPaths(paths)
@@ -1051,6 +1053,18 @@ func addRuntimePaths(paths obj) {
 	addRevenuePaths(paths)
 	addInternalPaths(paths)
 	addVoiceCloudPaths(paths)
+}
+
+func addAgentPaths(paths obj) {
+	paths["/v1/agents"] = obj{
+		"post": operation("Agents", "Create agent", "Create agent posts the display name Customer concierge, the short name customer-concierge, and the purpose from the dialog. The stored agent keeps that name, that short name, that purpose, source tenant, and no tools.", "createAgent", bearer(), nil, jsonRequest("New agent.", documentedCreatedAgentSchema(true), documentedCreatedAgentRequest()), obj{
+			"201": jsonResponse("Stored agent.", documentedCreatedAgentSchema(false), documentedCreatedAgent()),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"409": problemResponse("An agent with this short name already exists.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "an agent with this slug already exists", "conflict")),
+			"500": responseRef("500"),
+		}),
+	}
 }
 
 func addAgentSessionPaths(paths obj) {
@@ -2725,6 +2739,65 @@ func documentedNextRunSchema() obj {
 			"additionalProperties": source,
 		},
 	}, "target", "triggerSources", "health", "mechanism")
+}
+
+func documentedCreatedAgentRequest() obj {
+	return obj{
+		"slug":          "customer-concierge",
+		"name":          "Customer concierge",
+		"instructions":  "Explain what this agent should accomplish and how it should behave.",
+		"model":         "",
+		"provider":      "",
+		"enabledTools":  []any{},
+		"subagentRefs":  []any{},
+		"connectorReqs": []any{},
+		"limits":        obj{},
+	}
+}
+
+func documentedCreatedAgent() obj {
+	return obj{
+		"slug":         "customer-concierge",
+		"name":         "Customer concierge",
+		"source":       "tenant",
+		"instructions": "Explain what this agent should accomplish and how it should behave.",
+		"enabledTools": []any{},
+	}
+}
+
+func documentedCreatedAgentSchema(request bool) obj {
+	props := obj{
+		"slug":         stringSchema("Short name.", "customer-concierge"),
+		"name":         stringSchema("Display name.", "Customer concierge"),
+		"instructions": stringSchema("Purpose.", "Explain what this agent should accomplish and how it should behave."),
+		"model":        stringSchema("Model. Empty uses the workspace default.", ""),
+		"provider":     stringSchema("Provider. Empty uses the workspace default.", ""),
+		"enabledTools": obj{
+			"type":        "array",
+			"description": "Tools this agent can use.",
+			"items":       stringSchema("Tool name.", "current_time"),
+			"example":     []any{},
+		},
+		"subagentRefs": obj{
+			"type":        "array",
+			"description": "Other agents this one can call.",
+			"items":       stringSchema("Agent short name.", "assistant"),
+			"example":     []any{},
+		},
+		"connectorReqs": obj{
+			"type":        "array",
+			"description": "Connections this agent needs.",
+			"items":       stringSchema("Connection name.", "google"),
+			"example":     []any{},
+		},
+		"limits": objectSchema("Limits. Empty uses the workspace defaults.", obj{}),
+	}
+	required := []string{"slug", "name", "instructions"}
+	if !request {
+		props["source"] = stringEnum("Where this agent comes from.", "tenant", "tenant", "builtin")
+		required = []string{"slug", "name", "source", "instructions", "enabledTools"}
+	}
+	return objectSchema("An agent in this workspace.", props, required...)
 }
 
 func backgroundTaskExample() obj {

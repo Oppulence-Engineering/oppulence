@@ -15879,6 +15879,236 @@
         "tags": ["System"]
       }
     },
+    "/v1/agents": {
+      "post": {
+        "description": "Create agent posts the display name Customer concierge, the short name customer-concierge, and the purpose from the dialog. The stored agent keeps that name, that short name, that purpose, source tenant, and no tools.",
+        "operationId": "createAgent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "connectorReqs": [],
+                "enabledTools": [],
+                "instructions": "Explain what this agent should accomplish and how it should behave.",
+                "limits": {},
+                "model": "",
+                "name": "Customer concierge",
+                "provider": "",
+                "slug": "customer-concierge",
+                "subagentRefs": []
+              },
+              "schema": {
+                "description": "An agent in this workspace.",
+                "properties": {
+                  "connectorReqs": {
+                    "description": "Connections this agent needs.",
+                    "example": [],
+                    "items": {
+                      "description": "Connection name.",
+                      "example": "google",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "enabledTools": {
+                    "description": "Tools this agent can use.",
+                    "example": [],
+                    "items": {
+                      "description": "Tool name.",
+                      "example": "current_time",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "instructions": {
+                    "description": "Purpose.",
+                    "example": "Explain what this agent should accomplish and how it should behave.",
+                    "type": "string"
+                  },
+                  "limits": {
+                    "description": "Limits. Empty uses the workspace defaults.",
+                    "properties": {},
+                    "type": "object"
+                  },
+                  "model": {
+                    "description": "Model. Empty uses the workspace default.",
+                    "example": "",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "Display name.",
+                    "example": "Customer concierge",
+                    "type": "string"
+                  },
+                  "provider": {
+                    "description": "Provider. Empty uses the workspace default.",
+                    "example": "",
+                    "type": "string"
+                  },
+                  "slug": {
+                    "description": "Short name.",
+                    "example": "customer-concierge",
+                    "type": "string"
+                  },
+                  "subagentRefs": {
+                    "description": "Other agents this one can call.",
+                    "example": [],
+                    "items": {
+                      "description": "Agent short name.",
+                      "example": "assistant",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "slug",
+                  "name",
+                  "instructions"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "description": "New agent.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "enabledTools": [],
+                  "instructions": "Explain what this agent should accomplish and how it should behave.",
+                  "name": "Customer concierge",
+                  "slug": "customer-concierge",
+                  "source": "tenant"
+                },
+                "schema": {
+                  "description": "An agent in this workspace.",
+                  "properties": {
+                    "connectorReqs": {
+                      "description": "Connections this agent needs.",
+                      "example": [],
+                      "items": {
+                        "description": "Connection name.",
+                        "example": "google",
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "enabledTools": {
+                      "description": "Tools this agent can use.",
+                      "example": [],
+                      "items": {
+                        "description": "Tool name.",
+                        "example": "current_time",
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "instructions": {
+                      "description": "Purpose.",
+                      "example": "Explain what this agent should accomplish and how it should behave.",
+                      "type": "string"
+                    },
+                    "limits": {
+                      "description": "Limits. Empty uses the workspace defaults.",
+                      "properties": {},
+                      "type": "object"
+                    },
+                    "model": {
+                      "description": "Model. Empty uses the workspace default.",
+                      "example": "",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Display name.",
+                      "example": "Customer concierge",
+                      "type": "string"
+                    },
+                    "provider": {
+                      "description": "Provider. Empty uses the workspace default.",
+                      "example": "",
+                      "type": "string"
+                    },
+                    "slug": {
+                      "description": "Short name.",
+                      "example": "customer-concierge",
+                      "type": "string"
+                    },
+                    "source": {
+                      "description": "Where this agent comes from.",
+                      "enum": [
+                        "tenant",
+                        "builtin"
+                      ],
+                      "example": "tenant",
+                      "type": "string"
+                    },
+                    "subagentRefs": {
+                      "description": "Other agents this one can call.",
+                      "example": [],
+                      "items": {
+                        "description": "Agent short name.",
+                        "example": "assistant",
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "slug",
+                    "name",
+                    "source",
+                    "instructions",
+                    "enabledTools"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Stored agent."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "conflict",
+                  "detail": "an agent with this slug already exists",
+                  "requestId": "req-abc123",
+                  "status": 409,
+                  "title": "Conflict",
+                  "type": "https://api.rowboat.dev/problems/conflict"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "An agent with this short name already exists."
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Create agent",
+        "tags": [
+          "Agents"
+        ]
+      }
+    },
     "/v1/agent-sessions": {
       "get": {
         "description": "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.",
@@ -30581,6 +30811,10 @@
     {
       "description": "Internal admin GraphQL over the ent graph.",
       "name": "GraphQL"
+    },
+    {
+      "description": "Agents you create and reuse in chat.",
+      "name": "Agents"
     }
   ]
 }

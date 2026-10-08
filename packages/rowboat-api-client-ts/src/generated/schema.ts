@@ -284,6 +284,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/agents": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create agent
+     * @description Create agent posts the display name Customer concierge, the short name customer-concierge, and the purpose from the dialog. The stored agent keeps that name, that short name, that purpose, source tenant, and no tools.
+     */
+    post: operations["createAgent"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/agent-sessions": {
     parameters: {
       query?: never;
@@ -13665,6 +13685,170 @@ export interface operations {
         };
       };
       503: components["responses"]["503"];
+    };
+  };
+  createAgent: {
+    parameters: {
+      query?: {
+        /** @description Page offset. */
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description New agent. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "connectorReqs": [],
+         *       "enabledTools": [],
+         *       "instructions": "Explain what this agent should accomplish and how it should behave.",
+         *       "limits": {},
+         *       "model": "",
+         *       "name": "Customer concierge",
+         *       "provider": "",
+         *       "slug": "customer-concierge",
+         *       "subagentRefs": []
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Connections this agent needs.
+           * @example []
+           */
+          connectorReqs?: string[];
+          /**
+           * @description Tools this agent can use.
+           * @example []
+           */
+          enabledTools?: string[];
+          /**
+           * @description Purpose.
+           * @example Explain what this agent should accomplish and how it should behave.
+           */
+          instructions: string;
+          /** @description Limits. Empty uses the workspace defaults. */
+          limits?: Record<string, never>;
+          /**
+           * @description Model. Empty uses the workspace default.
+           * @example
+           */
+          model?: string;
+          /**
+           * @description Display name.
+           * @example Customer concierge
+           */
+          name: string;
+          /**
+           * @description Provider. Empty uses the workspace default.
+           * @example
+           */
+          provider?: string;
+          /**
+           * @description Short name.
+           * @example customer-concierge
+           */
+          slug: string;
+          /**
+           * @description Other agents this one can call.
+           * @example []
+           */
+          subagentRefs?: string[];
+        };
+      };
+    };
+    responses: {
+      /** @description Stored agent. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "enabledTools": [],
+           *       "instructions": "Explain what this agent should accomplish and how it should behave.",
+           *       "name": "Customer concierge",
+           *       "slug": "customer-concierge",
+           *       "source": "tenant"
+           *     }
+           */
+          "application/json": {
+            /**
+             * @description Connections this agent needs.
+             * @example []
+             */
+            connectorReqs?: string[];
+            /**
+             * @description Tools this agent can use.
+             * @example []
+             */
+            enabledTools: string[];
+            /**
+             * @description Purpose.
+             * @example Explain what this agent should accomplish and how it should behave.
+             */
+            instructions: string;
+            /** @description Limits. Empty uses the workspace defaults. */
+            limits?: Record<string, never>;
+            /**
+             * @description Model. Empty uses the workspace default.
+             * @example
+             */
+            model?: string;
+            /**
+             * @description Display name.
+             * @example Customer concierge
+             */
+            name: string;
+            /**
+             * @description Provider. Empty uses the workspace default.
+             * @example
+             */
+            provider?: string;
+            /**
+             * @description Short name.
+             * @example customer-concierge
+             */
+            slug: string;
+            /**
+             * @description Where this agent comes from.
+             * @example tenant
+             * @enum {string}
+             */
+            source: "tenant" | "builtin";
+            /**
+             * @description Other agents this one can call.
+             * @example []
+             */
+            subagentRefs?: string[];
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      /** @description An agent with this short name already exists. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "conflict",
+           *       "detail": "an agent with this slug already exists",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/conflict"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      500: components["responses"]["500"];
     };
   };
   listAgentSessions: {

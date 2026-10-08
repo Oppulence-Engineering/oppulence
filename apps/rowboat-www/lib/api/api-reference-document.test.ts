@@ -1961,6 +1961,31 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the agent Create agent stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const create = presented.paths["/v1/agents"].post;
+    expect(create.summary).toBe("Create agent");
+    expect(create.description).toContain("Customer concierge");
+    const request = create.requestBody.content["application/json"].example;
+    expect(request).toMatchObject({
+      slug: "customer-concierge",
+      name: "Customer concierge",
+      model: "",
+      provider: "",
+      enabledTools: [],
+      limits: {},
+    });
+    const stored = create.responses["201"].content["application/json"].example;
+    expect(stored).toMatchObject({
+      slug: "customer-concierge",
+      name: "Customer concierge",
+      source: "tenant",
+      enabledTools: [],
+    });
+    expect(stored.model).toBeUndefined();
+    expect(stored.provider).toBeUndefined();
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

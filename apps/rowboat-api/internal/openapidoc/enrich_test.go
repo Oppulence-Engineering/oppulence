@@ -56,6 +56,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/background-tasks/{slug}/runs/{runId}/events",
 		"/v1/background-tasks/{slug}/runs/{runId}/events/stream",
 		"/v1/background-tasks/{slug}/trigger",
+		"/v1/agents",
 		"/v1/llm/models",
 		"/v1/llm/chat/completions",
 		"/v1/llm/completions",
@@ -2229,6 +2230,33 @@ func assertNextRun(t *testing.T, spec obj) {
 	}
 	if _, ok := example["scheduleSyncState"]; ok {
 		t.Fatal("event workflow should omit schedule sync")
+	}
+
+	assertCreatedAgent(t, spec)
+}
+
+func TestCreateAgentStoresTheDialog(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertCreatedAgent(t, spec)
+}
+
+func assertCreatedAgent(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/agents"])["post"])
+	if op["summary"] != "Create agent" {
+		t.Fatalf("summary = %#v", op["summary"])
+	}
+	request := asObj(asObj(asObj(asObj(op["requestBody"])["content"])["application/json"])["example"])
+	if mustJSON(request) != mustJSON(documentedCreatedAgentRequest()) {
+		t.Fatalf("request = %s", mustJSON(request))
+	}
+	stored := asObj(asObj(asObj(asObj(asObj(op["responses"])["201"])["content"])["application/json"])["example"])
+	if mustJSON(stored) != mustJSON(documentedCreatedAgent()) {
+		t.Fatalf("stored = %s", mustJSON(stored))
+	}
+	if _, ok := stored["model"]; ok {
+		t.Fatal("stored agent should omit an empty model")
 	}
 }
 
