@@ -4972,8 +4972,8 @@ export interface components {
        */
       plan: "free" | "starter" | "pro" | "intelligence" | null;
       /**
-       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
-       * @example active
+       * @description Trial means this plan is still in its trial.
+       * @example trialing
        * @enum {string|null}
        */
       status: "active" | "trialing" | "past_due" | "canceled" | null;
@@ -17730,8 +17730,8 @@ export interface operations {
            * @example {
            *       "billing": {
            *         "plan": "free",
-           *         "status": "active",
-           *         "trialExpiresAt": null,
+           *         "status": "trialing",
+           *         "trialExpiresAt": "2026-07-01T00:00:00.000Z",
            *         "usage": {
            *           "availableCredits": 10000,
            *           "daily": {

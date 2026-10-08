@@ -320,6 +320,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatal("checked-in openapi json still contains unmounted ent CRUD paths")
 	}
 	schemas := asObj(asObj(spec["components"])["schemas"])
+	assertBillingTrialStatus(t, paths, schemas)
 	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil || schemas["BackgroundTask"] == nil || schemas["BackgroundTaskTemplate"] == nil || schemas["RevisionConflictEnvelope"] == nil || schemas["IntegrationTemplateBlock"] == nil || schemas["SlackWorkspacesResponse"] == nil || schemas["SlackThreadReadResponse"] == nil || schemas["EntityProjection"] == nil || schemas["EntitySpine"] == nil {
 		t.Fatal("checked-in openapi json is missing enriched runtime schemas")
 	}
@@ -370,6 +371,39 @@ func assertEventObservation(t *testing.T, schemas obj) {
 	evidence := asObj(asObj(schemas["MissionControlEvidenceReference"])["properties"])
 	if asObj(evidence["observationId"])["example"] != observationID {
 		t.Fatalf("mission control observation id changed: %#v", evidence["observationId"])
+	}
+}
+
+func TestBillingTrialStatus(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertBillingTrialStatus(t, asObj(spec["paths"]), asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertBillingTrialStatus(t *testing.T, paths obj, schemas obj) {
+	t.Helper()
+	status := asObj(asObj(asObj(schemas["BillingState"])["properties"])["status"])
+	if status["example"] != billingTrialStatusExample || status["description"] != billingTrialStatusDescription {
+		t.Fatalf("billing trial status: %#v", status)
+	}
+	enum, ok := status["enum"].([]any)
+	if !ok || len(enum) != 4 || enum[0] != "active" || enum[1] != billingTrialStatusExample || enum[2] != "past_due" || enum[3] != "canceled" {
+		t.Fatalf("billing status enum: %#v", status["enum"])
+	}
+	if subscription := asObj(schemas["Subscription"]); subscription != nil {
+		kept := asObj(asObj(subscription["properties"])["status"])
+		if kept["example"] != "active" {
+			t.Fatalf("subscription status changed: %#v", kept)
+		}
+	}
+	run := asObj(asObj(asObj(schemas["BackgroundTaskRun"])["properties"])["status"])
+	if run["example"] != "succeeded" {
+		t.Fatalf("run status changed: %#v", run)
+	}
+	me := asObj(asObj(asObj(asObj(asObj(asObj(paths["/v1/me"])["get"])["responses"])["200"])["content"])["application/json"])
+	billing := asObj(asObj(me["example"])["billing"])
+	if billing["status"] != billingTrialStatusExample || billing["trialExpiresAt"] != billingTrialExpiresAtExample {
+		t.Fatalf("current user billing sample: %#v", billing)
 	}
 }
 

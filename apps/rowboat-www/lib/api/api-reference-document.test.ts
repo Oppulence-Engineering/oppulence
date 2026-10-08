@@ -247,6 +247,20 @@ describe("API reference document", () => {
     expect(properties.created_at.description).toBe("When this was created.");
     expect(properties.updated_at.description).toBe("When this was last updated.");
     expect(properties.run_id.description).toBe("Run id.");
+
+    const billing = presentApiReferenceDocument(spec);
+    expect(billing.components.schemas.BillingState.properties.status).toMatchObject({
+      description: "Trial means this plan is still in its trial.",
+      example: "trialing",
+    });
+    expect(
+      billing.paths["/v1/me"]?.get?.responses?.["200"]?.content?.["application/json"]?.example?.billing,
+    ).toMatchObject({
+      status: "trialing",
+      trialExpiresAt: "2026-07-01T00:00:00.000Z",
+    });
+    expect(billing.components.schemas.Subscription.properties.status.example).toBe("active");
+    expect(billing.components.schemas.BackgroundTaskRun.properties.status.example).toBe("succeeded");
   });
 
   it("names background work without the scheduler's words", () => {

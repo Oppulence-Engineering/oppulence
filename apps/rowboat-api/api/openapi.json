@@ -2938,9 +2938,9 @@
             "type": "string"
           },
           "status": {
-            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "description": "Trial means this plan is still in its trial.",
             "enum": ["active", "trialing", "past_due", "canceled"],
-            "example": "active",
+            "example": "trialing",
             "nullable": true,
             "type": "string"
           },
@@ -21952,8 +21952,8 @@
                 "example": {
                   "billing": {
                     "plan": "free",
-                    "status": "active",
-                    "trialExpiresAt": null,
+                    "status": "trialing",
+                    "trialExpiresAt": "2026-07-01T00:00:00.000Z",
                     "usage": {
                       "availableCredits": 10000,
                       "daily": {
