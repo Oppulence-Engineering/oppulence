@@ -1601,11 +1601,16 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/relationships/{relationshipId}/changes"] = obj{"get": operation("Relationship Intelligence", "Get relationship changes", "Returns immutable projection snapshots so operators can see what changed and why. The first page is the two newest snapshots.", "getRelationshipChanges", bearer(), append(append(append([]any{}, relationshipParam...), obj{"name": "limit", "in": "query", "required": false, "description": "Maximum snapshots (default 2, max 50).", "schema": obj{"type": "integer", "minimum": 1, "maximum": 50}}), obj{"name": "offset", "in": "query", "required": false, "description": "Page offset.", "schema": obj{"type": "integer", "minimum": 0}}), nil, obj{
+	changesParam := []any{
+		obj{"name": "relationshipId", "in": "path", "required": true, "description": "Relationship id.", "schema": obj{"type": "string", "format": "uuid", "example": whatChangedRelationshipID}},
+		obj{"name": "limit", "in": "query", "required": false, "description": "Maximum snapshots. A company asks for the two newest.", "schema": obj{"type": "integer", "minimum": 1, "maximum": 50, "example": 2}},
+		obj{"name": "offset", "in": "query", "required": false, "description": "Older snapshots to skip. The first page sends none.", "schema": obj{"type": "integer", "minimum": 0}},
+	}
+	paths["/v1/relationships/{relationshipId}/changes"] = obj{"get": operation("Relationship Intelligence", "What changed", "What changed loads when a company opens. The request asks for the two newest snapshots and sends no older-page offset. Acme has one snapshot: engagement, health, and lifecycle changed together.", "getRelationshipChanges", bearer(), changesParam, nil, obj{
 		"200": jsonResponse("State changes.", objectSchema("Snapshot list.", obj{
 			"snapshots": arraySchema("Snapshots.", ref("RelationshipStateSnapshot")),
-			"hasMore":   boolSchema("An older snapshot exists beyond this page.", true),
-		}, "snapshots", "hasMore"), nil),
+			"hasMore":   boolSchema("An older snapshot exists beyond this page.", false),
+		}, "snapshots", "hasMore"), whatChangedPage()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
@@ -2615,5 +2620,53 @@ func retrySyncStatus() obj {
 		"retryCount":             0,
 		"authorizedAt":           retrySyncAuthorizedAt,
 		"syncStartedAt":          retrySyncStartedAt,
+	}
+}
+
+const (
+	whatChangedRelationshipID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	whatChangedSnapshotID     = "c18dfa9b-a7b2-46ea-982c-622a914c00e5"
+	whatChangedLifecycleID    = "d18dfa9b-a7b2-46ea-982c-622a914c00e5"
+	whatChangedEngagementID   = "e18dfa9b-a7b2-46ea-982c-622a914c00e5"
+	whatChangedHealthID       = "a28dfa9b-a7b2-46ea-982c-622a914c00e5"
+	whatChangedAt             = "2026-07-25T16:00:00Z"
+	whatChangedHash           = "sha256:61dd3377d3854c6f9c104af050ad3f0f87ff6cdd1c3458c17541cbc1e87fc887"
+)
+
+func whatChangedPage() obj {
+	return obj{
+		"hasMore": false,
+		"snapshots": []any{obj{
+			"id":               whatChangedSnapshotID,
+			"version":          1,
+			"state":            whatChangedState(),
+			"stateHash":        whatChangedHash,
+			"projectorVersion": 2,
+			"evaluatedAt":      whatChangedAt,
+			"changedDimensions": []any{
+				"engagement",
+				"health",
+				"lifecycle",
+			},
+			"assertionIds": []any{
+				whatChangedLifecycleID,
+				whatChangedEngagementID,
+				whatChangedHealthID,
+			},
+			"createdAt": whatChangedAt,
+		}},
+	}
+}
+
+func whatChangedState() obj {
+	return obj{
+		"lifecycle":    "evaluation",
+		"engagement":   "declining",
+		"sentiment":    "unknown",
+		"health":       "needs_attention",
+		"stateReason":  "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation.",
+		"risks":        nil,
+		"milestones":   nil,
+		"stateVersion": 1,
 	}
 }

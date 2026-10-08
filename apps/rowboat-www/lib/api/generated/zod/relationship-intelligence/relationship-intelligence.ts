@@ -4645,8 +4645,8 @@ export const RetractRelationshipAssertion409Response = zod
   );
 
 /**
- * Returns immutable projection snapshots so operators can see what changed and why. The first page is the two newest snapshots.
- * @summary Get relationship changes
+ * What changed loads when a company opens. The request asks for the two newest snapshots and sends no older-page offset. Acme has one snapshot: engagement, health, and lifecycle changed together.
+ * @summary What changed
  */
 export const GetRelationshipChangesParams = zod.object({
   relationshipId: zod.uuid().describe("Relationship id."),
@@ -4663,13 +4663,13 @@ export const GetRelationshipChangesQueryParams = zod.object({
     .min(1)
     .max(getRelationshipChangesQueryLimitMax)
     .optional()
-    .describe("Maximum snapshots (default 2, max 50)."),
+    .describe("Maximum snapshots. A company asks for the two newest."),
   offset: zod.coerce
     .number()
     .int()
     .min(getRelationshipChangesQueryOffsetMin)
     .optional()
-    .describe("Page offset."),
+    .describe("Older snapshots to skip. The first page sends none."),
 });
 
 export const GetRelationshipChanges200Response = zod

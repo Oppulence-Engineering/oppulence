@@ -25922,7 +25922,7 @@
     },
     "/v1/relationships/{relationshipId}/changes": {
       "get": {
-        "description": "Returns immutable projection snapshots so operators can see what changed and why. The first page is the two newest snapshots.",
+        "description": "What changed loads when a company opens. The request asks for the two newest snapshots and sends no older-page offset. Acme has one snapshot: engagement, health, and lifecycle changed together.",
         "operationId": "getRelationshipChanges",
         "parameters": [
           {
@@ -25931,23 +25931,25 @@
             "name": "relationshipId",
             "required": true,
             "schema": {
+              "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
           },
           {
-            "description": "Maximum snapshots (default 2, max 50).",
+            "description": "Maximum snapshots. A company asks for the two newest.",
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
+              "example": 2,
               "maximum": 50,
               "minimum": 1,
               "type": "integer"
             }
           },
           {
-            "description": "Page offset.",
+            "description": "Older snapshots to skip. The first page sends none.",
             "in": "query",
             "name": "offset",
             "required": false,
@@ -25961,12 +25963,45 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "hasMore": false,
+                  "snapshots": [
+                    {
+                      "assertionIds": [
+                        "d18dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "e18dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "a28dfa9b-a7b2-46ea-982c-622a914c00e5"
+                      ],
+                      "changedDimensions": [
+                        "engagement",
+                        "health",
+                        "lifecycle"
+                      ],
+                      "createdAt": "2026-07-25T16:00:00Z",
+                      "evaluatedAt": "2026-07-25T16:00:00Z",
+                      "id": "c18dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "projectorVersion": 2,
+                      "state": {
+                        "engagement": "declining",
+                        "health": "needs_attention",
+                        "lifecycle": "evaluation",
+                        "milestones": null,
+                        "risks": null,
+                        "sentiment": "unknown",
+                        "stateReason": "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation.",
+                        "stateVersion": 1
+                      },
+                      "stateHash": "sha256:61dd3377d3854c6f9c104af050ad3f0f87ff6cdd1c3458c17541cbc1e87fc887",
+                      "version": 1
+                    }
+                  ]
+                },
                 "schema": {
                   "description": "Snapshot list.",
                   "properties": {
                     "hasMore": {
                       "description": "An older snapshot exists beyond this page.",
-                      "example": true,
+                      "example": false,
                       "type": "boolean"
                     },
                     "snapshots": {
@@ -25977,7 +26012,10 @@
                       "type": "array"
                     }
                   },
-                  "required": ["snapshots", "hasMore"],
+                  "required": [
+                    "snapshots",
+                    "hasMore"
+                  ],
                   "type": "object"
                 }
               }
@@ -25999,8 +26037,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Get relationship changes",
-        "tags": ["Relationship Intelligence"]
+        "summary": "What changed",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/commitment-dependencies": {

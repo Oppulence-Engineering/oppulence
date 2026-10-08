@@ -2467,6 +2467,39 @@ describe("API reference document", () => {
     expect(JSON.stringify(queued)).not.toContain('"backfillPhase":"live"');
   });
 
+  it("samples the snapshot What changed loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const op = presented.paths["/v1/relationships/{relationshipId}/changes"].get;
+    expect(op.summary).toBe("What changed");
+    expect(op.description).toBe(
+      "What changed loads when a company opens. The request asks for the two newest snapshots and sends no older-page offset. Acme has one snapshot: engagement, health, and lifecycle changed together.",
+    );
+    const limit = op.parameters.find((parameter) => parameter.name === "limit");
+    const offset = op.parameters.find((parameter) => parameter.name === "offset");
+    expect(limit.schema.example).toBe(2);
+    expect(offset.schema.example).toBeUndefined();
+    const page = op.responses["200"].content["application/json"].example;
+    expect(page.hasMore).toBe(false);
+    expect(page.snapshots).toHaveLength(1);
+    expect(page.snapshots[0]).toMatchObject({
+      id: "c18dfa9b-a7b2-46ea-982c-622a914c00e5",
+      version: 1,
+      projectorVersion: 2,
+      stateHash: "sha256:61dd3377d3854c6f9c104af050ad3f0f87ff6cdd1c3458c17541cbc1e87fc887",
+      changedDimensions: ["engagement", "health", "lifecycle"],
+      state: {
+        lifecycle: "evaluation",
+        engagement: "declining",
+        health: "needs_attention",
+        stateReason:
+          "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation.",
+        stateVersion: 1,
+      },
+    });
+    expect(JSON.stringify(page)).not.toContain("state_abc123");
+    expect(JSON.stringify(page)).not.toContain("assertion-123");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

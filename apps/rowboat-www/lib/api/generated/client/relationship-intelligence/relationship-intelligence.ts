@@ -1647,8 +1647,8 @@ export const getGetRelationshipChangesUrl = (
 };
 
 /**
- * Returns immutable projection snapshots so operators can see what changed and why. The first page is the two newest snapshots.
- * @summary Get relationship changes
+ * What changed loads when a company opens. The request asks for the two newest snapshots and sends no older-page offset. Acme has one snapshot: engagement, health, and lifecycle changed together.
+ * @summary What changed
  */
 export const getRelationshipChanges = async (
   relationshipId: string,

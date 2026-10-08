@@ -3018,6 +3018,63 @@ func assertRetrySync(t *testing.T, paths obj) {
 	if string(got) != string(want) {
 		t.Fatalf("example:\n%s\nwant:\n%s", got, want)
 	}
+
+	assertWhatChanged(t, paths)
+}
+
+func TestWhatChangedSamplesTheAcmeSnapshot(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertWhatChanged(t, asObj(spec["paths"]))
+}
+
+func assertWhatChanged(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/relationships/{relationshipId}/changes"])["get"])
+	if op["summary"] != "What changed" {
+		t.Fatalf("summary: %#v", op["summary"])
+	}
+	const wantDescription = "What changed loads when a company opens. The request asks for the two newest snapshots and sends no older-page offset. Acme has one snapshot: engagement, health, and lifecycle changed together."
+	if op["description"] != wantDescription {
+		t.Fatalf("description: %#v", op["description"])
+	}
+	var limitExample any
+	var offsetExample any
+	for _, param := range op["parameters"].([]any) {
+		item := asObj(param)
+		switch item["name"] {
+		case "limit":
+			limitExample = asObj(item["schema"])["example"]
+		case "offset":
+			offsetExample = asObj(item["schema"])["example"]
+		case "relationshipId":
+			if asObj(item["schema"])["example"] != whatChangedRelationshipID {
+				t.Fatalf("company id: %#v", item)
+			}
+		}
+	}
+	limitRaw, err := json.Marshal(limitExample)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(limitRaw) != "2" || offsetExample != nil {
+		t.Fatalf("limit=%s offset=%v", limitRaw, offsetExample)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(whatChangedPage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("example:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "state_abc123") || strings.Contains(string(got), "assertion-123") {
+		t.Fatalf("oauth ticket leaked into the changes page: %s", got)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

@@ -8,13 +8,13 @@
 
 export type GetRelationshipChangesParams = {
   /**
-   * Maximum snapshots (default 2, max 50).
+   * Maximum snapshots. A company asks for the two newest.
    * @minimum 1
    * @maximum 50
    */
   limit?: number;
   /**
-   * Page offset.
+   * Older snapshots to skip. The first page sends none.
    * @minimum 0
    */
   offset?: number;
