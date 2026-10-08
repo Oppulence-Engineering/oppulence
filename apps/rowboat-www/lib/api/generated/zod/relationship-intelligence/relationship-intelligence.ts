@@ -2958,27 +2958,32 @@ export const DisconnectRelationshipSource403Response = zod
   );
 
 /**
- * Lists canonical relationship state with optional text, lifecycle, health, and engagement filters. A full page of 200 is the end of the list when hasMore is false.
- * @summary List relationships
+ * All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention.
+ * @summary All companies
  */
 export const listRelationshipsQueryOffsetMin = 0;
 
 export const ListRelationshipsQueryParams = zod.object({
-  q: zod.string().optional().describe("Account, domain, or contact search."),
-  lifecycle: zod.string().optional().describe("Lifecycle filter."),
-  health: zod.string().optional().describe("Health filter."),
-  engagement: zod.string().optional().describe("Engagement filter."),
+  q: zod
+    .string()
+    .optional()
+    .describe("Account, domain, or contact search. All companies sends none."),
+  lifecycle: zod.string().optional().describe("Lifecycle filter. All companies sends none."),
+  health: zod.string().optional().describe("Health filter. All companies sends none."),
+  engagement: zod.string().optional().describe("Engagement filter. All companies sends none."),
   offset: zod.coerce
     .number()
     .int()
     .min(listRelationshipsQueryOffsetMin)
     .optional()
-    .describe("How many relationships to skip. Each page is 200 rows, newest touch first."),
+    .describe(
+      "How many companies to skip. All companies sends none. Each page is 200 rows, newest touch first.",
+    ),
 });
 
 export const ListRelationships200Response = zod
   .strictObject({
-    hasMore: zod.boolean().optional().describe("Another company exists beyond this page."),
+    hasMore: zod.boolean().describe("Another company exists beyond this page."),
     relationships: zod
       .array(
         zod
@@ -3091,8 +3096,7 @@ export const ListRelationships200Response = zod
             "Canonical, living relationship state projected from append-only evidence. CRM and communication systems remain evidence sources; this object is the shared model rendered by web and desktop.",
           ),
       )
-      .optional()
-      .describe("Relationships."),
+      .describe("Companies and people, newest touch first."),
   })
   .describe("Relationship list.");
 

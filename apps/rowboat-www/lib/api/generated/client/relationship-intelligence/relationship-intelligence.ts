@@ -1271,8 +1271,8 @@ export const getListRelationshipsUrl = (params?: ListRelationshipsParams) => {
 };
 
 /**
- * Lists canonical relationship state with optional text, lifecycle, health, and engagement filters. A full page of 200 is the end of the list when hasMore is false.
- * @summary List relationships
+ * All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention.
+ * @summary All companies
  */
 export const listRelationships = async (
   params?: ListRelationshipsParams,

@@ -2528,6 +2528,38 @@ describe("API reference document", () => {
     expect(JSON.stringify(detail)).not.toContain("ab12cd34");
   });
 
+  it("samples the company All companies loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/relationships"].get;
+    expect(operation.summary).toBe("All companies");
+    expect(operation.description).toBe(
+      "All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention.",
+    );
+    for (const parameter of operation.parameters) {
+      expect(parameter.schema.example).toBeUndefined();
+    }
+    const page = operation.responses["200"].content["application/json"].example;
+    expect(page.hasMore).toBe(false);
+    expect(page.relationships).toHaveLength(1);
+    expect(page.relationships[0]).toMatchObject({
+      id: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      kind: "company",
+      displayName: "Acme",
+      accountDomain: "acme.com",
+      peopleCount: 1,
+      emailThreadCount: 0,
+      commitmentCount: 0,
+      lifecycle: "evaluation",
+      engagement: "declining",
+      health: "needs_attention",
+      stateVersion: 1,
+      stateHash: "sha256:61dd3377d3854c6f9c104af050ad3f0f87ff6cdd1c3458c17541cbc1e87fc887",
+    });
+    expect(JSON.stringify(page)).not.toContain("Jordan Buyer");
+    expect(JSON.stringify(page)).not.toContain("sha256:ab12");
+    expect(presented.paths["/v1/relationships"].post.operationId).toBe("createRelationship");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

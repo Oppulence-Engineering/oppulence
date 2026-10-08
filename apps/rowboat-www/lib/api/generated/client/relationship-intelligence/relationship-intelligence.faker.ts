@@ -2407,9 +2407,9 @@ export const getDisconnectRelationshipSourceResponseMock = (
 export const getListRelationshipsResponseMock = (
   overrideResponse: Partial<Extract<ListRelationships200, object>> = {},
 ): ListRelationships200 => ({
-  hasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
-  relationships: faker.helpers.arrayElement([
-    Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+  hasMore: faker.datatype.boolean(),
+  relationships: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => ({
       accountDomain: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
@@ -2520,9 +2520,8 @@ export const getListRelationshipsResponseMock = (
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
       ]),
-    })),
-    undefined,
-  ]),
+    }),
+  ),
   ...overrideResponse,
 });
 

@@ -12,7 +12,7 @@ import type { RevenueRelationship } from "./revenueRelationship";
  */
 export type ListRelationships200 = {
   /** Another company exists beyond this page. */
-  hasMore?: boolean;
-  /** Relationships. */
-  relationships?: RevenueRelationship[];
+  hasMore: boolean;
+  /** Companies and people, newest touch first. */
+  relationships: RevenueRelationship[];
 };
