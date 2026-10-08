@@ -5672,6 +5672,77 @@ func TestRelationshipSearchFindsEarlierMail(t *testing.T) {
 	assertCompanyQuery("meetings")
 }
 
+func TestRelationshipSearchFindsTheNextDuplicates(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	internal := auth.WithInternal(context.Background())
+	save := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.client.Relationship.Create().
+			SetWorkspace(ws).SetUser(f.user).SetKind("company").SetDisplayName(name).
+			SetResourceRefs([]string{}).SetRisks([]string{}).SetMilestones([]string{}).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	none := save("Quill North")
+	page := save("Cedar Slide")
+	hidden := save("Birch Quiet")
+	split := save("Lumen Fold")
+	resolved := save("Maple Kept")
+	more := save("Aspen Ledger")
+	_ = none
+	link := func(existing *ent.Relationship, status, prefix string, n int) {
+		t.Helper()
+		for i := 1; i <= n; i++ {
+			proposed := save(fmt.Sprintf("%s %d", prefix, i))
+			if _, err := f.client.RelationshipIdentityCandidate.Create().
+				SetWorkspace(ws).SetUser(f.user).
+				SetProposedRelationship(proposed).SetExistingRelationship(existing).
+				SetDedupeKey(fmt.Sprintf("%s-%d", prefix, i)).
+				SetAnchorKind("domain").SetAnchorKeyHash(fmt.Sprintf("%s-hash-%d", prefix, i)).
+				SetStatus(status).
+				Save(internal); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	link(page, "pending", "cedar-mate", 50)
+	link(hidden, "resolving", "birch-mate", 51)
+	link(split, "pending", "lumen-mate", 50)
+	link(split, "deferred", "lumen-later", 1)
+	link(resolved, "resolved", "maple-mate", 51)
+	link(more, "pending", "aspen-mate", 51)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+
+	assertCompanyQuery("Show the next duplicates", "Aspen Ledger", "Maple Kept")
+	assertCompanyQuery("which companies should I show the next duplicates", "Aspen Ledger", "Maple Kept")
+	assertCompanyQuery("show")
+	assertCompanyQuery("next")
+	assertCompanyQuery("duplicates")
+}
+
 func TestRelationshipSearchFindsTheLastInteraction(t *testing.T) {
 	f := newFixture(t)
 	recent, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
