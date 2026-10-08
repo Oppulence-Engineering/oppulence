@@ -2560,6 +2560,29 @@ describe("API reference document", () => {
     expect(presented.paths["/v1/relationships"].post.operationId).toBe("createRelationship");
   });
 
+  it("samples the open page Recovery loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-actions"].get;
+    expect(operation.summary).toBe("Recovery");
+    expect(operation.description).toBe(
+      "Recovery loads the open queue. The request asks for open actions, one hundred at a time, on the recovery list, and it does not ask for an older page. Acme has no open recovery action, so the page is empty.",
+    );
+    const examples = Object.fromEntries(
+      operation.parameters.map((parameter: { name: string; schema?: { example?: unknown } }) => [
+        parameter.name,
+        parameter.schema?.example,
+      ]),
+    );
+    expect(examples).toMatchObject({ queueStatus: "open", limit: 100, surface: "recovery" });
+    expect(examples.offset).toBeUndefined();
+    expect(examples.due).toBeUndefined();
+    const page = operation.responses["200"].content["application/json"].example;
+    expect(page).toEqual({ actions: [], hasMore: false });
+    expect(JSON.stringify(page)).not.toContain("warm_follow_up");
+    expect(JSON.stringify(page)).not.toContain("sha256:ab12");
+    expect(presented.paths["/v1/revenue-actions"].post.operationId).toBe("createRevenueAction");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

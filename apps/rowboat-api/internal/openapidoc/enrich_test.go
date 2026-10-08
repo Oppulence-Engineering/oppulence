@@ -3163,6 +3163,57 @@ func assertCompanyDirectory(t *testing.T, paths obj) {
 	if strings.Contains(string(got), "Jordan Buyer") || strings.Contains(string(got), "buyer@example.com") || strings.Contains(string(got), "sha256:ab12") {
 		t.Fatalf("directory example still uses the person sample: %s", got)
 	}
+
+	assertRecoveryQueue(t, paths)
+}
+
+func TestRecoveryQueueSamplesTheOpenPage(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertRecoveryQueue(t, asObj(spec["paths"]))
+}
+
+func assertRecoveryQueue(t *testing.T, paths obj) {
+	t.Helper()
+	path := asObj(paths["/v1/revenue-actions"])
+	if asObj(path["post"])["operationId"] != "createRevenueAction" {
+		t.Fatal("recovery replaced the create action route")
+	}
+	op := asObj(path["get"])
+	if op["summary"] != "Recovery" || op["description"] != recoveryQueueDescription {
+		t.Fatalf("recovery copy: summary=%#v description=%#v", op["summary"], op["description"])
+	}
+	examples := map[string]string{}
+	for _, param := range op["parameters"].([]any) {
+		item := asObj(param)
+		name, _ := item["name"].(string)
+		if name == "due" {
+			t.Fatal("recovery must not document a due order")
+		}
+		raw, err := json.Marshal(asObj(item["schema"])["example"])
+		if err != nil {
+			t.Fatal(err)
+		}
+		examples[name] = string(raw)
+	}
+	if examples["queueStatus"] != `"open"` || examples["limit"] != "100" || examples["surface"] != `"recovery"` || examples["offset"] != "null" {
+		t.Fatalf("recovery query examples: %#v", examples)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(recoveryQueuePage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("recovery example:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "warm_follow_up") || strings.Contains(string(got), "buyer@example.com") || strings.Contains(string(got), "sha256:ab12") {
+		t.Fatalf("recovery example still uses the invented action: %s", got)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

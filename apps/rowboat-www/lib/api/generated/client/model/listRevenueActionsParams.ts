@@ -14,16 +14,16 @@ export type ListRevenueActionsParams = {
    */
   queueStatus?: ListRevenueActionsQueueStatus;
   /**
-   * Page size (max 100, default 10).
+   * Page size (max 100). Recovery asks for 100.
    */
   limit?: number;
   /**
-   * How many actions to skip. Pages stay in priority order.
+   * How many actions to skip. Recovery does not send this on the first page.
    * @minimum 0
    */
   offset?: number;
   /**
-   * task keeps follow-up tasks. recovery keeps every other action.
+   * recovery keeps every action that is not a follow-up task. task keeps follow-up tasks.
    */
   surface?: ListRevenueActionsSurface;
 };
