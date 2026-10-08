@@ -51,6 +51,10 @@ const (
 	documentedPlanItemID     = "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5"
 )
 
+// The company page sends a new UUID for each conversation deletion. The server
+// stores that same id as the receipt.
+const documentedDeletionRequestID = "eb8dfa9b-a7b2-46ea-982c-622a914c00e5"
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
@@ -491,7 +495,7 @@ func addRevenueSchemas(schemas obj) {
 	}, "capture", "modelRoute", "publishEvidence", "externalShare", "retentionDays", "redactionClasses", "legalHold", "policyVersion", "sourceLayerIds", "resolvedAt")
 
 	schemas["ConversationDeletionReceipt"] = objectSchema("Immutable deletion request and per-target verification state. Pending device or provider targets keep the receipt partial.", obj{
-		"receiptId":   stringSchema("Idempotent request id.", "delete:ab12"),
+		"receiptId":   stringSchema("Idempotent request id.", documentedDeletionRequestID, obj{"format": "uuid"}),
 		"requestedAt": stringSchema("Request time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
 		"scopeRef":    stringSchema("Relationship scope.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"legalHold":   boolSchema("Whether legal hold blocked deletion.", false),
@@ -1174,8 +1178,8 @@ func addRevenuePaths(paths obj) {
 		}),
 	}
 	paths["/v1/relationships/{relationshipId}/conversation-deletion"] = obj{"post": operation("Relationship Intelligence", "Request conversation deletion", "Evaluates legal hold at execution time, removes server-side content transactionally, and returns an idempotent per-target receipt. Device and provider work remains pending until separately verified.", "requestConversationDeletion", bearer(), relationshipParam, jsonRequest("Deletion request.", objectSchema("Deletion request.", obj{
-		"requestId": stringSchema("Idempotency key.", "delete:ab12"),
-	}, "requestId"), obj{"requestId": "delete:ab12"}), obj{
+		"requestId": stringSchema("Idempotency key.", documentedDeletionRequestID, obj{"format": "uuid"}),
+	}, "requestId"), obj{"requestId": documentedDeletionRequestID}), obj{
 		"202": jsonResponse("Deletion receipt.", ref("ConversationDeletionReceipt"), nil),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}

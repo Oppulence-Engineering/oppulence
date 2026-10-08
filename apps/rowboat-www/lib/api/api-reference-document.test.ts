@@ -1070,6 +1070,27 @@ describe("API reference document", () => {
     expect(JSON.stringify(body)).not.toContain("item:ab12");
   });
 
+  it("samples the deletion id the company page sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const requestID = "eb8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    const body =
+      presented.paths["/v1/relationships/{relationshipId}/conversation-deletion"].post.requestBody
+        .content["application/json"];
+    expect(body.example).toEqual({ requestId: requestID });
+    expect(body.schema.properties.requestId).toMatchObject({
+      example: requestID,
+      format: "uuid",
+    });
+    expect(presented.components.schemas.ConversationDeletionReceipt.properties.receiptId).toMatchObject({
+      example: requestID,
+      format: "uuid",
+    });
+    expect(JSON.stringify(body)).not.toContain("delete:ab12");
+    expect(
+      JSON.stringify(presented.components.schemas.ConversationDeletionReceipt.properties.receiptId),
+    ).not.toContain("delete:ab12");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
