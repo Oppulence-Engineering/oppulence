@@ -441,6 +441,12 @@ export function personLastInteractionLabel(iso?: string | null): string {
   return label || "Not known";
 }
 
+/** The people list counts company records. Opening the person keeps that count. */
+export function personCompanyCountLabel(count?: number | null): string {
+  if (typeof count !== "number" || !Number.isFinite(count)) return "0";
+  return String(Math.max(0, Math.round(count)));
+}
+
 /** Other names stored on the person. The display name is not repeated here. */
 export function personAliasNames(aliases: readonly string[] | null | undefined): string {
   return (aliases ?? [])
@@ -899,7 +905,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                     {personLastInteractionLabel(person.lastInteractionAt)}
                   </TableCell>
                   <TableCell className="border-r px-3 text-center text-[12px] text-primary/60">
-                    {person.relationshipCount}
+                    {personCompanyCountLabel(person.relationshipCount)}
                   </TableCell>
                   <TableCell className="truncate border-r px-3 text-[12px]">
                     {webAddressHref(person.linkedinUrl) ? (
@@ -1095,6 +1101,7 @@ function PersonSheet({
   const aliasNames = personAliasNames(person.aliases);
   const sheetFacts: Array<[string, string | undefined]> = [
     ["Company", personCompanyTitle(person) || undefined],
+    ["Companies", personCompanyCountLabel(person.relationshipCount)],
     [personEvidenceLabel("org_domain"), person.orgDomain],
     ["Role", personDirectoryRole(person)],
     ["Seniority", personSeniorityLabel(person.seniority)],
