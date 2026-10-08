@@ -161,7 +161,7 @@ func addRevenueSchemas(schemas obj) {
 		"connectionId":           uuidSchema("Stable source connection id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"source":                 stringEnum("Source provider.", "google", "google", "slack", "hubspot"),
 		"sourceAccountId":        stringSchema("Provider account or workspace id.", "me@company.com"),
-		"consentingActorId":      uuidSchema("Actor who initiated consent.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"consentingActorId":      uuidSchema("User who connected this source.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
 		"status":                 stringEnum("Connection lifecycle.", "live", "not_connected", "authorizing", "connected", "backfilling", "live", "degraded", "stale", "rebuilding", "reconnect_required", "disconnected"),
 		"backfillPhase":          stringEnum("Backfill phase.", "live", "idle", "queued", "running", "live", "paused", "failed"),
 		"backfillCompleted":      intSchema("Accepted backfill records.", 250),
@@ -207,13 +207,13 @@ func addRevenueSchemas(schemas obj) {
 
 	schemas["RelationshipIdentityDecision"] = objectSchema("Immutable actor-bound identity decision.", obj{
 		"id": uuidSchema("Decision id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "decision": stringSchema("Decision kind.", "merge"),
-		"candidateVersion": intSchema("Candidate version decided.", 1), "actorId": uuidSchema("Decision actor.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"candidateVersion": intSchema("Candidate version decided.", 1), "actorId": uuidSchema("User who made this decision.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
 		"reason": stringSchema("Decision reason.", "Confirmed the provider records are the same account."), "decidedAt": stringSchema("Decision time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
 		"compensatesDecisionId": uuidSchema("Decision compensated by undo.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 	}, "id", "decision", "candidateVersion", "actorId", "decidedAt")
 	schemas["RelationshipIdentityLineage"] = objectSchema("Immutable graph lineage produced by an identity decision.", obj{
 		"id": uuidSchema("Lineage event id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "kind": stringSchema("Lineage kind.", "merged"),
-		"actorId": uuidSchema("Actor.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"), "reason": stringSchema("Reason.", "Confirmed duplicate."),
+		"actorId": uuidSchema("User who recorded this change.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"), "reason": stringSchema("Reason.", "Confirmed duplicate."),
 		"observationIds":        arraySchema("Moved observation ids.", stringSchema("Observation id.", "observation:1")),
 		"identityIds":           arraySchema("Affected identity ids.", stringSchema("Identity id.", "identity:1")),
 		"movedObjectRefs":       arraySchema("All moved graph objects.", stringSchema("Object ref.", "relationship-observation:1")),
@@ -230,7 +230,7 @@ func addRevenueSchemas(schemas obj) {
 		"evidenceRefs": arraySchema("Evidence references.", stringSchema("Evidence ref.", "relationship-observation:1")), "evidenceCount": intSchema("Affected evidence count.", 4),
 		"evidenceFrom": stringSchema("Earliest evidence.", "2026-01-01T00:00:00Z", obj{"format": "date-time"}, nullable()), "evidenceTo": stringSchema("Latest evidence.", "2026-07-31T00:00:00Z", obj{"format": "date-time"}, nullable()),
 		"impact": freeFormSchema("Counts and history that would move."), "recommendedDecision": stringSchema("Advisory decision.", "merge"), "recommendationConfidence": numberSchema("Advisory confidence.", 0.92),
-		"decision": stringSchema("Resolved decision.", "merge"), "decisionReason": stringSchema("Reason.", "Confirmed duplicate."), "decisionActorId": uuidSchema("Actor.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"), "decidedAt": stringSchema("Decision time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}, nullable()),
+		"decision": stringSchema("Resolved decision.", "merge"), "decisionReason": stringSchema("Reason.", "Confirmed duplicate."), "decisionActorId": uuidSchema("User who resolved this review.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"), "decidedAt": stringSchema("Decision time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}, nullable()),
 		"decisions": arraySchema("Decision history.", ref("RelationshipIdentityDecision")), "lineage": arraySchema("Lineage history.", ref("RelationshipIdentityLineage")),
 	}, "id", "status", "candidateType", "version", "proposedRelationship", "existingRelationship", "anchorKind", "matchingAnchors", "conflictingAnchors", "evidenceRefs", "evidenceCount", "impact", "recommendedDecision", "recommendationConfidence", "decisions", "lineage")
 
@@ -271,7 +271,7 @@ func addRevenueSchemas(schemas obj) {
 		"authorityRank": intSchema("Deterministic ordinal authority rank.", 4), "status": stringEnum("Assertion lifecycle state.", "accepted", "proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active"),
 		"confidence": numberSchema("Assertion confidence.", 1, obj{"minimum": 0, "maximum": 1}), "reason": stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won."),
 		"valueSchemaVersion": intSchema("Typed dimension schema version.", 1), "extractorVersion": stringSchema("Extractor or deterministic rule version.", "hubspot-company-v1"),
-		"projectorCompatVersion": intSchema("Minimum compatible projector version.", 2), "reviewerId": uuidSchema("Explicit reviewer when present.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"projectorCompatVersion": intSchema("Minimum compatible projector version.", 2), "reviewerId": uuidSchema("User who reviewed this value.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
 		"reviewDecision": stringEnum("Explicit review decision.", "accepted", "accepted", "rejected"), "reviewedAt": stringSchema("Explicit review time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}, nullable()),
 		"validFrom": stringSchema("Assertion validity start.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}, nullable()), "validTo": stringSchema("Assertion validity end.", "2026-08-31T14:00:00Z", obj{"format": "date-time"}, nullable()),
 		"fresh": boolSchema("Whether supporting sources are fresh and complete.", true), "evidence": arraySchema("Supporting observations.", ref("MissionControlEvidenceReference")),

@@ -8345,8 +8345,8 @@
             "type": "string"
           },
           "reviewerId": {
-            "description": "Explicit reviewer when present.",
-            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "description": "User who reviewed this value.",
+            "example": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
             "format": "uuid",
             "type": "string"
           },
@@ -10869,8 +10869,8 @@
             "type": "string"
           },
           "decisionActorId": {
-            "description": "Actor.",
-            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "description": "User who resolved this review.",
+            "example": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
             "format": "uuid",
             "type": "string"
           },
@@ -10993,8 +10993,8 @@
         "description": "Immutable actor-bound identity decision.",
         "properties": {
           "actorId": {
-            "description": "Decision actor.",
-            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "description": "User who made this decision.",
+            "example": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
             "format": "uuid",
             "type": "string"
           },
@@ -11039,8 +11039,8 @@
         "description": "Immutable graph lineage produced by an identity decision.",
         "properties": {
           "actorId": {
-            "description": "Actor.",
-            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "description": "User who recorded this change.",
+            "example": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
             "format": "uuid",
             "type": "string"
           },
@@ -11760,8 +11760,8 @@
             "type": "string"
           },
           "consentingActorId": {
-            "description": "Actor who initiated consent.",
-            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "description": "User who connected this source.",
+            "example": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
             "format": "uuid",
             "type": "string"
           },

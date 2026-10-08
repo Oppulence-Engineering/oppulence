@@ -622,6 +622,34 @@ describe("API reference document", () => {
     );
   });
 
+  it("does not sample the relationship id for the user who decided", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const schemas = presented.components.schemas;
+    const userId = "a8dfa9b6-a7b2-46ea-982c-622a914c00e5";
+    const relationshipId = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    expect(schemas.RelationshipIdentityDecision.properties.actorId).toMatchObject({
+      description: "User who made this decision.",
+      example: userId,
+    });
+    expect(schemas.RelationshipIdentityLineage.properties.actorId).toMatchObject({
+      description: "User who recorded this change.",
+      example: userId,
+    });
+    expect(schemas.RelationshipIdentityCandidate.properties.decisionActorId).toMatchObject({
+      description: "User who resolved this review.",
+      example: userId,
+    });
+    expect(schemas.RelationshipSourceStatus.properties.consentingActorId).toMatchObject({
+      description: "User who connected this source.",
+      example: userId,
+    });
+    expect(schemas.MissionControlDimensionEvidence.properties.reviewerId).toMatchObject({
+      description: "User who reviewed this value.",
+      example: userId,
+    });
+    expect(schemas.RelationshipAttentionItem.properties.relationshipId.example).toBe(relationshipId);
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

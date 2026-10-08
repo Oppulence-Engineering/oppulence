@@ -441,6 +441,7 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if entityStatus["description"] != "Lifecycle status." {
 		t.Fatalf("entity lifecycle metadata was overwritten: %#v", entityStatus)
 	}
+	assertActorUsers(t, schemas)
 }
 
 func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
@@ -1030,6 +1031,40 @@ func assertAttentionOwner(t *testing.T, schemas obj) {
 		if _, ok := field["example"]; ok {
 			t.Fatalf("%s sampled a decision on an open attention item: %#v", name, field["example"])
 		}
+	}
+
+	assertActorUsers(t, schemas)
+}
+
+func assertActorUsers(t *testing.T, schemas obj) {
+	t.Helper()
+	const userID = "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"
+	const relationshipID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	checks := []struct {
+		schema, field, description string
+	}{
+		{"RelationshipIdentityDecision", "actorId", "User who made this decision."},
+		{"RelationshipIdentityLineage", "actorId", "User who recorded this change."},
+		{"RelationshipIdentityCandidate", "decisionActorId", "User who resolved this review."},
+		{"RelationshipSourceStatus", "consentingActorId", "User who connected this source."},
+		{"MissionControlDimensionEvidence", "reviewerId", "User who reviewed this value."},
+	}
+	for _, check := range checks {
+		schema := asObj(schemas[check.schema])
+		if schema == nil {
+			t.Fatalf("missing schema %s", check.schema)
+		}
+		field := asObj(asObj(schema["properties"])[check.field])
+		if field == nil {
+			t.Fatalf("%s.%s missing", check.schema, check.field)
+		}
+		if field["example"] != userID || field["description"] != check.description {
+			t.Fatalf("%s.%s sampled the relationship instead of the user: %#v", check.schema, check.field, field)
+		}
+	}
+	relationship := asObj(asObj(asObj(schemas["RelationshipAttentionItem"])["properties"])["relationshipId"])
+	if relationship["example"] != relationshipID {
+		t.Fatalf("relationship id sample changed: %#v", relationship)
 	}
 }
 
