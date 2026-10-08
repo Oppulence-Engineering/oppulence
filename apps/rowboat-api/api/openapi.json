@@ -11638,6 +11638,66 @@
             "format": "uuid",
             "type": "string"
           },
+          "person": {
+            "description": "Directory person behind this company membership. The sheet prints this name, and Left the company when employment is departed.",
+            "properties": {
+              "displayName": {
+                "description": "Name the company sheet prints.",
+                "example": "Avery Chen",
+                "type": "string"
+              },
+              "employmentStatus": {
+                "description": "Whether their mail still reaches them. departed is shown as Left the company.",
+                "enum": ["unknown", "active", "departed"],
+                "example": "active",
+                "type": "string"
+              },
+              "id": {
+                "description": "Person id.",
+                "example": "aa8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                "format": "uuid",
+                "type": "string"
+              },
+              "location": {
+                "description": "Location.",
+                "example": "San Francisco",
+                "type": "string"
+              },
+              "orgDomain": {
+                "description": "Company domain.",
+                "example": "acme.com",
+                "type": "string"
+              },
+              "orgName": {
+                "description": "Company.",
+                "example": "Acme",
+                "type": "string"
+              },
+              "primaryEmail": {
+                "description": "Email.",
+                "example": "avery@acme.com",
+                "type": "string"
+              },
+              "seniority": {
+                "description": "Seniority band. The sheet says this in words.",
+                "example": "vp",
+                "type": "string"
+              },
+              "title": {
+                "description": "Role.",
+                "example": "VP Operations",
+                "type": "string"
+              }
+            },
+            "required": ["id", "displayName"],
+            "type": "object"
+          },
+          "personId": {
+            "description": "Person id. The company sheet loads this profile from it.",
+            "example": "aa8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
           "role": {
             "description": "Relationship role.",
             "example": "champion",
@@ -28682,6 +28742,18 @@
                       "email": "avery@acme.com",
                       "externalRefs": [],
                       "id": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "person": {
+                        "displayName": "Avery Chen",
+                        "employmentStatus": "active",
+                        "id": "aa8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "location": "San Francisco",
+                        "orgDomain": "acme.com",
+                        "orgName": "Acme",
+                        "primaryEmail": "avery@acme.com",
+                        "seniority": "vp",
+                        "title": "VP Operations"
+                      },
+                      "personId": "aa8dfa9b-a7b2-46ea-982c-622a914c00e5",
                       "role": "champion"
                     }
                   ],

@@ -583,6 +583,8 @@ export * from "./relationshipLineageEvent";
 export * from "./relationshipObservation";
 export * from "./relationshipObservationNormalizedFacts";
 export * from "./relationshipParticipant";
+export * from "./relationshipParticipantPerson";
+export * from "./relationshipParticipantPersonEmploymentStatus";
 export * from "./relationshipProjectionJob";
 export * from "./relationshipReviewAcknowledgement";
 export * from "./relationshipSourceInventoryItem";

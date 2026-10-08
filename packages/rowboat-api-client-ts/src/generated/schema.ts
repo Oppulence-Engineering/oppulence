@@ -11274,6 +11274,62 @@ export interface components {
        * @example 123e4567-e89b-12d3-a456-426614174000
        */
       id: string;
+      /** @description Directory person behind this company membership. The sheet prints this name, and Left the company when employment is departed. */
+      person?: {
+        /**
+         * @description Name the company sheet prints.
+         * @example Avery Chen
+         */
+        displayName: string;
+        /**
+         * @description Whether their mail still reaches them. departed is shown as Left the company.
+         * @example active
+         * @enum {string}
+         */
+        employmentStatus?: "unknown" | "active" | "departed";
+        /**
+         * Format: uuid
+         * @description Person id.
+         * @example aa8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
+        id: string;
+        /**
+         * @description Location.
+         * @example San Francisco
+         */
+        location?: string;
+        /**
+         * @description Company domain.
+         * @example acme.com
+         */
+        orgDomain?: string;
+        /**
+         * @description Company.
+         * @example Acme
+         */
+        orgName?: string;
+        /**
+         * @description Email.
+         * @example avery@acme.com
+         */
+        primaryEmail?: string;
+        /**
+         * @description Seniority band. The sheet says this in words.
+         * @example vp
+         */
+        seniority?: string;
+        /**
+         * @description Role.
+         * @example VP Operations
+         */
+        title?: string;
+      };
+      /**
+       * Format: uuid
+       * @description Person id. The company sheet loads this profile from it.
+       * @example aa8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      personId?: string;
       /**
        * @description Relationship role.
        * @example champion
@@ -24141,6 +24197,18 @@ export interface operations {
            *           "email": "avery@acme.com",
            *           "externalRefs": [],
            *           "id": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "person": {
+           *             "displayName": "Avery Chen",
+           *             "employmentStatus": "active",
+           *             "id": "aa8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "location": "San Francisco",
+           *             "orgDomain": "acme.com",
+           *             "orgName": "Acme",
+           *             "primaryEmail": "avery@acme.com",
+           *             "seniority": "vp",
+           *             "title": "VP Operations"
+           *           },
+           *           "personId": "aa8dfa9b-a7b2-46ea-982c-622a914c00e5",
            *           "role": "champion"
            *         }
            *       ],
