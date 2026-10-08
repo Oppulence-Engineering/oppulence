@@ -4142,6 +4142,10 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	if !ok || len(participants) != 1 || asObj(participants[0])["email"] != "avery@acme.com" || asObj(participants[0])["role"] != "champion" {
 		t.Fatalf("participants: %#v", example["participants"])
 	}
+	person := asObj(asObj(participants[0])["person"])
+	if asObj(participants[0])["personId"] != openedCompanyPersonID || person["displayName"] != "Avery Chen" || person["location"] != "San Francisco" || person["seniority"] != "vp" || person["employmentStatus"] != "active" {
+		t.Fatalf("sheet person: %#v", participants[0])
+	}
 	mission := asObj(example["missionControl"])
 	if mission["stateHash"] != openedCompanyHash {
 		t.Fatalf("mission hash: %#v", mission["stateHash"])

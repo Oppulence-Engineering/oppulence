@@ -4389,6 +4389,34 @@ export const GetRelationship200Response = zod
               .array(zod.string().describe("External reference."))
               .describe("Provider identity references."),
             id: zod.uuid().describe("Stable UUID primary key."),
+            person: zod
+              .strictObject({
+                displayName: zod.string().describe("Name the company sheet prints."),
+                employmentStatus: zod
+                  .enum(["unknown", "active", "departed"])
+                  .optional()
+                  .describe(
+                    "Whether their mail still reaches them. departed is shown as Left the company.",
+                  ),
+                id: zod.uuid().describe("Person id."),
+                location: zod.string().optional().describe("Location."),
+                orgDomain: zod.string().optional().describe("Company domain."),
+                orgName: zod.string().optional().describe("Company."),
+                primaryEmail: zod.string().optional().describe("Email."),
+                seniority: zod
+                  .string()
+                  .optional()
+                  .describe("Seniority band. The sheet says this in words."),
+                title: zod.string().optional().describe("Role."),
+              })
+              .optional()
+              .describe(
+                "Directory person behind this company membership. The sheet prints this name, and Left the company when employment is departed.",
+              ),
+            personId: zod
+              .uuid()
+              .optional()
+              .describe("Person id. The company sheet loads this profile from it."),
             role: zod.string().describe("Relationship role."),
             title: zod.string().optional().describe("Current title."),
           })

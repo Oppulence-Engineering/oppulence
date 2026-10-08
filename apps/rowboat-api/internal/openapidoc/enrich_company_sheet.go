@@ -8,6 +8,7 @@ package openapidoc
 const (
 	openedCompanyID            = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
 	openedCompanyParticipantID = "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	openedCompanyPersonID      = "aa8dfa9b-a7b2-46ea-982c-622a914c00e5"
 	openedCompanyObservationID = "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
 	openedCompanyHash          = "sha256:61dd3377d3854c6f9c104af050ad3f0f87ff6cdd1c3458c17541cbc1e87fc887"
 	openedCompanyReason        = "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation."
@@ -63,6 +64,8 @@ func openedCompanySheetExample() obj {
 			"role":         "champion",
 			"active":       true,
 			"externalRefs": empty,
+			"personId":     openedCompanyPersonID,
+			"person":       openedCompanyPerson(),
 		}},
 		"emailThreads":           empty,
 		"commitments":            empty,
@@ -157,6 +160,20 @@ func openedCompanyDimension(dimension, value string) obj {
 			"evidencePath":  "/v1/relationships/" + openedCompanyID + "/evidence/" + openedCompanyObservationID,
 			"contentHash":   "sha256:ab12",
 		}},
+	}
+}
+
+func openedCompanyPerson() obj {
+	return obj{
+		"id":               openedCompanyPersonID,
+		"displayName":      "Avery Chen",
+		"primaryEmail":     "avery@acme.com",
+		"title":            "VP Operations",
+		"orgName":          "Acme",
+		"orgDomain":        "acme.com",
+		"seniority":        "vp",
+		"location":         "San Francisco",
+		"employmentStatus": "active",
 	}
 }
 

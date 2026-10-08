@@ -3366,6 +3366,16 @@ describe("API reference document", () => {
         email: "avery@acme.com",
         role: "champion",
         displayName: "Avery Chen",
+        personId: "aa8dfa9b-a7b2-46ea-982c-622a914c00e5",
+        person: expect.objectContaining({
+          id: "aa8dfa9b-a7b2-46ea-982c-622a914c00e5",
+          displayName: "Avery Chen",
+          title: "VP Operations",
+          orgName: "Acme",
+          seniority: "vp",
+          location: "San Francisco",
+          employmentStatus: "active",
+        }),
       }),
     ]);
     expect(example.missionControl.stateVersion).toBe(1);

@@ -241,6 +241,18 @@ func addRevenueSchemas(schemas obj) {
 		"title":        stringSchema("Current title.", "VP Operations"),
 		"active":       boolSchema("Whether the participant is active.", true),
 		"externalRefs": arraySchema("Provider identity references.", stringSchema("External reference.", "hubspot:contact:123")),
+		"personId":     uuidSchema("Person id. The company sheet loads this profile from it.", openedCompanyPersonID),
+		"person": objectSchema("Directory person behind this company membership. The sheet prints this name, and Left the company when employment is departed.", obj{
+			"id":               uuidSchema("Person id.", openedCompanyPersonID),
+			"displayName":      stringSchema("Name the company sheet prints.", "Avery Chen"),
+			"primaryEmail":     stringSchema("Email.", "avery@acme.com"),
+			"title":            stringSchema("Role.", "VP Operations"),
+			"orgName":          stringSchema("Company.", "Acme"),
+			"orgDomain":        stringSchema("Company domain.", "acme.com"),
+			"seniority":        stringSchema("Seniority band. The sheet says this in words.", "vp"),
+			"location":         stringSchema("Location.", "San Francisco"),
+			"employmentStatus": stringEnum("Whether their mail still reaches them. departed is shown as Left the company.", "active", "unknown", "active", "departed"),
+		}, "id", "displayName"),
 	}, "id", "displayName", "role", "active", "externalRefs")
 
 	schemas["RelationshipCommitment"] = objectSchema("An open or completed promise attached to the relationship.", obj{

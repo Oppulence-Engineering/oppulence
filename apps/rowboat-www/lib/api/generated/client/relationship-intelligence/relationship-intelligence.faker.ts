@@ -3408,6 +3408,42 @@ export const getGetRelationshipResponseMock = (
         (_, i) => i + 1,
       ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
       id: faker.string.uuid(),
+      person: faker.helpers.arrayElement([
+        {
+          displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          employmentStatus: faker.helpers.arrayElement([
+            faker.helpers.arrayElement(["unknown", "active", "departed"] as const),
+            undefined,
+          ]),
+          id: faker.string.uuid(),
+          location: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+          orgDomain: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+          orgName: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+          primaryEmail: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+          seniority: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+          title: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+        },
+        undefined,
+      ]),
+      personId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
       role: faker.string.alpha({ length: { min: 10, max: 20 } }),
       title: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
