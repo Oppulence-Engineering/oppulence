@@ -922,6 +922,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if emptyActivity := relationshipSheetEmptyActivityMatch(needle); emptyActivity != nil {
 			parts = append(parts, emptyActivity)
 		}
+
+		if due := relationshipSheetActivityDueMatch(needle); due != nil {
+			parts = append(parts, due)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -2167,6 +2171,101 @@ func writeSilentFactKeys(b *sql.Builder) {
 		b.WriteString(key)
 		b.WriteString("'")
 	}
+}
+
+// relationshipSheetActivityDueMatch is the day on an opened activity.
+// "Due: Oct 3, 2026" is commitment_due_at in UTC. A promise row with that
+// day is a different line. An encrypted payload can replace the stored facts,
+// so those notes stay out.
+func relationshipSheetActivityDueMatch(needle string) predicate.Relationship {
+	start, ok := activityDueDay(needle)
+	if !ok {
+		return nil
+	}
+	return relationship.HasObservationsWith(observationFactDueOn(start))
+}
+
+func activityDueDay(needle string) (time.Time, bool) {
+	const marker = "due: "
+	index := strings.LastIndex(needle, marker)
+	if index < 0 {
+		return time.Time{}, false
+	}
+	fields := strings.Fields(needle[index+len(marker):])
+	if len(fields) < 3 {
+		return time.Time{}, false
+	}
+	month, ok := activityDueMonths[fields[0]]
+	if !ok {
+		return time.Time{}, false
+	}
+	day, err := strconv.Atoi(strings.TrimSuffix(fields[1], ","))
+	if err != nil || day < 1 || day > 31 {
+		return time.Time{}, false
+	}
+	if len(fields[2]) != 4 {
+		return time.Time{}, false
+	}
+	year, err := strconv.Atoi(fields[2])
+	if err != nil || year < 1000 {
+		return time.Time{}, false
+	}
+	start := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+	if start.Year() != year || start.Month() != month || start.Day() != day {
+		return time.Time{}, false
+	}
+	return start, true
+}
+
+var activityDueMonths = map[string]time.Month{
+	"jan": time.January,
+	"feb": time.February,
+	"mar": time.March,
+	"apr": time.April,
+	"may": time.May,
+	"jun": time.June,
+	"jul": time.July,
+	"aug": time.August,
+	"sep": time.September,
+	"oct": time.October,
+	"nov": time.November,
+	"dec": time.December,
+}
+
+func observationFactDueOn(start time.Time) predicate.RelationshipObservation {
+	end := start.Add(24 * time.Hour)
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			payload := s.C(relationshipobservation.FieldPayloadCiphertext)
+			b.WriteString("(")
+			b.WriteString(payload)
+			b.WriteString(" IS NULL OR length(")
+			b.WriteString(payload)
+			b.WriteString(") = 0) AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->>'commitment_due_at', '')) ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}:[0-9]{2}' AND (btrim(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->>'commitment_due_at'))::timestamptz >= ")
+				b.Arg(start)
+				b.WriteString(" AND (btrim(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->>'commitment_due_at'))::timestamptz < ")
+				b.Arg(end)
+				return
+			}
+			b.WriteString("datetime(replace(replace(trim(coalesce(json_extract(")
+			b.WriteString(facts)
+			b.WriteString(", '$.commitment_due_at'), '')), 'T', ' '), 'Z', '')) >= ")
+			b.Arg(start.Format("2006-01-02 15:04:05"))
+			b.WriteString(" AND datetime(replace(replace(trim(coalesce(json_extract(")
+			b.WriteString(facts)
+			b.WriteString(", '$.commitment_due_at'), '')), 'T', ' '), 'Z', '')) < ")
+			b.Arg(end.Format("2006-01-02 15:04:05"))
+		}))
+	})
 }
 
 func relationshipSheetActivityMatch(needle string) predicate.Relationship {
