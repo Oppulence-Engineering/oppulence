@@ -118,6 +118,21 @@ describe("synced console preferences", () => {
     });
   });
 
+  it("leaves an empty display name unnamed", async () => {
+    mocks.getPreferences.mockResolvedValue({ ...preferences, displayName: "" });
+    renderWithQuery(
+      <SettingsView
+        onNavigate={vi.fn()}
+        section="account"
+        session={{ user: { email: "dev@solomon-ai.co", permissions: [] } }}
+      />,
+    );
+
+    const field = await screen.findByLabelText("Display name");
+    await waitFor(() => expect(field).toHaveValue(""));
+    expect(field).toHaveAttribute("placeholder", "Your name");
+  });
+
   it("does not present preferences as notification settings", async () => {
     const onNavigate = vi.fn();
     const user = userEvent.setup();

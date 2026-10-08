@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  displayNamePlaceholder,
   helpDestination,
   preferenceFormIsHidden,
   preferenceRefreshCopy,
@@ -11,6 +12,15 @@ import {
 } from "@/components/features/settings/app-settings/app-settings";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "app-settings.tsx"), "utf8");
+
+describe("display name placeholder", () => {
+  it("does not name a sample person while the profile name is empty", () => {
+    expect(displayNamePlaceholder(false)).toBe("Your name");
+    expect(displayNamePlaceholder(true)).toBe("Loading…");
+    expect(source).not.toContain("Ada Lovelace");
+    expect(source).toContain("placeholder={displayNamePlaceholder(query.isLoading)}");
+  });
+});
 
 describe("SettingsView", () => {
   it("keeps the named product export at the generator path", () => {
