@@ -4496,8 +4496,8 @@
         "description": "Connector connection result.",
         "properties": {
           "audience": {
-            "description": "OAuth token audience for the connector.",
-            "example": "canvas-api",
+            "description": "Audience accepted by the product resource server.",
+            "example": "mcp:canvas",
             "type": "string"
           },
           "connected": {
@@ -4930,8 +4930,8 @@
         "description": "Append-only, replay-safe oauth-consent audit event. event_id is globally unique and conflicting replays are rejected.",
         "properties": {
           "audience": {
-            "description": "OAuth token audience for the connector.",
-            "example": "canvas-api",
+            "description": "Bound connector audience.",
+            "example": "mcp:canvas",
             "type": "string"
           },
           "client_id": {
@@ -5044,8 +5044,8 @@
         "description": "Connector identity shown to the user.",
         "properties": {
           "audience": {
-            "description": "OAuth token audience for the connector.",
-            "example": "canvas-api",
+            "description": "Audience bound to any resulting resource token.",
+            "example": "mcp:canvas",
             "type": "string"
           },
           "display_name": {
@@ -7127,8 +7127,8 @@
         "description": "Exact binding extracted from one verified connector resource token. Partial selectors are rejected.",
         "properties": {
           "audience": {
-            "description": "OAuth token audience for the connector.",
-            "example": "canvas-api",
+            "description": "Exact product resource audience.",
+            "example": "mcp:canvas",
             "type": "string"
           },
           "connection_id": {
@@ -7815,8 +7815,8 @@
         "description": "Audience and least-privilege scopes requested for one resource token.",
         "properties": {
           "audience": {
-            "description": "OAuth token audience for the connector.",
-            "example": "canvas-api",
+            "description": "Must exactly match the connector and stored connection audience.",
+            "example": "mcp:canvas",
             "nullable": true,
             "type": "string"
           },
@@ -7841,8 +7841,8 @@
             "type": "string"
           },
           "audience": {
-            "description": "OAuth token audience for the connector.",
-            "example": "canvas-api",
+            "description": "Exact product resource-server audience.",
+            "example": "mcp:canvas",
             "type": "string"
           },
           "connectionId": {

@@ -444,6 +444,21 @@ describe("API reference document", () => {
     expect(task.example).toBe("openai");
   });
 
+  it("does not sample the catalog audience for a minted token", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const schemas = presented.components.schemas as Record<
+      string,
+      { properties?: Record<string, { example?: string; description?: string; nullable?: boolean }> }
+    >;
+    const token = schemas.MCPTokenResponse?.properties?.audience;
+    expect(token?.example).toBe("mcp:canvas");
+    expect(token?.description).toBe("Exact product resource-server audience.");
+    const request = schemas.MCPTokenRequest?.properties?.audience;
+    expect(request?.example).toBe("mcp:canvas");
+    expect(request?.nullable).toBe(true);
+    expect(schemas.Connector?.properties?.audience?.example).toBe("canvas-api");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

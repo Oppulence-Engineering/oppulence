@@ -337,6 +337,7 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if taskProvider := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["provider"]); taskProvider["example"] != "openai" {
 		t.Fatalf("BackgroundTask.provider lost its model example: %#v", taskProvider)
 	}
+	assertTokenAudiences(t, schemas)
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
@@ -504,6 +505,8 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if taskProvider := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["provider"]); taskProvider["example"] != "openai" {
 		t.Fatalf("checked-in BackgroundTask.provider lost its model example: %#v", taskProvider)
 	}
+
+	assertTokenAudiences(t, schemas)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -659,6 +662,32 @@ func assertNonUUIDIdentifiers(t *testing.T, schemas obj) {
 	taskID := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["id"])
 	if taskID["example"] != "123e4567-e89b-12d3-a456-426614174000" || taskID["format"] != "uuid" {
 		t.Fatalf("BackgroundTask.id lost its UUID: %#v", taskID)
+	}
+}
+
+func assertTokenAudiences(t *testing.T, schemas obj) {
+	t.Helper()
+	want := map[string]string{
+		"ConnectionConnectedResponse":     "Audience accepted by the product resource server.",
+		"MCPTokenResponse":                "Exact product resource-server audience.",
+		"MCPTokenRequest":                 "Must exactly match the connector and stored connection audience.",
+		"ConsentConnectorIdentity":        "Audience bound to any resulting resource token.",
+		"InternalConnectionStatusRequest": "Exact product resource audience.",
+		"ConsentAuditRequest":             "Bound connector audience.",
+	}
+	for name, description := range want {
+		audience := asObj(asObj(asObj(schemas[name])["properties"])["audience"])
+		if audience["example"] != "mcp:canvas" || audience["description"] != description {
+			t.Fatalf("%s.audience sampled the catalog audience: %#v", name, audience)
+		}
+	}
+	request := asObj(asObj(asObj(schemas["MCPTokenRequest"])["properties"])["audience"])
+	if request["nullable"] != true {
+		t.Fatalf("MCPTokenRequest.audience must stay optional: %#v", request)
+	}
+	connector := asObj(asObj(asObj(schemas["Connector"])["properties"])["audience"])
+	if connector["example"] != "canvas-api" {
+		t.Fatalf("Connector.audience example changed: %#v", connector)
 	}
 }
 
