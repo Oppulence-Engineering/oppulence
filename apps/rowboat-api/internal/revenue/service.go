@@ -952,6 +952,9 @@ func (s *Service) ListRelationshipsFiltered(
 		if to := relationshipSheetActivityToMatch(needle); to != nil {
 			parts = append(parts, to)
 		}
+		if preview := relationshipSheetActivityPreviewMatch(needle); preview != nil {
+			parts = append(parts, preview)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -1973,6 +1976,25 @@ func relationshipSheetActivityFromMatch(needle string) predicate.Relationship {
 // not printed again. meeting-counterparty is not a recipient.
 func relationshipSheetActivityToMatch(needle string) predicate.Relationship {
 	return relationshipSheetActivityFactMatch(needle, "to: ", "to")
+}
+
+// relationshipSheetActivityPreviewMatch is "Preview: …" on an opened activity.
+// A mail snippet and a stored preview use the same label. A preview that
+// repeats the summary is not printed again. local-user is not a preview.
+func relationshipSheetActivityPreviewMatch(needle string) predicate.Relationship {
+	const marker = "preview: "
+	index := strings.Index(needle, marker)
+	if index < 0 {
+		return nil
+	}
+	value := strings.TrimSpace(needle[index+len(marker):])
+	if value == "" {
+		return nil
+	}
+	return relationship.HasObservationsWith(relationshipobservation.Or(
+		observationFactLine("snippet", value),
+		observationFactLine("preview", value),
+	))
 }
 
 func relationshipSheetActivityFactMatch(needle, marker, key string) predicate.Relationship {
