@@ -1505,7 +1505,7 @@ func addRevenuePaths(paths obj) {
 	}
 	paths["/v1/relationships/graph"] = companyGraphPath()
 	relationshipParam := []any{obj{"name": "relationshipId", "in": "path", "required": true, "description": "Relationship id.", "schema": obj{"type": "string", "format": "uuid"}}}
-	paths["/v1/relationships/{relationshipId}"] = obj{"get": operation("Relationship Intelligence", "Open a company", "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.", "getRelationship", bearer(), openedCompanyParams(), nil, obj{
+	paths["/v1/relationships/{relationshipId}"] = obj{"get": operation("Relationship Intelligence", "Open a company", "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The risk is that the security review has no owner.", "getRelationship", bearer(), openedCompanyParams(), nil, obj{
 		"200": jsonResponse("Opened company.", objectSchema("Company the sheet opened.", obj{
 			"relationship":           ref("RevenueRelationship"),
 			"actions":                arraySchema("Actions for this company.", ref("RevenueAction")),

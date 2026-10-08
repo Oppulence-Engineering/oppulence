@@ -2377,7 +2377,7 @@ export interface paths {
     };
     /**
      * Open a company
-     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.
+     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The risk is that the security review has no owner.
      */
     get: operations["getRelationship"];
     put?: never;
@@ -24090,7 +24090,9 @@ export interface operations {
            *         "projectedAt": "2026-07-25T16:00:00Z",
            *         "projectorVersion": 2,
            *         "resourceRefs": [],
-           *         "risks": [],
+           *         "risks": [
+           *           "Security review has no owner."
+           *         ],
            *         "sentiment": "unknown",
            *         "stateHash": "sha256:61dd3377d3854c6f9c104af050ad3f0f87ff6cdd1c3458c17541cbc1e87fc887",
            *         "stateReason": "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation.",
