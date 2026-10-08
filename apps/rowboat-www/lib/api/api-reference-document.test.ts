@@ -1986,6 +1986,16 @@ describe("API reference document", () => {
     expect(stored.provider).toBeUndefined();
   });
 
+  it("samples the agent Confirm delete removes", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const remove = presented.paths["/v1/agents/{slug}"].delete;
+    expect(remove.summary).toBe("Confirm delete");
+    expect(remove.description).toContain("customer-concierge");
+    expect(remove.requestBody).toBeUndefined();
+    expect(remove.parameters[0].schema.example).toBe("customer-concierge");
+    expect(remove.responses["204"].description).toBe("Agent removed.");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

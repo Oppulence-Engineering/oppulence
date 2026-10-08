@@ -57,6 +57,8 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/background-tasks/{slug}/runs/{runId}/events/stream",
 		"/v1/background-tasks/{slug}/trigger",
 		"/v1/agents",
+
+		"/v1/agents/{slug}",
 		"/v1/llm/models",
 		"/v1/llm/chat/completions",
 		"/v1/llm/completions",
@@ -2257,6 +2259,37 @@ func assertCreatedAgent(t *testing.T, spec obj) {
 	}
 	if _, ok := stored["model"]; ok {
 		t.Fatal("stored agent should omit an empty model")
+	}
+
+	assertDeletedAgent(t, spec)
+}
+
+func TestConfirmDeleteRemovesTheAgent(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertDeletedAgent(t, spec)
+}
+
+func assertDeletedAgent(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/agents/{slug}"])["delete"])
+	if op["summary"] != "Confirm delete" {
+		t.Fatalf("summary = %#v", op["summary"])
+	}
+	if op["description"] != "Confirm delete removes the agent named customer-concierge. Only an agent created in this workspace can be removed." {
+		t.Fatalf("description = %#v", op["description"])
+	}
+	if op["requestBody"] != nil {
+		t.Fatal("confirm delete sends no body")
+	}
+	params := op["parameters"].([]any)
+	slug := asObj(asObj(params[0])["schema"])
+	if slug["example"] != "customer-concierge" {
+		t.Fatalf("path example = %#v", slug["example"])
+	}
+	gone := asObj(asObj(op["responses"])["204"])
+	if gone["description"] != "Agent removed." {
+		t.Fatalf("204 = %#v", gone["description"])
 	}
 }
 
