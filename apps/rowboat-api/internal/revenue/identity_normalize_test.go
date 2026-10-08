@@ -1119,6 +1119,67 @@ func TestRelationshipSearchFindsSectionCounts(t *testing.T) {
 	assertCompanyQuery("People (1+)")
 }
 
+func TestRelationshipSearchFindsRecommendationReasons(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Reason Quiet",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	health, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Reason Health",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	health, err = f.svc.CorrectRelationship(f.ctx, f.user, health.ID, RelationshipCorrectionInput{
+		Dimension: "health", Value: "healthy", Reason: "The account is healthy.",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if health.StateReason != "The account is healthy." {
+		t.Fatalf("health reason = %q", health.StateReason)
+	}
+	slow, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Reason Slow",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	slow, err = f.svc.CorrectRelationship(f.ctx, f.user, slow.ID, RelationshipCorrectionInput{
+		Dimension: "engagement", Value: "declining", Reason: "Replies have slowed.",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if slow.StateReason != "Replies have slowed." {
+		t.Fatalf("slow reason = %q", slow.StateReason)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Why the recommendation changed", "Reason Health", "Reason Slow")
+	assertCompanyQuery("Why the recommendation changed:", "Reason Health", "Reason Slow")
+	assertCompanyQuery("Why the recommendation changed: The account is healthy.", "Reason Health")
+	assertCompanyQuery("Why the recommendation changed: Replies have slowed.", "Reason Slow")
+	assertCompanyQuery("Why the recommendation changed: Supporting evidence changed.")
+}
+
 func TestRelationshipSearchFindsTheUnsupportedStateAnswer(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
