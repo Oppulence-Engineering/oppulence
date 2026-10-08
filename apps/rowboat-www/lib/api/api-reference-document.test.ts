@@ -315,6 +315,23 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the Jira connection Disconnect Jira removes", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const remove = presented.paths["/v1/composio/connections/{connectionID}"].delete;
+    const connectionID = "ca_8b8dfa9ba7b246ea982c622a914c00e5";
+    expect(remove.summary).toBe("Disconnect Jira");
+    expect(remove.operationId).toBe("deleteComposioConnection");
+    expect(remove.description).toBe("Disconnect Jira removes that connection. The request sends no body.");
+    expect(remove.requestBody).toBeUndefined();
+    expect(remove.parameters[0].example).toBe(connectionID);
+    expect(remove.responses["204"].description).toBe("The Jira connection is removed.");
+    expect(remove.responses["204"].content).toBeUndefined();
+    const serialized = JSON.stringify(remove);
+    expect(serialized).not.toContain("acta_");
+    expect(serialized).not.toContain('"token"');
+    expect(serialized).not.toContain("hubspot");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

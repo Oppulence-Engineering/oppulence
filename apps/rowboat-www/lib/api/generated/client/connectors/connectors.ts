@@ -978,6 +978,69 @@ export const startConnector = async (
   return { data, status: res.status, headers: res.headers } as startConnectorResponse;
 };
 
+export type deleteComposioConnectionResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type deleteComposioConnectionResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type deleteComposioConnectionResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type deleteComposioConnectionResponse502 = {
+  data: N502Response;
+  status: 502;
+};
+
+export type deleteComposioConnectionResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type deleteComposioConnectionResponseSuccess = deleteComposioConnectionResponse204 & {
+  headers: Headers;
+};
+export type deleteComposioConnectionResponseError = (
+  | deleteComposioConnectionResponse401
+  | deleteComposioConnectionResponse404
+  | deleteComposioConnectionResponse502
+  | deleteComposioConnectionResponse503
+) & {
+  headers: Headers;
+};
+
+export type deleteComposioConnectionResponse =
+  deleteComposioConnectionResponseSuccess | deleteComposioConnectionResponseError;
+
+export const getDeleteComposioConnectionUrl = (connectionID: string) => {
+  return `/v1/composio/connections/${connectionID}`;
+};
+
+/**
+ * Disconnect Jira removes that connection. The request sends no body.
+ * @summary Disconnect Jira
+ */
+export const deleteComposioConnection = async (
+  connectionID: string,
+  options?: RequestInit,
+): Promise<deleteComposioConnectionResponse> => {
+  const res = await fetch(getDeleteComposioConnectionUrl(connectionID), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteComposioConnectionResponse["data"] = body ? JSON.parse(body) : undefined;
+  return { data, status: res.status, headers: res.headers } as deleteComposioConnectionResponse;
+};
+
 export type searchHubSpotResponse200 = {
   data: HubSpotSearchResponse;
   status: 200;

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,50 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertDisconnectJira(t, spec)
+}
+
+func TestDisconnectJiraRemovesTheConnection(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertDisconnectJira(t, spec)
+}
+
+func assertDisconnectJira(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/composio/connections/{connectionID}"])["delete"])
+	if operation["summary"] != "Disconnect Jira" || operation["operationId"] != "deleteComposioConnection" || operation["description"] != disconnectJiraDescription {
+		t.Fatalf("disconnect copy: %#v", obj{"summary": operation["summary"], "operationId": operation["operationId"], "description": operation["description"]})
+	}
+	if operation["requestBody"] != nil {
+		t.Fatal("disconnect sends a body")
+	}
+	params, _ := operation["parameters"].([]any)
+	if len(params) != 1 {
+		t.Fatalf("params: %#v", operation["parameters"])
+	}
+	param := asObj(params[0])
+	if param["name"] != "connectionID" || param["example"] != disconnectJiraConnectionID {
+		t.Fatalf("connection id: %#v", param)
+	}
+	removed := asObj(asObj(operation["responses"])["204"])
+	if removed["description"] != disconnectJiraRemoved || removed["content"] != nil {
+		t.Fatalf("204: %#v", removed)
+	}
+	raw, err := json.Marshal(operation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(raw)
+	for _, forbidden := range []string{"acta_", `"token"`, "hubspot", "gmail"} {
+		if strings.Contains(text, forbidden) {
+			t.Fatalf("disconnect sample contains %s", forbidden)
+		}
+	}
+	hubspot := asObj(asObj(asObj(spec["paths"])["/v1/connections/{name}"])["delete"])
+	if hubspot["summary"] != "Disconnect connector" {
+		t.Fatalf("native disconnect changed: %#v", hubspot["summary"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
