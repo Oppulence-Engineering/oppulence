@@ -7456,7 +7456,14 @@ export interface components {
     };
     /** @description One ordered durable agent lifecycle or transcript event. */
     DurableAgentSessionEvent: {
-      /** @description Event payload. */
+      /**
+       * @description Payload the approval card reads.
+       * @example {
+       *       "approvalId": "session_abc123/turn/0/approval/0",
+       *       "tool": "slack.post_message",
+       *       "trustTier": "act"
+       *     }
+       */
       data: {
         [key: string]: unknown;
       };
@@ -7471,8 +7478,8 @@ export interface components {
        */
       turnSeq?: number | null;
       /**
-       * @description Canonical event type.
-       * @example agent.message
+       * @description Chat event. An approval request pauses until Approve.
+       * @example agent.approval_requested
        */
       type: string;
     };

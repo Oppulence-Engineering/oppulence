@@ -592,6 +592,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 
 	assertRunAttempt(t, spec)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
+	assertChatApprovalEvent(t, schemas)
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
 	}
@@ -8117,6 +8118,36 @@ func assertConfirmPlan(t *testing.T, spec obj) {
 	publicPlan := asObj(asObj(asObj(spec["paths"])["/v1/public/mutual-action-plan"])["get"])
 	if asObj(asObj(asObj(asObj(publicPlan["responses"])["200"])["content"])["application/json"])["example"] != nil {
 		t.Fatal("opening the shared plan gained an example")
+	}
+}
+
+func TestChatApprovalEventIsDocumented(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertChatApprovalEvent(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertChatApprovalEvent(t *testing.T, schemas obj) {
+	t.Helper()
+	props := asObj(asObj(schemas["DurableAgentSessionEvent"])["properties"])
+	eventType := asObj(props["type"])
+	if eventType["example"] != chatApprovalEventType || eventType["description"] != chatApprovalEventTypeDescription {
+		t.Fatalf("chat approval event type: %#v", eventType)
+	}
+	data := asObj(props["data"])
+	if data["description"] != chatApprovalEventDataDescription {
+		t.Fatalf("chat approval payload: %#v", data)
+	}
+	example := asObj(data["example"])
+	if example["tool"] != chatApprovalEventTool || example["trustTier"] != chatApprovalEventTier || example["approvalId"] != chatApprovalEventID {
+		t.Fatalf("chat approval sample: %#v", example)
+	}
+	encoded, err := json.Marshal(example)
+	if err != nil {
+		t.Fatalf("marshal chat approval sample: %v", err)
+	}
+	if strings.Contains(string(encoded), "acta_") || strings.Contains(string(encoded), `"token"`) {
+		t.Fatalf("chat approval sample looks like a live token: %s", encoded)
 	}
 }
 

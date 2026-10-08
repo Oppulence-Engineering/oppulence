@@ -200,10 +200,12 @@ export const ListAgentSessionEvents200Response = zod
       .array(
         zod
           .strictObject({
-            data: zod.record(zod.string(), zod.unknown()).describe("Event payload."),
+            data: zod
+              .record(zod.string(), zod.unknown())
+              .describe("Payload the approval card reads."),
             seq: zod.int().describe("Stable session event sequence."),
             turnSeq: zod.int().nullish().describe("Owning turn sequence when applicable."),
-            type: zod.string().describe("Canonical event type."),
+            type: zod.string().describe("Chat event. An approval request pauses until Approve."),
           })
           .describe("One ordered durable agent lifecycle or transcript event."),
       )

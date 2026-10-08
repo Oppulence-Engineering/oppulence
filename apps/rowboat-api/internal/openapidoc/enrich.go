@@ -233,6 +233,15 @@ func addRuntimeSchemas(schemas obj) {
 	addAgentSessionSchemas(schemas)
 }
 
+const (
+	chatApprovalEventType            = "agent.approval_requested"
+	chatApprovalEventTool            = "slack.post_message"
+	chatApprovalEventTier            = "act"
+	chatApprovalEventID              = "session_abc123/turn/0/approval/0"
+	chatApprovalEventTypeDescription = "Chat event. An approval request pauses until Approve."
+	chatApprovalEventDataDescription = "Payload the approval card reads."
+)
+
 func addAgentSessionSchemas(schemas obj) {
 	schemas["DurableAgentSessionView"] = objectSchema("Durable agent conversation metadata.", obj{
 		"sessionId":         stringSchema("Stable session id.", "session_abc123"),
@@ -255,11 +264,17 @@ func addAgentSessionSchemas(schemas obj) {
 		"sessions": arraySchema("Sessions ordered by latest update.", ref("DurableAgentSessionView")),
 		"hasMore":  boolSchema("Another conversation exists beyond this page.", false),
 	}, "sessions")
+	approvalPayload := freeFormSchema(chatApprovalEventDataDescription)
+	approvalPayload["example"] = obj{
+		"approvalId": chatApprovalEventID,
+		"tool":       chatApprovalEventTool,
+		"trustTier":  chatApprovalEventTier,
+	}
 	schemas["DurableAgentSessionEvent"] = objectSchema("One ordered durable agent lifecycle or transcript event.", obj{
 		"seq":     intSchema("Stable session event sequence.", 4),
-		"type":    stringSchema("Canonical event type.", "agent.message"),
+		"type":    stringSchema(chatApprovalEventTypeDescription, chatApprovalEventType),
 		"turnSeq": intSchema("Owning turn sequence when applicable.", 1, nullable()),
-		"data":    freeFormSchema("Event payload."),
+		"data":    approvalPayload,
 	}, "seq", "type", "data")
 	schemas["AgentSessionEventsResponse"] = objectSchema("A page of durable session events.", obj{
 		"events":  arraySchema("Ordered session events.", ref("DurableAgentSessionEvent")),

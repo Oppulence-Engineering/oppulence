@@ -170,6 +170,25 @@ describe("API reference document", () => {
     expect(presented.paths["/v1/chat"]?.post?.tags).toEqual(["Model calls", "System"]);
   });
 
+  it("samples the tool and tier an approval card shows", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const event = presented.components.schemas.DurableAgentSessionEvent.properties;
+    expect(event.type).toMatchObject({
+      description: "Chat event. An approval request pauses until Approve.",
+      example: "agent.approval_requested",
+    });
+    expect(event.data).toMatchObject({
+      description: "Payload the approval card reads.",
+      example: {
+        approvalId: "session_abc123/turn/0/approval/0",
+        tool: "slack.post_message",
+        trustTier: "act",
+      },
+    });
+    expect(JSON.stringify(event.data.example)).not.toContain("acta_");
+    expect(JSON.stringify(event.data.example)).not.toContain('"token"');
+  });
+
   it("renames operation titles and drops the old product from their text", () => {
     const presented = presentApiReferenceDocument({
       paths: {
