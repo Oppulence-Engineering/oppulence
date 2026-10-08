@@ -4516,8 +4516,8 @@
             "type": "string"
           },
           "scopes": {
-            "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "description": "Scopes granted by the completed consent flow.",
+            "example": ["canvas:invoices.read"],
             "items": {
               "description": "Scope.",
               "example": "canvas:invoices.read",
@@ -4976,8 +4976,8 @@
             "type": "object"
           },
           "scopes": {
-            "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "description": "Shown or granted scope set.",
+            "example": ["canvas:invoices.read"],
             "items": {
               "description": "Connector scope.",
               "example": "canvas:invoices.read",
@@ -6775,8 +6775,8 @@
             "type": "string"
           },
           "scopes": {
-            "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "description": "Granted Google OAuth scopes.",
+            "example": ["https://www.googleapis.com/auth/gmail.readonly"],
             "items": {
               "description": "Scope.",
               "example": "https://www.googleapis.com/auth/gmail.readonly",
@@ -7648,8 +7648,8 @@
             "type": "string"
           },
           "scopes": {
-            "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "description": "Scopes granted for this connector.",
+            "example": ["canvas:invoices.read"],
             "items": {
               "type": "string"
             },
@@ -7777,8 +7777,8 @@
             "type": "string"
           },
           "scopes": {
-            "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "description": "Scopes recorded for this connector.",
+            "example": ["canvas:invoices.read"],
             "items": {
               "type": "string"
             },
@@ -7873,8 +7873,8 @@
             "type": "string"
           },
           "scopes": {
-            "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "description": "Validated minted scope subset.",
+            "example": ["canvas:invoices.read"],
             "items": {
               "description": "Scope.",
               "example": "canvas:invoices.read",
@@ -8588,8 +8588,8 @@
             "type": "boolean"
           },
           "scopes": {
-            "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "description": "Scopes granted on this connection.",
+            "example": ["https://www.googleapis.com/auth/gmail.readonly"],
             "items": {
               "type": "string"
             },
@@ -8666,8 +8666,8 @@
             "type": "boolean"
           },
           "scopes": {
-            "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "description": "Scopes recorded for this connection.",
+            "example": ["https://www.googleapis.com/auth/gmail.readonly"],
             "items": {
               "type": "string"
             },
@@ -9615,8 +9615,8 @@
             "type": "string"
           },
           "scopes": {
-            "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "description": "Exact catalog scope definitions.",
+            "example": [{"name": "canvas:invoices.read", "display_name": "Read invoices", "description": "Read invoice records.", "tier": "low", "required": true, "requires_step_up": false}],
             "items": {
               "$ref": "#/components/schemas/ConsentScopeDefinition"
             },
@@ -13764,8 +13764,8 @@
             "type": "string"
           },
           "scopes": {
-            "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "description": "Granted bot scopes.",
+            "example": ["channels:history", "chat:write"],
             "items": {
               "description": "Slack OAuth scope.",
               "example": "channels:history",
@@ -14658,8 +14658,8 @@
             "type": "string"
           },
           "scopes": {
-            "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "description": "Granted scopes.",
+            "example": ["notes:read"],
             "items": {
               "description": "Scope.",
               "example": "notes:read",
@@ -14686,8 +14686,8 @@
             "type": "string"
           },
           "scopes": {
-            "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "description": "Granted scopes.",
+            "example": ["notes:read"],
             "items": {
               "description": "Scope.",
               "example": "notes:read",
