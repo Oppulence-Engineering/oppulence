@@ -976,6 +976,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if changes := relationshipSheetChangeHeadingMatch(needle); changes != nil {
 			parts = append(parts, changes)
 		}
+
+		if timeline := relationshipSheetTimelineHeadingMatch(needle); timeline != nil {
+			parts = append(parts, timeline)
+		}
 		if accepted := relationshipSheetAcceptedPromiseMatch(needle); accepted != nil {
 			parts = append(parts, accepted)
 		}
@@ -5321,6 +5325,86 @@ func relationshipHasMeetingObservation() predicate.Relationship {
 
 func relationshipHasVisibleCommunication() predicate.Relationship {
 	return relationship.HasCommunicationInteractionsWith(communicationinteraction.DeletedEQ(false))
+}
+
+// The sheet asks for 50 activity rows and 50 mail or meeting rows. A longer
+// history prints (50+) and Show earlier until the rest of the rows are loaded.
+const (
+	relationshipActivityPage      = 50
+	relationshipCommunicationPage = 50
+)
+
+// relationshipSheetTimelineHeadingMatch matches Activity history and Email &
+// meeting timeline. A deleted mail record is not on the timeline. Show earlier
+// is the first page when more than 50 rows exist.
+func relationshipSheetTimelineHeadingMatch(needle string) predicate.Relationship {
+	if labelPhraseMatches("show earlier activity", needle) {
+		return relationshipObservationCount(">", relationshipActivityPage)
+	}
+	if labelPhraseMatches("show earlier mail and meetings", needle) {
+		return relationshipVisibleCommunicationCount(">", relationshipCommunicationPage)
+	}
+	if compare, n, ok := countedSheetHeading(needle, "activity history (", relationshipActivityPage); ok {
+		return relationshipObservationCount(compare, n)
+	}
+	if compare, n, ok := countedSheetHeading(needle, "email & meeting timeline (", relationshipCommunicationPage); ok {
+		return relationshipVisibleCommunicationCount(compare, n)
+	}
+	return nil
+}
+
+func countedSheetHeading(needle, prefix string, page int) (compare string, n int, ok bool) {
+	if !strings.HasPrefix(needle, prefix) || !strings.HasSuffix(needle, ")") {
+		return "", 0, false
+	}
+	body := strings.TrimSuffix(strings.TrimPrefix(needle, prefix), ")")
+	overflow := strings.HasSuffix(body, "+")
+	body = strings.TrimSuffix(body, "+")
+	parsed, err := strconv.Atoi(body)
+	if err != nil || parsed < 0 || strconv.Itoa(parsed) != body {
+		return "", 0, false
+	}
+	if overflow {
+		if parsed != page {
+			return "", 0, false
+		}
+		return ">", page, true
+	}
+	return "=", parsed, true
+}
+
+func relationshipObservationCount(compare string, n int) predicate.Relationship {
+	return relationshipRowCount(relationshipobservation.Table, relationshipobservation.RelationshipColumn, compare, n, false)
+}
+
+func relationshipVisibleCommunicationCount(compare string, n int) predicate.Relationship {
+	return relationshipRowCount(communicationinteraction.Table, communicationinteraction.RelationshipColumn, compare, n, true)
+}
+
+func relationshipRowCount(table, column, compare string, n int, visibleOnly bool) predicate.Relationship {
+	if compare != "=" && compare != ">" {
+		compare = "="
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(table)
+			b.WriteString(" AS counted WHERE counted.")
+			b.WriteString(column)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			if visibleOnly {
+				b.WriteString(" AND counted.")
+				b.WriteString(communicationinteraction.FieldDeleted)
+				b.WriteString(" = ")
+				b.Arg(false)
+			}
+			b.WriteString(") ")
+			b.WriteString(compare)
+			b.WriteString(" ")
+			b.Arg(n)
+		}))
+	})
 }
 
 // relationshipSheetReviewMatch matches the review line on the company sheet.

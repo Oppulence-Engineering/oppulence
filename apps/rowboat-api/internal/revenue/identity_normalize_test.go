@@ -942,6 +942,97 @@ func TestRelationshipSearchFindsDeletionAndChangeHeadings(t *testing.T) {
 	assertCompanyQuery("What changed (4)")
 }
 
+func TestRelationshipSearchFindsTimelineHeadings(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	at := time.Date(2026, 10, 4, 12, 0, 0, 0, time.UTC)
+	quiet := makeCompany("Pace Quiet")
+	one := makeCompany("Pace One")
+	mail := makeCompany("Pace Mail")
+	removed := makeCompany("Pace Removed")
+	long := makeCompany("Pace Long")
+	mailLong := makeCompany("Pace Mail Long")
+	_ = quiet
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(one).
+		SetSource("desktop_note").SetExternalID("pace-one").
+		SetEventType("note").SetOccurredAt(at).SetReceivedAt(at).
+		SetSummary("A note").SetContentHash("pace-one").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	internal := auth.WithInternal(context.Background())
+	writeMail := func(rel *ent.Relationship, objectID string, deleted bool) {
+		t.Helper()
+		if _, err := f.client.CommunicationInteraction.Create().
+			SetWorkspace(ws).SetOwner(f.user).SetRelationshipID(rel.ID).
+			SetSource("gmail").SetSourceAccountID("owner@x.co").SetProviderObjectID(objectID).
+			SetInteractionType("email").SetDirection("inbound").SetSubject("Hello").
+			SetOccurredAt(at).SetReceivedAt(at).SetVisibility("metadata").
+			SetContentHash("sha256:" + objectID).SetMetadataJSON(`{}`).SetDeleted(deleted).
+			Save(internal); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeMail(mail, "pace-mail", false)
+	writeMail(removed, "pace-removed", true)
+	for i := 0; i < 51; i++ {
+		externalID := fmt.Sprintf("pace-long-%d", i)
+		if _, err := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(long).
+			SetSource("desktop_note").SetExternalID(externalID).
+			SetEventType("note").SetOccurredAt(at.Add(time.Duration(i) * time.Second)).SetReceivedAt(at).
+			SetSummary("A note").SetContentHash(externalID).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+		writeMail(mailLong, fmt.Sprintf("pace-mail-long-%d", i), false)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Activity history (0)", "Pace Quiet", "Pace Mail", "Pace Removed", "Pace Mail Long")
+	assertCompanyQuery("Activity history (1)", "Pace One")
+	assertCompanyQuery("Activity history (50)")
+	assertCompanyQuery("Activity history (50+)", "Pace Long")
+	assertCompanyQuery("Activity history (51)", "Pace Long")
+	assertCompanyQuery("Show earlier activity", "Pace Long")
+	assertCompanyQuery("Email & meeting timeline (0)", "Pace Quiet", "Pace One", "Pace Removed", "Pace Long")
+	assertCompanyQuery("Email & meeting timeline (1)", "Pace Mail")
+	assertCompanyQuery("Email & meeting timeline (50+)", "Pace Mail Long")
+	assertCompanyQuery("Email & meeting timeline (51)", "Pace Mail Long")
+	assertCompanyQuery("Show earlier mail and meetings", "Pace Mail Long")
+	assertCompanyQuery("Activity history (49+)")
+	assertCompanyQuery("Email & meeting timeline (2)")
+}
+
 func TestRelationshipSearchFindsTheUnsupportedStateAnswer(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
