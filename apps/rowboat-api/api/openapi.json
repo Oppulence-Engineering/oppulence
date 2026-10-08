@@ -24565,7 +24565,7 @@
             "application/json": {
               "example": {
                 "correctedValue": "Avery Chen",
-                "reason": "Avery was the speaker.",
+                "reason": "User corrected conversation evidence during focused review.",
                 "reviewItemId": "review:ab12"
               },
               "schema": {
@@ -24578,7 +24578,7 @@
                   },
                   "reason": {
                     "description": "Correction reason.",
-                    "example": "Avery was the speaker.",
+                    "example": "User corrected conversation evidence during focused review.",
                     "type": "string"
                   },
                   "reviewItemId": {
@@ -24656,7 +24656,7 @@
             "application/json": {
               "example": {
                 "kind": "approve",
-                "reason": "Customer stated this directly.",
+                "reason": "User decided a proposed conversation change.",
                 "reviewItemId": "review:ab12"
               },
               "schema": {
@@ -24681,7 +24681,7 @@
                   },
                   "reason": {
                     "description": "Decision reason.",
-                    "example": "Customer clarified this in the meeting.",
+                    "example": "User decided a proposed conversation change.",
                     "type": "string"
                   },
                   "reviewItemId": {

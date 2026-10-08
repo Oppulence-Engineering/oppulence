@@ -55,6 +55,12 @@ const (
 // stores that same id as the receipt.
 const documentedDeletionRequestID = "eb8dfa9b-a7b2-46ea-982c-622a914c00e5"
 
+// Focused review sends these reasons for every correction and every decision.
+const (
+	documentedConversationCorrectionReason = "User corrected conversation evidence during focused review."
+	documentedConversationDecisionReason   = "User decided a proposed conversation change."
+)
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
@@ -1093,7 +1099,7 @@ func addRevenuePaths(paths obj) {
 		"reviewItemId":   stringSchema("Review item id.", conversationReviewItemID(conversationObservationID, conversationClaimID, "speaker")),
 		"kind":           stringEnum("Decision kind.", "approve", "approve", "correct", "reject", "defer"),
 		"correctedValue": stringSchema("Required replacement for correct.", "Security review is complete."),
-		"reason":         stringSchema("Decision reason.", "Customer clarified this in the meeting."),
+		"reason":         stringSchema("Decision reason.", documentedConversationDecisionReason),
 		"deferUntil":     stringSchema("Future reminder for defer.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
 	}, "reviewItemId", "kind"), obj{"reviewItemId": conversationReviewItemID(conversationObservationID, conversationClaimID, "speaker"), "kind": "approve", "reason": "Customer stated this directly."}), obj{
 		"201": jsonResponse("Updated relationship and refreshed review queue.", objectSchema("Decision result.", obj{"relationship": ref("RevenueRelationship"), "intelligence": ref("RelationshipIntelligence")}, "relationship", "intelligence"), nil),

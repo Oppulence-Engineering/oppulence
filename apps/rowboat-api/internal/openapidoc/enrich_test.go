@@ -834,8 +834,6 @@ func exampleEquals(value any, want int) bool {
 	default:
 		return false
 	}
-
-	assertObservationContentHash(t, schemas)
 }
 
 func TestObservationContentHashMatchesTheGmailSample(t *testing.T) {
@@ -1051,6 +1049,41 @@ func assertDeletionRequest(t *testing.T, spec obj) {
 	}
 	if requestID["example"] == "delete:ab12" || stored["example"] == "delete:ab12" {
 		t.Fatal("deletion still samples delete:ab12")
+	}
+
+	assertFocusedReviewReasons(t, spec)
+}
+
+func TestFocusedReviewSendsItsReasons(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertFocusedReviewReasons(t, spec)
+}
+
+func assertFocusedReviewReasons(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	correction := requestExample(t, paths, "/v1/relationships/{relationshipId}/conversation-corrections")
+	if correction.example["reason"] != documentedConversationCorrectionReason || correction.reason["example"] != documentedConversationCorrectionReason {
+		t.Fatalf("correction reason: %#v %#v", correction.example, correction.reason)
+	}
+	decision := requestExample(t, paths, "/v1/relationships/{relationshipId}/conversation-decisions")
+	if decision.example["kind"] != "approve" || decision.example["reason"] != documentedConversationDecisionReason || decision.reason["example"] != documentedConversationDecisionReason {
+		t.Fatalf("decision reason: %#v %#v", decision.example, decision.reason)
+	}
+}
+
+type focusedReviewRequest struct {
+	example obj
+	reason  obj
+}
+
+func requestExample(t *testing.T, paths obj, path string) focusedReviewRequest {
+	t.Helper()
+	content := asObj(asObj(asObj(asObj(asObj(paths[path])["post"])["requestBody"])["content"])["application/json"])
+	return focusedReviewRequest{
+		example: asObj(content["example"]),
+		reason:  asObj(asObj(asObj(content["schema"])["properties"])["reason"]),
 	}
 }
 
