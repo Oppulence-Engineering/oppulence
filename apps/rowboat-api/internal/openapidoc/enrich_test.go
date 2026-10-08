@@ -111,6 +111,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/relationships/{relationshipId}/conversation-corrections",
 		"/v1/relationship-observations/batch",
 		"/v1/workspace-notes",
+		"/v1/revenue-workspaces/current/communication-policy/{sourceAccountId}",
 		"/v1/relationship-sources/status",
 		"/v1/relationship-recommendations/{actionId}/approve",
 		"/v1/relationship-recommendations/{actionId}/reject",
@@ -2614,6 +2615,39 @@ func assertConnectHubSpot(t *testing.T, paths obj) {
 	}
 	if _, canvas := response["connector"]; canvas {
 		t.Fatal("response must not name another connector")
+	}
+
+	assertSaveMailboxPolicy(t, paths)
+}
+
+func TestSaveMailboxPolicyOmitsIdentityFields(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSaveMailboxPolicy(t, asObj(spec["paths"]))
+}
+
+func assertSaveMailboxPolicy(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/revenue-workspaces/current/communication-policy/{sourceAccountId}"])["put"])
+	if op["summary"] != "Save mailbox policy" {
+		t.Fatalf("summary: %#v", op["summary"])
+	}
+	params, ok := op["parameters"].([]any)
+	if !ok || len(params) != 1 || asObj(asObj(params[0])["schema"])["example"] != "you@company.com" {
+		t.Fatalf("account: %#v", op["parameters"])
+	}
+	request := asObj(asObj(asObj(asObj(op["requestBody"])["content"])["application/json"])["example"])
+	for _, hidden := range []string{"id", "sourceAccountId", "version"} {
+		if _, present := request[hidden]; present {
+			t.Fatalf("request includes %s: %s", hidden, mustJSON(request))
+		}
+	}
+	if mustJSON(request) != mustJSON(savedMailboxPolicyRequest()) {
+		t.Fatalf("request: %s", mustJSON(request))
+	}
+	response := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	if mustJSON(response) != mustJSON(savedMailboxPolicy()) {
+		t.Fatalf("response: %s", mustJSON(response))
 	}
 }
 

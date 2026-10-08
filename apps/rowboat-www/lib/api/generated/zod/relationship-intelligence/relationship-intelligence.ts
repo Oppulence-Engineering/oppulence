@@ -7349,6 +7349,105 @@ export const GetRelationshipTimeline404Response = zod
   );
 
 /**
+ * Save mailbox policy sends the sharing choices already on screen and leaves out the policy id, the mailbox account, and the current version. The stored policy keeps those choices and advances the version.
+ * @summary Save mailbox policy
+ */
+export const PutCommunicationPolicyParams = zod.object({
+  sourceAccountId: zod.string().describe("Mailbox account email."),
+});
+
+export const PutCommunicationPolicyBody = zod
+  .strictObject({
+    metadataVisibility: zod
+      .enum(["private", "workspace"])
+      .describe("Who can see mailbox metadata."),
+    modelContactExtraction: zod.boolean().describe("Extract contacts from mail."),
+    retentionDays: zod.int().describe("Days mailbox content is kept."),
+    shareAttachments: zod.boolean().describe("Share attachments by default."),
+    shareBody: zod.boolean().describe("Share bodies by default."),
+    shareSubject: zod.boolean().describe("Share subject lines by default."),
+    signatureEnrichment: zod.boolean().describe("Read email signatures."),
+  })
+  .describe("Mailbox policy save.");
+
+export const PutCommunicationPolicy200Response = zod
+  .strictObject({
+    id: zod.uuid().describe("Policy id."),
+    metadataVisibility: zod
+      .enum(["private", "workspace"])
+      .describe("Who can see mailbox metadata."),
+    modelContactExtraction: zod.boolean().describe("Extract contacts from mail."),
+    retentionDays: zod.int().describe("Days mailbox content is kept."),
+    shareAttachments: zod.boolean().describe("Share attachments by default."),
+    shareBody: zod.boolean().describe("Share bodies by default."),
+    shareSubject: zod.boolean().describe("Share subject lines by default."),
+    signatureEnrichment: zod.boolean().describe("Read email signatures."),
+    sourceAccountId: zod.string().describe("Mailbox account email."),
+    version: zod.int().describe("Policy version."),
+  })
+  .describe("Saved mailbox policy.");
+
+export const PutCommunicationPolicy400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const PutCommunicationPolicy401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const PutCommunicationPolicy403Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const PutCommunicationPolicy404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
  * Returns one scanned text attachment when policy and grants allow it.
  * @summary Get authorized attachment content
  */

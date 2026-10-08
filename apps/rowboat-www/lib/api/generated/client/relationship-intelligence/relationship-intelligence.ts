@@ -64,6 +64,8 @@ import type {
   N403Response,
   N404Response,
   N409Response,
+  PutCommunicationPolicy200,
+  PutCommunicationPolicyBody,
   PutConversationPolicy201,
   PutConversationPolicyBody,
   RejectRelationshipRecommendationBody,
@@ -2803,6 +2805,72 @@ export const getRelationshipTimeline = async (
 
   const data: getRelationshipTimelineResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as getRelationshipTimelineResponse;
+};
+
+export type putCommunicationPolicyResponse200 = {
+  data: PutCommunicationPolicy200;
+  status: 200;
+};
+
+export type putCommunicationPolicyResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type putCommunicationPolicyResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type putCommunicationPolicyResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type putCommunicationPolicyResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type putCommunicationPolicyResponseSuccess = putCommunicationPolicyResponse200 & {
+  headers: Headers;
+};
+export type putCommunicationPolicyResponseError = (
+  | putCommunicationPolicyResponse400
+  | putCommunicationPolicyResponse401
+  | putCommunicationPolicyResponse403
+  | putCommunicationPolicyResponse404
+) & {
+  headers: Headers;
+};
+
+export type putCommunicationPolicyResponse =
+  putCommunicationPolicyResponseSuccess | putCommunicationPolicyResponseError;
+
+export const getPutCommunicationPolicyUrl = (sourceAccountId: string) => {
+  return `/v1/revenue-workspaces/current/communication-policy/${sourceAccountId}`;
+};
+
+/**
+ * Save mailbox policy sends the sharing choices already on screen and leaves out the policy id, the mailbox account, and the current version. The stored policy keeps those choices and advances the version.
+ * @summary Save mailbox policy
+ */
+export const putCommunicationPolicy = async (
+  sourceAccountId: string,
+  putCommunicationPolicyBody: PutCommunicationPolicyBody,
+  options?: RequestInit,
+): Promise<putCommunicationPolicyResponse> => {
+  const res = await fetch(getPutCommunicationPolicyUrl(sourceAccountId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(putCommunicationPolicyBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: putCommunicationPolicyResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as putCommunicationPolicyResponse;
 };
 
 export type getCommunicationAttachmentContentResponse200 = {
