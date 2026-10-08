@@ -359,6 +359,8 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	assertVoiceKeyPrefix(t, schemas)
 	assertVoiceKeyCreateExample(t, spec)
 
+	assertAttentionOwner(t, schemas)
+
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
 	reason := asObj(evidenceProperties["reason"])
@@ -547,6 +549,8 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 
 	assertVoiceKeyPrefix(t, schemas)
 	assertVoiceKeyCreateExample(t, spec)
+
+	assertAttentionOwner(t, schemas)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -1007,6 +1011,25 @@ func assertVoiceKeyCreateExample(t *testing.T, spec obj) {
 	data := asObj(body["data"])
 	if data["key"] != "opv_live_exampleAbCdEfGhIjKlMnOpQrStUvWxYz0123456789" {
 		t.Fatalf("created voice key sampled the display prefix: %#v", data["key"])
+	}
+}
+
+func assertAttentionOwner(t *testing.T, schemas obj) {
+	t.Helper()
+	properties := asObj(asObj(schemas["RelationshipAttentionItem"])["properties"])
+	owner := asObj(properties["ownerId"])
+	relationship := asObj(properties["relationshipId"])["example"]
+	if owner["description"] != "Assigned user id." || owner["example"] != "a8dfa9b6-a7b2-46ea-982c-622a914c00e5" || owner["example"] == relationship {
+		t.Fatalf("attention owner sampled the relationship: owner=%#v relationship=%#v", owner["example"], relationship)
+	}
+	if relationship != "9c8dfa9b-a7b2-46ea-982c-622a914c00e5" {
+		t.Fatalf("attention relationship changed: %#v", relationship)
+	}
+	for _, name := range []string{"acknowledgedBy", "acknowledgedAt", "dismissedBy", "dismissedAt"} {
+		field := asObj(properties[name])
+		if _, ok := field["example"]; ok {
+			t.Fatalf("%s sampled a decision on an open attention item: %#v", name, field["example"])
+		}
 	}
 }
 
