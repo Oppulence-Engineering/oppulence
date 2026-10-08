@@ -975,6 +975,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if card := relationshipSheetPlanCardMatch(needle); card != nil {
 			parts = append(parts, card)
 		}
+
+		if planStatus := relationshipSheetPlanStatusMatch(needle); planStatus != nil {
+			parts = append(parts, planStatus)
+		}
 		if deletion := relationshipSheetDeletionEmptyMatch(needle); deletion != nil {
 			parts = append(parts, deletion)
 		}
@@ -3126,6 +3130,166 @@ func evidenceExcerptEquals(text string) predicate.RevenueEvidence {
 			b.Arg(text)
 		}))
 	})
+}
+
+// planStatusPhrase is a heading or button on the shared-plan card. The stored
+// status is a token such as internally_approved. The card says the phrase.
+type planStatusPhrase struct {
+	phrase   string
+	statuses []string
+}
+
+func planStatusPhrases() []planStatusPhrase {
+	return []planStatusPhrase{
+		{phrase: "approved in this workspace", statuses: []string{"internally_approved"}},
+		{phrase: "draft an email to share this plan", statuses: []string{"internally_approved"}},
+		{phrase: "they responded", statuses: []string{"counterparty_responded"}},
+		{phrase: "finished", statuses: []string{"completed"}},
+		{phrase: "cancelled", statuses: []string{"cancelled"}},
+		{phrase: "draft", statuses: []string{"draft"}},
+		{phrase: "revised", statuses: []string{"revised"}},
+		{phrase: "shared", statuses: []string{"shared"}},
+		{phrase: "approve this plan", statuses: []string{"draft", "revised"}},
+	}
+}
+
+// relationshipSheetPlanStatusMatch matches the plan heading and the button
+// under it. The heading is "Approved in this workspace · Version 2". A newer
+// revision replaces an older status. The words come from the saved plan, not
+// the artifact column, because that is what the sheet reads.
+func relationshipSheetPlanStatusMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	for _, item := range planStatusPhrases() {
+		version, ok := planStatusQuery(item.phrase, needle)
+		if !ok {
+			continue
+		}
+		preds = append(preds, relationshipHasLatestPlan(item.statuses, version))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func planStatusQuery(phrase, needle string) (int, bool) {
+	phrase = normalizePersonSearch(phrase)
+	needle = normalizePersonSearch(needle)
+	if phrase == "" || needle == "" || !planStatusPhraseMatches(phrase, needle) {
+		return 0, false
+	}
+	return planHeadingVersion(needle), true
+}
+
+func planStatusPhraseMatches(phrase, needle string) bool {
+	if needle == phrase || strings.Contains(needle, phrase+" ·") {
+		return true
+	}
+	// "Deletion is finished" is a privacy receipt. "Finished" on a plan is
+	// the completed status. The receipt must not open every completed plan.
+	if phrase == "finished" {
+		return strings.Contains(needle, "finished") && !strings.Contains(needle, "deletion is finished")
+	}
+	return len(phrase) >= 8 && strings.Contains(needle, phrase)
+}
+
+func planHeadingVersion(needle string) int {
+	const mark = "· version "
+	index := strings.LastIndex(needle, mark)
+	if index < 0 {
+		return 0
+	}
+	number := strings.TrimSpace(needle[index+len(mark):])
+	version, err := strconv.Atoi(number)
+	if err != nil || version < 1 {
+		return 0
+	}
+	return version
+}
+
+func relationshipHasLatestPlan(statuses []string, version int) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			art := conversationintelligenceartifact.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(art)
+			b.WriteString(" AS plan WHERE plan.")
+			b.WriteString(conversationintelligenceartifact.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND plan.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" = 'mutual_action_plan' AND plan.")
+			b.WriteString(conversationintelligenceartifact.FieldVersion)
+			b.WriteString(" = (SELECT MAX(newer.")
+			b.WriteString(conversationintelligenceartifact.FieldVersion)
+			b.WriteString(") FROM ")
+			b.WriteString(art)
+			b.WriteString(" AS newer WHERE newer.")
+			b.WriteString(conversationintelligenceartifact.FieldStableID)
+			b.WriteString(" = plan.")
+			b.WriteString(conversationintelligenceartifact.FieldStableID)
+			b.WriteString(" AND newer.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" = plan.")
+			b.WriteString(conversationintelligenceartifact.FieldKind)
+			b.WriteString(" AND newer.")
+			b.WriteString(conversationintelligenceartifact.RelationshipColumn)
+			b.WriteString(" = plan.")
+			b.WriteString(conversationintelligenceartifact.RelationshipColumn)
+			b.WriteString(") AND lower(trim(")
+			writePlanJSONText(b, s, "status")
+			b.WriteString(")) IN (")
+			for i, status := range statuses {
+				if i > 0 {
+					b.WriteString(", ")
+				}
+				b.Arg(status)
+			}
+			b.WriteString(")")
+			writePlanVersionFilter(b, s, version)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writePlanVersionFilter(b *sql.Builder, s *sql.Selector, version int) {
+	if version == 0 {
+		return
+	}
+	b.WriteString(" AND ")
+	if version == 1 {
+		// A missing revision still prints "Version 1".
+		b.WriteString("(")
+		writePlanJSONText(b, s, "currentRevision,version")
+		b.WriteString(" IS NULL OR lower(trim(CAST(")
+		writePlanJSONText(b, s, "currentRevision,version")
+		b.WriteString(" AS TEXT))) IN ('', '0', '1'))")
+		return
+	}
+	b.WriteString("lower(trim(CAST(")
+	writePlanJSONText(b, s, "currentRevision,version")
+	b.WriteString(" AS TEXT))) = ")
+	b.Arg(strconv.Itoa(version))
+}
+
+func writePlanJSONText(b *sql.Builder, s *sql.Selector, path string) {
+	column := "plan." + conversationintelligenceartifact.FieldPayloadJSON
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(column)
+		b.WriteString("::jsonb #>> ")
+		b.Arg("{" + path + "}")
+		return
+	}
+	b.WriteString("json_extract(")
+	b.WriteString(column)
+	b.WriteString(", ")
+	b.Arg("$." + strings.ReplaceAll(path, ",", "."))
+	b.WriteString(")")
 }
 
 // relationshipSheetDeletionEmptyMatch matches the privacy line. The delete
