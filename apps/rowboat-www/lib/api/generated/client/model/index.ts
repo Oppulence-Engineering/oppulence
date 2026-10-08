@@ -497,6 +497,8 @@ export * from "./recordRevenueActionOutcomeBody";
 export * from "./recordRevenueActionOutcomeBodyKind";
 export * from "./recordRevenueActionOutcomeBodyMetadata";
 export * from "./recordRevenueActionOutcomeBodySource";
+export * from "./rejectActionProposal200";
+export * from "./rejectActionProposalBody";
 export * from "./rejectRelationshipRecommendationBody";
 export * from "./rejectRevenueActionBody";
 export * from "./relationship";
