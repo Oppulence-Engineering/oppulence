@@ -1814,6 +1814,7 @@ func addGoogleOAuthPaths(paths obj) {
 		"502": responseRef("502"),
 		"503": responseRef("503"),
 	})}
+	paths["/v1/composio/connections"] = obj{"get": connectedJiraOperation()}
 }
 
 func addSlackOAuthPaths(paths obj) {

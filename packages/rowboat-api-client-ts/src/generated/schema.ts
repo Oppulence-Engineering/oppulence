@@ -1444,6 +1444,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/composio/connections": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Connected
+     * @description Connected lists the Jira account linked from More products.
+     */
+    get: operations["listComposioConnections"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/google-oauth/refresh": {
     parameters: {
       query?: never;
@@ -19259,6 +19279,66 @@ export interface operations {
       409: components["responses"]["409"];
       410: components["responses"]["410"];
       500: components["responses"]["500"];
+      503: components["responses"]["503"];
+    };
+  };
+  listComposioConnections: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Jira is connected. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "connections": [
+           *         {
+           *           "createdAt": "2026-07-15T16:00:00Z",
+           *           "id": "ca_8b8dfa9ba7b246ea982c622a914c00e5",
+           *           "status": "ACTIVE",
+           *           "toolkit": "jira"
+           *         }
+           *       ]
+           *     }
+           */
+          "application/json": {
+            /** @description Linked accounts. */
+            connections: {
+              /**
+               * Format: date-time
+               * @description When the account was linked.
+               * @example 2026-07-15T16:00:00Z
+               */
+              createdAt?: string;
+              /**
+               * @description Connection id.
+               * @example ca_8b8dfa9ba7b246ea982c622a914c00e5
+               */
+              id: string;
+              /**
+               * @description ACTIVE shows Connected on the card.
+               * @example ACTIVE
+               */
+              status: string;
+              /**
+               * @description Product id.
+               * @example jira
+               */
+              toolkit: string;
+            }[];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      502: components["responses"]["502"];
       503: components["responses"]["503"];
     };
   };
