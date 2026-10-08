@@ -1581,6 +1581,65 @@ describe("API reference document", () => {
     expect(presented.components.schemas.RevenueAction.properties.approvalStatus.example).toBe("pending");
   });
 
+  it("samples the note the editor saves", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/relationship-observations/batch"].post;
+    expect(operation.summary).toBe("Save a note");
+    expect(operation.description).toContain("Renewal context");
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      observations: [
+        {
+          relationshipId: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+          source: "desktop_note",
+          externalId: "c18dfa9b-a7b2-46ea-982c-622a914c00e5",
+          sourceVersion: "1",
+          eventType: "note",
+          occurredAt: "2026-09-01T12:00:00Z",
+          summary: "Renewal context",
+          normalizedFacts: {
+            body: "Use the updated terms.",
+            content: [{ children: [{ text: "Use the updated terms." }], type: "p" }],
+            meetingLinked: false,
+            noteId: "note-1",
+            title: "Renewal context",
+          },
+        },
+      ],
+    });
+    const stored = operation.responses["201"].content["application/json"].example.results[0];
+    expect(stored.duplicate).toBe(false);
+    expect(stored.projectionStatus).toBe("completed");
+    expect(stored.observation).toMatchObject({
+      source: "desktop_note",
+      externalId: "c18dfa9b-a7b2-46ea-982c-622a914c00e5",
+      eventType: "note",
+      summary: "Renewal context",
+      sourceVersion: "1",
+      contentHash: "cb2c6d9de0a502140de524129b786b3c768a4fe3f4c59a7aba3eef7724474d47",
+    });
+    expect(stored.observation.normalizedFacts).toMatchObject({
+      noteId: "note-1",
+      title: "Renewal context",
+      body: "Use the updated terms.",
+      meetingLinked: false,
+    });
+    expect(stored.relationship).toMatchObject({
+      id: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      displayName: "Cedar Notes",
+      kind: "company",
+      lastTouchAt: "2026-09-01T12:00:00Z",
+      stateHash: "sha256:e42c0202f5034a1965e117a1a6c7065bcd09e1439493cea57074fa06572905c9",
+    });
+    expect(
+      operation.requestBody.content["application/json"].schema.properties.observations.items.properties
+        .eventType.example,
+    ).toBe("commitment_created");
+    expect(
+      operation.requestBody.content["application/json"].schema.properties.observations.items.properties.source
+        .example,
+    ).toBe("gmail");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

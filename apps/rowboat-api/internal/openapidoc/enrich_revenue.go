@@ -1232,6 +1232,84 @@ func documentedRejectedRecommendation() obj {
 	}
 }
 
+const (
+	documentedSavedNoteRelationshipID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedSavedNoteObservationID  = "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedSavedNoteExternalID     = "c18dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedSavedNoteProjectionJob  = "d18dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedSavedNoteOccurredAt     = "2026-09-01T12:00:00Z"
+	documentedSavedNoteContentHash    = "cb2c6d9de0a502140de524129b786b3c768a4fe3f4c59a7aba3eef7724474d47"
+	documentedSavedNoteStateHash      = "sha256:e42c0202f5034a1965e117a1a6c7065bcd09e1439493cea57074fa06572905c9"
+)
+
+func documentedSavedNoteFacts() obj {
+	return obj{
+		"noteId": "note-1",
+		"title":  "Renewal context",
+		"body":   "Use the updated terms.",
+		"content": []any{obj{
+			"type":     "p",
+			"children": []any{obj{"text": "Use the updated terms."}},
+		}},
+		"meetingLinked": false,
+	}
+}
+
+func documentedSavedNoteRequest() obj {
+	return obj{"observations": []any{obj{
+		"relationshipId":  documentedSavedNoteRelationshipID,
+		"source":          "desktop_note",
+		"externalId":      documentedSavedNoteExternalID,
+		"sourceVersion":   "1",
+		"eventType":       "note",
+		"occurredAt":      documentedSavedNoteOccurredAt,
+		"summary":         "Renewal context",
+		"normalizedFacts": documentedSavedNoteFacts(),
+	}}}
+}
+
+func documentedSavedNoteResponse() obj {
+	return obj{"results": []any{obj{
+		"observation": obj{
+			"id":              documentedSavedNoteObservationID,
+			"source":          "desktop_note",
+			"externalId":      documentedSavedNoteExternalID,
+			"sourceVersion":   "1",
+			"eventType":       "note",
+			"occurredAt":      documentedSavedNoteOccurredAt,
+			"receivedAt":      documentedSavedNoteOccurredAt,
+			"summary":         "Renewal context",
+			"normalizedFacts": documentedSavedNoteFacts(),
+			"contentHash":     documentedSavedNoteContentHash,
+		},
+		"relationship": obj{
+			"id":               documentedSavedNoteRelationshipID,
+			"kind":             "company",
+			"displayName":      "Cedar Notes",
+			"status":           "active",
+			"lastTouchAt":      documentedSavedNoteOccurredAt,
+			"peopleCount":      0,
+			"emailThreadCount": 0,
+			"commitmentCount":  0,
+			"lifecycle":        "prospect",
+			"engagement":       "unknown",
+			"sentiment":        "unknown",
+			"health":           "unknown",
+			"stateVersion":     0,
+			"stateHash":        documentedSavedNoteStateHash,
+			"projectorVersion": 2,
+			"projectedAt":      documentedSavedNoteOccurredAt,
+			"risks":            []any{},
+			"milestones":       []any{},
+			"resourceRefs":     []any{},
+			"categories":       []any{},
+		},
+		"duplicate":        false,
+		"projectionStatus": "completed",
+		"projectionJobId":  documentedSavedNoteProjectionJob,
+	}}}
+}
+
 func addRevenuePaths(paths obj) {
 	actionParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Action id.", "schema": obj{"type": "string", "format": "uuid"}}}
 
@@ -1814,8 +1892,8 @@ func addRevenuePaths(paths obj) {
 			"channel":   stringEnum("Interaction channel.", "email", "email", "meeting", "call", "chat", "note", "crm"),
 			"direction": stringEnum("Interaction direction.", "inbound", "inbound", "outbound", "internal"),
 		}, "source", "externalId", "eventType")),
-	}, "observations"), obj{"observations": []any{obj{"displayName": "Acme", "accountDomain": "acme.com", "source": "gmail", "externalId": "message-123", "eventType": "commitment_created"}}}), obj{
-		"201": jsonResponse("Ingestion results.", freeFormSchema("Observation, relationship, and duplicate status per input."), nil),
+	}, "observations"), documentedSavedNoteRequest()), obj{
+		"201": jsonResponse("Stored note.", freeFormSchema("Observation, relationship, and duplicate status per input."), documentedSavedNoteResponse()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"409": responseRef("409"),

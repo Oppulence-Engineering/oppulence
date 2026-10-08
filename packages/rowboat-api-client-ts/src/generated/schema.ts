@@ -1754,8 +1754,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Ingest relationship observations
-     * @description Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.
+     * Save a note
+     * @description Save a note posts the note the editor stores. The summary is Renewal context. The stored facts keep note id note-1, that title, the body Use the updated terms., one editor paragraph, and meeting link false. Each save uses a new external id and source version 1. The stored observation copies those fields and its content hash. The projection completed, and this save was not a duplicate.
      */
     post: operations["ingestRelationshipObservations"];
     delete?: never;
@@ -18423,11 +18423,29 @@ export interface operations {
          * @example {
          *       "observations": [
          *         {
-         *           "accountDomain": "acme.com",
-         *           "displayName": "Acme",
-         *           "eventType": "commitment_created",
-         *           "externalId": "message-123",
-         *           "source": "gmail"
+         *           "eventType": "note",
+         *           "externalId": "c18dfa9b-a7b2-46ea-982c-622a914c00e5",
+         *           "normalizedFacts": {
+         *             "body": "Use the updated terms.",
+         *             "content": [
+         *               {
+         *                 "children": [
+         *                   {
+         *                     "text": "Use the updated terms."
+         *                   }
+         *                 ],
+         *                 "type": "p"
+         *               }
+         *             ],
+         *             "meetingLinked": false,
+         *             "noteId": "note-1",
+         *             "title": "Renewal context"
+         *           },
+         *           "occurredAt": "2026-09-01T12:00:00Z",
+         *           "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+         *           "source": "desktop_note",
+         *           "sourceVersion": "1",
+         *           "summary": "Renewal context"
          *         }
          *       ]
          *     }
@@ -18637,12 +18655,72 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Ingestion results. */
+      /** @description Stored note. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "results": [
+           *         {
+           *           "duplicate": false,
+           *           "observation": {
+           *             "contentHash": "cb2c6d9de0a502140de524129b786b3c768a4fe3f4c59a7aba3eef7724474d47",
+           *             "eventType": "note",
+           *             "externalId": "c18dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "id": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "normalizedFacts": {
+           *               "body": "Use the updated terms.",
+           *               "content": [
+           *                 {
+           *                   "children": [
+           *                     {
+           *                       "text": "Use the updated terms."
+           *                     }
+           *                   ],
+           *                   "type": "p"
+           *                 }
+           *               ],
+           *               "meetingLinked": false,
+           *               "noteId": "note-1",
+           *               "title": "Renewal context"
+           *             },
+           *             "occurredAt": "2026-09-01T12:00:00Z",
+           *             "receivedAt": "2026-09-01T12:00:00Z",
+           *             "source": "desktop_note",
+           *             "sourceVersion": "1",
+           *             "summary": "Renewal context"
+           *           },
+           *           "projectionJobId": "d18dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "projectionStatus": "completed",
+           *           "relationship": {
+           *             "categories": [],
+           *             "commitmentCount": 0,
+           *             "displayName": "Cedar Notes",
+           *             "emailThreadCount": 0,
+           *             "engagement": "unknown",
+           *             "health": "unknown",
+           *             "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "kind": "company",
+           *             "lastTouchAt": "2026-09-01T12:00:00Z",
+           *             "lifecycle": "prospect",
+           *             "milestones": [],
+           *             "peopleCount": 0,
+           *             "projectedAt": "2026-09-01T12:00:00Z",
+           *             "projectorVersion": 2,
+           *             "resourceRefs": [],
+           *             "risks": [],
+           *             "sentiment": "unknown",
+           *             "stateHash": "sha256:e42c0202f5034a1965e117a1a6c7065bcd09e1439493cea57074fa06572905c9",
+           *             "stateVersion": 0,
+           *             "status": "active"
+           *           }
+           *         }
+           *       ]
+           *     }
+           */
           "application/json": {
             [key: string]: unknown;
           };

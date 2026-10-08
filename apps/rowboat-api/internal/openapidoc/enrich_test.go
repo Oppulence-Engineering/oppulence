@@ -1706,6 +1706,43 @@ func assertRecommendationReject(t *testing.T, spec obj) {
 	if asObj(props["approvalStatus"])["example"] != "pending" {
 		t.Fatalf("shared approval example changed: %#v", props["approvalStatus"])
 	}
+
+	assertSavedNote(t, spec)
+}
+
+func TestSavedNoteStoresTheEditorNote(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSavedNote(t, spec)
+}
+
+func assertSavedNote(t *testing.T, spec obj) {
+	t.Helper()
+	post := asObj(asObj(asObj(spec["paths"])["/v1/relationship-observations/batch"])["post"])
+	if post["summary"] != "Save a note" {
+		t.Fatalf("summary: %v", post["summary"])
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])["example"]
+	response := asObj(asObj(asObj(asObj(post["responses"])["201"])["content"])["application/json"])["example"]
+	if got, want := mustJSON(request), mustJSON(documentedSavedNoteRequest()); got != want {
+		t.Fatalf("request example:\n%s\nwant:\n%s", got, want)
+	}
+	if got, want := mustJSON(response), mustJSON(documentedSavedNoteResponse()); got != want {
+		t.Fatalf("response example:\n%s\nwant:\n%s", got, want)
+	}
+	items := asObj(asObj(asObj(asObj(asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])["schema"])["properties"])["observations"])["items"])
+	props := asObj(items["properties"])
+	if asObj(props["eventType"])["example"] != "commitment_created" || asObj(props["source"])["example"] != "gmail" {
+		t.Fatalf("shared observation examples changed: event %#v source %#v", asObj(props["eventType"])["example"], asObj(props["source"])["example"])
+	}
+}
+
+func mustJSON(value any) string {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return err.Error()
+	}
+	return string(raw)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

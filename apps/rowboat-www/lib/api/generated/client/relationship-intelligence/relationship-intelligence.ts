@@ -735,8 +735,8 @@ export const getIngestRelationshipObservationsUrl = () => {
 };
 
 /**
- * Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.
- * @summary Ingest relationship observations
+ * Save a note posts the note the editor stores. The summary is Renewal context. The stored facts keep note id note-1, that title, the body Use the updated terms., one editor paragraph, and meeting link false. Each save uses a new external id and source version 1. The stored observation copies those fields and its content hash. The projection completed, and this save was not a duplicate.
+ * @summary Save a note
  */
 export const ingestRelationshipObservations = async (
   ingestRelationshipObservationsBody: IngestRelationshipObservationsBody,
