@@ -57,6 +57,19 @@ describe("API reference document", () => {
     expect(page).not.toContain("fonts.scalar.com");
   });
 
+  it("samples the Attempt count an open run shows", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const run = presented.components.schemas.BackgroundTaskRun;
+    expect(run.properties.attempt).toMatchObject({
+      description: "Attempt shown when this run is open.",
+      example: 1,
+      type: "integer",
+    });
+    expect(run.required).not.toContain("attempt");
+    expect(JSON.stringify(run.properties.attempt)).not.toContain("acta_");
+    expect(JSON.stringify(run.properties.attempt)).not.toContain('"token"');
+  });
+
   it("names reference sections in product language and keeps operations attached", () => {
     const presented = presentApiReferenceDocument({
       tags: [

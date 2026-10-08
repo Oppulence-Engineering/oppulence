@@ -326,6 +326,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if schemas["ConnectorCredentialCleanupJob"] != nil || schemas["ConnectorCredentialRecovery"] != nil {
 		t.Fatal("checked-in openapi json exposes internal credential cleanup or recovery state")
 	}
+	assertRunAttempt(t, spec)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -338,6 +339,32 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+}
+
+func TestRunAttemptIsDocumented(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertRunAttempt(t, spec)
+}
+
+func assertRunAttempt(t *testing.T, spec obj) {
+	t.Helper()
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	run := asObj(schemas["BackgroundTaskRun"])
+	attempt := asObj(asObj(run["properties"])["attempt"])
+	exampleOK := false
+	switch attempt["example"] {
+	case 1, float64(1):
+		exampleOK = true
+	}
+	if attempt["description"] != runAttemptDescription || !exampleOK || attempt["type"] != "integer" {
+		t.Fatalf("run attempt: %#v", attempt)
+	}
+	for _, name := range run["required"].([]any) {
+		if name == "attempt" {
+			t.Fatal("attempt stays off the required list so an older run sample can omit it")
+		}
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

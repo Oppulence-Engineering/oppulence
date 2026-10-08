@@ -29,6 +29,7 @@ export const getListBackgroundTaskRunsForAccountResponseMock = (
     undefined,
   ]),
   runs: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+    attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
     completedAt: faker.helpers.arrayElement([
       faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       undefined,
@@ -616,6 +617,7 @@ export const getListBackgroundTaskRunsResponseMock = (
     undefined,
   ]),
   runs: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+    attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
     completedAt: faker.helpers.arrayElement([
       faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       undefined,
@@ -714,6 +716,7 @@ export const getListBackgroundTaskRunsResponseMock = (
 export const getCreateBackgroundTaskRunResponseMock = (
   overrideResponse: Partial<Extract<BackgroundTaskRun, object>> = {},
 ): BackgroundTaskRun => ({
+  attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
@@ -811,6 +814,7 @@ export const getCreateBackgroundTaskRunResponseMock = (
 export const getGetBackgroundTaskRunResponseMock = (
   overrideResponse: Partial<Extract<BackgroundTaskRun, object>> = {},
 ): BackgroundTaskRun => ({
+  attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
@@ -908,6 +912,7 @@ export const getGetBackgroundTaskRunResponseMock = (
 export const getPatchBackgroundTaskRunResponseMock = (
   overrideResponse: Partial<Extract<BackgroundTaskRun, object>> = {},
 ): BackgroundTaskRun => ({
+  attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
@@ -1005,6 +1010,7 @@ export const getPatchBackgroundTaskRunResponseMock = (
 export const getCancelBackgroundTaskRunResponseMock = (
   overrideResponse: Partial<Extract<BackgroundTaskRun, object>> = {},
 ): BackgroundTaskRun => ({
+  attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
@@ -1142,6 +1148,7 @@ export const getStreamBackgroundTaskRunEventsResponseMock = (
 export const getRetryBackgroundTaskRunResponseMock = (
   overrideResponse: Partial<Extract<BackgroundTaskRun, object>> = {},
 ): BackgroundTaskRun => ({
+  attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
@@ -1239,6 +1246,7 @@ export const getRetryBackgroundTaskRunResponseMock = (
 export const getSignalBackgroundTaskRunResponseMock = (
   overrideResponse: Partial<Extract<BackgroundTaskRun, object>> = {},
 ): BackgroundTaskRun => ({
+  attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
@@ -1389,6 +1397,7 @@ export const getGetBackgroundTaskRunStatusResponseMock = (
 export const getTriggerBackgroundTaskResponseMock = (
   overrideResponse: Partial<Extract<BackgroundTaskRun, object>> = {},
 ): BackgroundTaskRun => ({
+  attempt: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
