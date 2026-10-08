@@ -8493,3 +8493,26 @@ func assertTranscriptModelCall(t *testing.T, schemas obj) {
 		t.Fatalf("append event type changed: %#v", inputType)
 	}
 }
+
+func TestMissingSendScopeIsDocumented(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertMissingSendScope(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertMissingSendScope(t *testing.T, schemas obj) {
+	t.Helper()
+	props := asObj(asObj(schemas["RelationshipSourceStatus"])["properties"])
+	missing := asObj(asObj(props["missingScopes"])["items"])
+	if missing["example"] != missingSendScopeExample || missing["description"] != "Scope." {
+		t.Fatalf("missing scope: %#v", missing)
+	}
+	granted := asObj(asObj(props["grantedScopes"])["items"])
+	if granted["example"] != "https://www.googleapis.com/auth/gmail.readonly" {
+		t.Fatalf("granted mail scope changed: %#v", granted)
+	}
+	required := asObj(asObj(props["requiredScopes"])["items"])
+	if required["example"] != "https://www.googleapis.com/auth/gmail.readonly" {
+		t.Fatalf("required mail scope changed: %#v", required)
+	}
+}

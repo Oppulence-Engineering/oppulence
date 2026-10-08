@@ -87,6 +87,10 @@ describe("API reference document", () => {
     expect(presented.components.schemas.RevenueAction.properties.executionStatus.example).toBe(
       "pending",
     );
+    const scopes = presented.components.schemas.RelationshipSourceStatus.properties;
+    expect(scopes.missingScopes.items.example).toBe("https://www.googleapis.com/auth/gmail.send");
+    expect(scopes.grantedScopes.items.example).toBe("https://www.googleapis.com/auth/gmail.readonly");
+    expect(scopes.requiredScopes.items.example).toBe("https://www.googleapis.com/auth/gmail.readonly");
   });
 
   it("renders a page titled for Oppulence and escapes embedded markup", () => {

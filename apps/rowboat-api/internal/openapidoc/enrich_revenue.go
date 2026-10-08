@@ -94,6 +94,8 @@ const documentedResearchPersonID = "1b8dfa9b-a7b2-46ea-982c-622a914c00e5"
 const (
 	graphExecutionStatusDescription = "Needs reconcile when this execution is ambiguous."
 	graphExecutionStatusExample     = "ambiguous"
+	// The company card prints Missing: Sending for this scope. Mail stays granted.
+	missingSendScopeExample = "https://www.googleapis.com/auth/gmail.send"
 )
 
 const (
@@ -330,7 +332,7 @@ func addRevenueSchemas(schemas obj) {
 		"lagSeconds":             intSchema("Calculated sync lag.", 42),
 		"requiredScopes":         arraySchema("Scopes required by enabled capabilities.", stringSchema("Scope.", "https://www.googleapis.com/auth/gmail.readonly")),
 		"grantedScopes":          arraySchema("Currently granted scopes.", stringSchema("Scope.", "https://www.googleapis.com/auth/gmail.readonly")),
-		"missingScopes":          arraySchema("Missing or revoked required scopes.", stringSchema("Scope.", "https://www.googleapis.com/auth/gmail.readonly")),
+		"missingScopes":          arraySchema("Missing or revoked required scopes.", stringSchema("Scope.", missingSendScopeExample)),
 		"errorCode":              stringSchema("Categorical safe error code.", "rate_limited"),
 		"retryCount":             intSchema("Bounded retry count.", 2),
 		"nextRetryAt":            stringSchema("Next retry.", "2026-07-31T14:05:00Z", obj{"format": "date-time"}, nullable()),
