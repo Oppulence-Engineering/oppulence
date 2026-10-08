@@ -6148,7 +6148,12 @@
         "properties": {
           "data": {
             "additionalProperties": true,
-            "description": "Event payload.",
+            "description": "Payload the approval card reads. It names the tool and how much it can change.",
+            "example": {
+              "approvalId": "session_abc123/turn/0/approval/0",
+              "tool": "slack.post_message",
+              "trustTier": "act"
+            },
             "type": "object"
           },
           "seq": {
@@ -6163,8 +6168,8 @@
             "type": "integer"
           },
           "type": {
-            "description": "Canonical event type.",
-            "example": "agent.message",
+            "description": "Chat event. An approval request pauses until Approve.",
+            "example": "agent.approval_requested",
             "type": "string"
           }
         },

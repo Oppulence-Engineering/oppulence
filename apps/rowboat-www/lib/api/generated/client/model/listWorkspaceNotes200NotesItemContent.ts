@@ -7,6 +7,6 @@
  */
 
 /**
- * Payload the approval card reads. It names the tool and how much it can change.
+ * Editor document, when one was saved.
  */
-export type DurableAgentSessionEventData = { [key: string]: unknown };
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };
