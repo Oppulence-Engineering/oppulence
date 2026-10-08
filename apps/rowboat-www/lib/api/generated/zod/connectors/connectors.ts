@@ -695,11 +695,11 @@ export const CreateMCPToken503Response = zod
   );
 
 /**
- * Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.
- * @summary Start connector OAuth flow
+ * Connect starts sign-in for Canvas. It sends the required permissions and the address that brings you back to Connections.
+ * @summary Connect
  */
 export const StartConnectionParams = zod.object({
-  name: zod.string().describe("Connector slug, for example canvas, corinthian, or wispr."),
+  name: zod.string().describe("Connection name."),
 });
 
 export const StartConnectionBody = zod
@@ -1468,11 +1468,11 @@ export const CreateConnectorResourceToken503Response = zod
   );
 
 /**
- * Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.
- * @summary Start connector OAuth flow
+ * Connect starts sign-in for Canvas. It sends the required permissions and the address that brings you back to Connections.
+ * @summary Connect
  */
 export const StartConnectorParams = zod.object({
-  name: zod.string().describe("Connector slug, for example canvas, corinthian, or wispr."),
+  name: zod.string().describe("Connection name."),
 });
 
 export const StartConnectorBody = zod

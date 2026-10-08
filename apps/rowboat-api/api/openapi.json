@@ -4570,7 +4570,7 @@
         "properties": {
           "redirectTarget": {
             "description": "Backward-compatible camelCase alias for redirect_after.",
-            "example": "solomon-ai://connection-complete",
+            "example": "https://oppulence.io/api/connectors/oauth/callback",
             "nullable": true,
             "type": "string"
           },
@@ -19179,16 +19179,17 @@
     },
     "/v1/connections/{name}/start": {
       "post": {
-        "description": "Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.",
+        "description": "Connect starts sign-in for Canvas. It sends the required permissions and the address that brings you back to Connections.",
         "operationId": "startConnection",
         "parameters": [
           {
-            "description": "Connector slug, for example canvas, corinthian, or wispr.",
+            "description": "Connection name.",
+            "example": "canvas",
             "in": "path",
             "name": "name",
             "required": true,
             "schema": {
-              "description": "Connector slug.",
+              "description": "Connection name.",
               "example": "canvas",
               "type": "string"
             }
@@ -19198,15 +19199,18 @@
           "content": {
             "application/json": {
               "example": {
-                "redirectTarget": "solomon-ai://connection-complete",
-                "requestedScopes": ["canvas:invoices.read", "canvas:customers.read"]
+                "redirectTarget": "https://oppulence.io/api/connectors/oauth/callback",
+                "requestedScopes": [
+                  "canvas:invoices.read",
+                  "canvas:customers.read"
+                ]
               },
               "schema": {
                 "$ref": "#/components/schemas/ConnectionStartRequest"
               }
             }
           },
-          "description": "Connector OAuth request.",
+          "description": "Required Canvas permissions and the address that brings you back to Connections.",
           "required": true
         },
         "responses": {
@@ -19255,8 +19259,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Start connector OAuth flow",
-        "tags": ["Connectors"]
+        "summary": "Connect",
+        "tags": [
+          "Connectors"
+        ]
       }
     },
     "/v1/connectors": {
@@ -19558,16 +19564,17 @@
     },
     "/v1/connectors/{name}/start": {
       "post": {
-        "description": "Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.",
+        "description": "Connect starts sign-in for Canvas. It sends the required permissions and the address that brings you back to Connections.",
         "operationId": "startConnector",
         "parameters": [
           {
-            "description": "Connector slug, for example canvas, corinthian, or wispr.",
+            "description": "Connection name.",
+            "example": "canvas",
             "in": "path",
             "name": "name",
             "required": true,
             "schema": {
-              "description": "Connector slug.",
+              "description": "Connection name.",
               "example": "canvas",
               "type": "string"
             }
@@ -19577,15 +19584,18 @@
           "content": {
             "application/json": {
               "example": {
-                "redirectTarget": "solomon-ai://connection-complete",
-                "requestedScopes": ["canvas:invoices.read", "canvas:customers.read"]
+                "redirectTarget": "https://oppulence.io/api/connectors/oauth/callback",
+                "requestedScopes": [
+                  "canvas:invoices.read",
+                  "canvas:customers.read"
+                ]
               },
               "schema": {
                 "$ref": "#/components/schemas/ConnectionStartRequest"
               }
             }
           },
-          "description": "Connector OAuth request.",
+          "description": "Required Canvas permissions and the address that brings you back to Connections.",
           "required": true
         },
         "responses": {
@@ -19634,8 +19644,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Start connector OAuth flow",
-        "tags": ["Connectors"]
+        "summary": "Connect",
+        "tags": [
+          "Connectors"
+        ]
       }
     },
     "/v1/console/preferences": {
