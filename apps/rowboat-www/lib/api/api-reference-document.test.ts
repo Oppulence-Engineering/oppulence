@@ -394,4 +394,14 @@ describe("API reference document", () => {
     expect(capture.description).toBe("What changed on this record.");
     expect(capture.example).toBeUndefined();
   });
+
+  it("uses a status sample the field allows", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const run = presented.components.schemas.BackgroundTaskRunStatusResponse.properties.status;
+    expect(run.example).toBe("queued");
+    expect(run.description).toContain("Background runs");
+    expect(presented.components.schemas.HealthResponse.properties.status.example).toBe("ok");
+    expect(presented.components.schemas.ReadyResponse.properties.status.example).toBe("ready");
+    expect(presented.components.schemas.RevenueWorkspace.properties.status.example).toBe("active");
+  });
 });

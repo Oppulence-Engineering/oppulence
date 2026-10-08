@@ -221,6 +221,18 @@ export function statusFieldCopy(values: readonly string[]): string {
   return `${sentence.charAt(0).toUpperCase()}${sentence.slice(1)}.`;
 }
 
+/**
+ * One stored sample, "active", is copied onto every status column. A background
+ * run cannot be active. The sample stays only when the field lists it.
+ */
+const GENERIC_STATUS_DESCRIPTION =
+  "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.";
+
+/** The published sample, or the first allowed value when that sample is not allowed. */
+export function statusSample(values: readonly string[], example: string): string {
+  return values.includes(example) ? example : (values[0] ?? example);
+}
+
 const API_REFERENCE_FIELD_NOTES: ReadonlyArray<readonly [string, string]> = [
   [GENERIC_STATUS_DESCRIPTION, STATUS_WITHOUT_VALUES],
   [
