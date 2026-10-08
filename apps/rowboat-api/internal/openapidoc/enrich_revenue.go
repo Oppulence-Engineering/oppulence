@@ -68,6 +68,9 @@ const (
 	documentedGraphFollowUpMessage = "Asked for pricing in April; wants a follow-up in July."
 )
 
+// The queue Dismiss button sends this reason, and the server stores it on the action.
+const documentedQueueDismissReason = "not_relevant"
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
@@ -634,7 +637,7 @@ func addRevenueSchemas(schemas obj) {
 		"reconciliationCheckedAt": stringSchema("Most recent provider lookup time.", "2026-07-12T12:07:00Z", obj{"format": "date-time"}, nullable()),
 		"reconciliationNextAt":    stringSchema("Next scheduled read-only lookup time.", "2026-07-12T12:12:00Z", obj{"format": "date-time"}, nullable()),
 		"reconciliationError":     stringSchema("Bounded provider lookup error.", ""),
-		"dismissReason":           stringSchema("Dismissal reason label.", "already_handled"),
+		"dismissReason":           stringSchema("Dismissal reason label.", documentedQueueDismissReason),
 		"snoozedUntil":            stringSchema("Snooze wake time.", "2026-07-20T09:00:00Z", obj{"format": "date-time"}, nullable()),
 		"dueAt":                   stringSchema("Due time.", "2026-07-15T00:00:00Z", obj{"format": "date-time"}, nullable()),
 		"createdAt":               stringSchema("Creation time.", "2026-07-12T12:00:00Z", obj{"format": "date-time"}),
@@ -1413,8 +1416,8 @@ func addRevenuePaths(paths obj) {
 		"404": responseRef("404"),
 	})}
 	paths["/v1/revenue-actions/{actionId}/dismiss"] = obj{"post": operation("Revenue", "Dismiss an action", "Dismisses the action with a reason label and records the dismissed outcome.", "dismissRevenueAction", bearer(), actionParam, jsonRequest("Dismissal reason.", objectSchema("Dismiss request.", obj{
-		"reason": stringSchema("Reason label.", "already_handled"),
-	}), obj{"reason": "already_handled"}), obj{
+		"reason": stringSchema("Reason label.", documentedQueueDismissReason),
+	}), obj{"reason": documentedQueueDismissReason}), obj{
 		"200": jsonResponse("Dismissed action.", ref("RevenueAction"), nil),
 		"401": responseRef("401"),
 		"404": responseRef("404"),

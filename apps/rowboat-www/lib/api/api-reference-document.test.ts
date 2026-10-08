@@ -1128,6 +1128,20 @@ describe("API reference document", () => {
     expect(JSON.stringify(body)).not.toContain("Hi Jordan");
   });
 
+  it("samples the reason the queue Dismiss button sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const body =
+      presented.paths["/v1/revenue-actions/{actionId}/dismiss"].post.requestBody.content[
+        "application/json"
+      ];
+    expect(body.example).toEqual({ reason: "not_relevant" });
+    expect(body.schema.properties.reason.example).toBe("not_relevant");
+    expect(presented.components.schemas.RevenueAction.properties.dismissReason.example).toBe(
+      "not_relevant",
+    );
+    expect(JSON.stringify(body)).not.toContain("already_handled");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
