@@ -5,11 +5,14 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
+import type { GetRelationshipPersonAttributes200AttributesItemCitationsItem } from "./getRelationshipPersonAttributes200AttributesItemCitationsItem";
 
 /**
  * One stored detail.
  */
 export type GetRelationshipPersonAttributes200AttributesItem = {
+  /** Pages that support a researched detail. The directory opens each one to verify it. */
+  citations?: GetRelationshipPersonAttributes200AttributesItemCitationsItem[];
   /** How strongly this detail is held. */
   confidence: number;
   /** Which detail this is. */

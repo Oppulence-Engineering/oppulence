@@ -2173,7 +2173,7 @@ export interface paths {
     };
     /**
      * Open person
-     * @description Open person loads the profile behind a name in the directory. The request sends only the person id. The answer is each stored detail: the value, where it came from, and why it is there.
+     * @description Open person loads the profile behind a name in the directory. The request sends only the person id. The answer is each stored detail: the value, where it came from, and why it is there. A researched detail includes the page the directory opens to verify it.
      */
     get: operations["getRelationshipPersonAttributes"];
     put?: never;
@@ -23154,6 +23154,28 @@ export interface operations {
            *           "status": "active",
            *           "validFrom": "2026-08-04T12:00:00Z",
            *           "value": "VP Engineering"
+           *         },
+           *         {
+           *           "citations": [
+           *             {
+           *               "excerpts": [
+           *                 "VP Engineering in San Francisco"
+           *               ],
+           *               "title": "Sarah Chen",
+           *               "url": "https://www.linkedin.com/in/sarahchen"
+           *             }
+           *           ],
+           *           "confidence": 0.85,
+           *           "dimension": "location",
+           *           "extractor": "parallel",
+           *           "id": "b68dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "observedAt": "2026-08-04T12:00:00Z",
+           *           "reason": "Public profile lists San Francisco.",
+           *           "source": "web",
+           *           "sourceType": "external_research",
+           *           "status": "active",
+           *           "validFrom": "2026-08-04T12:00:00Z",
+           *           "value": "San Francisco"
            *         }
            *       ]
            *     }
@@ -23161,6 +23183,21 @@ export interface operations {
           "application/json": {
             /** @description Stored details, newest first. */
             attributes: {
+              /** @description Pages that support a researched detail. The directory opens each one to verify it. */
+              citations?: {
+                /** @description Quoted lines from that page. */
+                excerpts?: string[];
+                /**
+                 * @description Title of the page.
+                 * @example Sarah Chen
+                 */
+                title?: string;
+                /**
+                 * @description Page to open.
+                 * @example https://www.linkedin.com/in/sarahchen
+                 */
+                url: string;
+              }[];
               /**
                * @description How strongly this detail is held.
                * @example 0.7

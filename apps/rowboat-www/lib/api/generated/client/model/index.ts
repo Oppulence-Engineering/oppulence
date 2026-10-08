@@ -340,6 +340,7 @@ export * from "./getRelationshipGraphParams";
 export * from "./getRelationshipGraphScope";
 export * from "./getRelationshipPersonAttributes200";
 export * from "./getRelationshipPersonAttributes200AttributesItem";
+export * from "./getRelationshipPersonAttributes200AttributesItemCitationsItem";
 export * from "./getRelationshipSourceInventory200";
 export * from "./getRelationshipSourceStatuses200";
 export * from "./getRelationshipTimeline200";

@@ -1889,7 +1889,7 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 	})}
 
-	paths["/v1/relationship-persons/{personId}/attributes"] = obj{"get": operation("Relationship Intelligence", "Open person", "Open person loads the profile behind a name in the directory. The request sends only the person id. The answer is each stored detail: the value, where it came from, and why it is there.", "getRelationshipPersonAttributes", bearer(), []any{
+	paths["/v1/relationship-persons/{personId}/attributes"] = obj{"get": operation("Relationship Intelligence", "Open person", openPersonDescription, "getRelationshipPersonAttributes", bearer(), []any{
 		obj{"name": "personId", "in": "path", "required": true, "description": "Person id.", "schema": uuidSchema("Person id.", openPersonID)},
 	}, nil, obj{
 		"200": jsonResponse("The profile details Open person loads.", objectSchema("Person profile.", obj{
@@ -1905,6 +1905,11 @@ func addRevenuePaths(paths obj) {
 				"reason":     stringSchema("Why this detail is here.", "Title supplied by the source record."),
 				"observedAt": stringSchema("When it was seen.", "2026-08-04T12:00:00Z", obj{"format": "date-time"}),
 				"validFrom":  stringSchema("When it started counting.", "2026-08-04T12:00:00Z", obj{"format": "date-time"}),
+				"citations": arraySchema("Pages that support a researched detail. The directory opens each one to verify it.", objectSchema("One page.", obj{
+					"title":    stringSchema("Title of the page.", "Sarah Chen"),
+					"url":      stringSchema("Page to open.", openPersonCitationURL),
+					"excerpts": arraySchema("Quoted lines from that page.", stringSchema("Quoted line.", "VP Engineering in San Francisco")),
+				}, "url")),
 			}, "id", "dimension", "value", "sourceType", "source", "extractor", "status", "confidence", "observedAt", "validFrom")),
 		}, "attributes"), openPersonProfile()),
 		"400": responseRef("400"),
@@ -2365,13 +2370,18 @@ func peopleDirectoryPerson() obj {
 }
 
 const (
-	openPersonID       = "ab8dfa9b-a7b2-46ea-982c-622a914c00e5"
-	openPersonAliasID  = "b18dfa9b-a7b2-46ea-982c-622a914c00e5"
-	openPersonNameID   = "b28dfa9b-a7b2-46ea-982c-622a914c00e5"
-	openPersonDomainID = "b38dfa9b-a7b2-46ea-982c-622a914c00e5"
-	openPersonOrgID    = "b48dfa9b-a7b2-46ea-982c-622a914c00e5"
-	openPersonTitleID  = "b58dfa9b-a7b2-46ea-982c-622a914c00e5"
+	openPersonID         = "ab8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	openPersonAliasID    = "b18dfa9b-a7b2-46ea-982c-622a914c00e5"
+	openPersonNameID     = "b28dfa9b-a7b2-46ea-982c-622a914c00e5"
+	openPersonDomainID   = "b38dfa9b-a7b2-46ea-982c-622a914c00e5"
+	openPersonOrgID      = "b48dfa9b-a7b2-46ea-982c-622a914c00e5"
+	openPersonTitleID    = "b58dfa9b-a7b2-46ea-982c-622a914c00e5"
+	openPersonLocationID = "b68dfa9b-a7b2-46ea-982c-622a914c00e5"
 )
+
+const openPersonDescription = "Open person loads the profile behind a name in the directory. The request sends only the person id. The answer is each stored detail: the value, where it came from, and why it is there. A researched detail includes the page the directory opens to verify it."
+
+const openPersonCitationURL = "https://www.linkedin.com/in/sarahchen"
 
 func openPersonProfile() obj {
 	return obj{"attributes": []any{
@@ -2380,7 +2390,19 @@ func openPersonProfile() obj {
 		openPersonDetail(openPersonDomainID, "org_domain", "acme.example", "deterministic", "email_header", 0.6, "Derived from the participant's email domain."),
 		openPersonDetail(openPersonOrgID, "org_name", "Acme", "deterministic", "display_name_header", 0.65, "Name of the company that owns this domain."),
 		openPersonDetail(openPersonTitleID, "title", "VP Engineering", "source_fact", "crm_field", 0.7, "Title supplied by the source record."),
+		openPersonLocation(),
 	}}
+}
+
+func openPersonLocation() obj {
+	detail := openPersonDetail(openPersonLocationID, "location", "San Francisco", "external_research", "parallel", 0.85, "Public profile lists San Francisco.")
+	detail["source"] = "web"
+	detail["citations"] = []any{obj{
+		"title":    "Sarah Chen",
+		"url":      openPersonCitationURL,
+		"excerpts": []any{"VP Engineering in San Francisco"},
+	}}
+	return detail
 }
 
 func openPersonDetail(id, dimension, value, sourceType, extractor string, confidence float64, reason string) obj {

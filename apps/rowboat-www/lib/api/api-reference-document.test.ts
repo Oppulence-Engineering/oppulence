@@ -2572,7 +2572,21 @@ describe("API reference document", () => {
       "org_domain",
       "org_name",
       "title",
+      "location",
     ]);
+    expect(example.attributes[5]).toMatchObject({
+      dimension: "location",
+      value: "San Francisco",
+      sourceType: "external_research",
+      source: "web",
+      citations: [
+        {
+          title: "Sarah Chen",
+          url: "https://www.linkedin.com/in/sarahchen",
+          excerpts: ["VP Engineering in San Francisco"],
+        },
+      ],
+    });
     expect(example.attributes[4]).toMatchObject({
       id: "b58dfa9b-a7b2-46ea-982c-622a914c00e5",
       dimension: "title",
