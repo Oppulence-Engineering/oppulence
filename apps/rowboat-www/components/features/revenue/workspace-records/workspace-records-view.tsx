@@ -1100,7 +1100,9 @@ function PersonSheet({
     ["Department", person.department],
     ["Location", person.location],
     ["LinkedIn", person.linkedinUrl],
-    ["Timezone", person.timezone],
+    // The directory counts both, and the evidence section already names them.
+    [personEvidenceLabel("timezone"), person.timezone],
+    [personEvidenceLabel("locale"), person.locale],
     ["Last interaction", personLastInteractionLabel(person.lastInteractionAt)],
   ];
   if (aliasNames) sheetFacts.push(["Also known as", aliasNames]);

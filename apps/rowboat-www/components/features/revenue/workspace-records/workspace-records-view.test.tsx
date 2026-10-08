@@ -1118,6 +1118,9 @@ describe("people directory labels", () => {
     expect(personEvidenceLabel("org_name")).toBe("Company");
     expect(personEvidenceLabel("linkedin_url")).toBe("LinkedIn");
     expect(personEvidenceLabel("employment_status")).toBe("Employment");
+    expect(personEvidenceLabel("timezone")).toBe("Time zone");
+    expect(personEvidenceLabel("locale")).toBe("Locale");
+    expect(personEnrichmentLabel({ locale: "en-US" })).toBe("1 detail filled in");
     expect(personEvidenceLabel("org_name")).not.toContain("org_name");
     expect(personEvidenceLabel("custom_fact")).toBe("Custom Fact");
     expect(personSeniorityLabel("vp")).toBe("VP");
@@ -1633,6 +1636,9 @@ describe("people directory copy", () => {
     expect(source).not.toContain("{person.orgName || \"—\"}");
     expect(source).toContain("personSheetDetail(label, value)");
     expect(source).not.toContain('{value || "Not known"}');
+    expect(source).toContain('[personEvidenceLabel("timezone"), person.timezone]');
+    expect(source).toContain('[personEvidenceLabel("locale"), person.locale]');
+    expect(source).not.toContain('["Timezone", person.timezone]');
     expect(source).toContain('["Domain", person.orgDomain]');
     expect(source).not.toContain("person.orgName || person.orgDomain");
     expect(source).toContain("company timeline");
