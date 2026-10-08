@@ -971,6 +971,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if evidence := relationshipSheetActivityDepartureEvidenceMatch(needle); evidence != nil {
 			parts = append(parts, evidence)
 		}
+
+		if direction := relationshipSheetActivityMailDirectionMatch(needle); direction != nil {
+			parts = append(parts, direction)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -10773,4 +10777,12 @@ func writeDepartureKindShown(b *sql.Builder, s *sql.Selector, facts string) {
 	b.WriteString(" WHEN 'left_organization' THEN 'Left Organization' WHEN 'recipient_unknown' THEN 'Recipient Unknown' ELSE ")
 	writeActivityFactTrim(b, s, facts, "departure_kind")
 	b.WriteString(" END")
+}
+
+// relationshipSheetActivityMailDirectionMatch is "Direction: outbound" or
+// "Direction: inbound" on an opened activity. Gmail stores who sent the last
+// message. That line is not "Direction: We owe them", which is a promise.
+// A direction that repeats the row summary stays hidden.
+func relationshipSheetActivityMailDirectionMatch(needle string) predicate.Relationship {
+	return relationshipSheetActivityFactMatch(needle, "direction: ", "direction")
 }
