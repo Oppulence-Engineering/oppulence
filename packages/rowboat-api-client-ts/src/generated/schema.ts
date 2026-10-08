@@ -2377,7 +2377,7 @@ export interface paths {
     };
     /**
      * Open a company
-     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.
+     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The source row opens the Acme team page.
      */
     get: operations["getRelationship"];
     put?: never;
@@ -24076,6 +24076,11 @@ export interface operations {
            *         "accountDomain": "acme.com",
            *         "categories": [],
            *         "commitmentCount": 0,
+           *         "companyEnrichmentRefs": {
+           *           "headquarters": [
+           *             "https://acme.example/team"
+           *           ]
+           *         },
            *         "displayName": "Acme",
            *         "emailThreadCount": 0,
            *         "engagement": "declining",

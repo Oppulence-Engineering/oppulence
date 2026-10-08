@@ -13,6 +13,8 @@ const (
 	openedCompanyReason        = "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation."
 	openedCompanyTouchedAt     = "2026-07-25T15:00:00Z"
 	openedCompanyProjectedAt   = "2026-07-25T16:00:00Z"
+	// The sheet Source row opens this page. The link says Check the source.
+	openedCompanySourceURL = "https://acme.example/team"
 )
 
 func openedCompanyParams() []any {
@@ -30,29 +32,30 @@ func openedCompanySheetExample() obj {
 	empty := []any{}
 	return obj{
 		"relationship": obj{
-			"id":               openedCompanyID,
-			"kind":             "company",
-			"displayName":      "Acme",
-			"accountDomain":    "acme.com",
-			"status":           "active",
-			"lastTouchAt":      openedCompanyTouchedAt,
-			"peopleCount":      1,
-			"emailThreadCount": 0,
-			"commitmentCount":  0,
-			"lifecycle":        "evaluation",
-			"engagement":       "declining",
-			"sentiment":        "unknown",
-			"health":           "needs_attention",
-			"stateReason":      openedCompanyReason,
-			"stateVersion":     1,
-			"stateHash":        openedCompanyHash,
-			"projectorVersion": 2,
-			"projectedAt":      openedCompanyProjectedAt,
-			"lastChangedAt":    openedCompanyProjectedAt,
-			"risks":            empty,
-			"milestones":       empty,
-			"resourceRefs":     empty,
-			"categories":       empty,
+			"id":                    openedCompanyID,
+			"kind":                  "company",
+			"displayName":           "Acme",
+			"accountDomain":         "acme.com",
+			"status":                "active",
+			"lastTouchAt":           openedCompanyTouchedAt,
+			"peopleCount":           1,
+			"emailThreadCount":      0,
+			"commitmentCount":       0,
+			"companyEnrichmentRefs": obj{"headquarters": []any{openedCompanySourceURL}},
+			"lifecycle":             "evaluation",
+			"engagement":            "declining",
+			"sentiment":             "unknown",
+			"health":                "needs_attention",
+			"stateReason":           openedCompanyReason,
+			"stateVersion":          1,
+			"stateHash":             openedCompanyHash,
+			"projectorVersion":      2,
+			"projectedAt":           openedCompanyProjectedAt,
+			"lastChangedAt":         openedCompanyProjectedAt,
+			"risks":                 empty,
+			"milestones":            empty,
+			"resourceRefs":          empty,
+			"categories":            empty,
 		},
 		"actions":         empty,
 		"recommendations": empty,
