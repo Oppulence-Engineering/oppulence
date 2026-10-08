@@ -1382,8 +1382,8 @@ func addRevenuePaths(paths obj) {
 		"503": problemResponse("Checked sending is not configured, so the link stays off.", ref("ErrorEnvelope"), problemExample(503, "Service Unavailable", "policy preflight unavailable; the action stays pending", "facade_unavailable")),
 	})}
 
-	paths["/v1/revenue-impact"] = obj{"get": operation("Revenue", "Get the revenue impact summary", "Returns the aggregate ROI picture for the caller: actions surfaced, triage breakdown, executions, outcomes, reply/meeting rates, and per-detector contribution.", "getRevenueImpact", bearer(), nil, nil, obj{
-		"200": jsonResponse("Impact summary.", ref("RevenueImpact"), nil),
+	paths["/v1/revenue-impact"] = obj{"get": operation("Revenue", "Impact", impactCountsDescription, "getRevenueImpact", bearer(), nil, nil, obj{
+		"200": jsonResponse("Impact summary.", ref("RevenueImpact"), impactCounts()),
 		"401": responseRef("401"),
 	})}
 	paths["/v1/revenue-search"] = obj{"get": operation("Revenue", "Search mail", "Search mail sends the words typed in the palette. The answer lists the closest mail first, with the subject, the other person's email, the kind of thread, why it matched, and how close it is. When mail search is not set up, the answer includes no matches.", "revenueSemanticSearch", bearer(), []any{obj{"name": "q", "in": "query", "required": true, "description": "Words typed in Search mail.", "schema": stringSchema("Words typed in Search mail.", searchMailQuery)}}, nil, obj{
@@ -2747,5 +2747,37 @@ func recoveryQueuePage() obj {
 	return obj{
 		"actions": []any{},
 		"hasMore": false,
+	}
+}
+
+const impactCountsDescription = "Impact loads the home counts. The request sends no filter. Overdue promises, open recovery, and companies at risk are zero, and there is no reply rate or meeting rate yet."
+
+func impactCounts() obj {
+	return obj{
+		"surfaced":              0,
+		"open":                  0,
+		"openTasks":             0,
+		"handled":               0,
+		"snoozed":               0,
+		"dismissed":             0,
+		"approved":              0,
+		"executed":              0,
+		"replied":               0,
+		"meetingsBooked":        0,
+		"won":                   0,
+		"lost":                  0,
+		"replyRate":             nil,
+		"meetingRate":           nil,
+		"outcomes":              obj{},
+		"byDetector":            []any{},
+		"relationships":         0,
+		"atRiskRelationships":   0,
+		"criticalRelationships": 0,
+		"portfolioRiskScore":    0,
+		"overdueCommitments":    0,
+		"overdueByUs":           0,
+		"overdueByThem":         0,
+		"longestOverdueDays":    0,
+		"riskReasons":           []any{},
 	}
 }

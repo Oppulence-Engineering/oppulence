@@ -2748,8 +2748,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get the revenue impact summary
-     * @description Returns the aggregate ROI picture for the caller: actions surfaced, triage breakdown, executions, outcomes, reply/meeting rates, and per-detector contribution.
+     * Impact
+     * @description Impact loads the home counts. The request sends no filter. Overdue promises, open recovery, and companies at risk are zero, and there is no reply rate or meeting rate yet.
      */
     get: operations["getRevenueImpact"];
     put?: never;
@@ -22614,6 +22614,35 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "approved": 0,
+           *       "atRiskRelationships": 0,
+           *       "byDetector": [],
+           *       "criticalRelationships": 0,
+           *       "dismissed": 0,
+           *       "executed": 0,
+           *       "handled": 0,
+           *       "longestOverdueDays": 0,
+           *       "lost": 0,
+           *       "meetingRate": null,
+           *       "meetingsBooked": 0,
+           *       "open": 0,
+           *       "openTasks": 0,
+           *       "outcomes": {},
+           *       "overdueByThem": 0,
+           *       "overdueByUs": 0,
+           *       "overdueCommitments": 0,
+           *       "portfolioRiskScore": 0,
+           *       "relationships": 0,
+           *       "replied": 0,
+           *       "replyRate": null,
+           *       "riskReasons": [],
+           *       "snoozed": 0,
+           *       "surfaced": 0,
+           *       "won": 0
+           *     }
+           */
           "application/json": components["schemas"]["RevenueImpact"];
         };
       };

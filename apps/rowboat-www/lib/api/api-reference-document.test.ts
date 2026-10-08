@@ -2583,6 +2583,33 @@ describe("API reference document", () => {
     expect(presented.paths["/v1/revenue-actions"].post.operationId).toBe("createRevenueAction");
   });
 
+  it("samples the counts Impact loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-impact"].get;
+    expect(operation.summary).toBe("Impact");
+    expect(operation.description).toBe(
+      "Impact loads the home counts. The request sends no filter. Overdue promises, open recovery, and companies at risk are zero, and there is no reply rate or meeting rate yet.",
+    );
+    expect(operation.parameters).toBeUndefined();
+    const impact = operation.responses["200"].content["application/json"].example;
+    expect(impact).toMatchObject({
+      surfaced: 0,
+      open: 0,
+      openTasks: 0,
+      relationships: 0,
+      atRiskRelationships: 0,
+      overdueCommitments: 0,
+      replyRate: null,
+      meetingRate: null,
+      outcomes: {},
+      byDetector: [],
+      riskReasons: [],
+    });
+    expect(JSON.stringify(impact)).not.toContain("42");
+    expect(JSON.stringify(impact)).not.toContain("0.38");
+    expect(JSON.stringify(impact)).not.toContain("unanswered_proposal");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

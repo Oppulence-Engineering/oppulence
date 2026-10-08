@@ -2228,8 +2228,8 @@ export const GetRevenueDigest401Response = zod
   );
 
 /**
- * Returns the aggregate ROI picture for the caller: actions surfaced, triage breakdown, executions, outcomes, reply/meeting rates, and per-detector contribution.
- * @summary Get the revenue impact summary
+ * Impact loads the home counts. The request sends no filter. Overdue promises, open recovery, and companies at risk are zero, and there is no reply rate or meeting rate yet.
+ * @summary Impact
  */
 export const GetRevenueImpact200Response = zod
   .strictObject({
