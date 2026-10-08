@@ -823,7 +823,7 @@ export const getListRelationshipPersonsUrl = (params?: ListRelationshipPersonsPa
 };
 
 /**
- * People loads this directory. The request asks for the first 500 people. The answer lists each person with their name, email, role, company, and when you last talked.
+ * People loads this directory. The request asks for the first 500 people. The answer lists each person with their name, email, role, company, department, location, LinkedIn, and when you last talked.
  * @summary People
  */
 export const listRelationshipPersons = async (

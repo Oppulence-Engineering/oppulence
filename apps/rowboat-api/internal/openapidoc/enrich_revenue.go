@@ -1848,7 +1848,7 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"409": responseRef("409"),
 	})}
-	paths["/v1/relationship-persons"] = obj{"get": operation("Relationship Intelligence", "People", "People loads this directory. The request asks for the first 500 people. The answer lists each person with their name, email, role, company, and when you last talked.", "listRelationshipPersons", bearer(), []any{
+	paths["/v1/relationship-persons"] = obj{"get": operation("Relationship Intelligence", "People", peopleDirectoryDescription, "listRelationshipPersons", bearer(), []any{
 		obj{"name": "limit", "in": "query", "required": false, "description": "How many people to return. The directory asks for 500.", "schema": intSchema("How many people to return. The directory asks for 500.", 500, obj{"minimum": 1, "maximum": 500})},
 	}, nil, obj{
 		"200": jsonResponse("The people in this workspace.", objectSchema("People directory.", obj{
@@ -1858,8 +1858,14 @@ func addRevenuePaths(paths obj) {
 				"aliases":            arraySchema("Other names.", stringSchema("Other name.", nil)),
 				"primaryEmail":       stringSchema("Email.", "sarah@acme.example"),
 				"title":              stringSchema("Role.", "VP Engineering"),
+				"seniority":          stringSchema("Seniority band. The Role column uses this when no title is saved.", "vp"),
 				"orgName":            stringSchema("Company.", "Acme"),
 				"orgDomain":          stringSchema("Company domain.", "acme.example"),
+				"department":         stringSchema("Department.", "Engineering"),
+				"location":           stringSchema("Location.", "San Francisco"),
+				"linkedinUrl":        stringSchema("LinkedIn page.", "https://www.linkedin.com/in/sarahchen"),
+				"timezone":           stringSchema("Time zone.", "America/Los_Angeles"),
+				"locale":             stringSchema("Locale.", "en-US"),
 				"status":             stringEnum("Whether this person is in the directory.", "active", "active", "merged"),
 				"employmentStatus":   stringEnum("Whether their mail still reaches them.", "unknown", "unknown", "active", "departed"),
 				"relationshipCount":  intSchema("Companies this person is on.", 1),
@@ -2315,6 +2321,8 @@ func searchMailMatch(threadID, subject, counterparty, class, summary string, sco
 
 const peopleDirectoryPersonID = "ab8dfa9b-a7b2-46ea-982c-622a914c00e5"
 
+const peopleDirectoryDescription = "People loads this directory. The request asks for the first 500 people. The answer lists each person with their name, email, role, company, department, location, LinkedIn, and when you last talked."
+
 func peopleDirectoryResponse() obj {
 	return obj{
 		"hasMore": false,
@@ -2329,8 +2337,14 @@ func peopleDirectoryPerson() obj {
 		"aliases":            []any{},
 		"primaryEmail":       "sarah@acme.example",
 		"title":              "VP Engineering",
+		"seniority":          "vp",
 		"orgName":            "Acme",
 		"orgDomain":          "acme.example",
+		"department":         "Engineering",
+		"location":           "San Francisco",
+		"linkedinUrl":        "https://www.linkedin.com/in/sarahchen",
+		"timezone":           "America/Los_Angeles",
+		"locale":             "en-US",
 		"status":             "active",
 		"employmentStatus":   "unknown",
 		"relationshipCount":  1,

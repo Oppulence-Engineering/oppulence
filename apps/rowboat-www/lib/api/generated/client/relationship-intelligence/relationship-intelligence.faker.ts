@@ -1434,6 +1434,10 @@ export const getListRelationshipPersonsResponseMock = (
         () => faker.string.alpha({ length: { min: 10, max: 20 } }),
       ),
       attributesVersion: faker.number.int(),
+      department: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
       displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
       employmentStatus: faker.helpers.arrayElement([
         faker.helpers.arrayElement(["unknown", "active", "departed"] as const),
@@ -1446,6 +1450,18 @@ export const getListRelationshipPersonsResponseMock = (
       id: faker.string.uuid(),
       lastInteractionAt: faker.helpers.arrayElement([
         faker.date.past().toISOString().slice(0, 19) + "Z",
+        undefined,
+      ]),
+      linkedinUrl: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      locale: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      location: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
       ]),
       orgDomain: faker.helpers.arrayElement([
@@ -1467,7 +1483,15 @@ export const getListRelationshipPersonsResponseMock = (
         undefined,
       ]),
       relationshipCount: faker.number.int(),
+      seniority: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
       status: faker.helpers.arrayElement(["active", "merged"] as const),
+      timezone: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
       title: faker.helpers.arrayElement([
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
