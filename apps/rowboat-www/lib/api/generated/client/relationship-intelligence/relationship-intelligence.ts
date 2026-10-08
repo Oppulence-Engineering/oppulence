@@ -1149,8 +1149,8 @@ export const getDisconnectRelationshipSourceUrl = (
 };
 
 /**
- * Marks the relationship-facing source disconnected and immediately downgrades completeness. Credential revocation remains owned by the connector path shown on the source card.
- * @summary Disconnect relationship source
+ * Disconnect posts no request body. The stored source is disconnected, backfill returns to idle, completeness is disconnected, and sync lag is cleared. Credential revocation stays on the connector path shown on the source card.
+ * @summary Disconnect
  */
 export const disconnectRelationshipSource = async (
   source: "google" | "slack" | "hubspot",

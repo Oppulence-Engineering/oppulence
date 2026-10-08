@@ -1684,9 +1684,15 @@ func addRevenuePaths(paths obj) {
 	paths["/v1/relationship-sources/{source}/resync"] = obj{"post": operation("Relationship Intelligence", "Resync a source", "Explicitly starts or resumes a durable source backfill and immediately marks relationship completeness rebuilding.", "resyncRelationshipSource", bearer(), sourceParam, jsonRequest("Source account.", objectSchema("Source resync request.", obj{"sourceAccountId": stringSchema("Provider account id.", "me@company.com")}, "sourceAccountId"), obj{"sourceAccountId": "me@company.com"}), obj{
 		"202": jsonResponse("Queued source lifecycle.", ref("RelationshipSourceStatus"), nil), "400": responseRef("400"), "401": responseRef("401"), "403": responseRef("403"),
 	})}
-	disconnectSourceParam := append(append([]any{}, sourceParam...), obj{"name": "sourceAccountId", "in": "path", "required": true, "description": "Provider account id.", "schema": obj{"type": "string"}})
-	paths["/v1/relationship-sources/{source}/{sourceAccountId}/disconnect"] = obj{"post": operation("Relationship Intelligence", "Disconnect relationship source", "Marks the relationship-facing source disconnected and immediately downgrades completeness. Credential revocation remains owned by the connector path shown on the source card.", "disconnectRelationshipSource", bearer(), disconnectSourceParam, nil, obj{
-		"200": jsonResponse("Disconnected lifecycle.", ref("RelationshipSourceStatus"), nil), "400": responseRef("400"), "401": responseRef("401"), "403": responseRef("403"),
+	disconnectSourceParam := []any{
+		obj{"name": "source", "in": "path", "required": true, "description": "Beta source provider.", "schema": obj{"type": "string", "enum": []any{"google", "slack", "hubspot"}, "example": "google"}},
+		obj{"name": "sourceAccountId", "in": "path", "required": true, "description": "Provider account id.", "schema": obj{"type": "string", "example": "me@company.com"}},
+	}
+	paths["/v1/relationship-sources/{source}/{sourceAccountId}/disconnect"] = obj{"post": operation("Relationship Intelligence", "Disconnect", "Disconnect posts no request body. The stored source is disconnected, backfill returns to idle, completeness is disconnected, and sync lag is cleared. Credential revocation stays on the connector path shown on the source card.", "disconnectRelationshipSource", bearer(), disconnectSourceParam, nil, obj{
+		"200": jsonResponse("Disconnected source.", ref("RelationshipSourceStatus"), documentedDisconnectedSource()),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"403": responseRef("403"),
 	})}
 
 	paths["/v1/relationship-identity-candidates"] = obj{"get": operation("Relationship Intelligence", "List identity review candidates", "Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage. A full page is the end of the inbox when hasMore is false.", "listRelationshipIdentityCandidates", bearer(), []any{
@@ -1935,4 +1941,29 @@ func addRevenuePaths(paths obj) {
 func withExample(schema obj, example any) obj {
 	schema["example"] = example
 	return schema
+}
+
+func documentedDisconnectedSource() obj {
+	readScopes := []any{
+		"https://www.googleapis.com/auth/gmail.readonly",
+		"https://www.googleapis.com/auth/calendar.events.readonly",
+	}
+	return obj{
+		"connectionId":           "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+		"consentingActorId":      "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+		"source":                 "google",
+		"sourceAccountId":        "me@company.com",
+		"status":                 "disconnected",
+		"backfillPhase":          "idle",
+		"backfillCompleted":      250,
+		"backfillTotal":          1000,
+		"completeness":           "disconnected",
+		"expectedCadenceSeconds": 900,
+		"lagSeconds":             0,
+		"requiredScopes":         readScopes,
+		"grantedScopes":          readScopes,
+		"missingScopes":          []any{},
+		"retryCount":             0,
+		"disconnectedAt":         "2026-07-31T14:00:00Z",
+	}
 }

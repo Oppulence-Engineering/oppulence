@@ -2370,9 +2370,7 @@ export const GetRelationshipSourceInventory200Response = zod
                         "reconnect_required",
                         "disconnected",
                       ])
-                      .describe(
-                        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-                      ),
+                      .describe("Connection lifecycle."),
                     syncStartedAt: zod.iso
                       .datetime({ offset: true })
                       .nullish()
@@ -2517,9 +2515,7 @@ export const GetRelationshipSourceStatuses200Response = zod
                 "reconnect_required",
                 "disconnected",
               ])
-              .describe(
-                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-              ),
+              .describe("Connection lifecycle."),
             syncStartedAt: zod.iso.datetime({ offset: true }).nullish().describe("Backfill start."),
           })
           .describe(
@@ -2640,9 +2636,7 @@ export const ReportRelationshipSourceAuthorization200Response = zod
         "reconnect_required",
         "disconnected",
       ])
-      .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-      ),
+      .describe("Connection lifecycle."),
     syncStartedAt: zod.iso.datetime({ offset: true }).nullish().describe("Backfill start."),
   })
   .describe(
@@ -2779,9 +2773,7 @@ export const ResyncRelationshipSource202Response = zod
         "reconnect_required",
         "disconnected",
       ])
-      .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-      ),
+      .describe("Connection lifecycle."),
     syncStartedAt: zod.iso.datetime({ offset: true }).nullish().describe("Backfill start."),
   })
   .describe(
@@ -2834,8 +2826,8 @@ export const ResyncRelationshipSource403Response = zod
   );
 
 /**
- * Marks the relationship-facing source disconnected and immediately downgrades completeness. Credential revocation remains owned by the connector path shown on the source card.
- * @summary Disconnect relationship source
+ * Disconnect posts no request body. The stored source is disconnected, backfill returns to idle, completeness is disconnected, and sync lag is cleared. Credential revocation stays on the connector path shown on the source card.
+ * @summary Disconnect
  */
 export const DisconnectRelationshipSourceParams = zod.object({
   source: zod.enum(["google", "slack", "hubspot"]).describe("Beta source provider."),
@@ -2913,9 +2905,7 @@ export const DisconnectRelationshipSource200Response = zod
         "reconnect_required",
         "disconnected",
       ])
-      .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-      ),
+      .describe("Connection lifecycle."),
     syncStartedAt: zod.iso.datetime({ offset: true }).nullish().describe("Backfill start."),
   })
   .describe(

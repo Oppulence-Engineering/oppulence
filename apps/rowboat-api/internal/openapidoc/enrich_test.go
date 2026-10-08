@@ -1546,6 +1546,14 @@ func assertLogOutcome(t *testing.T, spec obj) {
 	assertMailboxPolicy(t, spec)
 
 	assertCreatePlan(t, spec)
+
+	assertDisconnectSource(t, spec)
+}
+
+func TestDisconnectSourceReturnsDisconnected(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertDisconnectSource(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -2659,6 +2667,72 @@ type draftPlanItemSample struct {
 	DueAt               string   `json:"dueAt,omitempty"`
 	Status              string   `json:"status"`
 	EvidenceRefs        []string `json:"evidenceRefs"`
+}
+
+func assertDisconnectSource(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/relationship-sources/{source}/{sourceAccountId}/disconnect"])["post"])
+	if op["summary"] != "Disconnect" || op["operationId"] != "disconnectRelationshipSource" {
+		t.Fatalf("disconnect operation: summary=%#v id=%#v", op["summary"], op["operationId"])
+	}
+	if op["requestBody"] != nil {
+		t.Fatalf("disconnect sends no body: %#v", op["requestBody"])
+	}
+	description, _ := op["description"].(string)
+	if !strings.Contains(description, "posts no request body") || !strings.Contains(description, "backfill returns to idle") {
+		t.Fatalf("disconnect description: %q", description)
+	}
+	params, _ := op["parameters"].([]any)
+	if len(params) != 2 {
+		t.Fatalf("disconnect parameters: %#v", op["parameters"])
+	}
+	sourceSchema := asObj(asObj(params[0])["schema"])
+	accountSchema := asObj(asObj(params[1])["schema"])
+	if sourceSchema["example"] != "google" || accountSchema["example"] != "me@company.com" {
+		t.Fatalf("disconnect path examples: %#v %#v", sourceSchema, accountSchema)
+	}
+	media := asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])
+	example := asObj(media["example"])
+	if example["status"] != "disconnected" || example["backfillPhase"] != "idle" || example["completeness"] != "disconnected" {
+		t.Fatalf("disconnected source: %#v", example)
+	}
+	if example["source"] != "google" || example["sourceAccountId"] != "me@company.com" || example["disconnectedAt"] != "2026-07-31T14:00:00Z" {
+		t.Fatalf("disconnected identity: %#v", example)
+	}
+	if !openAPIIntEqual(example["lagSeconds"], 0) || !openAPIIntEqual(example["retryCount"], 0) || !openAPIIntEqual(example["backfillCompleted"], 250) || !openAPIIntEqual(example["expectedCadenceSeconds"], 900) {
+		t.Fatalf("disconnected counts: lag=%#v retry=%#v completed=%#v cadence=%#v", example["lagSeconds"], example["retryCount"], example["backfillCompleted"], example["expectedCadenceSeconds"])
+	}
+	if _, ok := example["nextRetryAt"]; ok {
+		t.Fatalf("disconnect clears nextRetryAt: %#v", example["nextRetryAt"])
+	}
+	scopes := []any{
+		"https://www.googleapis.com/auth/gmail.readonly",
+		"https://www.googleapis.com/auth/calendar.events.readonly",
+	}
+	if !reflect.DeepEqual(example["requiredScopes"], scopes) || !reflect.DeepEqual(example["grantedScopes"], scopes) {
+		t.Fatalf("disconnect keeps read scopes: %#v", example)
+	}
+	missing, _ := example["missingScopes"].([]any)
+	if len(missing) != 0 {
+		t.Fatalf("disconnect missing scopes: %#v", example["missingScopes"])
+	}
+	status := asObj(asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RelationshipSourceStatus"])["properties"])["status"])
+	if status["example"] != "live" {
+		t.Fatalf("source health status example changed: %#v", status)
+	}
+}
+
+func openAPIIntEqual(v any, want int) bool {
+	switch n := v.(type) {
+	case int:
+		return n == want
+	case int64:
+		return n == int64(want)
+	case float64:
+		return n == float64(want)
+	default:
+		return false
+	}
 }
 
 func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {

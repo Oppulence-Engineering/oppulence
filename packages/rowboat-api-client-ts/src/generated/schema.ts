@@ -1894,8 +1894,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Disconnect relationship source
-     * @description Marks the relationship-facing source disconnected and immediately downgrades completeness. Credential revocation remains owned by the connector path shown on the source card.
+     * Disconnect
+     * @description Disconnect posts no request body. The stored source is disconnected, backfill returns to idle, completeness is disconnected, and sync lag is cleared. Credential revocation stays on the connector path shown on the source card.
      */
     post: operations["disconnectRelationshipSource"];
     delete?: never;
@@ -10853,8 +10853,8 @@ export interface components {
        */
       sourceAccountId: string;
       /**
-       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
-       * @example active
+       * @description Connection lifecycle.
+       * @example live
        * @enum {string}
        */
       status:
@@ -18900,12 +18900,38 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Disconnected lifecycle. */
+      /** @description Disconnected source. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "backfillCompleted": 250,
+           *       "backfillPhase": "idle",
+           *       "backfillTotal": 1000,
+           *       "completeness": "disconnected",
+           *       "connectionId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "consentingActorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "disconnectedAt": "2026-07-31T14:00:00Z",
+           *       "expectedCadenceSeconds": 900,
+           *       "grantedScopes": [
+           *         "https://www.googleapis.com/auth/gmail.readonly",
+           *         "https://www.googleapis.com/auth/calendar.events.readonly"
+           *       ],
+           *       "lagSeconds": 0,
+           *       "missingScopes": [],
+           *       "requiredScopes": [
+           *         "https://www.googleapis.com/auth/gmail.readonly",
+           *         "https://www.googleapis.com/auth/calendar.events.readonly"
+           *       ],
+           *       "retryCount": 0,
+           *       "source": "google",
+           *       "sourceAccountId": "me@company.com",
+           *       "status": "disconnected"
+           *     }
+           */
           "application/json": components["schemas"]["RelationshipSourceStatus"];
         };
       };
