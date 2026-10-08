@@ -1403,6 +1403,42 @@ func assertLineageIdentity(t *testing.T, schemas obj) {
 	if asObj(asObj(identity["properties"])["id"])["example"] != identityID {
 		t.Fatalf("relationship identity id: %#v", asObj(identity["properties"])["id"])
 	}
+
+	assertAttentionEvidence(t, schemas)
+}
+
+func TestAttentionEvidenceNamesThePromiseEvidence(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertAttentionEvidence(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertAttentionEvidence(t *testing.T, schemas obj) {
+	t.Helper()
+	item := asObj(schemas["RelationshipAttentionItem"])
+	if item == nil {
+		return
+	}
+	const evidenceRef = "revenue-evidence:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	props := asObj(item["properties"])
+	refs := asObj(props["evidenceRefs"])
+	if !reflect.DeepEqual(refs["example"], []any{evidenceRef}) {
+		t.Fatalf("attention evidence refs: %#v", refs["example"])
+	}
+	if asObj(refs["items"])["example"] != evidenceRef {
+		t.Fatalf("attention evidence item: %#v", refs["items"])
+	}
+	if refs["description"] != "Evidence refs." {
+		t.Fatalf("attention evidence description changed: %#v", refs["description"])
+	}
+	if asObj(props["reasonCode"])["example"] != "overdue_commitment" {
+		t.Fatalf("attention reason changed: %#v", props["reasonCode"])
+	}
+	action := asObj(schemas["RevenueAction"])
+	evidence := asObj(asObj(asObj(asObj(action["properties"])["evidence"])["items"])["properties"])
+	if asObj(evidence["id"])["example"] != "4b8dfa9b-a7b2-46ea-982c-622a914c00e5" {
+		t.Fatalf("action evidence id changed: %#v", evidence["id"])
+	}
 }
 
 func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {

@@ -244,6 +244,8 @@ func addRevenueSchemas(schemas obj) {
 		"decisions": arraySchema("Decision history.", ref("RelationshipIdentityDecision")), "lineage": arraySchema("Lineage history.", ref("RelationshipIdentityLineage")),
 	}, "id", "status", "candidateType", "version", "proposedRelationship", "existingRelationship", "anchorKind", "matchingAnchors", "conflictingAnchors", "evidenceRefs", "evidenceCount", "impact", "recommendedDecision", "recommendationConfidence", "decisions", "lineage")
 
+	attentionEvidence := arraySchema("Evidence refs.", stringSchema("Evidence ref.", "revenue-evidence:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"))
+	attentionEvidence["example"] = []any{"revenue-evidence:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"}
 	schemas["RelationshipAttentionItem"] = objectSchema("Versioned relationship-native reason for portfolio attention.", obj{
 		"id": uuidSchema("Attention id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "version": intSchema("Optimistic version.", 1),
 		"relationshipId": uuidSchema("Relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"), "relationshipName": stringSchema("Relationship name.", "Acme"),
