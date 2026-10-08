@@ -15883,16 +15883,22 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Background task slug, matching bg-tasks/<slug> locally. */
+        /**
+         * @description Workflow the opened run belongs to.
+         * @example oppulence-relationship-refresh
+         */
         slug: string;
-        /** @description Cloud-visible run id for a background task run. */
+        /**
+         * @description Run the Runs page opens.
+         * @example sched-temporal-77f5e632-a841-4557-a8e4-9b8f0d207ff4
+         */
         runId: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Run mirror. */
+      /** @description Failed cloud run. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -15900,27 +15906,16 @@ export interface operations {
         content: {
           /**
            * @example {
-           *       "completedAt": "2026-06-04T21:02:00Z",
-           *       "createdAt": "2026-06-04T21:00:30Z",
-           *       "error": "",
-           *       "executor": "desktop",
+           *       "attempt": 1,
+           *       "errorCode": "llm_call_failed",
+           *       "executor": "api",
            *       "id": "77f5e632-a841-4557-a8e4-9b8f0d207ff4",
-           *       "localRunId": "local-run-42",
-           *       "model": "openai/gpt-4.1-mini",
-           *       "previousRunId": "",
-           *       "progressMessage": "Completed.",
-           *       "progressPercent": 100,
-           *       "provider": "openai",
-           *       "revision": 2,
-           *       "runId": "run-20260604-210000",
-           *       "slug": "daily-summary",
-           *       "startedAt": "2026-06-04T21:01:00Z",
-           *       "status": "succeeded",
-           *       "subUseCase": "daily-summary",
-           *       "summary": "No high-priority account changes.",
-           *       "trigger": "manual",
-           *       "updatedAt": "2026-06-04T21:02:05Z",
-           *       "useCase": "background-task"
+           *       "progressPercent": 10,
+           *       "revision": 5,
+           *       "runId": "sched-temporal-77f5e632-a841-4557-a8e4-9b8f0d207ff4",
+           *       "slug": "oppulence-relationship-refresh",
+           *       "status": "failed",
+           *       "trigger": "cron"
            *     }
            */
           "application/json": components["schemas"]["BackgroundTaskRun"];

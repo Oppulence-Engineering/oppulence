@@ -2176,8 +2176,8 @@ export const CreateBackgroundTaskRun500Response = zod
  * @summary Get task run
  */
 export const GetBackgroundTaskRunParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
-  runId: zod.string().describe("Cloud-visible run id for a background task run."),
+  slug: zod.string().describe("Workflow the opened run belongs to."),
+  runId: zod.string().describe("Run the Runs page opens."),
 });
 
 export const GetBackgroundTaskRun200Response = zod

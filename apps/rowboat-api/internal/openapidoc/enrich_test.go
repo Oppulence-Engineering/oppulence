@@ -4194,6 +4194,55 @@ func exampleTaskSlug(example any) string {
 	return slug
 }
 
+func TestOpenedRunSamplesTheRunThePageOpens(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertOpenedRun(t, spec)
+}
+
+func assertOpenedRun(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	item := asObj(paths["/v1/background-tasks/{slug}/runs/{runId}"])
+	get := asObj(item["get"])
+	if get["summary"] != "Get task run" || get["operationId"] != "getBackgroundTaskRun" {
+		t.Fatalf("opened run copy: %#v %#v", get["summary"], get["operationId"])
+	}
+	if get["requestBody"] != nil {
+		t.Fatalf("opened run sends no body: %#v", get["requestBody"])
+	}
+	params, _ := get["parameters"].([]any)
+	if len(params) != 2 {
+		t.Fatalf("opened run params: %#v", get["parameters"])
+	}
+	slug := asObj(params[0])
+	runID := asObj(params[1])
+	if slug["name"] != "slug" || slug["example"] != openedRunSlug || asObj(slug["schema"])["example"] != openedRunSlug {
+		t.Fatalf("opened run slug: %#v", slug)
+	}
+	if runID["name"] != "runId" || runID["example"] != openedRunID || asObj(runID["schema"])["example"] != openedRunID {
+		t.Fatalf("opened run id: %#v", runID)
+	}
+	got, err := json.Marshal(jsonExample(asObj(asObj(get["responses"])["200"])))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(openedCloudRunExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("opened run example:\n%s\nwant:\n%s", got, want)
+	}
+	if asObj(asObj(get["responses"])["200"])["description"] != "Failed cloud run." {
+		t.Fatalf("opened run response: %#v", asObj(asObj(get["responses"])["200"])["description"])
+	}
+	patched := jsonExample(asObj(asObj(asObj(item["patch"])["responses"])["200"]))
+	if asObj(patched)["slug"] != "daily-summary" || asObj(patched)["status"] != "succeeded" || asObj(patched)["executor"] != "desktop" {
+		t.Fatalf("shared run example changed: %#v", patched)
+	}
+}
+
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)
