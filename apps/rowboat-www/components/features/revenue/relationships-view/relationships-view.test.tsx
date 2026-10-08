@@ -1237,6 +1237,10 @@ describe("RelationshipsView", () => {
     expect(source).toContain(
       '"Lifecycle",\n                      supportedRecordValue(\n                        data.relationship.lifecycle,\n                        data.missionControl.evidence.lifecycle,',
     );
+    expect(supportedRecordValue("negative", { supported: true })).toBe("Negative");
+    expect(source).toContain(
+      '"Sentiment",\n                      supportedRecordValue(\n                        data.relationship.sentiment,\n                        data.missionControl.evidence.sentiment,',
+    );
     expect(source).not.toContain(
       '["Open commitments", String(data.commitments.filter((item) => item.status === "open").length)]',
     );

@@ -4361,6 +4361,13 @@ export function RelationshipSheet({
                       ),
                     ],
                     [
+                      "Sentiment",
+                      supportedRecordValue(
+                        data.relationship.sentiment,
+                        data.missionControl.evidence.sentiment,
+                      ),
+                    ],
+                    [
                       "Last activity",
                       companyLastActivityLabel(data.relationship.lastTouchAt),
                     ],
