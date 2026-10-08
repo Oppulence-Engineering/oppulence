@@ -31908,22 +31908,24 @@
     },
     "/v1/workspace-notes": {
       "get": {
-        "description": "Returns the latest copy of each company note in this workspace. One request reads every company, so the notes page does not ask for each company timeline. A newer edit replaces the previous copy, and a later deletion removes the note.",
+        "description": "Notes loads the newest page. The request asks for 50 notes and does not ask for an older page. This workspace has no company note, so the page is empty.",
         "operationId": "listWorkspaceNotes",
         "parameters": [
           {
-            "description": "Maximum notes to return (default 50, max 100).",
+            "description": "Page size (max 100). Notes asks for 50.",
+            "example": 50,
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
+              "example": 50,
               "maximum": 100,
               "minimum": 1,
               "type": "integer"
             }
           },
           {
-            "description": "Number of collapsed notes to skip.",
+            "description": "How many notes to skip. Notes does not send this on the first page.",
             "in": "query",
             "name": "offset",
             "required": false,
@@ -31937,6 +31939,10 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "hasMore": false,
+                  "notes": []
+                },
                 "schema": {
                   "description": "Workspace notes page.",
                   "properties": {
@@ -32041,8 +32047,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List workspace notes",
-        "tags": ["Relationship Intelligence"]
+        "summary": "Notes",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     }
   },

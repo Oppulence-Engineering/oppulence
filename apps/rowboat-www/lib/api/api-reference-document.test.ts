@@ -2610,6 +2610,29 @@ describe("API reference document", () => {
     expect(JSON.stringify(impact)).not.toContain("unanswered_proposal");
   });
 
+  it("samples the page Notes loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/workspace-notes"].get;
+    expect(operation.summary).toBe("Notes");
+    expect(operation.description).toBe(
+      "Notes loads the newest page. The request asks for 50 notes and does not ask for an older page. This workspace has no company note, so the page is empty.",
+    );
+    const examples = Object.fromEntries(
+      operation.parameters.map((parameter: { name: string; schema?: { example?: unknown } }) => [
+        parameter.name,
+        parameter.schema?.example,
+      ]),
+    );
+    expect(examples).toMatchObject({ limit: 50 });
+    expect(examples.offset).toBeUndefined();
+    expect(examples.order).toBeUndefined();
+    const page = operation.responses["200"].content["application/json"].example;
+    expect(page).toEqual({ hasMore: false, notes: [] });
+    expect(JSON.stringify(page)).not.toContain("Cedar Notes");
+    expect(JSON.stringify(page)).not.toContain("note-1");
+    expect(JSON.stringify(page)).not.toContain("Renewal context");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
