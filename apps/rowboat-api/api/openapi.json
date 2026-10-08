@@ -25798,6 +25798,104 @@
         "tags": ["Relationship Intelligence"]
       }
     },
+    "/v1/research/status": {
+      "get": {
+        "description": "The companies page checks public research before it shows Allow public research. When research is configured, the required plan is intelligence, and consent is still off, the response is available true, allowed false, and reason consent_required.",
+        "operationId": "getResearchStatus",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "allowed": false,
+                  "available": true,
+                  "consent": {
+                    "consented": false
+                  },
+                  "reason": "consent_required",
+                  "requiredPlan": "intelligence"
+                },
+                "schema": {
+                  "description": "Public research status.",
+                  "properties": {
+                    "allowed": {
+                      "description": "Whether this workspace may run public research now.",
+                      "example": false,
+                      "type": "boolean"
+                    },
+                    "available": {
+                      "description": "Whether a research vendor is configured.",
+                      "example": true,
+                      "type": "boolean"
+                    },
+                    "consent": {
+                      "description": "Stored public research consent.",
+                      "properties": {
+                        "consented": {
+                          "description": "Whether this workspace has allowed public research.",
+                          "example": false,
+                          "type": "boolean"
+                        },
+                        "consentedAt": {
+                          "description": "When consent was allowed. Omitted while consent is off.",
+                          "format": "date-time",
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "consented"
+                      ],
+                      "type": "object"
+                    },
+                    "reason": {
+                      "description": "Why public research is not running. Absent when it is allowed.",
+                      "enum": [
+                        "consent_required",
+                        "plan_required",
+                        "capability_disabled",
+                        "provider_unconfigured",
+                        "unavailable"
+                      ],
+                      "example": "consent_required",
+                      "type": "string"
+                    },
+                    "requiredPlan": {
+                      "description": "Plan that includes public research.",
+                      "example": "intelligence",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "available",
+                    "allowed",
+                    "requiredPlan",
+                    "consent"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Public research status."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Check public research",
+        "tags": [
+          "Relationship Intelligence"
+        ]
+      }
+    },
     "/v1/revenue-actions": {
       "get": {
         "description": "Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions. A full page is the end of the queue when hasMore is false.",

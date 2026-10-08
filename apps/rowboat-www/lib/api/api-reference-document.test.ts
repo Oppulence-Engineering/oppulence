@@ -1250,6 +1250,29 @@ describe("API reference document", () => {
     });
   });
 
+  it("samples the public research status the companies page checks", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/research/status"].get;
+    const body = operation.responses["200"].content["application/json"];
+    expect(operation.summary).toBe("Check public research");
+    expect(body.example).toEqual({
+      available: true,
+      allowed: false,
+      reason: "consent_required",
+      requiredPlan: "intelligence",
+      consent: { consented: false },
+    });
+    expect(body.schema.properties.reason.example).toBe("consent_required");
+    expect(body.schema.properties.reason.enum).toEqual([
+      "consent_required",
+      "plan_required",
+      "capability_disabled",
+      "provider_unconfigured",
+      "unavailable",
+    ]);
+    expect(body.schema.properties.requiredPlan.example).toBe("intelligence");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

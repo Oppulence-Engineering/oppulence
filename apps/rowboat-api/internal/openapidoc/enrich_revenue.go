@@ -1301,6 +1301,24 @@ func addRevenuePaths(paths obj) {
 		}, "outcomes"), nil),
 		"400": responseRef("400"), "401": responseRef("401"), "402": responseRef("402"), "403": responseRef("403"), "409": responseRef("409"), "503": responseRef("503"),
 	})}
+
+	paths["/v1/research/status"] = obj{"get": operation("Relationship Intelligence", "Check public research", "The companies page checks public research before it shows Allow public research. When research is configured, the required plan is intelligence, and consent is still off, the response is available true, allowed false, and reason consent_required.", "getResearchStatus", bearer(), nil, nil, obj{
+		"200": jsonResponse("Public research status.", objectSchema("Public research status.", obj{
+			"available":    boolSchema("Whether a research vendor is configured.", true),
+			"allowed":      boolSchema("Whether this workspace may run public research now.", false),
+			"reason":       stringEnum("Why public research is not running. Absent when it is allowed.", "consent_required", "consent_required", "plan_required", "capability_disabled", "provider_unconfigured", "unavailable"),
+			"requiredPlan": stringSchema("Plan that includes public research.", "intelligence"),
+			"consent": objectSchema("Stored public research consent.", obj{
+				"consented":   boolSchema("Whether this workspace has allowed public research.", false),
+				"consentedAt": stringSchema("When consent was allowed. Omitted while consent is off.", nil, obj{"format": "date-time"}, nullable()),
+			}, "consented"),
+		}, "available", "allowed", "requiredPlan", "consent"), obj{
+			"available": true, "allowed": false, "reason": "consent_required", "requiredPlan": "intelligence",
+			"consent": obj{"consented": false},
+		}),
+		"401": responseRef("401"),
+		"403": responseRef("403"),
+	})}
 	paths["/v1/relationship-observations/batch"] = obj{"post": operation("Relationship Intelligence", "Ingest relationship observations", "Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.", "ingestRelationshipObservations", bearer(), nil, jsonRequest("Observation batch.", objectSchema("Observation batch.", obj{
 		"observations": arraySchema("Provider-neutral observations.", objectSchema("Observation input.", obj{
 			"relationshipId":  uuidSchema("Known relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
