@@ -269,6 +269,18 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if taskProvider := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["provider"]); taskProvider["example"] != "openai" {
 		t.Fatalf("BackgroundTask.provider lost its model example: %#v", taskProvider)
 	}
+	participantEmail := asObj(asObj(asObj(schemas["RelationshipParticipant"])["properties"])["email"])
+	if participantEmail["description"] != "Normalized email." || participantEmail["example"] != "avery@acme.com" {
+		t.Fatalf("RelationshipParticipant.email was rewritten as the signed-in user: %#v", participantEmail)
+	}
+	messageEmail := asObj(asObj(asObj(schemas["CommunicationParticipant"])["properties"])["email"])
+	if messageEmail["description"] != "Address of someone on this message." || messageEmail["example"] != "avery@acme.com" {
+		t.Fatalf("CommunicationParticipant.email was rewritten as the signed-in user: %#v", messageEmail)
+	}
+	userEmail := asObj(asObj(asObj(schemas["User"])["properties"])["email"])
+	if userEmail["description"] != "Best-known WorkOS primary email for the user." || userEmail["example"] != "user@example.com" {
+		t.Fatalf("User.email lost the signed-in address: %#v", userEmail)
+	}
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
@@ -419,6 +431,18 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		if provider["example"] != "gmail" || len(enum) != 1 || enum[0] != "gmail" {
 			t.Fatalf("checked-in %s.provider is not Gmail: %#v", name, provider)
 		}
+	}
+
+	participantEmail := asObj(asObj(asObj(schemas["RelationshipParticipant"])["properties"])["email"])
+	if participantEmail["example"] != "avery@acme.com" || participantEmail["description"] != "Normalized email." {
+		t.Fatalf("checked-in RelationshipParticipant.email is the signed-in user: %#v", participantEmail)
+	}
+	messageEmail := asObj(asObj(asObj(schemas["CommunicationParticipant"])["properties"])["email"])
+	if messageEmail["example"] != "avery@acme.com" || messageEmail["description"] != "Address of someone on this message." {
+		t.Fatalf("checked-in CommunicationParticipant.email is the signed-in user: %#v", messageEmail)
+	}
+	if userEmail := asObj(asObj(asObj(schemas["User"])["properties"])["email"]); userEmail["example"] != "user@example.com" {
+		t.Fatalf("checked-in User.email lost the signed-in address: %#v", userEmail)
 	}
 	if value := asObj(evidenceProperties["value"]); value["oneOf"] == nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.value is invalid: %#v", value)

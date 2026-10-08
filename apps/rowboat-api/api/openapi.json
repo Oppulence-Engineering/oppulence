@@ -4021,8 +4021,8 @@
             "type": "string"
           },
           "email": {
-            "description": "Best-known WorkOS primary email for the user.",
-            "example": "user@example.com",
+            "description": "Address of someone on this message.",
+            "example": "avery@acme.com",
             "type": "string"
           },
           "external": {
@@ -11429,8 +11429,8 @@
             "type": "string"
           },
           "email": {
-            "description": "Best-known WorkOS primary email for the user.",
-            "example": "user@example.com",
+            "description": "Normalized email.",
+            "example": "avery@acme.com",
             "type": "string"
           },
           "externalRefs": {
