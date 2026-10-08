@@ -562,6 +562,20 @@ describe("API reference document", () => {
     );
   });
 
+  it("does not sample this run id as the previous run", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const schemas = presented.components.schemas as Record<
+      string,
+      { properties?: Record<string, { example?: unknown }> }
+    >;
+    const run = schemas.BackgroundTaskRun?.properties;
+    expect(run?.previousRunId?.example).toBe("run-20260604-205000");
+    expect(run?.runId?.example).toBe("run-20260604-210000");
+    expect(schemas.BackgroundTaskRunCreateRequest?.properties?.previousRunId?.example).toBe(
+      "run-20260604-205000",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

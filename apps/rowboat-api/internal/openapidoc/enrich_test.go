@@ -351,6 +351,8 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 
 	assertSessionCost(t, schemas)
 
+	assertPreviousRunID(t, schemas)
+
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
 	reason := asObj(evidenceProperties["reason"])
@@ -531,6 +533,8 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	assertSlackMessageTime(t, schemas)
 
 	assertSessionCost(t, schemas)
+
+	assertPreviousRunID(t, schemas)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -905,6 +909,30 @@ func sameNumber(value any, want int) bool {
 		return n == float64(want)
 	default:
 		return false
+	}
+}
+
+func assertPreviousRunID(t *testing.T, schemas obj) {
+	t.Helper()
+	run := asObj(asObj(schemas["BackgroundTaskRun"])["properties"])
+	previous := asObj(run["previousRunId"])
+	current := asObj(run["runId"])
+	if previous["example"] != "run-20260604-205000" || current["example"] != "run-20260604-210000" {
+		t.Fatalf("previous run id sampled this run: previous=%#v run=%#v", previous["example"], current["example"])
+	}
+	for _, name := range []string{"BackgroundTaskRunCreateRequest", "BackgroundTaskRunPatchRequest"} {
+		record := asObj(schemas[name])
+		if record == nil {
+			continue
+		}
+		properties := asObj(record["properties"])
+		if properties == nil {
+			continue
+		}
+		field := asObj(properties["previousRunId"])
+		if field != nil && field["example"] != "run-20260604-205000" {
+			t.Fatalf("%s.previousRunId changed: %#v", name, field["example"])
+		}
 	}
 }
 

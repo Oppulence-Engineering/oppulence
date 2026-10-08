@@ -1806,7 +1806,7 @@
           },
           "previousRunId": {
             "description": "Previous run id when this run was created by retry.",
-            "example": "run-20260604-210000",
+            "example": "run-20260604-205000",
             "nullable": true,
             "type": "string"
           },

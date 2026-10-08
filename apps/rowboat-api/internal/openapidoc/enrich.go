@@ -448,7 +448,7 @@ func addBackgroundTaskSchemas(schemas obj) {
 	schemas["BackgroundTaskRun"] = objectSchema("One mirrored desktop execution, queued remote trigger, or API-worker Temporal execution for a background task.", obj{
 		"id":                 uuidSchema("Stable server id for this run mirror.", "77f5e632-a841-4557-a8e4-9b8f0d207ff4"),
 		"runId":              stringSchema("Cloud-visible run id. Desktop-created runs can use local ids; remote triggers use remote-trigger-<uuid> until claimed.", "run-20260604-210000"),
-		"previousRunId":      stringSchema("Previous run id when this run was created by retry.", "run-20260604-210000", nullable()),
+		"previousRunId":      stringSchema("Previous run id when this run was created by retry.", "run-20260604-205000", nullable()),
 		"localRunId":         stringSchema("Actual desktop run id once a queued remote trigger has been claimed and executed locally.", "local-run-42", nullable()),
 		"slug":               stringSchema("Task slug this run belongs to.", "daily-summary"),
 		"trigger":            stringEnum("Trigger source for this run.", "manual", "manual", "cron", "window", "event"),
