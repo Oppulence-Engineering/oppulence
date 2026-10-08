@@ -9,7 +9,7 @@ import type {
   AcknowledgeMissionControl201,
   AcknowledgeMissionControlBody,
   AppendCommitmentTransitionBody,
-  ApproveMutualActionPlan200,
+  ApproveMutualActionPlan201,
   ApproveMutualActionPlanBody,
   ApproveRelationshipRecommendationBody,
   BetaDiagnostics,
@@ -85,7 +85,7 @@ import type {
   ReviseMutualActionPlanBody,
   RunCommitmentRecovery201,
   RunCommitmentRecoveryBody,
-  ShareMutualActionPlan200,
+  ShareMutualActionPlan201,
   ShareMutualActionPlanBody,
 } from "../model";
 
@@ -2609,9 +2609,9 @@ export const reviseMutualActionPlan = async (
   return { data, status: res.status, headers: res.headers } as reviseMutualActionPlanResponse;
 };
 
-export type approveMutualActionPlanResponse200 = {
-  data: ApproveMutualActionPlan200;
-  status: 200;
+export type approveMutualActionPlanResponse201 = {
+  data: ApproveMutualActionPlan201;
+  status: 201;
 };
 
 export type approveMutualActionPlanResponse401 = {
@@ -2629,7 +2629,7 @@ export type approveMutualActionPlanResponse409 = {
   status: 409;
 };
 
-export type approveMutualActionPlanResponseSuccess = approveMutualActionPlanResponse200 & {
+export type approveMutualActionPlanResponseSuccess = approveMutualActionPlanResponse201 & {
   headers: Headers;
 };
 export type approveMutualActionPlanResponseError = (
@@ -2648,8 +2648,8 @@ export const getApproveMutualActionPlanUrl = (relationshipId: string, planId: st
 };
 
 /**
- * Binds internal approval to the exact current revision hash.
- * @summary Approve a plan revision
+ * Approve this plan posts an empty body. The stored plan status is internally_approved, which the company sheet reads as Approved in this workspace.
+ * @summary Approve this plan
  */
 export const approveMutualActionPlan = async (
   relationshipId: string,
@@ -2670,9 +2670,9 @@ export const approveMutualActionPlan = async (
   return { data, status: res.status, headers: res.headers } as approveMutualActionPlanResponse;
 };
 
-export type shareMutualActionPlanResponse200 = {
-  data: ShareMutualActionPlan200;
-  status: 200;
+export type shareMutualActionPlanResponse201 = {
+  data: ShareMutualActionPlan201;
+  status: 201;
 };
 
 export type shareMutualActionPlanResponse401 = {
@@ -2690,7 +2690,7 @@ export type shareMutualActionPlanResponse409 = {
   status: 409;
 };
 
-export type shareMutualActionPlanResponseSuccess = shareMutualActionPlanResponse200 & {
+export type shareMutualActionPlanResponseSuccess = shareMutualActionPlanResponse201 & {
   headers: Headers;
 };
 export type shareMutualActionPlanResponseError = (
@@ -2709,8 +2709,8 @@ export const getShareMutualActionPlanUrl = (relationshipId: string, planId: stri
 };
 
 /**
- * Re-evaluates effective policy, creates a scoped expiring token, stores only its hash, and queues the exact approved revision for operator approval.
- * @summary Queue an approved plan share
+ * Draft an email to share this plan posts an empty body. The stored plan status is shared, the token state is active, and responseToken is the one-time token. The server keeps only the hash of that token.
+ * @summary Draft an email to share this plan
  */
 export const shareMutualActionPlan = async (
   relationshipId: string,

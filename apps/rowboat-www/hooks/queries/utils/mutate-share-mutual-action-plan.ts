@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import {
-  ShareMutualActionPlan200Response,
+  ShareMutualActionPlan201Response,
   ShareMutualActionPlanBody,
 } from "@/lib/api/generated/zod/relationship-intelligence/relationship-intelligence";
 import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
@@ -12,7 +12,7 @@ export type ShareMutualActionPlanInput = z.infer<typeof ShareMutualActionPlanInp
 /**
  * @oppulence-gen kind=mutation
  * Same-origin BFF write for Share mutual action plan. Validates the response with
- * ShareMutualActionPlan200Response. Do not cast the parsed result. Owned by `use-share-mutual-action-plan.lit.ts`.
+ * ShareMutualActionPlan201Response. Do not cast the parsed result. Owned by `use-share-mutual-action-plan.lit.ts`.
  */
 export function shareMutualActionPlanPath(relationshipId: string, planId: string): string {
   return `/relationships/${encodeURIComponent(relationshipId)}/mutual-action-plans/${encodeURIComponent(planId)}/share`;
@@ -28,7 +28,7 @@ export async function loadShareMutualActionPlan(
   return request({
     path: shareMutualActionPlanPath(relationshipId, planId),
     method: "POST",
-    schema: ShareMutualActionPlan200Response,
+    schema: ShareMutualActionPlan201Response,
     body,
     signal,
   });

@@ -7,6 +7,12 @@
  */
 
 /**
- * Plan share result.
+ * Share token state.
  */
-export type ShareMutualActionPlan200 = { [key: string]: unknown };
+export type ShareMutualActionPlan201PlanTokenState =
+  (typeof ShareMutualActionPlan201PlanTokenState)[keyof typeof ShareMutualActionPlan201PlanTokenState];
+
+export const ShareMutualActionPlan201PlanTokenState = {
+  not_issued: "not_issued",
+  active: "active",
+} as const;

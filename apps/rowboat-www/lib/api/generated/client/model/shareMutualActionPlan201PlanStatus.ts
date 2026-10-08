@@ -7,6 +7,17 @@
  */
 
 /**
- * Mutual action plan.
+ * Plan status.
  */
-export type ApproveMutualActionPlan200 = { [key: string]: unknown };
+export type ShareMutualActionPlan201PlanStatus =
+  (typeof ShareMutualActionPlan201PlanStatus)[keyof typeof ShareMutualActionPlan201PlanStatus];
+
+export const ShareMutualActionPlan201PlanStatus = {
+  draft: "draft",
+  revised: "revised",
+  internally_approved: "internally_approved",
+  shared: "shared",
+  counterparty_responded: "counterparty_responded",
+  completed: "completed",
+  cancelled: "cancelled",
+} as const;

@@ -2342,8 +2342,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Approve a plan revision
-     * @description Binds internal approval to the exact current revision hash.
+     * Approve this plan
+     * @description Approve this plan posts an empty body. The stored plan status is internally_approved, which the company sheet reads as Approved in this workspace.
      */
     post: operations["approveMutualActionPlan"];
     delete?: never;
@@ -2362,8 +2362,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Queue an approved plan share
-     * @description Re-evaluates effective policy, creates a scoped expiring token, stores only its hash, and queues the exact approved revision for operator approval.
+     * Draft an email to share this plan
+     * @description Draft an email to share this plan posts an empty body. The stored plan status is shared, the token state is active, and responseToken is the one-time token. The server keeps only the hash of that token.
      */
     post: operations["shareMutualActionPlan"];
     delete?: never;
@@ -20017,13 +20017,164 @@ export interface operations {
     };
     responses: {
       /** @description Approved plan. */
-      200: {
+      201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "counterpartyRef": "jordan@example.com",
+           *       "currentRevision": {
+           *         "createdAt": "2026-07-31T14:00:00Z",
+           *         "createdBy": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "items": [
+           *           {
+           *             "commitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "dependencyItemIds": [],
+           *             "dueAt": "2026-09-14T17:00:00Z",
+           *             "evidenceRefs": [
+           *               "revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *             ],
+           *             "itemId": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "ownerParticipantRef": "alex@example.com",
+           *             "status": "open",
+           *             "title": "Send the security packet."
+           *           }
+           *         ],
+           *         "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "revisionHash": "sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966",
+           *         "revisionId": "revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "version": 1
+           *       },
+           *       "internalOwnerRef": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "status": "internally_approved",
+           *       "tokenState": "not_issued"
+           *     }
+           */
           "application/json": {
-            [key: string]: unknown;
+            /**
+             * @description The other party.
+             * @example jordan@example.com
+             */
+            counterpartyRef: string;
+            /** @description The revision this approval is bound to. */
+            currentRevision: {
+              /**
+               * Format: date-time
+               * @description When this revision was written.
+               * @example 2026-07-31T14:00:00Z
+               */
+              createdAt: string;
+              /**
+               * Format: uuid
+               * @description Who wrote this revision.
+               * @example 7b8dfa9b-a7b2-46ea-982c-622a914c00e5
+               */
+              createdBy: string;
+              /** @description Plan steps. */
+              items: {
+                /**
+                 * Format: uuid
+                 * @description Commitment this step came from.
+                 * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+                 */
+                commitmentId?: string;
+                /** @description Steps this one waits on. */
+                dependencyItemIds: string[];
+                /**
+                 * Format: date-time
+                 * @description When the step is due.
+                 * @example 2026-09-14T17:00:00Z
+                 */
+                dueAt?: string;
+                /** @description Evidence for the step. */
+                evidenceRefs: string[];
+                /**
+                 * @description Step id.
+                 * @example item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+                 */
+                itemId: string;
+                /**
+                 * @description Who owns the step.
+                 * @example alex@example.com
+                 */
+                ownerParticipantRef: string;
+                /**
+                 * @description Step status.
+                 * @example open
+                 */
+                status: string;
+                /**
+                 * @description Step title.
+                 * @example Send the security packet.
+                 */
+                title: string;
+              }[];
+              /**
+               * @description Plan id.
+               * @example plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5
+               */
+              planId: string;
+              /**
+               * @description Hash of the steps.
+               * @example sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966
+               */
+              revisionHash: string;
+              /**
+               * @description Revision id.
+               * @example revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5
+               */
+              revisionId: string;
+              /**
+               * @description Revision number.
+               * @example 1
+               */
+              version: number;
+            };
+            /**
+             * Format: uuid
+             * @description Person who owns the plan inside this workspace.
+             * @example 7b8dfa9b-a7b2-46ea-982c-622a914c00e5
+             */
+            internalOwnerRef: string;
+            /**
+             * @description Plan id.
+             * @example plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5
+             */
+            planId: string;
+            /**
+             * Format: uuid
+             * @description Company id.
+             * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+             */
+            relationshipId: string;
+            /**
+             * @description Decision recorded when the plan was shared.
+             * @example governance:ab8dfa9ba7b246ea982c622a
+             */
+            sharePolicyDecisionId?: string;
+            /**
+             * @description Plan status.
+             * @example internally_approved
+             * @enum {string}
+             */
+            status:
+              | "draft"
+              | "revised"
+              | "internally_approved"
+              | "shared"
+              | "counterparty_responded"
+              | "completed"
+              | "cancelled";
+            /**
+             * @description Share token state.
+             * @example not_issued
+             * @enum {string}
+             */
+            tokenState: "not_issued" | "active";
           };
         };
       };
@@ -20052,14 +20203,177 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Shared plan metadata and one-time response token. */
-      200: {
+      /** @description Shared plan and one-time token. */
+      201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "plan": {
+           *         "counterpartyRef": "jordan@example.com",
+           *         "currentRevision": {
+           *           "createdAt": "2026-07-31T14:00:00Z",
+           *           "createdBy": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "items": [
+           *             {
+           *               "commitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *               "dependencyItemIds": [],
+           *               "dueAt": "2026-09-14T17:00:00Z",
+           *               "evidenceRefs": [
+           *                 "revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *               ],
+           *               "itemId": "item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *               "ownerParticipantRef": "alex@example.com",
+           *               "status": "open",
+           *               "title": "Send the security packet."
+           *             }
+           *           ],
+           *           "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "revisionHash": "sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966",
+           *           "revisionId": "revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "version": 1
+           *         },
+           *         "internalOwnerRef": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "planId": "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "sharePolicyDecisionId": "governance:ab8dfa9ba7b246ea982c622a",
+           *         "status": "shared",
+           *         "tokenState": "active"
+           *       },
+           *       "responseToken": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+           *     }
+           */
           "application/json": {
-            [key: string]: unknown;
+            /** @description The plan the company sheet reads. */
+            plan: {
+              /**
+               * @description The other party.
+               * @example jordan@example.com
+               */
+              counterpartyRef: string;
+              /** @description The revision this approval is bound to. */
+              currentRevision: {
+                /**
+                 * Format: date-time
+                 * @description When this revision was written.
+                 * @example 2026-07-31T14:00:00Z
+                 */
+                createdAt: string;
+                /**
+                 * Format: uuid
+                 * @description Who wrote this revision.
+                 * @example 7b8dfa9b-a7b2-46ea-982c-622a914c00e5
+                 */
+                createdBy: string;
+                /** @description Plan steps. */
+                items: {
+                  /**
+                   * Format: uuid
+                   * @description Commitment this step came from.
+                   * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+                   */
+                  commitmentId?: string;
+                  /** @description Steps this one waits on. */
+                  dependencyItemIds: string[];
+                  /**
+                   * Format: date-time
+                   * @description When the step is due.
+                   * @example 2026-09-14T17:00:00Z
+                   */
+                  dueAt?: string;
+                  /** @description Evidence for the step. */
+                  evidenceRefs: string[];
+                  /**
+                   * @description Step id.
+                   * @example item:8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+                   */
+                  itemId: string;
+                  /**
+                   * @description Who owns the step.
+                   * @example alex@example.com
+                   */
+                  ownerParticipantRef: string;
+                  /**
+                   * @description Step status.
+                   * @example open
+                   */
+                  status: string;
+                  /**
+                   * @description Step title.
+                   * @example Send the security packet.
+                   */
+                  title: string;
+                }[];
+                /**
+                 * @description Plan id.
+                 * @example plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5
+                 */
+                planId: string;
+                /**
+                 * @description Hash of the steps.
+                 * @example sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966
+                 */
+                revisionHash: string;
+                /**
+                 * @description Revision id.
+                 * @example revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5
+                 */
+                revisionId: string;
+                /**
+                 * @description Revision number.
+                 * @example 1
+                 */
+                version: number;
+              };
+              /**
+               * Format: uuid
+               * @description Person who owns the plan inside this workspace.
+               * @example 7b8dfa9b-a7b2-46ea-982c-622a914c00e5
+               */
+              internalOwnerRef: string;
+              /**
+               * @description Plan id.
+               * @example plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5
+               */
+              planId: string;
+              /**
+               * Format: uuid
+               * @description Company id.
+               * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+               */
+              relationshipId: string;
+              /**
+               * @description Decision recorded when the plan was shared.
+               * @example governance:ab8dfa9ba7b246ea982c622a
+               */
+              sharePolicyDecisionId?: string;
+              /**
+               * @description Plan status.
+               * @example shared
+               * @enum {string}
+               */
+              status:
+                | "draft"
+                | "revised"
+                | "internally_approved"
+                | "shared"
+                | "counterparty_responded"
+                | "completed"
+                | "cancelled";
+              /**
+               * @description Share token state.
+               * @example active
+               * @enum {string}
+               */
+              tokenState: "not_issued" | "active";
+            };
+            /**
+             * @description One-time token for the shared plan. The server stores only its hash.
+             * @example 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+             */
+            responseToken: string;
           };
         };
       };

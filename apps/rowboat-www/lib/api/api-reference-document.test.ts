@@ -1371,6 +1371,34 @@ describe("API reference document", () => {
     expect(presented.components.schemas.RevenueOutcome.properties.sourceEventId.example).toBe(eventID);
   });
 
+  it("samples the plan Approve this plan returns", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const approve =
+      presented.paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/approve"].post;
+    expect(approve.summary).toBe("Approve this plan");
+    expect(approve.responses["200"]).toBeUndefined();
+    const approved = approve.responses["201"].content["application/json"].example;
+    expect(approved.status).toBe("internally_approved");
+    expect(approved.tokenState).toBe("not_issued");
+    expect(approved.sharePolicyDecisionId).toBeUndefined();
+    expect(approved.currentRevision.revisionHash).toBe(
+      "sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966",
+    );
+    expect(approve.requestBody.content["application/json"].example).toEqual({});
+
+    const share =
+      presented.paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share"].post;
+    expect(share.summary).toBe("Draft an email to share this plan");
+    expect(share.responses["200"]).toBeUndefined();
+    const shared = share.responses["201"].content["application/json"].example;
+    expect(shared.plan.status).toBe("shared");
+    expect(shared.plan.tokenState).toBe("active");
+    expect(shared.plan.sharePolicyDecisionId).toBe("governance:ab8dfa9ba7b246ea982c622a");
+    expect(shared.responseToken).toHaveLength(64);
+    expect(shared.plan.currentRevision.revisionHash).toBe(approved.currentRevision.revisionHash);
+    expect(share.requestBody.content["application/json"].example).toEqual({});
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

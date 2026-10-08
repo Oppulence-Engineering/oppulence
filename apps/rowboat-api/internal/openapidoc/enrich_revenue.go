@@ -884,6 +884,93 @@ func restoreConversationReviewIdentifiers(schemas obj) {
 	}
 }
 
+const (
+	documentedPlanID             = "plan:ab8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedPlanRelationshipID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedPlanCommitmentID   = "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedPlanOwnerID        = "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedPlanRevisionID     = "revision:cb8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	documentedPlanRevisionHash   = "sha256:935371863ce9346ba2c85a787c066e76f7afd07a607fab5a9c3badb5034a4966"
+	documentedPlanResponseToken  = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+	documentedPlanDecisionID     = "governance:ab8dfa9ba7b246ea982c622a"
+)
+
+func documentedPlanItem() obj {
+	return obj{
+		"itemId":              "item:" + documentedPlanCommitmentID,
+		"commitmentId":        documentedPlanCommitmentID,
+		"title":               "Send the security packet.",
+		"ownerParticipantRef": "alex@example.com",
+		"dependencyItemIds":   []any{},
+		"dueAt":               "2026-09-14T17:00:00Z",
+		"status":              "open",
+		"evidenceRefs":        []any{"revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"},
+	}
+}
+
+func documentedPlanRevision() obj {
+	return obj{
+		"revisionId":   documentedPlanRevisionID,
+		"planId":       documentedPlanID,
+		"version":      1,
+		"revisionHash": documentedPlanRevisionHash,
+		"createdAt":    "2026-07-31T14:00:00Z",
+		"createdBy":    documentedPlanOwnerID,
+		"items":        []any{documentedPlanItem()},
+	}
+}
+
+func documentedMutualActionPlan(status, tokenState, decisionID string) obj {
+	plan := obj{
+		"planId":           documentedPlanID,
+		"relationshipId":   documentedPlanRelationshipID,
+		"internalOwnerRef": documentedPlanOwnerID,
+		"counterpartyRef":  "jordan@example.com",
+		"status":           status,
+		"currentRevision":  documentedPlanRevision(),
+		"tokenState":       tokenState,
+	}
+	if decisionID != "" {
+		plan["sharePolicyDecisionId"] = decisionID
+	}
+	return plan
+}
+
+func mutualActionPlanItemSchema() obj {
+	return objectSchema("One step on the plan.", obj{
+		"itemId":              stringSchema("Step id.", "item:"+documentedPlanCommitmentID),
+		"commitmentId":        uuidSchema("Commitment this step came from.", documentedPlanCommitmentID),
+		"title":               stringSchema("Step title.", "Send the security packet."),
+		"ownerParticipantRef": stringSchema("Who owns the step.", "alex@example.com"),
+		"dependencyItemIds":   arraySchema("Steps this one waits on.", stringSchema("Step id.", "item:"+documentedPlanCommitmentID)),
+		"dueAt":               stringSchema("When the step is due.", "2026-09-14T17:00:00Z", obj{"format": "date-time"}),
+		"status":              stringSchema("Step status.", "open"),
+		"evidenceRefs":        arraySchema("Evidence for the step.", stringSchema("Evidence reference.", "revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5")),
+	}, "itemId", "title", "ownerParticipantRef", "dependencyItemIds", "status", "evidenceRefs")
+}
+
+func mutualActionPlanSchema(statusExample, tokenStateExample string) obj {
+	return objectSchema("The plan the company sheet reads.", obj{
+		"planId":           stringSchema("Plan id.", documentedPlanID),
+		"relationshipId":   uuidSchema("Company id.", documentedPlanRelationshipID),
+		"internalOwnerRef": uuidSchema("Person who owns the plan inside this workspace.", documentedPlanOwnerID),
+		"counterpartyRef":  stringSchema("The other party.", "jordan@example.com"),
+		"status": stringEnum("Plan status.", statusExample,
+			"draft", "revised", "internally_approved", "shared", "counterparty_responded", "completed", "cancelled"),
+		"currentRevision": objectSchema("The revision this approval is bound to.", obj{
+			"revisionId":   stringSchema("Revision id.", documentedPlanRevisionID),
+			"planId":       stringSchema("Plan id.", documentedPlanID),
+			"version":      intSchema("Revision number.", 1),
+			"revisionHash": stringSchema("Hash of the steps.", documentedPlanRevisionHash),
+			"createdAt":    stringSchema("When this revision was written.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
+			"createdBy":    uuidSchema("Who wrote this revision.", documentedPlanOwnerID),
+			"items":        arraySchema("Plan steps.", mutualActionPlanItemSchema()),
+		}, "revisionId", "planId", "version", "revisionHash", "createdAt", "createdBy", "items"),
+		"sharePolicyDecisionId": stringSchema("Decision recorded when the plan was shared.", documentedPlanDecisionID),
+		"tokenState":            stringEnum("Share token state.", tokenStateExample, "not_issued", "active"),
+	}, "planId", "relationshipId", "internalOwnerRef", "counterpartyRef", "status", "currentRevision", "tokenState")
+}
+
 func addRevenuePaths(paths obj) {
 	actionParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Action id.", "schema": obj{"type": "string", "format": "uuid"}}}
 
@@ -1315,8 +1402,14 @@ func addRevenuePaths(paths obj) {
 		"200": jsonResponse("Approved plan.", freeFormSchema("Mutual action plan."), nil),
 		"401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
-	paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share"] = obj{"post": operation("Relationship Intelligence", "Queue an approved plan share", "Re-evaluates effective policy, creates a scoped expiring token, stores only its hash, and queues the exact approved revision for operator approval.", "shareMutualActionPlan", bearer(), planParam, jsonRequestOptional("Empty request.", objectSchema("Plan share request.", obj{}), obj{}), obj{
-		"200": jsonResponse("Shared plan metadata and one-time response token.", freeFormSchema("Plan share result."), nil),
+	paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share"] = obj{"post": operation("Relationship Intelligence", "Draft an email to share this plan", "Draft an email to share this plan posts an empty body. The stored plan status is shared, the token state is active, and responseToken is the one-time token. The server keeps only the hash of that token.", "shareMutualActionPlan", bearer(), planParam, jsonRequestOptional("Empty request.", objectSchema("Plan share request.", obj{}), obj{}), obj{
+		"201": jsonResponse("Shared plan and one-time token.", objectSchema("Plan share result.", obj{
+			"plan":          mutualActionPlanSchema("shared", "active"),
+			"responseToken": stringSchema("One-time token for the shared plan. The server stores only its hash.", documentedPlanResponseToken),
+		}, "plan", "responseToken"), obj{
+			"plan":          documentedMutualActionPlan("shared", "active", documentedPlanDecisionID),
+			"responseToken": documentedPlanResponseToken,
+		}),
 		"401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
 	paths["/v1/relationships/{relationshipId}/conversation-policy"] = obj{
