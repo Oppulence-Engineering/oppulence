@@ -1570,6 +1570,14 @@ func TestSnoozeActionStoresSevenDays(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)
 	assertSnoozeAction(t, spec)
+
+	assertSaveDraft(t, spec)
+}
+
+func TestSaveDraftPostsSubjectAndMessage(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSaveDraft(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -2795,6 +2803,41 @@ func assertSnoozeAction(t *testing.T, spec obj) {
 	queue := asObj(asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueAction"])["properties"])["queueStatus"])
 	if queue["example"] != "open" {
 		t.Fatalf("queue status example changed: %#v", queue)
+	}
+}
+
+func assertSaveDraft(t *testing.T, spec obj) {
+	t.Helper()
+	const (
+		subject = "Following up as promised"
+		message = "Hi Jordan — circling back as promised."
+		hash    = "sha256:35a77a7dc38e7b2d73e06e754a8a5767b3b8af2234f5caeeb532c63e488b2925"
+	)
+	op := asObj(asObj(asObj(spec["paths"])["/v1/revenue-actions/{actionId}/edit"])["post"])
+	if op["summary"] != "Save draft" || op["operationId"] != "editRevenueAction" {
+		t.Fatalf("save draft operation: summary=%#v id=%#v", op["summary"], op["operationId"])
+	}
+	description, _ := op["description"].(string)
+	if !strings.Contains(description, "subject and message") {
+		t.Fatalf("save draft description: %q", description)
+	}
+	request := asObj(asObj(asObj(asObj(op["requestBody"])["content"])["application/json"])["example"])
+	if len(request) != 2 || request["proposedSubject"] != subject || request["proposedMessage"] != message {
+		t.Fatalf("save draft request: %#v", request)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	if example["proposedSubject"] != subject || example["proposedMessage"] != message || example["revisionHash"] != hash || example["policyStatus"] != "pending" || example["approvalStatus"] != "pending" {
+		t.Fatalf("saved draft: %#v", example)
+	}
+	if !openAPIIntEqual(example["revision"], 2) {
+		t.Fatalf("saved revision: %#v", example["revision"])
+	}
+	if _, ok := example["approvedAt"]; ok {
+		t.Fatalf("save draft clears approval: %#v", example["approvedAt"])
+	}
+	revision := asObj(asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueAction"])["properties"])["revision"])
+	if !openAPIIntEqual(revision["example"], 1) {
+		t.Fatalf("shared revision example changed: %#v", revision)
 	}
 }
 

@@ -2506,8 +2506,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Edit an action
-     * @description Creates a new revision and invalidates the previous policy decision and approval. Editing is refused once execution has started.
+     * Save draft
+     * @description Save draft posts the subject and message from the review sheet. The stored action moves to revision 2, and the previous sending check and approval no longer apply.
      */
     post: operations["editRevenueAction"];
     delete?: never;
@@ -20961,6 +20961,12 @@ export interface operations {
     /** @description Fields to change; omitted fields keep their value. */
     requestBody: {
       content: {
+        /**
+         * @example {
+         *       "proposedMessage": "Hi Jordan — circling back as promised.",
+         *       "proposedSubject": "Following up as promised"
+         *     }
+         */
         "application/json": {
           /**
            * @description Action type.
@@ -20987,12 +20993,12 @@ export interface operations {
           executionMode?: "draft" | "send";
           /**
            * @description Proposed body.
-           * @example Updated body
+           * @example Hi Jordan — circling back as promised.
            */
           proposedMessage?: string | null;
           /**
            * @description Proposed subject.
-           * @example Updated subject
+           * @example Following up as promised
            */
           proposedSubject?: string | null;
           /**
@@ -21020,6 +21026,33 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "actionType": "warm_follow_up",
+           *       "approvalStatus": "pending",
+           *       "channel": "email",
+           *       "createdAt": "2026-07-12T12:00:00Z",
+           *       "detector": "requested_follow_up_due",
+           *       "evidence": [],
+           *       "executionMode": "draft",
+           *       "executionOwner": "rowboat",
+           *       "executionStatus": "pending",
+           *       "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "policyStatus": "pending",
+           *       "priorityScore": 82,
+           *       "proposedMessage": "Hi Jordan — circling back as promised.",
+           *       "proposedSubject": "Following up as promised",
+           *       "queueStatus": "open",
+           *       "reason": "They asked for a follow-up in July.",
+           *       "recipientEmail": "buyer@example.com",
+           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "relationshipName": "Acme",
+           *       "revision": 2,
+           *       "revisionHash": "sha256:35a77a7dc38e7b2d73e06e754a8a5767b3b8af2234f5caeeb532c63e488b2925",
+           *       "senderAccountRef": "gmail:me@company.com",
+           *       "updatedAt": "2026-07-31T14:00:00Z"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueAction"];
         };
       };
