@@ -983,6 +983,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if flag := relationshipSheetActivityFlagMatch(needle); flag != nil {
 			parts = append(parts, flag)
 		}
+
+		if messageDay := relationshipSheetActivityMessageDayMatch(needle); messageDay != nil {
+			parts = append(parts, messageDay)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -2915,6 +2919,139 @@ func writeNormalizedFlag(b *sql.Builder, s *sql.Selector, facts, key string) {
 		b.WriteString(", '  ', ' ')")
 	}
 	b.WriteString(")")
+}
+
+// relationshipSheetActivityMessageDayMatch is "First message: Oct 4, 2026" or
+// "Last message: Aug 1, 2026" on an opened activity. Gmail stores those instants
+// in UTC. The sheet names the day, so the raw timestamp is not a search sentence.
+// A day that repeats the row summary stays hidden.
+func relationshipSheetActivityMessageDayMatch(needle string) predicate.Relationship {
+	days := []struct{ marker, key string }{
+		{"first message: ", "first_message_at"},
+		{"last message: ", "last_message_at"},
+	}
+	var preds []predicate.RelationshipObservation
+	for _, day := range days {
+		start, printed, ok := activityMessageDay(needle, day.marker)
+		if !ok {
+			continue
+		}
+		preds = append(preds, observationFactMessageOn(day.key, start, printed))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
+}
+
+func activityMessageDay(needle, marker string) (time.Time, string, bool) {
+	index := strings.Index(needle, marker)
+	if index < 0 {
+		return time.Time{}, "", false
+	}
+	fields := strings.Fields(needle[index+len(marker):])
+	if len(fields) < 3 {
+		return time.Time{}, "", false
+	}
+	month, ok := activityMessageMonths[fields[0]]
+	if !ok {
+		return time.Time{}, "", false
+	}
+	day, err := strconv.Atoi(strings.TrimSuffix(fields[1], ","))
+	if err != nil || day < 1 || day > 31 {
+		return time.Time{}, "", false
+	}
+	if len(fields[2]) != 4 {
+		return time.Time{}, "", false
+	}
+	year, err := strconv.Atoi(fields[2])
+	if err != nil || year < 1000 {
+		return time.Time{}, "", false
+	}
+	start := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+	if start.Year() != year || start.Month() != month || start.Day() != day {
+		return time.Time{}, "", false
+	}
+	return start, start.Format("Jan 2, 2006"), true
+}
+
+var activityMessageMonths = map[string]time.Month{
+	"jan": time.January,
+	"feb": time.February,
+	"mar": time.March,
+	"apr": time.April,
+	"may": time.May,
+	"jun": time.June,
+	"jul": time.July,
+	"aug": time.August,
+	"sep": time.September,
+	"oct": time.October,
+	"nov": time.November,
+	"dec": time.December,
+}
+
+func observationFactMessageOn(key string, start time.Time, printed string) predicate.RelationshipObservation {
+	end := start.Add(24 * time.Hour)
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->>'")
+				b.WriteString(key)
+				b.WriteString("', '')) ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}:[0-9]{2}' AND (CASE WHEN btrim(coalesce(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->>'")
+				b.WriteString(key)
+				b.WriteString("', '')) ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}:[0-9]{2}' THEN (btrim(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->>'")
+				b.WriteString(key)
+				b.WriteString("'))::timestamptz ELSE NULL END) >= ")
+				b.Arg(start)
+				b.WriteString(" AND (CASE WHEN btrim(coalesce(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->>'")
+				b.WriteString(key)
+				b.WriteString("', '')) ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}:[0-9]{2}' THEN (btrim(")
+				b.WriteString(facts)
+				b.WriteString("::jsonb->>'")
+				b.WriteString(key)
+				b.WriteString("'))::timestamptz ELSE NULL END) < ")
+				b.Arg(end)
+			} else {
+				b.WriteString("datetime(substr(replace(replace(trim(coalesce(json_extract(")
+				b.WriteString(facts)
+				b.WriteString(", '$.")
+				b.WriteString(key)
+				b.WriteString("'), '')), 'T', ' '), 'Z', ''), 1, 19)) >= ")
+				b.Arg(start.Format("2006-01-02 15:04:05"))
+				b.WriteString(" AND datetime(substr(replace(replace(trim(coalesce(json_extract(")
+				b.WriteString(facts)
+				b.WriteString(", '$.")
+				b.WriteString(key)
+				b.WriteString("'), '')), 'T', ' '), 'Z', ''), 1, 19)) < ")
+				b.Arg(end.Format("2006-01-02 15:04:05"))
+			}
+			b.WriteString(" AND ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", '')) <> ")
+			b.Arg(printed)
+			b.WriteString(")")
+		}))
+	})
 }
 
 func relationshipSheetActivityMatch(needle string) predicate.Relationship {
