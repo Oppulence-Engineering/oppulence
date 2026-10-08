@@ -2563,7 +2563,9 @@ const (
 	companyDirectoryReason      = "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation."
 	companyDirectoryTouchedAt   = "2026-07-25T15:00:00Z"
 	companyDirectoryProjectedAt = "2026-07-25T16:00:00Z"
-	companyDirectoryDescription = "All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention."
+	companyDirectoryDescription = "All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention. The next action is to confirm the security review owner."
+	// The directory's Next action column prints this sentence.
+	companyDirectoryNextAction = "Confirm the security review owner."
 )
 
 func companyDirectoryPage() obj {
@@ -2591,6 +2593,7 @@ func companyDirectoryPage() obj {
 			"lastChangedAt":    companyDirectoryProjectedAt,
 			"risks":            []any{},
 			"milestones":       []any{},
+			"nextAction":       companyDirectoryNextAction,
 			"resourceRefs":     []any{},
 			"categories":       []any{},
 		}},

@@ -2333,7 +2333,7 @@ export interface paths {
     };
     /**
      * All companies
-     * @description All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention.
+     * @description All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention. The next action is to confirm the security review owner.
      */
     get: operations["listRelationships"];
     put?: never;
@@ -23734,6 +23734,7 @@ export interface operations {
            *           "lastTouchAt": "2026-07-25T15:00:00Z",
            *           "lifecycle": "evaluation",
            *           "milestones": [],
+           *           "nextAction": "Confirm the security review owner.",
            *           "peopleCount": 1,
            *           "projectedAt": "2026-07-25T16:00:00Z",
            *           "projectorVersion": 2,

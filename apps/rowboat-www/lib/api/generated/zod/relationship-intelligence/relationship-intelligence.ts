@@ -3210,7 +3210,7 @@ export const DisconnectRelationshipSource403Response = zod
   );
 
 /**
- * All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention.
+ * All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention. The next action is to confirm the security review owner.
  * @summary All companies
  */
 export const listRelationshipsQueryOffsetMin = 0;
