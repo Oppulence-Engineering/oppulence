@@ -114,6 +114,7 @@ import {
   identityDecisionLabel,
   identityImpactLabel,
   identityMatchDetail,
+  sourceConnectionSectionCopy,
   sourceListedOnConnectionsPage,
   sourcesNeedingRepair,
   identityMatchLabel,
@@ -447,6 +448,26 @@ describe("RelationshipsView", () => {
     expect(sourceListedOnConnectionsPage("google")).toBe(true);
     expect(sourceListedOnConnectionsPage("hubspot")).toBe(true);
     expect(sourceListedOnConnectionsPage("slack")).toBe(false);
+    expect(sourceConnectionSectionCopy([{ accounts: [] }])).toEqual({
+      title: "Sources to connect",
+      body: "Connect Gmail or HubSpot. Reading builds company history. Anything that writes waits for your approval.",
+    });
+    expect(
+      sourceConnectionSectionCopy([
+        { accounts: [{ status: "stale" }] },
+        { accounts: [] },
+      ]),
+    ).toEqual({
+      title: "Sources that need a look",
+      body: "Refresh a source that is already connected, or connect one that is not. Reading builds company history. Anything that writes waits for your approval.",
+    });
+    expect(sourceConnectionSectionCopy([{ accounts: [{ status: "stale" }] }]).title).toBe(
+      "Sources that need a look",
+    );
+    expect(sourceConnectionSectionCopy([{ accounts: [{ status: "reconnect_required" }] }]).title).toBe(
+      "Sources to connect",
+    );
+    expect(source).toContain("sourceConnectionSectionCopy(needsAttention)");
     expect(source).toContain("Sources to connect");
     expect(source).not.toContain("Evidence sources");
     expect(source).toContain("Could not update this source.");
