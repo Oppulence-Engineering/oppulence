@@ -6686,6 +6686,45 @@ func assertPriorityBreakdown(t *testing.T, schemas obj) {
 	}
 }
 
+func TestCompanyProfileFactsAreDocumented(t *testing.T) {
+	raw, err := os.ReadFile("../../api/openapi.json")
+	if err != nil {
+		t.Fatalf("read checked-in openapi json: %v", err)
+	}
+	var checked obj
+	if err := json.Unmarshal(raw, &checked); err != nil {
+		t.Fatalf("parse checked-in openapi json: %v", err)
+	}
+	assertCompanyProfileFacts(t, asObj(asObj(checked["components"])["schemas"]))
+	fresh := obj{"components": obj{"schemas": obj{}}}
+	Enrich(fresh)
+	assertCompanyProfileFacts(t, asObj(asObj(fresh["components"])["schemas"]))
+}
+
+func assertCompanyProfileFacts(t *testing.T, schemas obj) {
+	t.Helper()
+	props := asObj(asObj(schemas["RevenueRelationship"])["properties"])
+	facts := asObj(props["companyEnrichmentData"])
+	if facts["description"] != companyProfileFactsDescription {
+		t.Fatalf("company profile facts description: %#v", facts["description"])
+	}
+	got, err := json.Marshal(facts["example"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(companyProfileFactsExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("company profile facts example: %s", got)
+	}
+	refs := asObj(props["companyEnrichmentRefs"])
+	if _, ok := refs["example"]; ok {
+		t.Fatalf("citation urls gained an example: %#v", refs["example"])
+	}
+}
+
 func assertEventObservation(t *testing.T, schemas obj) {
 	t.Helper()
 	event := asObj(schemas["CommitmentEvent"])

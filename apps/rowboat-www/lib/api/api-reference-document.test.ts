@@ -150,7 +150,10 @@ describe("API reference document", () => {
         { name: "Revenue", description: "OutboundConsole policy preflight" },
         { name: "LLM", description: "Credit-gated OpenAI-compatible text" },
         { name: "Relationship Intelligence", description: "append-only evidence" },
-        { name: "System", description: "Health, readiness, and generated documentation endpoints." },
+        {
+          name: "System",
+          description: "Health, readiness, and generated documentation endpoints.",
+        },
       ],
       paths: {
         "/v1/chat": { post: { tags: ["LLM", "System"] } },
@@ -395,13 +398,28 @@ describe("API reference document", () => {
       example: "trialing",
     });
     expect(
-      billing.paths["/v1/me"]?.get?.responses?.["200"]?.content?.["application/json"]?.example?.billing,
+      billing.paths["/v1/me"]?.get?.responses?.["200"]?.content?.["application/json"]?.example
+        ?.billing,
     ).toMatchObject({
       status: "trialing",
       trialExpiresAt: "2026-07-01T00:00:00.000Z",
     });
     expect(billing.components.schemas.Subscription.properties.status.example).toBe("active");
-    expect(billing.components.schemas.BackgroundTaskRun.properties.status.example).toBe("succeeded");
+    expect(billing.components.schemas.BackgroundTaskRun.properties.status.example).toBe(
+      "succeeded",
+    );
+    expect(
+      billing.components.schemas.RevenueRelationship.properties.companyEnrichmentData,
+    ).toMatchObject({
+      description: "Facts the company list shows.",
+      example: {
+        employee_range: "201-500 employees (2026)",
+        funding_summary: "$80M total; Series C, $35M, 2025-10-10",
+        growth_signals: "Hiring in 2026",
+        headquarters: "San Francisco, California, United States",
+        revenue_range: "$40M-$60M (2025)",
+      },
+    });
   });
 
   it("samples the run Retry starts", () => {
@@ -514,10 +532,12 @@ describe("API reference document", () => {
       description: "Exact evidence references.",
       example: [`relationship-observation:${observationID}`],
     });
-    expect(JSON.stringify(event.sourceObservationId)).not.toContain("relationship-observation:ab12");
-    expect(presented.components.schemas.MissionControlEvidenceReference.properties.observationId.example).toBe(
-      observationID,
+    expect(JSON.stringify(event.sourceObservationId)).not.toContain(
+      "relationship-observation:ab12",
     );
+    expect(
+      presented.components.schemas.MissionControlEvidenceReference.properties.observationId.example,
+    ).toBe(observationID);
   });
 
   it("does not sample openai for a workflow template provider", () => {

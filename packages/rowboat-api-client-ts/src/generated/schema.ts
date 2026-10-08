@@ -12389,7 +12389,16 @@ export interface components {
        * @example 2026-09-06T08:00:00Z
        */
       companyEnrichedAt?: string | null;
-      /** @description Cited public-web company facts keyed by enrichment field. */
+      /**
+       * @description Facts the company list shows.
+       * @example {
+       *       "employee_range": "201-500 employees (2026)",
+       *       "funding_summary": "$80M total; Series C, $35M, 2025-10-10",
+       *       "growth_signals": "Hiring in 2026",
+       *       "headquarters": "San Francisco, California, United States",
+       *       "revenue_range": "$40M-$60M (2025)"
+       *     }
+       */
       companyEnrichmentData?: {
         [key: string]: unknown;
       };

@@ -91,6 +91,24 @@ const documentedResearchPersonID = "1b8dfa9b-a7b2-46ea-982c-622a914c00e5"
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
 
+const companyProfileFactsDescription = "Facts the company list shows."
+
+func companyProfileFactsExample() obj {
+	return obj{
+		"employee_range":  "201-500 employees (2026)",
+		"funding_summary": "$80M total; Series C, $35M, 2025-10-10",
+		"growth_signals":  "Hiring in 2026",
+		"headquarters":    "San Francisco, California, United States",
+		"revenue_range":   "$40M-$60M (2025)",
+	}
+}
+
+func companyProfileFactsSchema() obj {
+	schema := freeFormSchema(companyProfileFactsDescription)
+	schema["example"] = companyProfileFactsExample()
+	return schema
+}
+
 const (
 	graphExecutionStatusDescription = "Needs reconcile when this execution is ambiguous."
 	graphExecutionStatusExample     = "ambiguous"
@@ -211,7 +229,7 @@ func addRevenueSchemas(schemas obj) {
 		"companyDescription":    stringSchema("Source-backed company description.", "Builds AI infrastructure for customer operations."),
 		"linkedinUrl":           stringSchema("Verified public LinkedIn company URL.", "https://www.linkedin.com/company/acme"),
 		"companyEnrichmentRefs": freeFormSchema("Citation URLs keyed by enriched company field."),
-		"companyEnrichmentData": freeFormSchema("Cited public-web company facts keyed by enrichment field."),
+		"companyEnrichmentData": companyProfileFactsSchema(),
 		"companyEnrichedAt":     stringSchema("When the company profile was last enriched.", "2026-09-06T08:00:00Z", obj{"format": "date-time"}, nullable()),
 	}, "id", "kind", "displayName", "status", "lifecycle", "engagement", "sentiment", "health", "stateVersion", "projectorVersion", "risks", "milestones", "resourceRefs", "categories")
 
