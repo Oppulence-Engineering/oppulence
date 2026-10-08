@@ -4397,6 +4397,7 @@ describe("API reference document", () => {
     expect(example.stateReason).toBe("Reviewed from the portfolio attention queue.");
     expect(example.relationshipName).toBe("Acme");
     expect(example.version).toBe(2);
+    expect(example.projectorVersion).toBe(2);
     expect(example.snoozedUntil).toBeUndefined();
     expect(example.dismissedAt).toBeUndefined();
     expect(
