@@ -24263,7 +24263,7 @@
     },
     "/v1/relationships/{relationshipId}/commitment-recovery/run": {
       "post": {
-        "description": "Reconciles due commitments against bounded fresh evidence, closes only explicit fulfillment, and queues governed recovery proposals otherwise.",
+        "description": "Reconcile now sends an empty body. A past-due promise with nothing newer comes back as classification forgotten, and the company sheet reads that as a forgotten promise.",
         "operationId": "runCommitmentRecovery",
         "parameters": [
           {
@@ -24292,12 +24292,130 @@
           "required": false
         },
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "evaluations": [
+                    {
+                      "classification": "forgotten",
+                      "commitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "commitmentVersion": 3,
+                      "evaluatedAt": "2026-07-31T14:00:00Z",
+                      "evaluationId": "recovery:7cb1669953b1015129545ab3",
+                      "evidenceRefs": [],
+                      "explanation": "This promise is past due and nothing newer has closed it.",
+                      "proposedActionType": "reminder",
+                      "reconcilerVersion": "commitment-recovery-v1",
+                      "recoveryWindow": "2026-07-31",
+                      "requiresReview": true,
+                      "staleSources": null
+                    }
+                  ]
+                },
                 "schema": {
-                  "additionalProperties": true,
-                  "description": "Recovery evaluation result.",
+                  "description": "Recovery evaluations.",
+                  "properties": {
+                    "evaluations": {
+                      "description": "One classification per due promise.",
+                      "items": {
+                        "description": "Recovery evaluation.",
+                        "properties": {
+                          "classification": {
+                            "description": "Stored classification.",
+                            "enum": [
+                              "forgotten",
+                              "unknown_stale_sources",
+                              "fulfilled",
+                              "likely_fulfilled",
+                              "superseded",
+                              "renegotiated",
+                              "blocked"
+                            ],
+                            "example": "forgotten",
+                            "type": "string"
+                          },
+                          "commitmentId": {
+                            "description": "Promise id.",
+                            "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "commitmentVersion": {
+                            "description": "Promise version that was checked.",
+                            "example": 3,
+                            "type": "integer"
+                          },
+                          "evaluatedAt": {
+                            "description": "When the check ran.",
+                            "example": "2026-07-31T14:00:00Z",
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "evaluationId": {
+                            "description": "Stable id for this classification.",
+                            "example": "recovery:7cb1669953b1015129545ab3",
+                            "type": "string"
+                          },
+                          "evidenceRefs": {
+                            "description": "Fresh evidence considered.",
+                            "items": {
+                              "description": "Evidence reference.",
+                              "example": "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "explanation": {
+                            "description": "Sentence the company sheet shows.",
+                            "example": "This promise is past due and nothing newer has closed it.",
+                            "type": "string"
+                          },
+                          "proposedActionType": {
+                            "description": "Follow-up the checker proposes. A forgotten promise proposes a reminder.",
+                            "example": "reminder",
+                            "type": "string"
+                          },
+                          "reconcilerVersion": {
+                            "description": "Checker version.",
+                            "example": "commitment-recovery-v1",
+                            "type": "string"
+                          },
+                          "recoveryWindow": {
+                            "description": "Day the check ran.",
+                            "example": "2026-07-31",
+                            "type": "string"
+                          },
+                          "requiresReview": {
+                            "description": "Whether a person must review the result.",
+                            "example": true,
+                            "type": "boolean"
+                          },
+                          "staleSources": {
+                            "description": "Sources that were too old to trust. Null when every source was fresh.",
+                            "items": {
+                              "description": "Source.",
+                              "example": "google",
+                              "type": "string"
+                            },
+                            "nullable": true,
+                            "type": "array"
+                          }
+                        },
+                        "required": [
+                          "evaluationId",
+                          "commitmentId",
+                          "classification",
+                          "explanation"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "evaluations"
+                  ],
                   "type": "object"
                 }
               }
@@ -24316,8 +24434,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Run commitment recovery",
-        "tags": ["Relationship Intelligence"]
+        "summary": "Reconcile now",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/commitments/{commitmentId}/events": {

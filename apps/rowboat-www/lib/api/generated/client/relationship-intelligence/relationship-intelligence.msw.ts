@@ -48,7 +48,7 @@ import type {
   RevenueAction,
   RevenueRelationship,
   ReviseMutualActionPlan200,
-  RunCommitmentRecovery200,
+  RunCommitmentRecovery201,
   ShareMutualActionPlan200,
 } from "../model";
 
@@ -783,10 +783,10 @@ export const getCreateCommitmentDependencyMockHandler = (
 
 export const getRunCommitmentRecoveryMockHandler = (
   overrideResponse?:
-    | RunCommitmentRecovery200
+    | RunCommitmentRecovery201
     | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Promise<RunCommitmentRecovery200> | RunCommitmentRecovery200),
+      ) => Promise<RunCommitmentRecovery201> | RunCommitmentRecovery201),
   options?: RequestHandlerOptions,
 ) => {
   return http.post(
@@ -798,7 +798,7 @@ export const getRunCommitmentRecoveryMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getRunCommitmentRecoveryResponseMock(),
-        { status: 200 },
+        { status: 201 },
       );
     },
     options,

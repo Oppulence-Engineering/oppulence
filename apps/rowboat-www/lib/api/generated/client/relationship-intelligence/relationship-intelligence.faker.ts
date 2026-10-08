@@ -47,7 +47,7 @@ import type {
   RevenueAction,
   RevenueRelationship,
   ReviseMutualActionPlan200,
-  RunCommitmentRecovery200,
+  RunCommitmentRecovery201,
   ShareMutualActionPlan200,
 } from "../model";
 
@@ -3762,7 +3762,57 @@ export const getCreateCommitmentDependencyResponseMock = (
   ...overrideResponse,
 });
 
-export const getRunCommitmentRecoveryResponseMock = (): RunCommitmentRecovery200 => ({});
+export const getRunCommitmentRecoveryResponseMock = (
+  overrideResponse: Partial<Extract<RunCommitmentRecovery201, object>> = {},
+): RunCommitmentRecovery201 => ({
+  evaluations: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => ({
+      classification: faker.helpers.arrayElement([
+        "forgotten",
+        "unknown_stale_sources",
+        "fulfilled",
+        "likely_fulfilled",
+        "superseded",
+        "renegotiated",
+        "blocked",
+      ] as const),
+      commitmentId: faker.string.uuid(),
+      commitmentVersion: faker.helpers.arrayElement([faker.number.int(), undefined]),
+      evaluatedAt: faker.helpers.arrayElement([
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        undefined,
+      ]),
+      evaluationId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      evidenceRefs: faker.helpers.arrayElement([
+        Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+        ),
+        undefined,
+      ]),
+      explanation: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      proposedActionType: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      reconcilerVersion: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      recoveryWindow: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      requiresReview: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
+      staleSources: faker.helpers.arrayElement([
+        Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+        ),
+        undefined,
+      ]),
+    }),
+  ),
+  ...overrideResponse,
+});
 
 export const getGetCommitmentEventsResponseMock = (
   overrideResponse: Partial<Extract<GetCommitmentEvents200, object>> = {},

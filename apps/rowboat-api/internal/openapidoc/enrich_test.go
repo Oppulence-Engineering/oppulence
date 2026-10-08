@@ -1411,6 +1411,55 @@ func assertResearchPending(t *testing.T, spec obj) {
 	if !reflect.DeepEqual(peopleExample["personIds"], []any{personID}) || peopleExample["relationshipIds"] != nil {
 		t.Fatalf("pending people: %#v", peopleExample)
 	}
+
+	assertReconcileNow(t, spec)
+}
+
+func TestReconcileNowReturnsForgottenPromise(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertReconcileNow(t, spec)
+}
+
+func assertReconcileNow(t *testing.T, spec obj) {
+	t.Helper()
+	const commitmentID = "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	sum := sha256.Sum256([]byte(commitmentID + ":3:2026-07-31:forgotten::commitment-recovery-v1"))
+	wantID := "recovery:" + hex.EncodeToString(sum[:12])
+	op := asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/commitment-recovery/run"])["post"])
+	if op["summary"] != "Reconcile now" {
+		t.Fatalf("summary: %#v", op["summary"])
+	}
+	if asObj(op["responses"])["200"] != nil || asObj(op["responses"])["201"] == nil {
+		t.Fatalf("recovery status: %#v", op["responses"])
+	}
+	content := asObj(asObj(asObj(asObj(op["responses"])["201"])["content"])["application/json"])
+	request := asObj(asObj(asObj(asObj(op["requestBody"])["content"])["application/json"])["example"])
+	if len(request) != 0 {
+		t.Fatalf("recovery request: %#v", request)
+	}
+	evaluations, _ := content["example"].(obj)["evaluations"].([]any)
+	if len(evaluations) != 1 {
+		example := asObj(content["example"])
+		raw, _ := example["evaluations"].([]any)
+		evaluations = raw
+	}
+	if len(evaluations) != 1 {
+		t.Fatalf("evaluations: %#v", content["example"])
+	}
+	evaluation := asObj(evaluations[0])
+	version, _ := evaluation["commitmentVersion"].(int)
+	if version == 0 {
+		if number, ok := evaluation["commitmentVersion"].(float64); ok {
+			version = int(number)
+		}
+	}
+	if evaluation["evaluationId"] != wantID || evaluation["commitmentId"] != commitmentID || version != 3 || evaluation["classification"] != "forgotten" || evaluation["proposedActionType"] != "reminder" || evaluation["requiresReview"] != true || evaluation["explanation"] != "This promise is past due and nothing newer has closed it." || evaluation["reconcilerVersion"] != "commitment-recovery-v1" || evaluation["staleSources"] != nil {
+		t.Fatalf("forgotten promise: %#v want %s", evaluation, wantID)
+	}
+	if refs, ok := evaluation["evidenceRefs"].([]any); !ok || len(refs) != 0 {
+		t.Fatalf("evidence refs: %#v", evaluation["evidenceRefs"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

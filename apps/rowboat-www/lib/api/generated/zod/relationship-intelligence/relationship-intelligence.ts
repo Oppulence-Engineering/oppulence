@@ -4854,8 +4854,8 @@ export const CreateCommitmentDependency409Response = zod
   );
 
 /**
- * Reconciles due commitments against bounded fresh evidence, closes only explicit fulfillment, and queues governed recovery proposals otherwise.
- * @summary Run commitment recovery
+ * Reconcile now sends an empty body. A past-due promise with nothing newer comes back as classification forgotten, and the company sheet reads that as a forgotten promise.
+ * @summary Reconcile now
  */
 export const RunCommitmentRecoveryParams = zod.object({
   relationshipId: zod.uuid().describe("Relationship id."),
@@ -4863,9 +4863,55 @@ export const RunCommitmentRecoveryParams = zod.object({
 
 export const RunCommitmentRecoveryBody = zod.looseObject({}).describe("Recovery request.");
 
-export const RunCommitmentRecovery200Response = zod
-  .record(zod.string(), zod.unknown())
-  .describe("Recovery evaluation result.");
+export const RunCommitmentRecovery201Response = zod
+  .strictObject({
+    evaluations: zod
+      .array(
+        zod
+          .strictObject({
+            classification: zod
+              .enum([
+                "forgotten",
+                "unknown_stale_sources",
+                "fulfilled",
+                "likely_fulfilled",
+                "superseded",
+                "renegotiated",
+                "blocked",
+              ])
+              .describe("Stored classification."),
+            commitmentId: zod.uuid().describe("Promise id."),
+            commitmentVersion: zod.int().optional().describe("Promise version that was checked."),
+            evaluatedAt: zod.iso
+              .datetime({ offset: true })
+              .optional()
+              .describe("When the check ran."),
+            evaluationId: zod.string().describe("Stable id for this classification."),
+            evidenceRefs: zod
+              .array(zod.string().describe("Evidence reference."))
+              .optional()
+              .describe("Fresh evidence considered."),
+            explanation: zod.string().describe("Sentence the company sheet shows."),
+            proposedActionType: zod
+              .string()
+              .optional()
+              .describe("Follow-up the checker proposes. A forgotten promise proposes a reminder."),
+            reconcilerVersion: zod.string().optional().describe("Checker version."),
+            recoveryWindow: zod.string().optional().describe("Day the check ran."),
+            requiresReview: zod
+              .boolean()
+              .optional()
+              .describe("Whether a person must review the result."),
+            staleSources: zod
+              .array(zod.string().describe("Source."))
+              .nullish()
+              .describe("Sources that were too old to trust. Null when every source was fresh."),
+          })
+          .describe("Recovery evaluation."),
+      )
+      .describe("One classification per due promise."),
+  })
+  .describe("Recovery evaluations.");
 
 export const RunCommitmentRecovery401Response = zod
   .strictObject({

@@ -83,7 +83,7 @@ import type {
   RevenueRelationship,
   ReviseMutualActionPlan200,
   ReviseMutualActionPlanBody,
-  RunCommitmentRecovery200,
+  RunCommitmentRecovery201,
   RunCommitmentRecoveryBody,
   ShareMutualActionPlan200,
   ShareMutualActionPlanBody,
@@ -1665,9 +1665,9 @@ export const createCommitmentDependency = async (
   return { data, status: res.status, headers: res.headers } as createCommitmentDependencyResponse;
 };
 
-export type runCommitmentRecoveryResponse200 = {
-  data: RunCommitmentRecovery200;
-  status: 200;
+export type runCommitmentRecoveryResponse201 = {
+  data: RunCommitmentRecovery201;
+  status: 201;
 };
 
 export type runCommitmentRecoveryResponse401 = {
@@ -1680,7 +1680,7 @@ export type runCommitmentRecoveryResponse404 = {
   status: 404;
 };
 
-export type runCommitmentRecoveryResponseSuccess = runCommitmentRecoveryResponse200 & {
+export type runCommitmentRecoveryResponseSuccess = runCommitmentRecoveryResponse201 & {
   headers: Headers;
 };
 export type runCommitmentRecoveryResponseError = (
@@ -1697,8 +1697,8 @@ export const getRunCommitmentRecoveryUrl = (relationshipId: string) => {
 };
 
 /**
- * Reconciles due commitments against bounded fresh evidence, closes only explicit fulfillment, and queues governed recovery proposals otherwise.
- * @summary Run commitment recovery
+ * Reconcile now sends an empty body. A past-due promise with nothing newer comes back as classification forgotten, and the company sheet reads that as a forgotten promise.
+ * @summary Reconcile now
  */
 export const runCommitmentRecovery = async (
   relationshipId: string,

@@ -1309,6 +1309,27 @@ describe("API reference document", () => {
     });
   });
 
+  it("samples the forgotten promise Reconcile now returns", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/relationships/{relationshipId}/commitment-recovery/run"].post;
+    const stored = operation.responses["201"].content["application/json"].example.evaluations[0];
+    expect(operation.summary).toBe("Reconcile now");
+    expect(operation.requestBody.content["application/json"].example).toEqual({});
+    expect(operation.responses["200"]).toBeUndefined();
+    expect(stored).toMatchObject({
+      evaluationId: "recovery:7cb1669953b1015129545ab3",
+      commitmentId: "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      commitmentVersion: 3,
+      classification: "forgotten",
+      proposedActionType: "reminder",
+      requiresReview: true,
+      explanation: "This promise is past due and nothing newer has closed it.",
+      reconcilerVersion: "commitment-recovery-v1",
+      evidenceRefs: [],
+      staleSources: null,
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
