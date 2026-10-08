@@ -15334,12 +15334,18 @@ export interface operations {
   deleteBackgroundTask: {
     parameters: {
       query: {
-        /** @description Current task revision required for delete. */
+        /**
+         * @description Revision the editor last read.
+         * @example 1
+         */
         revision: number;
       };
       header?: never;
       path: {
-        /** @description Background task slug, matching bg-tasks/<slug> locally. */
+        /**
+         * @description Workflow to remove.
+         * @example follow-up-when-a-promise-slips
+         */
         slug: string;
       };
       cookie?: never;

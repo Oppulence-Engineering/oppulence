@@ -17931,24 +17931,24 @@
         "operationId": "deleteBackgroundTask",
         "parameters": [
           {
-            "description": "Background task slug, matching bg-tasks/\u003cslug\u003e locally.",
+            "description": "Workflow to remove.",
+            "example": "follow-up-when-a-promise-slips",
             "in": "path",
             "name": "slug",
             "required": true,
             "schema": {
-              "description": "Task slug.",
-              "example": "daily-summary",
+              "example": "follow-up-when-a-promise-slips",
               "type": "string"
             }
           },
           {
-            "description": "Current task revision required for delete.",
+            "description": "Revision the editor last read.",
+            "example": 1,
             "in": "query",
             "name": "revision",
             "required": true,
             "schema": {
-              "description": "Task revision.",
-              "example": 2,
+              "example": 1,
               "type": "integer"
             }
           }

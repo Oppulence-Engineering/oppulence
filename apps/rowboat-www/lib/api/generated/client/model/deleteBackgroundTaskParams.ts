@@ -8,7 +8,7 @@
 
 export type DeleteBackgroundTaskParams = {
   /**
-   * Task revision.
+   * Revision the editor last read.
    */
   revision: number;
 };
