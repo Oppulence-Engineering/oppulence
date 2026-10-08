@@ -6270,6 +6270,8 @@ func assertDisconnect(t *testing.T, spec obj) {
 	if strings.Contains(encoded, "canvas") || strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "tombstone") {
 		t.Fatalf("disconnect looks like the old connector sample: %s", encoded)
 	}
+
+	assertConnect(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -7652,6 +7654,76 @@ func assertOpenTranscript(t *testing.T, spec obj) {
 	event := asObj(asObj(schemas["BackgroundTaskRunEvent"])["properties"])
 	if asObj(event["type"])["example"] != "temporal.completed" || mustJSON(asObj(event["seq"])["example"]) != "1" {
 		t.Fatalf("shared event example changed: %#v", event)
+	}
+}
+
+func TestConnectSamplesTheCanvasReturnAddress(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertConnect(t, spec)
+}
+
+func assertConnect(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	assertConnectOperation(t, asObj(asObj(paths["/v1/connections/{name}/start"])["post"]), "startConnection")
+	assertConnectOperation(t, asObj(asObj(paths["/v1/connectors/{name}/start"])["post"]), "startConnector")
+
+	shared := asObj(asObj(asObj(paths["/v1/connections/{name}/api-key"])["post"])["parameters"].([]any)[0])
+	if shared["description"] != "Connector slug, for example canvas, corinthian, or wispr." || shared["example"] != nil {
+		t.Fatalf("shared connector name parameter changed: %#v", shared)
+	}
+
+	props := asObj(asObj(asObj(asObj(spec["components"])["schemas"])["ConnectionStartRequest"])["properties"])
+	if asObj(props["redirectTarget"])["example"] != connectReturnAddress {
+		t.Fatalf("redirectTarget schema example: %#v", asObj(props["redirectTarget"])["example"])
+	}
+	if asObj(props["redirect_after"])["example"] != "solomon-ai://connection-complete" {
+		t.Fatalf("redirect_after schema example changed: %#v", asObj(props["redirect_after"])["example"])
+	}
+}
+
+func assertConnectOperation(t *testing.T, operation obj, id string) {
+	t.Helper()
+	if operation["summary"] != "Connect" || operation["operationId"] != id || operation["description"] != connectDescription {
+		t.Fatalf("%s copy: %#v", id, obj{"summary": operation["summary"], "operationId": operation["operationId"], "description": operation["description"]})
+	}
+	param := asObj(operation["parameters"].([]any)[0])
+	if param["example"] != connectConnectorName || param["description"] != "Connection name." {
+		t.Fatalf("%s parameter: %#v", id, param)
+	}
+	if asObj(param["schema"])["example"] != connectConnectorName {
+		t.Fatalf("%s parameter schema: %#v", id, param["schema"])
+	}
+	body := asObj(operation["requestBody"])
+	if body["description"] != connectRequestDescription || body["required"] != true {
+		t.Fatalf("%s request: %#v", id, body)
+	}
+	example := asObj(asObj(asObj(body["content"])["application/json"])["example"])
+	if example["redirectTarget"] != connectReturnAddress {
+		t.Fatalf("%s redirectTarget: %#v", id, example["redirectTarget"])
+	}
+	scopes, ok := example["requestedScopes"].([]any)
+	if !ok || len(scopes) != 2 || scopes[0] != "canvas:invoices.read" || scopes[1] != "canvas:customers.read" {
+		t.Fatalf("%s scopes: %#v", id, example["requestedScopes"])
+	}
+	if _, present := example["redirect_after"]; present {
+		t.Fatalf("%s request sends redirect_after", id)
+	}
+	okExample := asObj(asObj(asObj(asObj(operation["responses"])["200"])["content"])["application/json"])["example"]
+	authURL, _ := asObj(okExample)["authorization_url"].(string)
+	if !strings.HasPrefix(authURL, "https://oauth.solomon-ai.co/oauth2/auth?") {
+		t.Fatalf("%s authorize url changed: %s", id, authURL)
+	}
+	raw, err := json.Marshal(operation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(raw)
+	for _, forbidden := range []string{"acta_", `"token"`, "solomon-ai://connection-complete", "canvas:transactions.read"} {
+		if strings.Contains(text, forbidden) {
+			t.Fatalf("%s sample contains %s", id, forbidden)
+		}
 	}
 }
 

@@ -567,8 +567,8 @@ export const getStartConnectionUrl = (name: string) => {
 };
 
 /**
- * Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.
- * @summary Start connector OAuth flow
+ * Connect starts sign-in for Canvas. It sends the required permissions and the address that brings you back to Connections.
+ * @summary Connect
  */
 export const startConnection = async (
   name: string,
@@ -958,8 +958,8 @@ export const getStartConnectorUrl = (name: string) => {
 };
 
 /**
- * Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.
- * @summary Start connector OAuth flow
+ * Connect starts sign-in for Canvas. It sends the required permissions and the address that brings you back to Connections.
+ * @summary Connect
  */
 export const startConnector = async (
   name: string,

@@ -1026,8 +1026,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Start connector OAuth flow
-     * @description Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.
+     * Connect
+     * @description Connect starts sign-in for Canvas. It sends the required permissions and the address that brings you back to Connections.
      */
     post: operations["startConnection"];
     delete?: never;
@@ -1126,8 +1126,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Start connector OAuth flow
-     * @description Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.
+     * Connect
+     * @description Connect starts sign-in for Canvas. It sends the required permissions and the address that brings you back to Connections.
      */
     post: operations["startConnector"];
     delete?: never;
@@ -6209,7 +6209,7 @@ export interface components {
     ConnectionStartRequest: {
       /**
        * @description Backward-compatible camelCase alias for redirect_after.
-       * @example solomon-ai://connection-complete
+       * @example https://oppulence.io/api/connectors/oauth/callback
        */
       redirectTarget?: string | null;
       /**
@@ -17058,17 +17058,20 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Connector slug, for example canvas, corinthian, or wispr. */
+        /**
+         * @description Connection name.
+         * @example canvas
+         */
         name: string;
       };
       cookie?: never;
     };
-    /** @description Connector OAuth request. */
+    /** @description Required Canvas permissions and the address that brings you back to Connections. */
     requestBody: {
       content: {
         /**
          * @example {
-         *       "redirectTarget": "solomon-ai://connection-complete",
+         *       "redirectTarget": "https://oppulence.io/api/connectors/oauth/callback",
          *       "requestedScopes": [
          *         "canvas:invoices.read",
          *         "canvas:customers.read"
@@ -17864,17 +17867,20 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Connector slug, for example canvas, corinthian, or wispr. */
+        /**
+         * @description Connection name.
+         * @example canvas
+         */
         name: string;
       };
       cookie?: never;
     };
-    /** @description Connector OAuth request. */
+    /** @description Required Canvas permissions and the address that brings you back to Connections. */
     requestBody: {
       content: {
         /**
          * @example {
-         *       "redirectTarget": "solomon-ai://connection-complete",
+         *       "redirectTarget": "https://oppulence.io/api/connectors/oauth/callback",
          *       "requestedScopes": [
          *         "canvas:invoices.read",
          *         "canvas:customers.read"

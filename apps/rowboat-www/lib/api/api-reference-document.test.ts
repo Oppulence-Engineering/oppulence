@@ -4355,6 +4355,39 @@ describe("API reference document", () => {
     expect(JSON.stringify(del)).not.toContain('"token"');
   });
 
+  it("samples the Canvas connection Connect starts", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const start = presented.paths["/v1/connections/{name}/start"].post;
+    const callback = "https://oppulence.io/api/connectors/oauth/callback";
+    expect(start.summary).toBe("Connect");
+    expect(start.operationId).toBe("startConnection");
+    expect(start.description).toBe(
+      "Connect starts sign-in for Canvas. It sends the required permissions and the address that brings you back to Connections.",
+    );
+    expect(start.parameters[0].example).toBe("canvas");
+    expect(start.requestBody.content["application/json"].example).toEqual({
+      redirectTarget: callback,
+      requestedScopes: ["canvas:invoices.read", "canvas:customers.read"],
+    });
+    expect(start.requestBody.description).toBe(
+      "Required Canvas permissions and the address that brings you back to Connections.",
+    );
+    const alias = presented.paths["/v1/connectors/{name}/start"].post;
+    expect(alias.summary).toBe("Connect");
+    expect(alias.operationId).toBe("startConnector");
+    expect(alias.requestBody.content["application/json"].example.redirectTarget).toBe(callback);
+    expect(presented.components.schemas.ConnectionStartRequest.properties.redirectTarget.example).toBe(
+      callback,
+    );
+    expect(presented.components.schemas.ConnectionStartRequest.properties.redirect_after.example).toBe(
+      "solomon-ai://connection-complete",
+    );
+    const serialized = JSON.stringify(start.requestBody);
+    expect(serialized).not.toContain("solomon-ai://connection-complete");
+    expect(serialized).not.toContain("acta_");
+    expect(serialized).not.toContain('"token"');
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
