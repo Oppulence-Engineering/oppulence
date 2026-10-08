@@ -1348,8 +1348,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get Google connection status
-     * @description Returns safe metadata for the authenticated user's connected Google account without exposing credentials.
+     * Gmail and Google Calendar
+     * @description Gmail and Google Calendar loads this account's connection. The request sends no filter. This workspace has not connected Google, so the account list is empty.
      */
     get: operations["getGoogleConnectionStatus"];
     put?: never;
@@ -18169,7 +18169,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Google connection status. */
+      /** @description No Google connection. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -18177,16 +18177,8 @@ export interface operations {
         content: {
           /**
            * @example {
-           *       "accounts": [
-           *         {
-           *           "accountId": "owner@example.com",
-           *           "connectedAt": "2026-06-04T20:38:00Z",
-           *           "scopes": [
-           *             "https://www.googleapis.com/auth/gmail.readonly"
-           *           ]
-           *         }
-           *       ],
-           *       "connected": true
+           *       "accounts": [],
+           *       "connected": false
            *     }
            */
           "application/json": components["schemas"]["GoogleConnectionStatus"];

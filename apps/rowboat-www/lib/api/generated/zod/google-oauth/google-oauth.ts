@@ -63,8 +63,8 @@ export const DisconnectGoogle500Response = zod
   );
 
 /**
- * Returns safe metadata for the authenticated user's connected Google account without exposing credentials.
- * @summary Get Google connection status
+ * Gmail and Google Calendar loads this account's connection. The request sends no filter. This workspace has not connected Google, so the account list is empty.
+ * @summary Gmail and Google Calendar
  */
 export const GetGoogleConnectionStatus200Response = zod
   .strictObject({

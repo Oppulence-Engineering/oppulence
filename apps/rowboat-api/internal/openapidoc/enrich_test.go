@@ -3742,6 +3742,48 @@ func assertWorkflowTemplates(t *testing.T, paths obj) {
 	if oneExample["instructions"] != "Review recent important Gmail messages and produce a markdown digest." {
 		t.Fatalf("single template example changed: %#v", oneExample["instructions"])
 	}
+
+	assertGoogleConnection(t, paths)
+}
+
+func TestGoogleConnectionSamplesTheEmptyAccount(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertGoogleConnection(t, asObj(spec["paths"]))
+}
+
+func assertGoogleConnection(t *testing.T, paths obj) {
+	t.Helper()
+	item := asObj(paths["/v1/google-oauth"])
+	get := asObj(item["get"])
+	if get["summary"] != "Gmail and Google Calendar" || get["description"] != googleConnectionDescription || get["operationId"] != "getGoogleConnectionStatus" {
+		t.Fatalf("google connection operation: %#v", get)
+	}
+	if get["parameters"] != nil {
+		t.Fatalf("google connection parameters: %#v", get["parameters"])
+	}
+	example := asObj(asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(googleConnectionPage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("google connection example: %s", got)
+	}
+	if strings.Contains(string(got), "owner@example.com") || strings.Contains(string(got), "gmail.readonly") {
+		t.Fatal("google connection example still shows a connected account")
+	}
+	accounts, _ := example["accounts"].([]any)
+	if example["connected"] != false || len(accounts) != 0 {
+		t.Fatalf("google connection page: %#v", example)
+	}
+	if asObj(item["delete"])["operationId"] != "disconnectGoogle" {
+		t.Fatal("disconnect Google was dropped")
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
