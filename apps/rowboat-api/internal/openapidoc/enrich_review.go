@@ -18,6 +18,8 @@ func reviewParams() []any {
 	}}
 }
 
+// reviewedAttention is the item Review returns. The detector stores the
+// relationship projector version, not the column default of 1.
 func reviewedAttention() obj {
 	return obj{
 		"id":                       reviewAttentionID,
@@ -35,7 +37,7 @@ func reviewedAttention() obj {
 		"status":                   "acknowledged",
 		"stateReason":              reviewReason,
 		"detectorVersion":          1,
-		"projectorVersion":         1,
+		"projectorVersion":         2,
 		"relationshipStateVersion": 4,
 		"acknowledgedBy":           "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
 		"acknowledgedAt":           "2026-07-31T14:00:00Z",

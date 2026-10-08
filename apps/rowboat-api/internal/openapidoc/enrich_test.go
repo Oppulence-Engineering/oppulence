@@ -816,6 +816,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	assertLineageIdentity(t, schemas)
 	assertAttentionEvidence(t, schemas)
 	assertReviewEvidence(t, schemas)
+	assertReview(t, spec)
 }
 
 func TestConversationReviewNamesTheItem(t *testing.T) {
@@ -5758,6 +5759,10 @@ func assertReview(t *testing.T, spec obj) {
 	ok := asObj(asObj(asObj(responses["200"])["content"])["application/json"])
 	if !reflect.DeepEqual(normalizedReview(t, ok["example"]), normalizedReview(t, reviewedAttention())) {
 		t.Fatalf("review example: %#v", ok["example"])
+	}
+	item := asObj(ok["example"])
+	if item["projectorVersion"] != 2 && item["projectorVersion"] != float64(2) {
+		t.Fatalf("review projector version: %#v", item["projectorVersion"])
 	}
 	stored := asObj(asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RelationshipAttentionItem"])["properties"])["stateReason"])
 	if stored["example"] != reviewReason {

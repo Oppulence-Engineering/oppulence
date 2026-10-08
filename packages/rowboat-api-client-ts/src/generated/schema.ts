@@ -22177,7 +22177,7 @@ export interface operations {
            *       ],
            *       "explanation": "A confirmed promise is overdue by two days.",
            *       "id": "da8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *       "projectorVersion": 1,
+           *       "projectorVersion": 2,
            *       "rankFactors": {
            *         "confirmed_commitment": 70,
            *         "overdue_days": 6
