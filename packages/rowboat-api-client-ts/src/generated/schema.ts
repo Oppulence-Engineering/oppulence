@@ -2333,7 +2333,7 @@ export interface paths {
     };
     /**
      * All companies
-     * @description All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention. The next action is to confirm the security review owner.
+     * @description All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention. The next action is to confirm the security review owner. The LinkedIn column opens the Acme company page. The category is Artificial intelligence.
      */
     get: operations["listRelationships"];
     put?: never;
@@ -2377,7 +2377,7 @@ export interface paths {
     };
     /**
      * Open a company
-     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations.
+     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com. The risk is that the security review has no owner. The LinkedIn row opens the Acme company page. The category is Artificial intelligence. The milestone is that the proposal was shared. The headquarters is San Francisco, California, United States. The source row opens the Acme team page. Avery Chen's title is VP Operations. The sheet says 4 account details still need a source.
      */
     get: operations["getRelationship"];
     put?: never;
@@ -23851,7 +23851,9 @@ export interface operations {
            *       "relationships": [
            *         {
            *           "accountDomain": "acme.com",
-           *           "categories": [],
+           *           "categories": [
+           *             "Artificial intelligence"
+           *           ],
            *           "commitmentCount": 0,
            *           "displayName": "Acme",
            *           "emailThreadCount": 0,
@@ -23862,6 +23864,7 @@ export interface operations {
            *           "lastChangedAt": "2026-07-25T16:00:00Z",
            *           "lastTouchAt": "2026-07-25T15:00:00Z",
            *           "lifecycle": "evaluation",
+           *           "linkedinUrl": "https://www.linkedin.com/company/acme",
            *           "milestones": [],
            *           "nextAction": "Confirm the security review owner.",
            *           "peopleCount": 1,
@@ -24108,9 +24111,14 @@ export interface operations {
            *         "changedSinceReview": false,
            *         "changes": [],
            *         "completeness": {
-           *           "explanation": "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation.",
+           *           "explanation": "No source connection has completed its first useful sync.",
            *           "externalActionSafe": false,
-           *           "missingMaterialDimensions": [],
+           *           "missingMaterialDimensions": [
+           *             "milestone",
+           *             "next_action",
+           *             "risk",
+           *             "summary"
+           *           ],
            *           "sources": [],
            *           "status": "partial",
            *           "unresolvedIdentityCount": 0
@@ -24119,6 +24127,7 @@ export interface operations {
            *         "detectorVersion": 1,
            *         "evidence": {
            *           "engagement": {
+           *             "authority": "source_fact",
            *             "dimension": "engagement",
            *             "evidence": [
            *               {
@@ -24134,6 +24143,7 @@ export interface operations {
            *             "value": "declining"
            *           },
            *           "health": {
+           *             "authority": "source_fact",
            *             "dimension": "health",
            *             "evidence": [
            *               {
@@ -24149,6 +24159,7 @@ export interface operations {
            *             "value": "needs_attention"
            *           },
            *           "lifecycle": {
+           *             "authority": "source_fact",
            *             "dimension": "lifecycle",
            *             "evidence": [
            *               {
@@ -24163,7 +24174,32 @@ export interface operations {
            *             "supported": true,
            *             "value": "evaluation"
            *           },
+           *           "milestone": {
+           *             "dimension": "milestone",
+           *             "evidence": [],
+           *             "fresh": true,
+           *             "missingReason": "No active assertion supports this value at the response asOf boundary.",
+           *             "supported": false,
+           *             "value": []
+           *           },
+           *           "next_action": {
+           *             "dimension": "next_action",
+           *             "evidence": [],
+           *             "fresh": true,
+           *             "missingReason": "No active assertion supports this value at the response asOf boundary.",
+           *             "supported": false,
+           *             "value": ""
+           *           },
+           *           "risk": {
+           *             "dimension": "risk",
+           *             "evidence": [],
+           *             "fresh": true,
+           *             "missingReason": "No active assertion supports this value at the response asOf boundary.",
+           *             "supported": false,
+           *             "value": []
+           *           },
            *           "sentiment": {
+           *             "authority": "source_fact",
            *             "dimension": "sentiment",
            *             "evidence": [
            *               {
@@ -24177,6 +24213,14 @@ export interface operations {
            *             "fresh": true,
            *             "supported": true,
            *             "value": "unknown"
+           *           },
+           *           "summary": {
+           *             "dimension": "summary",
+           *             "evidence": [],
+           *             "fresh": true,
+           *             "missingReason": "No active assertion supports this value at the response asOf boundary.",
+           *             "supported": false,
+           *             "value": ""
            *           }
            *         },
            *         "pending": {
@@ -24210,15 +24254,30 @@ export interface operations {
            *             "title": "VP Operations"
            *           },
            *           "personId": "aa8dfa9b-a7b2-46ea-982c-622a914c00e5",
-           *           "role": "champion"
+           *           "role": "champion",
+           *           "title": "VP Operations"
            *         }
            *       ],
            *       "recommendations": [],
            *       "relationship": {
            *         "accountDomain": "acme.com",
-           *         "categories": [],
+           *         "categories": [
+           *           "Artificial intelligence"
+           *         ],
            *         "commitmentCount": 0,
            *         "companyDescription": "Builds AI infrastructure for customer operations.",
+           *         "companyEnrichmentData": {
+           *           "employee_range": "201-500 employees (2026)",
+           *           "funding_summary": "$80M total; Series C, $35M, 2025-10-10",
+           *           "growth_signals": "Hiring in 2026",
+           *           "headquarters": "San Francisco, California, United States",
+           *           "revenue_range": "$40M-$60M (2025)"
+           *         },
+           *         "companyEnrichmentRefs": {
+           *           "headquarters": [
+           *             "https://acme.example/team"
+           *           ]
+           *         },
            *         "displayName": "Acme",
            *         "emailThreadCount": 0,
            *         "engagement": "declining",
@@ -24228,12 +24287,18 @@ export interface operations {
            *         "lastChangedAt": "2026-07-25T16:00:00Z",
            *         "lastTouchAt": "2026-07-25T15:00:00Z",
            *         "lifecycle": "evaluation",
-           *         "milestones": [],
+           *         "linkedinUrl": "https://www.linkedin.com/company/acme",
+           *         "milestones": [
+           *           "Proposal shared."
+           *         ],
            *         "peopleCount": 1,
+           *         "primaryEmail": "avery@acme.com",
            *         "projectedAt": "2026-07-25T16:00:00Z",
            *         "projectorVersion": 2,
            *         "resourceRefs": [],
-           *         "risks": [],
+           *         "risks": [
+           *           "Security review has no owner."
+           *         ],
            *         "sentiment": "unknown",
            *         "stateHash": "sha256:61dd3377d3854c6f9c104af050ad3f0f87ff6cdd1c3458c17541cbc1e87fc887",
            *         "stateReason": "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation.",

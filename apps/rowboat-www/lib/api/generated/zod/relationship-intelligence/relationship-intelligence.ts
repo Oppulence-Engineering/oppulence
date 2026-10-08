@@ -3236,7 +3236,7 @@ export const DisconnectRelationshipSource403Response = zod
   );
 
 /**
- * All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention. The next action is to confirm the security review owner.
+ * All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention. The next action is to confirm the security review owner. The LinkedIn column opens the Acme company page. The category is Artificial intelligence.
  * @summary All companies
  */
 export const listRelationshipsQueryOffsetMin = 0;
@@ -3803,7 +3803,7 @@ export const GetRelationshipGraph404Response = zod
   );
 
 /**
- * The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations.
+ * The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com. The risk is that the security review has no owner. The LinkedIn row opens the Acme company page. The category is Artificial intelligence. The milestone is that the proposal was shared. The headquarters is San Francisco, California, United States. The source row opens the Acme team page. Avery Chen's title is VP Operations. The sheet says 4 account details still need a source.
  * @summary Open a company
  */
 export const GetRelationshipParams = zod.object({
