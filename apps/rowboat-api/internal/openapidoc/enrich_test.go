@@ -1263,6 +1263,37 @@ func assertLineageAccounts(t *testing.T, schemas obj) {
 	if before["description"] != "Relationship ids before." || after["description"] != "Relationship ids after." {
 		t.Fatalf("lineage descriptions changed: %#v %#v", before["description"], after["description"])
 	}
+
+	assertSnapshotAssertionID(t, schemas)
+}
+
+func TestSnapshotNamesTheWinningAssertion(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSnapshotAssertionID(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertSnapshotAssertionID(t *testing.T, schemas obj) {
+	t.Helper()
+	snapshot := asObj(schemas["RelationshipStateSnapshot"])
+	if snapshot == nil {
+		return
+	}
+	props := asObj(snapshot["properties"])
+	const assertionID = "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	ids := asObj(props["assertionIds"])
+	if !reflect.DeepEqual(ids["example"], []any{assertionID}) {
+		t.Fatalf("snapshot assertion ids: %#v", ids["example"])
+	}
+	if asObj(ids["items"])["example"] != assertionID {
+		t.Fatalf("assertion id item: %#v", ids["items"])
+	}
+	if ids["description"] != "Assertions selected by deterministic precedence." {
+		t.Fatalf("assertion description changed: %#v", ids["description"])
+	}
+	if id := asObj(props["id"]); id["example"] == assertionID {
+		t.Fatalf("snapshot id reused the assertion id: %#v", id["example"])
+	}
 }
 
 func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {

@@ -145,6 +145,8 @@ func addRevenueSchemas(schemas obj) {
 		"contentHash":     stringSchema("Hash of summary, facts, and sealed payload.", "ab12cd34"),
 	}, "id", "source", "externalId", "sourceVersion", "eventType", "occurredAt", "receivedAt", "normalizedFacts", "contentHash")
 
+	assertionIDs := arraySchema("Assertions selected by deterministic precedence.", stringSchema("Assertion id.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"))
+	assertionIDs["example"] = []any{"7b8dfa9b-a7b2-46ea-982c-622a914c00e5"}
 	schemas["RelationshipStateSnapshot"] = objectSchema("Immutable projection snapshot created only when material relationship state changes.", obj{
 		"id":                uuidSchema("Snapshot id.", "5b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"version":           intSchema("Relationship state version.", 4),
@@ -153,7 +155,7 @@ func addRevenueSchemas(schemas obj) {
 		"projectorVersion":  intSchema("Projector version used for this snapshot.", 1),
 		"evaluatedAt":       stringSchema("Explicit evaluation time used by the projector.", "2026-07-25T16:00:00Z", obj{"format": "date-time"}),
 		"changedDimensions": arraySchema("Material dimensions that changed.", stringSchema("Dimension.", "health")),
-		"assertionIds":      arraySchema("Assertions selected by deterministic precedence.", stringSchema("Assertion id.", "assertion-123")),
+		"assertionIds":      assertionIDs,
 		"createdAt":         stringSchema("Snapshot creation time.", "2026-07-25T16:00:00Z", obj{"format": "date-time"}),
 	}, "id", "version", "state", "stateHash", "projectorVersion", "evaluatedAt", "changedDimensions", "assertionIds", "createdAt")
 
