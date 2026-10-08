@@ -2377,7 +2377,7 @@ export interface paths {
     };
     /**
      * Open a company
-     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.
+     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The headquarters is San Francisco, California, United States.
      */
     get: operations["getRelationship"];
     put?: never;
@@ -24076,6 +24076,13 @@ export interface operations {
            *         "accountDomain": "acme.com",
            *         "categories": [],
            *         "commitmentCount": 0,
+           *         "companyEnrichmentData": {
+           *           "employee_range": "201-500 employees (2026)",
+           *           "funding_summary": "$80M total; Series C, $35M, 2025-10-10",
+           *           "growth_signals": "Hiring in 2026",
+           *           "headquarters": "San Francisco, California, United States",
+           *           "revenue_range": "$40M-$60M (2025)"
+           *         },
            *         "displayName": "Acme",
            *         "emailThreadCount": 0,
            *         "engagement": "declining",

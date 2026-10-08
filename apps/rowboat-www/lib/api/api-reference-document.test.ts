@@ -3340,7 +3340,7 @@ describe("API reference document", () => {
     const companyID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5";
     expect(operation.summary).toBe("Open a company");
     expect(operation.description).toBe(
-      "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.",
+      "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The headquarters is San Francisco, California, United States.",
     );
     expect(operation.parameters).toEqual([
       expect.objectContaining({
@@ -3359,6 +3359,13 @@ describe("API reference document", () => {
       peopleCount: 1,
       emailThreadCount: 0,
       commitmentCount: 0,
+      companyEnrichmentData: {
+        employee_range: "201-500 employees (2026)",
+        funding_summary: "$80M total; Series C, $35M, 2025-10-10",
+        growth_signals: "Hiring in 2026",
+        headquarters: "San Francisco, California, United States",
+        revenue_range: "$40M-$60M (2025)",
+      },
     });
     expect(example.emailThreads).toEqual([]);
     expect(example.participants).toEqual([

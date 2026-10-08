@@ -4108,7 +4108,7 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	if operation["summary"] != "Open a company" {
 		t.Fatalf("summary: %#v", operation["summary"])
 	}
-	if operation["description"] != "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises." {
+	if operation["description"] != "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The headquarters is San Francisco, California, United States." {
 		t.Fatalf("description: %#v", operation["description"])
 	}
 	params, ok := operation["parameters"].([]any)
@@ -4133,6 +4133,11 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	peopleRaw, peopleErr := json.Marshal(people)
 	if !ok || peopleErr != nil || string(peopleRaw) != "1" {
 		t.Fatalf("people count: %#v", relationship["peopleCount"])
+	}
+	facts, factsErr := json.Marshal(relationship["companyEnrichmentData"])
+	wantFacts, wantErr := json.Marshal(companyProfileFactsExample())
+	if factsErr != nil || wantErr != nil || string(facts) != string(wantFacts) {
+		t.Fatalf("profile facts: %s", facts)
 	}
 	threads, ok := example["emailThreads"].([]any)
 	if !ok || len(threads) != 0 {
