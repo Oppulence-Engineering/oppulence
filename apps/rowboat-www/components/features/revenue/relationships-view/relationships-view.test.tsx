@@ -116,6 +116,7 @@ import {
   identityMatchDetail,
   sourceConnectionSectionCopy,
   sourceListedOnConnectionsPage,
+  googleAccountCanBeRead,
   sourcesNeedingRepair,
   identityMatchLabel,
   participantRoleLabel,
@@ -468,6 +469,33 @@ describe("RelationshipsView", () => {
       "Sources to connect",
     );
     expect(source).toContain("sourceConnectionSectionCopy(needsAttention)");
+
+    expect(
+      googleAccountCanBeRead({
+        status: "stale",
+        missingScopes: [],
+        sourceAccountId: "default",
+        grantedScopes: [],
+      }),
+    ).toBe(false);
+    expect(
+      googleAccountCanBeRead({
+        status: "stale",
+        missingScopes: [],
+        sourceAccountId: "me@gmail.com",
+        grantedScopes: [],
+      }),
+    ).toBe(true);
+    expect(
+      googleAccountCanBeRead({
+        status: "live",
+        missingScopes: [],
+        sourceAccountId: "default",
+        grantedScopes: ["https://www.googleapis.com/auth/gmail.readonly"],
+      }),
+    ).toBe(true);
+    expect(source).toContain("sourceCardAccount(item)");
+    expect(source).toContain('item.source === "google" && !googleAccountCanBeRead(account)');
     expect(source).toContain("Sources to connect");
     expect(source).not.toContain("Evidence sources");
     expect(source).toContain("Could not update this source.");
