@@ -25220,16 +25220,19 @@
       }
     },
     "/v1/relationship-identity-candidates/{candidateId}/decisions": {
-      "post": {
-        "description": "Applies merge, keep-separate, move-evidence, split, defer, or compensating undo once at the expected optimistic version.",
+            "post": {
+        "description": "Merge combines this possible duplicate into the company that already exists. The extra company is archived.",
         "operationId": "decideRelationshipIdentityCandidate",
         "parameters": [
           {
             "description": "Identity candidate id.",
+            "example": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "in": "path",
             "name": "candidateId",
             "required": true,
             "schema": {
+              "description": "Identity candidate id.",
+              "example": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -25249,7 +25252,14 @@
                 "properties": {
                   "decision": {
                     "description": "Decision.",
-                    "enum": ["merge", "keep_separate", "move_evidence", "split", "defer", "undo"],
+                    "enum": [
+                      "merge",
+                      "keep_separate",
+                      "move_evidence",
+                      "split",
+                      "defer",
+                      "undo"
+                    ],
                     "example": "merge",
                     "type": "string"
                   },
@@ -25270,7 +25280,11 @@
                     "type": "string"
                   }
                 },
-                "required": ["decision", "expectedVersion", "idempotencyKey"],
+                "required": [
+                  "decision",
+                  "expectedVersion",
+                  "idempotencyKey"
+                ],
                 "type": "object"
               }
             }
@@ -25282,12 +25296,107 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "anchorKind": "provider_resource",
+                  "anchorPreview": "contact …123",
+                  "anchorProvider": "hubspot",
+                  "candidateType": "anchor_collision",
+                  "conflictingAnchors": [],
+                  "decidedAt": "2026-07-31T14:00:00Z",
+                  "decision": "merge",
+                  "decisionActorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "decisionReason": "Reviewed in the identity inbox: merge.",
+                  "decisions": [
+                    {
+                      "actorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "candidateVersion": 2,
+                      "decidedAt": "2026-07-31T14:00:00Z",
+                      "decision": "merge",
+                      "id": "aa8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "reason": "Reviewed in the identity inbox: merge."
+                    }
+                  ],
+                  "evidenceCount": 1,
+                  "evidenceRefs": [
+                    "relationship-observation:4b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                  ],
+                  "existingRelationship": {
+                    "accountDomain": "example.com",
+                    "categories": [],
+                    "commitmentCount": 0,
+                    "displayName": "Acme",
+                    "emailThreadCount": 0,
+                    "engagement": "steady",
+                    "health": "needs_attention",
+                    "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "kind": "company",
+                    "lifecycle": "evaluation",
+                    "milestones": [],
+                    "peopleCount": 0,
+                    "projectorVersion": 2,
+                    "resourceRefs": [],
+                    "risks": [],
+                    "sentiment": "mixed",
+                    "stateVersion": 4,
+                    "status": "active"
+                  },
+                  "id": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "impact": {
+                    "evidence": 1
+                  },
+                  "lineage": [
+                    {
+                      "actorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "afterRelationshipIds": [
+                        "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                      ],
+                      "beforeRelationshipIds": [
+                        "fa8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                        "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                      ],
+                      "id": "ba8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "identityIds": [],
+                      "kind": "merged",
+                      "movedObjectRefs": [],
+                      "observationIds": [],
+                      "occurredAt": "2026-07-31T14:00:00Z",
+                      "reason": "Reviewed in the identity inbox: merge."
+                    }
+                  ],
+                  "matchingAnchors": [
+                    "hubspot:contact:123"
+                  ],
+                  "proposedRelationship": {
+                    "accountDomain": "example.com",
+                    "categories": [],
+                    "commitmentCount": 0,
+                    "displayName": "Acme Inc.",
+                    "emailThreadCount": 0,
+                    "engagement": "steady",
+                    "health": "needs_attention",
+                    "id": "fa8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "kind": "company",
+                    "lifecycle": "evaluation",
+                    "milestones": [],
+                    "peopleCount": 0,
+                    "projectorVersion": 2,
+                    "resourceRefs": [],
+                    "risks": [],
+                    "sentiment": "mixed",
+                    "stateVersion": 4,
+                    "status": "archived"
+                  },
+                  "recommendationConfidence": 0.5,
+                  "recommendedDecision": "merge",
+                  "status": "resolved",
+                  "version": 2
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RelationshipIdentityCandidate"
                 }
               }
             },
-            "description": "Resolved candidate."
+            "description": "The duplicate is merged into the existing company."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -25307,8 +25416,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Decide identity candidate",
-        "tags": ["Relationship Intelligence"]
+        "summary": "Merge",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-observations/batch": {

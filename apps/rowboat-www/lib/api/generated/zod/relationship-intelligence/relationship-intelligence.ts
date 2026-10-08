@@ -1367,8 +1367,8 @@ export const GetRelationshipIdentityCandidate404Response = zod
   );
 
 /**
- * Applies merge, keep-separate, move-evidence, split, defer, or compensating undo once at the expected optimistic version.
- * @summary Decide identity candidate
+ * Merge combines this possible duplicate into the company that already exists. The extra company is archived.
+ * @summary Merge
  */
 export const DecideRelationshipIdentityCandidateParams = zod.object({
   candidateId: zod.uuid().describe("Identity candidate id."),
@@ -1380,7 +1380,7 @@ export const DecideRelationshipIdentityCandidateBody = zod
       .enum(["merge", "keep_separate", "move_evidence", "split", "defer", "undo"])
       .describe("Decision."),
     expectedVersion: zod.int().describe("Expected candidate version."),
-    idempotencyKey: zod.string().describe("Stable client idempotency key."),
+    idempotencyKey: zod.uuid().describe("Stable client idempotency key."),
     reason: zod.string().optional().describe("Actor reason."),
   })
   .describe("Identity decision request.");

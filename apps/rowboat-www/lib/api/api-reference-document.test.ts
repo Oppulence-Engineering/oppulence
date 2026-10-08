@@ -4310,6 +4310,32 @@ describe("API reference document", () => {
     expect(JSON.stringify(post)).not.toContain("acta_");
   });
 
+  it("samples the duplicate Merge combines", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const post = presented.paths["/v1/relationship-identity-candidates/{candidateId}/decisions"].post;
+    expect(post.summary).toBe("Merge");
+    expect(post.operationId).toBe("decideRelationshipIdentityCandidate");
+    expect(post.description).toBe(
+      "Merge combines this possible duplicate into the company that already exists. The extra company is archived.",
+    );
+    const candidate = post.parameters.find((parameter: { name: string }) => parameter.name === "candidateId");
+    expect(candidate.example).toBe("6b8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    expect(post.requestBody.content["application/json"].example).toEqual({
+      decision: "merge",
+      expectedVersion: 1,
+      reason: "Reviewed in the identity inbox: merge.",
+      idempotencyKey: "cb8dfa9b-a7b2-46ea-982c-622a914c00e5",
+    });
+    const example = post.responses["200"].content["application/json"].example;
+    expect(example.status).toBe("resolved");
+    expect(example.decision).toBe("merge");
+    expect(example.existingRelationship.displayName).toBe("Acme");
+    expect(example.proposedRelationship.status).toBe("archived");
+    expect(example.lineage[0].kind).toBe("merged");
+    expect(JSON.stringify(post)).not.toContain("identity-review:123");
+    expect(JSON.stringify(post)).not.toContain("acta_");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

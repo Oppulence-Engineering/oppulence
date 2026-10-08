@@ -674,8 +674,8 @@ export const getDecideRelationshipIdentityCandidateUrl = (candidateId: string) =
 };
 
 /**
- * Applies merge, keep-separate, move-evidence, split, defer, or compensating undo once at the expected optimistic version.
- * @summary Decide identity candidate
+ * Merge combines this possible duplicate into the company that already exists. The extra company is archived.
+ * @summary Merge
  */
 export const decideRelationshipIdentityCandidate = async (
   candidateId: string,
