@@ -1917,7 +1917,7 @@
           },
           "trigger": {
             "description": "Trigger source for a task run.",
-            "enum": ["manual", "cron", "window", "event"],
+            "enum": ["manual", "cron", "window", "event", "retry"],
             "example": "manual",
             "type": "string"
           },
@@ -17976,7 +17976,7 @@
                   "id": "77f5e632-a841-4557-a8e4-9b8f0d207ff4",
                   "localRunId": "",
                   "model": "openai/gpt-4.1-mini",
-                  "previousRunId": "",
+                  "previousRunId": "run-20260604-210000",
                   "progressMessage": "Queued for API worker.",
                   "progressPercent": 0,
                   "provider": "openai",
@@ -17990,7 +17990,7 @@
                   "temporalRunId": "00000000-0000-0000-0000-000000000001",
                   "temporalStatus": "Started",
                   "temporalWorkflowId": "background-task/user/daily-summary/api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b",
-                  "trigger": "manual",
+                  "trigger": "retry",
                   "updatedAt": "2026-06-04T21:02:05Z",
                   "useCase": "background-task"
                 },

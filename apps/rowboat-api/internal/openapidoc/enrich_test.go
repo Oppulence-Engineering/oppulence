@@ -330,6 +330,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
 	}
+	assertRetryCloudRun(t, spec)
 	if value := asObj(evidenceProperties["value"]); value["oneOf"] == nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.value is invalid: %#v", value)
 	}
@@ -338,6 +339,42 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+}
+
+func TestRetryCloudRunIsDocumented(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertRetryCloudRun(t, spec)
+}
+
+func assertRetryCloudRun(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	retryExample := responseExample(t, paths, "/v1/background-tasks/{slug}/runs/{runId}/retry", "post", "202")
+	if retryExample["trigger"] != "retry" || retryExample["previousRunId"] != "run-20260604-210000" {
+		t.Fatalf("retry cloud run: %#v", retryExample)
+	}
+	signalExample := responseExample(t, paths, "/v1/background-tasks/{slug}/runs/{runId}/signal", "post", "202")
+	if signalExample["trigger"] != "manual" {
+		t.Fatalf("signal run trigger changed: %#v", signalExample["trigger"])
+	}
+	run := asObj(asObj(asObj(spec["components"])["schemas"])["BackgroundTaskRun"])
+	trigger := asObj(asObj(run["properties"])["trigger"])
+	enum, ok := trigger["enum"].([]any)
+	if !ok || !reflect.DeepEqual(enum, []any{"manual", "cron", "window", "event", "retry"}) || trigger["example"] != "manual" {
+		t.Fatalf("run trigger enum: %#v", trigger)
+	}
+}
+
+func responseExample(t *testing.T, paths obj, path, method, status string) obj {
+	t.Helper()
+	operation := asObj(asObj(paths[path])[method])
+	response := asObj(asObj(operation["responses"])[status])
+	body := asObj(asObj(asObj(response["content"])["application/json"])["example"])
+	if body == nil {
+		t.Fatalf("%s %s %s example missing", method, path, status)
+	}
+	return body
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

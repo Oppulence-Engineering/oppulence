@@ -128,7 +128,7 @@ export const ListBackgroundTaskRunsForAccount200Response = zod
               .nullish()
               .describe("Temporal workflow id for API-worker runs."),
             trigger: zod
-              .enum(["manual", "cron", "window", "event"])
+              .enum(["manual", "cron", "window", "event", "retry"])
               .describe("Trigger source for a task run."),
             updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
             useCase: zod
@@ -1763,7 +1763,7 @@ export const ListBackgroundTaskRuns200Response = zod
               .nullish()
               .describe("Temporal workflow id for API-worker runs."),
             trigger: zod
-              .enum(["manual", "cron", "window", "event"])
+              .enum(["manual", "cron", "window", "event", "retry"])
               .describe("Trigger source for a task run."),
             updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
             useCase: zod
@@ -1982,7 +1982,7 @@ export const CreateBackgroundTaskRun201Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -2157,7 +2157,7 @@ export const GetBackgroundTaskRun200Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -2355,7 +2355,7 @@ export const PatchBackgroundTaskRun200Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -2532,7 +2532,7 @@ export const CancelBackgroundTaskRun202Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -2978,7 +2978,7 @@ export const RetryBackgroundTaskRun202Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -3165,7 +3165,7 @@ export const SignalBackgroundTaskRun202Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),
@@ -3439,7 +3439,7 @@ export const TriggerBackgroundTask202Response = zod
       .nullish()
       .describe("Temporal workflow id for API-worker runs."),
     trigger: zod
-      .enum(["manual", "cron", "window", "event"])
+      .enum(["manual", "cron", "window", "event", "retry"])
       .describe("Trigger source for a task run."),
     updatedAt: zod.iso.datetime({ offset: true }).describe("Server row update timestamp."),
     useCase: zod.string().nullish().describe("High-level usage label for cost attribution."),

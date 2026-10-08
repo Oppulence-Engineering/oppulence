@@ -237,6 +237,20 @@ describe("API reference document", () => {
     expect(properties.run_id.description).toBe("Run id.");
   });
 
+  it("samples the run Retry starts", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const retry =
+      presented.paths["/v1/background-tasks/{slug}/runs/{runId}/retry"]?.post;
+    expect(retry?.summary).toBe("Retry a cloud run");
+    const example = retry?.responses?.["202"]?.content?.["application/json"]?.example;
+    expect(example).toMatchObject({
+      trigger: "retry",
+      previousRunId: "run-20260604-210000",
+    });
+    expect(JSON.stringify(example)).not.toContain("acta_");
+    expect(JSON.stringify(example)).not.toContain('"token"');
+  });
+
   it("names background work without the scheduler's words", () => {
     const presented = presentApiReferenceDocument(spec);
     const lines: string[] = [];
