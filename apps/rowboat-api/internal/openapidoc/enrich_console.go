@@ -149,6 +149,21 @@ func documentedEditedTemplate() obj {
 	}
 }
 
+func documentedSavedProfileRequest() obj {
+	return obj{"displayName": "Ada Lovelace"}
+}
+
+func documentedSavedProfile() obj {
+	return obj{
+		"displayName":        "Ada Lovelace",
+		"defaultAgentSlug":   "",
+		"shareUsageData":     false,
+		"notificationLevel":  "off",
+		"showModelReasoning": false,
+		"theme":              "system",
+	}
+}
+
 func addConsolePaths(paths obj) {
 	authErrors := obj{
 		"400": responseRef("400"),
@@ -162,10 +177,12 @@ func addConsolePaths(paths obj) {
 	}
 	preferenceResponses := cloneResponses(authErrors)
 	preferenceResponses["200"] = jsonResponse("Current preferences.", ref("ConsolePreferences"), nil)
+	savedProfileResponses := cloneResponses(preferenceResponses)
+	savedProfileResponses["200"] = jsonResponse("Stored profile.", ref("ConsolePreferences"), documentedSavedProfile())
 	paths["/v1/console/preferences"] = obj{
 		"get": operation("Console", "Get console preferences", "Returns defaults before the caller's first write.", "getConsolePreferences", bearer(), nil, nil, preferenceResponses),
-		"patch": operation("Console", "Patch console preferences", "Strictly merges supplied typed fields into the caller's durable preference document.", "patchConsolePreferences", bearer(), nil,
-			jsonRequest("Preference fields to merge.", ref("ConsolePreferencesPatch"), nil), preferenceResponses),
+		"patch": operation("Console", "Save profile", "Save profile posts the display name. The name is Ada Lovelace. The stored preferences keep that name, an empty default agent, usage sharing off, notifications off, model reasoning hidden, and the system theme.", "patchConsolePreferences", bearer(), nil,
+			jsonRequest("Preference fields to merge.", ref("ConsolePreferencesPatch"), documentedSavedProfileRequest()), savedProfileResponses),
 	}
 
 	listResponses := cloneResponses(authErrors)

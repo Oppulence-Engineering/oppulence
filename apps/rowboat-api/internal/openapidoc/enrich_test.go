@@ -1850,6 +1850,58 @@ func assertEditedTemplate(t *testing.T, spec obj) {
 	if getBody["example"] != nil {
 		t.Fatalf("get example changed: %s", mustJSON(getBody["example"]))
 	}
+
+	assertSavedProfile(t, spec)
+}
+
+func TestSavedProfileStoresTheDisplayName(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSavedProfile(t, spec)
+}
+
+func assertSavedProfile(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	preferences := asObj(paths["/v1/console/preferences"])
+	patch := asObj(preferences["patch"])
+	if patch["summary"] != "Save profile" {
+		t.Fatalf("summary: %#v", patch["summary"])
+	}
+	const description = "Save profile posts the display name. The name is Ada Lovelace. The stored preferences keep that name, an empty default agent, usage sharing off, notifications off, model reasoning hidden, and the system theme."
+	if patch["description"] != description {
+		t.Fatalf("description: %#v", patch["description"])
+	}
+	request := asObj(asObj(asObj(patch["requestBody"])["content"])["application/json"])
+	if mustJSON(request["example"]) != mustJSON(documentedSavedProfileRequest()) {
+		t.Fatalf("request example: %s", mustJSON(request["example"]))
+	}
+	response := asObj(asObj(patch["responses"])["200"])
+	if response["description"] != "Stored profile." {
+		t.Fatalf("response description: %#v", response["description"])
+	}
+	body := asObj(asObj(response["content"])["application/json"])
+	if mustJSON(body["example"]) != mustJSON(documentedSavedProfile()) {
+		t.Fatalf("response example: %s", mustJSON(body["example"]))
+	}
+	getBody := asObj(asObj(asObj(asObj(asObj(preferences["get"])["responses"])["200"])["content"])["application/json"])
+	if getBody["example"] != nil {
+		t.Fatalf("get example changed: %s", mustJSON(getBody["example"]))
+	}
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	props := asObj(asObj(schemas["ConsolePreferences"])["properties"])
+	if asObj(props["displayName"])["example"] != "Ada Lovelace" {
+		t.Fatalf("display name example changed: %#v", props["displayName"])
+	}
+	if asObj(props["defaultAgentSlug"])["example"] != "assistant" {
+		t.Fatalf("agent example changed: %#v", props["defaultAgentSlug"])
+	}
+	if asObj(props["shareUsageData"])["example"] != true {
+		t.Fatalf("usage example changed: %#v", props["shareUsageData"])
+	}
+	if asObj(props["notificationLevel"])["example"] != "attention" {
+		t.Fatalf("notification example changed: %#v", props["notificationLevel"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

@@ -1090,8 +1090,8 @@ export interface paths {
     options?: never;
     head?: never;
     /**
-     * Patch console preferences
-     * @description Strictly merges supplied typed fields into the caller's durable preference document.
+     * Save profile
+     * @description Save profile posts the display name. The name is Ada Lovelace. The stored preferences keep that name, an empty default agent, usage sharing off, notifications off, model reasoning hidden, and the system theme.
      */
     patch: operations["patchConsolePreferences"];
     trace?: never;
@@ -16249,16 +16249,31 @@ export interface operations {
     /** @description Preference fields to merge. */
     requestBody: {
       content: {
+        /**
+         * @example {
+         *       "displayName": "Ada Lovelace"
+         *     }
+         */
         "application/json": components["schemas"]["ConsolePreferencesPatch"];
       };
     };
     responses: {
-      /** @description Current preferences. */
+      /** @description Stored profile. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "defaultAgentSlug": "",
+           *       "displayName": "Ada Lovelace",
+           *       "notificationLevel": "off",
+           *       "shareUsageData": false,
+           *       "showModelReasoning": false,
+           *       "theme": "system"
+           *     }
+           */
           "application/json": components["schemas"]["ConsolePreferences"];
         };
       };

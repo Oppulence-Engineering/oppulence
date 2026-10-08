@@ -19715,14 +19715,19 @@
           }
         ],
         "summary": "Get console preferences",
-        "tags": ["Console"]
+        "tags": [
+          "Console"
+        ]
       },
       "patch": {
-        "description": "Strictly merges supplied typed fields into the caller's durable preference document.",
+        "description": "Save profile posts the display name. The name is Ada Lovelace. The stored preferences keep that name, an empty default agent, usage sharing off, notifications off, model reasoning hidden, and the system theme.",
         "operationId": "patchConsolePreferences",
         "requestBody": {
           "content": {
             "application/json": {
+              "example": {
+                "displayName": "Ada Lovelace"
+              },
               "schema": {
                 "$ref": "#/components/schemas/ConsolePreferencesPatch"
               }
@@ -19735,12 +19740,20 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "defaultAgentSlug": "",
+                  "displayName": "Ada Lovelace",
+                  "notificationLevel": "off",
+                  "shareUsageData": false,
+                  "showModelReasoning": false,
+                  "theme": "system"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/ConsolePreferences"
                 }
               }
             },
-            "description": "Current preferences."
+            "description": "Stored profile."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -19796,8 +19809,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Patch console preferences",
-        "tags": ["Console"]
+        "summary": "Save profile",
+        "tags": [
+          "Console"
+        ]
       }
     },
     "/v1/console/resources": {
