@@ -1936,8 +1936,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get source health
-     * @description Returns authorization, backfill, freshness, failure, repair, revocation, and disconnect state for each relationship evidence source.
+     * Connected sources
+     * @description Connected sources lists each account connected to this workspace. The page shows the account and whether its history is still syncing.
      */
     get: operations["getRelationshipSourceStatuses"];
     put?: never;
@@ -21015,12 +21015,43 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Evidence source health. */
+      /** @description Connected sources. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "sources": [
+           *         {
+           *           "backfillCompleted": 250,
+           *           "backfillPhase": "live",
+           *           "backfillTotal": 1000,
+           *           "completeness": "partial",
+           *           "connectionId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "consentingActorId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "expectedCadenceSeconds": 900,
+           *           "grantedScopes": [
+           *             "https://www.googleapis.com/auth/gmail.readonly",
+           *             "https://www.googleapis.com/auth/calendar.events.readonly"
+           *           ],
+           *           "lagSeconds": 42,
+           *           "lastSuccessAt": "2026-07-31T14:00:00Z",
+           *           "lastSyncAt": "2026-07-31T14:00:00Z",
+           *           "missingScopes": [],
+           *           "requiredScopes": [
+           *             "https://www.googleapis.com/auth/gmail.readonly",
+           *             "https://www.googleapis.com/auth/calendar.events.readonly"
+           *           ],
+           *           "retryCount": 0,
+           *           "source": "google",
+           *           "sourceAccountId": "me@company.com",
+           *           "status": "live"
+           *         }
+           *       ]
+           *     }
+           */
           "application/json": {
             /** @description Sources. */
             sources?: components["schemas"]["RelationshipSourceStatus"][];

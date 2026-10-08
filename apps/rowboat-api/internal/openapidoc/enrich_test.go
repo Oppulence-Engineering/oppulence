@@ -4746,6 +4746,44 @@ func assertOpenPlan(t *testing.T, spec obj) {
 	if !strings.Contains(encoded, openPlanTitle) || !strings.Contains(encoded, `"ownerParticipantRef":"plan-participant"`) || !strings.Contains(encoded, openPlanRevisionHash()) {
 		t.Fatalf("public plan is missing the page: %s", encoded)
 	}
+
+	assertSourceStatus(t, spec)
+}
+
+func TestSourceStatus(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSourceStatus(t, spec)
+}
+
+func assertSourceStatus(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/relationship-sources/status"])["get"])
+	if operation["summary"] != "Connected sources" || operation["operationId"] != "getRelationshipSourceStatuses" {
+		t.Fatalf("source status operation: summary=%#v id=%#v", operation["summary"], operation["operationId"])
+	}
+	if operation["description"] != "Connected sources lists each account connected to this workspace. The page shows the account and whether its history is still syncing." {
+		t.Fatalf("description: %#v", operation["description"])
+	}
+	if operation["requestBody"] != nil || operation["parameters"] != nil {
+		t.Fatalf("connected sources sends no parameters: body=%#v params=%#v", operation["requestBody"], operation["parameters"])
+	}
+	example := asObj(asObj(asObj(asObj(operation["responses"])["200"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(sourceStatusExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("source status example:\n%s\nwant:\n%s", got, want)
+	}
+	encoded := string(got)
+	if !strings.Contains(encoded, `"source":"google"`) || !strings.Contains(encoded, sourceStatusAccount) || !strings.Contains(encoded, `"completeness":"partial"`) || !strings.Contains(encoded, sourceStatusConnectionID) {
+		t.Fatalf("connected sources example is missing the page: %s", encoded)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

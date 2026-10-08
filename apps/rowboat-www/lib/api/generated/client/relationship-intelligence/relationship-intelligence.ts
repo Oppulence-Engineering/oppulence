@@ -1023,8 +1023,8 @@ export const getGetRelationshipSourceStatusesUrl = () => {
 };
 
 /**
- * Returns authorization, backfill, freshness, failure, repair, revocation, and disconnect state for each relationship evidence source.
- * @summary Get source health
+ * Connected sources lists each account connected to this workspace. The page shows the account and whether its history is still syncing.
+ * @summary Connected sources
  */
 export const getRelationshipSourceStatuses = async (
   options?: RequestInit,
