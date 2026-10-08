@@ -3886,6 +3886,67 @@ func assertAIModel(t *testing.T, paths obj) {
 	if request["model"] != "openai/gpt-4.1-mini" {
 		t.Fatalf("chat model example changed: %#v", request["model"])
 	}
+
+	assertNoteTemplates(t, paths)
+}
+
+func TestNoteTemplatesSamplesTheEmptyPage(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertNoteTemplates(t, asObj(spec["paths"]))
+}
+
+func assertNoteTemplates(t *testing.T, paths obj) {
+	t.Helper()
+	item := asObj(paths["/v1/console/resources"])
+	get := asObj(item["get"])
+	if get["summary"] != "Reusable note templates" || get["description"] != noteTemplatesDescription || get["operationId"] != "listConsoleResources" {
+		t.Fatalf("note templates operation: summary=%#v description=%#v id=%#v", get["summary"], get["description"], get["operationId"])
+	}
+	if asObj(item["post"])["operationId"] != "createConsoleResource" {
+		t.Fatalf("create console resource changed: %#v", asObj(item["post"])["operationId"])
+	}
+	byName := map[string]obj{}
+	for _, raw := range get["parameters"].([]any) {
+		param := asObj(raw)
+		byName[param["name"].(string)] = param
+	}
+	if byName["kind"]["example"] != "note_template" {
+		t.Fatalf("kind example: %#v", byName["kind"]["example"])
+	}
+	if !noteTemplatesNumber(byName["limit"]["example"], 100) || !noteTemplatesNumber(asObj(byName["limit"]["schema"])["example"], 100) {
+		t.Fatalf("limit example: %#v", byName["limit"])
+	}
+	if !noteTemplatesNumber(byName["offset"]["example"], 0) || !noteTemplatesNumber(asObj(byName["offset"]["schema"])["example"], 0) {
+		t.Fatalf("offset example: %#v", byName["offset"])
+	}
+	response := asObj(asObj(get["responses"])["200"])
+	if response["description"] != "Empty template page." {
+		t.Fatalf("note templates response: %#v", response["description"])
+	}
+	example := asObj(asObj(response["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(noteTemplatesPage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("note templates example:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func noteTemplatesNumber(got any, want int) bool {
+	switch n := got.(type) {
+	case int:
+		return n == want
+	case float64:
+		return n == float64(want)
+	default:
+		return false
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

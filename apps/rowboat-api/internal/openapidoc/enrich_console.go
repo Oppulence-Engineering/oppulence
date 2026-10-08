@@ -185,18 +185,12 @@ func addConsolePaths(paths obj) {
 			jsonRequest("Preference fields to merge.", ref("ConsolePreferencesPatch"), documentedSavedProfileRequest()), savedProfileResponses),
 	}
 
-	listResponses := cloneResponses(authErrors)
-	listResponses["200"] = jsonResponse("Resource page.", ref("ConsoleResourcePage"), nil)
 	createResponses := cloneResponses(authErrors)
 	createResponses["200"] = jsonResponse("Existing favorite returned after an idempotent replay.", ref("ConsoleResource"), nil)
 	createResponses["201"] = jsonResponse("Stored template.", ref("ConsoleResource"), documentedSavedTemplate())
 	createResponses["409"] = consoleConflictResponse()
 	paths["/v1/console/resources"] = obj{
-		"get": operation("Console", "List console resources", "Lists only the caller's resources in the exact organization workspace asserted by the token. A full page is the end of the list when hasMore is false.", "listConsoleResources", bearer(), []any{
-			queryParam("kind", "Required resource kind.", true, ref("ConsoleResourceKind")),
-			queryParam("limit", "Page size (default 50, max 100).", false, obj{"type": "integer", "minimum": 1, "maximum": 100}),
-			queryParam("offset", "Page offset (max 10000).", false, obj{"type": "integer", "minimum": 0, "maximum": 10000}),
-		}, nil, listResponses),
+		"get": noteTemplatesOperation(authErrors),
 		"post": operation("Console", "Save template", "Save template posts a note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0.", "createConsoleResource", bearer(), nil,
 			jsonRequest("Typed resource.", ref("ConsoleResourceCreate"), documentedSavedTemplateRequest()), createResponses),
 	}
