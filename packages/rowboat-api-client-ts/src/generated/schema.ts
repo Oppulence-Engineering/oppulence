@@ -1044,8 +1044,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List connectors
-     * @description Returns the configured connector registry plus the authenticated user's connection state for each connector.
+     * Connections
+     * @description Connections loads the catalog. The request sends no filter. This workspace has not connected any of them, so every one is disconnected.
      */
     get: operations["listConnectors"];
     put?: never;
@@ -16904,7 +16904,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Connector registry with connection state. */
+      /** @description Every connection is disconnected. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -16914,37 +16914,605 @@ export interface operations {
            * @example {
            *       "connectors": [
            *         {
+           *           "audience": "mcp:canvas",
            *           "authType": "oauth",
-           *           "connected": true,
-           *           "connectedAt": "2026-06-04T20:38:00Z",
+           *           "availableScopes": [
+           *             {
+           *               "description": "View invoice balances, status, due dates, and line-item context.",
+           *               "displayName": "Read invoices",
+           *               "environments": [
+           *                 "development",
+           *                 "staging",
+           *                 "production"
+           *               ],
+           *               "grantTier": "required",
+           *               "name": "canvas:invoices.read",
+           *               "risk": "low"
+           *             },
+           *             {
+           *               "description": "View customer identity and account context needed to interpret invoices.",
+           *               "displayName": "Read customers",
+           *               "environments": [
+           *                 "development",
+           *                 "staging",
+           *                 "production"
+           *               ],
+           *               "grantTier": "required",
+           *               "name": "canvas:customers.read",
+           *               "risk": "low"
+           *             },
+           *             {
+           *               "description": "Search transaction history and payment activity.",
+           *               "displayName": "Read transactions",
+           *               "environments": [
+           *                 "development",
+           *                 "staging",
+           *                 "production"
+           *               ],
+           *               "grantTier": "optional",
+           *               "name": "canvas:transactions.read",
+           *               "risk": "low"
+           *             }
+           *           ],
+           *           "connected": false,
+           *           "connectionHealth": "disconnected",
            *           "description": "Banking, invoicing, dunning, transactions",
            *           "displayName": "Canvas",
+           *           "health": "healthy",
            *           "mcpTools": [
            *             {
            *               "name": "customer.lookup",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "invoice.lookup",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "transaction.search",
            *               "trustTier": "read"
            *             }
            *           ],
            *           "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp",
            *           "name": "canvas",
-           *           "scopes": [
-           *             "invoices:read"
-           *           ],
-           *           "templateBlocks": [
+           *           "status": "enabled",
+           *           "transport": "mcp"
+           *         },
+           *         {
+           *           "audience": "mcp:corinthian",
+           *           "authType": "oauth",
+           *           "availableScopes": [
            *             {
-           *               "category": "finance",
-           *               "description": "Look up invoices and customers.",
-           *               "id": "invoice-context",
-           *               "mcpTools": [
-           *                 "invoice.lookup"
+           *               "description": "View receivables, balances, and aging context.",
+           *               "displayName": "Read accounts receivable",
+           *               "environments": [
+           *                 "development",
+           *                 "staging",
+           *                 "production"
            *               ],
-           *               "requiredScopes": [
-           *                 "invoices:read"
+           *               "grantTier": "required",
+           *               "name": "corinthian:ar.read",
+           *               "risk": "low"
+           *             },
+           *             {
+           *               "description": "View collection cases, customer threads, and promises to pay.",
+           *               "displayName": "Read collections",
+           *               "environments": [
+           *                 "development",
+           *                 "staging",
+           *                 "production"
            *               ],
-           *               "title": "Invoice context",
+           *               "grantTier": "optional",
+           *               "implies": [
+           *                 "corinthian:ar.read"
+           *               ],
+           *               "name": "corinthian:collections.read",
+           *               "risk": "low"
+           *             }
+           *           ],
+           *           "connected": false,
+           *           "connectionHealth": "disconnected",
+           *           "description": "Accounts receivable, collections, communications",
+           *           "displayName": "Corinthian",
+           *           "health": "healthy",
+           *           "mcpTools": [
+           *             {
+           *               "name": "thread.search",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "case.lookup",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "promise.list",
            *               "trustTier": "read"
            *             }
-           *           ]
+           *           ],
+           *           "mcpUrl": "https://mcp.corinthian.solomon-ai.co/mcp",
+           *           "name": "corinthian",
+           *           "status": "enabled",
+           *           "transport": "mcp"
+           *         },
+           *         {
+           *           "audience": "mcp:cadence",
+           *           "authType": "oauth",
+           *           "availableScopes": [
+           *             {
+           *               "description": "View payment-run status, totals, and approval context.",
+           *               "displayName": "Read payment runs",
+           *               "environments": [
+           *                 "development",
+           *                 "staging",
+           *                 "production"
+           *               ],
+           *               "grantTier": "required",
+           *               "name": "cadence:payment_runs.read",
+           *               "risk": "low"
+           *             },
+           *             {
+           *               "description": "Execute a payment only after a separate action-specific approval.",
+           *               "displayName": "Execute approved payments",
+           *               "environments": [
+           *                 "development",
+           *                 "staging"
+           *               ],
+           *               "grantTier": "optional",
+           *               "implies": [
+           *                 "cadence:payment_runs.read"
+           *               ],
+           *               "name": "cadence:payments.execute",
+           *               "perInvocationApproval": true,
+           *               "requiredPlan": "intelligence",
+           *               "risk": "money-moving",
+           *               "stepUpRequired": true
+           *             }
+           *           ],
+           *           "connected": false,
+           *           "connectionHealth": "disconnected",
+           *           "description": "Billing operations, payment runs, and finance approvals",
+           *           "displayName": "Cadence",
+           *           "health": "healthy",
+           *           "mcpTools": [
+           *             {
+           *               "name": "payment_run.list",
+           *               "trustTier": "read"
+           *             }
+           *           ],
+           *           "mcpUrl": "https://mcp.cadence.solomon-ai.co/mcp",
+           *           "name": "cadence",
+           *           "status": "enabled",
+           *           "transport": "mcp"
+           *         },
+           *         {
+           *           "audience": "mcp:conduit",
+           *           "authType": "oauth",
+           *           "availableScopes": [
+           *             {
+           *               "description": "View pipeline definitions, health, and recent runs.",
+           *               "displayName": "Read pipelines",
+           *               "environments": [
+           *                 "development",
+           *                 "staging",
+           *                 "production"
+           *               ],
+           *               "grantTier": "required",
+           *               "name": "conduit:pipelines.read",
+           *               "risk": "low"
+           *             },
+           *             {
+           *               "description": "Create or update pipeline configuration.",
+           *               "displayName": "Modify pipelines",
+           *               "environments": [
+           *                 "development",
+           *                 "staging",
+           *                 "production"
+           *               ],
+           *               "grantTier": "optional",
+           *               "implies": [
+           *                 "conduit:pipelines.read"
+           *               ],
+           *               "name": "conduit:pipelines.write",
+           *               "risk": "medium"
+           *             }
+           *           ],
+           *           "connected": false,
+           *           "connectionHealth": "disconnected",
+           *           "description": "Data pipelines, event routing, and operational integrations",
+           *           "displayName": "Conduit",
+           *           "health": "healthy",
+           *           "mcpTools": [
+           *             {
+           *               "name": "pipeline.list",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "pipeline.update",
+           *               "trustTier": "write"
+           *             }
+           *           ],
+           *           "mcpUrl": "https://mcp.conduit.solomon-ai.co/mcp",
+           *           "name": "conduit",
+           *           "status": "enabled",
+           *           "transport": "mcp"
+           *         },
+           *         {
+           *           "audience": "mcp:eigen",
+           *           "authType": "oauth",
+           *           "availableScopes": [
+           *             {
+           *               "description": "Search governed Eigen knowledge and citations.",
+           *               "displayName": "Read knowledge",
+           *               "environments": [
+           *                 "development",
+           *                 "staging",
+           *                 "production"
+           *               ],
+           *               "grantTier": "required",
+           *               "name": "eigen:knowledge.read",
+           *               "risk": "low"
+           *             },
+           *             {
+           *               "description": "Execute explicitly approved Eigen actions.",
+           *               "displayName": "Execute governed actions",
+           *               "environments": [
+           *                 "development",
+           *                 "staging"
+           *               ],
+           *               "grantTier": "optional",
+           *               "implies": [
+           *                 "eigen:knowledge.read"
+           *               ],
+           *               "name": "eigen:actions.execute",
+           *               "risk": "high",
+           *               "stepUpRequired": true
+           *             }
+           *           ],
+           *           "connected": false,
+           *           "connectionHealth": "disconnected",
+           *           "description": "Knowledge retrieval, reasoning context, and governed actions",
+           *           "displayName": "Eigen",
+           *           "health": "healthy",
+           *           "mcpTools": [
+           *             {
+           *               "name": "knowledge.search",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "action.execute",
+           *               "trustTier": "act"
+           *             }
+           *           ],
+           *           "mcpUrl": "https://mcp.eigen.solomon-ai.co/mcp",
+           *           "name": "eigen",
+           *           "status": "enabled",
+           *           "transport": "mcp"
+           *         },
+           *         {
+           *           "audience": "wispr-api",
+           *           "authType": "api_key",
+           *           "connected": false,
+           *           "connectionHealth": "disconnected",
+           *           "description": "AI dictation transcripts",
+           *           "displayName": "Wispr Flow",
+           *           "health": "healthy",
+           *           "mcpTools": [
+           *             {
+           *               "name": "transcript.search",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "transcript.get",
+           *               "trustTier": "read"
+           *             }
+           *           ],
+           *           "mcpUrl": "https://mcp.wispr.solomon-ai.co/mcp",
+           *           "name": "wispr",
+           *           "status": "enabled",
+           *           "templateBlocks": [
+           *             {
+           *               "category": "meetings",
+           *               "description": "Search and retrieve dictated transcripts for memory and follow-up work.",
+           *               "id": "transcript-recall",
+           *               "mcpTools": [
+           *                 "transcript.search",
+           *                 "transcript.get"
+           *               ],
+           *               "samplePrompt": "Find my latest voice notes about the launch plan.",
+           *               "title": "Transcript recall",
+           *               "trustTier": "read"
+           *             }
+           *           ],
+           *           "transport": "mcp"
+           *         },
+           *         {
+           *           "audience": "hubspot-api",
+           *           "authType": "api_key",
+           *           "connected": false,
+           *           "connectionHealth": "disconnected",
+           *           "description": "CRM contacts, deals, companies, tickets, and notes",
+           *           "displayName": "HubSpot",
+           *           "health": "healthy",
+           *           "mcpUrl": "",
+           *           "name": "hubspot",
+           *           "nativeTools": [
+           *             {
+           *               "name": "connector.read.hubspot_search",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "connector.write.hubspot_note",
+           *               "trustTier": "act"
+           *             },
+           *             {
+           *               "name": "connector.write.hubspot_task",
+           *               "trustTier": "act"
+           *             }
+           *           ],
+           *           "status": "enabled",
+           *           "templateBlocks": [
+           *             {
+           *               "category": "crm",
+           *               "description": "Look up contacts, companies, deals, and tickets before customer work.",
+           *               "id": "crm-research",
+           *               "nativeTools": [
+           *                 "connector.read.hubspot_search"
+           *               ],
+           *               "samplePrompt": "Brief me on the current HubSpot deal for Acme.",
+           *               "title": "CRM research",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "category": "crm",
+           *               "description": "Create notes and follow-up tasks from approved agent workflows.",
+           *               "id": "crm-actions",
+           *               "nativeTools": [
+           *                 "connector.write.hubspot_note",
+           *                 "connector.write.hubspot_task"
+           *               ],
+           *               "samplePrompt": "Create a follow-up note on this HubSpot company.",
+           *               "title": "CRM actions",
+           *               "trustTier": "act"
+           *             }
+           *           ],
+           *           "transport": "native"
+           *         },
+           *         {
+           *           "audience": "github-api",
+           *           "authType": "api_key",
+           *           "connected": false,
+           *           "connectionHealth": "disconnected",
+           *           "description": "Repositories, issues, pull requests, and code review context",
+           *           "displayName": "GitHub",
+           *           "health": "healthy",
+           *           "mcpTools": [
+           *             {
+           *               "name": "repository.get",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "issue.search",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "pull_request.search",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "issue.comment.create",
+           *               "trustTier": "act"
+           *             },
+           *             {
+           *               "name": "pull_request.review.create",
+           *               "trustTier": "act"
+           *             }
+           *           ],
+           *           "mcpUrl": "https://mcp.github.solomon-ai.co/mcp",
+           *           "name": "github",
+           *           "status": "enabled",
+           *           "templateBlocks": [
+           *             {
+           *               "category": "development",
+           *               "description": "Search repositories, issues, and pull requests for project context.",
+           *               "id": "engineering-context",
+           *               "mcpTools": [
+           *                 "repository.get",
+           *                 "issue.search",
+           *                 "pull_request.search"
+           *               ],
+           *               "samplePrompt": "Summarize open pull requests related to billing.",
+           *               "title": "Engineering context",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "category": "development",
+           *               "description": "Comment on issues or pull requests when a workflow needs to respond.",
+           *               "id": "github-comments",
+           *               "mcpTools": [
+           *                 "issue.comment.create",
+           *                 "pull_request.review.create"
+           *               ],
+           *               "samplePrompt": "Draft and post a status comment on this issue.",
+           *               "title": "GitHub comments",
+           *               "trustTier": "act"
+           *             }
+           *           ],
+           *           "transport": "mcp"
+           *         },
+           *         {
+           *           "audience": "linear-api",
+           *           "authType": "api_key",
+           *           "connected": false,
+           *           "connectionHealth": "disconnected",
+           *           "description": "Issues, projects, comments, and triage workflows",
+           *           "displayName": "Linear",
+           *           "health": "healthy",
+           *           "mcpTools": [
+           *             {
+           *               "name": "issue.search",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "project.lookup",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "issue.create",
+           *               "trustTier": "act"
+           *             },
+           *             {
+           *               "name": "issue.comment.create",
+           *               "trustTier": "act"
+           *             }
+           *           ],
+           *           "mcpUrl": "https://mcp.linear.solomon-ai.co/mcp",
+           *           "name": "linear",
+           *           "status": "enabled",
+           *           "templateBlocks": [
+           *             {
+           *               "category": "project-management",
+           *               "description": "Search issues and projects to understand scope and ownership.",
+           *               "id": "issue-triage",
+           *               "mcpTools": [
+           *                 "issue.search",
+           *                 "project.lookup"
+           *               ],
+           *               "samplePrompt": "Find Linear issues related to onboarding integrations.",
+           *               "title": "Issue triage",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "category": "project-management",
+           *               "description": "Create issues and add comments from support or planning workflows.",
+           *               "id": "issue-actions",
+           *               "mcpTools": [
+           *                 "issue.create",
+           *                 "issue.comment.create"
+           *               ],
+           *               "samplePrompt": "Create a Linear issue for this bug report.",
+           *               "title": "Issue actions",
+           *               "trustTier": "act"
+           *             }
+           *           ],
+           *           "transport": "mcp"
+           *         },
+           *         {
+           *           "audience": "notion-api",
+           *           "authType": "api_key",
+           *           "connected": false,
+           *           "connectionHealth": "disconnected",
+           *           "description": "Workspace pages, databases, and knowledge bases",
+           *           "displayName": "Notion",
+           *           "health": "healthy",
+           *           "mcpTools": [
+           *             {
+           *               "name": "page.search",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "page.get",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "database.query",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "page.update",
+           *               "trustTier": "act"
+           *             }
+           *           ],
+           *           "mcpUrl": "https://mcp.notion.solomon-ai.co/mcp",
+           *           "name": "notion",
+           *           "status": "enabled",
+           *           "templateBlocks": [
+           *             {
+           *               "category": "knowledge",
+           *               "description": "Search pages and databases to ground answers in Notion content.",
+           *               "id": "workspace-knowledge",
+           *               "mcpTools": [
+           *                 "page.search",
+           *                 "page.get",
+           *                 "database.query"
+           *               ],
+           *               "samplePrompt": "Search Notion for the latest onboarding notes.",
+           *               "title": "Workspace knowledge",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "category": "knowledge",
+           *               "description": "Update Notion pages after agent workflows produce new context.",
+           *               "id": "page-updates",
+           *               "mcpTools": [
+           *                 "page.update"
+           *               ],
+           *               "samplePrompt": "Append this summary to the launch plan page.",
+           *               "title": "Page updates",
+           *               "trustTier": "act"
+           *             }
+           *           ],
+           *           "transport": "mcp"
+           *         },
+           *         {
+           *           "audience": "stripe-api",
+           *           "authType": "api_key",
+           *           "availableScopes": [
+           *             {
+           *               "description": "Create a Stripe refund for an exact approved invocation.",
+           *               "displayName": "Create refunds",
+           *               "environments": [
+           *                 "development",
+           *                 "staging"
+           *               ],
+           *               "grantTier": "optional",
+           *               "name": "stripe:refunds.create",
+           *               "perInvocationApproval": true,
+           *               "risk": "money-moving",
+           *               "stepUpRequired": true
+           *             }
+           *           ],
+           *           "connected": false,
+           *           "connectionHealth": "disconnected",
+           *           "description": "Customers, charges, invoices, subscriptions, and refunds",
+           *           "displayName": "Stripe",
+           *           "health": "healthy",
+           *           "mcpTools": [
+           *             {
+           *               "name": "customer.lookup",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "charge.search",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "invoice.lookup",
+           *               "trustTier": "read"
+           *             },
+           *             {
+           *               "name": "invoice.finalize",
+           *               "trustTier": "act"
+           *             }
+           *           ],
+           *           "mcpUrl": "https://mcp.stripe.solomon-ai.co/mcp",
+           *           "name": "stripe",
+           *           "status": "enabled",
+           *           "templateBlocks": [
+           *             {
+           *               "category": "payments",
+           *               "description": "Look up customers, charges, and invoices for support and finance work.",
+           *               "id": "payments-context",
+           *               "mcpTools": [
+           *                 "customer.lookup",
+           *                 "charge.search",
+           *                 "invoice.lookup"
+           *               ],
+           *               "samplePrompt": "Find recent Stripe charges for this customer.",
+           *               "title": "Payments context",
+           *               "trustTier": "read"
+           *             }
+           *           ],
+           *           "transport": "mcp"
            *         }
            *       ]
            *     }

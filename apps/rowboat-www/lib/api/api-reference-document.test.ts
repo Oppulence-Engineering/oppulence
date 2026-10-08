@@ -2866,6 +2866,27 @@ describe("API reference document", () => {
     expect(presented.paths["/v1/google-oauth"]?.delete?.operationId).toBe("disconnectGoogle");
   });
 
+  it("samples the page Connections loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/connectors"]?.get;
+    expect(operation?.summary).toBe("Connections");
+    expect(operation?.description).toBe(
+      "Connections loads the catalog. The request sends no filter. This workspace has not connected any of them, so every one is disconnected.",
+    );
+    expect(operation?.parameters).toBeUndefined();
+    const example = operation?.responses?.["200"]?.content?.["application/json"]?.example as {
+      connectors?: Array<{ name?: string; connected?: boolean; displayName?: string; authType?: string; mcpUrl?: string }>;
+    };
+    expect(example.connectors).toHaveLength(11);
+    expect(example.connectors?.[0]).toMatchObject({ name: "canvas", connected: false });
+    expect(example.connectors?.every((connector) => connector.connected === false)).toBe(true);
+    const hubspot = example.connectors?.find((connector) => connector.name === "hubspot");
+    expect(hubspot).toMatchObject({ displayName: "HubSpot", authType: "api_key", mcpUrl: "" });
+    const encoded = JSON.stringify(example);
+    expect(encoded).not.toContain("connectedAt");
+    expect(encoded).not.toContain("invoice-context");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

@@ -1865,8 +1865,8 @@ func addSlackOAuthPaths(paths obj) {
 }
 
 func addConnectorPaths(paths obj) {
-	paths["/v1/connectors"] = obj{"get": operation("Connectors", "List connectors", "Returns the configured connector registry plus the authenticated user's connection state for each connector.", "listConnectors", bearer(), nil, nil, obj{
-		"200": jsonResponse("Connector registry with connection state.", ref("ConnectorsResponse"), obj{"connectors": []any{obj{"name": "canvas", "displayName": "Canvas", "description": "Banking, invoicing, dunning, transactions", "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp", "authType": "oauth", "scopes": []any{"invoices:read"}, "mcpTools": []any{obj{"name": "customer.lookup", "trustTier": "read"}}, "templateBlocks": []any{obj{"id": "invoice-context", "title": "Invoice context", "description": "Look up invoices and customers.", "category": "finance", "requiredScopes": []any{"invoices:read"}, "mcpTools": []any{"invoice.lookup"}, "trustTier": "read"}}, "connected": true, "connectedAt": "2026-06-04T20:38:00Z"}}}),
+	paths["/v1/connectors"] = obj{"get": operation("Connectors", "Connections", connectionsDescription, "listConnectors", bearer(), nil, nil, obj{
+		"200": jsonResponse("Every connection is disconnected.", ref("ConnectorsResponse"), connectionsPage()),
 		"401": responseRef("401"),
 		"429": responseRef("429"),
 		"500": responseRef("500"),

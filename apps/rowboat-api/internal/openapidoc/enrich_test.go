@@ -3784,6 +3784,65 @@ func assertGoogleConnection(t *testing.T, paths obj) {
 	if asObj(item["delete"])["operationId"] != "disconnectGoogle" {
 		t.Fatal("disconnect Google was dropped")
 	}
+
+	assertConnections(t, paths)
+}
+
+func TestConnectionsSamplesTheDisconnectedCatalog(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertConnections(t, asObj(spec["paths"]))
+}
+
+func assertConnections(t *testing.T, paths obj) {
+	t.Helper()
+	get := asObj(asObj(paths["/v1/connectors"])["get"])
+	if get["summary"] != "Connections" || get["description"] != connectionsDescription || get["operationId"] != "listConnectors" {
+		t.Fatalf("connections operation: %#v", get)
+	}
+	if get["parameters"] != nil {
+		t.Fatalf("connections parameters: %#v", get["parameters"])
+	}
+	example := asObj(asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(connectionsPage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatal("connections example does not match the catalog")
+	}
+	raw := string(got)
+	if strings.Contains(raw, "connectedAt") || strings.Contains(raw, "2026-06-04T20:38:00Z") || strings.Contains(raw, "invoice-context") {
+		t.Fatal("connections example still shows a connected catalog")
+	}
+	connectors, _ := example["connectors"].([]any)
+	if len(connectors) != 11 {
+		t.Fatalf("connector count: %d", len(connectors))
+	}
+	first := asObj(connectors[0])
+	if first["name"] != "canvas" || first["connected"] != false {
+		t.Fatalf("first connector: %#v", first)
+	}
+	for _, item := range connectors {
+		connector := asObj(item)
+		if connector["connected"] != false {
+			t.Fatalf("connected connector: %#v", connector["name"])
+		}
+	}
+	var hubspot obj
+	for _, item := range connectors {
+		connector := asObj(item)
+		if connector["name"] == "hubspot" {
+			hubspot = connector
+		}
+	}
+	if hubspot["displayName"] != "HubSpot" || hubspot["authType"] != "api_key" || hubspot["mcpUrl"] != "" {
+		t.Fatalf("hubspot: %#v", hubspot)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

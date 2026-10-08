@@ -853,8 +853,8 @@ export const StartConnection503Response = zod
   );
 
 /**
- * Returns the configured connector registry plus the authenticated user's connection state for each connector.
- * @summary List connectors
+ * Connections loads the catalog. The request sends no filter. This workspace has not connected any of them, so every one is disconnected.
+ * @summary Connections
  */
 export const ListConnectors200Response = zod
   .strictObject({
