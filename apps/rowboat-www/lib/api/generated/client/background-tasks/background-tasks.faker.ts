@@ -38,6 +38,10 @@ export const getListBackgroundTaskRunsForAccountResponseMock = (
       faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
       undefined,
     ]),
+    errorCode: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+      undefined,
+    ]),
     executor: faker.helpers.arrayElement(["desktop", "api"] as const),
     id: faker.string.uuid(),
     lastHeartbeatAt: faker.helpers.arrayElement([
@@ -625,6 +629,10 @@ export const getListBackgroundTaskRunsResponseMock = (
       faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
       undefined,
     ]),
+    errorCode: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+      undefined,
+    ]),
     executor: faker.helpers.arrayElement(["desktop", "api"] as const),
     id: faker.string.uuid(),
     lastHeartbeatAt: faker.helpers.arrayElement([
@@ -720,6 +728,10 @@ export const getCreateBackgroundTaskRunResponseMock = (
   ]),
   createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   error: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  errorCode: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
@@ -820,6 +832,10 @@ export const getGetBackgroundTaskRunResponseMock = (
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
+  errorCode: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
   executor: faker.helpers.arrayElement(["desktop", "api"] as const),
   id: faker.string.uuid(),
   lastHeartbeatAt: faker.helpers.arrayElement([
@@ -917,6 +933,10 @@ export const getPatchBackgroundTaskRunResponseMock = (
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
+  errorCode: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
   executor: faker.helpers.arrayElement(["desktop", "api"] as const),
   id: faker.string.uuid(),
   lastHeartbeatAt: faker.helpers.arrayElement([
@@ -1011,6 +1031,10 @@ export const getCancelBackgroundTaskRunResponseMock = (
   ]),
   createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   error: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  errorCode: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
@@ -1151,6 +1175,10 @@ export const getRetryBackgroundTaskRunResponseMock = (
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
+  errorCode: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
   executor: faker.helpers.arrayElement(["desktop", "api"] as const),
   id: faker.string.uuid(),
   lastHeartbeatAt: faker.helpers.arrayElement([
@@ -1245,6 +1273,10 @@ export const getSignalBackgroundTaskRunResponseMock = (
   ]),
   createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   error: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  errorCode: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),
@@ -1395,6 +1427,10 @@ export const getTriggerBackgroundTaskResponseMock = (
   ]),
   createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
   error: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  errorCode: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
     undefined,
   ]),

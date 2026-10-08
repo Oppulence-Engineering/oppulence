@@ -113,6 +113,20 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the code shown before a failed run's reason", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const run = presented.components.schemas.BackgroundTaskRun;
+    expect(run.properties.errorCode).toMatchObject({
+      description: "Code shown before a failed run's reason.",
+      example: "llm_call_failed",
+      nullable: true,
+      type: "string",
+    });
+    expect(run.required).not.toContain("errorCode");
+    expect(JSON.stringify(run.properties.errorCode)).not.toContain("acta_");
+    expect(JSON.stringify(run.properties.errorCode)).not.toContain('"token"');
+  });
+
   it("names schema fields without the old product and keeps public standards", () => {
     const presented = presentApiReferenceDocument({
       components: {

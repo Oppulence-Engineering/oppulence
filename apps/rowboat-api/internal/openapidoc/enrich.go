@@ -461,6 +461,7 @@ func addBackgroundTaskSchemas(schemas obj) {
 		"requestedContext":   stringSchema("Optional context supplied when a user remotely triggered the task.", "Run this now and focus on high-risk accounts.", nullable()),
 		"summary":            stringSchema("Short run summary from the desktop.", "No high-priority account changes.", nullable()),
 		"error":              stringSchema("Run error when status is failed or stopped unexpectedly.", "", nullable()),
+		"errorCode":          stringSchema(runFailureCodeDescription, "llm_call_failed", nullable()),
 		"temporalWorkflowId": stringSchema("Temporal workflow id for API-worker runs.", "background-task/user/daily-summary/api-trigger-123", nullable()),
 		"temporalRunId":      stringSchema("Temporal run id for the current workflow execution.", "00000000-0000-0000-0000-000000000001", nullable()),
 		"temporalStatus":     stringSchema("Last mirrored Temporal status, separate from the product status.", "Running", nullable()),
@@ -624,6 +625,8 @@ func addLLMSchemas(schemas obj) {
 		"data": arraySchema("Available models sorted by id.", ref("LLMModel")),
 	}, "data")
 }
+
+const runFailureCodeDescription = "Code shown before a failed run's reason."
 
 func addVendorProxySchemas(schemas obj) {
 	schemas["VoiceTextToSpeechRequest"] = objectSchema("ElevenLabs text-to-speech request body. Solomon AI API reads text for credit charging and forwards the full JSON body unchanged.", obj{
