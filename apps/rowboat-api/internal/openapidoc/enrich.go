@@ -1478,7 +1478,7 @@ func addBackgroundTaskPaths(paths obj) {
 	}
 	paths["/v1/background-tasks/{slug}/runs/{runId}/cancel"] = obj{
 		"post": operation("Background Tasks", "Cancel API-worker run", "Requests Temporal cancellation for an API-worker run and mirrors stopped/canceled state to Solomon AI. Desktop-local runs are rejected unless a future desktop cancellation bridge is added.", "cancelBackgroundTaskRun", bearer(), append(slugParam(), runIDParam()...), nil, obj{
-			"202": jsonResponse("Cancellation accepted.", ref("BackgroundTaskRun"), backgroundTaskQueuedRunExample()),
+			"202": jsonResponse("Cancellation accepted.", ref("BackgroundTaskRun"), backgroundTaskCanceledRunExample()),
 			"400": responseRef("400"),
 			"401": responseRef("401"),
 			"404": responseRef("404"),
@@ -2273,6 +2273,18 @@ func backgroundTaskRunExample() obj {
 		"updatedAt":       "2026-06-04T21:02:05Z",
 		"revision":        2,
 	}
+}
+
+func backgroundTaskCanceledRunExample() obj {
+	run := backgroundTaskAPIRunExample()
+	run["status"] = "stopped"
+	run["temporalStatus"] = "Canceled"
+	run["progressMessage"] = "Cancellation requested."
+	run["summary"] = ""
+	run["startedAt"] = "2026-06-04T21:01:00Z"
+	run["completedAt"] = "2026-06-04T21:02:00Z"
+	run["revision"] = 3
+	return run
 }
 
 func backgroundTaskAPIRunExample() obj {

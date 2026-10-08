@@ -320,4 +320,22 @@ describe("API reference document", () => {
     expect(page).toContain("The API reference could not be loaded.");
     expect(page).not.toContain("unpkg.com");
   });
+
+  it("samples the run Cancel stops", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const cancel =
+      presented.paths["/v1/background-tasks/{slug}/runs/{runId}/cancel"]?.post;
+    expect(cancel?.summary).toBe("Cancel a cloud run");
+    const example = cancel?.responses?.["202"]?.content?.["application/json"]?.example;
+    expect(example).toMatchObject({
+      status: "stopped",
+      executor: "api",
+      temporalStatus: "Canceled",
+      progressMessage: "Cancellation requested.",
+      startedAt: "2026-06-04T21:01:00Z",
+      completedAt: "2026-06-04T21:02:00Z",
+    });
+    expect(JSON.stringify(example)).not.toContain("acta_");
+    expect(JSON.stringify(example)).not.toContain('"token"');
+  });
 });
