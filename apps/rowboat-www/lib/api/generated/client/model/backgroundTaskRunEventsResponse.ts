@@ -13,4 +13,9 @@ import type { BackgroundTaskRunEvent } from "./backgroundTaskRunEvent";
 export interface BackgroundTaskRunEventsResponse {
   /** Run log/progress events ordered by seq. */
   events: BackgroundTaskRunEvent[];
+  /**
+   * Last sequence on this page. Show the next events sends it as afterSeq.
+   * @nullable
+   */
+  nextSeq?: number | null;
 }

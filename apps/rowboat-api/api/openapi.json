@@ -2177,6 +2177,12 @@
               "$ref": "#/components/schemas/BackgroundTaskRunEvent"
             },
             "type": "array"
+          },
+          "nextSeq": {
+            "description": "Last sequence on this page. Show the next events sends it as afterSeq.",
+            "example": 499,
+            "nullable": true,
+            "type": "integer"
           }
         },
         "required": ["events"],

@@ -554,7 +554,8 @@ func addBackgroundTaskSchemas(schemas obj) {
 		"receivedAt": stringSchema("Server timestamp when the event was stored.", "2026-06-04T21:02:05Z", obj{"format": "date-time"}),
 	}, "id", "seq", "event", "receivedAt")
 	schemas["BackgroundTaskRunEventsResponse"] = objectSchema("Ordered durable task log/progress event list for a run.", obj{
-		"events": arraySchema("Run log/progress events ordered by seq.", ref("BackgroundTaskRunEvent")),
+		"events":  arraySchema("Run log/progress events ordered by seq.", ref("BackgroundTaskRunEvent")),
+		"nextSeq": intSchema(nextEventsSequenceDescription, 499, nullable()),
 	}, "events")
 	schemas["BackgroundTaskRunEventInput"] = objectSchema("One event to append to a run log mirror.", obj{
 		"seq":   intSchema("Zero-based sequence number within the run log.", 1),
@@ -577,6 +578,8 @@ func addBackgroundTaskSchemas(schemas obj) {
 		"payload": freeFormSchema("Optional signal payload. update_context can carry context/text/requestedContext for the next runtime checkpoint."),
 	}, "signal")
 }
+
+const nextEventsSequenceDescription = "Last sequence on this page. Show the next events sends it as afterSeq."
 
 func addLLMSchemas(schemas obj) {
 	message := objectSchema("OpenAI-compatible chat message. Additional OpenAI fields are passed through.", obj{

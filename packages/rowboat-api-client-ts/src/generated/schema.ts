@@ -4705,6 +4705,11 @@ export interface components {
     BackgroundTaskRunEventsResponse: {
       /** @description Run log/progress events ordered by seq. */
       events: components["schemas"]["BackgroundTaskRunEvent"][];
+      /**
+       * @description Last sequence on this page. Show the next events sends it as afterSeq.
+       * @example 499
+       */
+      nextSeq?: number | null;
     };
     /** @description Revision-checked update for mirrored run state. */
     BackgroundTaskRunPatchRequest: {
