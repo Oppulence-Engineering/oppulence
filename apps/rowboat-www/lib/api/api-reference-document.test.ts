@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
 import spec from "../../../rowboat-api/api/openapi.json";
@@ -837,6 +838,34 @@ describe("API reference document", () => {
     expect(event.actorRef.example).not.toBe("alex@example.com");
     expect(presented.components.schemas.RelationshipCommitment.properties.ownerParticipantRef.example).toBe(
       "alex@example.com",
+    );
+  });
+
+  it("names the review item a conversation recorded", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const observationID = "6b8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    const claimID = "claim-risk";
+    const itemID = `review:${createHash("sha256").update(`${observationID}:${claimID}:speaker`).digest("hex").slice(0, 16)}`;
+    const batchID = `review:${createHash("sha256").update("oppulence:session-42:fingerprint-1:conversation-review-v1").digest("hex").slice(0, 24)}`;
+    const review = presented.components.schemas.ConversationReviewItem.properties;
+    expect(review.id).toMatchObject({
+      description: "Stable review item id.",
+      example: itemID,
+    });
+    expect(review.claimId).toMatchObject({
+      description: "Material claim id.",
+      example: claimID,
+    });
+    expect(review.batchId).toMatchObject({
+      description: "Idempotent review batch id.",
+      example: batchID,
+    });
+    expect(presented.components.schemas.ConversationClaim.properties.id).toMatchObject({
+      description: "Stable claim id.",
+      example: claimID,
+    });
+    expect(presented.components.schemas.RevenueAction.properties.evidence.items.properties.sourceRecordId.example).toBe(
+      `oppulence:session-42:claim:${claimID}`,
     );
   });
 

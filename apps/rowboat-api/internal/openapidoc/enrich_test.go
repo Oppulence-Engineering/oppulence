@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -619,6 +620,57 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	assertGraphExecutionNeedsReconcile(t, schemas)
 
 	assertEventParties(t, schemas)
+
+	assertConversationReview(t, schemas)
+}
+
+func TestConversationReviewNamesTheItem(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertConversationReview(t, asObj(asObj(spec["components"])["schemas"]))
+	raw, err := json.Marshal(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := string(raw)
+	itemID := conversationReviewItemID(conversationObservationID, conversationClaimID, "speaker")
+	if !strings.Contains(body, itemID) {
+		t.Fatalf("review item id missing from enriched spec")
+	}
+	if strings.Contains(body, "review:ab12") || strings.Contains(body, "claim:ab12") {
+		t.Fatal("review samples still use a short stub")
+	}
+}
+
+func assertConversationReview(t *testing.T, schemas obj) {
+	t.Helper()
+	itemID := conversationReviewItemID(conversationObservationID, conversationClaimID, "speaker")
+	batchID := conversationReviewBatchID(conversationExternalID, conversationSourceVersion)
+	claim := asObj(asObj(schemas["ConversationClaim"])["properties"])
+	if claim == nil {
+		return
+	}
+	if asObj(claim["id"])["example"] != conversationClaimID || asObj(claim["id"])["description"] != "Stable claim id." {
+		t.Fatalf("claim id: %#v", claim["id"])
+	}
+	review := asObj(asObj(schemas["ConversationReviewItem"])["properties"])
+	if asObj(review["id"])["example"] != itemID || asObj(review["id"])["description"] != "Stable review item id." {
+		t.Fatalf("review item id: %#v", review["id"])
+	}
+	if asObj(review["claimId"])["example"] != conversationClaimID || asObj(review["claimId"])["description"] != "Material claim id." {
+		t.Fatalf("review claim id: %#v", review["claimId"])
+	}
+	if asObj(review["batchId"])["example"] != batchID || asObj(review["batchId"])["description"] != "Idempotent review batch id." {
+		t.Fatalf("review batch id: %#v", review["batchId"])
+	}
+	if asObj(review["observationId"])["example"] != conversationObservationID || asObj(review["kind"])["example"] != "speaker" {
+		t.Fatalf("review inputs changed: observation %#v kind %#v", review["observationId"], review["kind"])
+	}
+	if user := asObj(schemas["User"]); user != nil {
+		if id := asObj(asObj(user["properties"])["id"]); id["example"] != nil && id["example"] != "123e4567-e89b-12d3-a456-426614174000" {
+			t.Fatalf("user id changed: %#v", id)
+		}
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
