@@ -457,6 +457,91 @@ func TestAcmeGoldenPathProjectsFourSourcesIntoOneRelationship(t *testing.T) {
 	}
 }
 
+func TestActivityHistoryReturnsTheAcmeTimeline(t *testing.T) {
+	f := newFixture(t)
+	received := time.Date(2026, 7, 25, 16, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return received }
+	base := time.Date(2026, 7, 8, 15, 0, 0, 0, time.UTC)
+	fixtures := []struct {
+		adapt func(AdapterEvent) (RelationshipObservationInput, error)
+		event AdapterEvent
+	}{
+		{AdaptHubSpotEvent, AdapterEvent{
+			ExternalID: "acme-deal-stage", AccountName: "Acme", AccountDomain: "acme.com",
+			EventType: "deal_stage_changed", Summary: "Acme moved into evaluation.", OccurredAt: base,
+			Assertions: []RelationshipAssertionInput{{
+				Dimension: "lifecycle", Value: "evaluation", SourceType: "source_fact",
+				Confidence: 1, Reason: "CRM stage is evaluation.", ValidFrom: base,
+			}},
+		}},
+		{AdaptCalendarEvent, AdapterEvent{
+			ExternalID: "acme-security-meeting", AccountName: "Acme", AccountDomain: "acme.com",
+			EventType: "meeting_missing", Summary: "No security-review meeting was scheduled.",
+			OccurredAt: base.Add(15 * 24 * time.Hour),
+			Assertions: []RelationshipAssertionInput{{
+				Dimension: "health", Value: "needs_attention", SourceType: "deterministic",
+				Confidence: 1, Reason: "Security review has no meeting.", ValidFrom: base.Add(15 * 24 * time.Hour),
+			}},
+		}},
+		{AdaptGmailEvent, AdapterEvent{
+			ExternalID: "acme-security-promise", AccountName: "Acme", AccountDomain: "acme.com",
+			EventType: "commitment_created", Summary: "We promised the security packet by July 22.",
+			OccurredAt: base.Add(10 * 24 * time.Hour),
+			Participants: []RelationshipParticipantInput{{
+				DisplayName: "Avery Chen", Email: "avery@acme.com", Role: "champion",
+			}},
+		}},
+		{AdaptSlackEvent, AdapterEvent{
+			ExternalID: "acme-engagement", AccountName: "Acme", AccountDomain: "acme.com",
+			EventType: "engagement_declined", Summary: "No champion reply after pricing.",
+			OccurredAt: base.Add(17 * 24 * time.Hour),
+			Assertions: []RelationshipAssertionInput{{
+				Dimension: "engagement", Value: "declining", SourceType: "deterministic",
+				Confidence: 1, Reason: "Champion engagement declined after pricing.", ValidFrom: base.Add(17 * 24 * time.Hour),
+			}},
+		}},
+	}
+	inputs := make([]RelationshipObservationInput, 0, len(fixtures))
+	for _, fixture := range fixtures {
+		input, err := fixture.adapt(fixture.event)
+		if err != nil {
+			t.Fatal(err)
+		}
+		inputs = append(inputs, input)
+	}
+	results, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, inputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	page, err := f.svc.relationshipObservationPage(f.ctx, results[0].Relationship.ID, 50, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if page.hasMore || page.nextBefore != nil || page.nextBeforeID != nil || len(page.observations) != 4 {
+		t.Fatalf("page hasMore=%v next=%v count=%d", page.hasMore, page.nextBefore, len(page.observations))
+	}
+	ids := map[string]string{
+		"acme-engagement":       "f18dfa9b-a7b2-46ea-982c-622a914c00e5",
+		"acme-security-meeting": "f28dfa9b-a7b2-46ea-982c-622a914c00e5",
+		"acme-security-promise": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+		"acme-deal-stage":       "f48dfa9b-a7b2-46ea-982c-622a914c00e5",
+	}
+	out := make([]observationDTO, 0, len(page.observations))
+	for _, observation := range page.observations {
+		dto := observationToDTO(observation)
+		dto.ID = ids[observation.ExternalID]
+		out = append(out, dto)
+	}
+	raw, err := json.Marshal(map[string]any{"hasMore": page.hasMore, "observations": out})
+	if err != nil {
+		t.Fatal(err)
+	}
+	const want = `{"hasMore":false,"observations":[{"id":"f18dfa9b-a7b2-46ea-982c-622a914c00e5","source":"slack","externalId":"acme-engagement","sourceVersion":"1","eventType":"engagement_declined","occurredAt":"2026-07-25T15:00:00Z","receivedAt":"2026-07-25T16:00:00Z","summary":"No champion reply after pricing.","normalizedFacts":{"adapter":"slack"},"contentHash":"dd678926df937610ecb0697421c89440d8fe69aa6769c440d53d538a59d3b864"},{"id":"f28dfa9b-a7b2-46ea-982c-622a914c00e5","source":"calendar","externalId":"acme-security-meeting","sourceVersion":"1","eventType":"meeting_missing","occurredAt":"2026-07-23T15:00:00Z","receivedAt":"2026-07-25T16:00:00Z","summary":"No security-review meeting was scheduled.","normalizedFacts":{"adapter":"calendar"},"contentHash":"00c3732fea559aee849682ce662c3066c1bdc3d30d695f6a48d38a4b3401da53"},{"id":"6b8dfa9b-a7b2-46ea-982c-622a914c00e5","source":"gmail","externalId":"acme-security-promise","sourceVersion":"1","eventType":"commitment_created","occurredAt":"2026-07-18T15:00:00Z","receivedAt":"2026-07-25T16:00:00Z","summary":"We promised the security packet by July 22.","normalizedFacts":{"adapter":"gmail"},"contentHash":"e57461826e791945b63630c2de4c026adb4459066470014cf50aadde9b6aafca"},{"id":"f48dfa9b-a7b2-46ea-982c-622a914c00e5","source":"hubspot","externalId":"acme-deal-stage","sourceVersion":"1","eventType":"deal_stage_changed","occurredAt":"2026-07-08T15:00:00Z","receivedAt":"2026-07-25T16:00:00Z","summary":"Acme moved into evaluation.","normalizedFacts":{"adapter":"hubspot"},"contentHash":"481faa42c6d60f434fc57540a21c1bee4a1dd745479fded5f6476080f9ebb3e7"}]}`
+	if string(raw) != want {
+		t.Fatalf("timeline:\n%s\nwant:\n%s", raw, want)
+	}
+}
+
 func TestCrossChannelIdentityAnchorsResolveProviderOnlyEvents(t *testing.T) {
 	f := newFixture(t)
 	base := time.Date(2026, 7, 31, 14, 0, 0, 0, time.UTC)

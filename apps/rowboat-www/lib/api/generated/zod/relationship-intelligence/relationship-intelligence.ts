@@ -7254,36 +7254,50 @@ export const ShareMutualActionPlan409Response = zod
   );
 
 /**
- * Returns the latest immutable observations for a relationship. Rows that share a time stay in id order, so the next page does not skip them.
- * @summary Get evidence timeline
+ * Activity loads when a company opens. The request asks for the first 50 records and sends no older-page time. The answer lists the newest activity first, from Slack, Calendar, Gmail, and HubSpot.
+ * @summary Activity
  */
 export const GetRelationshipTimelineParams = zod.object({
-  relationshipId: zod.uuid().describe("Relationship id."),
+  relationshipId: zod.uuid().describe("Company id."),
 });
 
+export const getRelationshipTimelineQueryLimitMax = 200;
+
 export const GetRelationshipTimelineQueryParams = zod.object({
-  limit: zod.coerce.number().int().optional().describe("Maximum observations (1-100)."),
+  limit: zod.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(getRelationshipTimelineQueryLimitMax)
+    .optional()
+    .describe("How many records to return. Opening a company asks for 50."),
   before: zod.iso
     .datetime({ offset: true })
     .optional()
-    .describe("Return observations before this RFC3339 timestamp."),
+    .describe("Return records before this time. The first page does not send it."),
   beforeId: zod
     .uuid()
     .optional()
-    .describe("With before, also return observations at that time whose id sorts earlier."),
+    .describe(
+      "With before, also return records at that time whose id sorts earlier. The first page does not send it.",
+    ),
 });
 
 export const GetRelationshipTimeline200Response = zod
   .strictObject({
-    hasMore: zod.boolean().describe("An older observation exists beyond this page."),
+    hasMore: zod.boolean().describe("An older record exists beyond this page."),
     nextBefore: zod.iso
       .datetime({ offset: true })
       .nullish()
-      .describe("Occurred-at cursor for the next page."),
+      .describe(
+        "Time of the last record on this page. Send it to load older records that share that time.",
+      ),
     nextBeforeId: zod
       .uuid()
       .nullish()
-      .describe("Id cursor for the next page. Send it with nextBefore."),
+      .describe(
+        "Id of the last record on this page. Send it with the time so records that share that time stay on the next page.",
+      ),
     observations: zod
       .array(
         zod

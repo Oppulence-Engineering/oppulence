@@ -2409,6 +2409,36 @@ describe("API reference document", () => {
     expect(JSON.stringify(example)).not.toContain('"inbound"');
   });
 
+  it("shows the activity a company loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/relationships/{relationshipId}/timeline"]?.get;
+    expect(operation?.summary).toBe("Activity");
+    expect(operation?.description).toContain("asks for the first 50");
+    expect(operation?.description).toContain("Slack");
+    const limit = operation?.parameters?.find((parameter) => parameter.name === "limit");
+    expect(limit?.schema).toMatchObject({ example: 50 });
+    const before = operation?.parameters?.find((parameter) => parameter.name === "before");
+    expect(before?.schema).not.toHaveProperty("example");
+    const example = operation?.responses?.["200"]?.content?.["application/json"]?.example as {
+      hasMore?: boolean;
+      nextBefore?: string;
+      observations?: Array<{ source?: string; summary?: string; eventType?: string }>;
+    };
+    expect(example.hasMore).toBe(false);
+    expect(example.nextBefore).toBeUndefined();
+    expect(example.observations?.map((item) => item.source)).toEqual([
+      "slack",
+      "calendar",
+      "gmail",
+      "hubspot",
+    ]);
+    expect(example.observations?.[2]).toMatchObject({
+      eventType: "commitment_created",
+      summary: "We promised the security packet by July 22.",
+    });
+    expect(JSON.stringify(example)).not.toContain("message-123");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

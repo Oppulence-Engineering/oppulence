@@ -11,15 +11,15 @@ import type { RelationshipObservation } from "./relationshipObservation";
  * Observation page.
  */
 export type GetRelationshipTimeline200 = {
-  /** An older observation exists beyond this page. */
+  /** An older record exists beyond this page. */
   hasMore: boolean;
   /**
-   * Occurred-at cursor for the next page.
+   * Time of the last record on this page. Send it to load older records that share that time.
    * @nullable
    */
   nextBefore?: string | null;
   /**
-   * Id cursor for the next page. Send it with nextBefore.
+   * Id of the last record on this page. Send it with the time so records that share that time stay on the next page.
    * @nullable
    */
   nextBeforeId?: string | null;

@@ -1574,13 +1574,18 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/relationships/{relationshipId}/timeline"] = obj{"get": operation("Relationship Intelligence", "Get evidence timeline", "Returns the latest immutable observations for a relationship. Rows that share a time stay in id order, so the next page does not skip them.", "getRelationshipTimeline", bearer(), append(relationshipParam, obj{"name": "limit", "in": "query", "required": false, "description": "Maximum observations (1-100).", "schema": obj{"type": "integer"}}, obj{"name": "before", "in": "query", "required": false, "description": "Return observations before this RFC3339 timestamp.", "schema": obj{"type": "string", "format": "date-time"}}, obj{"name": "beforeId", "in": "query", "required": false, "description": "With before, also return observations at that time whose id sorts earlier.", "schema": obj{"type": "string", "format": "uuid"}}), nil, obj{
-		"200": jsonResponse("Evidence timeline.", objectSchema("Observation page.", obj{
+	paths["/v1/relationships/{relationshipId}/timeline"] = obj{"get": operation("Relationship Intelligence", "Activity", "Activity loads when a company opens. The request asks for the first 50 records and sends no older-page time. The answer lists the newest activity first, from Slack, Calendar, Gmail, and HubSpot.", "getRelationshipTimeline", bearer(), []any{
+		obj{"name": "relationshipId", "in": "path", "required": true, "description": "Company id.", "schema": obj{"type": "string", "format": "uuid", "example": activityRelationshipID}},
+		obj{"name": "limit", "in": "query", "required": false, "description": "How many records to return. Opening a company asks for 50.", "schema": obj{"type": "integer", "minimum": 1, "maximum": 200, "example": 50}},
+		obj{"name": "before", "in": "query", "required": false, "description": "Return records before this time. The first page does not send it.", "schema": obj{"type": "string", "format": "date-time"}},
+		obj{"name": "beforeId", "in": "query", "required": false, "description": "With before, also return records at that time whose id sorts earlier. The first page does not send it.", "schema": obj{"type": "string", "format": "uuid"}},
+	}, nil, obj{
+		"200": jsonResponse("The activity this company loads.", objectSchema("Observation page.", obj{
 			"observations": arraySchema("Observations.", ref("RelationshipObservation")),
-			"hasMore":      boolSchema("An older observation exists beyond this page.", true),
-			"nextBefore":   stringSchema("Occurred-at cursor for the next page.", "2026-06-01T00:00:00Z", obj{"format": "date-time"}, nullable()),
-			"nextBeforeId": stringSchema("Id cursor for the next page. Send it with nextBefore.", "a1160000-0000-4000-8000-000000000002", obj{"format": "uuid"}, nullable()),
-		}, "observations", "hasMore"), nil),
+			"hasMore":      boolSchema("An older record exists beyond this page.", false),
+			"nextBefore":   stringSchema("Time of the last record on this page. Send it to load older records that share that time.", "2026-07-08T15:00:00Z", obj{"format": "date-time"}, nullable()),
+			"nextBeforeId": stringSchema("Id of the last record on this page. Send it with the time so records that share that time stay on the next page.", activityHubSpotID, obj{"format": "uuid"}, nullable()),
+		}, "observations", "hasMore"), activityHistoryPage()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
@@ -2541,5 +2546,41 @@ func mailMeetingsItem() obj {
 			"reason":        "mailbox_owner",
 			"policyVersion": 1,
 		},
+	}
+}
+
+const (
+	activityRelationshipID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	activitySlackID        = "f18dfa9b-a7b2-46ea-982c-622a914c00e5"
+	activityCalendarID     = "f28dfa9b-a7b2-46ea-982c-622a914c00e5"
+	activityGmailID        = "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	activityHubSpotID      = "f48dfa9b-a7b2-46ea-982c-622a914c00e5"
+	activityReceivedAt     = "2026-07-25T16:00:00Z"
+)
+
+func activityHistoryPage() obj {
+	return obj{
+		"hasMore": false,
+		"observations": []any{
+			activityObservation(activitySlackID, "slack", "acme-engagement", "engagement_declined", "2026-07-25T15:00:00Z", "No champion reply after pricing.", "dd678926df937610ecb0697421c89440d8fe69aa6769c440d53d538a59d3b864"),
+			activityObservation(activityCalendarID, "calendar", "acme-security-meeting", "meeting_missing", "2026-07-23T15:00:00Z", "No security-review meeting was scheduled.", "00c3732fea559aee849682ce662c3066c1bdc3d30d695f6a48d38a4b3401da53"),
+			activityObservation(activityGmailID, "gmail", "acme-security-promise", "commitment_created", "2026-07-18T15:00:00Z", "We promised the security packet by July 22.", "e57461826e791945b63630c2de4c026adb4459066470014cf50aadde9b6aafca"),
+			activityObservation(activityHubSpotID, "hubspot", "acme-deal-stage", "deal_stage_changed", "2026-07-08T15:00:00Z", "Acme moved into evaluation.", "481faa42c6d60f434fc57540a21c1bee4a1dd745479fded5f6476080f9ebb3e7"),
+		},
+	}
+}
+
+func activityObservation(id, source, externalID, eventType, occurredAt, summary, contentHash string) obj {
+	return obj{
+		"id":              id,
+		"source":          source,
+		"externalId":      externalID,
+		"sourceVersion":   "1",
+		"eventType":       eventType,
+		"occurredAt":      occurredAt,
+		"receivedAt":      activityReceivedAt,
+		"summary":         summary,
+		"normalizedFacts": obj{"adapter": source},
+		"contentHash":     contentHash,
 	}
 }

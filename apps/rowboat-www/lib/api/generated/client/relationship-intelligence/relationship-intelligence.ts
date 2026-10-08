@@ -2852,8 +2852,8 @@ export const getGetRelationshipTimelineUrl = (
 };
 
 /**
- * Returns the latest immutable observations for a relationship. Rows that share a time stay in id order, so the next page does not skip them.
- * @summary Get evidence timeline
+ * Activity loads when a company opens. The request asks for the first 50 records and sends no older-page time. The answer lists the newest activity first, from Slack, Calendar, Gmail, and HubSpot.
+ * @summary Activity
  */
 export const getRelationshipTimeline = async (
   relationshipId: string,
