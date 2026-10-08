@@ -461,4 +461,17 @@ describe("API reference document", () => {
     expect(ledger.description).toContain("Credit delta.");
     expect(ledger.example).toBe(-42);
   });
+
+  it("does not describe a mail thread as an LLM provider", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const thread = presented.components.schemas.MailThread.properties.provider;
+    expect(thread.description).toBe("Mailbox this row came from. Only Gmail is stored.");
+    expect(thread.enum).toEqual(["gmail"]);
+    expect(thread.example).toBe("gmail");
+    const cache = presented.components.schemas.MailBodyCache.properties.provider;
+    expect(cache.example).toBe("gmail");
+    expect(cache.enum).toEqual(["gmail"]);
+    const task = presented.components.schemas.BackgroundTask.properties.provider;
+    expect(task.example).toBe("openai");
+  });
 });

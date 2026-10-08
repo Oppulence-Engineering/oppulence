@@ -259,6 +259,16 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if proposalReason["enum"] != nil || proposalReason["description"] != "Reason recorded when this proposal is rejected or fails." {
 		t.Fatalf("ActionProposal.reason was stamped with the credit ledger: %#v", proposalReason)
 	}
+	for _, name := range []string{"MailThread", "MailBodyCache"} {
+		provider := asObj(asObj(asObj(schemas[name])["properties"])["provider"])
+		enum, _ := provider["enum"].([]any)
+		if provider["description"] != "Mailbox this row came from. Only Gmail is stored." || provider["example"] != "gmail" || len(enum) != 1 || enum[0] != "gmail" {
+			t.Fatalf("%s.provider was stamped as an LLM vendor: %#v", name, provider)
+		}
+	}
+	if taskProvider := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["provider"]); taskProvider["example"] != "openai" {
+		t.Fatalf("BackgroundTask.provider lost its model example: %#v", taskProvider)
+	}
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
@@ -401,6 +411,14 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	}
 	if ledgerDelta := asObj(asObj(asObj(schemas["CreditLedger"])["properties"])["delta"]); ledgerDelta["example"] != float64(-42) && ledgerDelta["example"] != -42 {
 		t.Fatalf("checked-in CreditLedger.delta lost its credit example: %#v", ledgerDelta)
+	}
+
+	for _, name := range []string{"MailThread", "MailBodyCache"} {
+		provider := asObj(asObj(asObj(schemas[name])["properties"])["provider"])
+		enum, _ := provider["enum"].([]any)
+		if provider["example"] != "gmail" || len(enum) != 1 || enum[0] != "gmail" {
+			t.Fatalf("checked-in %s.provider is not Gmail: %#v", name, provider)
+		}
 	}
 	if value := asObj(evidenceProperties["value"]); value["oneOf"] == nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.value is invalid: %#v", value)
