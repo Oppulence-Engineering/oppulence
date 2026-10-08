@@ -5570,6 +5570,52 @@ func assertLocalMode(t *testing.T, spec obj) {
 	if strings.Contains(string(got), "acta_") || strings.Contains(string(got), "\"token\"") || strings.Contains(string(got), "approvedAt") {
 		t.Fatalf("sample looks like a live secret: %s", got)
 	}
+
+	assertNewPerson(t, spec)
+}
+
+func TestNewPersonSamplesThePerson(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertNewPerson(t, spec)
+}
+
+func assertNewPerson(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/relationships"])["post"])
+	if op["summary"] != "New person" || op["operationId"] != "createRelationship" || op["description"] != newPersonDescription {
+		t.Fatalf("operation: summary=%#v id=%#v description=%#v", op["summary"], op["operationId"], op["description"])
+	}
+	request := asObj(asObj(asObj(asObj(op["requestBody"])["content"])["application/json"])["example"])
+	gotRequest, err := json.Marshal(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantRequest, err := json.Marshal(newPersonRequest())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotRequest) != string(wantRequest) {
+		t.Fatalf("request:\n%s\nwant:\n%s", gotRequest, wantRequest)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["201"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(newPerson())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("person:\n%s\nwant:\n%s", got, want)
+	}
+	if example["displayName"] != newPersonName || example["kind"] != "person" || example["primaryEmail"] != newPersonEmail || example["accountDomain"] != newPersonDomain || example["health"] != "unknown" || example["lifecycle"] != "prospect" {
+		t.Fatalf("person fields: %#v", example)
+	}
+	if strings.Contains(string(got), "acta_") || strings.Contains(string(got), "\"token\"") || strings.Contains(string(got), "approvedAt") {
+		t.Fatalf("sample looks like a live secret: %s", got)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

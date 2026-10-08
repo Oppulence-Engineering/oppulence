@@ -1521,17 +1521,7 @@ func addRevenuePaths(paths obj) {
 			}, "relationships", "hasMore"), companyDirectoryPage()),
 			"401": responseRef("401"),
 		}),
-		"post": operation("Relationship Intelligence", "Create a relationship", "Records a canonical relationship in the caller's workspace.", "createRelationship", bearer(), nil, jsonRequest("Relationship.", objectSchema("Create request.", obj{
-			"kind":          stringEnum("Relationship kind.", "person", "person", "company", "customer", "opportunity", "referral", "partner"),
-			"displayName":   stringSchema("Display name.", "Jordan Buyer"),
-			"primaryEmail":  stringSchema("Primary email.", "buyer@example.com"),
-			"accountDomain": stringSchema("Account domain.", "example.com"),
-			"summary":       stringSchema("Summary.", "Warm lead from the April demo."),
-		}, "kind", "displayName"), obj{"kind": "person", "displayName": "Jordan Buyer", "primaryEmail": "buyer@example.com"}), obj{
-			"201": jsonResponse("Created relationship.", ref("RevenueRelationship"), nil),
-			"400": responseRef("400"),
-			"401": responseRef("401"),
-		}),
+		"post": newPersonOperation(),
 	}
 	paths["/v1/relationships/graph"] = companyGraphPath()
 	relationshipParam := []any{obj{"name": "relationshipId", "in": "path", "required": true, "description": "Relationship id.", "schema": obj{"type": "string", "format": "uuid"}}}

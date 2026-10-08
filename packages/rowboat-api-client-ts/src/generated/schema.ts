@@ -2042,8 +2042,8 @@ export interface paths {
     get: operations["listRelationships"];
     put?: never;
     /**
-     * Create a relationship
-     * @description Records a canonical relationship in the caller's workspace.
+     * New person
+     * @description New person saves the name and email. The person comes back with that name, and People can open them.
      */
     post: operations["createRelationship"];
     delete?: never;
@@ -21473,11 +21473,12 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
-    /** @description Relationship. */
+    /** @description Name and email. */
     requestBody: {
       content: {
         /**
          * @example {
+         *       "accountDomain": "example.com",
          *       "displayName": "Jordan Buyer",
          *       "kind": "person",
          *       "primaryEmail": "buyer@example.com"
@@ -21485,28 +21486,28 @@ export interface operations {
          */
         "application/json": {
           /**
-           * @description Account domain.
+           * @description Domain from the email address.
            * @example example.com
            */
           accountDomain?: string;
           /**
-           * @description Display name.
+           * @description Full name.
            * @example Jordan Buyer
            */
           displayName: string;
           /**
-           * @description Relationship kind.
+           * @description Person or company.
            * @example person
            * @enum {string}
            */
           kind: "person" | "company" | "customer" | "opportunity" | "referral" | "partner";
           /**
-           * @description Primary email.
+           * @description Email address.
            * @example buyer@example.com
            */
           primaryEmail?: string;
           /**
-           * @description Summary.
+           * @description Notes.
            * @example Warm lead from the April demo.
            */
           summary?: string;
@@ -21514,12 +21515,35 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Created relationship. */
+      /** @description The person New person saves. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "accountDomain": "example.com",
+           *       "categories": [],
+           *       "commitmentCount": 0,
+           *       "displayName": "Jordan Buyer",
+           *       "emailThreadCount": 0,
+           *       "engagement": "unknown",
+           *       "health": "unknown",
+           *       "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "kind": "person",
+           *       "lifecycle": "prospect",
+           *       "milestones": [],
+           *       "peopleCount": 0,
+           *       "primaryEmail": "buyer@example.com",
+           *       "projectorVersion": 1,
+           *       "resourceRefs": [],
+           *       "risks": [],
+           *       "sentiment": "unknown",
+           *       "stateVersion": 0,
+           *       "status": "active"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueRelationship"];
         };
       };

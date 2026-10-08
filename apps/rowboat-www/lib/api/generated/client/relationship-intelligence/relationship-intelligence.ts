@@ -1321,8 +1321,8 @@ export const getCreateRelationshipUrl = () => {
 };
 
 /**
- * Records a canonical relationship in the caller's workspace.
- * @summary Create a relationship
+ * New person saves the name and email. The person comes back with that name, and People can open them.
+ * @summary New person
  */
 export const createRelationship = async (
   createRelationshipBody: CreateRelationshipBody,

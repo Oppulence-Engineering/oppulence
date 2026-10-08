@@ -3143,20 +3143,20 @@ export const ListRelationships401Response = zod
   );
 
 /**
- * Records a canonical relationship in the caller's workspace.
- * @summary Create a relationship
+ * New person saves the name and email. The person comes back with that name, and People can open them.
+ * @summary New person
  */
 export const CreateRelationshipBody = zod
   .strictObject({
-    accountDomain: zod.string().optional().describe("Account domain."),
-    displayName: zod.string().describe("Display name."),
+    accountDomain: zod.string().optional().describe("Domain from the email address."),
+    displayName: zod.string().describe("Full name."),
     kind: zod
       .enum(["person", "company", "customer", "opportunity", "referral", "partner"])
-      .describe("Relationship kind."),
-    primaryEmail: zod.string().optional().describe("Primary email."),
-    summary: zod.string().optional().describe("Summary."),
+      .describe("Person or company."),
+    primaryEmail: zod.string().optional().describe("Email address."),
+    summary: zod.string().optional().describe("Notes."),
   })
-  .describe("Create request.");
+  .describe("Person to save.");
 
 export const CreateRelationship201Response = zod
   .strictObject({

@@ -4044,6 +4044,34 @@ describe("API reference document", () => {
     });
   });
 
+  it("samples the person New person returns", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/relationships"].post;
+    expect(operation.summary).toBe("New person");
+    expect(operation.operationId).toBe("createRelationship");
+    expect(operation.description).toBe(
+      "New person saves the name and email. The person comes back with that name, and People can open them.",
+    );
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      accountDomain: "example.com",
+      displayName: "Jordan Buyer",
+      kind: "person",
+      primaryEmail: "buyer@example.com",
+    });
+    expect(operation.responses["201"].content["application/json"].example).toMatchObject({
+      id: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      kind: "person",
+      displayName: "Jordan Buyer",
+      primaryEmail: "buyer@example.com",
+      accountDomain: "example.com",
+      status: "active",
+      lifecycle: "prospect",
+      health: "unknown",
+      stateVersion: 0,
+      projectorVersion: 1,
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
