@@ -4166,6 +4166,11 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	if asObj(asObj(mission["evidence"])["lifecycle"])["supported"] != true {
 		t.Fatalf("lifecycle evidence: %#v", asObj(mission["evidence"])["lifecycle"])
 	}
+	for _, key := range []string{"lifecycle", "health", "engagement", "sentiment"} {
+		if asObj(asObj(mission["evidence"])[key])["authority"] != "source_fact" {
+			t.Fatalf("%s authority: %#v", key, asObj(asObj(mission["evidence"])[key])["authority"])
+		}
+	}
 	if asObj(asObj(media["schema"])["properties"])["emailThreads"] == nil {
 		t.Fatal("opened company schema omits email threads")
 	}

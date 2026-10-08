@@ -18,7 +18,7 @@ const (
 	openedCompanyDescription = "Builds AI infrastructure for customer operations."
 )
 
-const openedCompanyOperationDescription = "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations."
+const openedCompanyOperationDescription = "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source."
 
 func openedCompanyParams() []any {
 	return []any{obj{
@@ -158,6 +158,8 @@ func openedCompanyDimension(dimension, value string) obj {
 		"value":     value,
 		"supported": true,
 		"fresh":     true,
+		// The sheet badge says "From a connected source". A supported detail with no authority says "Not filled in yet".
+		"authority": "source_fact",
 		"evidence": []any{obj{
 			"observationId": openedCompanyObservationID,
 			"source":        "hubspot",
