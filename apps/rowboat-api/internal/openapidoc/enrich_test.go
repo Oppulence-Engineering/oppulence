@@ -347,6 +347,8 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 
 	assertVoiceKeyTimes(t, schemas)
 
+	assertSlackMessageTime(t, schemas)
+
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
 	reason := asObj(evidenceProperties["reason"])
@@ -523,6 +525,8 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	assertConsentContext(t, schemas)
 
 	assertVoiceKeyTimes(t, schemas)
+
+	assertSlackMessageTime(t, schemas)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -832,6 +836,28 @@ func assertVoiceKeyTimes(t *testing.T, schemas obj) {
 		connectorUse := asObj(asObj(mcp["properties"])["last_used_at"])
 		if connectorUse["description"] != "Timestamp when the connector credential was last minted or used." || connectorUse["example"] != "2026-06-04T20:45:00Z" {
 			t.Fatalf("MCPConnection.last_used_at changed: %#v", connectorUse)
+		}
+	}
+}
+
+func assertSlackMessageTime(t *testing.T, schemas obj) {
+	t.Helper()
+	message := asObj(asObj(schemas["SlackThreadMessage"])["properties"])
+	ts := asObj(message["ts"])
+	if ts["description"] != "Slack message timestamp." || ts["example"] != "1700000000.000100" || ts["nullable"] != true {
+		t.Fatalf("SlackThreadMessage.ts sampled a ledger time: %#v", ts)
+	}
+	user := asObj(message["user"])
+	if user["description"] != "Slack user id when present." || user["example"] != "U01234567" || user["nullable"] != true {
+		t.Fatalf("SlackThreadMessage.user sampled a row owner: %#v", user)
+	}
+	if ledger := asObj(schemas["CreditLedger"]); ledger != nil {
+		if properties := asObj(ledger["properties"]); properties != nil {
+			if ledgerTS := asObj(properties["ts"]); ledgerTS != nil {
+				if ledgerTS["example"] != "2026-06-04T20:38:00Z" || ledgerTS["description"] != "Usage or ledger event timestamp." {
+					t.Fatalf("CreditLedger.ts changed: %#v", ledgerTS)
+				}
+			}
 		}
 	}
 }
