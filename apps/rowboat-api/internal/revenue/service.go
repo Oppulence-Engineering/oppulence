@@ -9078,6 +9078,18 @@ func relationshipSheetCompletenessMatch(needle string) predicate.Relationship {
 	if sheetPhraseMatches("relationship projection requires operator repair before this state is safe to act on.", needle) {
 		preds = append(preds, relationshipHasDeadProjection(now))
 	}
+	// An open duplicate shows Keep separate, Move the evidence, and Decide
+	// later. A resolved duplicate keeps the heading and drops those buttons.
+	// A word from the middle of a button is not the button.
+	if labelPhraseMatches("keep separate", needle) ||
+		labelPhraseMatches("move the evidence", needle) ||
+		labelPhraseMatches("decide later", needle) {
+		preds = append(preds, relationshipHasOpenDuplicateChoice())
+	}
+	if labelPhraseMatches("review possible duplicates", needle) ||
+		labelPhraseMatches("needs your review", needle) {
+		preds = append(preds, relationshipHasDuplicateInbox())
+	}
 	for n := 1; n <= 20; n++ {
 		phrases := []string{
 			fmt.Sprintf("%d identity reviews block acting.", n),
@@ -9825,6 +9837,46 @@ func relationshipHasUnresolvedIdentity() predicate.Relationship {
 				relationshipidentitycandidate.ExistingRelationshipColumn,
 				s.C(relationship.FieldID),
 			))
+		}))
+	})
+}
+
+// relationshipHasOpenDuplicateChoice is a pending or deferred duplicate. The
+// sheet prints Keep separate, Move the evidence, and Decide later for those.
+// A resolved duplicate prints Split and Undo instead.
+func relationshipHasOpenDuplicateChoice() predicate.Relationship {
+	return relationshipHasIdentityStatus(identityPending, identityDeferred)
+}
+
+// relationshipHasDuplicateInbox is any duplicate the company sheet lists.
+// The heading is "Review possible duplicates" and the badge is "Needs your review".
+func relationshipHasDuplicateInbox() predicate.Relationship {
+	return relationshipHasIdentityStatus(identityPending, identityDeferred, identityResolved)
+}
+
+func relationshipHasIdentityStatus(statuses ...string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(relationshipidentitycandidate.Table)
+			b.WriteString(" WHERE ")
+			b.WriteString(relationshipidentitycandidate.FieldStatus)
+			b.WriteString(" IN (")
+			for i, status := range statuses {
+				if i > 0 {
+					b.WriteString(", ")
+				}
+				b.Arg(status)
+			}
+			b.WriteString(") AND (")
+			b.WriteString(relationshipidentitycandidate.ProposedRelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" OR ")
+			b.WriteString(relationshipidentitycandidate.ExistingRelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString("))")
 		}))
 	})
 }
