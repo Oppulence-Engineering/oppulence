@@ -16,6 +16,7 @@ import {
 } from "@oppulence/ui/components/sheet";
 
 import { dashboardFetch } from "@/lib/auth/client";
+import { planLabel } from "@/lib/product/plan-label";
 
 const ACCOUNT_DELETION_ERRORS: Record<string, string> = {
   workspace_successor_required:
@@ -80,6 +81,80 @@ function deletionError(code: string): string {
   return ACCOUNT_DELETION_ERRORS[code] ?? ACCOUNT_DELETION_FALLBACK;
 }
 
+const WORKSPACE_MEMBERS_PATH = "/api/rowboat/v1/revenue-workspaces/current/members";
+
+const MembersSchema = z.object({
+  members: z
+    .array(
+      z.object({
+        status: z.string().optional(),
+        userId: z.string().optional(),
+      }),
+    )
+    .optional(),
+});
+
+/**
+ * "loading" is still asking. "unknown" means the member list could not be
+ * read. A number is how many other active members share a workspace this
+ * account owns. Removed members do not count: deletion only transfers a
+ * workspace that still has someone else active.
+ */
+export type WorkspaceShareFact = "loading" | "unknown" | number;
+
+/**
+ * A free plan with no trial and no past-due balance has nothing for Stripe
+ * to cancel. A named paid plan, a trial, or a past-due balance does.
+ */
+export function deletionChargesASubscription(
+  plan?: string | null,
+  status?: string | null,
+): boolean {
+  const normalizedStatus = status?.trim().toLowerCase() ?? "";
+  if (normalizedStatus === "trialing" || normalizedStatus === "past_due") return true;
+  const normalizedPlan = plan?.trim().toLowerCase() ?? "";
+  return normalizedPlan !== "" && normalizedPlan !== "free";
+}
+
+export function deletionSubscriptionCopy(plan?: string | null, status?: string | null): string {
+  if (deletionChargesASubscription(plan, status)) {
+    return "We cancel your subscription immediately. You are not charged again.";
+  }
+  const name = planLabel(plan) || "Free";
+  return `This account is on the ${name} plan. Nothing is billed, so there is no subscription to cancel.`;
+}
+
+export function deletionRowDescription(plan?: string | null, status?: string | null): string {
+  if (deletionChargesASubscription(plan, status)) {
+    return "Permanently delete your account, your data, and your subscription.";
+  }
+  return "Permanently delete your account and your data.";
+}
+
+export function deletionWorkspaceCopy(share: WorkspaceShareFact): string {
+  if (share === "loading") return "Checking whether anyone else shares this workspace.";
+  if (share === "unknown") return "We could not check whether anyone else shares this workspace.";
+  if (share > 0) return "A shared workspace goes to another member. Their data stays.";
+  return "This workspace is only yours. Deleting the account deletes it.";
+}
+
+/**
+ * Active members other than the signed-in account. Without that account id
+ * the list cannot tell a teammate from the owner, so the answer stays unknown.
+ */
+export function workspaceShareFromMembers(
+  members: { status?: string; userId?: string }[] | null | undefined,
+  currentUserId: string | undefined,
+): WorkspaceShareFact {
+  const self = currentUserId?.trim() ?? "";
+  if (!members || !self) return "unknown";
+  return members.filter((member) => {
+    if ((member.status ?? "").trim().toLowerCase() !== "active") return false;
+    const id = member.userId?.trim() ?? "";
+    return id !== "" && id !== self;
+  }).length;
+}
+
 /**
  * Self-serve account deletion (DELETE /v1/me). Typing DELETE records intent.
  * One button then proves identity and finishes the deletion: a fresh
@@ -88,8 +163,24 @@ function deletionError(code: string): string {
  * and is never written to storage. Coming back from that sign-in deletes
  * the account only because this button stored the challenge first.
  */
-export function DeleteAccountRow() {
+export function DeleteAccountRow({
+  plan = null,
+  billingStatus = null,
+  userId,
+  watchMembers = false,
+  workspaceShare: workspaceShareProp,
+}: {
+  plan?: string | null;
+  billingStatus?: string | null;
+  userId?: string;
+  watchMembers?: boolean;
+  workspaceShare?: WorkspaceShareFact;
+} = {}) {
   const [open, setOpen] = React.useState(false);
+  const [loadedShare, setLoadedShare] = React.useState<WorkspaceShareFact>(
+    workspaceShareProp ?? (watchMembers ? "loading" : 0),
+  );
+  const workspaceShare = workspaceShareProp ?? loadedShare;
   const [confirmation, setConfirmation] = React.useState("");
   const [phase, setPhase] = React.useState<Phase>("intent");
   const [code, setCode] = React.useState("");
@@ -172,6 +263,30 @@ export function DeleteAccountRow() {
       setPending(false);
     }
   }, [deleteAccount]);
+
+  React.useEffect(() => {
+    if (workspaceShareProp !== undefined || !watchMembers) return;
+    let cancelled = false;
+    setLoadedShare("loading");
+    void (async () => {
+      try {
+        const response = await dashboardFetch(WORKSPACE_MEMBERS_PATH);
+        const body: unknown = await response.json().catch(() => null);
+        const parsed = MembersSchema.safeParse(body);
+        if (cancelled) return;
+        if (!response.ok || !parsed.success) {
+          setLoadedShare("unknown");
+          return;
+        }
+        setLoadedShare(workspaceShareFromMembers(parsed.data.members, userId));
+      } catch {
+        if (!cancelled) setLoadedShare("unknown");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [watchMembers, userId, workspaceShareProp]);
 
   React.useEffect(() => {
     if (resumeStarted.current) return;
@@ -273,9 +388,7 @@ export function DeleteAccountRow() {
     <div className="settings-row" data-slot="delete-account-row">
       <div className="settings-row-copy">
         <p className="settings-row-label">Delete account</p>
-        <p className="settings-row-description">
-          Permanently delete your account, your data, and your subscription.
-        </p>
+        <p className="settings-row-description">{deletionRowDescription(plan, billingStatus)}</p>
       </div>
       <Button onClick={() => setOpen(true)} size="sm" variant="destructive">
         Delete account
@@ -325,9 +438,9 @@ export function DeleteAccountRow() {
                 <SheetDescription>You cannot undo this.</SheetDescription>
               </SheetHeader>
               <ul className="list-disc space-y-1.5 px-8 text-sm text-muted-foreground">
-                <li>We cancel your subscription immediately. You are not charged again.</li>
+                <li>{deletionSubscriptionCopy(plan, billingStatus)}</li>
                 <li>We disconnect your connected accounts and delete your synced data.</li>
-                <li>A shared workspace goes to another member. Their data stays.</li>
+                <li>{deletionWorkspaceCopy(workspaceShare)}</li>
                 <li>You are signed out, and you cannot sign in to this account again.</li>
               </ul>
               <div className="flex flex-col gap-2 px-4">
