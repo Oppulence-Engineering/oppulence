@@ -8,7 +8,7 @@
 
 export type ListAgentSessionsParams = {
   /**
-   * Page offset.
+   * How many conversations to skip. Show earlier conversations skips the newest 50.
    * @minimum 0
    */
   offset?: number;

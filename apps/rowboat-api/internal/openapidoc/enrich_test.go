@@ -5616,6 +5616,60 @@ func assertNewPerson(t *testing.T, spec obj) {
 	if strings.Contains(string(got), "acta_") || strings.Contains(string(got), "\"token\"") || strings.Contains(string(got), "approvedAt") {
 		t.Fatalf("sample looks like a live secret: %s", got)
 	}
+
+	assertEarlierChats(t, spec)
+}
+
+func TestEarlierChatsSamplesTheNextPage(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertEarlierChats(t, spec)
+}
+
+func assertEarlierChats(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/agent-sessions"])["get"])
+	if op["summary"] != "Show earlier conversations" || op["operationId"] != "listAgentSessions" || op["description"] != earlierChatsDescription {
+		t.Fatalf("operation: summary=%#v id=%#v description=%#v", op["summary"], op["operationId"], op["description"])
+	}
+	params, ok := op["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("parameters: %#v", op["parameters"])
+	}
+	offset := asObj(params[0])
+	if offset["name"] != "offset" || offset["example"] != earlierChatsOffset && offset["example"] != float64(earlierChatsOffset) {
+		t.Fatalf("offset: %#v", offset)
+	}
+	schemaExample := asObj(offset["schema"])["example"]
+	if schemaExample != earlierChatsOffset && schemaExample != float64(earlierChatsOffset) {
+		t.Fatalf("offset schema example: %#v", schemaExample)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(earlierChatsPage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("page:\n%s\nwant:\n%s", got, want)
+	}
+	sessions, ok := example["sessions"].([]any)
+	if !ok || len(sessions) != 1 || example["hasMore"] != false {
+		t.Fatalf("page shape: %#v", example)
+	}
+	session := asObj(sessions[0])
+	if session["title"] != earlierChatsTitle || session["sessionId"] != earlierChatsSessionID || session["channel"] != "web" || session["continuationToken"] != "" {
+		t.Fatalf("session: %#v", session)
+	}
+	encoded := string(got)
+	for _, banned := range []string{"acta_", "\"token\"", "approvedAt", "agt_example", "session_abc123"} {
+		if strings.Contains(encoded, banned) {
+			t.Fatalf("sample still has %s: %s", banned, encoded)
+		}
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
