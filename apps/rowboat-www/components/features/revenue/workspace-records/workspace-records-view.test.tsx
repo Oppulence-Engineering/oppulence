@@ -161,6 +161,7 @@ import {
   personDirectoryRole,
   personKnownFact,
   personLastInteractionLabel,
+  personCompanyCountLabel,
   personDirectorySubtitle,
   personSheetSubtitle,
   sortTasksByDue,
@@ -1617,6 +1618,13 @@ describe("people directory copy", () => {
     expect(source).toContain("Fill in their role and company");
     expect(source).not.toContain("Enrich profiles with evidence");
     expect(source).toContain(">Companies</TableHead>");
+    expect(personCompanyCountLabel(1)).toBe("1");
+    expect(personCompanyCountLabel(0)).toBe("0");
+    expect(personCompanyCountLabel(undefined)).toBe("0");
+    expect(personCompanyCountLabel(Number.NaN)).toBe("0");
+    expect(source).toContain("personCompanyCountLabel(person.relationshipCount)");
+    expect(source).toContain('["Companies", personCompanyCountLabel(person.relationshipCount)]');
+    expect(source).not.toContain("{person.relationshipCount}");
     expect(source).toContain("personSeniorityLabel(person.seniority)");
     expect(source).toContain("personFactValue(attribute.dimension, attribute.value)");
     expect(source).toContain(
