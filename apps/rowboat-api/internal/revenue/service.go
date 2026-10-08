@@ -814,6 +814,9 @@ func (s *Service) ListRelationshipsFiltered(
 			))
 		}
 		needle := normalizePersonSearch(value)
+		if badges := relationshipSheetRecordBadgeMatch(needle, s.now()); badges != nil {
+			parts = append(parts, badges)
+		}
 		if labelPhraseMatches("no activity", needle) {
 			parts = append(parts, relationship.LastTouchAtIsNil())
 		}
@@ -1388,6 +1391,89 @@ func relationshipDirectoryColumnMatch(term string, now time.Time) predicate.Rela
 		return nil
 	}
 	return relationship.Or(preds...)
+}
+
+// relationshipSheetRecordBadgeMatch matches the record-detail badges.
+// The sheet prints "Lifecycle · Not known" until that detail is supported.
+// A supported unknown value uses the same words.
+func relationshipSheetRecordBadgeMatch(needle string, now time.Time) predicate.Relationship {
+	var preds []predicate.Relationship
+	for _, dim := range recordDetailDimensions() {
+		for _, value := range dim.values {
+			phrase := dim.title + " · " + companyRecordSearchLabel(value)
+			if !labelPhraseMatches(phrase, needle) {
+				continue
+			}
+			if value == "unknown" {
+				preds = append(preds, relationship.Or(
+					relationship.Not(relationshipHasSupportedDimension(dim.dimension, now)),
+					dim.eq("unknown"),
+				))
+				continue
+			}
+			preds = append(preds, relationship.And(
+				relationshipHasSupportedDimension(dim.dimension, now),
+				dim.eq(value),
+			))
+		}
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func companyRecordSearchLabel(value string) string {
+	switch value {
+	case "unknown":
+		return "Not known"
+	case "needs_attention":
+		return "Needs attention"
+	case "active_customer":
+		return "Active customer"
+	case "former_customer":
+		return "Former customer"
+	default:
+		if value == "" {
+			return "Not known"
+		}
+		return strings.ToUpper(value[:1]) + value[1:]
+	}
+}
+
+type recordDetailDimension struct {
+	title     string
+	dimension string
+	values    []string
+	eq        func(string) predicate.Relationship
+}
+
+func recordDetailDimensions() []recordDetailDimension {
+	return []recordDetailDimension{
+		{
+			title: "Lifecycle", dimension: "lifecycle", eq: relationship.LifecycleEQ,
+			values: []string{
+				"unknown", "prospect", "evaluation", "contracting", "onboarding",
+				"active_customer", "renewal", "churned", "former_customer",
+			},
+		},
+		{
+			title: "Health", dimension: "health", eq: relationship.HealthEQ,
+			values: []string{"unknown", "healthy", "needs_attention", "critical"},
+		},
+		{
+			title: "Engagement", dimension: "engagement", eq: relationship.EngagementEQ,
+			values: []string{"unknown", "increasing", "steady", "declining", "dormant"},
+		},
+		{
+			title: "Sentiment", dimension: "sentiment", eq: relationship.SentimentEQ,
+			values: []string{"unknown", "positive", "mixed", "negative"},
+		},
+	}
 }
 
 func relationshipHealthLabelMatch(needle string) predicate.Relationship {
