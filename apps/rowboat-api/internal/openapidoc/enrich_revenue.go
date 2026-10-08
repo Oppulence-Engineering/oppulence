@@ -77,6 +77,12 @@ const documentedRejectReason = "not_appropriate"
 // Portfolio attention Acknowledge sends this reason, and the server stores it as stateReason.
 const documentedAttentionAcknowledgeReason = "Reviewed from the portfolio attention queue."
 
+// Confirm remove sends this reason. The server stores it on the deletion receipt.
+const documentedPersonRemovalReason = "user_action"
+
+const documentedPersonID = "1b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+const documentedPersonRemovalReceiptID = "fb8dfa9b-a7b2-46ea-982c-622a914c00e5"
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
@@ -531,6 +537,20 @@ func addRevenueSchemas(schemas obj) {
 		}, "target", "status", "attempts")),
 		"completedAt": stringSchema("Time every required target was verified.", "2026-07-31T14:01:00Z", obj{"format": "date-time"}, nullable()),
 	}, "receiptId", "requestedAt", "scopeRef", "legalHold", "status", "targets")
+
+	schemas["PersonDeletionReceipt"] = objectSchema("Receipt for removing one person and the rows derived from them. Suppression anchors keep the next sync from recreating that person.", obj{
+		"receiptId":               uuidSchema("Receipt id.", documentedPersonRemovalReceiptID),
+		"personId":                uuidSchema("Removed person id.", documentedPersonID),
+		"requestedAt":             stringSchema("Request time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
+		"completedAt":             stringSchema("Completion time.", "2026-07-31T14:01:00Z", obj{"format": "date-time"}),
+		"reason":                  stringEnum("Why this person was removed.", documentedPersonRemovalReason, documentedPersonRemovalReason, "subject_request"),
+		"suppressedIdentities":    intSchema("Suppression anchors written.", 1),
+		"attributesDeleted":       intSchema("Attribute rows deleted.", 1),
+		"identitiesDeleted":       intSchema("Identity rows deleted.", 1),
+		"interactionStatsDeleted": intSchema("Interaction stat rows deleted.", 1),
+		"mergeCandidatesDeleted":  intSchema("Merge candidates deleted.", 0),
+		"personsDeleted":          intSchema("Person rows deleted.", 1),
+	}, "receiptId", "personId", "requestedAt", "completedAt", "reason", "suppressedIdentities", "attributesDeleted", "identitiesDeleted", "interactionStatsDeleted", "mergeCandidatesDeleted", "personsDeleted")
 
 	schemas["RelationshipIntelligence"] = objectSchema("Derived trust surface for a relationship: conversation claims, focused review, exact delta, governance, contradictions, and live cue cards.", obj{
 		"claims":                    arraySchema("Material quote-backed claims.", ref("ConversationClaim")),
@@ -1204,6 +1224,13 @@ func addRevenuePaths(paths obj) {
 	}, "requestId"), obj{"requestId": documentedDeletionRequestID}), obj{
 		"202": jsonResponse("Deletion receipt.", ref("ConversationDeletionReceipt"), nil),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
+	})}
+	personParam := []any{obj{"name": "personId", "in": "path", "required": true, "description": "Person id.", "schema": obj{"type": "string", "format": "uuid"}}}
+	paths["/v1/relationship-persons/{personId}"] = obj{"delete": operation("Relationship Intelligence", "Remove a person", "Confirm remove sends reason user_action. The server stores that reason, deletes the person and every derived row, and writes suppression anchors so the next sync cannot recreate them.", "deleteRelationshipPerson", bearer(), personParam, jsonRequest("Person removal.", objectSchema("Person removal request.", obj{
+		"reason": stringEnum("Why this person was removed.", documentedPersonRemovalReason, documentedPersonRemovalReason, "subject_request"),
+	}, "reason"), obj{"reason": documentedPersonRemovalReason}), obj{
+		"200": jsonResponse("Removal receipt.", ref("PersonDeletionReceipt"), nil),
+		"400": responseRef("400"), "401": responseRef("401"), "403": responseRef("403"), "404": responseRef("404"),
 	})}
 	paths["/v1/relationship-observations/batch"] = obj{"post": operation("Relationship Intelligence", "Ingest relationship observations", "Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.", "ingestRelationshipObservations", bearer(), nil, jsonRequest("Observation batch.", objectSchema("Observation batch.", obj{
 		"observations": arraySchema("Provider-neutral observations.", objectSchema("Observation input.", obj{

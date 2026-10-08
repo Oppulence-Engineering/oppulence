@@ -5637,6 +5637,85 @@
         ],
         "type": "object"
       },
+      "PersonDeletionReceipt": {
+        "description": "Receipt for removing one person and the rows derived from them. Suppression anchors keep the next sync from recreating that person.",
+        "properties": {
+          "attributesDeleted": {
+            "description": "Attribute rows deleted.",
+            "example": 1,
+            "type": "integer"
+          },
+          "completedAt": {
+            "description": "Completion time.",
+            "example": "2026-07-31T14:01:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "identitiesDeleted": {
+            "description": "Identity rows deleted.",
+            "example": 1,
+            "type": "integer"
+          },
+          "interactionStatsDeleted": {
+            "description": "Interaction stat rows deleted.",
+            "example": 1,
+            "type": "integer"
+          },
+          "mergeCandidatesDeleted": {
+            "description": "Merge candidates deleted.",
+            "example": 0,
+            "type": "integer"
+          },
+          "personId": {
+            "description": "Removed person id.",
+            "example": "1b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "personsDeleted": {
+            "description": "Person rows deleted.",
+            "example": 1,
+            "type": "integer"
+          },
+          "reason": {
+            "description": "Why this person was removed.",
+            "enum": ["user_action", "subject_request"],
+            "example": "user_action",
+            "type": "string"
+          },
+          "receiptId": {
+            "description": "Receipt id.",
+            "example": "fb8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "requestedAt": {
+            "description": "Request time.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "suppressedIdentities": {
+            "description": "Suppression anchors written.",
+            "example": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "receiptId",
+          "personId",
+          "requestedAt",
+          "completedAt",
+          "reason",
+          "suppressedIdentities",
+          "attributesDeleted",
+          "identitiesDeleted",
+          "interactionStatsDeleted",
+          "mergeCandidatesDeleted",
+          "personsDeleted"
+        ],
+        "type": "object"
+      },
       "ConversationDeletionReceipt": {
         "description": "Immutable deletion request and per-target verification state. Pending device or provider targets keep the receipt partial.",
         "properties": {
@@ -24811,6 +24890,79 @@
           }
         ],
         "summary": "Request conversation deletion",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationship-persons/{personId}": {
+      "delete": {
+        "description": "Confirm remove sends reason user_action. The server stores that reason, deletes the person and every derived row, and writes suppression anchors so the next sync cannot recreate them.",
+        "operationId": "deleteRelationshipPerson",
+        "parameters": [
+          {
+            "description": "Person id.",
+            "in": "path",
+            "name": "personId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "reason": "user_action"
+              },
+              "schema": {
+                "description": "Person removal request.",
+                "properties": {
+                  "reason": {
+                    "description": "Why this person was removed.",
+                    "enum": ["user_action", "subject_request"],
+                    "example": "user_action",
+                    "type": "string"
+                  }
+                },
+                "required": ["reason"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Person removal.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonDeletionReceipt"
+                }
+              }
+            },
+            "description": "Removal receipt."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Remove a person",
         "tags": ["Relationship Intelligence"]
       }
     },
