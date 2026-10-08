@@ -283,8 +283,8 @@ export const getListLLMModelsUrl = () => {
 };
 
 /**
- * Returns the sorted set of priced model ids the desktop can send to the LLM gateway.
- * @summary List routable LLM models
+ * AI model loads the priced list. The request sends no filter. The list is every model this workspace can choose, in order.
+ * @summary AI model
  */
 export const listLLMModels = async (options?: RequestInit): Promise<listLLMModelsResponse> => {
   const res = await fetch(getListLLMModelsUrl(), {

@@ -2887,6 +2887,25 @@ describe("API reference document", () => {
     expect(encoded).not.toContain("invoice-context");
   });
 
+  it("samples the page AI model loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/llm/models"]?.get;
+    expect(operation?.summary).toBe("AI model");
+    expect(operation?.description).toBe(
+      "AI model loads the priced list. The request sends no filter. The list is every model this workspace can choose, in order.",
+    );
+    expect(operation?.parameters).toBeUndefined();
+    const example = operation?.responses?.["200"]?.content?.["application/json"]?.example as {
+      data?: Array<{ id?: string }>;
+    };
+    expect(example.data).toHaveLength(10);
+    expect(example.data?.[0]?.id).toBe("anthropic/claude-haiku-4-5");
+    expect(example.data?.map((row) => row.id)).toEqual([...(example.data ?? []).map((row) => row.id)].sort());
+    expect(presented.paths["/v1/llm/chat/completions"]?.post?.requestBody?.content?.["application/json"]?.example).toMatchObject({
+      model: "openai/gpt-4.1-mini",
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

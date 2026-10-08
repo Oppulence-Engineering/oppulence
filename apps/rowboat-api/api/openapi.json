@@ -23813,7 +23813,7 @@
     },
     "/v1/llm/models": {
       "get": {
-        "description": "Returns the sorted set of priced model ids the desktop can send to the LLM gateway.",
+        "description": "AI model loads the priced list. The request sends no filter. The list is every model this workspace can choose, in order.",
         "operationId": "listLLMModels",
         "responses": {
           "200": {
@@ -23822,10 +23822,34 @@
                 "example": {
                   "data": [
                     {
-                      "id": "openai/gpt-4.1-mini"
+                      "id": "anthropic/claude-haiku-4-5"
+                    },
+                    {
+                      "id": "anthropic/claude-opus-4-1"
                     },
                     {
                       "id": "anthropic/claude-sonnet-4-5"
+                    },
+                    {
+                      "id": "google/gemini-2.5-flash"
+                    },
+                    {
+                      "id": "google/gemini-2.5-pro"
+                    },
+                    {
+                      "id": "google/gemini-3.1-flash-lite"
+                    },
+                    {
+                      "id": "openai/gpt-4.1"
+                    },
+                    {
+                      "id": "openai/gpt-4.1-mini"
+                    },
+                    {
+                      "id": "openai/o4-mini"
+                    },
+                    {
+                      "id": "openai/text-embedding-3-small"
                     }
                   ]
                 },
@@ -23834,7 +23858,7 @@
                 }
               }
             },
-            "description": "Model catalog."
+            "description": "Priced models."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -23848,8 +23872,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "List routable LLM models",
-        "tags": ["LLM"]
+        "summary": "AI model",
+        "tags": [
+          "LLM"
+        ]
       }
     },
     "/v1/billing/checkout-session": {

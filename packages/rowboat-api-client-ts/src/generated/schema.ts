@@ -1572,8 +1572,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List routable LLM models
-     * @description Returns the sorted set of priced model ids the desktop can send to the LLM gateway.
+     * AI model
+     * @description AI model loads the priced list. The request sends no filter. The list is every model this workspace can choose, in order.
      */
     get: operations["listLLMModels"];
     put?: never;
@@ -19284,7 +19284,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Model catalog. */
+      /** @description Priced models. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -19294,10 +19294,34 @@ export interface operations {
            * @example {
            *       "data": [
            *         {
-           *           "id": "openai/gpt-4.1-mini"
+           *           "id": "anthropic/claude-haiku-4-5"
+           *         },
+           *         {
+           *           "id": "anthropic/claude-opus-4-1"
            *         },
            *         {
            *           "id": "anthropic/claude-sonnet-4-5"
+           *         },
+           *         {
+           *           "id": "google/gemini-2.5-flash"
+           *         },
+           *         {
+           *           "id": "google/gemini-2.5-pro"
+           *         },
+           *         {
+           *           "id": "google/gemini-3.1-flash-lite"
+           *         },
+           *         {
+           *           "id": "openai/gpt-4.1"
+           *         },
+           *         {
+           *           "id": "openai/gpt-4.1-mini"
+           *         },
+           *         {
+           *           "id": "openai/o4-mini"
+           *         },
+           *         {
+           *           "id": "openai/text-embedding-3-small"
            *         }
            *       ]
            *     }
