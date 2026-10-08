@@ -345,6 +345,8 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 
 	assertConsentContext(t, schemas)
 
+	assertVoiceKeyTimes(t, schemas)
+
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
 	reason := asObj(evidenceProperties["reason"])
@@ -519,6 +521,8 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	assertGrantedScopes(t, schemas)
 
 	assertConsentContext(t, schemas)
+
+	assertVoiceKeyTimes(t, schemas)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -810,6 +814,25 @@ func assertConsentContext(t *testing.T, schemas obj) {
 	ledger := asObj(asObj(asObj(schemas["CreditLedger"])["properties"])["request_id"])
 	if ledger["example"] != "9e2fb15a-936d-4f39-9372-73cfe0476ca8" {
 		t.Fatalf("CreditLedger.request_id lost its metered example: %#v", ledger)
+	}
+}
+
+func assertVoiceKeyTimes(t *testing.T, schemas obj) {
+	t.Helper()
+	voice := asObj(asObj(schemas["VoiceAPIKey"])["properties"])
+	lastUsed := asObj(voice["last_used_at"])
+	if lastUsed["description"] != "Last-use time." || lastUsed["example"] != "2026-08-21T23:00:00Z" || lastUsed["nullable"] != true {
+		t.Fatalf("VoiceAPIKey.last_used_at sampled a connector credential: %#v", lastUsed)
+	}
+	expires := asObj(voice["expires_at"])
+	if expires["description"] != "Expiry time." || expires["example"] != "2026-09-20T23:00:00Z" || expires["nullable"] != true {
+		t.Fatalf("VoiceAPIKey.expires_at sampled a one-time ticket: %#v", expires)
+	}
+	if mcp := asObj(schemas["MCPConnection"]); mcp != nil {
+		connectorUse := asObj(asObj(mcp["properties"])["last_used_at"])
+		if connectorUse["description"] != "Timestamp when the connector credential was last minted or used." || connectorUse["example"] != "2026-06-04T20:45:00Z" {
+			t.Fatalf("MCPConnection.last_used_at changed: %#v", connectorUse)
+		}
 	}
 }
 

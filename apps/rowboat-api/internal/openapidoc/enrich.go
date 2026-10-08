@@ -2195,6 +2195,19 @@ func enrichEntitySchemas(schemas obj) {
 		}
 	}
 
+	// The shared last-use and expiry notes describe a connector credential.
+	// A voice key records when the key itself was used and when it expires.
+	if voice := asObj(schemas["VoiceAPIKey"]); voice != nil {
+		if properties := asObj(voice["properties"]); properties != nil {
+			if properties["last_used_at"] != nil {
+				properties["last_used_at"] = stringSchema("Last-use time.", "2026-08-21T23:00:00Z", nullable())
+			}
+			if properties["expires_at"] != nil {
+				properties["expires_at"] = stringSchema("Expiry time.", "2026-09-20T23:00:00Z", nullable())
+			}
+		}
+	}
+
 	backgroundPropDocs := map[string]obj{
 		"slug":                 {"description": "Stable per-user background task slug matching bg-tasks/<slug> locally.", "example": "daily-summary"},
 		"name":                 {"description": "Human-readable background task name.", "example": "Daily Account Summary"},

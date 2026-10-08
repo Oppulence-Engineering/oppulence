@@ -512,6 +512,24 @@ describe("API reference document", () => {
     expect(schemas.CreditLedger?.properties?.request_id?.example).toBe("9e2fb15a-936d-4f39-9372-73cfe0476ca8");
   });
 
+  it("does not describe a voice key as a connector credential", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const schemas = presented.components.schemas as Record<
+      string,
+      { properties?: Record<string, { example?: unknown; description?: string; nullable?: boolean }> }
+    >;
+    const lastUsed = schemas.VoiceAPIKey?.properties?.last_used_at;
+    expect(lastUsed?.description).toBe("Last-use time.");
+    expect(lastUsed?.example).toBe("2026-08-21T23:00:00Z");
+    expect(lastUsed?.nullable).toBe(true);
+    const expires = schemas.VoiceAPIKey?.properties?.expires_at;
+    expect(expires?.description).toBe("Expiry time.");
+    expect(expires?.example).toBe("2026-09-20T23:00:00Z");
+    expect(schemas.MCPConnection?.properties?.last_used_at?.description).toBe(
+      "Timestamp when the connector credential was last minted or used.",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
