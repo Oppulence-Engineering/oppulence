@@ -1127,9 +1127,6 @@ func (s *Service) ListRelationshipsFiltered(
 			parts = append(parts, excerpt)
 		}
 
-		if deletionButton := relationshipSheetDeletionButtonMatch(needle); deletionButton != nil {
-			parts = append(parts, deletionButton)
-		}
 		if accepted := relationshipSheetAcceptedPromiseMatch(needle); accepted != nil {
 			parts = append(parts, accepted)
 		}
@@ -1861,6 +1858,49 @@ func relationshipHasDepartedContact() predicate.Relationship {
 // The role is stored with underscores, the badge says Left the company, and
 // a person with no title, company, seniority, or location says there are no
 // profile details yet.
+// relationshipSheetUnknownPersonMatch matches "Unknown person" on the people
+// list. The sheet uses that label only when the membership header, the
+// person's name, and both email fields are blank. A name or an address is a
+// different line.
+func relationshipSheetUnknownPersonMatch(needle string) predicate.Relationship {
+	if !labelPhraseMatches("unknown person", needle) {
+		return nil
+	}
+	return relationshipHasUnknownPerson()
+}
+
+func relationshipHasUnknownPerson() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			part := relationshipparticipant.Table
+			people := person.Table
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(part)
+			b.WriteString(" AS member LEFT JOIN ")
+			b.WriteString(people)
+			b.WriteString(" AS who ON who.")
+			b.WriteString(person.FieldID)
+			b.WriteString(" = member.")
+			b.WriteString(relationshipparticipant.PersonColumn)
+			b.WriteString(" WHERE member.")
+			b.WriteString(relationshipparticipant.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND trim(coalesce(member.")
+			b.WriteString(relationshipparticipant.FieldDisplayName)
+			b.WriteString(", '')) = '' AND trim(coalesce(member.")
+			b.WriteString(relationshipparticipant.FieldEmail)
+			b.WriteString(", '')) = '' AND (member.")
+			b.WriteString(relationshipparticipant.PersonColumn)
+			b.WriteString(" IS NULL OR (trim(coalesce(who.")
+			b.WriteString(person.FieldDisplayName)
+			b.WriteString(", '')) = '' AND trim(coalesce(who.")
+			b.WriteString(person.FieldPrimaryEmail)
+			b.WriteString(", '')) = '')))")
+		}))
+	})
+}
+
 func relationshipSheetPeopleMatch(needle string) predicate.Relationship {
 	var preds []predicate.Relationship
 	if role := relationshipParticipantRoleMatch(needle); role != nil {
@@ -4783,23 +4823,6 @@ func relationshipWithoutConversationData() predicate.Relationship {
 		relationship.Not(relationship.HasObservationsWith(relationshipobservation.SourceIn(
 			"meeting", "desktop_note", "voice_note", "browser",
 		))),
-	)
-}
-
-// relationshipSheetDeletionButtonMatch matches the privacy button. It is the
-// company that has mail, a visible meeting, a note, or any promise. A calendar
-// event alone does not offer the delete.
-func relationshipSheetDeletionButtonMatch(needle string) predicate.Relationship {
-	if !labelPhraseMatches("delete conversation data", needle) {
-		return nil
-	}
-	return relationship.Or(
-		relationshipMailThreadCount("<>", 0),
-		relationshipHasVisibleCommunication(),
-		relationship.HasCommitments(),
-		relationship.HasObservationsWith(relationshipobservation.SourceIn(
-			"meeting", "desktop_note", "voice_note", "browser",
-		)),
 	)
 }
 
@@ -8872,24 +8895,6 @@ func relationshipSheetStateAnswerMatch(needle string, now time.Time) predicate.R
 	}
 }
 
-func companyRecordSearchLabel(value string) string {
-	switch value {
-	case "unknown":
-		return "Not known"
-	case "needs_attention":
-		return "Needs attention"
-	case "active_customer":
-		return "Active customer"
-	case "former_customer":
-		return "Former customer"
-	default:
-		if value == "" {
-			return "Not known"
-		}
-		return strings.ToUpper(value[:1]) + value[1:]
-	}
-}
-
 type stateAnswerDimension struct {
 	title     string
 	dimension string
@@ -11773,14 +11778,6 @@ func writeDepartureKindShown(b *sql.Builder, s *sql.Selector, facts string) {
 	b.WriteString(" END")
 }
 
-// relationshipSheetActivityMailDirectionMatch is "Direction: outbound" or
-// "Direction: inbound" on an opened activity. Gmail stores who sent the last
-// message. That line is not "Direction: We owe them", which is a promise.
-// A direction that repeats the row summary stays hidden.
-func relationshipSheetActivityMailDirectionMatch(needle string) predicate.Relationship {
-	return relationshipSheetActivityFactMatch(needle, "direction: ", "direction")
-}
-
 // relationshipSheetActivityCountMatch is "Message Count: 4", "Outbound Count: 2",
 // or "Inbound Count: 1" on an opened activity. Gmail stores those as numbers.
 // The mail row's "4 messages" is a different sentence. A count that repeats
@@ -11811,4 +11808,75 @@ func relationshipSheetActivityCountMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
 	}
+}
+
+func observationFactSubject(subject string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeSubjectTrim(b, s, facts)
+			b.WriteString(" <> '' AND ")
+			writeSubjectTrim(b, s, facts)
+			b.WriteString(" NOT IN ('local-user', 'meeting-counterparty') AND ")
+			writeNormalizedSubject(b, s, facts)
+			b.WriteString(" = ")
+			b.Arg(subject)
+			b.WriteString(" AND (")
+			writeSubjectToken(b, s, facts)
+			b.WriteString(" OR ")
+			writeSubjectTrim(b, s, facts)
+			b.WriteString(" <> ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", ''))))")
+		}))
+	})
+}
+
+func writeSubjectTrim(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(coalesce(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->>'subject', ''))")
+		return
+	}
+	b.WriteString("trim(coalesce(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.subject'), ''))")
+}
+
+func writeNormalizedSubject(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
+		writeSubjectTrim(b, s, facts)
+		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
+		return
+	}
+	b.WriteString("trim(")
+	for range 4 {
+		b.WriteString("replace(")
+	}
+	b.WriteString("replace(replace(replace(lower(")
+	writeSubjectTrim(b, s, facts)
+	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
+	for range 4 {
+		b.WriteString(", '  ', ' ')")
+	}
+	b.WriteString(")")
+}
+
+func writeSubjectToken(b *sql.Builder, s *sql.Selector, facts string) {
+	if s.Dialect() == dialect.Postgres {
+		writeSubjectTrim(b, s, facts)
+		b.WriteString(" ~ '^[a-z0-9_]*_[a-z0-9_]*$'")
+		return
+	}
+	writeSubjectTrim(b, s, facts)
+	b.WriteString(" GLOB '[a-z0-9_]*_[a-z0-9_]*'")
 }

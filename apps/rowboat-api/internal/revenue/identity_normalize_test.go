@@ -3706,6 +3706,96 @@ func TestRelationshipSearchFindsThePeopleOnTheCompany(t *testing.T) {
 	assertCompanyQuery("Contact", "Harbor Left")
 }
 
+func TestRelationshipSearchFindsAnUnknownPerson(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	addMember := func(rel *ent.Relationship, header, email string, who *ent.Person) {
+		t.Helper()
+		create := f.client.RelationshipParticipant.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetDisplayName(header).SetRole("contact")
+		if email != "" {
+			create.SetEmail(email)
+		}
+		if who != nil {
+			create.SetPerson(who)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	blankPerson := func() *ent.Person {
+		t.Helper()
+		row, err := f.client.Person.Create().
+			SetDisplayName(" ").
+			SetWorkspace(ws).SetUser(f.user).
+			Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	headerOnly := makeCompany("Quill North")
+	linkedBlank := makeCompany("Cedar Mark")
+	named := makeCompany("Birch Slide")
+	addressed := makeCompany("Aspen Quay")
+	emailed := makeCompany("Harbor Ledger")
+	makeCompany("Lumen Packet")
+	addMember(headerOnly, " ", "", nil)
+	addMember(linkedBlank, " ", "", blankPerson())
+	namedPerson, err := f.client.Person.Create().
+		SetDisplayName("Ada Harbor").
+		SetWorkspace(ws).SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	addMember(named, " ", "", namedPerson)
+	addressPerson, err := f.client.Person.Create().
+		SetDisplayName(" ").
+		SetPrimaryEmail("ada@birch.example").
+		SetWorkspace(ws).SetUser(f.user).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	addMember(addressed, " ", "", addressPerson)
+	addMember(emailed, " ", "ada@lumen.example", nil)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Unknown person", "Quill North", "Cedar Mark")
+	assertCompanyQuery("which companies have an unknown person", "Quill North", "Cedar Mark")
+	assertCompanyQuery("person")
+}
+
 func TestRelationshipSearchFindsTheActivityHeading(t *testing.T) {
 	f := newFixture(t)
 	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
