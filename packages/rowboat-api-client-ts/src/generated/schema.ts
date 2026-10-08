@@ -2530,8 +2530,8 @@ export interface paths {
     get: operations["listRevenueActions"];
     put?: never;
     /**
-     * Create a manual action
-     * @description Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.
+     * Create task
+     * @description Create task saves a follow-up on a company. It sends the title, the due time, and a priority of 30.
      */
     post: operations["createRevenueAction"];
     delete?: never;
@@ -23506,13 +23506,23 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
-    /** @description Action. */
+    /** @description Task. */
     requestBody: {
       content: {
+        /**
+         * @example {
+         *       "actionType": "follow_up_task",
+         *       "channel": "task",
+         *       "dueAt": "2026-07-15T17:00:00Z",
+         *       "priorityScore": 30,
+         *       "reason": "Follow up on the proposal",
+         *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"
+         *     }
+         */
         "application/json": {
           /**
            * @description Action type.
-           * @example warm_follow_up
+           * @example follow_up_task
            * @enum {string}
            */
           actionType:
@@ -23528,14 +23538,14 @@ export interface operations {
             | "commitment_rescue";
           /**
            * @description Delivery channel.
-           * @example email
+           * @example task
            * @enum {string}
            */
           channel: "email" | "slack" | "call" | "crm_task" | "crm" | "task" | "calendar";
           /**
            * Format: date-time
            * @description Due time.
-           * @example 2026-07-15T00:00:00Z
+           * @example 2026-07-15T17:00:00Z
            */
           dueAt?: string | null;
           /**
@@ -23550,7 +23560,7 @@ export interface operations {
           };
           /**
            * @description Priority (0-100).
-           * @example 80
+           * @example 30
            */
           priorityScore?: number;
           /**
@@ -23564,8 +23574,8 @@ export interface operations {
            */
           proposedSubject?: string;
           /**
-           * @description Evidence-backed reason.
-           * @example They asked for a follow-up in July.
+           * @description Task title.
+           * @example Follow up on the proposal
            */
           reason: string;
           /**
@@ -23575,7 +23585,7 @@ export interface operations {
           recipientEmail?: string;
           /**
            * Format: uuid
-           * @description Owning relationship id.
+           * @description Company the task is for.
            * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
            */
           relationshipId: string;
@@ -23588,12 +23598,36 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Created action. */
+      /** @description Created task. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "actionType": "follow_up_task",
+           *       "approvalStatus": "pending",
+           *       "channel": "task",
+           *       "createdAt": "2026-07-15T16:00:00Z",
+           *       "detector": "manual",
+           *       "dueAt": "2026-07-15T17:00:00Z",
+           *       "evidence": [],
+           *       "executionMode": "draft",
+           *       "executionOwner": "rowboat",
+           *       "executionStatus": "pending",
+           *       "id": "3a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "policyStatus": "pending",
+           *       "priorityScore": 30,
+           *       "queueStatus": "open",
+           *       "reason": "Follow up on the proposal",
+           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "relationshipName": "Acme",
+           *       "revision": 1,
+           *       "revisionHash": "sha256:ab12...",
+           *       "updatedAt": "2026-07-15T16:00:00Z"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueAction"];
         };
       };

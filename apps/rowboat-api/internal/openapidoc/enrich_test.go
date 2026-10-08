@@ -5193,6 +5193,54 @@ func assertReloadedAction(t *testing.T, spec obj) {
 	if action["policyStatus"] != "passed" || action["queueStatus"] != "open" || action["approvalStatus"] != "pending" || action["executionMode"] != "send" {
 		t.Fatalf("reloaded action state: %#v", action)
 	}
+
+	assertCreatedTask(t, spec)
+}
+
+func TestCreatedTask(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertCreatedTask(t, spec)
+}
+
+func assertCreatedTask(t *testing.T, spec obj) {
+	t.Helper()
+	post := asObj(asObj(asObj(spec["paths"])["/v1/revenue-actions"])["post"])
+	if post["summary"] != "Create task" || post["operationId"] != "createRevenueAction" || post["description"] != createdTaskDescription {
+		t.Fatalf("created task operation: summary=%#v id=%#v description=%#v", post["summary"], post["operationId"], post["description"])
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])["example"]
+	gotRequest, err := json.Marshal(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantRequest, err := json.Marshal(createdTaskRequest())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotRequest) != string(wantRequest) {
+		t.Fatalf("created task request:\n%s\nwant:\n%s", gotRequest, wantRequest)
+	}
+	example := asObj(asObj(asObj(asObj(post["responses"])["201"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(createdTaskResponse())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("created task response:\n%s\nwant:\n%s", got, want)
+	}
+	encoded := string(got)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, "approvedAt") || strings.Contains(encoded, "recipientEmail") {
+		t.Fatalf("created task includes a send: %s", encoded)
+	}
+	action := asObj(example)
+	if action["actionType"] != "follow_up_task" || action["channel"] != "task" || action["queueStatus"] != "open" || action["policyStatus"] != "pending" || action["executionMode"] != "draft" {
+		t.Fatalf("created task state: %#v", action)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
