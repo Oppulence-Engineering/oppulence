@@ -4389,6 +4389,11 @@ export interface components {
        */
       error?: string | null;
       /**
+       * @description Code shown before a failed run's reason.
+       * @example llm_call_failed
+       */
+      errorCode?: string | null;
+      /**
        * @description Execution backend that owns this run.
        * @example api
        * @enum {string}

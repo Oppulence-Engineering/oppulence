@@ -46,6 +46,7 @@ export const ListBackgroundTaskRunsForAccount200Response = zod
               .datetime({ offset: true })
               .describe("Server row creation timestamp."),
             error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+            errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
             executor: zod
               .enum(["desktop", "api"])
               .describe("Execution backend that owns this run."),
@@ -1789,6 +1790,7 @@ export const ListBackgroundTaskRuns200Response = zod
               .datetime({ offset: true })
               .describe("Server row creation timestamp."),
             error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+            errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
             executor: zod
               .enum(["desktop", "api"])
               .describe("Execution backend that owns this run."),
@@ -2015,6 +2017,7 @@ export const CreateBackgroundTaskRun201Response = zod
       .describe("Desktop run completion timestamp."),
     createdAt: zod.iso.datetime({ offset: true }).describe("Server row creation timestamp."),
     error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+    errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
     executor: zod.enum(["desktop", "api"]).describe("Execution backend that owns this run."),
     id: zod.uuid().describe("Stable UUID primary key."),
     lastHeartbeatAt: zod.iso
@@ -2192,6 +2195,7 @@ export const GetBackgroundTaskRun200Response = zod
       .describe("Desktop run completion timestamp."),
     createdAt: zod.iso.datetime({ offset: true }).describe("Server row creation timestamp."),
     error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+    errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
     executor: zod.enum(["desktop", "api"]).describe("Execution backend that owns this run."),
     id: zod.uuid().describe("Stable UUID primary key."),
     lastHeartbeatAt: zod.iso
@@ -2395,6 +2399,7 @@ export const PatchBackgroundTaskRun200Response = zod
       .describe("Desktop run completion timestamp."),
     createdAt: zod.iso.datetime({ offset: true }).describe("Server row creation timestamp."),
     error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+    errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
     executor: zod.enum(["desktop", "api"]).describe("Execution backend that owns this run."),
     id: zod.uuid().describe("Stable UUID primary key."),
     lastHeartbeatAt: zod.iso
@@ -2576,6 +2581,7 @@ export const CancelBackgroundTaskRun202Response = zod
       .describe("Desktop run completion timestamp."),
     createdAt: zod.iso.datetime({ offset: true }).describe("Server row creation timestamp."),
     error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+    errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
     executor: zod.enum(["desktop", "api"]).describe("Execution backend that owns this run."),
     id: zod.uuid().describe("Stable UUID primary key."),
     lastHeartbeatAt: zod.iso
@@ -3033,6 +3039,7 @@ export const RetryBackgroundTaskRun202Response = zod
       .describe("Desktop run completion timestamp."),
     createdAt: zod.iso.datetime({ offset: true }).describe("Server row creation timestamp."),
     error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+    errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
     executor: zod.enum(["desktop", "api"]).describe("Execution backend that owns this run."),
     id: zod.uuid().describe("Stable UUID primary key."),
     lastHeartbeatAt: zod.iso
@@ -3222,6 +3229,7 @@ export const SignalBackgroundTaskRun202Response = zod
       .describe("Desktop run completion timestamp."),
     createdAt: zod.iso.datetime({ offset: true }).describe("Server row creation timestamp."),
     error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+    errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
     executor: zod.enum(["desktop", "api"]).describe("Execution backend that owns this run."),
     id: zod.uuid().describe("Stable UUID primary key."),
     lastHeartbeatAt: zod.iso
@@ -3498,6 +3506,7 @@ export const TriggerBackgroundTask202Response = zod
       .describe("Desktop run completion timestamp."),
     createdAt: zod.iso.datetime({ offset: true }).describe("Server row creation timestamp."),
     error: zod.string().nullish().describe("Run error mirrored from the desktop."),
+    errorCode: zod.string().nullish().describe("Code shown before a failed run's reason."),
     executor: zod.enum(["desktop", "api"]).describe("Execution backend that owns this run."),
     id: zod.uuid().describe("Stable UUID primary key."),
     lastHeartbeatAt: zod.iso

@@ -1778,6 +1778,12 @@
             "nullable": true,
             "type": "string"
           },
+          "errorCode": {
+            "description": "Code shown before a failed run's reason.",
+            "example": "llm_call_failed",
+            "nullable": true,
+            "type": "string"
+          },
           "executor": {
             "description": "Execution backend that owns this run.",
             "enum": ["desktop", "api"],

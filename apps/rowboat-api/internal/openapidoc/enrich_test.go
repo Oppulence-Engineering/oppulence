@@ -646,6 +646,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if value := asObj(evidenceProperties["value"]); value["oneOf"] == nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.value is invalid: %#v", value)
 	}
+	assertRunFailureCode(t, spec)
 	entityProperties := asObj(asObj(schemas["EntityProjection"])["properties"])
 	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
@@ -6524,6 +6525,27 @@ func assertRunAttempt(t *testing.T, spec obj) {
 	for _, name := range run["required"].([]any) {
 		if name == "attempt" {
 			t.Fatal("attempt stays off the required list so an older run sample can omit it")
+		}
+	}
+}
+
+func TestRunFailureCodeIsDocumented(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertRunFailureCode(t, spec)
+}
+
+func assertRunFailureCode(t *testing.T, spec obj) {
+	t.Helper()
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	run := asObj(schemas["BackgroundTaskRun"])
+	code := asObj(asObj(run["properties"])["errorCode"])
+	if code["description"] != runFailureCodeDescription || code["example"] != "llm_call_failed" || code["nullable"] != true || code["type"] != "string" {
+		t.Fatalf("run failure code: %#v", code)
+	}
+	for _, name := range run["required"].([]any) {
+		if name == "errorCode" {
+			t.Fatal("errorCode stays off the required list so an older run sample can omit it")
 		}
 	}
 }

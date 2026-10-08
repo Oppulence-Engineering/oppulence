@@ -27,6 +27,11 @@ export interface BackgroundTaskRun {
    * @nullable
    */
   error?: string | null;
+  /**
+   * Code shown before a failed run's reason.
+   * @nullable
+   */
+  errorCode?: string | null;
   /** Execution backend that owns this run. */
   executor: BackgroundTaskRunExecutor;
   /** Stable UUID primary key. */
