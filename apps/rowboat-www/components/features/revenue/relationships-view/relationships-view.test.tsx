@@ -28,7 +28,7 @@ import {
   companyDirectoryHasConnectedSource,
   companySourceCountsAsConnected,
   sourcesAttentionLabel,
-  companyStageFilterName,
+  companyLifecycleFilterName,
   companySheetPositionLabel,
   companyReviewCopy,
   reviewHasRecordedActivity,
@@ -390,12 +390,14 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("humanize(relationship.health)");
     expect(source).not.toContain("humanize(data.relationship.health)");
     expect(source).not.toContain('"text-[13px] font-normal capitalize"');
-    expect(companyStageFilterName("all")).toBe("Stage, All stages");
-    expect(companyStageFilterName("evaluation")).toBe("Stage, Evaluation");
+    expect(companyLifecycleFilterName("all")).toBe("Lifecycle, Any lifecycle");
+    expect(companyLifecycleFilterName("evaluation")).toBe("Lifecycle, Evaluation");
     expect(source).toContain("aria-label={companyHealthFilterName(health)}");
-    expect(source).toContain("aria-label={companyStageFilterName(lifecycle)}");
+    expect(source).toContain("aria-label={companyLifecycleFilterName(lifecycle)}");
     expect(source).not.toContain(">All health</SelectItem>");
-    expect(source).toContain(">All stages</SelectItem>");
+    expect(source).toContain(">Any lifecycle</SelectItem>");
+    expect(source).not.toContain(">All stages</SelectItem>");
+    expect(source).not.toContain('placeholder="Stage"');
     expect(sourcesNeedingRepair([])).toBe(0);
     expect(sourcesNeedingRepair([{ status: "live" }, { status: "reconnect_required" }])).toBe(1);
     expect(sourcesNeedingRepair([{ status: "connected" }, { status: "backfilling" }])).toBe(0);
