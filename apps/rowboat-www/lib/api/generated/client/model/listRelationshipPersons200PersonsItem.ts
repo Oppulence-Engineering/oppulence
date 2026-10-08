@@ -16,6 +16,8 @@ export type ListRelationshipPersons200PersonsItem = {
   aliases: string[];
   /** How many times these details changed. */
   attributesVersion: number;
+  /** Department. */
+  department?: string;
   /** Name. */
   displayName: string;
   /** Whether their mail still reaches them. */
@@ -26,6 +28,12 @@ export type ListRelationshipPersons200PersonsItem = {
   id: string;
   /** When you last talked. */
   lastInteractionAt?: string;
+  /** LinkedIn page. */
+  linkedinUrl?: string;
+  /** Locale. */
+  locale?: string;
+  /** Location. */
+  location?: string;
   /** Company domain. */
   orgDomain?: string;
   /** Company. */
@@ -36,8 +44,12 @@ export type ListRelationshipPersons200PersonsItem = {
   primaryEmail?: string;
   /** Companies this person is on. */
   relationshipCount: number;
+  /** Seniority band. The Role column uses this when no title is saved. */
+  seniority?: string;
   /** Whether this person is in the directory. */
   status: ListRelationshipPersons200PersonsItemStatus;
+  /** Time zone. */
+  timezone?: string;
   /** Role. */
   title?: string;
 };

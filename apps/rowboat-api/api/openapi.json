@@ -27012,7 +27012,7 @@
     },
     "/v1/relationship-persons": {
       "get": {
-        "description": "People loads this directory. The request asks for the first 500 people. The answer lists each person with their name, email, role, company, and when you last talked.",
+        "description": "People loads this directory. The request asks for the first 500 people. The answer lists each person with their name, email, role, company, department, location, LinkedIn, and when you last talked.",
         "operationId": "listRelationshipPersons",
         "parameters": [
           {
@@ -27039,17 +27039,23 @@
                     {
                       "aliases": [],
                       "attributesVersion": 1,
+                      "department": "Engineering",
                       "displayName": "Sarah Chen",
                       "employmentStatus": "unknown",
                       "firstInteractionAt": "2026-08-04T12:00:00Z",
                       "id": "ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
                       "lastInteractionAt": "2026-08-04T12:00:00Z",
+                      "linkedinUrl": "https://www.linkedin.com/in/sarahchen",
+                      "locale": "en-US",
+                      "location": "San Francisco",
                       "orgDomain": "acme.example",
                       "orgName": "Acme",
                       "participantRoles": ["champion"],
                       "primaryEmail": "sarah@acme.example",
                       "relationshipCount": 1,
+                      "seniority": "vp",
                       "status": "active",
+                      "timezone": "America/Los_Angeles",
                       "title": "VP Engineering"
                     }
                   ]
@@ -27080,6 +27086,11 @@
                             "example": 1,
                             "type": "integer"
                           },
+                          "department": {
+                            "description": "Department.",
+                            "example": "Engineering",
+                            "type": "string"
+                          },
                           "displayName": {
                             "description": "Name.",
                             "example": "Sarah Chen",
@@ -27107,6 +27118,21 @@
                             "description": "When you last talked.",
                             "example": "2026-08-04T12:00:00Z",
                             "format": "date-time",
+                            "type": "string"
+                          },
+                          "linkedinUrl": {
+                            "description": "LinkedIn page.",
+                            "example": "https://www.linkedin.com/in/sarahchen",
+                            "type": "string"
+                          },
+                          "locale": {
+                            "description": "Locale.",
+                            "example": "en-US",
+                            "type": "string"
+                          },
+                          "location": {
+                            "description": "Location.",
+                            "example": "San Francisco",
                             "type": "string"
                           },
                           "orgDomain": {
@@ -27138,10 +27164,20 @@
                             "example": 1,
                             "type": "integer"
                           },
+                          "seniority": {
+                            "description": "Seniority band. The Role column uses this when no title is saved.",
+                            "example": "vp",
+                            "type": "string"
+                          },
                           "status": {
                             "description": "Whether this person is in the directory.",
                             "enum": ["active", "merged"],
                             "example": "active",
+                            "type": "string"
+                          },
+                          "timezone": {
+                            "description": "Time zone.",
+                            "example": "America/Los_Angeles",
                             "type": "string"
                           },
                           "title": {

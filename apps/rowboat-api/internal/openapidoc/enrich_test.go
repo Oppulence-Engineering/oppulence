@@ -2754,8 +2754,7 @@ func assertPeopleDirectory(t *testing.T, paths obj) {
 	if op["summary"] != "People" {
 		t.Fatalf("summary: %#v", op["summary"])
 	}
-	const wantDescription = "People loads this directory. The request asks for the first 500 people. The answer lists each person with their name, email, role, company, and when you last talked."
-	if op["description"] != wantDescription {
+	if op["description"] != peopleDirectoryDescription {
 		t.Fatalf("description: %#v", op["description"])
 	}
 	params, _ := op["parameters"].([]any)
@@ -2773,6 +2772,15 @@ func assertPeopleDirectory(t *testing.T, paths obj) {
 	}
 	if string(got) != string(want) {
 		t.Fatalf("example:\n%s\nwant:\n%s", got, want)
+	}
+	person := asObj(asObj(asObj(asObj(asObj(media["schema"])["properties"])["persons"])["items"])["properties"])
+	if asObj(person["department"])["example"] != "Engineering" ||
+		asObj(person["location"])["example"] != "San Francisco" ||
+		asObj(person["linkedinUrl"])["example"] != "https://www.linkedin.com/in/sarahchen" ||
+		asObj(person["seniority"])["example"] != "vp" ||
+		asObj(person["timezone"])["example"] != "America/Los_Angeles" ||
+		asObj(person["locale"])["example"] != "en-US" {
+		t.Fatalf("directory columns: department=%#v location=%#v linkedin=%#v seniority=%#v timezone=%#v locale=%#v", person["department"], person["location"], person["linkedinUrl"], person["seniority"], person["timezone"], person["locale"])
 	}
 	if asObj(asObj(op["responses"])["200"])["description"] != "The people in this workspace." {
 		t.Fatalf("response: %#v", asObj(op["responses"])["200"])

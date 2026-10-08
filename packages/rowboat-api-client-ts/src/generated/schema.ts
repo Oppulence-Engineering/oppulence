@@ -2133,7 +2133,7 @@ export interface paths {
     };
     /**
      * People
-     * @description People loads this directory. The request asks for the first 500 people. The answer lists each person with their name, email, role, company, and when you last talked.
+     * @description People loads this directory. The request asks for the first 500 people. The answer lists each person with their name, email, role, company, department, location, LinkedIn, and when you last talked.
      */
     get: operations["listRelationshipPersons"];
     put?: never;
@@ -22886,11 +22886,15 @@ export interface operations {
            *         {
            *           "aliases": [],
            *           "attributesVersion": 1,
+           *           "department": "Engineering",
            *           "displayName": "Sarah Chen",
            *           "employmentStatus": "unknown",
            *           "firstInteractionAt": "2026-08-04T12:00:00Z",
            *           "id": "ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
            *           "lastInteractionAt": "2026-08-04T12:00:00Z",
+           *           "linkedinUrl": "https://www.linkedin.com/in/sarahchen",
+           *           "locale": "en-US",
+           *           "location": "San Francisco",
            *           "orgDomain": "acme.example",
            *           "orgName": "Acme",
            *           "participantRoles": [
@@ -22898,7 +22902,9 @@ export interface operations {
            *           ],
            *           "primaryEmail": "sarah@acme.example",
            *           "relationshipCount": 1,
+           *           "seniority": "vp",
            *           "status": "active",
+           *           "timezone": "America/Los_Angeles",
            *           "title": "VP Engineering"
            *         }
            *       ]
@@ -22919,6 +22925,11 @@ export interface operations {
                * @example 1
                */
               attributesVersion: number;
+              /**
+               * @description Department.
+               * @example Engineering
+               */
+              department?: string;
               /**
                * @description Name.
                * @example Sarah Chen
@@ -22949,6 +22960,21 @@ export interface operations {
                */
               lastInteractionAt?: string;
               /**
+               * @description LinkedIn page.
+               * @example https://www.linkedin.com/in/sarahchen
+               */
+              linkedinUrl?: string;
+              /**
+               * @description Locale.
+               * @example en-US
+               */
+              locale?: string;
+              /**
+               * @description Location.
+               * @example San Francisco
+               */
+              location?: string;
+              /**
                * @description Company domain.
                * @example acme.example
                */
@@ -22971,11 +22997,21 @@ export interface operations {
                */
               relationshipCount: number;
               /**
+               * @description Seniority band. The Role column uses this when no title is saved.
+               * @example vp
+               */
+              seniority?: string;
+              /**
                * @description Whether this person is in the directory.
                * @example active
                * @enum {string}
                */
               status: "active" | "merged";
+              /**
+               * @description Time zone.
+               * @example America/Los_Angeles
+               */
+              timezone?: string;
               /**
                * @description Role.
                * @example VP Engineering

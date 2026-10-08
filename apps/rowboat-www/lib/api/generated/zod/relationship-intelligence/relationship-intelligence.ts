@@ -1914,7 +1914,7 @@ export const IngestRelationshipObservations409Response = zod
   );
 
 /**
- * People loads this directory. The request asks for the first 500 people. The answer lists each person with their name, email, role, company, and when you last talked.
+ * People loads this directory. The request asks for the first 500 people. The answer lists each person with their name, email, role, company, department, location, LinkedIn, and when you last talked.
  * @summary People
  */
 export const listRelationshipPersonsQueryLimitMax = 500;
@@ -1938,6 +1938,7 @@ export const ListRelationshipPersons200Response = zod
           .strictObject({
             aliases: zod.array(zod.string().describe("Other name.")).describe("Other names."),
             attributesVersion: zod.int().describe("How many times these details changed."),
+            department: zod.string().optional().describe("Department."),
             displayName: zod.string().describe("Name."),
             employmentStatus: zod
               .enum(["unknown", "active", "departed"])
@@ -1952,6 +1953,9 @@ export const ListRelationshipPersons200Response = zod
               .datetime({ offset: true })
               .optional()
               .describe("When you last talked."),
+            linkedinUrl: zod.string().optional().describe("LinkedIn page."),
+            locale: zod.string().optional().describe("Locale."),
+            location: zod.string().optional().describe("Location."),
             orgDomain: zod.string().optional().describe("Company domain."),
             orgName: zod.string().optional().describe("Company."),
             participantRoles: zod
@@ -1960,9 +1964,14 @@ export const ListRelationshipPersons200Response = zod
               .describe("Roles on those companies."),
             primaryEmail: zod.string().optional().describe("Email."),
             relationshipCount: zod.int().describe("Companies this person is on."),
+            seniority: zod
+              .string()
+              .optional()
+              .describe("Seniority band. The Role column uses this when no title is saved."),
             status: zod
               .enum(["active", "merged"])
               .describe("Whether this person is in the directory."),
+            timezone: zod.string().optional().describe("Time zone."),
             title: zod.string().optional().describe("Role."),
           })
           .describe("One person."),
