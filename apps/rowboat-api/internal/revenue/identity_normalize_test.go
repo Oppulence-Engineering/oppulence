@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -821,6 +822,124 @@ func TestRelationshipSearchFindsTheEmptySheetSentences(t *testing.T) {
 	assertCompanyQuery("have changed yet")
 	assertCompanyQuery("No Gmail threads linked yet", "Quay Empty", "Quay Note", "Quay Inbox", "Quay Promise", "Quay Changed", "Quay Deleted", "Quay Calendar", "Quay Observed")
 	assertCompanyQuery("No Gmail threads linked yet. Confirmed meetings are in Activity.", "Quay Meet")
+}
+
+func TestRelationshipSearchFindsDeletionAndChangeHeadings(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	at := time.Date(2026, 10, 4, 12, 0, 0, 0, time.UTC)
+	quiet := makeCompany("Sheet Quiet")
+	mail := makeCompany("Sheet Mail")
+	note := makeCompany("Sheet Note")
+	promise := makeCompany("Sheet Promise")
+	calendar := makeCompany("Sheet Calendar")
+	removed := makeCompany("Sheet Removed")
+	one := makeCompany("Sheet One")
+	two := makeCompany("Sheet Two")
+	more := makeCompany("Sheet More")
+	_ = quiet
+	if _, err := f.client.MailThread.Create().
+		SetUser(f.user).SetProviderThreadID("sheet-mail").
+		SetSubject("The sheet note").SetMessageCount(1).
+		SetRelationship(mail).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(note).
+		SetSource("desktop_note").SetExternalID("sheet-note").
+		SetEventType("note").SetOccurredAt(at).SetReceivedAt(at).
+		SetSummary("A note").SetContentHash("sheet-note").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Commitment.Create().
+		SetWorkspace(ws).SetRelationship(promise).SetUser(f.user).
+		SetDirection("promised_by_them").SetText("Send the sheet packet").
+		SetStatus("open").SetConfidence(1).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(calendar).
+		SetSource("calendar").SetExternalID("sheet-calendar").
+		SetEventType("event.updated").SetOccurredAt(at).SetReceivedAt(at).
+		SetSummary("A calendar event").SetContentHash("sheet-calendar").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	internal := auth.WithInternal(context.Background())
+	if _, err := f.client.CommunicationInteraction.Create().
+		SetWorkspace(ws).SetOwner(f.user).SetRelationshipID(removed.ID).
+		SetSource("gmail").SetSourceAccountID("owner@x.co").SetProviderObjectID("sheet-removed").
+		SetInteractionType("email").SetDirection("inbound").SetSubject("Removed").
+		SetOccurredAt(at).SetReceivedAt(at).SetVisibility("metadata").
+		SetContentHash("sha256:sheet-removed").SetMetadataJSON(`{}`).SetDeleted(true).
+		Save(internal); err != nil {
+		t.Fatal(err)
+	}
+	saveSnapshot := func(rel *ent.Relationship, version int) {
+		t.Helper()
+		if _, err := f.client.RelationshipStateSnapshot.Create().
+			SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+			SetVersion(version).SetStateJSON(`{}`).SetStateHash(rel.DisplayName + "-" + strconv.Itoa(version)).
+			SetEvaluatedAt(at).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveSnapshot(one, 1)
+	saveSnapshot(two, 1)
+	saveSnapshot(two, 2)
+	saveSnapshot(more, 1)
+	saveSnapshot(more, 2)
+	saveSnapshot(more, 3)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Delete conversation data", "Sheet Mail", "Sheet Note", "Sheet Promise")
+	assertCompanyQuery(
+		"No mail or meeting data to delete.",
+		"Sheet Quiet", "Sheet Calendar", "Sheet Removed", "Sheet One", "Sheet Two", "Sheet More",
+	)
+	assertCompanyQuery(
+		"What changed (0)",
+		"Sheet Quiet", "Sheet Mail", "Sheet Note", "Sheet Promise", "Sheet Calendar", "Sheet Removed",
+	)
+	assertCompanyQuery("What changed (1)", "Sheet One")
+	assertCompanyQuery("What changed (2)", "Sheet Two")
+	assertCompanyQuery("What changed (2+)", "Sheet More")
+	assertCompanyQuery("Show earlier changes", "Sheet More")
+	assertCompanyQuery("What changed (3)", "Sheet More")
+	assertCompanyQuery("What changed (1+)")
+	assertCompanyQuery("What changed (4)")
 }
 
 func TestRelationshipSearchFindsTheUnsupportedStateAnswer(t *testing.T) {
