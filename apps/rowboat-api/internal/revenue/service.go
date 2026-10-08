@@ -1012,6 +1012,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if uncertain := relationshipSheetUncertainClaimMatch(needle); uncertain != nil {
 			parts = append(parts, uncertain)
 		}
+
+		if counted := relationshipSheetSuggestionCountMatch(needle, searchedAt); counted != nil {
+			parts = append(parts, counted)
+		}
 		if privacy := relationshipSheetPrivacyMatch(needle); privacy != nil {
 			parts = append(parts, privacy)
 		}
@@ -4042,6 +4046,159 @@ func writeUncertainClaimCorrection(b *sql.Builder, s *sql.Selector, kinds []stri
 		b.Arg(kind)
 	}
 	b.WriteString("))")
+}
+
+// relationshipSheetSuggestionCountMatch matches the Suggestions heading. The
+// section is hidden when nothing is suggested, so Suggestions (0) matches
+// nobody. The count is the cues on the first observation page.
+func relationshipSheetSuggestionCountMatch(needle string, now time.Time) predicate.Relationship {
+	n, ok := suggestionCountQuery(needle)
+	if !ok {
+		return nil
+	}
+	return relationshipSuggestionCount(n, now)
+}
+
+func suggestionCountQuery(needle string) (int, bool) {
+	const prefix = "suggestions ("
+	if !strings.HasPrefix(needle, prefix) || !strings.HasSuffix(needle, ")") {
+		return 0, false
+	}
+	body := strings.TrimSuffix(strings.TrimPrefix(needle, prefix), ")")
+	parsed, err := strconv.Atoi(body)
+	if err != nil || parsed < 1 || strconv.Itoa(parsed) != body {
+		return 0, false
+	}
+	return parsed, true
+}
+
+func relationshipSuggestionCount(n int, now time.Time) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(")
+			writeOverdueCueCount(b, s, now)
+			b.WriteString(" + ")
+			writeClaimCueCount(b, s, "objection")
+			b.WriteString(" + ")
+			writeClaimCueCount(b, s, "risk")
+			b.WriteString(" + ")
+			writeRenewalCueCount(b, s)
+			b.WriteString(" + ")
+			writeMissingNextCueCount(b, s)
+			b.WriteString(" + ")
+			writeContradictionCueCount(b, s)
+			b.WriteString(") = ")
+			b.Arg(n)
+		}))
+	})
+}
+
+func writeOverdueCueCount(b *sql.Builder, s *sql.Selector, now time.Time) {
+	b.WriteString("(SELECT COUNT(*) FROM ")
+	b.WriteString(commitment.Table)
+	b.WriteString(" AS promised WHERE promised.")
+	b.WriteString(commitment.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.FieldID))
+	b.WriteString(" AND promised.")
+	b.WriteString(commitment.FieldStatus)
+	b.WriteString(" = 'open' AND promised.")
+	b.WriteString(commitment.FieldDueAt)
+	b.WriteString(" IS NOT NULL AND promised.")
+	b.WriteString(commitment.FieldDueAt)
+	b.WriteString(" < ")
+	b.Arg(now)
+	b.WriteString(")")
+}
+
+func writeClaimCueCount(b *sql.Builder, s *sql.Selector, kind string) {
+	b.WriteString("(CASE WHEN EXISTS (SELECT 1 FROM (SELECT obs.")
+	b.WriteString(relationshipobservation.FieldNormalizedFactsJSON)
+	b.WriteString(" FROM ")
+	b.WriteString(relationshipobservation.Table)
+	b.WriteString(" AS obs WHERE obs.")
+	b.WriteString(relationshipobservation.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.FieldID))
+	b.WriteString(" ORDER BY obs.")
+	b.WriteString(relationshipobservation.FieldOccurredAt)
+	b.WriteString(" DESC, obs.")
+	b.WriteString(relationshipobservation.FieldID)
+	b.WriteString(" DESC LIMIT ")
+	b.WriteString(strconv.Itoa(intelligenceObservationPage))
+	b.WriteString(") AS obs WHERE ")
+	writeClaimKindExists(b, s, kind)
+	b.WriteString(") THEN 1 ELSE 0 END)")
+}
+
+func writeClaimKindExists(b *sql.Builder, s *sql.Selector, kind string) {
+	facts := "obs." + relationshipobservation.FieldNormalizedFactsJSON
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_typeof(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'conversation_claims') = 'array' AND EXISTS (SELECT 1 FROM jsonb_array_elements(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->'conversation_claims') AS claim WHERE claim->>'kind' = ")
+	} else {
+		b.WriteString("json_valid(")
+		b.WriteString(facts)
+		b.WriteString(") AND json_type(")
+		b.WriteString(facts)
+		b.WriteString(", '$.conversation_claims') = 'array' AND EXISTS (SELECT 1 FROM json_each(")
+		b.WriteString(facts)
+		b.WriteString(", '$.conversation_claims') AS claim WHERE json_extract(claim.value, '$.kind') = ")
+	}
+	b.Arg(kind)
+	b.WriteString(")")
+}
+
+func writeRenewalCueCount(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("(CASE WHEN ")
+	b.WriteString(s.C(relationship.FieldLifecycle))
+	b.WriteString(" = 'renewal' THEN 1 ELSE 0 END)")
+}
+
+func writeMissingNextCueCount(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("(CASE WHEN trim(coalesce(")
+	b.WriteString(s.C(relationship.FieldNextAction))
+	b.WriteString(", '')) = '' AND ")
+	b.WriteString(s.C(relationship.FieldLifecycle))
+	b.WriteString(" IN ('evaluation', 'contracting', 'onboarding', 'renewal') THEN 1 ELSE 0 END)")
+}
+
+func writeContradictionCueCount(b *sql.Builder, s *sql.Selector) {
+	art := conversationintelligenceartifact.Table
+	b.WriteString("(SELECT COUNT(*) FROM ")
+	b.WriteString(art)
+	b.WriteString(" AS eval WHERE eval.")
+	b.WriteString(conversationintelligenceartifact.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.FieldID))
+	b.WriteString(" AND eval.")
+	b.WriteString(conversationintelligenceartifact.FieldKind)
+	b.WriteString(" = 'contradiction_case' AND eval.")
+	b.WriteString(conversationintelligenceartifact.FieldVersion)
+	b.WriteString(" = (SELECT MAX(newer.")
+	b.WriteString(conversationintelligenceartifact.FieldVersion)
+	b.WriteString(") FROM ")
+	b.WriteString(art)
+	b.WriteString(" AS newer WHERE newer.")
+	b.WriteString(conversationintelligenceartifact.FieldStableID)
+	b.WriteString(" = eval.")
+	b.WriteString(conversationintelligenceartifact.FieldStableID)
+	b.WriteString(" AND newer.")
+	b.WriteString(conversationintelligenceartifact.FieldKind)
+	b.WriteString(" = eval.")
+	b.WriteString(conversationintelligenceartifact.FieldKind)
+	b.WriteString(" AND newer.")
+	b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+	b.WriteString(" = eval.")
+	b.WriteString(conversationintelligenceartifact.WorkspaceColumn)
+	b.WriteString(") AND ")
+	writeContradictionText(b, s, "status")
+	b.WriteString(" = 'open' AND ")
+	writeContradictionSideCount(b, s)
+	b.WriteString(" >= 2)")
 }
 
 // relationshipSheetSuggestionMatch matches suggestion titles the sheet prints
