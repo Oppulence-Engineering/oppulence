@@ -8379,6 +8379,13 @@ func relationshipSheetReviewMatch(userID uuid.UUID, needle string) predicate.Rel
 	if labelPhraseMatches("mark as reviewed", needle) {
 		preds = append(preds, relationshipChangedSinceReview(userID))
 	}
+
+	// The graph marks a company "Changed since you last looked" when its
+	// version is past this person's latest review. Version 0 has not moved.
+	// Another person's review does not clear it.
+	if labelPhraseMatches("changed since you last looked", needle) {
+		preds = append(preds, relationshipChangedSinceReview(userID))
+	}
 	switch len(preds) {
 	case 0:
 		return nil

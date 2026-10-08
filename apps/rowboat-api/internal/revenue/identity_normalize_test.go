@@ -5805,6 +5805,100 @@ func TestRelationshipSearchFindsEarlierEvidence(t *testing.T) {
 	assertCompanyQuery("earlier")
 }
 
+func TestRelationshipSearchFindsChangedSinceYouLastLooked(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill North",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	moved, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Slide",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CorrectRelationship(f.ctx, f.user, moved.ID, RelationshipCorrectionInput{
+		Dimension: "health",
+		Value:     "healthy",
+		Reason:    "The account is healthy.",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	reviewed, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Aspen Ledger",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CorrectRelationship(f.ctx, f.user, reviewed.ID, RelationshipCorrectionInput{
+		Dimension: "health",
+		Value:     "healthy",
+		Reason:    "The account is healthy.",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	reviewed, err = f.svc.GetRelationship(f.ctx, reviewed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.AcknowledgeMissionControl(f.ctx, f.user, reviewed.ID, reviewed.StateVersion, reviewed.StateHash); err != nil {
+		t.Fatal(err)
+	}
+	again, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Birch Quiet",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CorrectRelationship(f.ctx, f.user, again.ID, RelationshipCorrectionInput{
+		Dimension: "health",
+		Value:     "healthy",
+		Reason:    "The account is healthy.",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	again, err = f.svc.GetRelationship(f.ctx, again.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.AcknowledgeMissionControl(f.ctx, f.user, again.ID, again.StateVersion, again.StateHash); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CorrectRelationship(f.ctx, f.user, again.ID, RelationshipCorrectionInput{
+		Dimension: "health",
+		Value:     "needs_attention",
+		Reason:    "The account needs attention.",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+
+	assertCompanyQuery("Changed since you last looked", "Cedar Slide", "Birch Quiet")
+	assertCompanyQuery("which companies changed since you last looked", "Cedar Slide", "Birch Quiet")
+	assertCompanyQuery("Changed since you last looked: Health.", "Cedar Slide", "Birch Quiet")
+	assertCompanyQuery("Not reviewed yet.", "Quill North")
+	assertCompanyQuery("Nothing changed since your last review.", "Aspen Ledger")
+	assertCompanyQuery("looked")
+	assertCompanyQuery("since")
+}
+
 func TestRelationshipSearchFindsTheLastInteraction(t *testing.T) {
 	f := newFixture(t)
 	recent, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
