@@ -35,6 +35,7 @@ import type {
   ListCommitments200,
   ListRelationshipAttention200,
   ListRelationshipIdentityCandidates200,
+  ListRelationshipPersons200,
   ListRelationships200,
   ListWorkspaceNotes200,
   PutConversationPolicy201,
@@ -1442,6 +1443,59 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
 
 export const getIngestRelationshipObservationsResponseMock =
   (): IngestRelationshipObservations201 => ({});
+
+export const getListRelationshipPersonsResponseMock = (
+  overrideResponse: Partial<Extract<ListRelationshipPersons200, object>> = {},
+): ListRelationshipPersons200 => ({
+  hasMore: faker.datatype.boolean(),
+  persons: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => ({
+      aliases: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+        () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+      ),
+      attributesVersion: faker.number.int(),
+      displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      employmentStatus: faker.helpers.arrayElement([
+        faker.helpers.arrayElement(["unknown", "active", "departed"] as const),
+        undefined,
+      ]),
+      firstInteractionAt: faker.helpers.arrayElement([
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        undefined,
+      ]),
+      id: faker.string.uuid(),
+      lastInteractionAt: faker.helpers.arrayElement([
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        undefined,
+      ]),
+      orgDomain: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      orgName: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      participantRoles: faker.helpers.arrayElement([
+        Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+        ),
+        undefined,
+      ]),
+      primaryEmail: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      relationshipCount: faker.number.int(),
+      status: faker.helpers.arrayElement(["active", "merged"] as const),
+      title: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+    }),
+  ),
+  ...overrideResponse,
+});
 
 export const getApproveRelationshipRecommendationResponseMock = (
   overrideResponse: Partial<Extract<RevenueAction, object>> = {},

@@ -110,6 +110,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/relationships/{relationshipId}/corrections",
 		"/v1/relationships/{relationshipId}/conversation-corrections",
 		"/v1/relationship-observations/batch",
+		"/v1/relationship-persons",
 		"/v1/workspace-notes",
 		"/v1/revenue-workspaces/current/communication-policy/{sourceAccountId}",
 		"/v1/relationship-sources/status",
@@ -2778,6 +2779,45 @@ func assertSearchMail(t *testing.T, paths obj) {
 		t.Fatalf("schema examples: %#v", items)
 	}
 	if asObj(asObj(op["responses"])["200"])["description"] != "The mail Search mail ranks." {
+		t.Fatalf("response: %#v", asObj(op["responses"])["200"])
+	}
+
+	assertPeopleDirectory(t, paths)
+}
+
+func TestPeopleDirectorySamplesTheProjectedPerson(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertPeopleDirectory(t, asObj(spec["paths"]))
+}
+
+func assertPeopleDirectory(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/relationship-persons"])["get"])
+	if op["summary"] != "People" {
+		t.Fatalf("summary: %#v", op["summary"])
+	}
+	const wantDescription = "People loads this directory. The request asks for the first 500 people. The answer lists each person with their name, email, role, company, and when you last talked."
+	if op["description"] != wantDescription {
+		t.Fatalf("description: %#v", op["description"])
+	}
+	params, _ := op["parameters"].([]any)
+	if len(params) != 1 || asObj(asObj(params[0])["schema"])["example"] != 500 && asObj(asObj(params[0])["schema"])["example"] != float64(500) {
+		t.Fatalf("limit: %#v", op["parameters"])
+	}
+	media := asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])
+	got, err := json.Marshal(media["example"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(peopleDirectoryResponse())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("example:\n%s\nwant:\n%s", got, want)
+	}
+	if asObj(asObj(op["responses"])["200"])["description"] != "The people in this workspace." {
 		t.Fatalf("response: %#v", asObj(op["responses"])["200"])
 	}
 }

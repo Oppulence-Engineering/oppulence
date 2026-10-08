@@ -24430,6 +24430,196 @@
         ]
       }
     },
+    "/v1/relationship-persons": {
+      "get": {
+        "description": "People loads this directory. The request asks for the first 500 people. The answer lists each person with their name, email, role, company, and when you last talked.",
+        "operationId": "listRelationshipPersons",
+        "parameters": [
+          {
+            "description": "How many people to return. The directory asks for 500.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "description": "How many people to return. The directory asks for 500.",
+              "example": 500,
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "hasMore": false,
+                  "persons": [
+                    {
+                      "aliases": [],
+                      "attributesVersion": 1,
+                      "displayName": "Sarah Chen",
+                      "employmentStatus": "unknown",
+                      "firstInteractionAt": "2026-08-04T12:00:00Z",
+                      "id": "ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "lastInteractionAt": "2026-08-04T12:00:00Z",
+                      "orgDomain": "acme.example",
+                      "orgName": "Acme",
+                      "participantRoles": [
+                        "champion"
+                      ],
+                      "primaryEmail": "sarah@acme.example",
+                      "relationshipCount": 1,
+                      "status": "active",
+                      "title": "VP Engineering"
+                    }
+                  ]
+                },
+                "schema": {
+                  "description": "People directory.",
+                  "properties": {
+                    "hasMore": {
+                      "description": "Whether another person exists past this page.",
+                      "example": false,
+                      "type": "boolean"
+                    },
+                    "persons": {
+                      "description": "People, most recently active first.",
+                      "items": {
+                        "description": "One person.",
+                        "properties": {
+                          "aliases": {
+                            "description": "Other names.",
+                            "items": {
+                              "description": "Other name.",
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "attributesVersion": {
+                            "description": "How many times these details changed.",
+                            "example": 1,
+                            "type": "integer"
+                          },
+                          "displayName": {
+                            "description": "Name.",
+                            "example": "Sarah Chen",
+                            "type": "string"
+                          },
+                          "employmentStatus": {
+                            "description": "Whether their mail still reaches them.",
+                            "enum": [
+                              "unknown",
+                              "active",
+                              "departed"
+                            ],
+                            "example": "unknown",
+                            "type": "string"
+                          },
+                          "firstInteractionAt": {
+                            "description": "When you first talked.",
+                            "example": "2026-08-04T12:00:00Z",
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "id": {
+                            "description": "Person id.",
+                            "example": "ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                            "format": "uuid",
+                            "type": "string"
+                          },
+                          "lastInteractionAt": {
+                            "description": "When you last talked.",
+                            "example": "2026-08-04T12:00:00Z",
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "orgDomain": {
+                            "description": "Company domain.",
+                            "example": "acme.example",
+                            "type": "string"
+                          },
+                          "orgName": {
+                            "description": "Company.",
+                            "example": "Acme",
+                            "type": "string"
+                          },
+                          "participantRoles": {
+                            "description": "Roles on those companies.",
+                            "items": {
+                              "description": "Role.",
+                              "example": "champion",
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "primaryEmail": {
+                            "description": "Email.",
+                            "example": "sarah@acme.example",
+                            "type": "string"
+                          },
+                          "relationshipCount": {
+                            "description": "Companies this person is on.",
+                            "example": 1,
+                            "type": "integer"
+                          },
+                          "status": {
+                            "description": "Whether this person is in the directory.",
+                            "enum": [
+                              "active",
+                              "merged"
+                            ],
+                            "example": "active",
+                            "type": "string"
+                          },
+                          "title": {
+                            "description": "Role.",
+                            "example": "VP Engineering",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "displayName",
+                          "aliases",
+                          "status",
+                          "relationshipCount",
+                          "attributesVersion"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "persons",
+                    "hasMore"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The people in this workspace."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "People",
+        "tags": [
+          "Relationship Intelligence"
+        ]
+      }
+    },
     "/v1/relationship-recommendations/{actionId}/approve": {
       "post": {
         "description": "Approve posts acceptRisk false. The stored recommendation is approved for its current revision, and the approval time is recorded. The queue stays open.",

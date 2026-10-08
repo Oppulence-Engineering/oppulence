@@ -36,6 +36,7 @@ import type {
   ListCommitments200,
   ListRelationshipAttention200,
   ListRelationshipIdentityCandidates200,
+  ListRelationshipPersons200,
   ListRelationships200,
   ListWorkspaceNotes200,
   PutConversationPolicy201,
@@ -89,6 +90,7 @@ import {
   getListCommitmentsResponseMock,
   getListRelationshipAttentionResponseMock,
   getListRelationshipIdentityCandidatesResponseMock,
+  getListRelationshipPersonsResponseMock,
   getListRelationshipsResponseMock,
   getListWorkspaceNotesResponseMock,
   getPutConversationPolicyResponseMock,
@@ -116,6 +118,7 @@ export {
   getGetRelationshipIdentityCandidateResponseMock,
   getDecideRelationshipIdentityCandidateResponseMock,
   getIngestRelationshipObservationsResponseMock,
+  getListRelationshipPersonsResponseMock,
   getApproveRelationshipRecommendationResponseMock,
   getRejectRelationshipRecommendationResponseMock,
   getGetRelationshipSourceInventoryResponseMock,
@@ -418,6 +421,30 @@ export const getIngestRelationshipObservationsMockHandler = (
             : overrideResponse
           : getIngestRelationshipObservationsResponseMock(),
         { status: 201 },
+      );
+    },
+    options,
+  );
+};
+
+export const getListRelationshipPersonsMockHandler = (
+  overrideResponse?:
+    | ListRelationshipPersons200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListRelationshipPersons200> | ListRelationshipPersons200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/relationship-persons",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListRelationshipPersonsResponseMock(),
+        { status: 200 },
       );
     },
     options,
@@ -1323,6 +1350,7 @@ export const getRelationshipIntelligenceMock = () => [
   getGetRelationshipIdentityCandidateMockHandler(),
   getDecideRelationshipIdentityCandidateMockHandler(),
   getIngestRelationshipObservationsMockHandler(),
+  getListRelationshipPersonsMockHandler(),
   getApproveRelationshipRecommendationMockHandler(),
   getRejectRelationshipRecommendationMockHandler(),
   getGetRelationshipSourceInventoryMockHandler(),

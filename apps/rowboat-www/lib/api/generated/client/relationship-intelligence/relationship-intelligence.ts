@@ -55,6 +55,8 @@ import type {
   ListRelationshipAttentionParams,
   ListRelationshipIdentityCandidates200,
   ListRelationshipIdentityCandidatesParams,
+  ListRelationshipPersons200,
+  ListRelationshipPersonsParams,
   ListRelationships200,
   ListRelationshipsParams,
   ListWorkspaceNotes200,
@@ -759,6 +761,68 @@ export const ingestRelationshipObservations = async (
     status: res.status,
     headers: res.headers,
   } as ingestRelationshipObservationsResponse;
+};
+
+export type listRelationshipPersonsResponse200 = {
+  data: ListRelationshipPersons200;
+  status: 200;
+};
+
+export type listRelationshipPersonsResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type listRelationshipPersonsResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listRelationshipPersonsResponseSuccess = listRelationshipPersonsResponse200 & {
+  headers: Headers;
+};
+export type listRelationshipPersonsResponseError = (
+  listRelationshipPersonsResponse400 | listRelationshipPersonsResponse401
+) & {
+  headers: Headers;
+};
+
+export type listRelationshipPersonsResponse =
+  listRelationshipPersonsResponseSuccess | listRelationshipPersonsResponseError;
+
+export const getListRelationshipPersonsUrl = (params?: ListRelationshipPersonsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/relationship-persons?${stringifiedParams}`
+    : `/v1/relationship-persons`;
+};
+
+/**
+ * People loads this directory. The request asks for the first 500 people. The answer lists each person with their name, email, role, company, and when you last talked.
+ * @summary People
+ */
+export const listRelationshipPersons = async (
+  params?: ListRelationshipPersonsParams,
+  options?: RequestInit,
+): Promise<listRelationshipPersonsResponse> => {
+  const res = await fetch(getListRelationshipPersonsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listRelationshipPersonsResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listRelationshipPersonsResponse;
 };
 
 export type approveRelationshipRecommendationResponse200 = {

@@ -1828,6 +1828,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/relationship-persons": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * People
+     * @description People loads this directory. The request asks for the first 500 people. The answer lists each person with their name, email, role, company, and when you last talked.
+     */
+    get: operations["listRelationshipPersons"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/relationship-recommendations/{actionId}/approve": {
     parameters: {
       query?: never;
@@ -19492,6 +19512,134 @@ export interface operations {
       400: components["responses"]["400"];
       401: components["responses"]["401"];
       409: components["responses"]["409"];
+    };
+  };
+  listRelationshipPersons: {
+    parameters: {
+      query?: {
+        /** @description How many people to return. The directory asks for 500. */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The people in this workspace. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "hasMore": false,
+           *       "persons": [
+           *         {
+           *           "aliases": [],
+           *           "attributesVersion": 1,
+           *           "displayName": "Sarah Chen",
+           *           "employmentStatus": "unknown",
+           *           "firstInteractionAt": "2026-08-04T12:00:00Z",
+           *           "id": "ab8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "lastInteractionAt": "2026-08-04T12:00:00Z",
+           *           "orgDomain": "acme.example",
+           *           "orgName": "Acme",
+           *           "participantRoles": [
+           *             "champion"
+           *           ],
+           *           "primaryEmail": "sarah@acme.example",
+           *           "relationshipCount": 1,
+           *           "status": "active",
+           *           "title": "VP Engineering"
+           *         }
+           *       ]
+           *     }
+           */
+          "application/json": {
+            /**
+             * @description Whether another person exists past this page.
+             * @example false
+             */
+            hasMore: boolean;
+            /** @description People, most recently active first. */
+            persons: {
+              /** @description Other names. */
+              aliases: string[];
+              /**
+               * @description How many times these details changed.
+               * @example 1
+               */
+              attributesVersion: number;
+              /**
+               * @description Name.
+               * @example Sarah Chen
+               */
+              displayName: string;
+              /**
+               * @description Whether their mail still reaches them.
+               * @example unknown
+               * @enum {string}
+               */
+              employmentStatus?: "unknown" | "active" | "departed";
+              /**
+               * Format: date-time
+               * @description When you first talked.
+               * @example 2026-08-04T12:00:00Z
+               */
+              firstInteractionAt?: string;
+              /**
+               * Format: uuid
+               * @description Person id.
+               * @example ab8dfa9b-a7b2-46ea-982c-622a914c00e5
+               */
+              id: string;
+              /**
+               * Format: date-time
+               * @description When you last talked.
+               * @example 2026-08-04T12:00:00Z
+               */
+              lastInteractionAt?: string;
+              /**
+               * @description Company domain.
+               * @example acme.example
+               */
+              orgDomain?: string;
+              /**
+               * @description Company.
+               * @example Acme
+               */
+              orgName?: string;
+              /** @description Roles on those companies. */
+              participantRoles?: string[];
+              /**
+               * @description Email.
+               * @example sarah@acme.example
+               */
+              primaryEmail?: string;
+              /**
+               * @description Companies this person is on.
+               * @example 1
+               */
+              relationshipCount: number;
+              /**
+               * @description Whether this person is in the directory.
+               * @example active
+               * @enum {string}
+               */
+              status: "active" | "merged";
+              /**
+               * @description Role.
+               * @example VP Engineering
+               */
+              title?: string;
+            }[];
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
     };
   };
   approveRelationshipRecommendation: {
