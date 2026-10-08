@@ -4336,6 +4336,25 @@ describe("API reference document", () => {
     expect(JSON.stringify(post)).not.toContain("acta_");
   });
 
+  it("samples the HubSpot connection Disconnect removes", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const del = presented.paths["/v1/connections/{name}"].delete;
+    expect(del.summary).toBe("Disconnect");
+    expect(del.operationId).toBe("deleteConnection");
+    expect(del.description).toBe(
+      "Disconnect removes the HubSpot connection. Confirm sends no body.",
+    );
+    const name = del.parameters.find((parameter: { name: string }) => parameter.name === "name");
+    expect(name.example).toBe("hubspot");
+    expect(name.schema.example).toBe("hubspot");
+    expect(del.requestBody).toBeUndefined();
+    expect(del.responses["204"].description).toBe("The HubSpot connection is removed.");
+    expect(del.responses["204"].content).toBeUndefined();
+    expect(JSON.stringify(del)).not.toContain("canvas");
+    expect(JSON.stringify(del)).not.toContain("acta_");
+    expect(JSON.stringify(del)).not.toContain('"token"');
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

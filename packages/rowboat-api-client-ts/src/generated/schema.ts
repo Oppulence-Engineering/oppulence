@@ -927,8 +927,8 @@ export interface paths {
     put?: never;
     post?: never;
     /**
-     * Disconnect connector
-     * @description Idempotently revokes upstream where possible, clears local credentials, and retains a revoked audit tombstone.
+     * Disconnect
+     * @description Disconnect removes the HubSpot connection. Confirm sends no body.
      */
     delete: operations["deleteConnection"];
     options?: never;
@@ -16835,14 +16835,17 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Connector slug, for example canvas, corinthian, or wispr. */
+        /**
+         * @description Connection name.
+         * @example hubspot
+         */
         name: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Connector disconnected or was already absent. */
+      /** @description The HubSpot connection is removed. */
       204: {
         headers: {
           [name: string]: unknown;

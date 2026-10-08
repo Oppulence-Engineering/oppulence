@@ -20253,24 +20253,25 @@
     },
     "/v1/connections/{name}": {
       "delete": {
-        "description": "Idempotently revokes upstream where possible, clears local credentials, and retains a revoked audit tombstone.",
+        "description": "Disconnect removes the HubSpot connection. Confirm sends no body.",
         "operationId": "deleteConnection",
         "parameters": [
           {
-            "description": "Connector slug, for example canvas, corinthian, or wispr.",
+            "description": "Connection name.",
+            "example": "hubspot",
             "in": "path",
             "name": "name",
             "required": true,
             "schema": {
-              "description": "Connector slug.",
-              "example": "canvas",
+              "description": "Connection name.",
+              "example": "hubspot",
               "type": "string"
             }
           }
         ],
         "responses": {
           "204": {
-            "description": "Connector disconnected or was already absent."
+            "description": "The HubSpot connection is removed."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -20290,8 +20291,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Disconnect connector",
-        "tags": ["Connectors"]
+        "summary": "Disconnect",
+        "tags": [
+          "Connectors"
+        ]
       }
     },
     "/v1/connections/{name}/api-key": {
