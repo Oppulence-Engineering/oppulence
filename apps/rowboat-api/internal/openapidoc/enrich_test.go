@@ -4145,6 +4145,55 @@ func exampleSlug(example any) string {
 	return slug
 }
 
+func TestWorkflowEnsureSamplesTheInstall(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertWorkflowEnsure(t, spec)
+}
+
+func assertWorkflowEnsure(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	post := asObj(asObj(paths["/v1/background-tasks/first-party/ensure"])["post"])
+	if post["summary"] != "Ensure first-party workflows" {
+		t.Fatalf("install summary: %#v", post["summary"])
+	}
+	if post["operationId"] != "ensureFirstPartyBackgroundTasks" {
+		t.Fatalf("operation id: %#v", post["operationId"])
+	}
+	if post["parameters"] != nil || post["requestBody"] != nil {
+		t.Fatalf("install sends no query and no body: %#v %#v", post["parameters"], post["requestBody"])
+	}
+	got, err := json.Marshal(jsonExample(asObj(asObj(post["responses"])["200"])))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(workflowEnsureExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("install example:\n%s\nwant:\n%s", got, want)
+	}
+	response := asObj(asObj(post["responses"])["200"])
+	if response["description"] != "Maintained workflows." {
+		t.Fatalf("install response: %#v", response["description"])
+	}
+	listed := jsonExample(asObj(asObj(asObj(asObj(paths["/v1/background-tasks"])["get"])["responses"])["200"]))
+	if exampleTaskSlug(listed) != "daily-summary" {
+		t.Fatalf("task list sample changed: %#v", listed)
+	}
+}
+
+func exampleTaskSlug(example any) string {
+	tasks, _ := asObj(example)["tasks"].([]any)
+	if len(tasks) == 0 {
+		return ""
+	}
+	slug, _ := asObj(tasks[0])["slug"].(string)
+	return slug
+}
+
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)

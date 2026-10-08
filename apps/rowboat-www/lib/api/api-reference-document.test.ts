@@ -3061,6 +3061,34 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the workflows the Workflows page installs", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/background-tasks/first-party/ensure"].post;
+    expect(operation.summary).toBe("Install maintained workflows");
+    expect(operation.description).toBe(
+      "Installs or updates the maintained workflows for the signed-in person. Paused workflows stay paused.",
+    );
+    expect(operation.parameters).toBeUndefined();
+    expect(operation.requestBody).toBeUndefined();
+    const tasks = operation.responses["200"].content["application/json"].example.tasks;
+    expect(tasks.map((task: { slug: string; executionTarget: string; active: boolean }) => [
+      task.slug,
+      task.executionTarget,
+      task.active,
+    ])).toEqual([
+      ["oppulence-relationship-refresh", "api", true],
+      ["oppulence-attention-monitor", "api", true],
+      ["oppulence-meeting-pre-brief", "api", true],
+      ["oppulence-post-meeting-processor", "api", true],
+      ["oppulence-recommendation-review", "api", true],
+      ["oppulence-connector-health-repair", "api", true],
+    ]);
+    expect(JSON.stringify(operation.responses["200"])).not.toContain("daily-summary");
+    expect(
+      presented.paths["/v1/background-tasks"].get.responses["200"].content["application/json"].example.tasks[0].slug,
+    ).toBe("daily-summary");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
