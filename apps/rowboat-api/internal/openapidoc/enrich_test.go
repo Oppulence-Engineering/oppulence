@@ -817,6 +817,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	assertAttentionEvidence(t, schemas)
 	assertReviewEvidence(t, schemas)
 	assertReview(t, spec)
+	assertOpenedCompany(t, spec)
 }
 
 func TestConversationReviewNamesTheItem(t *testing.T) {
@@ -4177,7 +4178,7 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 		t.Fatalf("email threads: %#v", example["emailThreads"])
 	}
 	participants, ok := example["participants"].([]any)
-	if !ok || len(participants) != 1 || asObj(participants[0])["email"] != "avery@acme.com" || asObj(participants[0])["role"] != "champion" {
+	if !ok || len(participants) != 1 || asObj(participants[0])["email"] != "avery@acme.com" || asObj(participants[0])["role"] != "champion" || asObj(participants[0])["title"] != openedCompanyTitle {
 		t.Fatalf("participants: %#v", example["participants"])
 	}
 	person := asObj(asObj(participants[0])["person"])

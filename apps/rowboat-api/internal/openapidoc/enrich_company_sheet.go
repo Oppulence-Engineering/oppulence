@@ -28,9 +28,10 @@ const (
 	openedCompanyMilestone = "Proposal shared."
 	// The sheet Source row opens this page. The link says Check the source.
 	openedCompanySourceURL = "https://acme.example/team"
+	openedCompanyTitle     = "VP Operations"
 )
 
-const openedCompanyOperationDescription = "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com. The risk is that the security review has no owner. The LinkedIn row opens the Acme company page. The category is Artificial intelligence. The milestone is that the proposal was shared. The headquarters is San Francisco, California, United States. The source row opens the Acme team page."
+const openedCompanyOperationDescription = "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com. The risk is that the security review has no owner. The LinkedIn row opens the Acme company page. The category is Artificial intelligence. The milestone is that the proposal was shared. The headquarters is San Francisco, California, United States. The source row opens the Acme team page. Avery Chen's title is VP Operations."
 
 func openedCompanyParams() []any {
 	return []any{obj{
@@ -83,6 +84,7 @@ func openedCompanySheetExample() obj {
 			"displayName":  "Avery Chen",
 			"email":        openedCompanyEmail,
 			"role":         "champion",
+			"title":        openedCompanyTitle,
 			"active":       true,
 			"externalRefs": empty,
 			"personId":     openedCompanyPersonID,
