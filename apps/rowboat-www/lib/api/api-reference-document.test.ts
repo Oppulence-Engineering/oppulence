@@ -497,6 +497,21 @@ describe("API reference document", () => {
     ]);
   });
 
+  it("does not sample a metered request for consent context", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const schemas = presented.components.schemas as Record<
+      string,
+      { properties?: Record<string, { example?: unknown; description?: string; $ref?: string }> }
+    >;
+    const requestId = schemas.PreConsentResponse?.properties?.request_id;
+    expect(requestId?.example).toBe("ctx_01HABCDEF");
+    expect(requestId?.description).toBe("Deterministic context request id bound to the challenge.");
+    expect(schemas.PreConsentResponse?.properties?.connector).toEqual({
+      $ref: "#/components/schemas/ConsentConnectorIdentity",
+    });
+    expect(schemas.CreditLedger?.properties?.request_id?.example).toBe("9e2fb15a-936d-4f39-9372-73cfe0476ca8");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

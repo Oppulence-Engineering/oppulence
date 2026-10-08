@@ -343,6 +343,8 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 
 	assertGrantedScopes(t, schemas)
 
+	assertConsentContext(t, schemas)
+
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
 	reason := asObj(evidenceProperties["reason"])
@@ -515,6 +517,8 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	assertUnixTokenExpiry(t, schemas)
 
 	assertGrantedScopes(t, schemas)
+
+	assertConsentContext(t, schemas)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -790,6 +794,22 @@ func assertGrantedScopes(t *testing.T, schemas obj) {
 	examples, _ := pre["example"].([]any)
 	if len(examples) != 1 || asObj(examples[0])["name"] != "canvas:invoices.read" {
 		t.Fatalf("PreConsentResponse.scopes sampled strings: %#v", pre["example"])
+	}
+}
+
+func assertConsentContext(t *testing.T, schemas obj) {
+	t.Helper()
+	requestID := asObj(asObj(asObj(schemas["PreConsentResponse"])["properties"])["request_id"])
+	if requestID["example"] != "ctx_01HABCDEF" || requestID["description"] != "Deterministic context request id bound to the challenge." {
+		t.Fatalf("PreConsentResponse.request_id sampled a metered request: %#v", requestID)
+	}
+	connector := asObj(asObj(asObj(schemas["PreConsentResponse"])["properties"])["connector"])
+	if connector["$ref"] != "#/components/schemas/ConsentConnectorIdentity" || connector["example"] != nil {
+		t.Fatalf("PreConsentResponse.connector sampled a string: %#v", connector)
+	}
+	ledger := asObj(asObj(asObj(schemas["CreditLedger"])["properties"])["request_id"])
+	if ledger["example"] != "9e2fb15a-936d-4f39-9372-73cfe0476ca8" {
+		t.Fatalf("CreditLedger.request_id lost its metered example: %#v", ledger)
 	}
 }
 
