@@ -10023,7 +10023,7 @@ export interface components {
       /** @description Inspectable evidence ids. */
       evidenceRefs: string[];
       /**
-       * @description Execution the company graph shows. Ambiguous is a result that needs reconcile.
+       * @description Needs reconcile when this execution is ambiguous.
        * @example ambiguous
        */
       executionStatus?: string;

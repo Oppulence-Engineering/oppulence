@@ -33,7 +33,7 @@ export interface RelationshipGraphNode {
   engagement?: string;
   /** Inspectable evidence ids. */
   evidenceRefs: string[];
-  /** Execution the company graph shows. Ambiguous is a result that needs reconcile. */
+  /** Needs reconcile when this execution is ambiguous. */
   executionStatus?: string;
   /** Evidence freshness. */
   freshness?: RelationshipGraphNodeFreshness;

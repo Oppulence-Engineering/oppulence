@@ -3398,9 +3398,7 @@ export const GetRelationshipGraph200Response = zod
             executionStatus: zod
               .string()
               .optional()
-              .describe(
-                "Execution the company graph shows. Ambiguous is a result that needs reconcile.",
-              ),
+              .describe("Needs reconcile when this execution is ambiguous."),
             freshness: zod
               .enum(["current", "aging", "stale", "unknown"])
               .optional()

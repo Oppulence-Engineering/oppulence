@@ -41,8 +41,7 @@ describe("API reference document", () => {
     const presented = presentApiReferenceDocument(spec);
     const status = presented.components.schemas.RelationshipGraphNode.properties.executionStatus;
     expect(status).toMatchObject({
-      description:
-        "Execution the company graph shows. Ambiguous is a result that needs reconcile.",
+      description: "Needs reconcile when this execution is ambiguous.",
       example: "ambiguous",
     });
     expect(presented.components.schemas.RevenueAction.properties.executionStatus.example).toBe(

@@ -5,7 +5,7 @@ package openapidoc
 // and drafts work, preflight and sends fail closed).
 
 const (
-	graphExecutionStatusDescription = "Execution the company graph shows. Ambiguous is a result that needs reconcile."
+	graphExecutionStatusDescription = "Needs reconcile when this execution is ambiguous."
 	graphExecutionStatusExample     = "ambiguous"
 )
 
