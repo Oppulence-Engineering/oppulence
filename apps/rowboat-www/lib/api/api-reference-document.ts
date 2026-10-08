@@ -606,6 +606,18 @@ function stringEnum(value: unknown): string[] | null {
 }
 
 /**
+
+ * The history-row sentence is copied onto every field named ref. A history
+ * row points at the source row's id. An external record points at a company
+ * or thread in another tool, and that value is not a UUID.
+ */
+const GENERIC_HISTORY_REF_DESCRIPTION = "UUID of the source row represented by a history row.";
+
+const EXTERNAL_RECORD_REF = "External record this row points at.";
+
+const EXTERNAL_RECORD_EXAMPLE = "hubspot:company:acme";
+
+/**
  * Field descriptions live on schemas, request bodies, and responses. Parameter
  * descriptions stay as published so a path parameter does not change under a
  * generated client.
