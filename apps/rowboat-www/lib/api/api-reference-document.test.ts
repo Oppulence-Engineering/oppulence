@@ -315,6 +315,31 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the account Connected lists", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const list = presented.paths["/v1/composio/connections"].get;
+    expect(list.summary).toBe("Connected");
+    expect(list.operationId).toBe("listComposioConnections");
+    expect(list.description).toBe("Connected lists the Jira account linked from More products.");
+    expect(list.requestBody).toBeUndefined();
+    expect(list.responses["200"].description).toBe("Jira is connected.");
+    expect(list.responses["200"].content["application/json"].example).toEqual({
+      connections: [
+        {
+          id: "ca_8b8dfa9ba7b246ea982c622a914c00e5",
+          toolkit: "jira",
+          status: "ACTIVE",
+          createdAt: "2026-07-15T16:00:00Z",
+        },
+      ],
+    });
+    const serialized = JSON.stringify(list.responses["200"].content["application/json"].example);
+    expect(serialized).not.toContain("gmail");
+    expect(serialized).not.toContain("hubspot");
+    expect(serialized).not.toContain("acta_");
+    expect(serialized).not.toContain('"token"');
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

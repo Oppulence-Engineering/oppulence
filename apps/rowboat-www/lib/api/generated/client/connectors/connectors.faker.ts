@@ -13,6 +13,7 @@ import type {
   ConnectorsResponse,
   GetConnectorBrokerJWKS200,
   HubSpotSearchResponse,
+  ListComposioConnections200,
   MCPTokenResponse,
 } from "../model";
 
@@ -287,6 +288,23 @@ export const getStartConnectorResponseMock = (
   authorization_url: faker.string.alpha({ length: { min: 10, max: 20 } }),
   authorize_url: faker.string.alpha({ length: { min: 10, max: 20 } }),
   expires_at: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ...overrideResponse,
+});
+
+export const getListComposioConnectionsResponseMock = (
+  overrideResponse: Partial<Extract<ListComposioConnections200, object>> = {},
+): ListComposioConnections200 => ({
+  connections: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => ({
+      createdAt: faker.helpers.arrayElement([
+        faker.date.past().toISOString().slice(0, 19) + "Z",
+        undefined,
+      ]),
+      id: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      status: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      toolkit: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    }),
+  ),
   ...overrideResponse,
 });
 

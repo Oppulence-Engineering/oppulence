@@ -17,6 +17,7 @@ import type {
   HandleConnectorCallbackParams,
   HubSpotSearchRequest,
   HubSpotSearchResponse,
+  ListComposioConnections200,
   MCPTokenRequest,
   MCPTokenResponse,
   N400Response,
@@ -976,6 +977,62 @@ export const startConnector = async (
 
   const data: startConnectorResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as startConnectorResponse;
+};
+
+export type listComposioConnectionsResponse200 = {
+  data: ListComposioConnections200;
+  status: 200;
+};
+
+export type listComposioConnectionsResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listComposioConnectionsResponse502 = {
+  data: N502Response;
+  status: 502;
+};
+
+export type listComposioConnectionsResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type listComposioConnectionsResponseSuccess = listComposioConnectionsResponse200 & {
+  headers: Headers;
+};
+export type listComposioConnectionsResponseError = (
+  | listComposioConnectionsResponse401
+  | listComposioConnectionsResponse502
+  | listComposioConnectionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listComposioConnectionsResponse =
+  listComposioConnectionsResponseSuccess | listComposioConnectionsResponseError;
+
+export const getListComposioConnectionsUrl = () => {
+  return `/v1/composio/connections`;
+};
+
+/**
+ * Connected lists the Jira account linked from More products.
+ * @summary Connected
+ */
+export const listComposioConnections = async (
+  options?: RequestInit,
+): Promise<listComposioConnectionsResponse> => {
+  const res = await fetch(getListComposioConnectionsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listComposioConnectionsResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listComposioConnectionsResponse;
 };
 
 export type searchHubSpotResponse200 = {

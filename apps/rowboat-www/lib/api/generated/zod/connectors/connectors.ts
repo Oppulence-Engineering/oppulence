@@ -1626,6 +1626,75 @@ export const StartConnector503Response = zod
   );
 
 /**
+ * Connected lists the Jira account linked from More products.
+ * @summary Connected
+ */
+export const ListComposioConnections200Response = zod
+  .strictObject({
+    connections: zod
+      .array(
+        zod
+          .strictObject({
+            createdAt: zod.iso
+              .datetime({ offset: true })
+              .optional()
+              .describe("When the account was linked."),
+            id: zod.string().describe("Connection id."),
+            status: zod.string().describe("ACTIVE shows Connected on the card."),
+            toolkit: zod.string().describe("Product id."),
+          })
+          .describe("One linked product account."),
+      )
+      .describe("Linked accounts."),
+  })
+  .describe("Accounts linked from More products.");
+
+export const ListComposioConnections401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ListComposioConnections502Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ListComposioConnections503Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
  * Searches contacts, companies, deals, or tickets through HubSpot's official server-side SDK. The connected private-app token remains sealed server-side.
  * @summary Search HubSpot CRM
  */

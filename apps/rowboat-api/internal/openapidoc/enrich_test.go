@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,47 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertConnectedJira(t, spec)
+}
+
+func TestConnectedJiraListsTheLinkedAccount(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertConnectedJira(t, spec)
+}
+
+func assertConnectedJira(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/composio/connections"])["get"])
+	if operation["summary"] != "Connected" || operation["operationId"] != "listComposioConnections" || operation["description"] != connectedJiraDescription {
+		t.Fatalf("connected copy: %#v", obj{"summary": operation["summary"], "operationId": operation["operationId"], "description": operation["description"]})
+	}
+	if operation["requestBody"] != nil || operation["parameters"] != nil {
+		t.Fatalf("connected sends no query: %#v", operation)
+	}
+	ok := asObj(asObj(operation["responses"])["200"])
+	if ok["description"] != connectedJiraReady {
+		t.Fatalf("200 description: %#v", ok["description"])
+	}
+	example := asObj(asObj(asObj(ok["content"])["application/json"])["example"])
+	connections, _ := example["connections"].([]any)
+	if len(connections) != 1 {
+		t.Fatalf("connections: %#v", example)
+	}
+	account := asObj(connections[0])
+	if account["id"] != connectedJiraConnectionID || account["toolkit"] != "jira" || account["status"] != "ACTIVE" || account["createdAt"] != connectedJiraAt {
+		t.Fatalf("jira account: %#v", account)
+	}
+	raw, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(raw)
+	for _, forbidden := range []string{"gmail", "googlecalendar", "slack", "hubspot", "acta_", `"token"`} {
+		if strings.Contains(text, forbidden) {
+			t.Fatalf("connected sample contains %s", forbidden)
+		}
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

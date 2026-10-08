@@ -21084,6 +21084,94 @@
         "tags": ["Google OAuth"]
       }
     },
+    "/v1/composio/connections": {
+      "get": {
+        "description": "Connected lists the Jira account linked from More products.",
+        "operationId": "listComposioConnections",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "connections": [
+                    {
+                      "createdAt": "2026-07-15T16:00:00Z",
+                      "id": "ca_8b8dfa9ba7b246ea982c622a914c00e5",
+                      "status": "ACTIVE",
+                      "toolkit": "jira"
+                    }
+                  ]
+                },
+                "schema": {
+                  "description": "Accounts linked from More products.",
+                  "properties": {
+                    "connections": {
+                      "description": "Linked accounts.",
+                      "items": {
+                        "description": "One linked product account.",
+                        "properties": {
+                          "createdAt": {
+                            "description": "When the account was linked.",
+                            "example": "2026-07-15T16:00:00Z",
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "id": {
+                            "description": "Connection id.",
+                            "example": "ca_8b8dfa9ba7b246ea982c622a914c00e5",
+                            "type": "string"
+                          },
+                          "status": {
+                            "description": "ACTIVE shows Connected on the card.",
+                            "example": "ACTIVE",
+                            "type": "string"
+                          },
+                          "toolkit": {
+                            "description": "Product id.",
+                            "example": "jira",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "toolkit",
+                          "status"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "connections"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Jira is connected."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Connected",
+        "tags": [
+          "Connectors"
+        ]
+      }
+    },
     "/v1/google-oauth/refresh": {
       "post": {
         "description": "Refreshes a Google access token using the server-held Google OAuth client id and secret. Google usually omits refresh_token on refresh; the desktop should preserve the old refresh token.",
