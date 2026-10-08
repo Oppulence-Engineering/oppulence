@@ -882,8 +882,9 @@ func (s *Service) ListRelationshipsFiltered(
 		// "Nothing recorded yet" and "None recorded." contain "recorded",
 		// and the calendar sentence contains "calendar". Those words are
 		// also activity headings. The empty sentence is the company that
-		// prints it.
-		if activity := relationshipSheetActivityMatch(needle); activity != nil && !sheetEmptySentenceOwnsActivity(needle) {
+		// prints it. "You chose the value from Calendar." is the closed
+		// contradiction, not every company that has a calendar event.
+		if activity := relationshipSheetActivityMatch(needle); activity != nil && !sheetEmptySentenceOwnsActivity(needle) && !contradictionSentenceOwnsActivity(needle) {
 			parts = append(parts, activity)
 		}
 		if subject := relationshipSheetActivitySubjectMatch(needle); subject != nil {
@@ -3482,12 +3483,30 @@ func contradictionSearchPhrases() []contradictionSearchPhrase {
 			},
 		)
 	}
-	phrases = append(phrases, contradictionSearchPhrase{
-		phrase:    normalizePersonSearch("You chose the current value."),
-		statusNot: "open",
-		reason:    "User selected the current value from a focused contradiction case.",
-		labelOnly: true,
-	})
+	chose := "You chose the current value."
+	phrases = append(phrases,
+		contradictionSearchPhrase{
+			phrase: normalizePersonSearch(chose), statusNot: "open", reason: chose, labelOnly: true,
+		},
+		contradictionSearchPhrase{
+			phrase:    normalizePersonSearch(chose),
+			statusNot: "open",
+			reason:    "User selected the current value from a focused contradiction case.",
+			labelOnly: true,
+		},
+	)
+	disagree := "Two sources disagree. Choose which value is current."
+	phrases = append(phrases,
+		contradictionSearchPhrase{
+			phrase: normalizePersonSearch(disagree), statusNot: "open", reason: disagree, labelOnly: true,
+		},
+		contradictionSearchPhrase{
+			phrase:    normalizePersonSearch(disagree),
+			statusNot: "open",
+			reason:    "equally authoritative typed evidence overlaps with different values",
+			labelOnly: true,
+		},
+	)
 	return phrases
 }
 
@@ -3516,9 +3535,20 @@ func contradictionChosenSourceLabel(source string) string {
 	}
 }
 
+// contradictionSentenceOwnsActivity is true when the query is a closed-case
+// sentence that also contains an activity heading, such as Calendar or A meeting.
+func contradictionSentenceOwnsActivity(needle string) bool {
+	for _, slug := range contradictionChosenSources() {
+		if labelPhraseMatches("You chose the value from "+contradictionChosenSourceLabel(slug)+".", needle) {
+			return true
+		}
+	}
+	return false
+}
 // relationshipSheetContradictionMatch matches the suggestion "Two details disagree"
 // and the sentence under it. A resolved disagreement prints a different sentence,
-// so the open suggestion stays off that company.
+// so the open suggestion stays off that company. A closed case prints who chose
+// the current value. An open case that still stores that reason does not.
 func relationshipSheetContradictionMatch(needle string) predicate.Relationship {
 	phrases := contradictionSearchPhrases()
 	chosen := make([]contradictionSearchPhrase, 0)
