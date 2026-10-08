@@ -5475,6 +5475,59 @@ func assertCorrectDetail(t *testing.T, spec obj) {
 	if company["displayName"] != "Acme" || company["health"] != "healthy" || company["kind"] != "company" || company["stateReason"] != correctDetailReason {
 		t.Fatalf("correct detail company state: %#v", company)
 	}
+
+	assertEarlierEvidence(t, spec)
+}
+
+func TestEarlierEvidenceSamplesTheNextPage(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertEarlierEvidence(t, spec)
+}
+
+func assertEarlierEvidence(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/conversation-review"])["get"])
+	if op["summary"] != "Show earlier evidence" || op["operationId"] != "getRelationshipConversationReview" || op["description"] != earlierEvidenceDescription {
+		t.Fatalf("earlier evidence copy: summary=%#v id=%#v description=%#v", op["summary"], op["operationId"], op["description"])
+	}
+	examples := map[string]string{}
+	for _, param := range op["parameters"].([]any) {
+		item := asObj(param)
+		name, _ := item["name"].(string)
+		raw, err := json.Marshal(asObj(item["schema"])["example"])
+		if err != nil {
+			t.Fatal(err)
+		}
+		examples[name] = string(raw)
+	}
+	if examples["relationshipId"] != `"`+earlierEvidenceRelationship+`"` || examples["offset"] != "200" {
+		t.Fatalf("earlier evidence query: %#v", examples)
+	}
+	example := asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(earlierEvidencePage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("earlier evidence page:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "acta_") || strings.Contains(string(got), "\"token\"") || strings.Contains(string(got), "approvedAt") {
+		t.Fatalf("earlier evidence includes a live approval: %s", got)
+	}
+	page := asObj(example)
+	if page["hasMore"] != false {
+		t.Fatalf("earlier evidence hasMore: %#v", page["hasMore"])
+	}
+	items := page["reviewItems"].([]any)
+	item := asObj(items[0])
+	if item["label"] != "Resolve the speaker for a material statement" || item["kind"] != "speaker" || item["exactQuote"] != "We are concerned security could delay the renewal." {
+		t.Fatalf("earlier evidence item: %#v", item)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

@@ -8,7 +8,7 @@
 
 export type GetRelationshipConversationReviewParams = {
   /**
-   * Observation offset. The first page is the newest 200 conversations.
+   * How many conversations to skip. Show earlier evidence skips the newest 200.
    * @minimum 0
    */
   offset?: number;

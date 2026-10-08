@@ -2411,8 +2411,8 @@ export const getGetRelationshipConversationReviewUrl = (
 };
 
 /**
- * Returns focused review items and governance receipts from conversations older than the newest page.
- * @summary Get earlier conversation review
+ * Show earlier evidence loads the next page of focused review. It skips the newest 200 conversations. This page has one speaker to resolve, and no older conversation after it.
+ * @summary Show earlier evidence
  */
 export const getRelationshipConversationReview = async (
   relationshipId: string,

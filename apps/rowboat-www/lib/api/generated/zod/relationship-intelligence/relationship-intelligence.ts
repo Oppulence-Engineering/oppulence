@@ -6801,11 +6801,11 @@ export const PutConversationPolicy404Response = zod
   );
 
 /**
- * Returns focused review items and governance receipts from conversations older than the newest page.
- * @summary Get earlier conversation review
+ * Show earlier evidence loads the next page of focused review. It skips the newest 200 conversations. This page has one speaker to resolve, and no older conversation after it.
+ * @summary Show earlier evidence
  */
 export const GetRelationshipConversationReviewParams = zod.object({
-  relationshipId: zod.uuid().describe("Relationship id."),
+  relationshipId: zod.uuid().describe("Company this review belongs to."),
 });
 
 export const getRelationshipConversationReviewQueryOffsetMin = 0;
@@ -6816,7 +6816,7 @@ export const GetRelationshipConversationReviewQueryParams = zod.object({
     .int()
     .min(getRelationshipConversationReviewQueryOffsetMin)
     .optional()
-    .describe("Observation offset. The first page is the newest 200 conversations."),
+    .describe("How many conversations to skip. Show earlier evidence skips the newest 200."),
 });
 
 export const GetRelationshipConversationReview200Response = zod
@@ -6842,8 +6842,8 @@ export const GetRelationshipConversationReview200Response = zod
             "Capture, routing, retention, disclosure, legal-hold, deletion, and evidence-clip receipt stored beside a transcript.",
           ),
       )
-      .describe("Governance receipts from this page of conversations."),
-    hasMore: zod.boolean().describe("An older conversation exists beyond this page."),
+      .describe("Receipts from this older page."),
+    hasMore: zod.boolean().describe("Another older conversation exists beyond this page."),
     reviewItems: zod
       .array(
         zod
@@ -6891,9 +6891,9 @@ export const GetRelationshipConversationReview200Response = zod
             "One evidence-backed proposed change requiring approve, correct, reject, or defer review.",
           ),
       )
-      .describe("Review items from this page of conversations."),
+      .describe("Review items from this older page."),
   })
-  .describe("Focused review page.");
+  .describe("Focused review from older conversations.");
 
 export const GetRelationshipConversationReview400Response = zod
   .strictObject({

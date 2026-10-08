@@ -1591,16 +1591,7 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
-	paths["/v1/relationships/{relationshipId}/conversation-review"] = obj{"get": operation("Relationship Intelligence", "Get earlier conversation review", "Returns focused review items and governance receipts from conversations older than the newest page.", "getRelationshipConversationReview", bearer(), append(append([]any{}, relationshipParam...), obj{"name": "offset", "in": "query", "required": false, "description": "Observation offset. The first page is the newest 200 conversations.", "schema": obj{"type": "integer", "minimum": 0}}), nil, obj{
-		"200": jsonResponse("Conversation review page.", objectSchema("Focused review page.", obj{
-			"reviewItems":        arraySchema("Review items from this page of conversations.", ref("ConversationReviewItem")),
-			"governanceReceipts": arraySchema("Governance receipts from this page of conversations.", ref("ConversationGovernanceReceipt")),
-			"hasMore":            boolSchema("An older conversation exists beyond this page.", false),
-		}, "reviewItems", "governanceReceipts", "hasMore"), nil),
-		"400": responseRef("400"),
-		"401": responseRef("401"),
-		"404": responseRef("404"),
-	})}
+	paths["/v1/relationships/{relationshipId}/conversation-review"] = obj{"get": earlierEvidenceOperation()}
 	paths["/v1/relationships/{relationshipId}/acknowledgements"] = obj{"post": operation("Relationship Intelligence", "Acknowledge Mission Control state", "Records the exact state version and hash the actor reviewed. A stale acknowledgement fails with 409.", "acknowledgeMissionControl", bearer(), relationshipParam, jsonRequest("Review boundary.", objectSchema("Mission Control acknowledgement.", obj{
 		"stateVersion": intSchema("Reviewed state version.", 4), "stateHash": stringSchema("Reviewed state hash.", documentedRelationshipStateHash),
 	}, "stateVersion", "stateHash"), obj{"stateVersion": 4, "stateHash": documentedRelationshipStateHash}), obj{

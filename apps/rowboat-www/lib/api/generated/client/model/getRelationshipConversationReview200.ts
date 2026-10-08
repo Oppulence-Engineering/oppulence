@@ -9,13 +9,13 @@ import type { ConversationGovernanceReceipt } from "./conversationGovernanceRece
 import type { ConversationReviewItem } from "./conversationReviewItem";
 
 /**
- * Focused review page.
+ * Focused review from older conversations.
  */
 export type GetRelationshipConversationReview200 = {
-  /** Governance receipts from this page of conversations. */
+  /** Receipts from this older page. */
   governanceReceipts: ConversationGovernanceReceipt[];
-  /** An older conversation exists beyond this page. */
+  /** Another older conversation exists beyond this page. */
   hasMore: boolean;
-  /** Review items from this page of conversations. */
+  /** Review items from this older page. */
   reviewItems: ConversationReviewItem[];
 };
