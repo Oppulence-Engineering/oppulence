@@ -955,6 +955,12 @@ func (s *Service) ListRelationshipsFiltered(
 		if preview := relationshipSheetActivityPreviewMatch(needle); preview != nil {
 			parts = append(parts, preview)
 		}
+		if summary := relationshipSheetActivitySummaryMatch(needle); summary != nil {
+			parts = append(parts, summary)
+		}
+		if text := relationshipSheetActivityTextMatch(needle); text != nil {
+			parts = append(parts, text)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -1995,6 +2001,20 @@ func relationshipSheetActivityPreviewMatch(needle string) predicate.Relationship
 		observationFactLine("snippet", value),
 		observationFactLine("preview", value),
 	))
+}
+
+// relationshipSheetActivitySummaryMatch is "Summary: …" on an opened activity.
+// The fact is separate from the row summary. A summary line that repeats the
+// row is not printed again. local-user is not a summary.
+func relationshipSheetActivitySummaryMatch(needle string) predicate.Relationship {
+	return relationshipSheetActivityFactMatch(needle, "summary: ", "summary")
+}
+
+// relationshipSheetActivityTextMatch is "Text: …" on an opened activity.
+// The stored text stays visible when it differs from the row summary.
+// local-user is not that text.
+func relationshipSheetActivityTextMatch(needle string) predicate.Relationship {
+	return relationshipSheetActivityFactMatch(needle, "text: ", "text")
 }
 
 func relationshipSheetActivityFactMatch(needle, marker, key string) predicate.Relationship {
