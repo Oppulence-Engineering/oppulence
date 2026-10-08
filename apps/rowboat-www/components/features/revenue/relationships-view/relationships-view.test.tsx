@@ -429,6 +429,10 @@ describe("RelationshipsView", () => {
     expect(source).not.toContain("href={`https://${relationship.accountDomain}`}");
     expect(source).toContain('aria-label="Company domain"');
     expect(source).toContain('placeholder="Company domain (optional)"');
+    expect(source).toContain('aria-label="Description"');
+    expect(source).toContain('placeholder="Description (optional)"');
+    expect(source).not.toContain('aria-label="Company notes"');
+    expect(source).not.toContain("Notes about this company");
     expect(source).toContain("Mail and meetings can fill in its people and activity later.");
     expect(source).toContain('["history", "Activity"]');
     expect(source).toContain('["emails", `Emails ${data.emailThreads.length}`]');

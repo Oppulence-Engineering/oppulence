@@ -5725,10 +5725,10 @@ function CreateRelationshipDialog({
             placeholder="Primary email (optional)"
           />
           <Input
-            aria-label="Company notes"
+            aria-label="Description"
             value={summary}
             onChange={(event) => setSummary(event.target.value)}
-            placeholder="Notes about this company (optional)"
+            placeholder="Description (optional)"
           />
         </div>
         {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
