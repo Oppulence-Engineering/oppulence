@@ -1188,6 +1188,12 @@ describe("RelationshipsView", () => {
     ).toMatch(/ago$/);
     expect(source).toContain("companyLastActivityLabel(relationship.lastTouchAt)");
     expect(source).toContain("companyLastActivityLabel(data.relationship.lastTouchAt)");
+    expect(source).toContain(">Last activity</TableHead>");
+    expect(source).toContain('"Last activity",\n                      companyLastActivityLabel(data.relationship.lastTouchAt)');
+    expect(source).toContain(">Domain</TableHead>");
+    expect(source).not.toContain(">Last interaction</TableHead>");
+    expect(source).not.toContain('"Last interaction"');
+    expect(source).not.toContain(">Domains</TableHead>");
     expect(recommendationPriorityLabel(80)).toBe("High");
     expect(recommendationPriorityLabel(40)).toBe("Medium");
     expect(recommendationPriorityLabel(0)).toBe("Low");

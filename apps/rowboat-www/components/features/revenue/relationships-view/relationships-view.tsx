@@ -1462,10 +1462,10 @@ export function RelationshipsView({
                         </DropdownMenu>
                       </div>
                     </TableHead>
-                    <TableHead className="h-10 w-32 border-r px-3">Last interaction</TableHead>
+                    <TableHead className="h-10 w-32 border-r px-3">Last activity</TableHead>
                     <TableHead className="h-10 w-40 border-r px-3">Email threads</TableHead>
                     <TableHead className="h-10 w-[136px] border-r px-3">Categories</TableHead>
-                    <TableHead className="h-10 w-44 border-r px-3">Domains</TableHead>
+                    <TableHead className="h-10 w-44 border-r px-3">Domain</TableHead>
                     <TableHead className="h-10 w-[120px] border-r px-3">LinkedIn</TableHead>
                     {optionalColumns.includes("people") ? (
                       <TableHead className="h-10 w-20 border-r px-3 text-center">People</TableHead>
@@ -4353,7 +4353,7 @@ export function RelationshipSheet({
                       ),
                     ],
                     [
-                      "Last interaction",
+                      "Last activity",
                       companyLastActivityLabel(data.relationship.lastTouchAt),
                     ],
                     ["People", String(data.participants.length)],
