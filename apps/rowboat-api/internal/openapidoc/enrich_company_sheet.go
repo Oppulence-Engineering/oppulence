@@ -13,6 +13,8 @@ const (
 	openedCompanyReason        = "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation."
 	openedCompanyTouchedAt     = "2026-07-25T15:00:00Z"
 	openedCompanyProjectedAt   = "2026-07-25T16:00:00Z"
+	// The sheet LinkedIn row opens this page. Without a saved page it searches for the company name.
+	openedCompanyLinkedInURL = "https://www.linkedin.com/company/acme"
 )
 
 func openedCompanyParams() []any {
@@ -40,6 +42,7 @@ func openedCompanySheetExample() obj {
 			"emailThreadCount": 0,
 			"commitmentCount":  0,
 			"lifecycle":        "evaluation",
+			"linkedinUrl":      openedCompanyLinkedInURL,
 			"engagement":       "declining",
 			"sentiment":        "unknown",
 			"health":           "needs_attention",

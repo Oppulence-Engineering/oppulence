@@ -1585,7 +1585,7 @@ export const getGetRelationshipUrl = (relationshipId: string) => {
 };
 
 /**
- * The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.
+ * The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The LinkedIn row opens the Acme company page.
  * @summary Open a company
  */
 export const getRelationship = async (

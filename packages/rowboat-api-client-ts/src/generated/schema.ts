@@ -2377,7 +2377,7 @@ export interface paths {
     };
     /**
      * Open a company
-     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.
+     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The LinkedIn row opens the Acme company page.
      */
     get: operations["getRelationship"];
     put?: never;
@@ -24085,6 +24085,7 @@ export interface operations {
            *         "lastChangedAt": "2026-07-25T16:00:00Z",
            *         "lastTouchAt": "2026-07-25T15:00:00Z",
            *         "lifecycle": "evaluation",
+           *         "linkedinUrl": "https://www.linkedin.com/company/acme",
            *         "milestones": [],
            *         "peopleCount": 1,
            *         "projectedAt": "2026-07-25T16:00:00Z",
