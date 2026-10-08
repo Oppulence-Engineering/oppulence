@@ -715,8 +715,8 @@ export const getRejectRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Rejects the current revision with a reason.
- * @summary Reject an action
+ * Reject declines this follow-up. The decision is stored and the follow-up stays open.
+ * @summary Reject
  */
 export const rejectRevenueAction = async (
   actionId: string,

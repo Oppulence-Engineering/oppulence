@@ -6053,6 +6053,62 @@ func normalizedDismiss(t *testing.T, value any) any {
 	return out
 }
 
+func TestRejectSamplesTheFollowUp(t *testing.T) {
+	spec := obj{"paths": obj{}, "components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertReject(t, spec)
+}
+
+func assertReject(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	post := asObj(asObj(paths["/v1/revenue-actions/{actionId}/reject"])["post"])
+	if post["summary"] != "Reject" || post["operationId"] != "rejectRevenueAction" || post["description"] != rejectDescription {
+		t.Fatalf("reject operation: summary=%#v description=%#v id=%#v", post["summary"], post["description"], post["operationId"])
+	}
+	params, _ := post["parameters"].([]any)
+	if len(params) != 1 {
+		t.Fatalf("reject parameters: %#v", post["parameters"])
+	}
+	action := asObj(params[0])
+	if action["name"] != "actionId" || action["example"] != rejectActionID || asObj(action["schema"])["example"] != rejectActionID {
+		t.Fatalf("reject action: %#v", action)
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
+	if asObj(request["example"])["reason"] != rejectReason {
+		t.Fatalf("reject request: %#v", request["example"])
+	}
+	responses := asObj(post["responses"])
+	if asObj(responses["200"])["description"] != "The follow-up is rejected and still open." {
+		t.Fatalf("reject response: %#v", responses["200"])
+	}
+	ok := asObj(asObj(asObj(responses["200"])["content"])["application/json"])
+	if !reflect.DeepEqual(normalizedReject(t, ok["example"]), normalizedReject(t, rejectedAction())) {
+		t.Fatalf("reject example: %#v", ok["example"])
+	}
+	raw, err := json.Marshal(post)
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded := string(raw)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "approvedAt") {
+		t.Fatalf("reject looks live: %s", encoded)
+	}
+}
+
+func normalizedReject(t *testing.T, value any) any {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out any
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)

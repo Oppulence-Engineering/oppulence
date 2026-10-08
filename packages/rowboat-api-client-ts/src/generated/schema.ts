@@ -2710,8 +2710,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Reject an action
-     * @description Rejects the current revision with a reason.
+     * Reject
+     * @description Reject declines this follow-up. The decision is stored and the follow-up stays open.
      */
     post: operations["rejectRevenueAction"];
     delete?: never;
@@ -24764,7 +24764,10 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Action id. */
+        /**
+         * @description Action id.
+         * @example 1a8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         actionId: string;
       };
       cookie?: never;
@@ -24774,25 +24777,61 @@ export interface operations {
       content: {
         /**
          * @example {
-         *       "reason": "wrong_recipient"
+         *       "reason": "not_appropriate"
          *     }
          */
         "application/json": {
           /**
            * @description Reason.
-           * @example wrong_recipient
+           * @example not_appropriate
            */
           reason?: string;
         };
       };
     };
     responses: {
-      /** @description Rejected action. */
+      /** @description The follow-up is rejected and still open. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "actionType": "warm_follow_up",
+           *       "approvalStatus": "rejected",
+           *       "channel": "email",
+           *       "createdAt": "2026-07-12T12:00:00Z",
+           *       "detector": "waiting_on_me",
+           *       "evidence": [
+           *         {
+           *           "excerpt": "We are concerned security could delay renewal.",
+           *           "externalEvidenceRefs": [
+           *             "timestamp:12000-16000"
+           *           ],
+           *           "id": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "occurredAt": "2026-07-31T14:00:00Z",
+           *           "source": "meeting",
+           *           "sourceRecordId": "oppulence:session-42:claim:claim-risk"
+           *         }
+           *       ],
+           *       "executionMode": "draft",
+           *       "executionOwner": "rowboat",
+           *       "executionStatus": "pending",
+           *       "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "policyStatus": "pending",
+           *       "priorityScore": 82,
+           *       "proposedSubject": "Following up as promised",
+           *       "queueStatus": "open",
+           *       "reason": "They asked for a follow-up in July.",
+           *       "recipientEmail": "buyer@example.com",
+           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "relationshipName": "Acme",
+           *       "revision": 1,
+           *       "revisionHash": "sha256:ab12cd34ef567890",
+           *       "updatedAt": "2026-07-15T16:05:00Z"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueAction"];
         };
       };
