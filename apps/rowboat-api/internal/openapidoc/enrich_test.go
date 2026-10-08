@@ -1544,6 +1544,8 @@ func assertLogOutcome(t *testing.T, spec obj) {
 	assertApprovePlan(t, spec)
 
 	assertMailboxPolicy(t, spec)
+
+	assertCreatePlan(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -2593,6 +2595,70 @@ func jsonInt(v any) (int, bool) {
 	default:
 		return 0, false
 	}
+}
+
+func TestCreatePlanReturnsDraft(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertCreatePlan(t, spec)
+}
+
+func assertCreatePlan(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/mutual-action-plans"])["post"])
+	if operation["summary"] != "Create from promises they accepted" || operation["operationId"] != "createMutualActionPlan" {
+		t.Fatalf("create plan operation: %#v", operation["summary"])
+	}
+	request := asObj(asObj(asObj(asObj(operation["requestBody"])["content"])["application/json"])["example"])
+	ids, _ := request["commitmentIds"].([]any)
+	if len(ids) != 1 || ids[0] != documentedDraftCommitmentID {
+		t.Fatalf("create plan request: %#v", request)
+	}
+	responses := asObj(operation["responses"])
+	if responses["200"] != nil || responses["201"] == nil {
+		t.Fatalf("create plan statuses: %#v", responses)
+	}
+	plan := asObj(asObj(asObj(asObj(responses["201"])["content"])["application/json"])["example"])
+	if plan["status"] != "draft" || plan["tokenState"] != "not_issued" || plan["planId"] != documentedDraftPlanID {
+		t.Fatalf("draft plan: %#v", plan)
+	}
+	if _, ok := plan["sharePolicyDecisionId"]; ok {
+		t.Fatal("draft plan includes a share decision")
+	}
+	revision := asObj(plan["currentRevision"])
+	version, versionOK := jsonInt(revision["version"])
+	if revision["revisionHash"] != documentedDraftRevisionHash || !versionOK || version != 1 {
+		t.Fatalf("draft revision: %#v", revision)
+	}
+	raw, err := json.Marshal([]draftPlanItemSample{{
+		ItemID:              "item:" + documentedDraftCommitmentID,
+		CommitmentID:        documentedDraftCommitmentID,
+		Title:               "Send the security packet.",
+		OwnerParticipantRef: "alex@example.com",
+		DependencyItemIDs:   []string{},
+		DueAt:               "2026-07-22T17:00:00Z",
+		Status:              "open",
+		EvidenceRefs:        []string{"revenue-evidence:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(raw)
+	if got := "sha256:" + hex.EncodeToString(sum[:]); got != documentedDraftRevisionHash {
+		t.Fatalf("revision hash %s from %s", got, raw)
+	}
+}
+
+type draftPlanItemSample struct {
+	ItemID              string   `json:"itemId"`
+	CommitmentID        string   `json:"commitmentId,omitempty"`
+	MilestoneRef        string   `json:"milestoneRef,omitempty"`
+	Title               string   `json:"title"`
+	OwnerParticipantRef string   `json:"ownerParticipantRef"`
+	DependencyItemIDs   []string `json:"dependencyItemIds"`
+	DueAt               string   `json:"dueAt,omitempty"`
+	Status              string   `json:"status"`
+	EvidenceRefs        []string `json:"evidenceRefs"`
 }
 
 func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {

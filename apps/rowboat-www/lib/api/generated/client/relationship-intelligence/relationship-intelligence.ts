@@ -2522,8 +2522,8 @@ export const getCreateMutualActionPlanUrl = (relationshipId: string) => {
 };
 
 /**
- * Creates an evidence-backed plan only from accepted or open commitments.
- * @summary Create a mutual action plan
+ * Create from promises they accepted posts the ids of promises they accepted that are still open. The stored plan status is draft.
+ * @summary Create from promises they accepted
  */
 export const createMutualActionPlan = async (
   relationshipId: string,

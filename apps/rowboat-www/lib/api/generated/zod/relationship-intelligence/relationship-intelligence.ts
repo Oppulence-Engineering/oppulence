@@ -6805,8 +6805,8 @@ export const GetRelationshipEvidence404Response = zod
   );
 
 /**
- * Creates an evidence-backed plan only from accepted or open commitments.
- * @summary Create a mutual action plan
+ * Create from promises they accepted posts the ids of promises they accepted that are still open. The stored plan status is draft.
+ * @summary Create from promises they accepted
  */
 export const CreateMutualActionPlanParams = zod.object({
   relationshipId: zod.uuid().describe("Relationship id."),
@@ -6819,8 +6819,58 @@ export const CreateMutualActionPlanBody = zod
   .describe("Plan create request.");
 
 export const CreateMutualActionPlan201Response = zod
-  .record(zod.string(), zod.unknown())
-  .describe("Mutual action plan.");
+  .strictObject({
+    counterpartyRef: zod.string().describe("The other party."),
+    currentRevision: zod
+      .strictObject({
+        createdAt: zod.iso.datetime({ offset: true }).describe("When this revision was written."),
+        createdBy: zod.uuid().describe("Who wrote this revision."),
+        items: zod
+          .array(
+            zod
+              .strictObject({
+                commitmentId: zod.uuid().optional().describe("Commitment this step came from."),
+                dependencyItemIds: zod
+                  .array(zod.string().describe("Step id."))
+                  .describe("Steps this one waits on."),
+                dueAt: zod.iso
+                  .datetime({ offset: true })
+                  .optional()
+                  .describe("When the step is due."),
+                evidenceRefs: zod
+                  .array(zod.string().describe("Evidence reference."))
+                  .describe("Evidence for the step."),
+                itemId: zod.string().describe("Step id."),
+                ownerParticipantRef: zod.string().describe("Who owns the step."),
+                status: zod.string().describe("Step status."),
+                title: zod.string().describe("Step title."),
+              })
+              .describe("One step on the plan."),
+          )
+          .describe("Plan steps."),
+        planId: zod.string().describe("Plan id."),
+        revisionHash: zod.string().describe("Hash of the steps."),
+        revisionId: zod.string().describe("Revision id."),
+        version: zod.int().describe("Revision number."),
+      })
+      .describe("The first revision."),
+    internalOwnerRef: zod.uuid().describe("Person who owns the plan inside this workspace."),
+    planId: zod.string().describe("Plan id."),
+    relationshipId: zod.uuid().describe("Company id."),
+    status: zod
+      .enum([
+        "draft",
+        "revised",
+        "internally_approved",
+        "shared",
+        "counterparty_responded",
+        "completed",
+        "cancelled",
+      ])
+      .describe("Plan status."),
+    tokenState: zod.enum(["not_issued", "active"]).describe("Share token state."),
+  })
+  .describe("The draft plan the company sheet reads.");
 
 export const CreateMutualActionPlan400Response = zod
   .strictObject({

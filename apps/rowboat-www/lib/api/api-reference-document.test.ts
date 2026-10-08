@@ -1421,6 +1421,25 @@ describe("API reference document", () => {
     expect(policy.responses["404"]).toBeTruthy();
   });
 
+  it("samples the draft plan Create from promises they accepted returns", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const create = presented.paths["/v1/relationships/{relationshipId}/mutual-action-plans"].post;
+    expect(create.summary).toBe("Create from promises they accepted");
+    expect(create.requestBody.content["application/json"].example.commitmentIds).toEqual([
+      "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+    ]);
+    expect(create.responses["200"]).toBeUndefined();
+    const plan = create.responses["201"].content["application/json"].example;
+    expect(plan.status).toBe("draft");
+    expect(plan.tokenState).toBe("not_issued");
+    expect(plan.sharePolicyDecisionId).toBeUndefined();
+    expect(plan.currentRevision.revisionHash).toBe(
+      "sha256:b718e82644ea4d98cb7a1f3ee6503cd6d3463df9c211e85051737f7654067f4d",
+    );
+    expect(plan.currentRevision.items[0].title).toBe("Send the security packet.");
+    expect(plan.currentRevision.items[0].dueAt).toBe("2026-07-22T17:00:00Z");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

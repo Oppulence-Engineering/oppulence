@@ -4918,7 +4918,54 @@ export const getGetRelationshipEvidenceResponseMock = (
   ...overrideResponse,
 });
 
-export const getCreateMutualActionPlanResponseMock = (): CreateMutualActionPlan201 => ({});
+export const getCreateMutualActionPlanResponseMock = (
+  overrideResponse: Partial<Extract<CreateMutualActionPlan201, object>> = {},
+): CreateMutualActionPlan201 => ({
+  counterpartyRef: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  currentRevision: {
+    createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+    createdBy: faker.string.uuid(),
+    items: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+      () => ({
+        commitmentId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+        dependencyItemIds: Array.from(
+          { length: faker.number.int({ min: 1, max: 10 }) },
+          (_, i) => i + 1,
+        ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+        dueAt: faker.helpers.arrayElement([
+          faker.date.past().toISOString().slice(0, 19) + "Z",
+          undefined,
+        ]),
+        evidenceRefs: Array.from(
+          { length: faker.number.int({ min: 1, max: 10 }) },
+          (_, i) => i + 1,
+        ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+        itemId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        ownerParticipantRef: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        status: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        title: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      }),
+    ),
+    planId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    revisionHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    revisionId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    version: faker.number.int(),
+  },
+  internalOwnerRef: faker.string.uuid(),
+  planId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  relationshipId: faker.string.uuid(),
+  status: faker.helpers.arrayElement([
+    "draft",
+    "revised",
+    "internally_approved",
+    "shared",
+    "counterparty_responded",
+    "completed",
+    "cancelled",
+  ] as const),
+  tokenState: faker.helpers.arrayElement(["not_issued", "active"] as const),
+  ...overrideResponse,
+});
 
 export const getReviseMutualActionPlanResponseMock = (): ReviseMutualActionPlan200 => ({});
 
