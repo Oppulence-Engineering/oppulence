@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   displayNamePlaceholder,
   helpDestination,
+  mailPrivacySectionCopy,
   preferenceFormIsHidden,
   preferenceRefreshCopy,
   sessionRoleCopy,
@@ -181,8 +182,21 @@ describe("SettingsView", () => {
     expect(source).not.toContain('title="Chat Defaults"');
     expect(source).not.toContain('title="Current Plan"');
     expect(source).toContain("How Oppulence looks on this device.");
-    expect(source).toContain(
+    expect(source).toContain("description={mailPrivacy}");
+    expect(source).not.toContain(
+      'description="Choose what from mail and calendar can be shared, and which addresses stay private."',
+    );
+    expect(mailPrivacySectionCopy({ connected: true, failed: false })).toBe(
       "Choose what from mail and calendar can be shared, and which addresses stay private.",
+    );
+    expect(mailPrivacySectionCopy({ connected: false, failed: false })).toBe(
+      "Connect a Google mailbox before you can choose what from mail and calendar is shared.",
+    );
+    expect(mailPrivacySectionCopy({ connected: null, failed: false })).toBe(
+      "Checking whether a Google mailbox is connected.",
+    );
+    expect(mailPrivacySectionCopy({ connected: null, failed: true })).toBe(
+      "Could not check whether a Google mailbox is connected.",
     );
     expect(source).not.toContain("mailbox metadata defaults");
     expect(source).not.toContain("this console");
