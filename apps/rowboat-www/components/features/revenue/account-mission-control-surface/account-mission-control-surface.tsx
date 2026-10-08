@@ -125,6 +125,11 @@ export function promiseFollowUpTitle(evaluationCount: number, atRiskCount: numbe
   return `Promises to follow up (${count})`;
 }
 
+/** The Promises section and the overview card share this line. */
+export function companyPromiseEmptyCopy(): string {
+  return "No promises recorded for this company yet.";
+}
+
 /** An empty check is not the same as a promise that is already due. */
 export function promiseFollowUpEmptyCopy(atRiskCount: number, overdueCount = 0): string {
   const waiting = Number.isFinite(atRiskCount) ? Math.max(0, Math.round(atRiskCount)) : 0;
@@ -193,7 +198,7 @@ export function AccountMissionControlSurface({
   attentionLabel,
   attentionVariant = "amber",
   className,
-  emptyMessage = "No commitments recorded for this company yet.",
+  emptyMessage = companyPromiseEmptyCopy(),
   items,
   showHeader = true,
   ...props
