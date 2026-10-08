@@ -4879,6 +4879,56 @@ func assertObjectAudit(t *testing.T, spec obj) {
 	if plan["summary"] != "Open a scoped mutual action plan" {
 		t.Fatalf("public plan changed: %#v", plan["summary"])
 	}
+
+	assertScanProgress(t, spec)
+}
+
+func TestScanProgress(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertScanProgress(t, spec)
+}
+
+func assertScanProgress(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	operation := asObj(asObj(paths["/v1/revenue-leak-scans/{scanId}"])["get"])
+	if operation["summary"] != "Reading your last 6 months" || operation["operationId"] != "getRevenueLeakScan" || operation["description"] != scanProgressDescription {
+		t.Fatalf("scan progress operation: summary=%#v id=%#v description=%#v", operation["summary"], operation["operationId"], operation["description"])
+	}
+	if operation["requestBody"] != nil {
+		t.Fatalf("scan progress sends no body: %#v", operation["requestBody"])
+	}
+	params, ok := operation["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("scan progress parameters: %#v", operation["parameters"])
+	}
+	param := asObj(params[0])
+	if param["name"] != "scanId" || param["example"] != scanProgressID || param["required"] != true {
+		t.Fatalf("scan progress param: %#v", param)
+	}
+	if asObj(param["schema"])["example"] != scanProgressID {
+		t.Fatalf("scan progress schema example: %#v", param["schema"])
+	}
+	example := asObj(asObj(asObj(asObj(operation["responses"])["200"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(scanProgressExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("scan progress example:\n%s\nwant:\n%s", got, want)
+	}
+	encoded := string(got)
+	if !strings.Contains(encoded, `"status":"running"`) || !strings.Contains(encoded, `"threadsSeen":412`) || !strings.Contains(encoded, `"lookbackDays":180`) || !strings.Contains(encoded, scanProgressID) {
+		t.Fatalf("scan progress example is missing the page: %s", encoded)
+	}
+	if strings.Contains(encoded, "completedAt") || strings.Contains(encoded, `"error"`) {
+		t.Fatalf("scan progress example finished the audit: %s", encoded)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

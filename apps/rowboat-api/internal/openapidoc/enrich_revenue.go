@@ -1440,11 +1440,7 @@ func addRevenuePaths(paths obj) {
 			"401": responseRef("401"),
 			"409": problemResponse("A scan is already running, or no scan source is configured.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "revenue: scan unavailable: a scan is already running", "scan_unavailable")),
 		})}
-	paths["/v1/revenue-leak-scans/{scanId}"] = obj{"get": operation("Revenue", "Get scan progress", "Returns progress, counts, errors, and source freshness for one scan.", "getRevenueLeakScan", bearer(), []any{obj{"name": "scanId", "in": "path", "required": true, "description": "Scan id.", "schema": obj{"type": "string", "format": "uuid"}}}, nil, obj{
-		"200": jsonResponse("Scan state.", ref("RevenueLeakScan"), nil),
-		"401": responseRef("401"),
-		"404": responseRef("404"),
-	})}
+	paths["/v1/revenue-leak-scans/{scanId}"] = obj{"get": scanProgressOperation()}
 
 	// The commitment register: obligations across every account. Every other
 	// commitment path is nested under a relationship id and cannot answer

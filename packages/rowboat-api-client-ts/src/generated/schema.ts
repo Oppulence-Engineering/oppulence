@@ -2832,8 +2832,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get scan progress
-     * @description Returns progress, counts, errors, and source freshness for one scan.
+     * Reading your last 6 months
+     * @description Reading your last 6 months polls this audit while it runs. The page shows how many conversations have been read.
      */
     get: operations["getRevenueLeakScan"];
     put?: never;
@@ -24587,19 +24587,40 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Scan id. */
+        /**
+         * @description The audit Reading your last 6 months is polling.
+         * @example 4d8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         scanId: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Scan state. */
+      /** @description Reading your last 6 months. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "actionsCreated": 0,
+           *       "candidatesSeen": 0,
+           *       "commitmentsCreated": 0,
+           *       "evidencesCreated": 0,
+           *       "id": "4d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "lookbackDays": 180,
+           *       "mode": "local",
+           *       "relationshipsCreated": 0,
+           *       "startedAt": "2026-07-23T12:00:00Z",
+           *       "status": "running",
+           *       "threadsDeepRead": 412,
+           *       "threadsSeen": 412,
+           *       "threadsSkipped": 0,
+           *       "threadsSnippetOnly": 0
+           *     }
+           */
           "application/json": components["schemas"]["RevenueLeakScan"];
         };
       };

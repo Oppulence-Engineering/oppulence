@@ -2497,11 +2497,11 @@ export const StartRevenueLeakScan409Response = zod
   );
 
 /**
- * Returns progress, counts, errors, and source freshness for one scan.
- * @summary Get scan progress
+ * Reading your last 6 months polls this audit while it runs. The page shows how many conversations have been read.
+ * @summary Reading your last 6 months
  */
 export const GetRevenueLeakScanParams = zod.object({
-  scanId: zod.uuid().describe("Scan id."),
+  scanId: zod.uuid().describe("The audit Reading your last 6 months is polling."),
 });
 
 export const GetRevenueLeakScan200Response = zod
