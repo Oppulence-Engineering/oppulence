@@ -6347,6 +6347,49 @@ func assertPriorityBreakdown(t *testing.T, schemas obj) {
 	}
 }
 
+func TestParticipantEmailIsTheCompanyPerson(t *testing.T) {
+	raw, err := os.ReadFile("../../api/openapi.json")
+	if err != nil {
+		t.Fatalf("read checked-in openapi json: %v", err)
+	}
+	var checked obj
+	if err := json.Unmarshal(raw, &checked); err != nil {
+		t.Fatalf("parse checked-in openapi json: %v", err)
+	}
+	assertParticipantEmail(t, asObj(asObj(checked["components"])["schemas"]))
+
+	fresh := obj{"components": obj{"schemas": obj{
+		"CommunicationParticipant": obj{"type": "object", "properties": obj{
+			"email": obj{
+				"type":        "string",
+				"description": "Best-known WorkOS primary email for the user.",
+				"example":     "user@example.com",
+			},
+		}},
+		"User": obj{"type": "object", "properties": obj{
+			"email": obj{"type": "string"},
+		}},
+	}}}
+	Enrich(fresh)
+	assertParticipantEmail(t, asObj(asObj(fresh["components"])["schemas"]))
+}
+
+func assertParticipantEmail(t *testing.T, schemas obj) {
+	t.Helper()
+	participant := asObj(asObj(asObj(schemas["RelationshipParticipant"])["properties"])["email"])
+	if participant["description"] != participantEmailDescription || participant["example"] != participantEmailExample {
+		t.Fatalf("RelationshipParticipant.email is the signed-in user: %#v", participant)
+	}
+	message := asObj(asObj(asObj(schemas["CommunicationParticipant"])["properties"])["email"])
+	if message["description"] != messageAddressDescription || message["example"] != participantEmailExample {
+		t.Fatalf("CommunicationParticipant.email is the signed-in user: %#v", message)
+	}
+	user := asObj(asObj(asObj(schemas["User"])["properties"])["email"])
+	if user["description"] != "Best-known WorkOS primary email for the user." || user["example"] != "user@example.com" {
+		t.Fatalf("User.email lost the signed-in address: %#v", user)
+	}
+}
+
 func TestCompanyProfileFactsAreDocumented(t *testing.T) {
 	raw, err := os.ReadFile("../../api/openapi.json")
 	if err != nil {
