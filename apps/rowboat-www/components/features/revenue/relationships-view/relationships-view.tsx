@@ -460,7 +460,7 @@ function RelationshipEnrichment({
           <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
             Public research
           </p>
-          <h3 className="mt-1 text-sm font-semibold text-primary">Know who is behind the inbox</h3>
+          <h3 className="mt-1 text-sm font-semibold text-primary">{researchPanelTitle()}</h3>
           <p className="mt-1 max-w-3xl text-xs text-primary/55">
             Public research can fill in a company and the people who work there, and each detail
             keeps its source link. Message content, notes, and full email addresses stay in
@@ -554,6 +554,14 @@ function RelationshipEnrichment({
   );
 }
 
+
+/**
+ * Public research fills in a company from names and domains. It does not
+ * read a mailbox, so the heading must not name an inbox.
+ */
+export function researchPanelTitle(): string {
+  return "Know who works at a company";
+}
 
 /**
  * Research status mixes a vendor setup step with the stored plan slug. The
