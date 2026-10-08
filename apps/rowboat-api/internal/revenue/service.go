@@ -738,6 +738,11 @@ const taskQueuePage = 100
 // stay out of that list.
 const promiseRegisterPage = 200
 
+// attentionQueuePage is the open queue the companies page asks for. The
+// button is "Show the next companies in the queue" when another open item
+// sits past that page. A resolved item stays off the list.
+const attentionQueuePage = 50
+
 // ListRelationships returns the workspace's relationships, most recent
 // interaction first. A company with no interaction follows those, newest
 // edit first. Each row includes its open queue actions so the caller can
@@ -880,6 +885,10 @@ func (s *Service) ListRelationshipsFiltered(
 		// we made sits past the first page. A full page of 200 is the whole list.
 		if labelPhraseMatches("show the next promises", needle) {
 			parts = append(parts, relationshipHasAnotherPromisePage())
+		}
+
+		if labelPhraseMatches("show the next companies in the queue", needle) {
+			parts = append(parts, relationshipHasAnotherAttentionPage())
 		}
 		if labelPhraseMatches("no activity", needle) {
 			parts = append(parts, relationship.LastTouchAtIsNil())
@@ -10860,6 +10869,29 @@ func writeDependentSource(b *sql.Builder, s *sql.Selector, alias string) {
 	b.WriteString(") IN ('hubspot', 'crm') AND ")
 	writeRelationshipDependsOn(b, s, []string{"hubspot", "crm"}, []string{"hubspot", "crm", "crm_task", "task"})
 	b.WriteString("))")
+}
+
+// relationshipHasAnotherAttentionPage is true when the open attention queue
+// has another page. The companies list prints "Show the next companies in
+// the queue" in that case. A task never becomes one of these items, and a
+// dismissed follow-up is no longer open.
+func relationshipHasAnotherAttentionPage() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(relationshipattentionitem.Table)
+			b.WriteString(" AS directory WHERE directory.")
+			b.WriteString(relationshipattentionitem.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND directory.")
+			b.WriteString(relationshipattentionitem.FieldStatus)
+			b.WriteString(" = ")
+			b.Arg("open")
+			b.WriteString(") > ")
+			b.Arg(attentionQueuePage)
+		}))
+	})
 }
 
 // labelPhraseMatches is the sentence on the company row, or a longer question
