@@ -891,6 +891,29 @@ func addRevenuePaths(paths obj) {
 		"200": jsonResponse("Current workspace.", ref("RevenueWorkspace"), nil),
 		"401": responseRef("401"),
 	})}
+	// Add rule leaves Protected address selected and posts the address typed
+	// into the field. The placeholder that field shows is buyer@example.com.
+	const privacyRuleKind = "protected_address"
+	const privacyRuleValue = "buyer@example.com"
+	const privacyRuleID = "3b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	const privacyRuleHash = "sha256:6a6c26195c3682faa816966af789717c3bfa834eee6c599d667d2b3429c27cfd"
+	paths["/v1/revenue-workspaces/current/communication-privacy-rules"] = obj{"post": operation("Revenue", "Add rule", "Add rule sends kind protected_address and value buyer@example.com. The server lowercases the address, stores an active rule, and returns that rule with the sha256 of the stored address.", "createCommunicationPrivacyRule", bearer(), nil, jsonRequest("Privacy rule.", objectSchema("Privacy rule.", obj{
+		"kind":  stringEnum("Rule kind. Add rule leaves the default protected address selected.", privacyRuleKind, "protected_address", "protected_domain", "blocked_address", "blocked_domain"),
+		"value": stringSchema("Address or domain typed into the rule field.", privacyRuleValue),
+	}, "kind", "value"), obj{"kind": privacyRuleKind, "value": privacyRuleValue}), obj{
+		"201": jsonResponse("Stored privacy rule.", objectSchema("Stored privacy rule.", obj{
+			"id":        uuidSchema("Rule id.", privacyRuleID),
+			"kind":      stringEnum("Stored rule kind.", privacyRuleKind, "protected_address", "protected_domain", "blocked_address", "blocked_domain"),
+			"value":     stringSchema("Normalized address or domain.", privacyRuleValue),
+			"valueHash": stringSchema("sha256 of the normalized value.", privacyRuleHash),
+			"active":    boolSchema("New rules are stored active.", true),
+		}, "id", "kind", "value", "valueHash", "active"), obj{
+			"id": privacyRuleID, "kind": privacyRuleKind, "value": privacyRuleValue, "valueHash": privacyRuleHash, "active": true,
+		}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"403": responseRef("403"),
+	})}
 	paths["/v1/revenue-workspaces/link"] = obj{"post": operation("Revenue", "Link the OutboundConsole workspace", "Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.", "linkRevenueWorkspace", bearer(), nil, jsonRequest("OutboundConsole identifiers.", objectSchema("Link request.", obj{
 		"outboundOrganizationId": stringSchema("OutboundConsole organization id.", "org_01ABC"),
 		"outboundWorkspaceId":    stringSchema("OutboundConsole workspace id.", "ws_01ABC"),

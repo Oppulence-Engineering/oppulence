@@ -1,6 +1,8 @@
 package openapidoc
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"reflect"
@@ -1269,6 +1271,42 @@ func assertUpgradePlan(t *testing.T, spec obj) {
 	plan := asObj(asObj(asObj(content["schema"])["properties"])["plan"])
 	if example["plan"] != "pro" || plan["example"] != "pro" {
 		t.Fatalf("checkout plan: %#v %#v", example, plan)
+	}
+
+	assertPrivacyRule(t, spec)
+}
+
+func TestAddRuleSendsProtectedAddress(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertPrivacyRule(t, spec)
+}
+
+func assertPrivacyRule(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/revenue-workspaces/current/communication-privacy-rules"])["post"])
+	if op["summary"] != "Add rule" {
+		t.Fatalf("summary: %#v", op["summary"])
+	}
+	content := asObj(asObj(asObj(op["requestBody"])["content"])["application/json"])
+	example := asObj(content["example"])
+	props := asObj(asObj(content["schema"])["properties"])
+	kind := asObj(props["kind"])
+	value := asObj(props["value"])
+	if example["kind"] != "protected_address" || example["value"] != "buyer@example.com" {
+		t.Fatalf("privacy rule request: %#v", example)
+	}
+	if kind["example"] != "protected_address" || value["example"] != "buyer@example.com" {
+		t.Fatalf("privacy rule fields: %#v %#v", kind, value)
+	}
+	if !reflect.DeepEqual(kind["enum"], []any{"protected_address", "protected_domain", "blocked_address", "blocked_domain"}) {
+		t.Fatalf("privacy rule kinds: %#v", kind["enum"])
+	}
+	sum := sha256.Sum256([]byte("buyer@example.com"))
+	wantHash := "sha256:" + hex.EncodeToString(sum[:])
+	stored := asObj(asObj(asObj(asObj(asObj(op["responses"])["201"])["content"])["application/json"])["example"])
+	if stored["kind"] != "protected_address" || stored["value"] != "buyer@example.com" || stored["active"] != true || stored["valueHash"] != wantHash || stored["id"] != "3b8dfa9b-a7b2-46ea-982c-622a914c00e5" {
+		t.Fatalf("stored privacy rule: %#v want hash %s", stored, wantHash)
 	}
 }
 
