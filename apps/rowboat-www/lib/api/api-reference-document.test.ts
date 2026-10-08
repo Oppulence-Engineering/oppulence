@@ -869,6 +869,23 @@ describe("API reference document", () => {
     );
   });
 
+  it("names the assertion a contradiction resolution selects", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const assertionID = "7b8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    const media =
+      presented.paths["/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve"].post.requestBody
+        .content["application/json"];
+    expect(media.example.selectedAssertionId).toBe(assertionID);
+    expect(media.schema.properties.selectedAssertionId).toMatchObject({
+      description: "Selected assertion id.",
+      example: assertionID,
+      format: "uuid",
+    });
+    expect(presented.components.schemas.MissionControlDimensionEvidence.properties.assertionId.example).toBe(
+      assertionID,
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

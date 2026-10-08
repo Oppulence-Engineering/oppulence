@@ -671,6 +671,37 @@ func assertConversationReview(t *testing.T, schemas obj) {
 			t.Fatalf("user id changed: %#v", id)
 		}
 	}
+
+	assertSelectedAssertion(t, spec)
+}
+
+func TestContradictionResolutionNamesTheAssertion(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSelectedAssertion(t, spec)
+}
+
+func assertSelectedAssertion(t *testing.T, spec obj) {
+	t.Helper()
+	const assertionID = "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	paths := asObj(spec["paths"])
+	if paths == nil {
+		return
+	}
+	operation := asObj(asObj(paths["/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve"])["post"])
+	media := asObj(asObj(asObj(asObj(operation["requestBody"])["content"])["application/json"]))
+	example := asObj(media["example"])
+	if example["selectedAssertionId"] != assertionID {
+		t.Fatalf("resolution example: %#v", example)
+	}
+	selected := asObj(asObj(asObj(media["schema"])["properties"])["selectedAssertionId"])
+	if selected["example"] != assertionID || selected["format"] != "uuid" || selected["description"] != "Selected assertion id." {
+		t.Fatalf("selected assertion: %#v", selected)
+	}
+	evidence := asObj(asObj(asObj(asObj(spec["components"])["schemas"])["MissionControlDimensionEvidence"])["properties"])
+	if asObj(evidence["assertionId"])["example"] != assertionID {
+		t.Fatalf("winning assertion changed: %#v", evidence["assertionId"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
