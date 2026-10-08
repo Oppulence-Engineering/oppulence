@@ -5528,6 +5528,48 @@ func assertEarlierEvidence(t *testing.T, spec obj) {
 	if item["label"] != "Resolve the speaker for a material statement" || item["kind"] != "speaker" || item["exactQuote"] != "We are concerned security could delay the renewal." {
 		t.Fatalf("earlier evidence item: %#v", item)
 	}
+
+	assertLocalMode(t, spec)
+}
+
+func TestLocalModeSamplesTheWorkspace(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertLocalMode(t, spec)
+}
+
+func assertLocalMode(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/revenue-workspaces/current"])["get"])
+	if op["summary"] != "Local mode" || op["operationId"] != "getRevenueWorkspace" || op["description"] != localModeDescription {
+		t.Fatalf("operation: summary=%#v id=%#v description=%#v", op["summary"], op["operationId"], op["description"])
+	}
+	if op["parameters"] != nil || op["requestBody"] != nil {
+		t.Fatalf("local mode takes no query or body: %#v", op)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(localModeWorkspace())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("example:\n%s\nwant:\n%s", got, want)
+	}
+	if example["id"] != localModeWorkspaceID || example["mode"] != "local" || example["status"] != "active" || example["preflightAvailable"] != false {
+		t.Fatalf("workspace: %#v", example)
+	}
+	for _, absent := range []string{"outboundOrganizationId", "outboundWorkspaceId", "lastVerifiedAt"} {
+		if _, ok := example[absent]; ok {
+			t.Fatalf("local mode sample includes %s: %#v", absent, example)
+		}
+	}
+	if strings.Contains(string(got), "acta_") || strings.Contains(string(got), "\"token\"") || strings.Contains(string(got), "approvedAt") {
+		t.Fatalf("sample looks like a live secret: %s", got)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
