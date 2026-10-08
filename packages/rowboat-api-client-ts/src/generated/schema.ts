@@ -2548,8 +2548,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get an action
-     * @description Returns one action with relationship context.
+     * Reload the checked action
+     * @description Re-check policy reloads this action. The sheet shows the company, the follow-up, and that the check passed.
      */
     get: operations["getRevenueAction"];
     put?: never;
@@ -23607,22 +23607,67 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Action id. */
+        /** @description Action the sheet reloads. */
         actionId: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Action. */
+      /** @description The action the sheet shows after the check. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "actionType": "warm_follow_up",
+           *       "approvalStatus": "pending",
+           *       "channel": "email",
+           *       "createdAt": "2026-07-12T12:00:00Z",
+           *       "detector": "requested_follow_up_due",
+           *       "dueAt": "2026-07-15T00:00:00Z",
+           *       "evidence": [
+           *         {
+           *           "excerpt": "Can you circle back this month?",
+           *           "externalEvidenceRefs": [
+           *             "gmail:message:msg_01"
+           *           ],
+           *           "id": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "occurredAt": "2026-07-01T14:00:00Z",
+           *           "source": "gmail",
+           *           "sourceRecordId": "gmail:thread:thr_01"
+           *         }
+           *       ],
+           *       "executionMode": "send",
+           *       "executionOwner": "rowboat",
+           *       "executionStatus": "pending",
+           *       "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "policyStatus": "passed",
+           *       "priorityComponents": {
+           *         "commitment_urgency": 40,
+           *         "recency_signal": 12,
+           *         "relationship_value": 30
+           *       },
+           *       "priorityScore": 82,
+           *       "proposedMessage": "Hi Jordan — you asked me to circle back this month...",
+           *       "proposedSubject": "Following up as promised",
+           *       "queueStatus": "open",
+           *       "reason": "They asked for a follow-up in July.",
+           *       "recipientEmail": "buyer@example.com",
+           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "relationshipName": "Acme",
+           *       "revision": 1,
+           *       "revisionHash": "sha256:ab12...",
+           *       "senderAccountRef": "gmail:me@company.com",
+           *       "updatedAt": "2026-07-12T12:00:00Z"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueAction"];
         };
       };
+      400: components["responses"]["400"];
       401: components["responses"]["401"];
       404: components["responses"]["404"];
     };

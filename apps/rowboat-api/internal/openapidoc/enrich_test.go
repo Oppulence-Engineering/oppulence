@@ -5143,6 +5143,56 @@ func assertActionObjectAudit(t *testing.T, spec obj) {
 	if !ok || len(records) != 1 || asObj(records[0])["hashPrefix"] != actionAuditHashPrefix || asObj(records[0])["consumed"] != true {
 		t.Fatalf("audit records: %#v", entry["tokens"])
 	}
+
+	assertReloadedAction(t, spec)
+}
+
+func TestReloadedAction(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertReloadedAction(t, spec)
+}
+
+func assertReloadedAction(t *testing.T, spec obj) {
+	t.Helper()
+	get := asObj(asObj(asObj(spec["paths"])["/v1/revenue-actions/{actionId}"])["get"])
+	if get["summary"] != "Reload the checked action" || get["operationId"] != "getRevenueAction" || get["description"] != reloadedActionDescription {
+		t.Fatalf("reloaded action operation: summary=%#v id=%#v description=%#v", get["summary"], get["operationId"], get["description"])
+	}
+	if get["requestBody"] != nil {
+		t.Fatalf("reloaded action has no body: %#v", get["requestBody"])
+	}
+	params, ok := get["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("reloaded action parameters: %#v", get["parameters"])
+	}
+	param := asObj(params[0])
+	if param["name"] != "actionId" || param["in"] != "path" || param["required"] != true {
+		t.Fatalf("reloaded action path param: %#v", param)
+	}
+	if asObj(param["schema"])["example"] != reloadedActionID {
+		t.Fatalf("reloaded action id example: %#v", param["schema"])
+	}
+	example := asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(reloadedActionExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("reloaded action example:\n%s\nwant:\n%s", got, want)
+	}
+	encoded := string(got)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, "approvedAt") || strings.Contains(encoded, "dismissReason") {
+		t.Fatalf("reloaded action is not still waiting to send: %s", encoded)
+	}
+	action := asObj(example)
+	if action["policyStatus"] != "passed" || action["queueStatus"] != "open" || action["approvalStatus"] != "pending" || action["executionMode"] != "send" {
+		t.Fatalf("reloaded action state: %#v", action)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

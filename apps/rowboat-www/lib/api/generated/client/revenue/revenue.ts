@@ -213,6 +213,11 @@ export type getRevenueActionResponse200 = {
   status: 200;
 };
 
+export type getRevenueActionResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
 export type getRevenueActionResponse401 = {
   data: N401Response;
   status: 401;
@@ -227,7 +232,7 @@ export type getRevenueActionResponseSuccess = getRevenueActionResponse200 & {
   headers: Headers;
 };
 export type getRevenueActionResponseError = (
-  getRevenueActionResponse401 | getRevenueActionResponse404
+  getRevenueActionResponse400 | getRevenueActionResponse401 | getRevenueActionResponse404
 ) & {
   headers: Headers;
 };
@@ -240,8 +245,8 @@ export const getGetRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Returns one action with relationship context.
- * @summary Get an action
+ * Re-check policy reloads this action. The sheet shows the company, the follow-up, and that the check passed.
+ * @summary Reload the checked action
  */
 export const getRevenueAction = async (
   actionId: string,

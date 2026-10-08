@@ -3738,6 +3738,66 @@ describe("API reference document", () => {
     expect(encoded).not.toContain('"token"');
   });
 
+  it("samples the action Re-check policy reloads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/revenue-actions/{actionId}"].get;
+    expect(operation.summary).toBe("Reload the checked action");
+    expect(operation.operationId).toBe("getRevenueAction");
+    expect(operation.description).toBe(
+      "Re-check policy reloads this action. The sheet shows the company, the follow-up, and that the check passed.",
+    );
+    expect(operation.requestBody).toBeUndefined();
+    expect(operation.parameters[0]).toMatchObject({
+      name: "actionId",
+      in: "path",
+      required: true,
+      schema: { example: "1a8dfa9b-a7b2-46ea-982c-622a914c00e5" },
+    });
+    expect(operation.responses["200"].content["application/json"].example).toEqual({
+      id: "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      relationshipId: "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      relationshipName: "Acme",
+      actionType: "warm_follow_up",
+      channel: "email",
+      detector: "requested_follow_up_due",
+      revision: 1,
+      revisionHash: "sha256:ab12...",
+      reason: "They asked for a follow-up in July.",
+      recipientEmail: "buyer@example.com",
+      proposedSubject: "Following up as promised",
+      proposedMessage: "Hi Jordan — you asked me to circle back this month...",
+      senderAccountRef: "gmail:me@company.com",
+      priorityScore: 82,
+      priorityComponents: {
+        commitment_urgency: 40,
+        recency_signal: 12,
+        relationship_value: 30,
+      },
+      queueStatus: "open",
+      policyStatus: "passed",
+      approvalStatus: "pending",
+      executionStatus: "pending",
+      executionOwner: "rowboat",
+      executionMode: "send",
+      dueAt: "2026-07-15T00:00:00Z",
+      createdAt: "2026-07-12T12:00:00Z",
+      updatedAt: "2026-07-12T12:00:00Z",
+      evidence: [
+        {
+          id: "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+          source: "gmail",
+          sourceRecordId: "gmail:thread:thr_01",
+          excerpt: "Can you circle back this month?",
+          occurredAt: "2026-07-01T14:00:00Z",
+          externalEvidenceRefs: ["gmail:message:msg_01"],
+        },
+      ],
+    });
+    const encoded = JSON.stringify(operation.responses["200"].content["application/json"].example);
+    expect(encoded).not.toContain("acta_");
+    expect(encoded).not.toContain("approvedAt");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
