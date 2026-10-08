@@ -1020,6 +1020,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if earlier := relationshipSheetEarlierPageMatch(needle); earlier != nil {
 			parts = append(parts, earlier)
 		}
+
+		if older := relationshipSheetOlderReviewMatch(needle); older != nil {
+			parts = append(parts, older)
+		}
 		if privacy := relationshipSheetPrivacyMatch(needle); privacy != nil {
 			parts = append(parts, privacy)
 		}
@@ -4290,6 +4294,190 @@ func relationshipSheetSuggestionMatch(needle string) predicate.Relationship {
 	default:
 		return relationship.Or(preds...)
 	}
+}
+
+// relationshipSheetOlderReviewMatch matches "Older conversations may still
+// need review." The sheet prints that only when the newest page has no
+// review item and another page of conversations is still unloaded. A claim
+// or proposed change on that page prints a different sentence.
+func relationshipSheetOlderReviewMatch(needle string) predicate.Relationship {
+	if needle != "older conversations may still need review" {
+		return nil
+	}
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			writeOlderReviewEmpty(b, s)
+		}))
+	})
+}
+
+func writeOlderReviewEmpty(b *sql.Builder, s *sql.Selector) {
+	obs := relationshipobservation.Table
+	rel := s.C(relationship.FieldID)
+	b.WriteString("(SELECT COUNT(*) FROM ")
+	b.WriteString(obs)
+	b.WriteString(" AS counted WHERE counted.")
+	b.WriteString(relationshipobservation.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(rel)
+	b.WriteString(") > ")
+	b.Arg(intelligenceObservationPage)
+	b.WriteString(" AND NOT EXISTS (SELECT 1 FROM (SELECT paged_obs.")
+	b.WriteString(relationshipobservation.FieldID)
+	b.WriteString(" AS id, paged_obs.")
+	b.WriteString(relationshipobservation.FieldNormalizedFactsJSON)
+	b.WriteString(" AS facts FROM ")
+	b.WriteString(obs)
+	b.WriteString(" AS paged_obs WHERE paged_obs.")
+	b.WriteString(relationshipobservation.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(rel)
+	b.WriteString(" ORDER BY paged_obs.")
+	b.WriteString(relationshipobservation.FieldOccurredAt)
+	b.WriteString(" DESC, paged_obs.")
+	b.WriteString(relationshipobservation.FieldID)
+	b.WriteString(" DESC LIMIT ")
+	b.WriteString(strconv.Itoa(intelligenceObservationPage))
+	b.WriteString(") AS paged WHERE ")
+	writePagedClaimReview(b, s, rel)
+	b.WriteString(" OR ")
+	writePagedCandidateReview(b, s, rel)
+	b.WriteString(")")
+}
+
+func writePagedClaimReview(b *sql.Builder, s *sql.Selector, rel string) {
+	b.WriteString("EXISTS (SELECT 1 FROM ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_array_elements(CASE WHEN jsonb_typeof(paged.facts::jsonb->'conversation_claims') = 'array' THEN paged.facts::jsonb->'conversation_claims' ELSE '[]'::jsonb END) AS claim WHERE ")
+	} else {
+		b.WriteString("json_each(CASE WHEN json_valid(paged.facts) AND json_type(paged.facts, '$.conversation_claims') = 'array' THEN paged.facts ELSE '{\"conversation_claims\":[]}' END, '$.conversation_claims') AS claim WHERE ")
+	}
+	kind := "claim->>'kind'"
+	if s.Dialect() != dialect.Postgres {
+		kind = "json_extract(claim.value, '$.kind')"
+	}
+	confidence := reviewClaimNumber(s, "confidence")
+	b.WriteString("((")
+	b.WriteString(confidence)
+	b.WriteString(" < 0.75 OR (")
+	b.WriteString(kind)
+	b.WriteString(" = 'stakeholder' AND ")
+	b.WriteString(confidence)
+	b.WriteString(" < 0.85)) AND NOT ")
+	writeReviewCorrectionExists(b, s, rel, "confidence")
+	b.WriteString(") OR (")
+	writeReviewClaimCondition(b, s, "speaker")
+	b.WriteString(" AND NOT ")
+	writeReviewCorrectionExists(b, s, rel, "speaker")
+	b.WriteString("))")
+}
+
+func writePagedCandidateReview(b *sql.Builder, s *sql.Selector, rel string) {
+	b.WriteString("EXISTS (SELECT 1 FROM ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("jsonb_array_elements(CASE WHEN jsonb_typeof(paged.facts::jsonb->'conversation_claim_candidates') = 'array' THEN paged.facts::jsonb->'conversation_claim_candidates' ELSE '[]'::jsonb END) AS candidate WHERE NOT ")
+	} else {
+		b.WriteString("json_each(CASE WHEN json_valid(paged.facts) AND json_type(paged.facts, '$.conversation_claim_candidates') = 'array' THEN paged.facts ELSE '{\"conversation_claim_candidates\":[]}' END, '$.conversation_claim_candidates') AS candidate WHERE NOT ")
+	}
+	writeCandidateDecisionClosed(b, s, rel)
+	b.WriteString(")")
+}
+
+func writeReviewCorrectionExists(b *sql.Builder, s *sql.Selector, rel, side string) {
+	b.WriteString("EXISTS (SELECT 1 FROM ")
+	b.WriteString(relationshipobservation.Table)
+	b.WriteString(" AS corr WHERE corr.")
+	b.WriteString(relationshipobservation.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(rel)
+	b.WriteString(" AND ")
+	writeObservationFactText(b, s, "corr", "review_correction", "observation_id")
+	b.WriteString(" = ")
+	writePagedObservationID(b, s)
+	b.WriteString(" AND ")
+	writeObservationFactText(b, s, "corr", "review_correction", "claim_id")
+	b.WriteString(" = ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("claim->>'id'")
+	} else {
+		b.WriteString("json_extract(claim.value, '$.id')")
+	}
+	b.WriteString(" AND ")
+	writeObservationFactText(b, s, "corr", "review_correction", "kind")
+	if side == "speaker" {
+		b.WriteString(" = ")
+		b.Arg("speaker")
+	} else {
+		b.WriteString(" IN (")
+		b.Arg("claim")
+		b.WriteString(", ")
+		b.Arg("entity")
+		b.WriteString(", ")
+		b.Arg("word")
+		b.WriteString(")")
+	}
+	b.WriteString(")")
+}
+
+func writeCandidateDecisionClosed(b *sql.Builder, s *sql.Selector, rel string) {
+	b.WriteString("EXISTS (SELECT 1 FROM (SELECT ")
+	writeObservationFactText(b, s, "dec", "review_decision", "kind")
+	b.WriteString(" AS kind FROM ")
+	b.WriteString(relationshipobservation.Table)
+	b.WriteString(" AS dec WHERE dec.")
+	b.WriteString(relationshipobservation.RelationshipColumn)
+	b.WriteString(" = ")
+	b.WriteString(rel)
+	b.WriteString(" AND ")
+	writeObservationFactText(b, s, "dec", "review_decision", "observation_id")
+	b.WriteString(" = ")
+	writePagedObservationID(b, s)
+	b.WriteString(" AND ")
+	writeObservationFactText(b, s, "dec", "review_decision", "candidate_id")
+	b.WriteString(" = ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("candidate->>'candidateId'")
+	} else {
+		b.WriteString("json_extract(candidate.value, '$.candidateId')")
+	}
+	b.WriteString(" ORDER BY dec.")
+	b.WriteString(relationshipobservation.FieldOccurredAt)
+	b.WriteString(" DESC, dec.")
+	b.WriteString(relationshipobservation.FieldID)
+	b.WriteString(" DESC LIMIT 1) AS latest WHERE latest.kind IN (")
+	b.Arg("approve")
+	b.WriteString(", ")
+	b.Arg("correct")
+	b.WriteString(", ")
+	b.Arg("reject")
+	b.WriteString("))")
+}
+
+func writePagedObservationID(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("paged.id")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("::text")
+	}
+}
+
+func writeObservationFactText(b *sql.Builder, s *sql.Selector, alias, object, field string) {
+	column := alias + "." + relationshipobservation.FieldNormalizedFactsJSON
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(column)
+		b.WriteString("::jsonb->'")
+		b.WriteString(object)
+		b.WriteString("'->>'")
+		b.WriteString(field)
+		b.WriteString("'")
+		return
+	}
+	b.WriteString("json_extract(")
+	b.WriteString(column)
+	b.WriteString(", '$.")
+	b.WriteString(object)
+	b.WriteString(".")
+	b.WriteString(field)
+	b.WriteString("')")
 }
 
 func relationshipHasConversationClaimKind(kind string) predicate.Relationship {
