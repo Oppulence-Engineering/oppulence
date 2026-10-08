@@ -75,6 +75,23 @@ export function localModeNotice(gmail: "connected" | "missing" | "unknown"): str
   return sending;
 }
 
+/**
+ * Linking fails closed when the sending check is not configured. That failure
+ * does not create a Gmail draft, so the message must not say drafts still work
+ * unless a mailbox is actually connected.
+ */
+export function linkUnavailableCopy(gmail: "connected" | "missing" | "unknown"): string {
+  const base =
+    "Checked sending isn't configured on the server yet, so linking can't be completed.";
+  if (gmail === "connected") {
+    return `${base} Drafts still land in your Gmail so you can send them yourself.`;
+  }
+  if (gmail === "missing") {
+    return `${base} Connect Gmail before a draft can land in your mailbox.`;
+  }
+  return base;
+}
+
 /** Preflight off means Oppulence will not send. "Drafts only" is true once Gmail can receive one. */
 export function sendingCheckLabel(
   preflightAvailable: boolean,
@@ -162,7 +179,7 @@ export function WorkspaceView({
     } catch (error) {
       onError(
         error instanceof RevenueAPIError && error.code === "facade_unavailable"
-          ? "Checked sending isn't configured on the server yet, so linking can't be completed. Drafts still work."
+          ? linkUnavailableCopy(gmail)
           : errMessage(error, "Could not link the workspace."),
       );
     } finally {
