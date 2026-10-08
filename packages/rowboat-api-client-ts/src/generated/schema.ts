@@ -9390,7 +9390,7 @@ export interface components {
       previousReviewedStateVersion: number;
       /**
        * @description Projector version.
-       * @example 1
+       * @example 2
        */
       projectorVersion: number;
       /**
@@ -10310,7 +10310,7 @@ export interface components {
       ownerId?: string;
       /**
        * @description Projector version.
-       * @example 1
+       * @example 2
        */
       projectorVersion: number;
       /** @description Readable factor contributions. */
@@ -11514,7 +11514,7 @@ export interface components {
       id: string;
       /**
        * @description Projector version used for this snapshot.
-       * @example 1
+       * @example 2
        */
       projectorVersion: number;
       /** @description Projected state at this version. */

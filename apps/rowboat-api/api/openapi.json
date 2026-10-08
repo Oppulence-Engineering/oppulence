@@ -8593,7 +8593,7 @@
           },
           "projectorVersion": {
             "description": "Projector version.",
-            "example": 1,
+            "example": 2,
             "type": "integer"
           },
           "stateHash": {
@@ -10356,7 +10356,7 @@
           },
           "projectorVersion": {
             "description": "Projector version.",
-            "example": 1,
+            "example": 2,
             "type": "integer"
           },
           "rankFactors": {
@@ -12161,7 +12161,7 @@
           },
           "projectorVersion": {
             "description": "Projector version used for this snapshot.",
-            "example": 1,
+            "example": 2,
             "type": "integer"
           },
           "state": {

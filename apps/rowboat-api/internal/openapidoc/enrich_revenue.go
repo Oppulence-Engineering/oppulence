@@ -329,7 +329,7 @@ func addRevenueSchemas(schemas obj) {
 		"version":           intSchema("Relationship state version.", 4),
 		"state":             freeFormSchema("Projected state at this version."),
 		"stateHash":         stringSchema("Stable hash of canonical state and winning assertions.", documentedRelationshipStateHash),
-		"projectorVersion":  intSchema("Projector version used for this snapshot.", 1),
+		"projectorVersion":  intSchema("Projector version used for this snapshot.", 2),
 		"evaluatedAt":       stringSchema("Explicit evaluation time used by the projector.", "2026-07-25T16:00:00Z", obj{"format": "date-time"}),
 		"changedDimensions": arraySchema("Material dimensions that changed.", stringSchema("Dimension.", "health")),
 		"assertionIds":      assertionIDs,
@@ -434,7 +434,7 @@ func addRevenueSchemas(schemas obj) {
 		"sourceRequirements": arraySchema("Fresh sources required.", stringSchema("Source.", "google")), "recommendationId": uuidSchema("Recommendation id.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "recommendationRevision": intSchema("Recommendation revision.", 2),
 		"ownerId": uuidSchema("Assigned user id.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"), "status": stringEnum("Triage state.", "open", "open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved"), "stateReason": stringSchema("Why this item was acknowledged, snoozed, or dismissed. Empty while it is still open.", nil),
 		"snoozedUntil": stringSchema("Snooze time.", "2026-08-07T14:00:00Z", obj{"format": "date-time"}, nullable()), "expiresAt": stringSchema("Expiry time.", "2026-08-07T14:00:00Z", obj{"format": "date-time"}, nullable()),
-		"detectorVersion": intSchema("Detector version.", 1), "projectorVersion": intSchema("Projector version.", 1), "relationshipStateVersion": intSchema("Relationship version evaluated.", 4),
+		"detectorVersion": intSchema("Detector version.", 1), "projectorVersion": intSchema("Projector version.", 2), "relationshipStateVersion": intSchema("Relationship version evaluated.", 4),
 		"acknowledgedBy": stringSchema("User who acknowledged this item. Empty until it is acknowledged.", nil, obj{"format": "uuid"}, nullable()), "acknowledgedAt": stringSchema("When this item was acknowledged. Empty until then.", nil, obj{"format": "date-time"}, nullable()),
 		"dismissedBy": stringSchema("User who dismissed this item. Empty until it is dismissed.", nil, obj{"format": "uuid"}, nullable()), "dismissedAt": stringSchema("When this item was dismissed. Empty until then.", nil, obj{"format": "date-time"}, nullable()),
 		"createdAt": stringSchema("Created time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}), "updatedAt": stringSchema("Updated time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
@@ -470,7 +470,7 @@ func addRevenueSchemas(schemas obj) {
 
 	schemas["MissionControlReadModel"] = objectSchema("One server-owned, version-consistent answer to state, change, evidence, action, completeness, and control.", obj{
 		"contractVersion": stringSchema("Read-contract version.", "tfa-r1.1-2026-08-26"), "aggregateHash": stringSchema("Stable hash of every material answer in this aggregate.", "sha256:cd34"), "asOf": stringSchema("Explicit response boundary.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
-		"stateVersion": intSchema("Relationship state version.", 4), "stateHash": stringSchema("Stable state hash.", documentedRelationshipStateHash), "projectorVersion": intSchema("Projector version.", 1), "detectorVersion": intSchema("Detector version.", 1),
+		"stateVersion": intSchema("Relationship state version.", 4), "stateHash": stringSchema("Stable state hash.", documentedRelationshipStateHash), "projectorVersion": intSchema("Projector version.", 2), "detectorVersion": intSchema("Detector version.", 1),
 		"freshnessBoundary": stringSchema("Earliest source freshness boundary.", "2026-07-31T14:30:00Z", obj{"format": "date-time"}, nullable()), "previousReviewedStateVersion": intSchema("Last acknowledged version.", 3), "changedSinceReview": boolSchema("Whether material state changed.", true),
 		"changes": arraySchema("Dimension-level changes.", freeFormSchema("Mission Control change.")), "evidence": obj{"type": "object", "description": "Dimension-keyed winning typed assertions and evidence references.", "additionalProperties": ref("MissionControlDimensionEvidence")},
 		"completeness": freeFormSchema("Source coverage, missing dimensions, ambiguity, and external-action safety."), "activeRecommendation": freeFormSchema("Active revision-bound recommendation and factors."),
