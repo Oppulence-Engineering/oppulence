@@ -114,7 +114,7 @@ func openedCompanyIntelligence(empty []any) obj {
 			"uncertainClaimIds": empty,
 			"contradictions":    empty,
 		},
-		"liveCues":                  empty,
+		"liveCues":                  []any{suggestionCueExample()},
 		"contradictionCases":        empty,
 		"recoveryEvaluations":       empty,
 		"recommendationEvaluations": empty,
