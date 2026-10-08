@@ -481,8 +481,8 @@ export const getGetRelationshipBetaDiagnosticsUrl = () => {
 };
 
 /**
- * Returns metadata-only rollout, source, queue, projection, uncertainty, and trust-funnel diagnostics for workspace administrators. Customer content, credentials, cursors, raw errors, and correlation identifiers are excluded.
- * @summary Export redacted beta diagnostics
+ * Download support file saves the redacted support file for this workspace. Names, addresses, evidence, and secrets are left out.
+ * @summary Download support file
  */
 export const getRelationshipBetaDiagnostics = async (
   options?: RequestInit,

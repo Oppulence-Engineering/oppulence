@@ -1997,8 +1997,8 @@ func addRevenuePaths(paths obj) {
 		"200": jsonResponse("Evidence source health.", objectSchema("Source status list.", obj{"sources": arraySchema("Sources.", ref("RelationshipSourceStatus"))}), nil),
 		"401": responseRef("401"),
 	})}
-	paths["/v1/relationship-beta/diagnostics"] = obj{"get": operation("Relationship Intelligence", "Export redacted beta diagnostics", "Returns metadata-only rollout, source, queue, projection, uncertainty, and trust-funnel diagnostics for workspace administrators. Customer content, credentials, cursors, raw errors, and correlation identifiers are excluded.", "getRelationshipBetaDiagnostics", bearer(), nil, nil, obj{
-		"200": jsonResponse("Support-safe diagnostic bundle.", ref("BetaDiagnostics"), nil), "401": responseRef("401"), "403": responseRef("403"),
+	paths["/v1/relationship-beta/diagnostics"] = obj{"get": operation("Relationship Intelligence", "Download support file", "Download support file saves the redacted support file for this workspace. Names, addresses, evidence, and secrets are left out.", "getRelationshipBetaDiagnostics", bearer(), nil, nil, obj{
+		"200": jsonResponse("Support file.", ref("BetaDiagnostics"), supportFileExample()), "401": responseRef("401"), "403": responseRef("403"),
 	})}
 	sourceParam := []any{obj{"name": "source", "in": "path", "required": true, "description": "Beta source provider.", "schema": obj{"type": "string", "enum": []any{"google", "slack", "hubspot"}}}}
 	paths["/v1/relationship-sources/{source}/authorization"] = obj{"post": operation("Relationship Intelligence", "Report source authorization lifecycle", "Records the bounded consent state, actor, granted read scopes, and safe categorical failure without exposing provider tokens or authorization codes.", "reportRelationshipSourceAuthorization", bearer(), sourceParam, jsonRequest("Authorization lifecycle transition.", objectSchema("Source authorization transition.", obj{

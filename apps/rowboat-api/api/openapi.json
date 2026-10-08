@@ -24834,35 +24834,114 @@
       }
     },
     "/v1/relationship-beta/diagnostics": {
-      "get": {
-        "description": "Returns metadata-only rollout, source, queue, projection, uncertainty, and trust-funnel diagnostics for workspace administrators. Customer content, credentials, cursors, raw errors, and correlation identifiers are excluded.",
-        "operationId": "getRelationshipBetaDiagnostics",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BetaDiagnostics"
+        "get": {
+            "description": "Download support file saves the redacted support file for this workspace. Names, addresses, evidence, and secrets are left out.",
+            "operationId": "getRelationshipBetaDiagnostics",
+            "responses": {
+                "200": {
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "checks": [
+                                    {
+                                        "code": "source_health",
+                                        "count": 1,
+                                        "explanation": "One or more source connections require repair or backfill.",
+                                        "status": "attention"
+                                    },
+                                    {
+                                        "code": "identity_review",
+                                        "count": 0,
+                                        "explanation": "No identity ambiguity is awaiting review.",
+                                        "status": "pass"
+                                    },
+                                    {
+                                        "code": "projection_dead_letter",
+                                        "count": 0,
+                                        "explanation": "No relationship projection is dead-lettered.",
+                                        "status": "pass"
+                                    },
+                                    {
+                                        "code": "execution_uncertainty",
+                                        "count": 0,
+                                        "explanation": "No external action awaits uncertainty review.",
+                                        "status": "pass"
+                                    },
+                                    {
+                                        "code": "release_owner_signoff",
+                                        "count": 0,
+                                        "explanation": "Governed design-partner execution is either disabled or explicitly signed off.",
+                                        "status": "pass"
+                                    }
+                                ],
+                                "counts": {
+                                    "approvalPending": 0,
+                                    "attentionOpen": 0,
+                                    "executionUncertain": 0,
+                                    "identityReview": 0,
+                                    "projectionDead": 0,
+                                    "projectionPending": 0,
+                                    "relationships": 0
+                                },
+                                "features": [
+                                    {
+                                        "capability": "action_gmail",
+                                        "enabled": false,
+                                        "reasonCode": "internal_canary",
+                                        "rolloutStage": "internal_read_only"
+                                    }
+                                ],
+                                "generatedAt": "2026-08-01T15:00:00Z",
+                                "schemaVersion": "tfa-support-v1",
+                                "sources": [
+                                    {
+                                        "backfillCompleted": 20,
+                                        "backfillPhase": "failed",
+                                        "backfillTotal": 100,
+                                        "completeness": "stale",
+                                        "connectionRef": "connection:sha256:da73462ccdf527f07099a17f",
+                                        "errorCode": "provider_outage",
+                                        "lagSeconds": 900,
+                                        "missingScopeCount": 0,
+                                        "retryCount": 2,
+                                        "source": "google",
+                                        "sourceAccountRef": "source-account:sha256:24021bb72aca268d3989017b",
+                                        "status": "degraded"
+                                    }
+                                ],
+                                "trustFunnel": [
+                                    {
+                                        "count": 12,
+                                        "eventName": "mission_control_opened",
+                                        "outcome": "viewed"
+                                    }
+                                ],
+                                "workspaceRef": "workspace:sha256:1d811ce10de82ecb6ed8274b"
+                            },
+                            "schema": {
+                                "$ref": "#/components/schemas/BetaDiagnostics"
+                            }
+                        }
+                    },
+                    "description": "Support file."
+                },
+                "401": {
+                    "$ref": "#/components/responses/401"
+                },
+                "403": {
+                    "$ref": "#/components/responses/403"
                 }
-              }
             },
-            "description": "Support-safe diagnostic bundle."
-          },
-          "401": {
-            "$ref": "#/components/responses/401"
-          },
-          "403": {
-            "$ref": "#/components/responses/403"
-          }
-        },
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "summary": "Export redacted beta diagnostics",
-        "tags": ["Relationship Intelligence"]
-      }
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "summary": "Download support file",
+            "tags": [
+                "Relationship Intelligence"
+            ]
+        }
     },
     "/v1/relationship-identity-candidates": {
       "get": {

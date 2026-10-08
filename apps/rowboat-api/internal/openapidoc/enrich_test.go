@@ -4587,6 +4587,49 @@ func assertActionHistory(t *testing.T, spec obj) {
 	if strings.Contains(string(got), "sha256:ab12") {
 		t.Fatalf("history example still uses the truncated hash: %s", got)
 	}
+
+	assertSupportFile(t, spec)
+}
+
+func TestSupportFile(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSupportFile(t, spec)
+}
+
+func assertSupportFile(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/relationship-beta/diagnostics"])["get"])
+	if operation["summary"] != "Download support file" || operation["operationId"] != "getRelationshipBetaDiagnostics" {
+		t.Fatalf("support file operation: summary=%#v id=%#v", operation["summary"], operation["operationId"])
+	}
+	if operation["description"] != "Download support file saves the redacted support file for this workspace. Names, addresses, evidence, and secrets are left out." {
+		t.Fatalf("description: %#v", operation["description"])
+	}
+	if operation["requestBody"] != nil {
+		t.Fatalf("support file sends no body: %#v", operation["requestBody"])
+	}
+	example := asObj(asObj(asObj(asObj(operation["responses"])["200"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(supportFileExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("support file example:\n%s\nwant:\n%s", got, want)
+	}
+	workspaceRef := supportFileRef("workspace", supportFileWorkspaceID)
+	connectionRef := supportFileRef("connection", supportFileConnectionID)
+	accountRef := supportFileRef("source-account", supportFileAccount)
+	if workspaceRef != "workspace:sha256:1d811ce10de82ecb6ed8274b" || connectionRef != "connection:sha256:da73462ccdf527f07099a17f" || accountRef != "source-account:sha256:24021bb72aca268d3989017b" {
+		t.Fatalf("support refs workspace=%s connection=%s account=%s", workspaceRef, connectionRef, accountRef)
+	}
+	if strings.Contains(string(got), "sha256:ab12") || strings.Contains(string(got), "sha256:cd34") {
+		t.Fatalf("support file example still uses a truncated ref: %s", got)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
