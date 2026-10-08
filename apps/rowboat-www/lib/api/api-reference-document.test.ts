@@ -369,6 +369,15 @@ describe("API reference document", () => {
     expect(task.example).toBe("openai");
   });
 
+  it("does not sample a chat model for an embeddings request", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const embedding = presented.components.schemas.LLMEmbeddingsRequest.properties.model;
+    expect(embedding.description).toBe("Desktop-facing embedding model id.");
+    expect(embedding.example).toBe("openai/text-embedding-3-small");
+    const chat = presented.components.schemas.LLMChatCompletionsRequest.properties.model;
+    expect(chat.example).toBe("openai/gpt-4.1-mini");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

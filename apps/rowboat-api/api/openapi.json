@@ -7374,8 +7374,8 @@
             "example": ["customer invoice", "payment risk"]
           },
           "model": {
-            "description": "Desktop-facing LLM model id.",
-            "example": "openai/gpt-4.1-mini",
+            "description": "Desktop-facing embedding model id.",
+            "example": "openai/text-embedding-3-small",
             "type": "string"
           }
         },

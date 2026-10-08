@@ -292,6 +292,13 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if taskProvider := asObj(taskProperties["provider"]); taskProvider["example"] != "openai" {
 		t.Fatalf("BackgroundTask.provider lost its example: %#v", taskProvider)
 	}
+	embeddingModel := asObj(asObj(asObj(schemas["LLMEmbeddingsRequest"])["properties"])["model"])
+	if embeddingModel["example"] != "openai/text-embedding-3-small" || embeddingModel["description"] != "Desktop-facing embedding model id." {
+		t.Fatalf("LLMEmbeddingsRequest.model sampled a chat model: %#v", embeddingModel)
+	}
+	if chatModel := asObj(asObj(asObj(schemas["LLMChatCompletionsRequest"])["properties"])["model"]); chatModel["example"] != "openai/gpt-4.1-mini" {
+		t.Fatalf("LLMChatCompletionsRequest.model lost its chat example: %#v", chatModel)
+	}
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
@@ -409,6 +416,14 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	}
 	if taskProvider := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["provider"]); taskProvider["example"] != "openai" {
 		t.Fatalf("checked-in BackgroundTask.provider lost its example: %#v", taskProvider)
+	}
+
+	embeddingModel := asObj(asObj(asObj(schemas["LLMEmbeddingsRequest"])["properties"])["model"])
+	if embeddingModel["example"] != "openai/text-embedding-3-small" || embeddingModel["description"] != "Desktop-facing embedding model id." {
+		t.Fatalf("checked-in LLMEmbeddingsRequest.model sampled a chat model: %#v", embeddingModel)
+	}
+	if chatModel := asObj(asObj(asObj(schemas["LLMChatCompletionsRequest"])["properties"])["model"]); chatModel["example"] != "openai/gpt-4.1-mini" {
+		t.Fatalf("checked-in LLMChatCompletionsRequest.model lost its chat example: %#v", chatModel)
 	}
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
