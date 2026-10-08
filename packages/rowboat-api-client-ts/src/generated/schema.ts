@@ -9026,8 +9026,8 @@ export interface components {
        */
       id: string;
       /**
-       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
-       * @example openai
+       * @description Mailbox this row came from. Only Gmail is stored.
+       * @example gmail
        * @enum {string}
        */
       provider: "gmail";
@@ -9128,8 +9128,8 @@ export interface components {
       messages?: components["schemas"]["MailMessageMeta"][];
       outbound_count: number;
       /**
-       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
-       * @example openai
+       * @description Mailbox this row came from. Only Gmail is stored.
+       * @example gmail
        * @enum {string}
        */
       provider: "gmail";

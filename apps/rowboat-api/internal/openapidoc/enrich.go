@@ -2132,6 +2132,9 @@ func enrichEntitySchemas(schemas obj) {
 			}
 		}
 	}
+	// provider is a model vendor only on a background task. A stored mailbox
+	// is Gmail, so the shared sample must not name a model.
+	documentMailboxProvider(schemas)
 	// reason is a credit-ledger code only on CreditLedger. Promise transitions,
 	// person removals, and share grants reuse the name with different values.
 	if ledger := asObj(schemas["CreditLedger"]); ledger != nil {
@@ -3378,4 +3381,26 @@ func asObj(v any) obj {
 		return m
 	}
 	return nil
+}
+
+const mailboxProviderDescription = "Mailbox this row came from. Only Gmail is stored."
+
+func documentMailboxProvider(schemas obj) {
+	for _, name := range []string{"MailThread", "MailBodyCache"} {
+		schema := asObj(schemas[name])
+		if schema == nil {
+			continue
+		}
+		props := asObj(schema["properties"])
+		if props == nil {
+			continue
+		}
+		provider := asObj(props["provider"])
+		if provider == nil {
+			continue
+		}
+		provider["description"] = mailboxProviderDescription
+		provider["example"] = "gmail"
+		provider["enum"] = []any{"gmail"}
+	}
 }

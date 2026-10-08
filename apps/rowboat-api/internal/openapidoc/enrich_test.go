@@ -6725,6 +6725,41 @@ func assertCompanyProfileFacts(t *testing.T, schemas obj) {
 	}
 }
 
+func TestMailboxProviderIsGmail(t *testing.T) {
+	raw, err := os.ReadFile("../../api/openapi.json")
+	if err != nil {
+		t.Fatalf("read checked-in openapi json: %v", err)
+	}
+	var checked obj
+	if err := json.Unmarshal(raw, &checked); err != nil {
+		t.Fatalf("parse checked-in openapi json: %v", err)
+	}
+	assertMailboxProvider(t, asObj(asObj(checked["components"])["schemas"]))
+	fresh := obj{"components": obj{"schemas": obj{
+		"MailThread":     obj{"type": "object", "properties": obj{"provider": obj{"type": "string", "enum": []any{"gmail"}, "example": "openai"}}},
+		"MailBodyCache":  obj{"type": "object", "properties": obj{"provider": obj{"type": "string", "enum": []any{"gmail"}, "example": "openai"}}},
+		"BackgroundTask": obj{"type": "object", "properties": obj{"provider": obj{"type": "string", "example": "openai"}}},
+	}}}
+	Enrich(fresh)
+	assertMailboxProvider(t, asObj(asObj(fresh["components"])["schemas"]))
+}
+
+func assertMailboxProvider(t *testing.T, schemas obj) {
+	t.Helper()
+	for _, name := range []string{"MailThread", "MailBodyCache"} {
+		provider := asObj(asObj(asObj(schemas[name])["properties"])["provider"])
+		enum, _ := provider["enum"].([]any)
+		if provider["description"] != mailboxProviderDescription || provider["example"] != "gmail" || len(enum) != 1 || enum[0] != "gmail" {
+			t.Fatalf("%s.provider: %#v", name, provider)
+		}
+	}
+	if task := asObj(schemas["BackgroundTask"]); task != nil {
+		if asObj(asObj(task["properties"])["provider"])["example"] != "openai" {
+			t.Fatalf("background task provider: %#v", asObj(task["properties"])["provider"])
+		}
+	}
+}
+
 func assertEventObservation(t *testing.T, schemas obj) {
 	t.Helper()
 	event := asObj(schemas["CommitmentEvent"])
