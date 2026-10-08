@@ -267,7 +267,15 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 		t.Fatalf("CreditLedger.delta lost its credit contract: %#v", delta)
 	}
 	intelligenceDelta := asObj(asObj(asObj(schemas["RelationshipIntelligence"])["properties"])["delta"])
-	if intelligenceDelta["type"] != "object" || intelligenceDelta["example"] != nil || intelligenceDelta["description"] != "Exact before/after values, uncertain claim ids, contradictions, and recommendation reason." {
+	changeExample, err := json.Marshal(intelligenceDelta["example"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantChange, err := json.Marshal(relationshipChangeExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if intelligenceDelta["type"] != "object" || intelligenceDelta["description"] != relationshipChangeDescription || string(changeExample) != string(wantChange) {
 		t.Fatalf("RelationshipIntelligence.delta was rewritten as a credit change: %#v", intelligenceDelta)
 	}
 	ledgerReason := asObj(asObj(creditLedger["properties"])["reason"])
@@ -622,7 +630,15 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	}
 
 	intelligenceDelta := asObj(asObj(asObj(schemas["RelationshipIntelligence"])["properties"])["delta"])
-	if intelligenceDelta["description"] != "Exact before/after values, uncertain claim ids, contradictions, and recommendation reason." || intelligenceDelta["example"] != nil {
+	checkedChange, err := json.Marshal(intelligenceDelta["example"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantCheckedChange, err := json.Marshal(relationshipChangeExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if intelligenceDelta["description"] != relationshipChangeDescription || string(checkedChange) != string(wantCheckedChange) {
 		t.Fatalf("checked-in RelationshipIntelligence.delta is a credit change: %#v", intelligenceDelta)
 	}
 	if ledgerDelta := asObj(asObj(asObj(schemas["CreditLedger"])["properties"])["delta"]); ledgerDelta["example"] != float64(-42) && ledgerDelta["example"] != -42 {
