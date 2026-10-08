@@ -459,6 +459,20 @@ describe("API reference document", () => {
     expect(schemas.Connector?.properties?.audience?.example).toBe("canvas-api");
   });
 
+  it("does not sample a timestamp string for a unix token expiry", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const schemas = presented.components.schemas as Record<
+      string,
+      { properties?: Record<string, { example?: unknown; description?: string }> }
+    >;
+    const token = schemas.MCPTokenResponse?.properties?.expires_at;
+    expect(token?.example).toBe(1790784000);
+    expect(token?.description).toBe("Unix expiry timestamp in seconds.");
+    expect(schemas.OAuthTokenBundle?.properties?.expires_at?.example).toBe(1790784000);
+    expect(schemas.WorkOSTokenBundle?.properties?.expires_at?.example).toBe(1790784000);
+    expect(schemas.ConnectionStartResponse?.properties?.expires_at?.example).toBe("2026-06-04T20:48:00Z");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

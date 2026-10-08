@@ -339,6 +339,8 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	}
 	assertTokenAudiences(t, schemas)
 
+	assertUnixTokenExpiry(t, schemas)
+
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
 	reason := asObj(evidenceProperties["reason"])
@@ -507,6 +509,8 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	}
 
 	assertTokenAudiences(t, schemas)
+
+	assertUnixTokenExpiry(t, schemas)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -688,6 +692,38 @@ func assertTokenAudiences(t *testing.T, schemas obj) {
 	connector := asObj(asObj(asObj(schemas["Connector"])["properties"])["audience"])
 	if connector["example"] != "canvas-api" {
 		t.Fatalf("Connector.audience example changed: %#v", connector)
+	}
+}
+
+func unixExpiryExample(value any) bool {
+	switch n := value.(type) {
+	case int64:
+		return n == 1790784000
+	case int:
+		return n == 1790784000
+	case float64:
+		return n == 1790784000
+	default:
+		return false
+	}
+}
+
+func assertUnixTokenExpiry(t *testing.T, schemas obj) {
+	t.Helper()
+	want := map[string]string{
+		"WorkOSTokenBundle": "Unix timestamp in seconds when the access token expires.",
+		"OAuthTokenBundle":  "Unix timestamp in seconds when the access token expires.",
+		"MCPTokenResponse":  "Unix expiry timestamp in seconds.",
+	}
+	for name, description := range want {
+		field := asObj(asObj(asObj(schemas[name])["properties"])["expires_at"])
+		if field["type"] != "integer" || field["format"] != "int64" || field["description"] != description || !unixExpiryExample(field["example"]) {
+			t.Fatalf("%s.expires_at sampled a timestamp string: %#v", name, field)
+		}
+	}
+	pending := asObj(asObj(asObj(schemas["ConnectionStartResponse"])["properties"])["expires_at"])
+	if _, ok := pending["example"].(string); !ok {
+		t.Fatalf("ConnectionStartResponse.expires_at should stay a timestamp: %#v", pending)
 	}
 }
 

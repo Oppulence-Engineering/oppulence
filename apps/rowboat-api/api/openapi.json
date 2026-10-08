@@ -7851,8 +7851,8 @@
             "type": "string"
           },
           "expires_at": {
-            "description": "Credential or one-time ticket expiry timestamp.",
-            "example": "2026-06-04T20:48:00Z",
+            "description": "Unix expiry timestamp in seconds.",
+            "example": 1790784000,
             "format": "int64",
             "type": "integer"
           },
@@ -8809,8 +8809,8 @@
             "type": "string"
           },
           "expires_at": {
-            "description": "Credential or one-time ticket expiry timestamp.",
-            "example": "2026-06-04T20:48:00Z",
+            "description": "Unix timestamp in seconds when the access token expires.",
+            "example": 1790784000,
             "format": "int64",
             "type": "integer"
           },
@@ -14965,8 +14965,8 @@
             "type": "string"
           },
           "expires_at": {
-            "description": "Credential or one-time ticket expiry timestamp.",
-            "example": "2026-06-04T20:48:00Z",
+            "description": "Unix timestamp in seconds when the access token expires.",
+            "example": 1790784000,
             "format": "int64",
             "type": "integer"
           },
