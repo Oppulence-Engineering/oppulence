@@ -1180,6 +1180,107 @@ func TestRelationshipSearchFindsRecommendationReasons(t *testing.T) {
 	assertCompanyQuery("Why the recommendation changed: Supporting evidence changed.")
 }
 
+func TestRelationshipSearchFindsUnavailableEvidenceExcerpts(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	saveAction := func(rel *ent.Relationship, key string) *ent.RevenueAction {
+		t.Helper()
+		action, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+			RelationshipID: rel.ID, ActionType: "warm_follow_up", Channel: "email",
+			DedupeKey: key, Reason: "Mail the ledger note", ExecutionMode: ExecModeDraft, PriorityScore: 40,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return action
+	}
+	saveEvidence := func(rel *ent.Relationship, record, excerpt string) *ent.RevenueEvidence {
+		t.Helper()
+		create := f.client.RevenueEvidence.Create().
+			SetWorkspace(ws).AddRelationships(rel).SetUser(f.user).
+			SetSource("gmail").SetSourceRecordID(record).
+			SetContentHash("sha256:" + record).
+			SetOccurredAt(f.svc.now()).SetObservedAt(f.svc.now())
+		if excerpt != "" || record == "excerpt-blank" {
+			create.SetExcerpt(excerpt)
+		}
+		row, err := create.Save(f.ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	quiet := makeCompany("Excerpt Quiet")
+	quoted := makeCompany("Excerpt Quoted")
+	blank := makeCompany("Excerpt Blank")
+	missing := makeCompany("Excerpt Missing")
+	promise := makeCompany("Excerpt Promise")
+	_ = quiet
+	if _, err := saveAction(quoted, "excerpt-quoted").Update().
+		AddEvidences(saveEvidence(quoted, "excerpt-quoted", "The harbor sentence.")).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := saveAction(blank, "excerpt-blank").Update().
+		AddEvidences(saveEvidence(blank, "excerpt-blank", "   ")).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := saveAction(missing, "excerpt-missing").Update().
+		AddEvidences(saveEvidence(missing, "excerpt-missing", "")).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	promised, err := f.client.Commitment.Create().
+		SetWorkspace(ws).SetRelationship(promise).SetUser(f.user).
+		SetDirection("promised_by_them").SetText("Send the excerpt packet").
+		SetConfidence(1).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := promised.Update().
+		AddEvidences(saveEvidence(promise, "excerpt-promise", "   ")).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		names := namesOf(found.Relationships)
+		if len(names) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, names, want)
+		}
+		for _, name := range want {
+			if !hasName(names, name) {
+				t.Fatalf("query %q = %v, want %v", query, names, want)
+			}
+		}
+	}
+	assertCompanyQuery("Evidence excerpt unavailable", "Excerpt Blank", "Excerpt Missing")
+	assertCompanyQuery("“Evidence excerpt unavailable”", "Excerpt Blank", "Excerpt Missing")
+	assertCompanyQuery("The harbor sentence.", "Excerpt Quoted")
+	assertCompanyQuery("“The harbor sentence.”", "Excerpt Quoted")
+	assertCompanyQuery("harbor")
+}
+
 func TestRelationshipSearchFindsTheUnsupportedStateAnswer(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
