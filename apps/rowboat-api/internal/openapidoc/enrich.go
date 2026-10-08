@@ -1766,6 +1766,7 @@ func addConnectorPaths(paths obj) {
 		"200": jsonResponse("Connector broker JSON Web Key Set.", freeFormSchema("RFC 7517 JSON Web Key Set."), obj{"keys": []any{obj{"kty": "RSA", "use": "sig", "alg": "RS256", "kid": "broker-2026-08", "n": "...", "e": "AQAB"}}}),
 		"503": responseRef("503"),
 	})}
+	paths["/v1/composio/connections"] = obj{"post": connectJiraOperation()}
 	paths["/v1/connections/{name}"] = obj{"delete": operation("Connectors", "Disconnect connector", "Idempotently revokes upstream where possible, clears local credentials, and retains a revoked audit tombstone.", "deleteConnection", bearer(), connectorNameParam(), nil, obj{
 		"204": obj{"description": "Connector disconnected or was already absent."},
 		"401": responseRef("401"),

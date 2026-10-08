@@ -14,6 +14,7 @@ import type {
   GetConnectorBrokerJWKS200,
   HubSpotSearchResponse,
   MCPTokenResponse,
+  StartComposioConnection200,
 } from "../model";
 
 export const getGetConnectorBrokerJWKSResponseMock = (): GetConnectorBrokerJWKS200 => ({});
@@ -83,6 +84,18 @@ export const getCreateMCPTokenResponseMock = (
   ),
   token: faker.string.alpha({ length: { min: 10, max: 20 } }),
   token_type: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ...overrideResponse,
+});
+
+export const getStartComposioConnectionResponseMock = (
+  overrideResponse: Partial<Extract<StartComposioConnection200, object>> = {},
+): StartComposioConnection200 => ({
+  connectionId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  expiresAt: faker.helpers.arrayElement([
+    faker.date.past().toISOString().slice(0, 19) + "Z",
+    undefined,
+  ]),
+  redirectUrl: faker.string.alpha({ length: { min: 10, max: 20 } }),
   ...overrideResponse,
 });
 

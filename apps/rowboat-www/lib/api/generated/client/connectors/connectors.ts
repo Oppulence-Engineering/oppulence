@@ -29,6 +29,8 @@ import type {
   N500Response,
   N502Response,
   N503Response,
+  StartComposioConnection200,
+  StartComposioConnectionBody,
 } from "../model";
 
 export type getConnectorBrokerJWKSResponse200 = {
@@ -496,6 +498,71 @@ export const createMCPToken = async (
 
   const data: createMCPTokenResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as createMCPTokenResponse;
+};
+
+export type startComposioConnectionResponse200 = {
+  data: StartComposioConnection200;
+  status: 200;
+};
+
+export type startComposioConnectionResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type startComposioConnectionResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type startComposioConnectionResponse502 = {
+  data: N502Response;
+  status: 502;
+};
+
+export type startComposioConnectionResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type startComposioConnectionResponseSuccess = startComposioConnectionResponse200 & {
+  headers: Headers;
+};
+export type startComposioConnectionResponseError = (
+  | startComposioConnectionResponse400
+  | startComposioConnectionResponse401
+  | startComposioConnectionResponse502
+  | startComposioConnectionResponse503
+) & {
+  headers: Headers;
+};
+
+export type startComposioConnectionResponse =
+  startComposioConnectionResponseSuccess | startComposioConnectionResponseError;
+
+export const getStartComposioConnectionUrl = () => {
+  return `/v1/composio/connections`;
+};
+
+/**
+ * Connect opens the Jira sign-in page. The account is linked only after that page is finished.
+ * @summary Connect
+ */
+export const startComposioConnection = async (
+  startComposioConnectionBody: StartComposioConnectionBody,
+  options?: RequestInit,
+): Promise<startComposioConnectionResponse> => {
+  const res = await fetch(getStartComposioConnectionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(startComposioConnectionBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: startComposioConnectionResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as startComposioConnectionResponse;
 };
 
 export type startConnectionResponse200 = {

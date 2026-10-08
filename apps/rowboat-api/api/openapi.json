@@ -19177,6 +19177,98 @@
         "tags": ["Connectors"]
       }
     },
+    "/v1/composio/connections": {
+      "post": {
+        "description": "Connect opens the Jira sign-in page. The account is linked only after that page is finished.",
+        "operationId": "startComposioConnection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "toolkit": "jira"
+              },
+              "schema": {
+                "description": "Product to connect.",
+                "properties": {
+                  "toolkit": {
+                    "description": "Product name.",
+                    "example": "jira",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "toolkit"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "description": "The product Connect opens.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "connectionId": "ca_8b8dfa9ba7b246ea982c622a914c00e5",
+                  "expiresAt": "2026-07-15T16:05:00Z",
+                  "redirectUrl": "https://connect.composio.dev/link/lk_8b8dfa9b"
+                },
+                "schema": {
+                  "description": "Hosted sign-in page for the product.",
+                  "properties": {
+                    "connectionId": {
+                      "description": "The account this page will link.",
+                      "example": "ca_8b8dfa9ba7b246ea982c622a914c00e5",
+                      "type": "string"
+                    },
+                    "expiresAt": {
+                      "description": "When the sign-in page stops working.",
+                      "example": "2026-07-15T16:05:00Z",
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "redirectUrl": {
+                      "description": "Address of the sign-in page.",
+                      "example": "https://connect.composio.dev/link/lk_8b8dfa9b",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "connectionId",
+                    "redirectUrl"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The Jira sign-in page is ready."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Connect",
+        "tags": [
+          "Connectors"
+        ]
+      }
+    },
     "/v1/connections/{name}/start": {
       "post": {
         "description": "Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.",

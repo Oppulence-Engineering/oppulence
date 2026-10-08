@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,57 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertConnectJira(t, spec)
+}
+
+func TestConnectJiraOpensTheSignInPage(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertConnectJira(t, spec)
+}
+
+func assertConnectJira(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/composio/connections"])["post"])
+	if operation["summary"] != "Connect" || operation["operationId"] != "startComposioConnection" || operation["description"] != connectJiraDescription {
+		t.Fatalf("connect copy: %#v", obj{"summary": operation["summary"], "operationId": operation["operationId"], "description": operation["description"]})
+	}
+	if operation["parameters"] != nil {
+		t.Fatalf("connect sends no query: %#v", operation["parameters"])
+	}
+	body := asObj(operation["requestBody"])
+	if body["description"] != connectJiraRequestDescription {
+		t.Fatalf("request description: %#v", body["description"])
+	}
+	example := asObj(asObj(asObj(body["content"])["application/json"])["example"])
+	if example["toolkit"] != connectJiraToolkit {
+		t.Fatalf("request example: %#v", example)
+	}
+	if _, present := example["user_id"]; present {
+		t.Fatal("connect names a user")
+	}
+	ok := asObj(asObj(operation["responses"])["200"])
+	if ok["description"] != connectJiraReady {
+		t.Fatalf("200 description: %#v", ok["description"])
+	}
+	link := asObj(asObj(asObj(ok["content"])["application/json"])["example"])
+	if link["connectionId"] != connectJiraConnectionID || link["redirectUrl"] != connectJiraRedirectURL || link["expiresAt"] != connectJiraExpiresAt {
+		t.Fatalf("200 example: %#v", link)
+	}
+	raw, err := json.Marshal(operation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(raw)
+	for _, forbidden := range []string{"acta_", `"token"`, "gmail", "hubspot", "slug"} {
+		if strings.Contains(text, forbidden) {
+			t.Fatalf("connect sample contains %s", forbidden)
+		}
+	}
+	start := asObj(asObj(asObj(spec["paths"])["/v1/connections/{name}/start"])["post"])
+	if start["summary"] == "Connect" {
+		t.Fatal("canvas connect gained this title")
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

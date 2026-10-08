@@ -15,6 +15,7 @@ import type {
   GetConnectorBrokerJWKS200,
   HubSpotSearchResponse,
   MCPTokenResponse,
+  StartComposioConnection200,
 } from "../model";
 
 import {
@@ -25,6 +26,7 @@ import {
   getListConnectorsResponseMock,
   getSearchHubSpotResponseMock,
   getSetConnectionAPIKeyResponseMock,
+  getStartComposioConnectionResponseMock,
   getStartConnectionResponseMock,
   getStartConnectorResponseMock,
 } from "./connectors.faker";
@@ -34,6 +36,7 @@ export {
   getSetConnectionAPIKeyResponseMock,
   getClaimConnectionResponseMock,
   getCreateMCPTokenResponseMock,
+  getStartComposioConnectionResponseMock,
   getStartConnectionResponseMock,
   getListConnectorsResponseMock,
   getCreateConnectorResourceTokenResponseMock,
@@ -166,6 +169,30 @@ export const getCreateMCPTokenMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getCreateMCPTokenResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getStartComposioConnectionMockHandler = (
+  overrideResponse?:
+    | StartComposioConnection200
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<StartComposioConnection200> | StartComposioConnection200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/composio/connections",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getStartComposioConnectionResponseMock(),
         { status: 200 },
       );
     },
@@ -335,6 +362,7 @@ export const getConnectorsMock = () => [
   getHandleConnectionCallbackMockHandler(),
   getClaimConnectionMockHandler(),
   getCreateMCPTokenMockHandler(),
+  getStartComposioConnectionMockHandler(),
   getStartConnectionMockHandler(),
   getListConnectorsMockHandler(),
   getHandleConnectorCallbackMockHandler(),

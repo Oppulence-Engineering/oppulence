@@ -315,6 +315,29 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the Jira connection Connect starts", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const connect = presented.paths["/v1/composio/connections"].post;
+    expect(connect.summary).toBe("Connect");
+    expect(connect.operationId).toBe("startComposioConnection");
+    expect(connect.description).toBe(
+      "Connect opens the Jira sign-in page. The account is linked only after that page is finished.",
+    );
+    expect(connect.requestBody.description).toBe("The product Connect opens.");
+    expect(connect.requestBody.content["application/json"].example).toEqual({ toolkit: "jira" });
+    expect(connect.responses["200"].description).toBe("The Jira sign-in page is ready.");
+    expect(connect.responses["200"].content["application/json"].example).toEqual({
+      connectionId: "ca_8b8dfa9ba7b246ea982c622a914c00e5",
+      redirectUrl: "https://connect.composio.dev/link/lk_8b8dfa9b",
+      expiresAt: "2026-07-15T16:05:00Z",
+    });
+    const serialized = JSON.stringify(connect);
+    expect(serialized).not.toContain("acta_");
+    expect(serialized).not.toContain('"token"');
+    expect(serialized).not.toContain("gmail");
+    expect(serialized).not.toContain("hubspot");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
