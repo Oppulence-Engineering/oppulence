@@ -3171,6 +3171,35 @@ describe("API reference document", () => {
     expect(example.missionControl.evidence.lifecycle.value).toBe("evaluation");
   });
 
+  it("samples the company Mark as reviewed sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/relationships/{relationshipId}/acknowledgements"].post;
+    const companyID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    const stateHash = "sha256:ab12cd34";
+    expect(operation.summary).toBe("Mark as reviewed");
+    expect(operation.description).toBe(
+      "Mark as reviewed sends the company id and the state version and hash that company is showing. A stale review fails with 409.",
+    );
+    expect(operation.parameters).toEqual([
+      expect.objectContaining({
+        name: "relationshipId",
+        example: companyID,
+        schema: expect.objectContaining({ example: companyID }),
+      }),
+    ]);
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      stateHash,
+      stateVersion: 4,
+    });
+    expect(operation.responses["201"].content["application/json"].example).toMatchObject({
+      id: "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+      stateHash,
+      stateVersion: 4,
+      acknowledgedAt: "2026-07-31T14:00:00Z",
+    });
+    expect(JSON.stringify(operation.requestBody)).not.toContain("sha256:ab12\"");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

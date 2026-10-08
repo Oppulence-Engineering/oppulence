@@ -2083,7 +2083,7 @@ export interface paths {
     put?: never;
     /**
      * Acknowledge Mission Control state
-     * @description Records the exact state version and hash the actor reviewed. A stale acknowledgement fails with 409.
+     * @description Mark as reviewed sends the company id and the state version and hash that company is showing. A stale review fails with 409.
      */
     post: operations["acknowledgeMissionControl"];
     delete?: never;
@@ -21484,7 +21484,10 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /**
+         * @description Company marked reviewed.
+         * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         relationshipId: string;
       };
       cookie?: never;
@@ -21494,14 +21497,14 @@ export interface operations {
       content: {
         /**
          * @example {
-         *       "stateHash": "sha256:ab12",
+         *       "stateHash": "sha256:ab12cd34",
          *       "stateVersion": 4
          *     }
          */
         "application/json": {
           /**
            * @description Reviewed state hash.
-           * @example sha256:ab12
+           * @example sha256:ab12cd34
            */
           stateHash: string;
           /**
@@ -21519,6 +21522,14 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "acknowledgedAt": "2026-07-31T14:00:00Z",
+           *       "id": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "stateHash": "sha256:ab12cd34",
+           *       "stateVersion": 4
+           *     }
+           */
           "application/json": {
             /**
              * Format: date-time
@@ -21534,7 +21545,7 @@ export interface operations {
             id: string;
             /**
              * @description Reviewed hash.
-             * @example sha256:ab12
+             * @example sha256:ab12cd34
              */
             stateHash: string;
             /**

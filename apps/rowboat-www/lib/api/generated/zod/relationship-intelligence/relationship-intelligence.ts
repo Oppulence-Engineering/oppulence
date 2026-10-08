@@ -4443,11 +4443,11 @@ export const GetRelationship404Response = zod
   );
 
 /**
- * Records the exact state version and hash the actor reviewed. A stale acknowledgement fails with 409.
+ * Mark as reviewed sends the company id and the state version and hash that company is showing. A stale review fails with 409.
  * @summary Acknowledge Mission Control state
  */
 export const AcknowledgeMissionControlParams = zod.object({
-  relationshipId: zod.uuid().describe("Relationship id."),
+  relationshipId: zod.uuid().describe("Company marked reviewed."),
 });
 
 export const AcknowledgeMissionControlBody = zod

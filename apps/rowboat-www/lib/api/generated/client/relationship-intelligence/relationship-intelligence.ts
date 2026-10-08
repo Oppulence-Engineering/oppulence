@@ -1504,7 +1504,7 @@ export const getAcknowledgeMissionControlUrl = (relationshipId: string) => {
 };
 
 /**
- * Records the exact state version and hash the actor reviewed. A stale acknowledgement fails with 409.
+ * Mark as reviewed sends the company id and the state version and hash that company is showing. A stale review fails with 409.
  * @summary Acknowledge Mission Control state
  */
 export const acknowledgeMissionControl = async (
