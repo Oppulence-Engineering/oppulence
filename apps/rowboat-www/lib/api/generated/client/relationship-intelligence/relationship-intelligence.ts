@@ -2471,8 +2471,8 @@ export const getCorrectRelationshipUrl = (relationshipId: string) => {
 };
 
 /**
- * Appends a user correction assertion and deterministically reprojects the relationship. Source evidence is never overwritten.
- * @summary Correct relationship state
+ * Correct a detail replaces one field on this company. It sends the field, the new value, and why, and the company comes back with that value.
+ * @summary Correct a detail
  */
 export const correctRelationship = async (
   relationshipId: string,

@@ -6941,11 +6941,11 @@ export const GetRelationshipConversationReview404Response = zod
   );
 
 /**
- * Appends a user correction assertion and deterministically reprojects the relationship. Source evidence is never overwritten.
- * @summary Correct relationship state
+ * Correct a detail replaces one field on this company. It sends the field, the new value, and why, and the company comes back with that value.
+ * @summary Correct a detail
  */
 export const CorrectRelationshipParams = zod.object({
-  relationshipId: zod.uuid().describe("Relationship id."),
+  relationshipId: zod.uuid().describe("Company this detail belongs to."),
 });
 
 export const CorrectRelationshipBody = zod
@@ -6961,21 +6961,19 @@ export const CorrectRelationshipBody = zod
         "risk",
         "milestone",
       ])
-      .describe("Corrected state dimension."),
-    reason: zod.string().describe("Why the model is wrong."),
+      .describe("The detail this form corrects."),
+    reason: zod.string().describe("Why this is wrong."),
     supersedesAssertionId: zod
       .uuid()
       .optional()
-      .describe(
-        "Optional active assertion on the same relationship and dimension that this correction permanently replaces.",
-      ),
+      .describe("Earlier evidence on this same detail that this correction replaces."),
     validTo: zod.iso
       .datetime({ offset: true })
       .nullish()
-      .describe("Optional exclusive expiry boundary for a temporary correction."),
-    value: zod.string().describe("Correct value."),
+      .describe("When a temporary correction stops applying."),
+    value: zod.string().describe("The value you chose."),
   })
-  .describe("Relationship correction.");
+  .describe("Company detail correction.");
 
 export const CorrectRelationship201Response = zod
   .strictObject({

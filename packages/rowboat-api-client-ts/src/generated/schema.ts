@@ -2386,8 +2386,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Correct relationship state
-     * @description Appends a user correction assertion and deterministically reprojects the relationship. Source evidence is never overwritten.
+     * Correct a detail
+     * @description Correct a detail replaces one field on this company. It sends the field, the new value, and why, and the company comes back with that value.
      */
     post: operations["correctRelationship"];
     delete?: never;
@@ -22825,7 +22825,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /** @description Company this detail belongs to. */
         relationshipId: string;
       };
       cookie?: never;
@@ -22842,7 +22842,7 @@ export interface operations {
          */
         "application/json": {
           /**
-           * @description Corrected state dimension.
+           * @description The detail this form corrects.
            * @example health
            * @enum {string}
            */
@@ -22856,24 +22856,24 @@ export interface operations {
             | "risk"
             | "milestone";
           /**
-           * @description Why the model is wrong.
+           * @description Why this is wrong.
            * @example The review happened yesterday.
            */
           reason: string;
           /**
            * Format: uuid
-           * @description Optional active assertion on the same relationship and dimension that this correction permanently replaces.
+           * @description Earlier evidence on this same detail that this correction replaces.
            * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
            */
           supersedesAssertionId?: string;
           /**
            * Format: date-time
-           * @description Optional exclusive expiry boundary for a temporary correction.
+           * @description When a temporary correction stops applying.
            * @example 2026-08-31T17:00:00Z
            */
           validTo?: string | null;
           /**
-           * @description Correct value.
+           * @description The value you chose.
            * @example healthy
            */
           value: string;
@@ -22881,12 +22881,37 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Reprojected relationship. */
+      /** @description Company after the detail is corrected. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "categories": [],
+           *       "commitmentCount": 0,
+           *       "displayName": "Acme",
+           *       "emailThreadCount": 0,
+           *       "engagement": "declining",
+           *       "health": "healthy",
+           *       "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "kind": "company",
+           *       "lastChangedAt": "2026-07-26T16:00:00Z",
+           *       "lifecycle": "evaluation",
+           *       "milestones": [],
+           *       "peopleCount": 0,
+           *       "projectedAt": "2026-07-26T16:00:00Z",
+           *       "projectorVersion": 2,
+           *       "resourceRefs": [],
+           *       "risks": [],
+           *       "sentiment": "mixed",
+           *       "stateHash": "sha256:ab12cd34",
+           *       "stateReason": "The review happened yesterday.",
+           *       "stateVersion": 5,
+           *       "status": "active"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueRelationship"];
         };
       };
