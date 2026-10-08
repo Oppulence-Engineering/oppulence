@@ -2442,13 +2442,15 @@ export const PatchBackgroundTaskRun500Response = zod
   );
 
 /**
- * Requests Temporal cancellation for an API-worker run and mirrors stopped/canceled state to Solomon AI. Desktop-local runs are rejected unless a future desktop cancellation bridge is added.
- * @summary Cancel API-worker run
+ * Cancel posts an empty body. The stored cloud run is stopped, its progress is Cancellation requested, and the revision is 3.
+ * @summary Cancel
  */
 export const CancelBackgroundTaskRunParams = zod.object({
-  slug: zod.string().describe("Background task slug, matching bg-tasks\/<slug> locally."),
-  runId: zod.string().describe("Cloud-visible run id for a background task run."),
+  slug: zod.string().describe("Workflow to stop."),
+  runId: zod.string().describe("Run to stop."),
 });
+
+export const CancelBackgroundTaskRunBody = zod.looseObject({});
 
 export const CancelBackgroundTaskRun202Response = zod
   .strictObject({

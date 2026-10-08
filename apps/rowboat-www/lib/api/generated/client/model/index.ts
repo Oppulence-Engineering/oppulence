@@ -95,6 +95,7 @@ export * from "./billingState";
 export * from "./billingStatePlan";
 export * from "./billingStateStatus";
 export * from "./billingUsage";
+export * from "./cancelBackgroundTaskRunBody";
 export * from "./captureArtifact";
 export * from "./captureArtifactEnvelope";
 export * from "./captureArtifactEnvelopeConsent";

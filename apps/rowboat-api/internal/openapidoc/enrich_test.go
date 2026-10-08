@@ -2044,6 +2044,55 @@ func assertRunNow(t *testing.T, spec obj) {
 	if asObj(create["example"])["slug"] != "daily-summary" {
 		t.Fatalf("create workflow example changed: %s", mustJSON(create["example"]))
 	}
+
+	assertCanceledRun(t, spec)
+}
+
+func TestCancelStoresTheStoppedRun(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertCanceledRun(t, spec)
+}
+
+func assertCanceledRun(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	post := asObj(asObj(paths["/v1/background-tasks/{slug}/runs/{runId}/cancel"])["post"])
+	if post["summary"] != "Cancel" {
+		t.Fatalf("summary: %#v", post["summary"])
+	}
+	const description = "Cancel posts an empty body. The stored cloud run is stopped, its progress is Cancellation requested, and the revision is 3."
+	if post["description"] != description {
+		t.Fatalf("description: %#v", post["description"])
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
+	if mustJSON(request["example"]) != mustJSON(documentedCanceledRunRequest()) {
+		t.Fatalf("request example: %s", mustJSON(request["example"]))
+	}
+	response := asObj(asObj(post["responses"])["202"])
+	if response["description"] != "Stopped run." {
+		t.Fatalf("response description: %#v", response["description"])
+	}
+	body := asObj(asObj(response["content"])["application/json"])
+	if mustJSON(body["example"]) != mustJSON(documentedCanceledRun()) {
+		t.Fatalf("response example: %s", mustJSON(body["example"]))
+	}
+	params, ok := post["parameters"].([]any)
+	if !ok || len(params) != 2 {
+		t.Fatalf("path params: %#v", post["parameters"])
+	}
+	if asObj(asObj(params[0])["schema"])["example"] != "follow-up-when-a-promise-slips" || asObj(asObj(params[1])["schema"])["example"] != "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b" {
+		t.Fatalf("path examples: %#v", post["parameters"])
+	}
+	retry := asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks/{slug}/runs/{runId}/retry"])["post"])["responses"])["202"])["content"])
+	retryExample := asObj(asObj(retry["application/json"])["example"])
+	if retryExample["runId"] != "api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b" || retryExample["status"] != "queued" {
+		t.Fatalf("retry example changed: %s", mustJSON(retryExample))
+	}
+	trigger := asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks/{slug}/trigger"])["post"])["requestBody"])["content"])["application/json"])
+	if asObj(trigger["example"])["context"] != "Run this now and focus on high-risk accounts." {
+		t.Fatalf("trigger example changed: %s", mustJSON(trigger["example"]))
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

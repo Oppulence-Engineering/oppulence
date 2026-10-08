@@ -618,8 +618,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Cancel API-worker run
-     * @description Requests Temporal cancellation for an API-worker run and mirrors stopped/canceled state to Solomon AI. Desktop-local runs are rejected unless a future desktop cancellation bridge is added.
+     * Cancel
+     * @description Cancel posts an empty body. The stored cloud run is stopped, its progress is Cancellation requested, and the revision is 3.
      */
     post: operations["cancelBackgroundTaskRun"];
     delete?: never;
@@ -14917,16 +14917,22 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Background task slug, matching bg-tasks/<slug> locally. */
+        /** @description Workflow to stop. */
         slug: string;
-        /** @description Cloud-visible run id for a background task run. */
+        /** @description Run to stop. */
         runId: string;
       };
       cookie?: never;
     };
-    requestBody?: never;
+    /** @description Empty cancel body. */
+    requestBody?: {
+      content: {
+        /** @example {} */
+        "application/json": Record<string, never>;
+      };
+    };
     responses: {
-      /** @description Cancellation accepted. */
+      /** @description Stopped run. */
       202: {
         headers: {
           [name: string]: unknown;
@@ -14934,28 +14940,25 @@ export interface operations {
         content: {
           /**
            * @example {
-           *       "completedAt": null,
+           *       "attempt": 1,
+           *       "cancelRequestedAt": "2026-06-04T21:03:00Z",
+           *       "completedAt": "2026-06-04T21:03:00Z",
            *       "createdAt": "2026-06-04T21:00:30Z",
-           *       "error": "",
-           *       "executor": "desktop",
-           *       "id": "77f5e632-a841-4557-a8e4-9b8f0d207ff4",
-           *       "localRunId": "",
-           *       "model": "openai/gpt-4.1-mini",
-           *       "previousRunId": "",
-           *       "progressMessage": "Completed.",
-           *       "progressPercent": 100,
-           *       "provider": "openai",
-           *       "requestedContext": "Run this now and focus on high-risk accounts.",
-           *       "revision": 1,
-           *       "runId": "remote-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b",
-           *       "slug": "daily-summary",
-           *       "startedAt": null,
-           *       "status": "queued",
-           *       "subUseCase": "daily-summary",
-           *       "summary": "",
+           *       "executor": "api",
+           *       "id": "88f5e632-a841-4557-a8e4-9b8f0d207ff4",
+           *       "progressMessage": "Cancellation requested.",
+           *       "progressPercent": 0,
+           *       "requestedContext": "Started from the visual workflow editor.",
+           *       "revision": 3,
+           *       "runId": "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b",
+           *       "slug": "follow-up-when-a-promise-slips",
+           *       "status": "stopped",
+           *       "temporalClosedAt": "2026-06-04T21:03:00Z",
+           *       "temporalRunId": "00000000-0000-0000-0000-000000000002",
+           *       "temporalStatus": "Canceled",
+           *       "temporalWorkflowId": "background-task/user/follow-up-when-a-promise-slips/api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b",
            *       "trigger": "manual",
-           *       "updatedAt": "2026-06-04T21:02:05Z",
-           *       "useCase": "background-task"
+           *       "updatedAt": "2026-06-04T21:03:00Z"
            *     }
            */
           "application/json": components["schemas"]["BackgroundTaskRun"];

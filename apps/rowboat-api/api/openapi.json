@@ -17618,66 +17618,75 @@
     },
     "/v1/background-tasks/{slug}/runs/{runId}/cancel": {
       "post": {
-        "description": "Requests Temporal cancellation for an API-worker run and mirrors stopped/canceled state to Solomon AI. Desktop-local runs are rejected unless a future desktop cancellation bridge is added.",
+        "description": "Cancel posts an empty body. The stored cloud run is stopped, its progress is Cancellation requested, and the revision is 3.",
         "operationId": "cancelBackgroundTaskRun",
         "parameters": [
           {
-            "description": "Background task slug, matching bg-tasks/\u003cslug\u003e locally.",
+            "description": "Workflow to stop.",
             "in": "path",
             "name": "slug",
             "required": true,
             "schema": {
-              "description": "Task slug.",
-              "example": "daily-summary",
+              "description": "Workflow address.",
+              "example": "follow-up-when-a-promise-slips",
               "type": "string"
             }
           },
           {
-            "description": "Cloud-visible run id for a background task run.",
+            "description": "Run to stop.",
             "in": "path",
             "name": "runId",
             "required": true,
             "schema": {
               "description": "Run id.",
-              "example": "run-20260604-210000",
+              "example": "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b",
               "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {},
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "description": "Empty cancel body.",
+          "required": false
+        },
         "responses": {
           "202": {
             "content": {
               "application/json": {
                 "example": {
-                  "completedAt": null,
+                  "attempt": 1,
+                  "cancelRequestedAt": "2026-06-04T21:03:00Z",
+                  "completedAt": "2026-06-04T21:03:00Z",
                   "createdAt": "2026-06-04T21:00:30Z",
-                  "error": "",
-                  "executor": "desktop",
-                  "id": "77f5e632-a841-4557-a8e4-9b8f0d207ff4",
-                  "localRunId": "",
-                  "model": "openai/gpt-4.1-mini",
-                  "previousRunId": "",
-                  "progressMessage": "Completed.",
-                  "progressPercent": 100,
-                  "provider": "openai",
-                  "requestedContext": "Run this now and focus on high-risk accounts.",
-                  "revision": 1,
-                  "runId": "remote-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b",
-                  "slug": "daily-summary",
-                  "startedAt": null,
-                  "status": "queued",
-                  "subUseCase": "daily-summary",
-                  "summary": "",
+                  "executor": "api",
+                  "id": "88f5e632-a841-4557-a8e4-9b8f0d207ff4",
+                  "progressMessage": "Cancellation requested.",
+                  "progressPercent": 0,
+                  "requestedContext": "Started from the visual workflow editor.",
+                  "revision": 3,
+                  "runId": "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b",
+                  "slug": "follow-up-when-a-promise-slips",
+                  "status": "stopped",
+                  "temporalClosedAt": "2026-06-04T21:03:00Z",
+                  "temporalRunId": "00000000-0000-0000-0000-000000000002",
+                  "temporalStatus": "Canceled",
+                  "temporalWorkflowId": "background-task/user/follow-up-when-a-promise-slips/api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b",
                   "trigger": "manual",
-                  "updatedAt": "2026-06-04T21:02:05Z",
-                  "useCase": "background-task"
+                  "updatedAt": "2026-06-04T21:03:00Z"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/BackgroundTaskRun"
                 }
               }
             },
-            "description": "Cancellation accepted."
+            "description": "Stopped run."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -17700,8 +17709,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Cancel API-worker run",
-        "tags": ["Background Tasks"]
+        "summary": "Cancel",
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}/events": {

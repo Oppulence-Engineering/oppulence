@@ -293,7 +293,8 @@ describe("API reference document", () => {
     const text = lines.join("\n");
     expect(text).toContain("Install maintained workflows");
     expect(text).toContain("Installs or updates the maintained workflows for the signed-in person.");
-    expect(text).toContain("Cancel a cloud run");
+    expect(text).toContain("Cancel");
+    expect(text).toContain("The stored cloud run is stopped");
     expect(text).not.toMatch(/Temporal|task\.yaml|API-worker|API-target|\bmirror\b|Instantiate|ndjson/);
     expect(presented.components.schemas.BackgroundTask.description).toBe(
       "One background task. It belongs to one person.",
@@ -1844,6 +1845,32 @@ describe("API reference document", () => {
     expect(presented.paths["/v1/background-tasks"].post.requestBody.content["application/json"].example.slug).toBe(
       "daily-summary",
     );
+  });
+
+  it("samples the stopped run Cancel stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const post = presented.paths["/v1/background-tasks/{slug}/runs/{runId}/cancel"].post;
+    expect(post.summary).toBe("Cancel");
+    expect(post.description).toBe(
+      "Cancel posts an empty body. The stored cloud run is stopped, its progress is Cancellation requested, and the revision is 3.",
+    );
+    expect(post.requestBody.content["application/json"].example).toEqual({});
+    expect(post.parameters[0].schema.example).toBe("follow-up-when-a-promise-slips");
+    expect(post.parameters[1].schema.example).toBe("api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b");
+    expect(post.responses["202"].description).toBe("Stopped run.");
+    expect(post.responses["202"].content["application/json"].example).toMatchObject({
+      slug: "follow-up-when-a-promise-slips",
+      status: "stopped",
+      executor: "api",
+      requestedContext: "Started from the visual workflow editor.",
+      temporalStatus: "Canceled",
+      progressMessage: "Cancellation requested.",
+      revision: 3,
+    });
+    expect(
+      presented.paths["/v1/background-tasks/{slug}/trigger"].post.requestBody.content["application/json"].example
+        .context,
+    ).toBe("Run this now and focus on high-risk accounts.");
   });
 
   it("says the reference could not be loaded when the spec is missing", () => {
