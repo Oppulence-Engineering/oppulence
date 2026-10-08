@@ -93,6 +93,13 @@ vi.mock("@/hooks/queries/use-revenue-actions", () => ({
     refetch: records.actionsRefetch,
   }),
 }));
+vi.mock("@/hooks/queries/use-relationship-sources", () => ({
+  useRelationshipSourceInventory: () => ({
+    data: [],
+    isPending: false,
+    isError: false,
+  }),
+}));
 vi.mock("@/hooks/queries/use-relationships", () => ({
   useRelationships: () => ({
     data: [{ id: "relationship-1", kind: "company", displayName: "Acme" }],
@@ -133,6 +140,7 @@ import {
   personDirectoryCount,
   personDirectoryTitle,
   personRemainderLabel,
+  peopleDirectoryHasGmail,
   peopleListEmptyCopy,
   peopleListFailureCopy,
   noteListFailureCopy,
@@ -1561,7 +1569,23 @@ describe("people directory copy", () => {
   it("talks about companies on the empty directory and the account count", () => {
     expect(source).toContain("keep a contact for each company.");
     expect(peopleListEmptyCopy(true)).toBe("No people match this search.");
-    expect(peopleListEmptyCopy(false)).toContain("keep a contact for each company.");
+    expect(peopleListEmptyCopy(true, true)).toBe("No people match this search.");
+    expect(peopleListEmptyCopy(false)).toBe(
+      "Connect Gmail or add a person to keep a contact for each company.",
+    );
+    expect(peopleListEmptyCopy(false, true)).toBe(
+      "Gmail is connected. Add a person to keep a contact for each company.",
+    );
+    expect(peopleDirectoryHasGmail([])).toBe(false);
+    expect(peopleDirectoryHasGmail([{ source: "google", accounts: [{ status: "stale" }] }])).toBe(
+      true,
+    );
+    expect(
+      peopleDirectoryHasGmail([{ source: "google", accounts: [{ status: "reconnect_required" }] }]),
+    ).toBe(false);
+    expect(peopleDirectoryHasGmail([{ source: "hubspot", accounts: [{ status: "live" }] }])).toBe(
+      false,
+    );
     expect(peopleListFailureCopy()).toBe("People could not load. Try again.");
     expect(noteListFailureCopy()).toBe("Notes could not load. Try again.");
     expect(notesTimelineFailureCopy()).toBe(
@@ -1569,7 +1593,9 @@ describe("people directory copy", () => {
     );
     expect(source).toContain("notesTimelineUnread(");
     expect(source).toContain("notesTimelineFailureCopy()");
-    expect(source).toContain("peopleListEmptyCopy(directoryTitle.filtered)");
+    expect(source).toContain(
+      "peopleListEmptyCopy(directoryTitle.filtered, gmailConnected)",
+    );
     expect(source).toContain("listNeverLoaded(peopleQuery.isError, peopleQuery.data)");
     expect(source).toContain('listRefreshFailureCopy("people")');
     expect(source).toContain("listNeverLoaded(notesQuery.isError, notesQuery.data)");

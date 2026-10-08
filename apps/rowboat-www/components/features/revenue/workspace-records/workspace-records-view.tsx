@@ -48,6 +48,7 @@ import {
   fetchRevenueActions,
 } from "@/hooks/queries/utils/fetch-revenue-actions";
 import { usePersons, useRelationships } from "@/hooks/queries/use-relationships";
+import { useRelationshipSourceInventory } from "@/hooks/queries/use-relationship-sources";
 import {
   fetchRelationships,
   relationshipPageHasMore,
@@ -335,9 +336,33 @@ export function personRemainderLabel(): string {
   return "Show the next people";
 }
 
+const LINKED_MAILBOX_STATUSES = new Set([
+  "connected",
+  "backfilling",
+  "live",
+  "stale",
+  "rebuilding",
+  "degraded",
+]);
+
+/**
+ * A stale mailbox is still connected. The people list was telling someone who
+ * had already authorized Gmail to connect it again.
+ */
+export function peopleDirectoryHasGmail(
+  inventory: readonly { source: string; accounts: readonly { status: string }[] }[],
+): boolean {
+  return inventory.some(
+    (item) =>
+      item.source === "google" &&
+      item.accounts.some((account) => LINKED_MAILBOX_STATUSES.has(account.status)),
+  );
+}
+
 /** A search with no hits is not an empty workspace. */
-export function peopleListEmptyCopy(filtered: boolean): string {
+export function peopleListEmptyCopy(filtered: boolean, gmailConnected = false): string {
   if (filtered) return "No people match this search.";
+  if (gmailConnected) return "Gmail is connected. Add a person to keep a contact for each company.";
   return "Connect Gmail or add a person to keep a contact for each company.";
 }
 
@@ -599,6 +624,8 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
   const [removing, setRemoving] = React.useState(false);
   const [removeError, setRemoveError] = React.useState<string | null>(null);
   const peopleQuery = usePersons(debouncedQuery);
+  const sourceInventoryQuery = useRelationshipSourceInventory();
+  const gmailConnected = peopleDirectoryHasGmail(sourceInventoryQuery.data ?? []);
   const [extraPeople, setExtraPeople] = React.useState<RelationshipPerson[]>([]);
   const [laterPeopleHasMore, setLaterPeopleHasMore] = React.useState<boolean | null>(null);
   const [loadingMorePeople, setLoadingMorePeople] = React.useState(false);
@@ -617,7 +644,9 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
   }, [extraPeople, peoplePage]);
   const hasMorePeople =
     laterPeopleHasMore ?? (peoplePage.length > 0 && personPageHasMore(peopleQuery.data));
-  const loading = peopleQuery.isPending;
+  const loading =
+    peopleQuery.isPending ||
+    (people.length === 0 && !peopleQuery.isError && sourceInventoryQuery.isPending);
   React.useEffect(() => {
     setExtraPeople([]);
     setLaterPeopleHasMore(null);
@@ -757,7 +786,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
         </EmptyBlock>
       ) : people.length === 0 ? (
         <EmptyBlock
-          body={peopleListEmptyCopy(directoryTitle.filtered)}
+          body={peopleListEmptyCopy(directoryTitle.filtered, gmailConnected)}
           image="people"
           learnMore={
             directoryTitle.filtered
