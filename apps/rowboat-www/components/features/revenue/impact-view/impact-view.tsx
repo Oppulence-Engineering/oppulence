@@ -132,15 +132,15 @@ export function impactRefreshCopy(): string {
   return listRefreshFailureCopy("impact");
 }
 
-/** A promise already in Commitments stays visible when Impact has nothing else to score. */
+/** A promise already in Promises stays visible when Impact has nothing else to score. */
 export function recordedPromisePrefix(count: number | undefined, hasMore = false): string {
   const total = Number.isFinite(count) ? Math.max(0, Math.round(count ?? 0)) : 0;
   if (total <= 0) return "";
   const sentence = hasMore
-    ? `${total}+ promises are already in Commitments.`
+    ? `${total}+ promises are already in Promises.`
     : total === 1
-      ? "1 promise is already in Commitments."
-      : `${total} promises are already in Commitments.`;
+      ? "1 promise is already in Promises."
+      : `${total} promises are already in Promises.`;
   return `${sentence} `;
 }
 
@@ -217,7 +217,7 @@ export function ImpactView({
   needsReconnect?: boolean;
   /** No mailbox is connected, so `onScan` opens connections instead of a scan. */
   needsConnect?: boolean;
-  /** Open or at-risk promises already in Commitments. */
+  /** Open or at-risk promises already in Promises. */
   knownPromiseCount?: number;
   knownPromiseHasMore?: boolean;
   /** The empty sentence waits so it does not hide a promise that is still loading. */

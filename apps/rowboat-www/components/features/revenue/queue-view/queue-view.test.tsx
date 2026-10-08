@@ -172,11 +172,11 @@ describe("QueueView", () => {
     expect(recoveryOpenEmptyCopy({ needsConnect: false, needsReconnect: false })).toContain(
       "Run an audit",
     );
-    expect(recordedRecoveryPrefix(1)).toBe("1 promise is already in Commitments. ");
+    expect(recordedRecoveryPrefix(1)).toBe("1 promise is already in Promises. ");
     expect(
       recoveryOpenEmptyCopy({ needsConnect: true, needsReconnect: false, knownPromiseCount: 1 }),
     ).toBe(
-      "1 promise is already in Commitments. No recovery drafts yet. Connect Gmail and Calendar before an audit can find promises to recover.",
+      "1 promise is already in Promises. No recovery drafts yet. Connect Gmail and Calendar before an audit can find promises to recover.",
     );
     expect(source).toContain("knownPromiseCount");
     expect(recoveryEmptyDescription("snoozed")).toBe("Nothing is snoozed right now.");

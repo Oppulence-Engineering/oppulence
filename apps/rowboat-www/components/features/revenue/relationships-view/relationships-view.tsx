@@ -732,7 +732,7 @@ export function companyListEmptyCopy(input: {
 }): string {
   if (input.filtered) return "No companies match these filters.";
   if (input.hasConnectedSource) {
-    return `Gmail is connected. Run the ${input.lookbackLabel} audit from Commitments to discover companies and the people behind each conversation.`;
+    return `Gmail is connected. Run the ${input.lookbackLabel} audit from Promises to discover companies and the people behind each conversation.`;
   }
   return "Connect Gmail to discover companies from real conversations, or add one by hand.";
 }

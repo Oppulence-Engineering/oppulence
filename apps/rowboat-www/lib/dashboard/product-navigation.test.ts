@@ -46,6 +46,7 @@ describe("product navigation", () => {
   });
 
   it("distinguishes governed agent approvals from the recovery queue", () => {
+    expect(REVENUE_TAB_LABELS.commitments).toBe("Promises");
     expect(REVENUE_TAB_LABELS.queue).toBe("Recovery");
     expect(REVENUE_TAB_LABELS.actions).toBe("Agent approvals");
   });

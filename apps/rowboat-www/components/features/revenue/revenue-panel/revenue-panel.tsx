@@ -79,10 +79,10 @@ function registerErrorMessage(reason: unknown): string {
   const status = reason instanceof RevenueAPIError ? reason.status : 0;
   const code = reason instanceof RevenueAPIError ? reason.code : undefined;
   if (status === 404) {
-    return "The commitment register is unavailable on this server. This usually means the app is newer than the API it is talking to.";
+    return "Promises are unavailable on this server. This usually means the app is newer than the API it is talking to.";
   }
   if (status === 403) {
-    return "You do not have access to the commitment register in this workspace.";
+    return "You do not have access to promises in this workspace.";
   }
   if (status === 503) {
     if (code === "session_unavailable") {
@@ -93,7 +93,7 @@ function registerErrorMessage(reason: unknown): string {
   if (reason instanceof Error && reason.message.trim()) {
     return friendlyRevenueError(reason.message);
   }
-  return "The commitment register could not be loaded.";
+  return "Promises could not be loaded.";
 }
 
 export function RevenuePanel({
@@ -494,7 +494,7 @@ export function RevenuePanel({
               commitmentQuery.error instanceof Error
                 ? commitmentQuery.error.message
                 : commitmentQuery.error
-                  ? "Could not load commitments."
+                  ? "Could not load promises."
                   : commitmentQuery.data?.registerError
             }
             registerKnown={commitmentQuery.data?.entriesKnown === true}

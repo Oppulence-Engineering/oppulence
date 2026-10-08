@@ -28,13 +28,13 @@ describe("OpenPromisesReportClient", () => {
     expect(reportStateBadge("review")).toBe("Review");
     expect(reportStateBadge("open")).toBeNull();
     expect(reportKnownPromiseCopy(0)).toBe("");
-    expect(reportKnownPromiseCopy(1)).toBe("1 promise is already in Commitments.");
-    expect(reportKnownPromiseCopy(2, true)).toBe("2+ promises are already in Commitments.");
+    expect(reportKnownPromiseCopy(1)).toBe("1 promise is already in Promises.");
+    expect(reportKnownPromiseCopy(2, true)).toBe("2+ promises are already in Promises.");
     expect(reportConnectDescription(false, "", "6 months")).toBe(
       "Oppulence reads the last 6 months to find promises. Nothing is sent, written, or replied to on your behalf.",
     );
-    expect(reportConnectDescription(false, "1 promise is already in Commitments.", "6 months")).toBe(
-      "1 promise is already in Commitments. Oppulence reads the last 6 months to find promises in mail. Nothing is sent, written, or replied to on your behalf.",
+    expect(reportConnectDescription(false, "1 promise is already in Promises.", "6 months")).toBe(
+      "1 promise is already in Promises. Oppulence reads the last 6 months to find promises in mail. Nothing is sent, written, or replied to on your behalf.",
     );
     expect(source).toContain("reportKnownPromiseCopy(");
     expect(source).toContain("reportConnectDescription(");

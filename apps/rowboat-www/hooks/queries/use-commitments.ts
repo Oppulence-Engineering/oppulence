@@ -59,10 +59,10 @@ export function registerLoadNotice(reason: unknown, hadPage: boolean): string {
       ? reason.code
       : undefined;
   if (status === 404) {
-    return "The commitment register is unavailable on this server. This usually means the app is newer than the API it is talking to.";
+    return "Promises are unavailable on this server. This usually means the app is newer than the API it is talking to.";
   }
   if (status === 403) {
-    return "You do not have access to the commitment register in this workspace.";
+    return "You do not have access to promises in this workspace.";
   }
   if (status === 503) {
     if (code === "session_unavailable") {
@@ -75,8 +75,8 @@ export function registerLoadNotice(reason: unknown, hadPage: boolean): string {
     if (friendly !== reason.message) return friendly;
   }
   return hadPage
-    ? "Could not refresh the commitment register. Try again."
-    : "The commitment register could not be loaded.";
+    ? "Could not refresh promises. Try again."
+    : "Promises could not be loaded.";
 }
 
 export function useCommitmentRegister(

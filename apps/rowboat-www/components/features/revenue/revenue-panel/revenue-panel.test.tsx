@@ -11,7 +11,7 @@ describe("RevenuePanel", () => {
   });
 
   it("names a failed commitments load without the internal queue name", () => {
-    expect(source).toContain('"Could not load commitments."');
+    expect(source).toContain('"Could not load promises."');
     expect(source).not.toContain("Commitment Queue");
   });
 

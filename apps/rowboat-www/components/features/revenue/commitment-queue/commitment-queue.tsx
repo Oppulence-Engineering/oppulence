@@ -212,13 +212,13 @@ export function registerCountLabel(
 ): string {
   const count = Number.isFinite(shown) ? Math.max(0, Math.round(shown)) : 0;
   if (count === 0 && heldElsewhere) return pastDue ? "None past due" : "None in this view";
-  const noun = count === 1 ? "commitment" : "commitments";
+  const noun = count === 1 ? "promise" : "promises";
   return hasMore ? `${count}+ ${noun}` : `${count} ${noun}`;
 }
 
 /** A search of the loaded page is not a search of promises still past it. */
 export function registerMissTitle(hasMore: boolean): string {
-  return hasMore ? "No loaded promises match this view" : "No commitments match this view";
+  return hasMore ? "No loaded promises match this view" : "No promises match this view";
 }
 
 export function registerMissDetail(hasMore: boolean): string {
@@ -673,7 +673,7 @@ const COMMITMENT_FILTER_LABEL: Record<string, string> = {
 
 /** The visible word is the current commitment filter, not the menu's name. */
 export function commitmentFilterName(value: string): string {
-  return comboboxFilterName("Commitments", COMMITMENT_FILTER_LABEL[value] ?? "Active");
+  return comboboxFilterName("Promises", COMMITMENT_FILTER_LABEL[value] ?? "Active");
 }
 
 /**
@@ -920,7 +920,7 @@ export function CommitmentQueue({
             overdueOnly,
           )}
           icon={TableIcon}
-          title="Commitment register"
+          title="Promises"
         />
         <SimProductToolbar aria-label="Register views" role="tablist">
           {overdueOnly ? (
@@ -956,10 +956,10 @@ export function CommitmentQueue({
           <div className="relative min-w-[180px] max-w-sm flex-1">
             <MagnifyingGlass className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--text-icon)]" />
             <Input
-              aria-label="Search commitments"
+              aria-label="Search promises"
               className="h-8 border-[var(--border)] bg-[var(--bg)] pl-8 text-[13px]"
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search commitments"
+              placeholder="Search promises"
               value={query}
             />
           </div>
@@ -1207,7 +1207,7 @@ export function CommitmentQueue({
           </div>
         ) : loading ? (
           <div className="flex flex-1 items-center justify-center gap-2 p-6 text-sm text-primary/55">
-            <Spinner className="size-4" /> Loading commitments…
+            <Spinner className="size-4" /> Loading promises…
           </div>
         ) : noAccounts ? (
           <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
@@ -1309,7 +1309,7 @@ export function CommitmentQueue({
               {items.length === 0
                 ? otherPromisesPending
                   ? "Checking the other views"
-                  : (elsewhere?.title ?? "No commitments yet")
+                  : (elsewhere?.title ?? "No promises yet")
                 : registerMissTitle(hasMorePromises)}
             </h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
@@ -1401,7 +1401,7 @@ export function CommitmentQueue({
         ) : (
           <div className="min-w-0 flex-1 overflow-auto">
             <table
-              aria-label="Commitments"
+              aria-label="Promises"
               className="w-full min-w-[620px] table-fixed border-collapse text-left"
             >
               <colgroup>

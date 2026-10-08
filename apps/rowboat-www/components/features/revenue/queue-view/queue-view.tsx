@@ -235,15 +235,15 @@ export function recoveryEmptyDescription(filter: string): string {
  * The open queue is empty because mail cannot be read. The button already
  * names reconnect or connect. Telling the reader to run an audit disagrees.
  */
-/** A promise already in Commitments stays visible when Recovery has no draft. */
+/** A promise already in Promises stays visible when Recovery has no draft. */
 export function recordedRecoveryPrefix(count: number | undefined, hasMore = false): string {
   const total = Number.isFinite(count) ? Math.max(0, Math.round(count ?? 0)) : 0;
   if (total <= 0) return "";
   const sentence = hasMore
-    ? `${total}+ promises are already in Commitments.`
+    ? `${total}+ promises are already in Promises.`
     : total === 1
-      ? "1 promise is already in Commitments."
-      : `${total} promises are already in Commitments.`;
+      ? "1 promise is already in Promises."
+      : `${total} promises are already in Promises.`;
   return `${sentence} `;
 }
 
@@ -315,7 +315,7 @@ export function QueueView({
   needsReconnect?: boolean;
   /** No mailbox is connected, so `onScan` opens connections instead of a scan. */
   needsConnect?: boolean;
-  /** Open or at-risk promises already in Commitments. */
+  /** Open or at-risk promises already in Promises. */
   knownPromiseCount?: number;
   knownPromiseHasMore?: boolean;
   /** The empty sentence waits so it does not hide a promise that is still loading. */
@@ -502,7 +502,7 @@ export function QueueView({
               }
               description={
                 knownPromisesPending
-                  ? "Checking Commitments for promises already on the record."
+                  ? "Checking Promises for promises already on the record."
                   : recoveryOpenEmptyCopy({
                       needsConnect,
                       needsReconnect,

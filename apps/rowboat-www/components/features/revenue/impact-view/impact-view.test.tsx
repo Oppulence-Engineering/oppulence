@@ -69,12 +69,12 @@ describe("ImpactView", () => {
       "Run an audit",
     );
     expect(recordedPromisePrefix(0)).toBe("");
-    expect(recordedPromisePrefix(1)).toBe("1 promise is already in Commitments. ");
-    expect(recordedPromisePrefix(2, true)).toBe("2+ promises are already in Commitments. ");
+    expect(recordedPromisePrefix(1)).toBe("1 promise is already in Promises. ");
+    expect(recordedPromisePrefix(2, true)).toBe("2+ promises are already in Promises. ");
     expect(
       impactEmptyBody({ needsConnect: true, needsReconnect: false, knownPromiseCount: 1 }),
     ).toBe(
-      "1 promise is already in Commitments. Connect Gmail and Calendar. Replies, meetings, and wins show up here after an audit.",
+      "1 promise is already in Promises. Connect Gmail and Calendar. Replies, meetings, and wins show up here after an audit.",
     );
     expect(digestPreviewBadge()).toBe("Preview of open loops");
     expect(source).toContain("digestPreviewBadge()");
