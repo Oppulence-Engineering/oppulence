@@ -8005,6 +8005,20 @@ func relationshipSheetMailMatch(needle string) predicate.Relationship {
 	if n, ok := exactMailMessageCount(needle); ok {
 		preds = append(preds, relationship.HasMailThreadsWith(mailthread.MessageCountEQ(n)))
 	}
+	if counts := gmailPartyLineCounts(needle); len(counts) > 0 {
+		lines := make([]predicate.MailThread, 0, len(counts))
+		for _, n := range counts {
+			lines = append(lines, mailthread.And(
+				mailThreadCounterpartyBlank(),
+				mailthread.MessageCountEQ(n),
+			))
+		}
+		line := lines[0]
+		if len(lines) > 1 {
+			line = mailthread.Or(lines...)
+		}
+		preds = append(preds, relationship.HasMailThreadsWith(line))
+	}
 	if sheetPhraseMatches("unknown date", needle) {
 		preds = append(preds, relationship.HasMailThreadsWith(mailthread.LastActivityAtIsNil()))
 	}
@@ -9931,6 +9945,55 @@ func exactMailMessageCount(needle string) (int, bool) {
 		return 0, false
 	}
 	return n, true
+}
+
+// gmailPartyLineCounts reads the second line of an email row when the address
+// is missing. The sheet prints "Gmail · 1 message" or "Gmail · 0 messages."
+func gmailPartyLineCounts(needle string) []int {
+	text := normalizePersonSearch(needle)
+	const marker = "gmail · "
+	var counts []int
+	seen := map[int]bool{}
+	rest := text
+	for {
+		index := strings.Index(rest, marker)
+		if index < 0 {
+			return counts
+		}
+		if index > 0 && rest[index-1] != ' ' {
+			rest = rest[index+1:]
+			continue
+		}
+		n, ok := gmailPartyLineCount(rest[index+len(marker):])
+		if ok && !seen[n] {
+			seen[n] = true
+			counts = append(counts, n)
+		}
+		rest = rest[index+len(marker):]
+	}
+}
+
+func gmailPartyLineCount(body string) (int, bool) {
+	i := 0
+	for i < len(body) && body[i] >= '0' && body[i] <= '9' {
+		i++
+	}
+	if i == 0 || i >= len(body) || body[i] != ' ' {
+		return 0, false
+	}
+	n, err := strconv.Atoi(body[:i])
+	if err != nil || n < 0 || strconv.Itoa(n) != body[:i] {
+		return 0, false
+	}
+	word := "messages"
+	if n == 1 {
+		word = "message"
+	}
+	unit := body[i+1:]
+	if unit == word || strings.HasPrefix(unit, word+" ") {
+		return n, true
+	}
+	return 0, false
 }
 
 func relationshipMailThreadCount(compare string, n int) predicate.Relationship {
