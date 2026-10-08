@@ -1016,6 +1016,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/composio/connections": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Connect
+     * @description Connect opens the Jira sign-in page. The account is linked only after that page is finished.
+     */
+    post: operations["startComposioConnection"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/connections/{name}/start": {
     parameters: {
       query?: never;
@@ -17049,6 +17069,70 @@ export interface operations {
       410: components["responses"]["410"];
       429: components["responses"]["429"];
       500: components["responses"]["500"];
+      502: components["responses"]["502"];
+      503: components["responses"]["503"];
+    };
+  };
+  startComposioConnection: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description The product Connect opens. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "toolkit": "jira"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Product name.
+           * @example jira
+           */
+          toolkit: string;
+        };
+      };
+    };
+    responses: {
+      /** @description The Jira sign-in page is ready. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "connectionId": "ca_8b8dfa9ba7b246ea982c622a914c00e5",
+           *       "expiresAt": "2026-07-15T16:05:00Z",
+           *       "redirectUrl": "https://connect.composio.dev/link/lk_8b8dfa9b"
+           *     }
+           */
+          "application/json": {
+            /**
+             * @description The account this page will link.
+             * @example ca_8b8dfa9ba7b246ea982c622a914c00e5
+             */
+            connectionId: string;
+            /**
+             * Format: date-time
+             * @description When the sign-in page stops working.
+             * @example 2026-07-15T16:05:00Z
+             */
+            expiresAt?: string;
+            /**
+             * @description Address of the sign-in page.
+             * @example https://connect.composio.dev/link/lk_8b8dfa9b
+             */
+            redirectUrl: string;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
     };

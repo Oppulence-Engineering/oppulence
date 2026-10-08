@@ -653,6 +653,8 @@ export * from "./slackWebhookBody";
 export * from "./slackWorkspace";
 export * from "./slackWorkspacesResponse";
 export * from "./snoozeRevenueActionBody";
+export * from "./startComposioConnection200";
+export * from "./startComposioConnectionBody";
 export * from "./startGoogleOAuth200";
 export * from "./startGoogleOAuthParams";
 export * from "./startRevenueLeakScanBody";
