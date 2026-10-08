@@ -11,6 +11,7 @@ import type {
   GetOpenPromisesReport200One,
   GetRevenueActionAudit200,
   GetRevenueActionSourceBody200,
+  ListActionProposals200,
   ListRevenueActions200,
   ListRevenueLeakScans200,
   RevenueAction,
@@ -22,6 +23,15 @@ import type {
   RevenueSemanticSearch200,
   RevenueWorkspace,
 } from "../model";
+
+export const getListActionProposalsResponseMock = (
+  overrideResponse: Partial<Extract<ListActionProposals200, object>> = {},
+): ListActionProposals200 => ({
+  proposals: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => ({}),
+  ),
+  ...overrideResponse,
+});
 
 export const getListRevenueActionsResponseMock = (
   overrideResponse: Partial<Extract<ListRevenueActions200, object>> = {},

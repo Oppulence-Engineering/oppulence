@@ -16,6 +16,8 @@ import type {
   GetRevenueActionAudit200,
   GetRevenueActionSourceBody200,
   LinkRevenueWorkspaceBody,
+  ListActionProposals200,
+  ListActionProposalsParams,
   ListRevenueActions200,
   ListRevenueActionsParams,
   ListRevenueLeakScans200,
@@ -38,6 +40,61 @@ import type {
   SnoozeRevenueActionBody,
   StartRevenueLeakScanBody,
 } from "../model";
+
+export type listActionProposalsResponse200 = {
+  data: ListActionProposals200;
+  status: 200;
+};
+
+export type listActionProposalsResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listActionProposalsResponseSuccess = listActionProposalsResponse200 & {
+  headers: Headers;
+};
+export type listActionProposalsResponseError = listActionProposalsResponse401 & {
+  headers: Headers;
+};
+
+export type listActionProposalsResponse =
+  listActionProposalsResponseSuccess | listActionProposalsResponseError;
+
+export const getListActionProposalsUrl = (params?: ListActionProposalsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/action-proposals?${stringifiedParams}`
+    : `/v1/action-proposals`;
+};
+
+/**
+ * Agent approvals loads the pending queue. The request asks for pending proposals. This workspace has no pending proposal, so the page is empty.
+ * @summary Agent approvals
+ */
+export const listActionProposals = async (
+  params?: ListActionProposalsParams,
+  options?: RequestInit,
+): Promise<listActionProposalsResponse> => {
+  const res = await fetch(getListActionProposalsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listActionProposalsResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listActionProposalsResponse;
+};
 
 export type listRevenueActionsResponse200 = {
   data: ListRevenueActions200;
