@@ -343,6 +343,17 @@ export function registerEmptyAccountsDetail(hasMoreAccounts: boolean): string {
     : "Add a company before this view can show its promise history.";
 }
 
+/**
+ * An empty register with Gmail already connected has not always been read.
+ * "Run another audit" is only true after one audit has finished.
+ */
+export function registerConnectedEmptyCopy(audited: boolean): string {
+  if (audited) {
+    return "No explicit promises were found. Run another audit after new conversations.";
+  }
+  return "No audit has read your mail yet. Run the 6-month audit to find who promised what.";
+}
+
 // The register already carries direction, owner, counterparty, the derived
 // state and the account name, so the queue no longer reconstructs commitments
 // from relationship-graph nodes and edges. That reconstruction could not page,
@@ -1292,7 +1303,7 @@ export function CommitmentQueue({
                   ? "Looking for promises in the other register views."
                   : (elsewhere?.detail ??
                     (googleConnected
-                      ? "No explicit promises were found. Run another audit after new conversations."
+                      ? registerConnectedEmptyCopy(latestScan?.status === "completed")
                       : googleNeedsReconnect
                         ? "Reconnect Google to resume finding who promised what, when it is due, and the message it came from."
                         : "Connect Gmail and Calendar to find who promised what, when it is due, and the message it came from."))

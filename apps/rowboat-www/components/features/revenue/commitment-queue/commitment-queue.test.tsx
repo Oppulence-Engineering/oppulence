@@ -31,6 +31,7 @@ import {
   registerNextCompaniesLabel,
   registerAccountScopeCopy,
   registerRemainderLabel,
+  registerConnectedEmptyCopy,
   registerRowStatus,
   registerSharedPromiseCopy,
   sourceWatchCopy,
@@ -543,13 +544,73 @@ describe("CommitmentQueue", () => {
       />,
     );
 
-    expect(screen.getByText(/No explicit promises were found/)).toBeInTheDocument();
+    expect(registerConnectedEmptyCopy(false)).toBe(
+      "No audit has read your mail yet. Run the 6-month audit to find who promised what.",
+    );
+    expect(registerConnectedEmptyCopy(true)).toBe(
+      "No explicit promises were found. Run another audit after new conversations.",
+    );
+    expect(
+      screen.getByText(
+        "No audit has read your mail yet. Run the 6-month audit to find who promised what.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/No explicit promises were found/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Google connected/ })).toBeEnabled();
     expect(screen.getByRole("button", { name: /Run 6-month Promise Leak Audit/ })).toBeEnabled();
     expect(
       screen.queryByRole("button", { name: /Connect Gmail & Calendar/ }),
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/Connect Google and run/)).not.toBeInTheDocument();
+  });
+
+  it("says another audit only after one has finished", () => {
+    render(
+      <CommitmentQueue
+        {...props({
+          entries: [],
+          latestScan: {
+            id: "scan-1",
+            status: "completed",
+            mode: "linked",
+            lookbackDays: 180,
+            threadsSeen: 4,
+            candidatesSeen: 0,
+            relationshipsCreated: 0,
+          },
+          sources: [
+            {
+              ...sources[0],
+              accounts: [
+                {
+                  connectionId: "google-1",
+                  source: "google",
+                  sourceAccountId: "me@gmail.com",
+                  status: "stale",
+                  backfillPhase: "completed",
+                  backfillCompleted: 1,
+                  backfillTotal: 1,
+                  completeness: "stale",
+                  expectedCadenceSeconds: 900,
+                  lagSeconds: 1_801,
+                  retryCount: 0,
+                  requiredScopes: [],
+                  grantedScopes: [],
+                  missingScopes: [],
+                },
+              ],
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        "No explicit promises were found. Run another audit after new conversations.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/No audit has read your mail yet/)).not.toBeInTheDocument();
   });
 
   it("shows what the latest audit accomplished", () => {
