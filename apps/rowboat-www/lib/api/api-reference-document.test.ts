@@ -3685,6 +3685,59 @@ describe("API reference document", () => {
     expect(encoded).not.toContain("token");
   });
 
+  it("samples the audit trail the approvals page opens", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/objects/{resourceRef}/audit"].get;
+    expect(operation.summary).toBe("Audit trail");
+    expect(operation.operationId).toBe("getObjectActionAudit");
+    expect(operation.description).toBe(
+      "Audit trail opens the chain for the object this action changes. It shows each proposal and a short prefix of the approval record. The one-time value is not included.",
+    );
+    expect(operation.requestBody).toBeUndefined();
+    expect(operation.parameters[0]).toMatchObject({
+      name: "resourceRef",
+      in: "path",
+      required: true,
+      schema: { example: "conduit:invoice:inv_456" },
+    });
+    expect(operation.responses["200"].content["application/json"].example).toEqual({
+      resourceRef: "conduit:invoice:inv_456",
+      entries: [
+        {
+          proposal: {
+            id: "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            target: "conduit:invoice:inv_456",
+            kind: "conduit.dunning.advance",
+            paramsJson: '{"amount":100,"step":2}',
+            financial: false,
+            rationale: "Acme is 14 days overdue",
+            status: "executed",
+            resultRef: "conduit:step:step_1",
+            returnEventId: "8d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            approvedAt: "2026-07-31T14:00:00Z",
+            executedAt: "2026-07-31T14:00:00Z",
+            resolvedAt: "2026-07-31T14:02:00Z",
+            createdAt: "2026-07-31T14:00:00Z",
+          },
+          tokens: [
+            {
+              hashPrefix: "c4e8a91b0d27",
+              paramsHash: "1e750183c74a18b46e872244bea860113d34dd38a8c7a87192b41553be26941d",
+              stepUp: false,
+              expiresAt: "2026-07-31T14:05:00Z",
+              consumed: true,
+              consumedAt: "2026-07-31T14:00:00Z",
+              issuedAt: "2026-07-31T14:00:00Z",
+            },
+          ],
+        },
+      ],
+    });
+    const encoded = JSON.stringify(operation.responses["200"].content["application/json"].example);
+    expect(encoded).not.toContain("acta_");
+    expect(encoded).not.toContain('"token"');
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
