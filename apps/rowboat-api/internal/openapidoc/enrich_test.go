@@ -4474,6 +4474,74 @@ func assertConversationCorrection(t *testing.T, spec obj) {
 	if asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/acknowledgements"])["post"])["summary"] != "Acknowledge Mission Control state" {
 		t.Fatal("acknowledgement summary changed")
 	}
+
+	assertAddedPerson(t, spec)
+}
+
+func TestAddedPerson(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertAddedPerson(t, spec)
+}
+
+func assertAddedPerson(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/relationship-observations/batch"])["post"])
+	if operation["summary"] != "Ingest relationship observations" {
+		t.Fatalf("summary: %#v", operation["summary"])
+	}
+	if operation["description"] != "New person sends the new person id, source user, and event person_added. The summary is that person's name followed by added by the user." {
+		t.Fatalf("description: %#v", operation["description"])
+	}
+	request := asObj(asObj(asObj(asObj(operation["requestBody"])["content"])["application/json"])["example"])
+	observations, ok := request["observations"].([]any)
+	if !ok || len(observations) != 1 {
+		t.Fatalf("observations: %#v", request["observations"])
+	}
+	observation := asObj(observations[0])
+	if observation["relationshipId"] != addedPersonRelationshipID || observation["source"] != "user" || observation["externalId"] != addedPersonExternalID || observation["eventType"] != "person_added" || observation["summary"] != addedPersonSummary || observation["occurredAt"] != addedPersonAt {
+		t.Fatalf("observation: %#v", observation)
+	}
+	participants, ok := observation["participants"].([]any)
+	if !ok || len(participants) != 1 {
+		t.Fatalf("participants: %#v", observation["participants"])
+	}
+	participant := asObj(participants[0])
+	if participant["displayName"] != addedPersonName || participant["email"] != addedPersonEmail || participant["role"] != "contact" {
+		t.Fatalf("participant: %#v", participant)
+	}
+	encoded, err := json.Marshal(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, old := range []string{"message-123", "commitment_created", `"gmail"`, "Acme"} {
+		if strings.Contains(string(encoded), old) {
+			t.Fatalf("request still has %s: %s", old, encoded)
+		}
+	}
+	if addedPersonContentHash() != "a9ca4ce2e0cf65ff92d605d96c2f6ac649e3fadd83c402ac59e9c481e7aa67ef" {
+		t.Fatalf("content hash: %s", addedPersonContentHash())
+	}
+	response := asObj(asObj(asObj(asObj(asObj(operation["responses"])["201"])["content"])["application/json"])["example"])
+	results, ok := response["results"].([]any)
+	if !ok || len(results) != 1 {
+		t.Fatalf("results: %#v", response["results"])
+	}
+	result := asObj(results[0])
+	stored := asObj(result["observation"])
+	if stored["contentHash"] != addedPersonContentHash() || stored["sourceVersion"] != "1" || stored["eventType"] != "person_added" || stored["summary"] != addedPersonSummary || stored["id"] != addedPersonObservationID {
+		t.Fatalf("stored observation: %#v", stored)
+	}
+	if result["duplicate"] != false || result["projectionStatus"] != "completed" {
+		t.Fatalf("result: %#v", result)
+	}
+	if asObj(result["relationship"])["displayName"] != addedPersonName {
+		t.Fatalf("relationship: %#v", result["relationship"])
+	}
+	create := asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/relationships"])["post"])["requestBody"])["content"])["application/json"])
+	if asObj(create["example"])["kind"] != "person" {
+		t.Fatalf("create sample changed: %#v", create["example"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
