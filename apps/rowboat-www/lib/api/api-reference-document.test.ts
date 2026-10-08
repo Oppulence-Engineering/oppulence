@@ -704,6 +704,16 @@ describe("API reference document", () => {
     expect(state.relationshipId.example).toBe("3a196c5e-b10e-46cb-a177-7c001f7be573");
   });
 
+  it("does not open an attention item from commitment:123", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const item = presented.components.schemas.RelationshipAttentionItem.properties;
+    expect(item.triggeringObjectRef).toMatchObject({
+      description: "Triggering object.",
+      example: "commitment:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+    });
+    expect(item.reasonCode.example).toBe("overdue_commitment");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
