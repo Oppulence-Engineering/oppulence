@@ -14,7 +14,7 @@ export interface RelationshipParticipant {
   active: boolean;
   /** Display name. */
   displayName: string;
-  /** Best-known WorkOS primary email for the user. */
+  /** Normalized email. */
   email?: string;
   /** Provider identity references. */
   externalRefs: string[];

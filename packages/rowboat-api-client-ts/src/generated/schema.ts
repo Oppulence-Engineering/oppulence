@@ -6294,8 +6294,8 @@ export interface components {
       created_at: string;
       display_name?: string;
       /**
-       * @description Best-known WorkOS primary email for the user.
-       * @example user@example.com
+       * @description Address of someone on this message.
+       * @example avery@acme.com
        */
       email: string;
       external: boolean;
@@ -11167,8 +11167,8 @@ export interface components {
        */
       displayName: string;
       /**
-       * @description Best-known WorkOS primary email for the user.
-       * @example user@example.com
+       * @description Normalized email.
+       * @example avery@acme.com
        */
       email?: string;
       /** @description Provider identity references. */

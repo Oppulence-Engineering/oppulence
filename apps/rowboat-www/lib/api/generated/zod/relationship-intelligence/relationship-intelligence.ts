@@ -4391,10 +4391,7 @@ export const GetRelationship200Response = zod
           .strictObject({
             active: zod.boolean().describe("Whether the participant is active."),
             displayName: zod.string().describe("Display name."),
-            email: zod
-              .string()
-              .optional()
-              .describe("Best-known WorkOS primary email for the user."),
+            email: zod.string().optional().describe("Normalized email."),
             externalRefs: zod
               .array(zod.string().describe("External reference."))
               .describe("Provider identity references."),

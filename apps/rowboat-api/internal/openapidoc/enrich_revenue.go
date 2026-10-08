@@ -236,7 +236,7 @@ func addRevenueSchemas(schemas obj) {
 	schemas["RelationshipParticipant"] = objectSchema("A person participating in the relationship, resolved across provider identities.", obj{
 		"id":           uuidSchema("Participant id.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"displayName":  stringSchema("Display name.", "Avery Chen"),
-		"email":        stringSchema("Normalized email.", "avery@acme.com"),
+		"email":        stringSchema(participantEmailDescription, participantEmailExample),
 		"role":         stringSchema("Relationship role.", "champion"),
 		"title":        stringSchema("Current title.", "VP Operations"),
 		"active":       boolSchema("Whether the participant is active.", true),
@@ -863,6 +863,7 @@ func addRevenueSchemas(schemas obj) {
 // overlay. Runtime schemas may reuse names such as status and reason with
 // domain-specific semantics, so their contract must win over entity defaults.
 func restoreRevenueSchemaOverrides(schemas obj) {
+	documentParticipantEmail(schemas)
 	if evidence := asObj(schemas["MissionControlDimensionEvidence"]); evidence != nil {
 		properties := asObj(evidence["properties"])
 		properties["reason"] = stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won.")
@@ -891,6 +892,36 @@ func restoreRevenueSchemaOverrides(schemas obj) {
 	setSchemaReason(schemas, "RelationshipIdentityDecision", stringSchema("Decision reason.", "Confirmed the provider records are the same account."))
 	setSchemaReason(schemas, "RelationshipIdentityLineage", stringSchema("Reason.", "Confirmed duplicate."))
 	setSchemaReason(schemas, "RelationshipLineageEvent", stringSchema("Why this identity change was recorded.", "Confirmed the provider records are the same account."))
+}
+
+const (
+	participantEmailDescription = "Normalized email."
+	participantEmailExample     = "avery@acme.com"
+	messageAddressDescription   = "Address of someone on this message."
+)
+
+// email is the signed-in WorkOS address only on User. A company person and
+// someone on a message reuse the field for the address the product shows.
+func documentParticipantEmail(schemas obj) {
+	restoreEmail(schemas, "RelationshipParticipant", participantEmailDescription, participantEmailExample)
+	restoreEmail(schemas, "CommunicationParticipant", messageAddressDescription, participantEmailExample)
+}
+
+func restoreEmail(schemas obj, name, description, example string) {
+	schema := asObj(schemas[name])
+	if schema == nil {
+		return
+	}
+	properties := asObj(schema["properties"])
+	if properties == nil {
+		return
+	}
+	email := asObj(properties["email"])
+	if email == nil {
+		return
+	}
+	email["description"] = description
+	email["example"] = example
 }
 
 func setSchemaReason(schemas obj, name string, field obj) {
