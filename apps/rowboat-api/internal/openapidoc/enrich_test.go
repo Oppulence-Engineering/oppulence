@@ -4154,6 +4154,10 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	if relationship["linkedinUrl"] != openedCompanyLinkedInURL {
 		t.Fatalf("linkedin: %#v", relationship["linkedinUrl"])
 	}
+	categories, ok := relationship["categories"].([]any)
+	if !ok || len(categories) != 1 || categories[0] != openedCompanyCategory {
+		t.Fatalf("categories: %#v", relationship["categories"])
+	}
 	threads, ok := example["emailThreads"].([]any)
 	if !ok || len(threads) != 0 {
 		t.Fatalf("email threads: %#v", example["emailThreads"])
