@@ -4929,6 +4929,8 @@ func assertScanProgress(t *testing.T, spec obj) {
 	if strings.Contains(encoded, "completedAt") || strings.Contains(encoded, `"error"`) {
 		t.Fatalf("scan progress example finished the audit: %s", encoded)
 	}
+
+	assertActionApprove(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -6423,5 +6425,55 @@ func assertWorkflowRuns(t *testing.T, spec obj) {
 	sharedRuns, _ := shared["runs"].([]any)
 	if len(sharedRuns) != 1 || asObj(sharedRuns[0])["slug"] != "daily-summary" || asObj(sharedRuns[0])["status"] != "succeeded" {
 		t.Fatalf("per-workflow run example changed: %#v", shared)
+	}
+}
+
+func TestActionApprove(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertActionApprove(t, spec)
+}
+
+func assertActionApprove(t *testing.T, spec obj) {
+	t.Helper()
+	post := asObj(asObj(asObj(spec["paths"])["/v1/action-proposals/{id}/approve"])["post"])
+	if post["summary"] != "Approve and run" || post["operationId"] != "approveActionProposal" || post["description"] != actionApproveDescription {
+		t.Fatalf("approve and run operation: summary=%#v id=%#v description=%#v", post["summary"], post["operationId"], post["description"])
+	}
+	if post["requestBody"] != nil {
+		t.Fatalf("approve and run sends no body: %#v", post["requestBody"])
+	}
+	params, ok := post["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("approve and run parameters: %#v", post["parameters"])
+	}
+	param := asObj(params[0])
+	if param["name"] != "id" || param["example"] != actionApproveProposalID || param["required"] != true {
+		t.Fatalf("approve and run param: %#v", param)
+	}
+	if asObj(param["schema"])["example"] != actionApproveProposalID {
+		t.Fatalf("approve and run schema example: %#v", param["schema"])
+	}
+	example := asObj(asObj(asObj(asObj(post["responses"])["200"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(actionApproveExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("approve and run example:\n%s\nwant:\n%s", got, want)
+	}
+	encoded := string(got)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, "documented-audit-ledger") || strings.Contains(encoded, "test-signing-secret") {
+		t.Fatalf("approve and run example publishes a live approval: %s", encoded)
+	}
+	if !strings.Contains(encoded, `"status":"approved"`) || !strings.Contains(encoded, actionApproveSample) || !strings.Contains(encoded, actionApproveTarget) {
+		t.Fatalf("approve and run example is missing the page: %s", encoded)
+	}
+	if strings.Contains(encoded, "executedAt") || strings.Contains(encoded, "resultRef") {
+		t.Fatalf("approve and run example already ran the action: %s", encoded)
 	}
 }
