@@ -885,6 +885,30 @@ func assertSupportRefs(t *testing.T, schemas obj) {
 	if asObj(props["source"])["example"] != "google" {
 		t.Fatalf("source: %#v", props["source"])
 	}
+
+	assertDeletionVerificationHash(t, schemas)
+}
+
+func TestDeletionVerificationHashMatchesThePublishedTarget(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertDeletionVerificationHash(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertDeletionVerificationHash(t *testing.T, schemas obj) {
+	t.Helper()
+	receipt := asObj(asObj(schemas["ConversationDeletionReceipt"])["properties"])
+	if asObj(receipt["receiptId"])["example"] != "delete:ab12" {
+		t.Fatalf("receipt id: %#v", receipt["receiptId"])
+	}
+	target := asObj(asObj(receipt["targets"])["items"])
+	props := asObj(target["properties"])
+	if asObj(props["target"])["example"] != "api_evidence" {
+		t.Fatalf("target: %#v", props["target"])
+	}
+	if asObj(props["verificationHash"])["example"] != documentedDeletionVerificationHash {
+		t.Fatalf("verification hash: %#v", props["verificationHash"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

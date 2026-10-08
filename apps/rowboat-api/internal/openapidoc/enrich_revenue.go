@@ -20,6 +20,11 @@ const (
 	documentedSourceAccountSupportRef = "source-account:sha256:24021bb72aca268d3989017b"
 )
 
+// documentedDeletionVerificationHash is deletionVerificationHash for the
+// published request id, the api_evidence target, and zero affected records.
+// The server still records that target as deleted.
+const documentedDeletionVerificationHash = "sha256:5c15791fbeefd579cf530b240c1a3d5eec1d94058e045c8a4eadf0d1385ebfbf"
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
@@ -468,7 +473,7 @@ func addRevenueSchemas(schemas obj) {
 		"targets": arraySchema("Per-target outcomes.", objectSchema("Deletion target outcome.", obj{
 			"target":           stringEnum("Deletion target.", "api_evidence", "local_recording", "local_note", "outbox", "api_evidence", "embedding", "plan_share", "provider"),
 			"status":           stringEnum("Target state.", "deleted", "pending", "deleted", "not_found", "blocked", "failed"),
-			"verificationHash": stringSchema("Content-free verification hash.", "sha256:ab12"),
+			"verificationHash": stringSchema("Content-free verification hash.", documentedDeletionVerificationHash),
 			"errorCode":        stringSchema("Bounded failure code.", "legal_hold"),
 			"attempts":         intSchema("Attempts made.", 1),
 		}, "target", "status", "attempts")),
