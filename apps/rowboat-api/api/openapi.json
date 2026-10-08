@@ -3550,7 +3550,7 @@
           },
           "dependencyId": {
             "description": "Dependency id.",
-            "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "example": "3b8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "format": "uuid",
             "type": "string"
           },
@@ -3577,13 +3577,13 @@
           },
           "relationshipId": {
             "description": "Relationship id.",
-            "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "format": "uuid",
             "type": "string"
           },
           "toCommitmentId": {
             "description": "Target commitment id.",
-            "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "example": "26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51",
             "format": "uuid",
             "type": "string"
           }
@@ -24046,7 +24046,7 @@
                   },
                   "toCommitmentId": {
                     "description": "Target commitment id.",
-                    "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "example": "26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51",
                     "format": "uuid",
                     "type": "string"
                   }

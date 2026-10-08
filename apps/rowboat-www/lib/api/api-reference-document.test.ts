@@ -576,6 +576,20 @@ describe("API reference document", () => {
     );
   });
 
+  it("does not sample one commitment as both ends of a dependency", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const dependency = (
+      presented.components.schemas as Record<
+        string,
+        { properties?: Record<string, { example?: unknown }> }
+      >
+    ).CommitmentDependency?.properties;
+    expect(dependency?.fromCommitmentId?.example).toBe("8b8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    expect(dependency?.toCommitmentId?.example).toBe("26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51");
+    expect(dependency?.relationshipId?.example).toBe("9c8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    expect(dependency?.dependencyId?.example).toBe("3b8dfa9b-a7b2-46ea-982c-622a914c00e5");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
