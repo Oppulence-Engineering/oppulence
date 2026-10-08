@@ -3083,6 +3083,18 @@ func backgroundTaskRetryRunExample() obj {
 	return run
 }
 
+func backgroundTaskCanceledRunExample() obj {
+	run := backgroundTaskAPIRunExample()
+	run["status"] = "stopped"
+	run["temporalStatus"] = "Canceled"
+	run["progressMessage"] = "Cancellation requested."
+	run["summary"] = ""
+	run["startedAt"] = "2026-06-04T21:01:00Z"
+	run["completedAt"] = "2026-06-04T21:02:00Z"
+	run["revision"] = 3
+	return run
+}
+
 func backgroundTaskAPIRunExample() obj {
 	run := backgroundTaskRunExample()
 	run["runId"] = "api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b"

@@ -489,6 +489,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if paths["/v1/me"] == nil || paths["/v1/background-task-templates"] == nil || paths["/v1/background-tasks"] == nil || paths["/v1/background-tasks/first-party/ensure"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events/stream"] == nil || paths["/v1/llm/chat/completions"] == nil || paths["/v1/connectors"] == nil || paths["/v1/connections/{name}/api-key"] == nil || paths["/v1/slack-oauth/workspaces"] == nil || paths["/v1/slack-oauth/thread/read"] == nil || paths["/v1/entities"] == nil || paths["/v1/entities/{id}"] == nil || paths["/v1/entities/merge"] == nil {
 		t.Fatal("checked-in openapi json is missing mounted runtime API paths")
 	}
+	assertCanceledCloudRun(t, spec)
 	if paths["/credit-ledgers"] != nil {
 		t.Fatal("checked-in openapi json still contains unmounted ent CRUD paths")
 	}
@@ -6587,6 +6588,25 @@ func responseExample(t *testing.T, paths obj, path, method, status string) obj {
 		t.Fatalf("%s %s %s example missing", method, path, status)
 	}
 	return body
+}
+
+func TestCanceledCloudRunIsDocumented(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertCanceledCloudRun(t, spec)
+}
+
+func assertCanceledCloudRun(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	canceled := responseExample(t, paths, "/v1/background-tasks/{slug}/runs/{runId}/cancel", "post", "202")
+	if canceled["status"] != "stopped" || canceled["executor"] != "api" || canceled["temporalStatus"] != "Canceled" || canceled["progressMessage"] != "Cancellation requested." || canceled["completedAt"] != "2026-06-04T21:02:00Z" || canceled["startedAt"] != "2026-06-04T21:01:00Z" {
+		t.Fatalf("canceled cloud run: %#v", canceled)
+	}
+	queued := responseExample(t, paths, "/v1/background-tasks/{slug}/trigger", "post", "202")
+	if queued["status"] != "queued" || queued["executor"] != "desktop" {
+		t.Fatalf("queued run sample changed: %#v", queued)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
