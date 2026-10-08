@@ -23245,6 +23245,52 @@
         "tags": ["Cloud Events"]
       }
     },
+    "/v1/composio/connections/{connectionID}": {
+      "delete": {
+        "description": "Disconnect Jira removes that connection. The request sends no body.",
+        "operationId": "deleteComposioConnection",
+        "parameters": [
+          {
+            "description": "Connection id.",
+            "example": "ca_8b8dfa9ba7b246ea982c622a914c00e5",
+            "in": "path",
+            "name": "connectionID",
+            "required": true,
+            "schema": {
+              "description": "Connection id.",
+              "example": "ca_8b8dfa9ba7b246ea982c622a914c00e5",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The Jira connection is removed."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Disconnect Jira",
+        "tags": [
+          "Connectors"
+        ]
+      }
+    },
     "/v1/google-oauth": {
       "delete": {
         "description": "Removes the user's Google connection and purges data derived from it (the RFC 031 cloud mail index; evidence quotes are retained as the user's own action history). Idempotent: returns 204 whether or not a connection existed. The user should also revoke the grant in their Google account.",

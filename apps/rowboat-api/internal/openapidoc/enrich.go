@@ -1773,6 +1773,7 @@ func addVendorProxyPaths(paths obj) {
 }
 
 func addGoogleOAuthPaths(paths obj) {
+	paths["/v1/composio/connections/{connectionID}"] = obj{"delete": disconnectJiraOperation()}
 	paths["/v1/google-oauth"] = obj{
 		"get": operation("Google OAuth", "Gmail and Google Calendar", googleConnectionDescription, "getGoogleConnectionStatus", bearer(), nil, nil, obj{
 			"200": jsonResponse("No Google connection.", ref("GoogleConnectionStatus"), googleConnectionPage()),

@@ -1380,6 +1380,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/composio/connections/{connectionID}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Disconnect Jira
+     * @description Disconnect Jira removes that connection. The request sends no body.
+     */
+    delete: operations["deleteComposioConnection"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/google-oauth": {
     parameters: {
       query?: never;
@@ -19117,6 +19137,34 @@ export interface operations {
       401: components["responses"]["401"];
       404: components["responses"]["404"];
       500: components["responses"]["500"];
+    };
+  };
+  deleteComposioConnection: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description Connection id.
+         * @example ca_8b8dfa9ba7b246ea982c622a914c00e5
+         */
+        connectionID: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The Jira connection is removed. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      502: components["responses"]["502"];
+      503: components["responses"]["503"];
     };
   };
   getGoogleConnectionStatus: {
