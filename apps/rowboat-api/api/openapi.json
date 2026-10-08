@@ -2818,7 +2818,7 @@
                 },
                 "connectionRef": {
                   "description": "One-way connection support reference.",
-                  "example": "connection:sha256:ab12",
+                  "example": "connection:sha256:da73462ccdf527f07099a17f",
                   "type": "string"
                 },
                 "errorCode": {
@@ -2843,12 +2843,12 @@
                 },
                 "source": {
                   "description": "Provider.",
-                  "example": "hubspot",
+                  "example": "google",
                   "type": "string"
                 },
                 "sourceAccountRef": {
                   "description": "One-way provider account support reference.",
-                  "example": "source-account:sha256:cd34",
+                  "example": "source-account:sha256:24021bb72aca268d3989017b",
                   "type": "string"
                 },
                 "status": {
@@ -2902,7 +2902,7 @@
           },
           "workspaceRef": {
             "description": "One-way workspace support reference.",
-            "example": "workspace:sha256:ab12",
+            "example": "workspace:sha256:1d811ce10de82ecb6ed8274b",
             "type": "string"
           }
         },

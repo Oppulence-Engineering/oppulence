@@ -11,6 +11,15 @@ import (
 // sealed payload of JSON null. Mission Control copies this value as stored.
 const documentedObservationContentHash = "c649f448e463924ae2a0923fcc6d409bc5a808004027b16bfbea961336650984"
 
+// Support references are diagnosticRef: kind, then sha256, then 24 hex
+// characters of sha256("tfa-"+kind+":"+id). These use the published workspace
+// id, the published connection id, and that connection's Google account.
+const (
+	documentedWorkspaceSupportRef     = "workspace:sha256:1d811ce10de82ecb6ed8274b"
+	documentedConnectionSupportRef    = "connection:sha256:da73462ccdf527f07099a17f"
+	documentedSourceAccountSupportRef = "source-account:sha256:24021bb72aca268d3989017b"
+)
+
 // Revenue memory and outbound governance surface (RFC 030). Always mounted;
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
@@ -366,14 +375,14 @@ func addRevenueSchemas(schemas obj) {
 	schemas["BetaDiagnostics"] = objectSchema("Metadata-only support export. It excludes relationship names, addresses, evidence, action bodies, tokens, cursors, raw errors, and correlation identifiers.", obj{
 		"schemaVersion": stringSchema("Diagnostics contract version.", "tfa-support-v1"),
 		"generatedAt":   stringSchema("Generation time.", "2026-08-01T15:00:00Z", obj{"format": "date-time"}),
-		"workspaceRef":  stringSchema("One-way workspace support reference.", "workspace:sha256:ab12"),
+		"workspaceRef":  stringSchema("One-way workspace support reference.", documentedWorkspaceSupportRef),
 		"features": arraySchema("Workspace rollout controls.", objectSchema("Feature diagnostic.", obj{
 			"capability": stringSchema("Capability id.", "action_gmail"), "enabled": boolSchema("Whether enabled.", false),
 			"rolloutStage": stringSchema("Rollout stage.", "internal_read_only"), "reasonCode": stringSchema("Categorical change reason.", "internal_canary"),
 		}, "capability", "enabled", "rolloutStage")),
 		"sources": arraySchema("Redacted connection lifecycle metadata.", objectSchema("Source diagnostic.", obj{
-			"connectionRef": stringSchema("One-way connection support reference.", "connection:sha256:ab12"), "source": stringSchema("Provider.", "hubspot"),
-			"sourceAccountRef": stringSchema("One-way provider account support reference.", "source-account:sha256:cd34"), "status": stringSchema("Lifecycle state.", "degraded"), "completeness": stringSchema("Completeness state.", "stale"),
+			"connectionRef": stringSchema("One-way connection support reference.", documentedConnectionSupportRef), "source": stringSchema("Provider.", "google"),
+			"sourceAccountRef": stringSchema("One-way provider account support reference.", documentedSourceAccountSupportRef), "status": stringSchema("Lifecycle state.", "degraded"), "completeness": stringSchema("Completeness state.", "stale"),
 			"backfillPhase": stringSchema("Backfill phase.", "failed"), "backfillCompleted": intSchema("Completed units.", 20), "backfillTotal": intSchema("Total units.", 100),
 			"lagSeconds": intSchema("Current lag.", 900), "missingScopeCount": intSchema("Count only; scope values remain on the user-facing connection card.", 0),
 			"errorCode": stringSchema("Safe categorical error.", "provider_outage"), "retryCount": intSchema("Retry attempts.", 2),

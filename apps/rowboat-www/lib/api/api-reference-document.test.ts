@@ -970,6 +970,16 @@ describe("API reference document", () => {
     ).toBe(contentHash);
   });
 
+  it("samples the one-way support references for the published workspace", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const diagnostics = presented.components.schemas.BetaDiagnostics.properties;
+    expect(diagnostics.workspaceRef.example).toBe("workspace:sha256:1d811ce10de82ecb6ed8274b");
+    const source = diagnostics.sources.items.properties;
+    expect(source.connectionRef.example).toBe("connection:sha256:da73462ccdf527f07099a17f");
+    expect(source.sourceAccountRef.example).toBe("source-account:sha256:24021bb72aca268d3989017b");
+    expect(source.source.example).toBe("google");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
