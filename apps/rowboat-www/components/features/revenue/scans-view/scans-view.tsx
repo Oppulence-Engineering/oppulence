@@ -45,15 +45,15 @@ export function auditRefreshCopy(): string {
 export function auditKnownPromiseCopy(count: number, hasMore = false): string {
   const total = Number.isFinite(count) ? Math.max(0, Math.round(count)) : 0;
   if (total <= 0) return "";
-  if (hasMore) return `${total}+ promises are already in Commitments.`;
-  if (total === 1) return "1 promise is already in Commitments.";
-  return `${total} promises are already in Commitments.`;
+  if (hasMore) return `${total}+ promises are already in Promises.`;
+  if (total === 1) return "1 promise is already in Promises.";
+  return `${total} promises are already in Promises.`;
 }
 
 /**
  * The button already says reconnect or connect. The empty list has to say the
  * same thing. A dead Google grant is not a workspace that has never been audited.
- * A promise already in Commitments stays in the sentence.
+ * A promise already in Promises stays in the sentence.
  */
 export function auditEmptyDescription(input: {
   needsConnect: boolean;
@@ -95,7 +95,7 @@ export function ScansView({
   needsReconnect?: boolean;
   /** No mailbox is connected, so `onScan` opens connections instead of a scan. */
   needsConnect?: boolean;
-  /** Open or at-risk promises already in Commitments. */
+  /** Open or at-risk promises already in Promises. */
   knownPromiseCount?: number;
   knownPromiseHasMore?: boolean;
   /** The promise count is still loading, so the empty sentence would be incomplete. */

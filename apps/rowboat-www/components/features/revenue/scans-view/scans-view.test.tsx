@@ -47,8 +47,8 @@ describe("ScansView", () => {
       /Run your first audit/,
     );
     expect(auditKnownPromiseCopy(0)).toBe("");
-    expect(auditKnownPromiseCopy(1)).toBe("1 promise is already in Commitments.");
-    expect(auditKnownPromiseCopy(4, true)).toBe("4+ promises are already in Commitments.");
+    expect(auditKnownPromiseCopy(1)).toBe("1 promise is already in Promises.");
+    expect(auditKnownPromiseCopy(4, true)).toBe("4+ promises are already in Promises.");
     expect(
       auditEmptyDescription({
         needsConnect: true,
@@ -56,7 +56,7 @@ describe("ScansView", () => {
         knownPromiseCount: 1,
       }),
     ).toBe(
-      "1 promise is already in Commitments. Connect Gmail and Calendar before an audit can read your mail.",
+      "1 promise is already in Promises. Connect Gmail and Calendar before an audit can read your mail.",
     );
     expect(
       auditEmptyDescription({
@@ -65,7 +65,7 @@ describe("ScansView", () => {
         knownPromiseCount: 2,
         knownPromiseHasMore: true,
       }),
-    ).toBe("2+ promises are already in Commitments. Reconnect Google before an audit can read your mail.");
+    ).toBe("2+ promises are already in Promises. Reconnect Google before an audit can read your mail.");
     expect(source).toContain("knownPromiseCount");
     expect(source).toContain("knownPromisesPending");
     expect(source).toContain("loadFailed && rows.length === 0");

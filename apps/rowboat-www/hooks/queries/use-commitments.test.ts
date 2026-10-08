@@ -34,10 +34,10 @@ describe("keptRegisterPage", () => {
 describe("registerLoadNotice", () => {
   it("names a refresh when the register page already arrived", () => {
     expect(registerLoadNotice(new Error("Request failed (500)"), true)).toBe(
-      "Could not refresh the commitment register. Try again.",
+      "Could not refresh promises. Try again.",
     );
     expect(registerLoadNotice(new Error("Request failed (500)"), false)).toBe(
-      "The commitment register could not be loaded.",
+      "Promises could not be loaded.",
     );
     expect(registerLoadNotice(new Error("Request failed (429)"), true)).toBe(
       "Too many requests were sent from this workspace. Wait a moment, then try again.",

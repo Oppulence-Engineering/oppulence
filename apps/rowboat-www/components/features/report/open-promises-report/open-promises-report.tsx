@@ -553,9 +553,9 @@ function ScanningStep({
 export function reportKnownPromiseCopy(count: number, hasMore = false): string {
   const total = Number.isFinite(count) ? Math.max(0, Math.round(count)) : 0;
   if (total <= 0) return "";
-  if (hasMore) return `${total}+ promises are already in Commitments.`;
-  if (total === 1) return "1 promise is already in Commitments.";
-  return `${total} promises are already in Commitments.`;
+  if (hasMore) return `${total}+ promises are already in Promises.`;
+  if (total === 1) return "1 promise is already in Promises.";
+  return `${total} promises are already in Promises.`;
 }
 
 /** Connecting mail looks for more promises. It does not erase the ones already recorded. */

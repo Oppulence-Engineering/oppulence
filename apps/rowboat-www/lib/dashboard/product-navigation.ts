@@ -29,7 +29,7 @@ export type RevenueTab = z.infer<typeof RevenueTabSchema>;
 export const REVENUE_TAB_LABELS: Record<RevenueTab, string> = {
   tasks: "Tasks",
   notes: "Notes",
-  commitments: "Commitments",
+  commitments: "Promises",
   relationships: "Companies",
   people: "People",
   queue: "Recovery",

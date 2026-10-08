@@ -219,7 +219,7 @@ describe("RelationshipsView", () => {
         lookbackLabel: "6 months",
       }),
     ).toBe(
-      "Gmail is connected. Run the 6 months audit from Commitments to discover companies and the people behind each conversation.",
+      "Gmail is connected. Run the 6 months audit from Promises to discover companies and the people behind each conversation.",
     );
     for (const status of ["connected", "backfilling", "live", "stale", "rebuilding", "degraded"]) {
       expect(companySourceCountsAsConnected(status)).toBe(true);
