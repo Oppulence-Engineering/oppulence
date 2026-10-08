@@ -804,6 +804,21 @@ describe("API reference document", () => {
     );
   });
 
+  it("names the observation an identity review cites", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const candidate = presented.components.schemas.RelationshipIdentityCandidate.properties;
+    const evidenceRef = "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    expect(candidate.evidenceRefs).toMatchObject({
+      description: "Evidence references.",
+      example: [evidenceRef],
+    });
+    expect(candidate.evidenceRefs.items.example).toBe(evidenceRef);
+    expect(JSON.stringify(candidate.evidenceRefs)).not.toContain("relationship-observation:1");
+    expect(presented.components.schemas.MissionControlEvidenceReference.properties.observationId.example).toBe(
+      "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

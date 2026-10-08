@@ -10903,9 +10903,12 @@
           },
           "evidenceRefs": {
             "description": "Evidence references.",
+            "example": [
+              "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+            ],
             "items": {
               "description": "Evidence ref.",
-              "example": "relationship-observation:1",
+              "example": "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "type": "string"
             },
             "type": "array"
