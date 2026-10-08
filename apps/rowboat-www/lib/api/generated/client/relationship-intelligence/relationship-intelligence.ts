@@ -792,8 +792,8 @@ export const getApproveRelationshipRecommendationUrl = (actionId: string) => {
 };
 
 /**
- * Relationship-intelligence alias for the governed action approval transition.
- * @summary Approve a recommendation
+ * Approve posts acceptRisk false. The stored recommendation is approved for its current revision, and the approval time is recorded. The queue stays open.
+ * @summary Approve
  */
 export const approveRelationshipRecommendation = async (
   actionId: string,

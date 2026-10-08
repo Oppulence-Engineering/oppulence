@@ -1774,8 +1774,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Approve a recommendation
-     * @description Relationship-intelligence alias for the governed action approval transition.
+     * Approve
+     * @description Approve posts acceptRisk false. The stored recommendation is approved for its current revision, and the approval time is recorded. The queue stays open.
      */
     post: operations["approveRelationshipRecommendation"];
     delete?: never;
@@ -18765,6 +18765,35 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "actionType": "warm_follow_up",
+           *       "approvalStatus": "approved",
+           *       "approvedAt": "2026-07-12T12:05:00Z",
+           *       "approvedRevision": 1,
+           *       "channel": "email",
+           *       "createdAt": "2026-07-12T12:00:00Z",
+           *       "detector": "requested_follow_up_due",
+           *       "evidence": [],
+           *       "executionMode": "draft",
+           *       "executionOwner": "rowboat",
+           *       "executionStatus": "pending",
+           *       "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "policyStatus": "pending",
+           *       "priorityScore": 82,
+           *       "proposedMessage": "Hi Jordan — you asked me to circle back this month...",
+           *       "proposedSubject": "Following up as promised",
+           *       "queueStatus": "open",
+           *       "reason": "They asked for a follow-up in July.",
+           *       "recipientEmail": "buyer@example.com",
+           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "relationshipName": "Acme",
+           *       "revision": 1,
+           *       "revisionHash": "sha256:ab12...",
+           *       "senderAccountRef": "gmail:me@company.com",
+           *       "updatedAt": "2026-07-12T12:05:00Z"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueAction"];
         };
       };

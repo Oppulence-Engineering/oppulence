@@ -23234,7 +23234,7 @@
     },
     "/v1/relationship-recommendations/{actionId}/approve": {
       "post": {
-        "description": "Relationship-intelligence alias for the governed action approval transition.",
+        "description": "Approve posts acceptRisk false. The stored recommendation is approved for its current revision, and the approval time is recorded. The queue stays open.",
         "operationId": "approveRelationshipRecommendation",
         "parameters": [
           {
@@ -23243,6 +23243,7 @@
             "name": "actionId",
             "required": true,
             "schema": {
+              "example": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -23274,6 +23275,33 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "actionType": "warm_follow_up",
+                  "approvalStatus": "approved",
+                  "approvedAt": "2026-07-12T12:05:00Z",
+                  "approvedRevision": 1,
+                  "channel": "email",
+                  "createdAt": "2026-07-12T12:00:00Z",
+                  "detector": "requested_follow_up_due",
+                  "evidence": [],
+                  "executionMode": "draft",
+                  "executionOwner": "rowboat",
+                  "executionStatus": "pending",
+                  "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "policyStatus": "pending",
+                  "priorityScore": 82,
+                  "proposedMessage": "Hi Jordan — you asked me to circle back this month...",
+                  "proposedSubject": "Following up as promised",
+                  "queueStatus": "open",
+                  "reason": "They asked for a follow-up in July.",
+                  "recipientEmail": "buyer@example.com",
+                  "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "relationshipName": "Acme",
+                  "revision": 1,
+                  "revisionHash": "sha256:ab12...",
+                  "senderAccountRef": "gmail:me@company.com",
+                  "updatedAt": "2026-07-12T12:05:00Z"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueAction"
                 }
@@ -23293,8 +23321,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Approve a recommendation",
-        "tags": ["Relationship Intelligence"]
+        "summary": "Approve",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-recommendations/{actionId}/reject": {

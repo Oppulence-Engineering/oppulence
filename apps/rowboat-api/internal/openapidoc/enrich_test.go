@@ -1743,6 +1743,34 @@ func mustJSON(value any) string {
 		return err.Error()
 	}
 	return string(raw)
+
+	assertApprovedRecommendation(t, spec)
+}
+
+func TestRecommendationApproveStoresApprovedRevision(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertApprovedRecommendation(t, spec)
+}
+
+func assertApprovedRecommendation(t *testing.T, spec obj) {
+	t.Helper()
+	post := asObj(asObj(asObj(spec["paths"])["/v1/relationship-recommendations/{actionId}/approve"])["post"])
+	if post["summary"] != "Approve" {
+		t.Fatalf("summary: %v", post["summary"])
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])["example"]
+	if got, want := mustJSON(request), mustJSON(obj{"acceptRisk": false}); got != want {
+		t.Fatalf("request example:\n%s\nwant:\n%s", got, want)
+	}
+	response := asObj(asObj(asObj(asObj(post["responses"])["200"])["content"])["application/json"])["example"]
+	if got, want := mustJSON(response), mustJSON(documentedApprovedRecommendation()); got != want {
+		t.Fatalf("response example:\n%s\nwant:\n%s", got, want)
+	}
+	action := asObj(asObj(asObj(spec["components"])["schemas"])["RevenueAction"])
+	if asObj(asObj(action["properties"])["approvalStatus"])["example"] != "pending" {
+		t.Fatalf("shared approval status changed: %#v", asObj(action["properties"])["approvalStatus"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
