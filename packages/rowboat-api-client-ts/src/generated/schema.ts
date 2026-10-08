@@ -2377,7 +2377,7 @@ export interface paths {
     };
     /**
      * Open a company
-     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.
+     * @description The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations.
      */
     get: operations["getRelationship"];
     put?: never;
@@ -24218,6 +24218,7 @@ export interface operations {
            *         "accountDomain": "acme.com",
            *         "categories": [],
            *         "commitmentCount": 0,
+           *         "companyDescription": "Builds AI infrastructure for customer operations.",
            *         "displayName": "Acme",
            *         "emailThreadCount": 0,
            *         "engagement": "declining",
