@@ -905,6 +905,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if badges := relationshipSheetRecommendationBadgeMatch(needle); badges != nil {
 			parts = append(parts, badges)
 		}
+
+		if detector := relationshipSheetDetectorMatch(needle); detector != nil {
+			parts = append(parts, detector)
+		}
 		parts = append(parts, relationship.HasCommitmentsWith(commitment.TextContainsFold(value)))
 		if text := promiseLineText(needle); text != "" {
 			parts = append(parts, relationship.HasCommitmentsWith(commitment.And(
@@ -5634,6 +5638,43 @@ func recommendationBadgePhrase(phrase, needle string) bool {
 		return false
 	}
 	return strings.Contains(needle, phrase)
+}
+
+// detectorSearchLabels are the badges on a recommendation. The stored detector
+// is a token such as waiting_on_me. The badge says "Waiting on you".
+var detectorSearchLabels = []struct {
+	phrase   string
+	detector string
+}{
+	{"follow-up due", "requested_follow_up_due"},
+	{"unanswered proposal", "unanswered_proposal"},
+	{"waiting on you", "waiting_on_me"},
+	{"dormant opportunity", "dormant_warm_opportunity"},
+	{"neglected referral", "neglected_referral"},
+	{"former customer", "former_customer_reconnect"},
+	{"conversation action pack", "conversation_action_pack"},
+	{"promise due", "commitment_due"},
+	{"added by you", "manual"},
+}
+
+// relationshipSheetDetectorMatch matches the recommendation badge. A dismissed
+// recommendation still shows the badge, so the queue status does not matter.
+func relationshipSheetDetectorMatch(needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	for _, item := range detectorSearchLabels {
+		if !labelPhraseMatches(item.phrase, needle) {
+			continue
+		}
+		preds = append(preds, relationship.HasActionsWith(revenueaction.DetectorEQ(item.detector)))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
 }
 
 // relationshipAttentionBandMatch is the urgency badge on the attention queue.

@@ -2717,6 +2717,91 @@ func TestRelationshipSearchFindsTheActionOutcome(t *testing.T) {
 	assertCompanyQuery("may have gone through", "Lumen Packet")
 }
 
+func TestRelationshipSearchFindsDetectorLabels(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	recommend := func(rel *ent.Relationship, detector, dedupe string) {
+		t.Helper()
+		if _, err := f.client.RevenueAction.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetActionType("follow_up_task").SetChannel("task").
+			SetDetector(detector).SetDedupeKey(dedupe).
+			SetRevisionHash(dedupe).SetReason("Send the harbor note").
+			SetPriorityScore(40).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	quiet := makeCompany("Detect Quiet")
+	follow := makeCompany("Detect Follow")
+	proposal := makeCompany("Detect Offer")
+	waiting := makeCompany("Detect Hold")
+	dormant := makeCompany("Detect Dormant")
+	referral := makeCompany("Detect Referral")
+	alumni := makeCompany("Detect Alumni")
+	pack := makeCompany("Detect Pack")
+	clock := makeCompany("Detect Clock")
+	manual := makeCompany("Detect Manual")
+	_ = quiet
+	recommend(follow, "requested_follow_up_due", "detect-follow")
+	recommend(proposal, "unanswered_proposal", "detect-proposal")
+	recommend(waiting, "waiting_on_me", "detect-waiting")
+	if _, err := f.client.RevenueAction.Update().
+		Where(revenueaction.DedupeKeyEQ("detect-waiting")).
+		SetQueueStatus("dismissed").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	recommend(dormant, "dormant_warm_opportunity", "detect-dormant")
+	recommend(referral, "neglected_referral", "detect-referral")
+	recommend(alumni, "former_customer_reconnect", "detect-alumni")
+	recommend(pack, "conversation_action_pack", "detect-pack")
+	recommend(clock, "commitment_due", "detect-clock")
+	recommend(manual, "manual", "detect-manual")
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Follow-up due", "Detect Follow")
+	assertCompanyQuery("which companies have an unanswered proposal", "Detect Offer")
+	assertCompanyQuery("Waiting on you", "Detect Hold")
+	assertCompanyQuery("Dormant opportunity", "Detect Dormant")
+	assertCompanyQuery("Neglected referral", "Detect Referral")
+	assertCompanyQuery("Former customer", "Detect Alumni")
+	assertCompanyQuery("Conversation action pack", "Detect Pack")
+	assertCompanyQuery("Promise due", "Detect Clock")
+	assertCompanyQuery("Added by you", "Detect Manual")
+	assertCompanyQuery("proposal")
+	assertCompanyQuery("waiting")
+	assertCompanyQuery("due")
+}
+
 func TestRelationshipSearchFindsTheOverduePromise(t *testing.T) {
 	f := newFixture(t)
 	now := time.Now().UTC()
