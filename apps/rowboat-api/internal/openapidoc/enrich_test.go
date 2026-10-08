@@ -4542,6 +4542,51 @@ func assertAddedPerson(t *testing.T, spec obj) {
 	if asObj(create["example"])["kind"] != "person" {
 		t.Fatalf("create sample changed: %#v", create["example"])
 	}
+
+	assertActionHistory(t, spec)
+}
+
+func TestActionHistory(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertActionHistory(t, spec)
+}
+
+func assertActionHistory(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/revenue-actions/{actionId}/audit"])["get"])
+	if operation["summary"] != "Get action history" {
+		t.Fatalf("summary: %#v", operation["summary"])
+	}
+	if operation["description"] != "History loads the action, its revisions, the policy decisions, and the outcomes." {
+		t.Fatalf("description: %#v", operation["description"])
+	}
+	params, ok := operation["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("parameters: %#v", operation["parameters"])
+	}
+	param := asObj(params[0])
+	if param["example"] != actionHistoryActionID || asObj(param["schema"])["example"] != actionHistoryActionID {
+		t.Fatalf("action id example: %#v", param)
+	}
+	example := asObj(asObj(asObj(asObj(operation["responses"])["200"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(actionHistoryExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("history example:\n%s\nwant:\n%s", got, want)
+	}
+	if actionHistoryRevisionHash() == "sha256:ab12..." || len(actionHistoryRevisionHash()) != len("sha256:")+64 {
+		t.Fatalf("revision hash: %s", actionHistoryRevisionHash())
+	}
+	if strings.Contains(string(got), "sha256:ab12") {
+		t.Fatalf("history example still uses the truncated hash: %s", got)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

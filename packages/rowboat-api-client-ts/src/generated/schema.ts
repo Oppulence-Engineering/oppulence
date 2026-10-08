@@ -2568,8 +2568,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get the audit chain
-     * @description Returns the full observe, decision, approval, execution, and outcome chain for one action.
+     * Get action history
+     * @description History loads the action, its revisions, the policy decisions, and the outcomes.
      */
     get: operations["getRevenueActionAudit"];
     put?: never;
@@ -23416,19 +23416,92 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Action id. */
+        /**
+         * @description Action id.
+         * @example 1a8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         actionId: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Audit chain. */
+      /** @description Action history. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "action": {
+           *         "actionType": "warm_follow_up",
+           *         "approvalStatus": "pending",
+           *         "channel": "email",
+           *         "createdAt": "2026-07-12T12:00:00Z",
+           *         "detector": "manual",
+           *         "dueAt": "2026-07-15T00:00:00Z",
+           *         "evidence": [
+           *           {
+           *             "excerpt": "We are concerned security could delay renewal.",
+           *             "externalEvidenceRefs": [
+           *               "timestamp:12000-16000"
+           *             ],
+           *             "id": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "occurredAt": "2026-07-31T14:00:00Z",
+           *             "source": "meeting",
+           *             "sourceRecordId": "oppulence:session-42:claim:claim-risk"
+           *           }
+           *         ],
+           *         "executionMode": "draft",
+           *         "executionOwner": "rowboat",
+           *         "executionStatus": "pending",
+           *         "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "policyStatus": "passed",
+           *         "priorityScore": 82,
+           *         "proposedMessage": "Hi Jordan — you asked me to circle back this month...",
+           *         "proposedSubject": "Following up as promised",
+           *         "queueStatus": "open",
+           *         "reason": "They asked for a follow-up in July.",
+           *         "recipientEmail": "buyer@example.com",
+           *         "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "relationshipName": "Jordan Buyer",
+           *         "revision": 1,
+           *         "revisionHash": "sha256:878529bfd91ade7c21b79bcd0f4a2b80dfe46a6f6b41c2b82f58d196c1f10184",
+           *         "senderAccountRef": "gmail:me@company.com",
+           *         "updatedAt": "2026-07-12T14:00:00Z"
+           *       },
+           *       "decisions": [
+           *         {
+           *           "evaluatedAt": "2026-07-12T12:00:00Z",
+           *           "expiresAt": "2026-07-13T12:00:00Z",
+           *           "id": "2b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "reasonCodes": [],
+           *           "revision": 1,
+           *           "revisionHash": "sha256:878529bfd91ade7c21b79bcd0f4a2b80dfe46a6f6b41c2b82f58d196c1f10184",
+           *           "status": "passed"
+           *         }
+           *       ],
+           *       "outcomes": [
+           *         {
+           *           "id": "3c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "kind": "replied",
+           *           "occurredAt": "2026-07-12T14:00:00Z",
+           *           "source": "user",
+           *           "sourceEventId": "manual:replied:1783864800000"
+           *         }
+           *       ],
+           *       "revisions": [
+           *         {
+           *           "actionType": "warm_follow_up",
+           *           "channel": "email",
+           *           "createdAt": "2026-07-12T12:00:00Z",
+           *           "revision": 1,
+           *           "revisionHash": "sha256:878529bfd91ade7c21b79bcd0f4a2b80dfe46a6f6b41c2b82f58d196c1f10184"
+           *         }
+           *       ]
+           *     }
+           */
           "application/json": {
             action?: components["schemas"]["RevenueAction"];
             /** @description Policy decision snapshots. */
