@@ -10708,8 +10708,8 @@
             "type": "array"
           },
           "executionStatus": {
-            "description": "Action execution state.",
-            "example": "pending",
+            "description": "Execution the company graph shows. Ambiguous is a result that needs reconcile.",
+            "example": "ambiguous",
             "type": "string"
           },
           "freshness": {

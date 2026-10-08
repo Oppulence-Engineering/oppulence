@@ -4,6 +4,11 @@ package openapidoc
 // without a configured facade the workspace runs in local mode (observation
 // and drafts work, preflight and sends fail closed).
 
+const (
+	graphExecutionStatusDescription = "Execution the company graph shows. Ambiguous is a result that needs reconcile."
+	graphExecutionStatusExample     = "ambiguous"
+)
+
 func addRevenueSchemas(schemas obj) {
 	schemas["RevenueWorkspace"] = objectSchema("Mapping between the Rowboat tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.", obj{
 		"id":                     uuidSchema("Workspace id.", "0b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
@@ -416,7 +421,7 @@ func addRevenueSchemas(schemas obj) {
 		"health":             stringSchema("Health state.", "needs_attention"),
 		"approvalStatus":     stringSchema("Action approval state.", "pending"),
 		"policyStatus":       stringSchema("Action policy state.", "passed"),
-		"executionStatus":    stringSchema("Action execution state.", "pending"),
+		"executionStatus":    stringSchema(graphExecutionStatusDescription, graphExecutionStatusExample),
 		"freshness":          stringEnum("Evidence freshness.", "current", "current", "aging", "stale", "unknown"),
 		"confidence":         obj{"type": "number", "minimum": 0, "maximum": 1, "example": 0.88},
 		"priority":           obj{"type": "integer", "minimum": 0, "maximum": 100, "example": 82},
