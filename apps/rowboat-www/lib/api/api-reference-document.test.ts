@@ -3363,7 +3363,7 @@ describe("API reference document", () => {
     const companyID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5";
     expect(operation.summary).toBe("Open a company");
     expect(operation.description).toBe(
-      "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com. The risk is that the security review has no owner. The LinkedIn row opens the Acme company page. The category is Artificial intelligence.",
+      "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com. The risk is that the security review has no owner. The LinkedIn row opens the Acme company page. The category is Artificial intelligence. The milestone is that the proposal was shared.",
     );
     expect(operation.parameters).toEqual([
       expect.objectContaining({
@@ -3387,6 +3387,7 @@ describe("API reference document", () => {
       risks: ["Security review has no owner."],
       linkedinUrl: "https://www.linkedin.com/company/acme",
       categories: ["Artificial intelligence"],
+      milestones: ["Proposal shared."],
     });
     expect(example.emailThreads).toEqual([]);
     expect(example.participants).toEqual([

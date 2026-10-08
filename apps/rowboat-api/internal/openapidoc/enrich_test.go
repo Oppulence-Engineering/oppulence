@@ -4158,6 +4158,10 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	if !ok || len(categories) != 1 || categories[0] != openedCompanyCategory {
 		t.Fatalf("categories: %#v", relationship["categories"])
 	}
+	milestones, ok := relationship["milestones"].([]any)
+	if !ok || len(milestones) != 1 || milestones[0] != openedCompanyMilestone {
+		t.Fatalf("milestones: %#v", relationship["milestones"])
+	}
 	threads, ok := example["emailThreads"].([]any)
 	if !ok || len(threads) != 0 {
 		t.Fatalf("email threads: %#v", example["emailThreads"])

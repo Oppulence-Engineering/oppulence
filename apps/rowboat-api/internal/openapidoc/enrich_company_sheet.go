@@ -24,9 +24,11 @@ const (
 	openedCompanyLinkedInURL = "https://www.linkedin.com/company/acme"
 	// The sheet Category row prints this name. An empty list says Not filled in.
 	openedCompanyCategory = "Artificial intelligence"
+	// The sheet Milestones list prints this sentence. An empty list says None recorded.
+	openedCompanyMilestone = "Proposal shared."
 )
 
-const openedCompanyOperationDescription = "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com. The risk is that the security review has no owner. The LinkedIn row opens the Acme company page. The category is Artificial intelligence."
+const openedCompanyOperationDescription = "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com. The risk is that the security review has no owner. The LinkedIn row opens the Acme company page. The category is Artificial intelligence. The milestone is that the proposal was shared."
 
 func openedCompanyParams() []any {
 	return []any{obj{
@@ -65,7 +67,7 @@ func openedCompanySheetExample() obj {
 			"projectedAt":        openedCompanyProjectedAt,
 			"lastChangedAt":      openedCompanyProjectedAt,
 			"risks":              []any{openedCompanyRisk},
-			"milestones":         empty,
+			"milestones":         []any{openedCompanyMilestone},
 			"resourceRefs":       empty,
 			"categories":         []any{openedCompanyCategory},
 			"primaryEmail":       openedCompanyEmail,
