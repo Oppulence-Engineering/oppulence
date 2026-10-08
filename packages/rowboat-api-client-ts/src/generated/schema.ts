@@ -742,8 +742,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Queue or start task trigger
-     * @description For executionTarget=desktop, queues a remote trigger with status=queued for desktop pickup. For executionTarget=api, creates an API-worker run and starts a Temporal workflow, while clients poll Solomon AI run status endpoints.
+     * Run now
+     * @description Run now posts a manual start from the visual workflow editor. The stored cloud run stays queued, keeps the note Started from the visual workflow editor, uses cloud execution, and records revision 2.
      */
     post: operations["triggerBackgroundTask"];
     delete?: never;
@@ -15299,7 +15299,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Background task slug, matching bg-tasks/<slug> locally. */
+        /** @description Workflow to run. */
         slug: string;
       };
       cookie?: never;
@@ -15309,7 +15309,7 @@ export interface operations {
       content: {
         /**
          * @example {
-         *       "context": "Run this now and focus on high-risk accounts.",
+         *       "context": "Started from the visual workflow editor.",
          *       "trigger": "manual"
          *     }
          */
@@ -15317,7 +15317,7 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Queued or started run mirror. */
+      /** @description Stored run. */
       202: {
         headers: {
           [name: string]: unknown;
@@ -15325,28 +15325,22 @@ export interface operations {
         content: {
           /**
            * @example {
-           *       "completedAt": null,
+           *       "attempt": 1,
            *       "createdAt": "2026-06-04T21:00:30Z",
-           *       "error": "",
-           *       "executor": "desktop",
-           *       "id": "77f5e632-a841-4557-a8e4-9b8f0d207ff4",
-           *       "localRunId": "",
-           *       "model": "openai/gpt-4.1-mini",
-           *       "previousRunId": "",
-           *       "progressMessage": "Completed.",
-           *       "progressPercent": 100,
-           *       "provider": "openai",
-           *       "requestedContext": "Run this now and focus on high-risk accounts.",
-           *       "revision": 1,
-           *       "runId": "remote-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b",
-           *       "slug": "daily-summary",
-           *       "startedAt": null,
+           *       "executor": "api",
+           *       "id": "88f5e632-a841-4557-a8e4-9b8f0d207ff4",
+           *       "progressMessage": "Queued for API worker.",
+           *       "progressPercent": 0,
+           *       "requestedContext": "Started from the visual workflow editor.",
+           *       "revision": 2,
+           *       "runId": "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b",
+           *       "slug": "follow-up-when-a-promise-slips",
            *       "status": "queued",
-           *       "subUseCase": "daily-summary",
-           *       "summary": "",
+           *       "temporalRunId": "00000000-0000-0000-0000-000000000002",
+           *       "temporalStatus": "Started",
+           *       "temporalWorkflowId": "background-task/user/follow-up-when-a-promise-slips/api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b",
            *       "trigger": "manual",
-           *       "updatedAt": "2026-06-04T21:02:05Z",
-           *       "useCase": "background-task"
+           *       "updatedAt": "2026-06-04T21:00:31Z"
            *     }
            */
           "application/json": components["schemas"]["BackgroundTaskRun"];

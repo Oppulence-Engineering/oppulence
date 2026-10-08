@@ -1810,6 +1810,42 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the cloud run Run now stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const post = presented.paths["/v1/background-tasks/{slug}/trigger"].post;
+    expect(post.summary).toBe("Run now");
+    expect(post.description).toBe(
+      "Run now posts a manual start from the visual workflow editor. The stored cloud run stays queued, keeps the note Started from the visual workflow editor, uses cloud execution, and records revision 2.",
+    );
+    expect(post.requestBody.content["application/json"].example).toEqual({
+      trigger: "manual",
+      context: "Started from the visual workflow editor.",
+    });
+    expect(post.parameters[0].schema.example).toBe("follow-up-when-a-promise-slips");
+    expect(post.responses["202"].description).toBe("Stored run.");
+    expect(post.responses["202"].content["application/json"].example).toMatchObject({
+      id: "88f5e632-a841-4557-a8e4-9b8f0d207ff4",
+      runId: "api-trigger-5b41958c-3a0a-4cb2-9361-ea563cd0477b",
+      slug: "follow-up-when-a-promise-slips",
+      trigger: "manual",
+      status: "queued",
+      executor: "api",
+      attempt: 1,
+      requestedContext: "Started from the visual workflow editor.",
+      temporalStatus: "Started",
+      progressPercent: 0,
+      progressMessage: "Queued for API worker.",
+      revision: 2,
+    });
+    expect(presented.components.schemas.BackgroundTaskTriggerRequest.properties.context.example).toBe(
+      "Run this now and focus on high-risk accounts.",
+    );
+    expect(presented.components.schemas.BackgroundTaskRun.properties.slug.example).toBe("daily-summary");
+    expect(presented.paths["/v1/background-tasks"].post.requestBody.content["application/json"].example.slug).toBe(
+      "daily-summary",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
