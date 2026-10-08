@@ -2473,7 +2473,7 @@ func enrichEntitySchemas(schemas obj) {
 		"run_id":               {"description": "Cloud-visible id for a mirrored run.", "example": "run-20260604-210000"},
 		"previous_run_id":      {"description": "Previous run id when this run was created by retry.", "example": "run-20260604-205000"},
 		"local_run_id":         {"description": "Actual desktop run id when different from run_id, especially after claiming a queued remote trigger.", "example": "local-run-42"},
-		"trigger":              {"description": "Trigger source for a task run.", "enum": []any{"manual", "cron", "window", "event"}, "example": "manual"},
+		"trigger":              {"description": "Trigger source for a task run.", "enum": []any{"manual", "cron", "window", "event", "retry"}, "example": "manual"},
 		"status":               {"description": "Background task run lifecycle state.", "enum": []any{"queued", "running", "succeeded", "failed", "stopped"}, "example": "succeeded"},
 		"executor":             {"description": "Execution backend that owns this run.", "enum": []any{"desktop", "api"}, "example": "api"},
 		"requested_context":    {"description": "Optional context supplied by a remote trigger request.", "example": "Run this now and focus on high-risk accounts."},
