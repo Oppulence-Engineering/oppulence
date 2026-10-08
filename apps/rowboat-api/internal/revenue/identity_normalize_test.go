@@ -693,6 +693,104 @@ func TestRelationshipSearchFindsTheSheetMailWords(t *testing.T) {
 	assertCompanyQuery("date")
 }
 
+func TestRelationshipSearchFindsGmailLinkedDetails(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	addThread := func(rel *ent.Relationship, id string) {
+		t.Helper()
+		if _, err := f.client.MailThread.Create().
+			SetUser(f.user).SetProviderThreadID(id).
+			SetSubject("Harbor note").SetMessageCount(1).
+			SetRelationship(rel).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	quiet := makeCompany("Link Quiet")
+	one := makeCompany("Link One")
+	two := makeCompany("Link Two")
+	three := makeCompany("Link Three")
+	sourced := makeCompany("Link Sourced")
+	_ = quiet
+	addThread(one, "link-one")
+	addThread(two, "link-two-a")
+	addThread(two, "link-two-b")
+	addThread(three, "link-three-a")
+	addThread(three, "link-three-b")
+	addThread(three, "link-three-c")
+	addThread(sourced, "link-sourced")
+	obs, err := f.client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(sourced).
+		SetSource("desktop_note").SetExternalID("link-sourced-obs").
+		SetEventType("note").SetOccurredAt(now).SetReceivedAt(now).
+		SetContentHash("link-sourced-obs").
+		Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.RelationshipAssertion.Create().
+		SetWorkspace(ws).SetUser(f.user).SetRelationship(sourced).SetObservation(obs).
+		SetDimension("lifecycle").SetValue("prospect").
+		SetSourceType("source_fact").SetValidFrom(now).
+		SetValueSchemaVersion(relationshipAssertionValueSchemaVersion).
+		SetProjectorCompatVersion(relationshipProjectorVersion).
+		SetSupportingObservationIds([]string{}).
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery(
+		"1 Gmail thread is linked. Health and status still need a clearer source.",
+		"Link One",
+	)
+	assertCompanyQuery(
+		"2 Gmail threads are linked. Health and status still need a clearer source.",
+		"Link Two",
+	)
+	assertCompanyQuery(
+		"3 Gmail threads are linked. Health and status still need a clearer source.",
+		"Link Three",
+	)
+	assertCompanyQuery(
+		"Health and status still need a clearer source.",
+		"Link One", "Link Two", "Link Three",
+	)
+	assertCompanyQuery("Gmail thread is linked", "Link One")
+	assertCompanyQuery("Gmail threads are linked", "Link Two", "Link Three")
+	assertCompanyQuery("clearer")
+	assertCompanyQuery("linked")
+}
+
 func TestRelationshipSearchFindsTheEmptySheetSentences(t *testing.T) {
 	f := newFixture(t)
 	makeCompany := func(name string) *ent.Relationship {
