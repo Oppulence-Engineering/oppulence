@@ -1016,6 +1016,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if counted := relationshipSheetSuggestionCountMatch(needle, searchedAt); counted != nil {
 			parts = append(parts, counted)
 		}
+
+		if earlier := relationshipSheetEarlierPageMatch(needle); earlier != nil {
+			parts = append(parts, earlier)
+		}
 		if privacy := relationshipSheetPrivacyMatch(needle); privacy != nil {
 			parts = append(parts, privacy)
 		}
@@ -4199,6 +4203,53 @@ func writeContradictionCueCount(b *sql.Builder, s *sql.Selector) {
 	b.WriteString(" = 'open' AND ")
 	writeContradictionSideCount(b, s)
 	b.WriteString(" >= 2)")
+}
+
+// The sheet asks for the rest of a list once the first page is full.
+// Activity and mail use 50. Changes use 2. Focused review uses the
+// observation page.
+const (
+	relationshipActivityPage      = 50
+	relationshipCommunicationPage = 50
+	relationshipChangePage        = 2
+)
+
+// relationshipSheetEarlierPageMatch matches the buttons that load the next
+// page. A full first page does not print the button.
+func relationshipSheetEarlierPageMatch(needle string) predicate.Relationship {
+	switch needle {
+	case "show earlier evidence":
+		return relationshipRowCountAbove(relationshipobservation.Table, relationshipobservation.RelationshipColumn, intelligenceObservationPage, false)
+	case "show earlier activity":
+		return relationshipRowCountAbove(relationshipobservation.Table, relationshipobservation.RelationshipColumn, relationshipActivityPage, false)
+	case "show earlier mail and meetings":
+		return relationshipRowCountAbove(communicationinteraction.Table, communicationinteraction.RelationshipColumn, relationshipCommunicationPage, true)
+	case "show earlier changes":
+		return relationshipRowCountAbove(relationshipstatesnapshot.Table, relationshipstatesnapshot.RelationshipColumn, relationshipChangePage, false)
+	default:
+		return nil
+	}
+}
+
+func relationshipRowCountAbove(table, column string, n int, visibleOnly bool) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(table)
+			b.WriteString(" AS counted WHERE counted.")
+			b.WriteString(column)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			if visibleOnly {
+				b.WriteString(" AND counted.")
+				b.WriteString(communicationinteraction.FieldDeleted)
+				b.WriteString(" = ")
+				b.Arg(false)
+			}
+			b.WriteString(") > ")
+			b.Arg(n)
+		}))
+	})
 }
 
 // relationshipSheetSuggestionMatch matches suggestion titles the sheet prints
