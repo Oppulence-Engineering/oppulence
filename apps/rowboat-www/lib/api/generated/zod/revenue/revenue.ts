@@ -1018,8 +1018,8 @@ export const GetRevenueActionAudit404Response = zod
   );
 
 /**
- * Dismisses the action with a reason label and records the dismissed outcome.
- * @summary Dismiss an action
+ * Dismiss removes this follow-up from the queue and stores the reason.
+ * @summary Dismiss
  */
 export const DismissRevenueActionParams = zod.object({
   actionId: zod.uuid().describe("Action id."),

@@ -4242,6 +4242,26 @@ describe("API reference document", () => {
     expect(JSON.stringify(post)).not.toContain("acta_");
   });
 
+  it("samples the follow-up Dismiss removes", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const post = presented.paths["/v1/revenue-actions/{actionId}/dismiss"].post;
+    expect(post.summary).toBe("Dismiss");
+    expect(post.operationId).toBe("dismissRevenueAction");
+    expect(post.description).toBe("Dismiss removes this follow-up from the queue and stores the reason.");
+    const action = post.parameters.find((parameter: { name: string }) => parameter.name === "actionId");
+    expect(action.example).toBe("1a8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    expect(post.requestBody.content["application/json"].example).toEqual({ reason: "not_relevant" });
+    const example = post.responses["200"].content["application/json"].example;
+    expect(example.queueStatus).toBe("dismissed");
+    expect(example.dismissReason).toBe("not_relevant");
+    expect(example.relationshipName).toBe("Acme");
+    expect(example.approvedAt).toBeUndefined();
+    expect(presented.components.schemas.RevenueAction.properties.dismissReason.example).toBe(
+      "not_relevant",
+    );
+    expect(JSON.stringify(post)).not.toContain("acta_");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

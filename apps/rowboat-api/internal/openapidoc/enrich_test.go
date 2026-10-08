@@ -5993,6 +5993,66 @@ func normalizedConfirmDelete(t *testing.T, value any) any {
 	return out
 }
 
+func TestDismissSamplesTheFollowUp(t *testing.T) {
+	spec := obj{"paths": obj{}, "components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertDismiss(t, spec)
+}
+
+func assertDismiss(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	post := asObj(asObj(paths["/v1/revenue-actions/{actionId}/dismiss"])["post"])
+	if post["summary"] != "Dismiss" || post["operationId"] != "dismissRevenueAction" || post["description"] != dismissDescription {
+		t.Fatalf("dismiss operation: summary=%#v description=%#v id=%#v", post["summary"], post["description"], post["operationId"])
+	}
+	params, _ := post["parameters"].([]any)
+	if len(params) != 1 {
+		t.Fatalf("dismiss parameters: %#v", post["parameters"])
+	}
+	action := asObj(params[0])
+	if action["name"] != "actionId" || action["example"] != dismissActionID || asObj(action["schema"])["example"] != dismissActionID {
+		t.Fatalf("dismiss action: %#v", action)
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
+	if asObj(request["example"])["reason"] != dismissReason {
+		t.Fatalf("dismiss request: %#v", request["example"])
+	}
+	responses := asObj(post["responses"])
+	if asObj(responses["200"])["description"] != "The follow-up is dismissed." {
+		t.Fatalf("dismiss response: %#v", responses["200"])
+	}
+	ok := asObj(asObj(asObj(responses["200"])["content"])["application/json"])
+	if !reflect.DeepEqual(normalizedDismiss(t, ok["example"]), normalizedDismiss(t, dismissedAction())) {
+		t.Fatalf("dismiss example: %#v", ok["example"])
+	}
+	stored := asObj(asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueAction"])["properties"])["dismissReason"])
+	if stored["example"] != dismissReason {
+		t.Fatalf("stored dismiss reason: %#v", stored)
+	}
+	raw, err := json.Marshal(post)
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded := string(raw)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "approvedAt") {
+		t.Fatalf("dismiss looks live: %s", encoded)
+	}
+}
+
+func normalizedDismiss(t *testing.T, value any) any {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out any
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)

@@ -2610,8 +2610,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Dismiss an action
-     * @description Dismisses the action with a reason label and records the dismissed outcome.
+     * Dismiss
+     * @description Dismiss removes this follow-up from the queue and stores the reason.
      */
     post: operations["dismissRevenueAction"];
     delete?: never;
@@ -11185,7 +11185,7 @@ export interface components {
         | "manual";
       /**
        * @description Dismissal reason label.
-       * @example already_handled
+       * @example not_relevant
        */
       dismissReason?: string;
       /**
@@ -24318,7 +24318,10 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Action id. */
+        /**
+         * @description Action id.
+         * @example 1a8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         actionId: string;
       };
       cookie?: never;
@@ -24328,25 +24331,62 @@ export interface operations {
       content: {
         /**
          * @example {
-         *       "reason": "already_handled"
+         *       "reason": "not_relevant"
          *     }
          */
         "application/json": {
           /**
            * @description Reason label.
-           * @example already_handled
+           * @example not_relevant
            */
           reason?: string;
         };
       };
     };
     responses: {
-      /** @description Dismissed action. */
+      /** @description The follow-up is dismissed. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "actionType": "warm_follow_up",
+           *       "approvalStatus": "pending",
+           *       "channel": "email",
+           *       "createdAt": "2026-07-12T12:00:00Z",
+           *       "detector": "waiting_on_me",
+           *       "dismissReason": "not_relevant",
+           *       "evidence": [
+           *         {
+           *           "excerpt": "We are concerned security could delay renewal.",
+           *           "externalEvidenceRefs": [
+           *             "timestamp:12000-16000"
+           *           ],
+           *           "id": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *           "occurredAt": "2026-07-31T14:00:00Z",
+           *           "source": "meeting",
+           *           "sourceRecordId": "oppulence:session-42:claim:claim-risk"
+           *         }
+           *       ],
+           *       "executionMode": "draft",
+           *       "executionOwner": "rowboat",
+           *       "executionStatus": "pending",
+           *       "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "policyStatus": "pending",
+           *       "priorityScore": 82,
+           *       "proposedSubject": "Following up as promised",
+           *       "queueStatus": "dismissed",
+           *       "reason": "They asked for a follow-up in July.",
+           *       "recipientEmail": "buyer@example.com",
+           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "relationshipName": "Acme",
+           *       "revision": 1,
+           *       "revisionHash": "sha256:ab12cd34ef567890",
+           *       "updatedAt": "2026-07-15T16:05:00Z"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueAction"];
         };
       };
