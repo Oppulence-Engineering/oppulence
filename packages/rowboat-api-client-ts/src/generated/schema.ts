@@ -1414,8 +1414,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Start Google OAuth consent
-     * @description Creates a one-time state ticket bound to the authenticated Rowboat user and a PKCE S256 verifier, then returns the Google consent URL for the desktop to open.
+     * Connect Google
+     * @description Connect Google starts Gmail and Calendar authorization. The request asks for commitments, a web return, and the connections page. This server has not configured Google sign-in, so the request is refused.
      */
     post: operations["startGoogleOAuth"];
     delete?: never;
@@ -18888,33 +18888,56 @@ export interface operations {
   };
   startGoogleOAuth: {
     parameters: {
-      query?: never;
+      query?: {
+        /**
+         * @description Google access Connect Google asks for.
+         * @example commitments
+         */
+        profile?: string;
+        /**
+         * @description Where the browser comes back.
+         * @example web
+         */
+        return?: string;
+        /**
+         * @description Page Connect Google returns to.
+         * @example /app/settings?settings=connections
+         */
+        return_path?: string;
+      };
       header?: never;
       path?: never;
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Bound Google authorization URL. */
+      /** @description Google authorization address. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "authorizeUrl": "https://accounts.google.com/o/oauth2/v2/auth?..."
-           *     }
-           */
           "application/json": {
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description Google authorization address.
+             */
             authorizeUrl: string;
           };
         };
       };
       401: components["responses"]["401"];
       500: components["responses"]["500"];
-      502: components["responses"]["502"];
+      /** @description Google sign-in is not configured. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /** @example <!doctype html><meta charset=utf-8><title>Oppulence</title><p style="font:14px system-ui;margin:3rem">Google sign-in isn't configured on the server yet.</p> */
+          "text/html": string;
+        };
+      };
     };
   };
   searchHubSpot: {

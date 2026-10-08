@@ -1774,12 +1774,7 @@ func addGoogleOAuthPaths(paths obj) {
 			"500": responseRef("500"),
 		}),
 	}
-	paths["/v1/google-oauth/start"] = obj{"post": operation("Google OAuth", "Start Google OAuth consent", "Creates a one-time state ticket bound to the authenticated Rowboat user and a PKCE S256 verifier, then returns the Google consent URL for the desktop to open.", "startGoogleOAuth", bearer(), nil, nil, obj{
-		"200": jsonResponse("Bound Google authorization URL.", obj{"type": "object", "required": []any{"authorizeUrl"}, "properties": obj{"authorizeUrl": obj{"type": "string", "format": "uri"}}}, obj{"authorizeUrl": "https://accounts.google.com/o/oauth2/v2/auth?..."}),
-		"401": responseRef("401"),
-		"500": responseRef("500"),
-		"502": responseRef("502"),
-	})}
+	paths["/v1/google-oauth/start"] = connectGooglePath()
 	paths["/oauth/google/callback"] = obj{"get": operation("Google OAuth", "Handle Google OAuth callback", "Google redirect target. Exchanges the authorization code server-side using the sealed PKCE verifier, parks the token bundle under the provider-bound state ticket, and returns an HTML page that deep-links back to the desktop.", "handleGoogleOAuthCallback", nil, []any{
 		queryParam("state", "Opaque user-bound state ticket minted by /v1/google-oauth/start.", true, stringSchema("State ticket.", "state_abc123")),
 		queryParam("code", "Authorization code returned by Google.", false, stringSchema("Authorization code.", "4/0AfJoh...")),

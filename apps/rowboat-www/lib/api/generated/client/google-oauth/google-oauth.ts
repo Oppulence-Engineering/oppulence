@@ -21,6 +21,7 @@ import type {
   N503Response,
   OAuthTokenBundle,
   StartGoogleOAuth200,
+  StartGoogleOAuthParams,
 } from "../model";
 
 export type handleGoogleOAuthCallbackResponse200 = {
@@ -352,7 +353,7 @@ export type startGoogleOAuthResponse500 = {
 };
 
 export type startGoogleOAuthResponse502 = {
-  data: N502Response;
+  data: string;
   status: 502;
 };
 
@@ -368,24 +369,42 @@ export type startGoogleOAuthResponseError = (
 export type startGoogleOAuthResponse =
   startGoogleOAuthResponseSuccess | startGoogleOAuthResponseError;
 
-export const getStartGoogleOAuthUrl = () => {
-  return `/v1/google-oauth/start`;
+export const getStartGoogleOAuthUrl = (params?: StartGoogleOAuthParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/google-oauth/start?${stringifiedParams}`
+    : `/v1/google-oauth/start`;
 };
 
 /**
- * Creates a one-time state ticket bound to the authenticated Rowboat user and a PKCE S256 verifier, then returns the Google consent URL for the desktop to open.
- * @summary Start Google OAuth consent
+ * Connect Google starts Gmail and Calendar authorization. The request asks for commitments, a web return, and the connections page. This server has not configured Google sign-in, so the request is refused.
+ * @summary Connect Google
  */
 export const startGoogleOAuth = async (
+  params?: StartGoogleOAuthParams,
   options?: RequestInit,
 ): Promise<startGoogleOAuthResponse> => {
-  const res = await fetch(getStartGoogleOAuthUrl(), {
+  const res = await fetch(getStartGoogleOAuthUrl(params), {
     ...options,
     method: "POST",
   });
 
+  const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: startGoogleOAuthResponse["data"] = body ? JSON.parse(body) : {};
+  const data: startGoogleOAuthResponse["data"] = body
+    ? contentType.includes("json")
+      ? JSON.parse(body)
+      : body
+    : {};
   return { data, status: res.status, headers: res.headers } as startGoogleOAuthResponse;
 };

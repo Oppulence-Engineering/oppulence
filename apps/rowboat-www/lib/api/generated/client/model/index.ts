@@ -644,6 +644,7 @@ export * from "./slackWorkspace";
 export * from "./slackWorkspacesResponse";
 export * from "./snoozeRevenueActionBody";
 export * from "./startGoogleOAuth200";
+export * from "./startGoogleOAuthParams";
 export * from "./startRevenueLeakScanBody";
 export * from "./startSlackOAuth200";
 export * from "./streamAgentSessionParams";
