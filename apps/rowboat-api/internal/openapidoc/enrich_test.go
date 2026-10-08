@@ -5035,6 +5035,56 @@ func assertActionReject(t *testing.T, spec obj) {
 	if asObj(example)["status"] != "rejected" || asObj(example)["reason"] != actionRejectReason {
 		t.Fatalf("reject result: %#v", example)
 	}
+
+	assertActionPending(t, spec)
+}
+
+func TestActionPending(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertActionPending(t, spec)
+}
+
+func assertActionPending(t *testing.T, spec obj) {
+	t.Helper()
+	get := asObj(asObj(asObj(spec["paths"])["/v1/action-proposals"])["get"])
+	if get["summary"] != "List pending approvals" || get["operationId"] != "listPendingActionProposals" || get["description"] != actionPendingDescription {
+		t.Fatalf("pending operation: summary=%#v id=%#v description=%#v", get["summary"], get["operationId"], get["description"])
+	}
+	if get["requestBody"] != nil {
+		t.Fatalf("pending list has no body: %#v", get["requestBody"])
+	}
+	params, ok := get["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("pending parameters: %#v", get["parameters"])
+	}
+	param := asObj(params[0])
+	if param["name"] != "status" || param["in"] != "query" || param["required"] != false {
+		t.Fatalf("pending query: %#v", param)
+	}
+	if asObj(param["schema"])["example"] != actionPendingStatus {
+		t.Fatalf("pending status example: %#v", param["schema"])
+	}
+	example := asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(actionPendingExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("pending example:\n%s\nwant:\n%s", got, want)
+	}
+	encoded := string(got)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, "approvedAt") || strings.Contains(encoded, "token") || strings.Contains(encoded, "rejected") {
+		t.Fatalf("pending example is not still waiting: %s", encoded)
+	}
+	proposals, ok := asObj(example)["proposals"].([]any)
+	if !ok || len(proposals) != 1 || asObj(proposals[0])["status"] != actionPendingStatus {
+		t.Fatalf("pending proposals: %#v", example)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

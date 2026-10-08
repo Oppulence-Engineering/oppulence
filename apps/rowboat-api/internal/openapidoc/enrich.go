@@ -1057,6 +1057,8 @@ func addRuntimePaths(paths obj) {
 	addActionApprovePath(paths)
 
 	addActionRejectPath(paths)
+
+	addActionPendingPath(paths)
 	addCloudEventPaths(paths)
 	addRevenuePaths(paths)
 	addActionPaths(paths)
