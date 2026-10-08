@@ -2872,8 +2872,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get current revenue workspace
-     * @description Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.
+     * Workspace
+     * @description Connected sources loads this workspace. The request sends no filter. This workspace is local, active, and the sending check is off, so the organization and sending workspace are omitted.
      */
     get: operations["getRevenueWorkspace"];
     put?: never;
@@ -23949,12 +23949,20 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Current workspace. */
+      /** @description Local workspace. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "id": "0b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "mode": "local",
+           *       "preflightAvailable": false,
+           *       "status": "active"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueWorkspace"];
         };
       };

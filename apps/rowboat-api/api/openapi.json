@@ -31581,18 +31581,24 @@
     },
     "/v1/revenue-workspaces/current": {
       "get": {
-        "description": "Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.",
+        "description": "Connected sources loads this workspace. The request sends no filter. This workspace is local, active, and the sending check is off, so the organization and sending workspace are omitted.",
         "operationId": "getRevenueWorkspace",
         "responses": {
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "id": "0b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "mode": "local",
+                  "preflightAvailable": false,
+                  "status": "active"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueWorkspace"
                 }
               }
             },
-            "description": "Current workspace."
+            "description": "Local workspace."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -31603,8 +31609,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Get current revenue workspace",
-        "tags": ["Revenue"]
+        "summary": "Workspace",
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-workspaces/current/communication-privacy-rules": {
