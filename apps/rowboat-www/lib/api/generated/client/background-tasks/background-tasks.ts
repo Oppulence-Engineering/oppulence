@@ -1285,8 +1285,8 @@ export const getListBackgroundTaskRunEventsUrl = (
 };
 
 /**
- * Returns durable log/progress events for a run ordered by seq. Use afterSeq for incremental polling of desktop and API-worker progress events.
- * @summary List task run logs
+ * Open the transcript reads the cloud run api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b on daily-summary. The first read sends no cursor. The stored page starts at sequence 0 with the message API worker claimed the run.
+ * @summary Open the transcript
  */
 export const listBackgroundTaskRunEvents = async (
   slug: string,

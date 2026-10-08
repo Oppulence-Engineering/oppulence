@@ -1683,8 +1683,8 @@ func addBackgroundTaskPaths(paths obj) {
 		}),
 	}
 	paths["/v1/background-tasks/{slug}/runs/{runId}/events"] = obj{
-		"get": operation("Background Tasks", "List task run logs", "Returns durable log/progress events for a run ordered by seq. Use afterSeq for incremental polling of desktop and API-worker progress events.", "listBackgroundTaskRunEvents", bearer(), append(append(slugParam(), runIDParam()...), queryParam("afterSeq", "Optional sequence cursor. When provided, only events with seq greater than this value are returned.", false, intSchema("Last seen event seq.", 0))), nil, obj{
-			"200": jsonResponse("Run log/progress events.", ref("BackgroundTaskRunEventsResponse"), obj{"events": []any{backgroundTaskRunEventExample()}}),
+		"get": operation("Background Tasks", "Open the transcript", "Open the transcript reads the cloud run api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b on daily-summary. The first read sends no cursor. The stored page starts at sequence 0 with the message API worker claimed the run.", "listBackgroundTaskRunEvents", bearer(), append(append(slugParam(), pathParam("runId", "Cloud-visible run id for a background task run.", stringSchema("Run id.", "api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b"))), queryParam("afterSeq", "Optional sequence cursor. The first read omits this. When provided, only events with seq greater than this value are returned.", false, obj{"type": "integer", "minimum": 0, "description": "Sequence cursor."})), nil, obj{
+			"200": jsonResponse("Stored transcript.", ref("BackgroundTaskRunEventsResponse"), documentedTranscriptPage()),
 			"401": responseRef("401"),
 			"404": responseRef("404"),
 			"500": responseRef("500"),
@@ -3178,6 +3178,21 @@ func backgroundTaskRunEventExample() obj {
 		"event":      obj{"type": "temporal.completed", "summary": "ok"},
 		"receivedAt": "2026-06-04T21:02:05Z",
 	}
+}
+
+func documentedTranscriptPage() obj {
+	return obj{"events": []any{obj{
+		"id":   "c6227adb-924f-46f1-b324-1b10d080a661",
+		"seq":  0,
+		"type": "temporal.running",
+		"event": obj{
+			"message":    "API worker claimed the run.",
+			"progress":   5,
+			"type":       "temporal.running",
+			"workflowId": "background-task/user/daily-summary/api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b",
+		},
+		"receivedAt": "2026-06-04T21:01:00Z",
+	}}}
 }
 
 func ref(name string) obj {

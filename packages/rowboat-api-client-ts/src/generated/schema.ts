@@ -700,8 +700,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * List task run logs
-     * @description Returns durable log/progress events for a run ordered by seq. Use afterSeq for incremental polling of desktop and API-worker progress events.
+     * Open the transcript
+     * @description Open the transcript reads the cloud run api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b on daily-summary. The first read sends no cursor. The stored page starts at sequence 0 with the message API worker claimed the run.
      */
     get: operations["listBackgroundTaskRunEvents"];
     put?: never;
@@ -15620,7 +15620,7 @@ export interface operations {
   listBackgroundTaskRunEvents: {
     parameters: {
       query?: {
-        /** @description Optional sequence cursor. When provided, only events with seq greater than this value are returned. */
+        /** @description Optional sequence cursor. The first read omits this. When provided, only events with seq greater than this value are returned. */
         afterSeq?: number;
       };
       header?: never;
@@ -15634,7 +15634,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Run log/progress events. */
+      /** @description Stored transcript. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -15645,13 +15645,15 @@ export interface operations {
            *       "events": [
            *         {
            *           "event": {
-           *             "summary": "ok",
-           *             "type": "temporal.completed"
+           *             "message": "API worker claimed the run.",
+           *             "progress": 5,
+           *             "type": "temporal.running",
+           *             "workflowId": "background-task/user/daily-summary/api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b"
            *           },
-           *           "id": "06227adb-924f-46f1-b324-1b10d080a660",
-           *           "receivedAt": "2026-06-04T21:02:05Z",
-           *           "seq": 1,
-           *           "type": "temporal.completed"
+           *           "id": "c6227adb-924f-46f1-b324-1b10d080a661",
+           *           "receivedAt": "2026-06-04T21:01:00Z",
+           *           "seq": 0,
+           *           "type": "temporal.running"
            *         }
            *       ]
            *     }

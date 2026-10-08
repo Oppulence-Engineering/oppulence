@@ -2571,6 +2571,8 @@ func assertApprovalToken(t *testing.T, spec obj) {
 	}
 
 	assertOpenConversation(t, spec)
+
+	assertOpenTranscript(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -3902,6 +3904,57 @@ func assertOpenConversation(t *testing.T, spec obj) {
 	page := asObj(asObj(schemas["AgentSessionEventsResponse"])["properties"])
 	if mustJSON(asObj(page["nextSeq"])["example"]) != "500" {
 		t.Fatalf("shared nextSeq example changed: %#v", page["nextSeq"])
+	}
+}
+
+func TestOpenTranscriptReadsTheCloudRun(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertOpenTranscript(t, spec)
+}
+
+func assertOpenTranscript(t *testing.T, spec obj) {
+	t.Helper()
+	path := asObj(asObj(spec["paths"])["/v1/background-tasks/{slug}/runs/{runId}/events"])
+	get := asObj(path["get"])
+	if get["summary"] != "Open the transcript" {
+		t.Fatalf("summary: %#v", get["summary"])
+	}
+	description, _ := get["description"].(string)
+	if !strings.Contains(description, "sends no cursor") || !strings.Contains(description, "API worker claimed the run.") || !strings.Contains(description, "api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b") {
+		t.Fatalf("description: %s", description)
+	}
+	var afterSeq, runID obj
+	for _, raw := range get["parameters"].([]any) {
+		param := asObj(raw)
+		switch param["name"] {
+		case "afterSeq":
+			afterSeq = asObj(param["schema"])
+		case "runId":
+			runID = asObj(param["schema"])
+		}
+	}
+	if _, ok := afterSeq["example"]; ok || afterSeq["type"] != "integer" {
+		t.Fatalf("afterSeq example must be omitted: %#v", afterSeq)
+	}
+	if runID["example"] != "api-trigger-4a31958c-3a0a-4cb2-9361-ea563cd0477b" {
+		t.Fatalf("run id: %#v", runID["example"])
+	}
+	example := asObj(asObj(asObj(asObj(asObj(get["responses"])["200"])["content"])["application/json"])["example"])
+	if _, ok := example["nextSeq"]; ok {
+		t.Fatalf("first page names another page: %#v", example["nextSeq"])
+	}
+	if mustJSON(example) != mustJSON(documentedTranscriptPage()) {
+		t.Fatalf("transcript page: %s", mustJSON(example))
+	}
+	post := asObj(path["post"])
+	if post["summary"] != "Append task run logs" {
+		t.Fatalf("append summary changed: %#v", post["summary"])
+	}
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	event := asObj(asObj(schemas["BackgroundTaskRunEvent"])["properties"])
+	if asObj(event["type"])["example"] != "temporal.completed" || mustJSON(asObj(event["seq"])["example"]) != "1" {
+		t.Fatalf("shared event example changed: %#v", event)
 	}
 }
 

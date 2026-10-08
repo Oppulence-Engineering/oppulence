@@ -8,7 +8,8 @@
 
 export type ListBackgroundTaskRunEventsParams = {
   /**
-   * Last seen event seq.
+   * Sequence cursor.
+   * @minimum 0
    */
   afterSeq?: number;
 };
