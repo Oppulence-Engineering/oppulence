@@ -891,6 +891,15 @@ func restoreRevenueSchemaOverrides(schemas obj) {
 	setSchemaReason(schemas, "RelationshipIdentityDecision", stringSchema("Decision reason.", "Confirmed the provider records are the same account."))
 	setSchemaReason(schemas, "RelationshipIdentityLineage", stringSchema("Reason.", "Confirmed duplicate."))
 	setSchemaReason(schemas, "RelationshipLineageEvent", stringSchema("Why this identity change was recorded.", "Confirmed the provider records are the same account."))
+	// A connected account is live. The shared status sample "active" is not
+	// one of the values this field allows, and Connected sources does not show it.
+	if source := asObj(schemas["RelationshipSourceStatus"]); source != nil {
+		if properties := asObj(source["properties"]); properties != nil {
+			if status := asObj(properties["status"]); status != nil {
+				status["example"] = "live"
+			}
+		}
+	}
 }
 
 func setSchemaReason(schemas obj, name string, field obj) {

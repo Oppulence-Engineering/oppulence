@@ -12090,7 +12090,7 @@
               "reconnect_required",
               "disconnected"
             ],
-            "example": "active",
+            "example": "live",
             "type": "string"
           },
           "syncStartedAt": {

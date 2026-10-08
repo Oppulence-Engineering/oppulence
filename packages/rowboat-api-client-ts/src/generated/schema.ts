@@ -11462,7 +11462,7 @@ export interface components {
       sourceAccountId: string;
       /**
        * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
-       * @example active
+       * @example live
        * @enum {string}
        */
       status:
