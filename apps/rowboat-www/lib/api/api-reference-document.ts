@@ -17,7 +17,7 @@ export const API_REFERENCE_DESCRIPTION =
  * words as the rest of the product, and operations stay attached by rewriting
  * their tag list to the same names.
  */
-const API_REFERENCE_TAGS: Record<string, { name: string; description: string }> = {
+const API_REFERENCE_TAGS: Partial<Record<string, { name: string; description: string }>> = {
   Auth: {
     name: "Sign-in",
     description: "Sign-in before this workspace has a session.",
@@ -171,7 +171,7 @@ type ApiReferenceDocument = {
   externalDocs?: { description?: string; url?: string };
   servers?: Array<{ url?: string; description?: string }>;
   tags?: Array<{ name?: string; description?: string }>;
-  paths?: Record<string, Record<string, ApiReferenceOperation | undefined>>;
+  paths?: Record<string, Record<string, ApiReferenceOperation | undefined> | undefined>;
 };
 
 function presentedTagName(name: string): string {

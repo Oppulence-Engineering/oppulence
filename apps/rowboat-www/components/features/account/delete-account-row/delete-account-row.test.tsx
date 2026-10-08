@@ -7,6 +7,8 @@ import type { ComponentProps } from "react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { sessionHandoff } from "@/lib/storage/session-handoff";
+
 const dashboardFetch = vi.fn();
 vi.mock("@/lib/auth/client", () => ({
   dashboardFetch: (...args: unknown[]) => dashboardFetch(...args),
@@ -43,6 +45,7 @@ const CHALLENGE = {
 };
 const PROOF = { stepUpToken: "proof-token", expiresAt: "2026-09-15T21:35:00Z" };
 const CHALLENGE_KEY = "oppulence.account-deletion-challenge";
+const challengeHandoff = sessionHandoff(CHALLENGE_KEY);
 
 function json(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -65,14 +68,14 @@ beforeEach(() => {
     configurable: true,
     value: { ...window.location, assign },
   });
-  window.sessionStorage.clear();
+  challengeHandoff.clear();
 });
 
 afterEach(() => {
   cleanup();
   dashboardFetch.mockReset();
   assign.mockReset();
-  window.sessionStorage.clear();
+  challengeHandoff.clear();
 });
 
 async function openSheet(props?: ComponentProps<typeof DeleteAccountRow>) {
@@ -97,8 +100,12 @@ describe("deletion consequence copy", () => {
     expect(deletionSubscriptionCopy(null, null)).toBe(
       "This account is on the Free plan. Nothing is billed, so there is no subscription to cancel.",
     );
-    expect(deletionSubscriptionCopy("pro", "canceled")).toMatch(/cancel your subscription immediately/i);
-    expect(deletionSubscriptionCopy("free", "past_due")).toMatch(/cancel your subscription immediately/i);
+    expect(deletionSubscriptionCopy("pro", "canceled")).toMatch(
+      /cancel your subscription immediately/i,
+    );
+    expect(deletionSubscriptionCopy("free", "past_due")).toMatch(
+      /cancel your subscription immediately/i,
+    );
     expect(deletionRowDescription("free", "active")).toBe(
       "Permanently delete your account and your data.",
     );
@@ -157,7 +164,9 @@ describe("DeleteAccountRow", () => {
           "This account is on the Free plan. Nothing is billed, so there is no subscription to cancel.",
         ),
       ).toBeInTheDocument();
-      expect(within(dialog).queryByText(/cancel your subscription immediately/i)).not.toBeInTheDocument();
+      expect(
+        within(dialog).queryByText(/cancel your subscription immediately/i),
+      ).not.toBeInTheDocument();
       expect(within(dialog).queryByText(/not charged again/i)).not.toBeInTheDocument();
       expect(within(dialog).getByText(/disconnect your connected accounts/i)).toBeInTheDocument();
       expect(
@@ -171,7 +180,9 @@ describe("DeleteAccountRow", () => {
         ),
       ).toBeInTheDocument();
       expect(within(dialog).queryByText(/Google/)).not.toBeInTheDocument();
-      expect(screen.getByText("Permanently delete your account and your data.")).toBeInTheDocument();
+      expect(
+        screen.getByText("Permanently delete your account and your data."),
+      ).toBeInTheDocument();
       expect(screen.queryByText(/and your subscription/i)).not.toBeInTheDocument();
       expect(dashboardFetch).not.toHaveBeenCalled();
     });
@@ -229,14 +240,7 @@ describe("DeleteAccountRow", () => {
           ],
         }),
       );
-      render(
-        <DeleteAccountRow
-          billingStatus="active"
-          plan="free"
-          userId="user-1"
-          watchMembers
-        />,
-      );
+      render(<DeleteAccountRow billingStatus="active" plan="free" userId="user-1" watchMembers />);
       await user.click(screen.getByRole("button", { name: "Delete account" }));
       expect(
         await screen.findByText("This workspace is only yours. Deleting the account deletes it."),
@@ -255,7 +259,9 @@ describe("DeleteAccountRow", () => {
           ],
         }),
       );
-      render(<DeleteAccountRow plan="starter" billingStatus="active" userId="user-1" watchMembers />);
+      render(
+        <DeleteAccountRow plan="starter" billingStatus="active" userId="user-1" watchMembers />,
+      );
       await user.click(screen.getByRole("button", { name: "Delete account" }));
       expect(
         await screen.findByText("A shared workspace goes to another member. Their data stays."),
@@ -344,17 +350,16 @@ describe("DeleteAccountRow", () => {
       expect(assign).toHaveBeenCalledWith(
         "/api/auth/workos/login?return_to=%2Fapp%2Fsettings%3Fsettings%3Daccount&max_age=0",
       );
-      expect(JSON.parse(window.sessionStorage.getItem(CHALLENGE_KEY) ?? "")).toEqual({
+      expect(challengeHandoff.peek()).toEqual({
         challengeId: CHALLENGE.challengeId,
       });
-      expect(dashboardFetch.mock.calls.map(([called]) => called)).not.toContain("/api/rowboat/v1/me");
+      expect(dashboardFetch.mock.calls.map(([called]) => called)).not.toContain(
+        "/api/rowboat/v1/me",
+      );
     });
 
     it("deletes as soon as the Google sign-in comes back", async () => {
-      window.sessionStorage.setItem(
-        CHALLENGE_KEY,
-        JSON.stringify({ challengeId: CHALLENGE.challengeId }),
-      );
+      challengeHandoff.write({ challengeId: CHALLENGE.challengeId });
       dashboardFetch.mockImplementation(async (url: string) => {
         if (String(url).includes("/verify")) return json(200, PROOF);
         return json(200, RECEIPT);
@@ -362,7 +367,7 @@ describe("DeleteAccountRow", () => {
       render(<DeleteAccountRow />);
 
       expect(await screen.findByText(DELETED_TITLE)).toBeInTheDocument();
-      expect(window.sessionStorage.getItem(CHALLENGE_KEY)).toBeNull();
+      expect(challengeHandoff.peek()).toBeNull();
       const [verifyUrl, verifyInit] = dashboardFetch.mock.calls[0] as [string, RequestInit];
       expect(verifyUrl).toBe(
         `/api/rowboat/v1/me/deletion-challenges/${CHALLENGE.challengeId}/verify`,
@@ -378,10 +383,7 @@ describe("DeleteAccountRow", () => {
     });
 
     it("does not delete when the returned sign-in cannot be verified", async () => {
-      window.sessionStorage.setItem(
-        CHALLENGE_KEY,
-        JSON.stringify({ challengeId: CHALLENGE.challengeId }),
-      );
+      challengeHandoff.write({ challengeId: CHALLENGE.challengeId });
       dashboardFetch.mockResolvedValue(json(403, { code: "step_up_required" }));
       render(<DeleteAccountRow />);
 

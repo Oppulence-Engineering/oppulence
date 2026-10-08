@@ -17,6 +17,7 @@ import {
 
 import { dashboardFetch } from "@/lib/auth/client";
 import { planLabel } from "@/lib/product/plan-label";
+import { sessionHandoff } from "@/lib/storage/session-handoff";
 
 const ACCOUNT_DELETION_ERRORS: Record<string, string> = {
   workspace_successor_required:
@@ -40,6 +41,7 @@ const ACCOUNT_DELETION_FALLBACK =
  * later page, or another tab reading storage, cannot replay the deletion.
  */
 const CHALLENGE_STORAGE_KEY = "oppulence.account-deletion-challenge";
+const challengeHandoff = sessionHandoff(CHALLENGE_STORAGE_KEY);
 const REAUTH_RETURN_TO = "/app/settings?settings=account";
 
 const ReceiptSchema = z.object({
@@ -233,36 +235,39 @@ export function DeleteAccountRow({
     }
   }, []);
 
-  const verifyStoredChallenge = React.useCallback(async (id: string) => {
-    setPending(true);
-    setError(null);
-    setOpen(true);
-    setConfirmation("DELETE");
-    setPhase("deleting");
-    try {
-      const response = await dashboardFetch(
-        `/api/rowboat/v1/me/deletion-challenges/${encodeURIComponent(id)}/verify`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
-        },
-      );
-      const body: unknown = await response.json().catch(() => null);
-      const parsed = StepUpSchema.safeParse(body);
-      if (!response.ok || !parsed.success) {
+  const verifyStoredChallenge = React.useCallback(
+    async (id: string) => {
+      setPending(true);
+      setError(null);
+      setOpen(true);
+      setConfirmation("DELETE");
+      setPhase("deleting");
+      try {
+        const response = await dashboardFetch(
+          `/api/rowboat/v1/me/deletion-challenges/${encodeURIComponent(id)}/verify`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({}),
+          },
+        );
+        const body: unknown = await response.json().catch(() => null);
+        const parsed = StepUpSchema.safeParse(body);
+        if (!response.ok || !parsed.success) {
+          resetIntent();
+          setError(deletionError(problemCode(body)));
+          return;
+        }
+        await deleteAccount(parsed.data.stepUpToken);
+      } catch {
         resetIntent();
-        setError(deletionError(problemCode(body)));
-        return;
+        setError(ACCOUNT_DELETION_FALLBACK);
+      } finally {
+        setPending(false);
       }
-      await deleteAccount(parsed.data.stepUpToken);
-    } catch {
-      resetIntent();
-      setError(ACCOUNT_DELETION_FALLBACK);
-    } finally {
-      setPending(false);
-    }
-  }, [deleteAccount]);
+    },
+    [deleteAccount],
+  );
 
   React.useEffect(() => {
     if (workspaceShareProp !== undefined || !watchMembers) return;
@@ -290,19 +295,10 @@ export function DeleteAccountRow({
 
   React.useEffect(() => {
     if (resumeStarted.current) return;
-    const raw = window.sessionStorage.getItem(CHALLENGE_STORAGE_KEY);
-    if (!raw) return;
+    const stored = challengeHandoff.take(StoredChallengeSchema);
+    if (!stored) return;
     resumeStarted.current = true;
-    window.sessionStorage.removeItem(CHALLENGE_STORAGE_KEY);
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      return;
-    }
-    const stored = StoredChallengeSchema.safeParse(parsed);
-    if (!stored.success) return;
-    void verifyStoredChallenge(stored.data.challengeId);
+    void verifyStoredChallenge(stored.challengeId);
   }, [verifyStoredChallenge]);
 
   async function startChallenge(method: "oauth_reauth" | "email_otp") {
@@ -335,7 +331,7 @@ export function DeleteAccountRow({
     // The id lets the settings page finish verification after AuthKit returns.
     // max_age=0 forces a real sign-in through AuthKit, including an enrolled
     // second factor. It must not jump straight to Google.
-    window.sessionStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify({ challengeId: id }));
+    challengeHandoff.write({ challengeId: id });
     const params = new URLSearchParams({
       return_to: REAUTH_RETURN_TO,
       max_age: "0",
@@ -368,7 +364,11 @@ export function DeleteAccountRow({
       const parsed = StepUpSchema.safeParse(body);
       if (!response.ok || !parsed.success) {
         const codeName = problemCode(body);
-        if (codeName === "too_many_attempts" || codeName === "step_up_not_found" || codeName === "step_up_expired") {
+        if (
+          codeName === "too_many_attempts" ||
+          codeName === "step_up_not_found" ||
+          codeName === "step_up_expired"
+        ) {
           resetIntent();
         }
         setError(deletionError(codeName));
@@ -463,7 +463,10 @@ export function DeleteAccountRow({
                   />
                 </label>
                 {phase === "email" ? (
-                  <label className="flex flex-col gap-2 text-sm font-medium" htmlFor="delete-account-code">
+                  <label
+                    className="flex flex-col gap-2 text-sm font-medium"
+                    htmlFor="delete-account-code"
+                  >
                     Verification code
                     <Input
                       autoComplete="one-time-code"
@@ -490,7 +493,10 @@ export function DeleteAccountRow({
                     Deleting…
                   </Button>
                 ) : phase === "email" ? (
-                  <Button disabled={code.trim().length < 6 || pending} onClick={() => void verifyCode()}>
+                  <Button
+                    disabled={code.trim().length < 6 || pending}
+                    onClick={() => void verifyCode()}
+                  >
                     {pending ? "Checking…" : "Verify and delete"}
                   </Button>
                 ) : (

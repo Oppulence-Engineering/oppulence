@@ -12,7 +12,12 @@ import { useThemePreference } from "@/components/features/dashboard/app-shell/ap
 function ThemeProbe() {
   const { setTheme } = useThemePreference();
   return (
-    <button onClick={() => setTheme("dark")} type="button">
+    <button
+      onClick={() => {
+        setTheme("dark");
+      }}
+      type="button"
+    >
       Use dark
     </button>
   );
@@ -21,6 +26,8 @@ function ThemeProbe() {
 describe("useThemePreference", () => {
   beforeEach(() => {
     document.documentElement.className = "font-sans light";
+    // next-themes owns this storage; the test resets and reads it directly.
+    // eslint-disable-next-line oppulence-web/no-raw-browser-storage
     window.localStorage.clear();
     vi.stubGlobal(
       "matchMedia",
@@ -54,6 +61,7 @@ describe("useThemePreference", () => {
 
     expect(document.documentElement.classList.contains("dark")).toBe(true);
     expect(document.documentElement.classList.contains("light")).toBe(false);
+    // eslint-disable-next-line oppulence-web/no-raw-browser-storage
     expect(window.localStorage.getItem("theme")).toBe("dark");
   });
 });

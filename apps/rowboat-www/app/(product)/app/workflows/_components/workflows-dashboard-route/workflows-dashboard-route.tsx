@@ -22,7 +22,7 @@ export type WorkflowsDashboardRouteProps = ComponentPropsWithoutRef<"section"> &
 
 export function WorkflowsDashboardRoute({
   className,
-  focus,
+  focus: _serverFocus,
   ...props
 }: WorkflowsDashboardRouteProps) {
   const { selectedResource: resource } = useDashboardChatController();
@@ -30,7 +30,7 @@ export function WorkflowsDashboardRoute({
   // through nuqs, which does not rerun that server page, so the shell title
   // would change while this canvas stayed on the workflow editor.
   const { workflowFocus } = useProductRouteState();
-  const activeFocus = workflowFocus || focus;
+  const activeFocus = workflowFocus;
   const isTaskResource = resource?.kind === "task" || resource?.kind === "taskrun";
   return (
     <section

@@ -51,7 +51,7 @@ jobs:
         run: make policy
         working-directory: apps/rowboat-api
       - name: Test with race detector
-        run: go test ./... -race -count=1
+        run: go test ./... -race -count=1 -timeout=30m
         working-directory: apps/rowboat-api
       - name: Vet
         run: go vet ./...

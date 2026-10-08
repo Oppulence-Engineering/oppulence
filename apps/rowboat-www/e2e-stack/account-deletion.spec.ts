@@ -1,6 +1,12 @@
 import { execFileSync } from "node:child_process";
 
-import { expect, test, type APIRequestContext, type BrowserContext, type Page } from "@playwright/test";
+import {
+  expect,
+  test,
+  type APIRequestContext,
+  type BrowserContext,
+  type Page,
+} from "@playwright/test";
 import { z } from "zod";
 
 /**
@@ -94,7 +100,9 @@ async function seedSubscription(
  */
 async function proxiedMe(): Promise<{ status: number; body: unknown }> {
   return page.evaluate(async () => {
-    const response = await fetch("/api/rowboat/v1/me");
+    // Playwright runs this in the page, so it is the browser's own request.
+    // eslint-disable-next-line oppulence-web/no-direct-api-fetch
+    const response = await fetch("/api/rowboat/v1/me", { signal: AbortSignal.timeout(10_000) });
     let body: unknown = null;
     try {
       body = await response.json();
@@ -136,9 +144,7 @@ async function openDeleteSheet() {
 async function confirmDeletion() {
   await page.getByLabel("Type DELETE to confirm").fill("DELETE");
   await page.getByRole("button", { name: "Permanently delete account" }).click();
-  await expect(
-    page.getByText("Your account is deleted").or(page.getByRole("alert")),
-  ).toBeVisible();
+  await expect(page.getByText("Your account is deleted").or(page.getByRole("alert"))).toBeVisible();
 }
 
 test.beforeAll(async ({ browser }, testInfo) => {

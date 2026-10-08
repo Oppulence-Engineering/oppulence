@@ -15,10 +15,13 @@ const VIEWER_URL = "https://unpkg.com/@scalar/api-reference@1.72.2/dist/browser/
 
 const VIEWER_SHA256 = "b6564fd22226b587bbb7b02cfa6910b1e0f52b2e4b9e2cdaa950145ca574f5e7";
 
+/** A slow CDN fails the request instead of holding the route open. */
+const VIEWER_TIMEOUT_MS = 10_000;
+
 let cached: Promise<Uint8Array<ArrayBuffer>> | undefined;
 
 function loadViewer(): Promise<Uint8Array<ArrayBuffer>> {
-  cached ??= fetch(VIEWER_URL)
+  cached ??= fetch(VIEWER_URL, { signal: AbortSignal.timeout(VIEWER_TIMEOUT_MS) })
     .then(async (response) => {
       if (!response.ok) {
         throw new Error(`API reference viewer responded ${response.status}`);

@@ -19,6 +19,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAgentSummaries } from "@/hooks/queries/use-agents";
 import { useConnectors } from "@/hooks/queries/use-connectors";
 import { useGoogleConnectionStatus } from "@/hooks/queries/use-google-oauth";
+import { getReadyz } from "@/lib/api/generated/client/system/system";
 import { shownDefaultAgent } from "@/hooks/dashboard/use-agent-catalog";
 import { comboboxFilterName } from "@/lib/a11y/combobox-filter-name";
 import { visibleAgentLabel } from "@/lib/agents/agent-schemas";
@@ -260,6 +261,9 @@ export function useBrowserOrigin(): string {
   return React.useSyncExternalStore(subscribeBrowserOrigin, readBrowserOrigin, () => "");
 }
 
+/** A readiness check that hangs reads as unavailable instead of spinning. */
+const READINESS_TIMEOUT_MS = 5000;
+
 function WorkspaceConnection({ organizationId }: { organizationId?: string }) {
   const copy = sessionWorkspaceCopy(organizationId);
   const [state, setState] = React.useState<"checking" | "ready" | "unavailable">("checking");
@@ -267,8 +271,11 @@ function WorkspaceConnection({ organizationId }: { organizationId?: string }) {
   const check = React.useCallback(async () => {
     setState("checking");
     try {
-      const response = await fetch("/readyz", { cache: "no-store" });
-      setState(response.ok ? "ready" : "unavailable");
+      const response = await getReadyz({
+        cache: "no-store",
+        signal: AbortSignal.timeout(READINESS_TIMEOUT_MS),
+      });
+      setState(response.status === 200 ? "ready" : "unavailable");
     } catch {
       setState("unavailable");
     }
