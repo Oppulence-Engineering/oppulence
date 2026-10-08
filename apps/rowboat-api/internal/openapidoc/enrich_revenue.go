@@ -218,11 +218,14 @@ func addRevenueSchemas(schemas obj) {
 
 	movedObjects := arraySchema("All moved graph objects.", stringSchema("Object ref.", "relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"))
 	movedObjects["example"] = []any{"relationship-observation:6b8dfa9b-a7b2-46ea-982c-622a914c00e5"}
+
+	movedIdentities := arraySchema("Affected identity ids.", stringSchema("Identity id.", "1b8dfa9b-a7b2-46ea-982c-622a914c00e5"))
+	movedIdentities["example"] = []any{"1b8dfa9b-a7b2-46ea-982c-622a914c00e5"}
 	schemas["RelationshipIdentityLineage"] = objectSchema("Immutable graph lineage produced by an identity decision.", obj{
 		"id": uuidSchema("Lineage event id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "kind": stringSchema("Lineage kind.", "merged"),
 		"actorId": uuidSchema("User who recorded this change.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"), "reason": stringSchema("Reason.", "Confirmed duplicate."),
 		"observationIds":        arraySchema("Moved observation ids.", stringSchema("Observation id.", "observation:1")),
-		"identityIds":           arraySchema("Affected identity ids.", stringSchema("Identity id.", "identity:1")),
+		"identityIds":           movedIdentities,
 		"movedObjectRefs":       arraySchema("All moved graph objects.", stringSchema("Object ref.", "relationship-observation:1")),
 		"beforeRelationshipIds": withExample(arraySchema("Relationship ids before.", stringSchema("Relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5")), []any{"9c8dfa9b-a7b2-46ea-982c-622a914c00e5", "3a196c5e-b10e-46cb-a177-7c001f7be573"}),
 		"afterRelationshipIds":  withExample(arraySchema("Relationship ids after.", stringSchema("Relationship id.", "3a196c5e-b10e-46cb-a177-7c001f7be573")), []any{"3a196c5e-b10e-46cb-a177-7c001f7be573"}),

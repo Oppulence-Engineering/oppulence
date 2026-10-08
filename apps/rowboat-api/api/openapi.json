@@ -10774,7 +10774,7 @@
           },
           "id": {
             "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "example": "1b8dfa9b-a7b2-46ea-982c-622a914c00e5",
             "format": "uuid",
             "type": "string"
           },
@@ -11077,9 +11077,12 @@
           },
           "identityIds": {
             "description": "Affected identity ids.",
+            "example": [
+              "1b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+            ],
             "items": {
               "description": "Identity id.",
-              "example": "identity:1",
+              "example": "1b8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "type": "string"
             },
             "type": "array"

@@ -774,6 +774,20 @@ describe("API reference document", () => {
     );
   });
 
+  it("names the identity a lineage row moved", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const identityID = "1b8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    const lineage = presented.components.schemas.RelationshipIdentityLineage.properties;
+    expect(lineage.identityIds).toMatchObject({
+      description: "Affected identity ids.",
+      example: [identityID],
+    });
+    expect(lineage.identityIds.items.example).toBe(identityID);
+    expect(JSON.stringify(lineage.identityIds)).not.toContain("identity:1");
+    expect(lineage.id.example).not.toBe(identityID);
+    expect(presented.components.schemas.RelationshipIdentity.properties.id.example).toBe(identityID);
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

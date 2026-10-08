@@ -1361,6 +1361,48 @@ func assertMovedObjectRef(t *testing.T, schemas obj) {
 	if asObj(evidence["observationId"])["example"] != "6b8dfa9b-a7b2-46ea-982c-622a914c00e5" {
 		t.Fatalf("mission control observation id changed: %#v", evidence["observationId"])
 	}
+
+	assertLineageIdentity(t, schemas)
+}
+
+func TestLineageNamesTheIdentity(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{
+		"RelationshipIdentity": obj{"type": "object", "properties": obj{
+			"id": obj{"type": "string", "format": "uuid", "description": "Stable UUID primary key.", "example": "123e4567-e89b-12d3-a456-426614174000"},
+		}},
+	}}}
+	Enrich(spec)
+	assertLineageIdentity(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertLineageIdentity(t *testing.T, schemas obj) {
+	t.Helper()
+	lineage := asObj(schemas["RelationshipIdentityLineage"])
+	if lineage == nil {
+		return
+	}
+	const identityID = "1b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	props := asObj(lineage["properties"])
+	ids := asObj(props["identityIds"])
+	if !reflect.DeepEqual(ids["example"], []any{identityID}) {
+		t.Fatalf("identity ids: %#v", ids["example"])
+	}
+	if asObj(ids["items"])["example"] != identityID {
+		t.Fatalf("identity id item: %#v", ids["items"])
+	}
+	if ids["description"] != "Affected identity ids." {
+		t.Fatalf("identity description changed: %#v", ids["description"])
+	}
+	if id := asObj(props["id"]); id["example"] == identityID {
+		t.Fatalf("lineage id reused the identity id: %#v", id["example"])
+	}
+	identity := asObj(schemas["RelationshipIdentity"])
+	if identity == nil {
+		t.Fatal("relationship identity schema missing")
+	}
+	if asObj(asObj(identity["properties"])["id"])["example"] != identityID {
+		t.Fatalf("relationship identity id: %#v", asObj(identity["properties"])["id"])
+	}
 }
 
 func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {
