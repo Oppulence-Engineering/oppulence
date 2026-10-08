@@ -975,6 +975,10 @@ func (s *Service) ListRelationshipsFiltered(
 		if direction := relationshipSheetActivityMailDirectionMatch(needle); direction != nil {
 			parts = append(parts, direction)
 		}
+
+		if count := relationshipSheetActivityCountMatch(needle); count != nil {
+			parts = append(parts, count)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -2081,7 +2085,7 @@ func writeActivityFactTrim(b *sql.Builder, s *sql.Selector, facts, key string) {
 		b.WriteString("', ''))")
 		return
 	}
-	b.WriteString("trim(coalesce(json_extract(")
+	b.WriteString("trim(coalesce(CAST(json_extract(")
 	b.WriteString(facts)
 	b.WriteString(", '$.")
 	b.WriteString(key)
@@ -10785,4 +10789,36 @@ func writeDepartureKindShown(b *sql.Builder, s *sql.Selector, facts string) {
 // A direction that repeats the row summary stays hidden.
 func relationshipSheetActivityMailDirectionMatch(needle string) predicate.Relationship {
 	return relationshipSheetActivityFactMatch(needle, "direction: ", "direction")
+}
+
+// relationshipSheetActivityCountMatch is "Message Count: 4", "Outbound Count: 2",
+// or "Inbound Count: 1" on an opened activity. Gmail stores those as numbers.
+// The mail row's "4 messages" is a different sentence. A count that repeats
+// the row summary stays hidden.
+func relationshipSheetActivityCountMatch(needle string) predicate.Relationship {
+	counts := []struct{ marker, key string }{
+		{"message count: ", "message_count"},
+		{"outbound count: ", "outbound_count"},
+		{"inbound count: ", "inbound_count"},
+	}
+	var preds []predicate.RelationshipObservation
+	for _, count := range counts {
+		index := strings.Index(needle, count.marker)
+		if index < 0 {
+			continue
+		}
+		value := strings.TrimSpace(needle[index+len(count.marker):])
+		if value == "" {
+			continue
+		}
+		preds = append(preds, observationFactLine(count.key, value))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return relationship.HasObservationsWith(preds[0])
+	default:
+		return relationship.HasObservationsWith(relationshipobservation.Or(preds...))
+	}
 }
