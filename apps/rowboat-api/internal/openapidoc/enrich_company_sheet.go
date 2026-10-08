@@ -13,6 +13,11 @@ const (
 	openedCompanyReason        = "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation."
 	openedCompanyTouchedAt     = "2026-07-25T15:00:00Z"
 	openedCompanyProjectedAt   = "2026-07-25T16:00:00Z"
+	// The sheet counts eight account details. Four have a source. With no
+	// completed sync, the stored completeness sentence is this one, and the
+	// sheet prints "4 account details still need a source."
+	openedCompanyGapExplanation = "No source connection has completed its first useful sync."
+	openedCompanyDescription    = "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The sheet says 4 account details still need a source."
 )
 
 func openedCompanyParams() []any {
@@ -120,17 +125,21 @@ func openedCompanyMissionControl(empty []any) obj {
 		"changedSinceReview":           false,
 		"changes":                      empty,
 		"evidence": obj{
-			"lifecycle":  openedCompanyDimension("lifecycle", "evaluation"),
-			"health":     openedCompanyDimension("health", "needs_attention"),
-			"engagement": openedCompanyDimension("engagement", "declining"),
-			"sentiment":  openedCompanyDimension("sentiment", "unknown"),
+			"lifecycle":   openedCompanyDimension("lifecycle", "evaluation"),
+			"health":      openedCompanyDimension("health", "needs_attention"),
+			"engagement":  openedCompanyDimension("engagement", "declining"),
+			"sentiment":   openedCompanyDimension("sentiment", "unknown"),
+			"summary":     openedCompanyMissingDimension("summary", ""),
+			"next_action": openedCompanyMissingDimension("next_action", ""),
+			"risk":        openedCompanyMissingDimension("risk", empty),
+			"milestone":   openedCompanyMissingDimension("milestone", empty),
 		},
 		"completeness": obj{
 			"status":                    "partial",
-			"explanation":               openedCompanyReason,
+			"explanation":               openedCompanyGapExplanation,
 			"externalActionSafe":        false,
 			"unresolvedIdentityCount":   0,
-			"missingMaterialDimensions": empty,
+			"missingMaterialDimensions": []any{"milestone", "next_action", "risk", "summary"},
 			"sources":                   empty,
 		},
 		"pending": obj{
@@ -141,6 +150,17 @@ func openedCompanyMissionControl(empty []any) obj {
 			"reconciliation": 0,
 		},
 		"capabilities": obj{},
+	}
+}
+
+func openedCompanyMissingDimension(dimension string, value any) obj {
+	return obj{
+		"dimension":     dimension,
+		"value":         value,
+		"supported":     false,
+		"fresh":         true,
+		"missingReason": "No active assertion supports this value at the response asOf boundary.",
+		"evidence":      []any{},
 	}
 }
 

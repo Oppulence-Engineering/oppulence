@@ -28442,7 +28442,7 @@
     },
     "/v1/relationships/{relationshipId}": {
       "get": {
-        "description": "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.",
+        "description": "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The sheet says 4 account details still need a source.",
         "operationId": "getRelationship",
         "parameters": [
           {
@@ -28506,9 +28506,9 @@
                     "changedSinceReview": false,
                     "changes": [],
                     "completeness": {
-                      "explanation": "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation.",
+                      "explanation": "No source connection has completed its first useful sync.",
                       "externalActionSafe": false,
-                      "missingMaterialDimensions": [],
+                      "missingMaterialDimensions": ["milestone", "next_action", "risk", "summary"],
                       "sources": [],
                       "status": "partial",
                       "unresolvedIdentityCount": 0
@@ -28561,6 +28561,30 @@
                         "supported": true,
                         "value": "evaluation"
                       },
+                      "milestone": {
+                        "dimension": "milestone",
+                        "evidence": [],
+                        "fresh": true,
+                        "missingReason": "No active assertion supports this value at the response asOf boundary.",
+                        "supported": false,
+                        "value": []
+                      },
+                      "next_action": {
+                        "dimension": "next_action",
+                        "evidence": [],
+                        "fresh": true,
+                        "missingReason": "No active assertion supports this value at the response asOf boundary.",
+                        "supported": false,
+                        "value": ""
+                      },
+                      "risk": {
+                        "dimension": "risk",
+                        "evidence": [],
+                        "fresh": true,
+                        "missingReason": "No active assertion supports this value at the response asOf boundary.",
+                        "supported": false,
+                        "value": []
+                      },
                       "sentiment": {
                         "dimension": "sentiment",
                         "evidence": [
@@ -28575,6 +28599,14 @@
                         "fresh": true,
                         "supported": true,
                         "value": "unknown"
+                      },
+                      "summary": {
+                        "dimension": "summary",
+                        "evidence": [],
+                        "fresh": true,
+                        "missingReason": "No active assertion supports this value at the response asOf boundary.",
+                        "supported": false,
+                        "value": ""
                       }
                     },
                     "pending": {

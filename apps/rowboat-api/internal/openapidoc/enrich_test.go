@@ -816,6 +816,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	assertLineageIdentity(t, schemas)
 	assertAttentionEvidence(t, schemas)
 	assertReviewEvidence(t, schemas)
+	assertOpenedCompany(t, spec)
 }
 
 func TestConversationReviewNamesTheItem(t *testing.T) {
@@ -4108,7 +4109,7 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	if operation["summary"] != "Open a company" {
 		t.Fatalf("summary: %#v", operation["summary"])
 	}
-	if operation["description"] != "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises." {
+	if operation["description"] != openedCompanyDescription {
 		t.Fatalf("description: %#v", operation["description"])
 	}
 	params, ok := operation["parameters"].([]any)
@@ -4148,6 +4149,24 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	}
 	if asObj(asObj(mission["evidence"])["lifecycle"])["supported"] != true {
 		t.Fatalf("lifecycle evidence: %#v", asObj(mission["evidence"])["lifecycle"])
+	}
+	completeness := asObj(mission["completeness"])
+	if completeness["explanation"] != openedCompanyGapExplanation || completeness["status"] != "partial" {
+		t.Fatalf("completeness: %#v", completeness)
+	}
+	missing, err := json.Marshal(completeness["missingMaterialDimensions"])
+	if err != nil || string(missing) != `["milestone","next_action","risk","summary"]` {
+		t.Fatalf("missing details: %s %v", missing, err)
+	}
+	evidence := asObj(mission["evidence"])
+	for _, dimension := range []string{"summary", "next_action", "risk", "milestone"} {
+		item := asObj(evidence[dimension])
+		if item["supported"] != false || item["missingReason"] != "No active assertion supports this value at the response asOf boundary." {
+			t.Fatalf("%s evidence: %#v", dimension, item)
+		}
+	}
+	if len(evidence) != 8 {
+		t.Fatalf("evidence count: %d", len(evidence))
 	}
 	if asObj(asObj(media["schema"])["properties"])["emailThreads"] == nil {
 		t.Fatal("opened company schema omits email threads")

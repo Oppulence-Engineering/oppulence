@@ -3340,7 +3340,7 @@ describe("API reference document", () => {
     const companyID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5";
     expect(operation.summary).toBe("Open a company");
     expect(operation.description).toBe(
-      "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.",
+      "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The sheet says 4 account details still need a source.",
     );
     expect(operation.parameters).toEqual([
       expect.objectContaining({
@@ -3371,6 +3371,32 @@ describe("API reference document", () => {
     expect(example.missionControl.stateVersion).toBe(1);
     expect(example.missionControl.evidence.lifecycle.supported).toBe(true);
     expect(example.missionControl.evidence.lifecycle.value).toBe("evaluation");
+    expect(example.missionControl.completeness.explanation).toBe(
+      "No source connection has completed its first useful sync.",
+    );
+    expect(example.missionControl.completeness.missingMaterialDimensions).toEqual([
+      "milestone",
+      "next_action",
+      "risk",
+      "summary",
+    ]);
+    expect(Object.keys(example.missionControl.evidence).sort()).toEqual([
+      "engagement",
+      "health",
+      "lifecycle",
+      "milestone",
+      "next_action",
+      "risk",
+      "sentiment",
+      "summary",
+    ]);
+    for (const dimension of ["summary", "next_action", "risk", "milestone"]) {
+      expect(example.missionControl.evidence[dimension]).toMatchObject({
+        dimension,
+        supported: false,
+        missingReason: "No active assertion supports this value at the response asOf boundary.",
+      });
+    }
   });
 
   it("samples the company Mark as reviewed sends", () => {

@@ -1585,7 +1585,7 @@ export const getGetRelationshipUrl = (relationshipId: string) => {
 };
 
 /**
- * The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises.
+ * The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The sheet says 4 account details still need a source.
  * @summary Open a company
  */
 export const getRelationship = async (
