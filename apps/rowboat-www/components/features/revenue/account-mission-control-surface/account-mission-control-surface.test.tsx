@@ -5,7 +5,7 @@ import "@testing-library/jest-dom/vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 const source = fs.readFileSync(path.join(import.meta.dirname, "account-mission-control-surface.tsx"), "utf8");
@@ -16,6 +16,7 @@ import {
   overduePromiseCount,
   commitmentPreviewRemainder,
   commitmentTimelineDue,
+  companyPromiseEmptyCopy,
   commitmentTimelineLabel,
   commitmentTimelineStatus,
   mapCommitmentsToAccountTimeline,
@@ -46,7 +47,8 @@ describe("AccountMissionControlSurface", () => {
 
     const surface = screen.getByRole("region", { name: "Acme" });
     expect(surface).toHaveAttribute("data-slot", "account-mission-control-surface");
-    expect(screen.getByText("No commitments recorded for this company yet.")).toBeInTheDocument();
+    expect(companyPromiseEmptyCopy()).toBe("No promises recorded for this company yet.");
+    expect(screen.getByText("No promises recorded for this company yet.")).toBeInTheDocument();
   });
 
   it("names the promises still off the overview", () => {
@@ -149,7 +151,7 @@ describe("AccountMissionControlSurface", () => {
   });
 
   it("shows the due day on the company promise", () => {
-    render(
+    const view = render(
       <AccountMissionControlSurface
         accountName="Quay Due"
         showHeader={false}
@@ -165,7 +167,8 @@ describe("AccountMissionControlSurface", () => {
         ]}
       />,
     );
-    expect(screen.getByText("Due: Oct 20, 2026")).toBeVisible();
+    expect(view.getByText("Due: Oct 20, 2026")).toBeVisible();
+    expect(within(view.container).queryByText(companyPromiseEmptyCopy())).not.toBeInTheDocument();
     expect(source).toContain("commitmentTimelineDue(commitment.dueAt)");
     expect(source).toContain("{item.due}");
   });
