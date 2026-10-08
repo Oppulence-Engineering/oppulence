@@ -349,6 +349,8 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 
 	assertSlackMessageTime(t, schemas)
 
+	assertSessionCost(t, schemas)
+
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
 	reason := asObj(evidenceProperties["reason"])
@@ -527,6 +529,8 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	assertVoiceKeyTimes(t, schemas)
 
 	assertSlackMessageTime(t, schemas)
+
+	assertSessionCost(t, schemas)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -859,6 +863,48 @@ func assertSlackMessageTime(t *testing.T, schemas obj) {
 				}
 			}
 		}
+	}
+}
+
+func assertSessionCost(t *testing.T, schemas obj) {
+	t.Helper()
+	sessionCost := asObj(asObj(asObj(schemas["AgentSession"])["properties"])["cost_units"])
+	if sessionCost["description"] != "Credits used across this session." || !sameNumber(sessionCost["example"], 8) {
+		t.Fatalf("AgentSession.cost_units sampled a single request: %#v", sessionCost)
+	}
+	turnCost := asObj(asObj(asObj(schemas["AgentTurn"])["properties"])["cost_units"])
+	if turnCost["description"] != "Credits used during this turn." || !sameNumber(turnCost["example"], 8) {
+		t.Fatalf("AgentTurn.cost_units sampled a single request: %#v", turnCost)
+	}
+	for _, name := range []string{"LLMUsage", "LLMUsageHistory"} {
+		record := asObj(schemas[name])
+		if record == nil {
+			continue
+		}
+		properties := asObj(record["properties"])
+		if properties == nil {
+			continue
+		}
+		usageCost := asObj(properties["cost_units"])
+		if usageCost == nil {
+			continue
+		}
+		if usageCost["description"] != "Settled credit cost for the request." || !sameNumber(usageCost["example"], 8) {
+			t.Fatalf("%s.cost_units changed: %#v", name, usageCost)
+		}
+	}
+}
+
+func sameNumber(value any, want int) bool {
+	switch n := value.(type) {
+	case int:
+		return n == want
+	case int64:
+		return n == int64(want)
+	case float64:
+		return n == float64(want)
+	default:
+		return false
 	}
 }
 
