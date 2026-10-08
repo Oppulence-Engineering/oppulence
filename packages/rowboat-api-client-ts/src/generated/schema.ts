@@ -1668,6 +1668,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/objects/{resourceRef}/audit": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Audit trail
+     * @description Audit trail opens this object's proposal, approval, and execution. The page shows the proposal kind, the approval prefix, and the execution result.
+     */
+    get: operations["getObjectAudit"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/public/mutual-action-plan": {
     parameters: {
       query?: never;
@@ -19932,6 +19952,71 @@ export interface operations {
           "application/problem+json": components["schemas"]["ErrorEnvelope"];
         };
       };
+    };
+  };
+  getObjectAudit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /**
+         * @description The object Audit trail opens. Agent approvals sends the proposal target.
+         * @example conduit:invoice:inv_456
+         */
+        resourceRef: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Audit trail. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "entries": [
+           *         {
+           *           "proposal": {
+           *             "approvedAt": "2026-07-31T14:00:00Z",
+           *             "createdAt": "2026-07-31T14:00:00Z",
+           *             "executedAt": "2026-07-31T14:00:00Z",
+           *             "financial": false,
+           *             "id": "5f8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "kind": "conduit.dunning.advance",
+           *             "paramsJson": "{\"amount\":100,\"step\":2}",
+           *             "rationale": "Acme is 14 days overdue",
+           *             "resultRef": "conduit:step:step_1",
+           *             "status": "executed",
+           *             "target": "conduit:invoice:inv_456"
+           *           },
+           *           "tokens": [
+           *             {
+           *               "consumed": true,
+           *               "consumedAt": "2026-07-31T14:00:00Z",
+           *               "expiresAt": "2026-07-31T14:05:00Z",
+           *               "hashPrefix": "12b92895f861",
+           *               "issuedAt": "2026-07-31T14:00:00Z",
+           *               "paramsHash": "1e750183c74a18b46e872244bea860113d34dd38a8c7a87192b41553be26941d",
+           *               "stepUp": false
+           *             }
+           *           ]
+           *         }
+           *       ],
+           *       "resourceRef": "conduit:invoice:inv_456"
+           *     }
+           */
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      500: components["responses"]["500"];
     };
   };
   getPublicMutualActionPlan: {

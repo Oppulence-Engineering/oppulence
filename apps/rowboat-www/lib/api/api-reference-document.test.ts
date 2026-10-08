@@ -3464,6 +3464,40 @@ describe("API reference document", () => {
     });
   });
 
+  it("samples the trail Audit trail opens", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/objects/{resourceRef}/audit"].get;
+    expect(operation.summary).toBe("Audit trail");
+    expect(operation.operationId).toBe("getObjectAudit");
+    expect(operation.description).toBe(
+      "Audit trail opens this object's proposal, approval, and execution. The page shows the proposal kind, the approval prefix, and the execution result.",
+    );
+    expect(operation.requestBody).toBeUndefined();
+    expect(operation.parameters).toEqual([
+      expect.objectContaining({
+        name: "resourceRef",
+        example: "conduit:invoice:inv_456",
+      }),
+    ]);
+    const example = operation.responses["200"].content["application/json"].example;
+    expect(example.resourceRef).toBe("conduit:invoice:inv_456");
+    expect(example.entries[0].proposal).toMatchObject({
+      kind: "conduit.dunning.advance",
+      status: "executed",
+      rationale: "Acme is 14 days overdue",
+      resultRef: "conduit:step:step_1",
+      target: "conduit:invoice:inv_456",
+    });
+    expect(example.entries[0].tokens[0]).toMatchObject({
+      consumed: true,
+      stepUp: false,
+    });
+    expect(JSON.stringify(example)).not.toContain("acta_");
+    expect(presented.paths["/v1/public/mutual-action-plan"].get.summary).toBe(
+      "Open a scoped mutual action plan",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

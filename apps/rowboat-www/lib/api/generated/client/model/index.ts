@@ -292,6 +292,7 @@ export * from "./getCommunicationPolicy200";
 export * from "./getCommunicationPolicy200MetadataVisibility";
 export * from "./getConnectorBrokerJWKS200";
 export * from "./getConversationPolicy200";
+export * from "./getObjectAudit200";
 export * from "./getOpenAPI200";
 export * from "./getOpenPromisesReport200One";
 export * from "./getOpenPromisesReport200OneByAccount";
