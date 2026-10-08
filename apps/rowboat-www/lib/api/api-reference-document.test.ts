@@ -2043,6 +2043,19 @@ describe("API reference document", () => {
     });
   });
 
+  it("samples the chat approval Approve stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const approve = presented.paths["/v1/agent-sessions/{id}/approvals/{approvalId}"].post;
+    expect(approve.summary).toBe("Approve");
+    expect(approve.description).toContain("decision granted");
+    expect(approve.requestBody.content["application/json"].example).toEqual({ decision: "granted" });
+    expect(approve.responses["202"].content["application/json"].example).toEqual({
+      approvalId: "session_abc123/turn/0/approval/0",
+      decision: "granted",
+    });
+    expect(JSON.stringify(approve.requestBody)).not.toContain("resolvedBy");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

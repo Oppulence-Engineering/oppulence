@@ -16330,6 +16330,120 @@
         ]
       }
     },
+    "/v1/agent-sessions/{id}/approvals/{approvalId}": {
+      "post": {
+        "description": "Approve allows the paused chat action. It posts decision granted for approval session_abc123/turn/0/approval/0. The response repeats that approval and decision granted.",
+        "operationId": "approveAgentSession",
+        "parameters": [
+          {
+            "description": "Stable session id.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session id.",
+              "example": "session_abc123",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Approval id.",
+            "in": "path",
+            "name": "approvalId",
+            "required": true,
+            "schema": {
+              "description": "Approval id.",
+              "example": "session_abc123/turn/0/approval/0",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "decision": "granted"
+              },
+              "schema": {
+                "description": "Chat approval decision.",
+                "properties": {
+                  "decision": {
+                    "description": "Granted or denied.",
+                    "enum": [
+                      "granted",
+                      "denied"
+                    ],
+                    "example": "granted",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "decision"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Approval decision.",
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "approvalId": "session_abc123/turn/0/approval/0",
+                  "decision": "granted"
+                },
+                "schema": {
+                  "description": "Accepted approval.",
+                  "properties": {
+                    "approvalId": {
+                      "description": "Approval that was decided.",
+                      "example": "session_abc123/turn/0/approval/0",
+                      "type": "string"
+                    },
+                    "decision": {
+                      "description": "Decision that was stored.",
+                      "enum": [
+                        "granted",
+                        "denied"
+                      ],
+                      "example": "granted",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "approvalId",
+                    "decision"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Approval granted."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Approve",
+        "tags": [
+          "Agent Sessions"
+        ]
+      }
+    },
     "/v1/agent-sessions/{id}/events": {
       "get": {
         "description": "Returns ordered durable events used to reconstruct a conversation after navigation or reload.",

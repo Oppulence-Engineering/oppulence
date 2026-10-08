@@ -1111,6 +1111,19 @@ func documentedStoppedChat() obj {
 	}
 }
 
+const documentedChatApprovalID = "session_abc123/turn/0/approval/0"
+
+func documentedChatApprovalRequest() obj {
+	return obj{"decision": "granted"}
+}
+
+func documentedChatApproval() obj {
+	return obj{
+		"approvalId": documentedChatApprovalID,
+		"decision":   "granted",
+	}
+}
+
 func addAgentSessionPaths(paths obj) {
 	paths["/v1/agent-sessions"] = obj{
 		"get": operation("Agent Sessions", "List agent sessions", "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.", "listAgentSessions", bearer(), nil, nil, obj{
