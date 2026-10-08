@@ -381,6 +381,8 @@ export * from "./listBackgroundTaskRunsStatus";
 export * from "./listCloudEventsParams";
 export * from "./listCommitments200";
 export * from "./listCommitmentsParams";
+export * from "./listCommunicationPrivacyRules200";
+export * from "./listCommunicationPrivacyRules200RulesItem";
 export * from "./listConsoleResourcesParams";
 export * from "./listRelationshipAttention200";
 export * from "./listRelationshipAttentionParams";

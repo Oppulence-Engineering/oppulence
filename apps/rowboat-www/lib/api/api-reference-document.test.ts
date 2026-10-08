@@ -2769,6 +2769,20 @@ describe("API reference document", () => {
     });
   });
 
+  it("samples the page Protected or blocked addresses loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation =
+      presented.paths["/v1/revenue-workspaces/current/communication-privacy-rules"].get;
+    expect(operation.summary).toBe("Protected or blocked addresses");
+    expect(operation.description).toBe(
+      "Protected or blocked addresses loads this workspace's list. The request sends no filter. This workspace has no protected or blocked address, so the list is empty.",
+    );
+    expect(operation.parameters).toBeUndefined();
+    expect(operation.responses["200"].content["application/json"].example).toEqual({
+      rules: [],
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
