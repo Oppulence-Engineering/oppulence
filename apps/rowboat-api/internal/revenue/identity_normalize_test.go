@@ -5541,6 +5541,66 @@ func TestRelationshipSearchFindsEarlierChanges(t *testing.T) {
 	assertCompanyQuery("show")
 }
 
+func TestRelationshipSearchFindsEarlierActivity(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	create := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	record := func(row *ent.Relationship, count int) {
+		t.Helper()
+		now := time.Now().UTC()
+		for i := 0; i < count; i++ {
+			id := fmt.Sprintf("%s-%02d", row.DisplayName, i)
+			if _, err := f.client.RelationshipObservation.Create().
+				SetWorkspace(ws).SetUser(f.user).SetRelationship(row).
+				SetSource("user").SetExternalID(id).SetEventType("relationship.observed").
+				SetOccurredAt(now.Add(-time.Duration(i) * time.Minute)).SetReceivedAt(now).
+				SetSummary("A recorded note").SetContentHash(id).
+				Save(f.ctx); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	create("Quill North")
+	cedar := create("Cedar Slide")
+	record(cedar, 50)
+	aspen := create("Aspen Ledger")
+	record(aspen, 51)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Show earlier activity", "Aspen Ledger")
+	assertCompanyQuery("which companies should I show earlier activity", "Aspen Ledger")
+	assertCompanyQuery("Nothing recorded yet", "Quill North")
+	assertCompanyQuery("earlier")
+	assertCompanyQuery("show")
+}
+
 func TestRelationshipSearchFindsTheLastInteraction(t *testing.T) {
 	f := newFixture(t)
 	recent, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
