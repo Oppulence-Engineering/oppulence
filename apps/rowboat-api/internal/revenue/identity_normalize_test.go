@@ -5401,6 +5401,62 @@ func TestRelationshipSearchFindsEngagementAndSentiment(t *testing.T) {
 	assertBadge("Health · Not known", "Quill Atelier", "Lumen Packet")
 }
 
+func TestRelationshipSearchFindsTheStateAnswer(t *testing.T) {
+	f := newFixture(t)
+	makeCompany := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	stored := makeCompany("Quill North")
+	stage := makeCompany("Cedar Mark")
+	makeCompany("Birch Slide")
+	if _, err := f.client.Relationship.UpdateOneID(stored.ID).
+		SetHealth("needs_attention").
+		Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Health: Needs attention")
+	assertCompanyQuery("No supported answer yet.", "Quill North", "Cedar Mark", "Birch Slide")
+	if _, err := f.svc.CorrectRelationship(f.ctx, f.user, stored.ID, RelationshipCorrectionInput{
+		Dimension: "health", Value: "needs_attention", Reason: "The last note needs a reply.",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CorrectRelationship(f.ctx, f.user, stage.ID, RelationshipCorrectionInput{
+		Dimension: "lifecycle", Value: "prospect", Reason: "The buyer is a prospect.",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	assertCompanyQuery("Health: Needs attention", "Quill North")
+	assertCompanyQuery("Lifecycle: Prospect", "Cedar Mark")
+	assertCompanyQuery("which companies have health: needs attention", "Quill North")
+	assertCompanyQuery("Health: Healthy")
+	assertCompanyQuery("Engagement: Declining")
+	assertCompanyQuery("No supported answer yet.", "Birch Slide")
+}
+
 func TestRelationshipSearchFindsTheEnrichment(t *testing.T) {
 	f := newFixture(t)
 	austin, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
