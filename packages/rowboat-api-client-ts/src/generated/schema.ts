@@ -2333,7 +2333,7 @@ export interface paths {
     };
     /**
      * All companies
-     * @description All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention.
+     * @description All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention. The LinkedIn column opens the Acme company page.
      */
     get: operations["listRelationships"];
     put?: never;
@@ -23733,6 +23733,7 @@ export interface operations {
            *           "lastChangedAt": "2026-07-25T16:00:00Z",
            *           "lastTouchAt": "2026-07-25T15:00:00Z",
            *           "lifecycle": "evaluation",
+           *           "linkedinUrl": "https://www.linkedin.com/company/acme",
            *           "milestones": [],
            *           "peopleCount": 1,
            *           "projectedAt": "2026-07-25T16:00:00Z",
