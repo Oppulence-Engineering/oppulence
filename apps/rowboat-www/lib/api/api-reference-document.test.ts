@@ -2381,6 +2381,34 @@ describe("API reference document", () => {
     expect(JSON.stringify(example)).not.toContain("phone");
   });
 
+  it("shows the sent message Mail and meetings loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation =
+      presented.paths["/v1/relationships/{relationshipId}/communication-timeline"]?.get;
+    expect(operation?.summary).toBe("Mail and meetings");
+    expect(operation?.description).toContain("asks for the first 50");
+    expect(operation?.description).toContain("Follow up");
+    const limit = operation?.parameters?.find((parameter) => parameter.name === "limit");
+    expect(limit?.schema).toMatchObject({ example: 50 });
+    const before = operation?.parameters?.find((parameter) => parameter.name === "before");
+    expect(before?.schema).not.toHaveProperty("example");
+    const example = operation?.responses?.["200"]?.content?.["application/json"]?.example as {
+      hasMore?: boolean;
+      nextBefore?: string;
+      items?: Array<{ direction?: string; subject?: string; bodyLocked?: boolean; access?: { reason?: string } }>;
+    };
+    expect(example.hasMore).toBe(false);
+    expect(example.nextBefore).toBeUndefined();
+    expect(example.items?.[0]).toMatchObject({
+      direction: "outbound",
+      subject: "Follow up",
+      bodyLocked: false,
+      access: { reason: "mailbox_owner", body: true },
+    });
+    expect(JSON.stringify(example)).not.toContain("llm_settle");
+    expect(JSON.stringify(example)).not.toContain('"inbound"');
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

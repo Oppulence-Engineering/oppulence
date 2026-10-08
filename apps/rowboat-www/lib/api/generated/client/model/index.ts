@@ -129,7 +129,6 @@ export * from "./commitmentEventKind";
 export * from "./commitmentEventReason";
 export * from "./commitmentRegisterEntry";
 export * from "./communicationAccess";
-export * from "./communicationAccessReason";
 export * from "./communicationAttachment";
 export * from "./communicationInteraction";
 export * from "./communicationParticipant";

@@ -2,9 +2,11 @@ package revenue
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -75,6 +77,68 @@ func seedCommunicationInteraction(
 		t.Fatal(err)
 	}
 	return interaction, attachment
+}
+
+func TestMailAndMeetingsReturnsTheSentFollowUp(t *testing.T) {
+	f := newFixture(t)
+	rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Acme", AccountDomain: "example.com",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	occurred := time.Date(2026, 9, 17, 12, 0, 0, 0, time.UTC)
+	internal := auth.WithInternal(context.Background())
+	interaction, err := f.client.CommunicationInteraction.Create().
+		SetID(uuid.MustParse("e18dfa9b-a7b2-46ea-982c-622a914c00e5")).
+		SetWorkspace(ws).
+		SetOwner(f.user).
+		SetRelationshipID(rel.ID).
+		SetSource("gmail").
+		SetSourceAccountID("owner@example.com").
+		SetProviderObjectID("m-1").
+		SetInteractionType("email").
+		SetDirection("outbound").
+		SetSubject("Follow up").
+		SetOccurredAt(occurred).
+		SetReceivedAt(occurred).
+		SetVisibility("metadata").
+		SetContentHash("sha256:follow-up").
+		SetMetadataJSON(`{"threadId":"t-1","labels":["SENT"],"snippet":"metadata only"}`).
+		Save(internal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.CommunicationAttachment.Create().
+		SetWorkspace(ws).
+		SetInteraction(interaction).
+		SetProviderAttachmentID("attachment-1").
+		SetFilename("terms.pdf").
+		SetMimeType("application/pdf").
+		SetSizeBytes(42).
+		Save(internal); err != nil {
+		t.Fatal(err)
+	}
+	page, err := f.svc.RelationshipCommunicationTimeline(f.ctx, f.user, rel.ID, nil, nil, 50)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := json.Marshal(page)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), f.user.ID.String()) {
+		t.Fatalf("owner id missing: %s", raw)
+	}
+	got := strings.ReplaceAll(string(raw), f.user.ID.String(), "7b8dfa9b-a7b2-46ea-982c-622a914c00e5")
+	const want = `{"items":[{"id":"e18dfa9b-a7b2-46ea-982c-622a914c00e5","source":"gmail","interactionType":"email","direction":"outbound","subject":"Follow up","occurredAt":"2026-09-17T12:00:00Z","visibility":"metadata","ownerId":"7b8dfa9b-a7b2-46ea-982c-622a914c00e5","bodyLocked":false,"attachmentCount":1,"access":{"metadata":true,"subject":true,"body":true,"attachments":true,"protected":false,"reason":"mailbox_owner","policyVersion":1}}],"hasMore":false}`
+	if got != want {
+		t.Fatalf("timeline:\n%s\nwant:\n%s", got, want)
+	}
 }
 
 func TestCommunicationTimelineKeepsTiedOccurredAt(t *testing.T) {

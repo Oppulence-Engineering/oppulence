@@ -5173,23 +5173,33 @@ export const AppendCommitmentTransition409Response = zod
   );
 
 /**
- * Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship. Rows that share a time stay in id order, so the next page does not skip them.
- * @summary Get communication timeline
+ * Mail and meetings loads when a company opens. The request asks for the first 50 records and sends no older-page time. The answer is the newest record, the sent message Follow up, and shows this mailbox can see it.
+ * @summary Mail and meetings
  */
 export const GetRelationshipCommunicationTimelineParams = zod.object({
-  relationshipId: zod.uuid().describe("Relationship id."),
+  relationshipId: zod.uuid().describe("Company id."),
 });
 
+export const getRelationshipCommunicationTimelineQueryLimitMax = 100;
+
 export const GetRelationshipCommunicationTimelineQueryParams = zod.object({
-  limit: zod.coerce.number().int().optional().describe("Maximum items (1-100)."),
+  limit: zod.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(getRelationshipCommunicationTimelineQueryLimitMax)
+    .optional()
+    .describe("How many records to return. Opening a company asks for 50."),
   before: zod.iso
     .datetime({ offset: true })
     .optional()
-    .describe("Return items before this RFC3339 timestamp."),
+    .describe("Return records before this time. The first page does not send it."),
   beforeId: zod
     .uuid()
     .optional()
-    .describe("With before, also return items at that time whose id sorts earlier."),
+    .describe(
+      "With before, also return records at that time whose id sorts earlier. The first page does not send it.",
+    ),
 });
 
 export const GetRelationshipCommunicationTimeline200Response = zod
@@ -5206,24 +5216,14 @@ export const GetRelationshipCommunicationTimeline200Response = zod
                 metadata: zod.boolean().describe("Metadata visibility."),
                 policyVersion: zod.int().optional().describe("Policy version."),
                 protected: zod.boolean().optional().describe("Protected recipient match."),
-                reason: zod
-                  .enum([
-                    "llm_call",
-                    "llm_call_reserve",
-                    "llm_settle",
-                    "voice_tts",
-                    "exa_search",
-                    "grant",
-                    "refund",
-                  ])
-                  .describe("Reason code for the ledger entry."),
+                reason: zod.string().describe("Decision reason."),
                 subject: zod.boolean().describe("Subject visibility."),
               })
               .describe("Authorized communication fields for one actor."),
             attachmentCount: zod.int().optional().describe("Attachment count."),
             bodyLocked: zod.boolean().describe("Whether the body remains locked."),
             direction: zod.string().optional().describe("Direction."),
-            id: zod.uuid().describe("Stable UUID primary key."),
+            id: zod.uuid().describe("Interaction id."),
             interactionType: zod.enum(["email", "meeting"]).describe("Interaction kind."),
             occurredAt: zod.iso.datetime({ offset: true }).describe("When it occurred."),
             ownerId: zod.uuid().describe("Mailbox owner."),
@@ -5234,12 +5234,17 @@ export const GetRelationshipCommunicationTimeline200Response = zod
           .describe("One redacted communication metadata row."),
       )
       .describe("Timeline items."),
-    nextBefore: zod.iso.datetime({ offset: true }).nullish().describe("Cursor for the next page."),
+    nextBefore: zod.iso
+      .datetime({ offset: true })
+      .nullish()
+      .describe(
+        "Time of the last record on this page. Send it to load older records that share that time.",
+      ),
     nextBeforeId: zod
       .uuid()
       .nullish()
       .describe(
-        "Id of the last item on this page. Send it with nextBefore so rows that share that time stay on the next page.",
+        "Id of the last record on this page. Send it with the time so records that share that time stay on the next page.",
       ),
   })
   .describe("Paginated communication timeline.");
@@ -7464,17 +7469,7 @@ export const GetCommunicationAttachmentContent200Response = zod
         metadata: zod.boolean().describe("Metadata visibility."),
         policyVersion: zod.int().optional().describe("Policy version."),
         protected: zod.boolean().optional().describe("Protected recipient match."),
-        reason: zod
-          .enum([
-            "llm_call",
-            "llm_call_reserve",
-            "llm_settle",
-            "voice_tts",
-            "exa_search",
-            "grant",
-            "refund",
-          ])
-          .describe("Reason code for the ledger entry."),
+        reason: zod.string().describe("Decision reason."),
         subject: zod.boolean().describe("Subject visibility."),
       })
       .optional()
@@ -7603,17 +7598,7 @@ export const GetCommunicationInteractionBody200Response = zod
         metadata: zod.boolean().describe("Metadata visibility."),
         policyVersion: zod.int().optional().describe("Policy version."),
         protected: zod.boolean().optional().describe("Protected recipient match."),
-        reason: zod
-          .enum([
-            "llm_call",
-            "llm_call_reserve",
-            "llm_settle",
-            "voice_tts",
-            "exa_search",
-            "grant",
-            "refund",
-          ])
-          .describe("Reason code for the ledger entry."),
+        reason: zod.string().describe("Decision reason."),
         subject: zod.boolean().describe("Subject visibility."),
       })
       .optional()

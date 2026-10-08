@@ -1959,8 +1959,8 @@ export const getGetRelationshipCommunicationTimelineUrl = (
 };
 
 /**
- * Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship. Rows that share a time stay in id order, so the next page does not skip them.
- * @summary Get communication timeline
+ * Mail and meetings loads when a company opens. The request asks for the first 50 records and sends no older-page time. The answer is the newest record, the sent message Follow up, and shows this mailbox can see it.
+ * @summary Mail and meetings
  */
 export const getRelationshipCommunicationTimeline = async (
   relationshipId: string,

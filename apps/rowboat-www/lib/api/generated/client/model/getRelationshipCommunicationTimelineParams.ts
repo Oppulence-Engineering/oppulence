@@ -8,15 +8,17 @@
 
 export type GetRelationshipCommunicationTimelineParams = {
   /**
-   * Maximum items (1-100).
+   * How many records to return. Opening a company asks for 50.
+   * @minimum 1
+   * @maximum 100
    */
   limit?: number;
   /**
-   * Return items before this RFC3339 timestamp.
+   * Return records before this time. The first page does not send it.
    */
   before?: string;
   /**
-   * With before, also return items at that time whose id sorts earlier.
+   * With before, also return records at that time whose id sorts earlier. The first page does not send it.
    */
   beforeId?: string;
 };
