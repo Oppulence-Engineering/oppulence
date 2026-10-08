@@ -22222,7 +22222,7 @@
     },
     "/v1/public/mutual-action-plan/responses": {
       "post": {
-        "description": "Appends an idempotent external response for internal review; it never directly changes canonical commitments.",
+        "description": "Confirm plan records that the other person confirmed the shared plan. The owner's records stay unchanged.",
         "operationId": "respondPublicMutualActionPlan",
         "parameters": [
           {
@@ -22239,8 +22239,9 @@
           "content": {
             "application/json": {
               "example": {
+                "comment": "",
                 "kind": "confirm",
-                "responseId": "response:ab12"
+                "responseId": "db8dfa9b-a7b2-46ea-982c-622a914c00e5"
               },
               "schema": {
                 "description": "Plan response.",
@@ -22257,7 +22258,13 @@
                   },
                   "kind": {
                     "description": "Response kind.",
-                    "enum": ["confirm", "correct", "blocked", "completed", "comment"],
+                    "enum": [
+                      "confirm",
+                      "correct",
+                      "blocked",
+                      "completed",
+                      "comment"
+                    ],
                     "example": "confirm",
                     "type": "string"
                   },
@@ -22268,30 +22275,54 @@
                   },
                   "responseId": {
                     "description": "Counterparty-generated idempotency key.",
-                    "example": "response:ab12",
+                    "example": "db8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "format": "uuid",
                     "type": "string"
                   }
                 },
-                "required": ["responseId", "kind"],
+                "required": [
+                  "responseId",
+                  "kind"
+                ],
                 "type": "object"
               }
             }
           },
-          "description": "External response.",
+          "description": "Confirmation of the shared plan.",
           "required": true
         },
         "responses": {
           "201": {
             "content": {
               "application/json": {
+                "example": {
+                  "recorded": true,
+                  "responseId": "db8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                },
                 "schema": {
-                  "additionalProperties": true,
-                  "description": "Response receipt.",
+                  "description": "Recorded plan confirmation.",
+                  "properties": {
+                    "recorded": {
+                      "description": "The confirmation is stored for the plan owner.",
+                      "example": true,
+                      "type": "boolean"
+                    },
+                    "responseId": {
+                      "description": "The response that was recorded.",
+                      "example": "db8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "format": "uuid",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "responseId",
+                    "recorded"
+                  ],
                   "type": "object"
                 }
               }
             },
-            "description": "Recorded response."
+            "description": "The confirmation is recorded."
           },
           "400": {
             "$ref": "#/components/responses/400"
@@ -22300,8 +22331,10 @@
             "$ref": "#/components/responses/404"
           }
         },
-        "summary": "Respond to a scoped plan",
-        "tags": ["Relationship Intelligence"]
+        "summary": "Confirm plan",
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-attention": {

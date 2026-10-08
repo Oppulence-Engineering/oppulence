@@ -7,11 +7,6 @@
  */
 
 /**
- * Recorded plan confirmation.
+ * Editor document, when one was saved.
  */
-export type RespondPublicMutualActionPlan201 = {
-  /** The confirmation is stored for the plan owner. */
-  recorded: boolean;
-  /** The response that was recorded. */
-  responseId: string;
-};
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };

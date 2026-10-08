@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -338,6 +339,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertConfirmPlan(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -369,6 +371,62 @@ func assertEventObservation(t *testing.T, schemas obj) {
 	evidence := asObj(asObj(schemas["MissionControlEvidenceReference"])["properties"])
 	if asObj(evidence["observationId"])["example"] != observationID {
 		t.Fatalf("mission control observation id changed: %#v", evidence["observationId"])
+	}
+}
+
+func TestConfirmPlanRecordsTheConfirmation(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertConfirmPlan(t, spec)
+}
+
+func assertConfirmPlan(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/public/mutual-action-plan/responses"])["post"])
+	if operation["summary"] != "Confirm plan" || operation["operationId"] != "respondPublicMutualActionPlan" || operation["description"] != confirmPlanDescription {
+		t.Fatalf("confirm plan copy: %#v", obj{"summary": operation["summary"], "operationId": operation["operationId"], "description": operation["description"]})
+	}
+	header := asObj(operation["parameters"].([]any)[0])
+	if header["name"] != "X-Oppulence-Plan-Token" || header["example"] != nil {
+		t.Fatalf("plan header example: %#v", header)
+	}
+	body := asObj(operation["requestBody"])
+	if body["description"] != confirmPlanRequestDescription {
+		t.Fatalf("request description: %#v", body["description"])
+	}
+	example := asObj(asObj(asObj(body["content"])["application/json"])["example"])
+	if example["responseId"] != confirmPlanResponseID || example["kind"] != "confirm" || example["comment"] != "" {
+		t.Fatalf("request example: %#v", example)
+	}
+	if _, present := example["itemId"]; present {
+		t.Fatal("confirm plan sends an item id")
+	}
+	requestSchema := asObj(asObj(asObj(body["content"])["application/json"])["schema"])
+	responseID := asObj(asObj(requestSchema["properties"])["responseId"])
+	if responseID["example"] != confirmPlanResponseID || responseID["format"] != "uuid" {
+		t.Fatalf("response id schema: %#v", responseID)
+	}
+	ok := asObj(asObj(operation["responses"])["201"])
+	if ok["description"] != confirmPlanRecorded {
+		t.Fatalf("201 description: %#v", ok["description"])
+	}
+	recorded := asObj(asObj(asObj(ok["content"])["application/json"])["example"])
+	if recorded["responseId"] != confirmPlanResponseID || recorded["recorded"] != true {
+		t.Fatalf("201 example: %#v", recorded)
+	}
+	raw, err := json.Marshal(operation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(raw)
+	for _, forbidden := range []string{"acta_", `"token"`, "response:ab12"} {
+		if strings.Contains(text, forbidden) {
+			t.Fatalf("confirm plan sample contains %s", forbidden)
+		}
+	}
+	publicPlan := asObj(asObj(asObj(spec["paths"])["/v1/public/mutual-action-plan"])["get"])
+	if asObj(asObj(asObj(asObj(publicPlan["responses"])["200"])["content"])["application/json"])["example"] != nil {
+		t.Fatal("opening the shared plan gained an example")
 	}
 }
 

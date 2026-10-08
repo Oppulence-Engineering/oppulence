@@ -1065,14 +1065,16 @@ func addRevenuePaths(paths obj) {
 	paths["/v1/public/mutual-action-plan"] = obj{"get": operation("Relationship Intelligence", "Open a scoped mutual action plan", "Returns only the externally authorized plan revision with internal evidence references removed and policy redactions applied.", "getPublicMutualActionPlan", nil, planTokenParam, nil, obj{
 		"200": jsonResponse("Scoped public plan.", freeFormSchema("Public mutual action plan."), nil), "404": responseRef("404"),
 	})}
-	paths["/v1/public/mutual-action-plan/responses"] = obj{"post": operation("Relationship Intelligence", "Respond to a scoped plan", "Appends an idempotent external response for internal review; it never directly changes canonical commitments.", "respondPublicMutualActionPlan", nil, planTokenParam, jsonRequest("External response.", objectSchema("Plan response.", obj{
-		"responseId":    stringSchema("Counterparty-generated idempotency key.", "response:ab12"),
+	paths["/v1/public/mutual-action-plan/responses"] = obj{"post": operation("Relationship Intelligence", "Confirm plan", confirmPlanDescription, "respondPublicMutualActionPlan", nil, planTokenParam, jsonRequest(confirmPlanRequestDescription, objectSchema("Plan response.", obj{
+		"responseId":    stringSchema("Counterparty-generated idempotency key.", confirmPlanResponseID, obj{"format": "uuid"}),
 		"kind":          stringEnum("Response kind.", "confirm", "confirm", "correct", "blocked", "completed", "comment"),
 		"itemId":        stringSchema("Plan item id when applicable.", "item:ab12"),
 		"proposedValue": stringSchema("Proposed correction.", "Move due date to Friday."),
 		"comment":       stringSchema("Counterparty comment.", "Waiting on legal."),
-	}, "responseId", "kind"), obj{"responseId": "response:ab12", "kind": "confirm"}), obj{
-		"201": jsonResponse("Recorded response.", freeFormSchema("Response receipt."), nil), "400": responseRef("400"), "404": responseRef("404"),
+	}, "responseId", "kind"), confirmPlanRequestExample()), obj{
+		"201": jsonResponse(confirmPlanRecorded, confirmPlanResponseSchema(), confirmPlanResponseExample()),
+		"400": responseRef("400"),
+		"404": responseRef("404"),
 	})}
 	paths["/v1/relationship-sources"] = obj{"get": operation("Relationship Intelligence", "List guided source connections", "Returns Google, Slack, and HubSpot capability/scopes plus durable account lifecycle state. No token, secret, or raw cursor is exposed.", "getRelationshipSourceInventory", bearer(), nil, nil, obj{
 		"200": jsonResponse("Guided source inventory.", objectSchema("Source inventory.", obj{"sources": arraySchema("Source cards.", ref("RelationshipSourceInventoryItem"))}, "sources"), nil),
