@@ -2812,8 +2812,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Semantic search over mail
-     * @description Natural-language search over the caller's Layer-2 signals (RFC 031). Returns available=false with no matches when semantic memory is not configured.
+     * Search mail
+     * @description Search mail sends the words typed in the palette. The answer lists the closest mail first, with the subject, the other person's email, the kind of thread, why it matched, and how close it is. When mail search is not set up, the answer includes no matches.
      */
     get: operations["revenueSemanticSearch"];
     put?: never;
@@ -22691,7 +22691,7 @@ export interface operations {
   revenueSemanticSearch: {
     parameters: {
       query: {
-        /** @description Search query. */
+        /** @description Words typed in Search mail. */
         q: string;
       };
       header?: never;
@@ -22700,49 +22700,80 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Ranked matches. */
+      /** @description The mail Search mail ranks. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "available": true,
+           *       "matches": [
+           *         {
+           *           "classification": "other",
+           *           "counterparty": "client@example.org",
+           *           "score": 0.9130171833009648,
+           *           "subject": "Launch plan",
+           *           "summary": "An explicit promise in this message needs confirmation.",
+           *           "threadId": "tc"
+           *         },
+           *         {
+           *           "classification": "deal",
+           *           "counterparty": "buyer@example.com",
+           *           "score": 0.8497568598529869,
+           *           "subject": "SOW draft",
+           *           "summary": "You sent a proposal-stage message 10 days ago and there has been no reply.",
+           *           "threadId": "tp"
+           *         },
+           *         {
+           *           "classification": "client",
+           *           "counterparty": "casey@corp.com",
+           *           "score": 0.848014789037389,
+           *           "subject": "Contract",
+           *           "summary": "Casey Lee asked you something 6 days ago and is still waiting on a reply.",
+           *           "threadId": "tw"
+           *         }
+           *       ]
+           *     }
+           */
           "application/json": {
             /**
-             * @description Whether semantic memory is configured.
+             * @description Whether mail search is set up.
              * @example true
              */
             available?: boolean;
-            /** @description Ranked matches. */
+            /** @description Closest mail first. */
             matches?: {
               /**
-               * @description Signal class.
-               * @example deal
+               * @description Kind of thread.
+               * @example other
                * @enum {string}
                */
               classification?: "deal" | "invoice" | "client" | "referral" | "other";
               /**
-               * @description Counterparty email.
-               * @example buyer@example.com
+               * @description Other person's email.
+               * @example client@example.org
                */
               counterparty?: string;
               /**
-               * @description Cosine similarity.
-               * @example 0.82
+               * @description How close this thread is.
+               * @example 0.9130171833009648
                */
               score?: number;
               /**
-               * @description Thread subject.
-               * @example Proposal follow-up
+               * @description Subject.
+               * @example Launch plan
                */
               subject?: string;
               /**
-               * @description Derived summary.
-               * @example Unanswered proposal from 10 days ago.
+               * @description Why this thread matched.
+               * @example An explicit promise in this message needs confirmation.
                */
               summary?: string;
               /**
-               * @description Provider thread id.
-               * @example thr_01
+               * @description Mail thread id.
+               * @example tc
                */
               threadId?: string;
             }[];

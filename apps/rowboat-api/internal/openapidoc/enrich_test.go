@@ -2741,6 +2741,45 @@ func assertLinkWorkspace(t *testing.T, paths obj, schemas obj) {
 	if mode["example"] != "local" {
 		t.Fatalf("shared workspace mode example changed: %#v", mode)
 	}
+
+	assertSearchMail(t, paths)
+}
+
+func TestSearchMailSamplesTheRankedThreads(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertSearchMail(t, asObj(spec["paths"]))
+}
+
+func assertSearchMail(t *testing.T, paths obj) {
+	t.Helper()
+	op := asObj(asObj(paths["/v1/revenue-search"])["get"])
+	if op["summary"] != "Search mail" {
+		t.Fatalf("summary: %#v", op["summary"])
+	}
+	const wantDescription = "Search mail sends the words typed in the palette. The answer lists the closest mail first, with the subject, the other person's email, the kind of thread, why it matched, and how close it is. When mail search is not set up, the answer includes no matches."
+	if op["description"] != wantDescription {
+		t.Fatalf("description: %#v", op["description"])
+	}
+	params, _ := op["parameters"].([]any)
+	if len(params) != 1 || asObj(asObj(params[0])["schema"])["example"] != searchMailQuery {
+		t.Fatalf("query: %#v", op["parameters"])
+	}
+	media := asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])
+	if media["description"] != nil {
+		t.Fatalf("media: %#v", media)
+	}
+	if !reflect.DeepEqual(media["example"], searchMailResponse()) {
+		raw, _ := json.Marshal(media["example"])
+		t.Fatalf("example: %s", raw)
+	}
+	items := asObj(asObj(asObj(asObj(asObj(media["schema"])["properties"])["matches"])["items"])["properties"])
+	if asObj(items["subject"])["example"] != "Launch plan" || asObj(items["threadId"])["example"] != "tc" || asObj(items["classification"])["example"] != "other" {
+		t.Fatalf("schema examples: %#v", items)
+	}
+	if asObj(asObj(op["responses"])["200"])["description"] != "The mail Search mail ranks." {
+		t.Fatalf("response: %#v", asObj(op["responses"])["200"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

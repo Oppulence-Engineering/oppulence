@@ -2301,6 +2301,31 @@ describe("API reference document", () => {
     expect(presented.components.schemas.RevenueWorkspace.properties.mode.example).toBe("local");
   });
 
+  it("shows the mail Search mail ranks for the typed words", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const search = presented.paths["/v1/revenue-search"].get;
+    expect(search.summary).toBe("Search mail");
+    expect(search.description).toContain("words typed in the palette");
+    expect(search.description).not.toMatch(/RFC|Layer-2/);
+    expect(search.parameters?.[0]?.schema?.example).toBe("launch promise");
+    const example = search.responses["200"].content["application/json"].example as {
+      available: boolean;
+      matches: Array<{ subject: string; classification: string; counterparty: string; threadId: string }>;
+    };
+    expect(example.available).toBe(true);
+    expect(example.matches[0]).toMatchObject({
+      threadId: "tc",
+      subject: "Launch plan",
+      counterparty: "client@example.org",
+      classification: "other",
+      summary: "An explicit promise in this message needs confirmation.",
+      score: 0.9130171833009648,
+    });
+    expect(JSON.stringify(example)).not.toContain("thr_01");
+    expect(JSON.stringify(example)).not.toContain("Proposal follow-up");
+    expect(JSON.stringify(example)).not.toContain('"commitment"');
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

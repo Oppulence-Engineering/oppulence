@@ -1152,8 +1152,8 @@ export const getRevenueSemanticSearchUrl = (params: RevenueSemanticSearchParams)
 };
 
 /**
- * Natural-language search over the caller's Layer-2 signals (RFC 031). Returns available=false with no matches when semantic memory is not configured.
- * @summary Semantic search over mail
+ * Search mail sends the words typed in the palette. The answer lists the closest mail first, with the subject, the other person's email, the kind of thread, why it matched, and how close it is. When mail search is not set up, the answer includes no matches.
+ * @summary Search mail
  */
 export const revenueSemanticSearch = async (
   params: RevenueSemanticSearchParams,

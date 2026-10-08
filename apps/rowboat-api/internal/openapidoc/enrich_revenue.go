@@ -1386,18 +1386,18 @@ func addRevenuePaths(paths obj) {
 		"200": jsonResponse("Impact summary.", ref("RevenueImpact"), nil),
 		"401": responseRef("401"),
 	})}
-	paths["/v1/revenue-search"] = obj{"get": operation("Revenue", "Semantic search over mail", "Natural-language search over the caller's Layer-2 signals (RFC 031). Returns available=false with no matches when semantic memory is not configured.", "revenueSemanticSearch", bearer(), []any{obj{"name": "q", "in": "query", "required": true, "description": "Search query.", "schema": obj{"type": "string"}}}, nil, obj{
-		"200": jsonResponse("Ranked matches.", objectSchema("Search result.", obj{
-			"available": boolSchema("Whether semantic memory is configured.", true),
-			"matches": arraySchema("Ranked matches.", objectSchema("Match.", obj{
-				"threadId":       stringSchema("Provider thread id.", "thr_01"),
-				"subject":        stringSchema("Thread subject.", "Proposal follow-up"),
-				"counterparty":   stringSchema("Counterparty email.", "buyer@example.com"),
-				"classification": stringEnum("Signal class.", "deal", "deal", "invoice", "client", "referral", "other"),
-				"summary":        stringSchema("Derived summary.", "Unanswered proposal from 10 days ago."),
-				"score":          numberSchema("Cosine similarity.", 0.82),
+	paths["/v1/revenue-search"] = obj{"get": operation("Revenue", "Search mail", "Search mail sends the words typed in the palette. The answer lists the closest mail first, with the subject, the other person's email, the kind of thread, why it matched, and how close it is. When mail search is not set up, the answer includes no matches.", "revenueSemanticSearch", bearer(), []any{obj{"name": "q", "in": "query", "required": true, "description": "Words typed in Search mail.", "schema": stringSchema("Words typed in Search mail.", searchMailQuery)}}, nil, obj{
+		"200": jsonResponse("The mail Search mail ranks.", objectSchema("Mail search answer.", obj{
+			"available": boolSchema("Whether mail search is set up.", true),
+			"matches": arraySchema("Closest mail first.", objectSchema("One mail thread.", obj{
+				"threadId":       stringSchema("Mail thread id.", "tc"),
+				"subject":        stringSchema("Subject.", "Launch plan"),
+				"counterparty":   stringSchema("Other person's email.", "client@example.org"),
+				"classification": stringEnum("Kind of thread.", "other", "deal", "invoice", "client", "referral", "other"),
+				"summary":        stringSchema("Why this thread matched.", "An explicit promise in this message needs confirmation."),
+				"score":          numberSchema("How close this thread is.", 0.9130171833009648),
 			})),
-		}), nil),
+		}), searchMailResponse()),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 	})}
@@ -2364,4 +2364,28 @@ func linkedWorkspace() obj {
 	saved["lastVerifiedAt"] = linkedWorkspaceVerifiedAt
 	saved["preflightAvailable"] = true
 	return saved
+}
+
+const searchMailQuery = "launch promise"
+
+func searchMailResponse() obj {
+	return obj{
+		"available": true,
+		"matches": []any{
+			searchMailMatch("tc", "Launch plan", "client@example.org", "other", "An explicit promise in this message needs confirmation.", 0.9130171833009648),
+			searchMailMatch("tp", "SOW draft", "buyer@example.com", "deal", "You sent a proposal-stage message 10 days ago and there has been no reply.", 0.8497568598529869),
+			searchMailMatch("tw", "Contract", "casey@corp.com", "client", "Casey Lee asked you something 6 days ago and is still waiting on a reply.", 0.848014789037389),
+		},
+	}
+}
+
+func searchMailMatch(threadID, subject, counterparty, class, summary string, score float64) obj {
+	return obj{
+		"threadId":       threadID,
+		"subject":        subject,
+		"counterparty":   counterparty,
+		"classification": class,
+		"summary":        summary,
+		"score":          score,
+	}
 }

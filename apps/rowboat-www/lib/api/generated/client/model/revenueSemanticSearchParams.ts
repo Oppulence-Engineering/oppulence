@@ -8,7 +8,7 @@
 
 export type RevenueSemanticSearchParams = {
   /**
-   * Search query.
+   * Words typed in Search mail.
    */
   q: string;
 };
