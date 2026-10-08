@@ -2352,9 +2352,7 @@ export const ListRevenueLeakScans200Response = zod
             startedAt: zod.iso.datetime({ offset: true }).nullish().describe("Start time."),
             status: zod
               .enum(["pending", "running", "completed", "failed"])
-              .describe(
-                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-              ),
+              .describe("Scan status."),
             threadsDeepRead: zod
               .int()
               .optional()
@@ -2408,15 +2406,17 @@ export const ListRevenueLeakScans401Response = zod
   );
 
 /**
- * Starts a bounded historical scan over the user's connected Gmail (deterministic detectors, draft-first actions). One scan runs per workspace at a time; poll the scan id for progress.
- * @summary Start a revenue leak scan
+ * Run Promise Leak Audit reads the last six months of connected Gmail. The button sends lookbackDays 180. One audit runs at a time; poll the scan id for progress.
+ * @summary Run Promise Leak Audit
  */
 export const StartRevenueLeakScanBody = zod
   .strictObject({
     lookbackDays: zod
       .int()
       .optional()
-      .describe("Historical lookback in days (default 90, max 365)."),
+      .describe(
+        "Historical lookback in days. Run Promise Leak Audit sends 180. Omitted values use 180. Maximum 365.",
+      ),
   })
   .describe("Scan request.");
 
@@ -2437,11 +2437,7 @@ export const StartRevenueLeakScan202Response = zod
       .nullish()
       .describe("Newest source timestamp observed (incremental cursor)."),
     startedAt: zod.iso.datetime({ offset: true }).nullish().describe("Start time."),
-    status: zod
-      .enum(["pending", "running", "completed", "failed"])
-      .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-      ),
+    status: zod.enum(["pending", "running", "completed", "failed"]).describe("Scan status."),
     threadsDeepRead: zod
       .int()
       .optional()
@@ -2512,11 +2508,7 @@ export const GetRevenueLeakScan200Response = zod
       .nullish()
       .describe("Newest source timestamp observed (incremental cursor)."),
     startedAt: zod.iso.datetime({ offset: true }).nullish().describe("Start time."),
-    status: zod
-      .enum(["pending", "running", "completed", "failed"])
-      .describe(
-        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
-      ),
+    status: zod.enum(["pending", "running", "completed", "failed"]).describe("Scan status."),
     threadsDeepRead: zod
       .int()
       .optional()

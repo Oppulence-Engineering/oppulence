@@ -2690,8 +2690,8 @@ export interface paths {
     get: operations["listRevenueLeakScans"];
     put?: never;
     /**
-     * Start a revenue leak scan
-     * @description Starts a bounded historical scan over the user's connected Gmail (deterministic detectors, draft-first actions). One scan runs per workspace at a time; poll the scan id for progress.
+     * Run Promise Leak Audit
+     * @description Run Promise Leak Audit reads the last six months of connected Gmail. The button sends lookbackDays 180. One audit runs at a time; poll the scan id for progress.
      */
     post: operations["startRevenueLeakScan"];
     delete?: never;
@@ -11532,7 +11532,7 @@ export interface components {
       id: string;
       /**
        * @description Historical lookback in days.
-       * @example 90
+       * @example 180
        */
       lookbackDays: number;
       /**
@@ -11559,8 +11559,8 @@ export interface components {
        */
       startedAt?: string | null;
       /**
-       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
-       * @example active
+       * @description Scan status.
+       * @example running
        * @enum {string}
        */
       status: "pending" | "running" | "completed" | "failed";
@@ -20925,13 +20925,13 @@ export interface operations {
       content: {
         /**
          * @example {
-         *       "lookbackDays": 90
+         *       "lookbackDays": 180
          *     }
          */
         "application/json": {
           /**
-           * @description Historical lookback in days (default 90, max 365).
-           * @example 90
+           * @description Historical lookback in days. Run Promise Leak Audit sends 180. Omitted values use 180. Maximum 365.
+           * @example 180
            */
           lookbackDays?: number;
         };
@@ -20944,6 +20944,24 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "actionsCreated": 0,
+           *       "candidatesSeen": 0,
+           *       "commitmentsCreated": 0,
+           *       "evidencesCreated": 0,
+           *       "id": "4d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "lookbackDays": 180,
+           *       "mode": "local",
+           *       "relationshipsCreated": 0,
+           *       "startedAt": "2026-07-23T12:00:00Z",
+           *       "status": "running",
+           *       "threadsDeepRead": 0,
+           *       "threadsSeen": 0,
+           *       "threadsSkipped": 0,
+           *       "threadsSnippetOnly": 0
+           *     }
+           */
           "application/json": components["schemas"]["RevenueLeakScan"];
         };
       };
@@ -21093,7 +21111,7 @@ export interface operations {
             }[];
             /**
              * @description Scan window in days.
-             * @example 90
+             * @example 180
              */
             lookbackDays: number;
             /**

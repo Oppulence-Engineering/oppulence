@@ -765,9 +765,9 @@ func addRevenueSchemas(schemas obj) {
 
 	schemas["RevenueLeakScan"] = objectSchema("One bounded historical scan over connected sources (Gmail first). Detectors are deterministic; counts, errors, and freshness make runs incremental and auditable.", obj{
 		"id":                   uuidSchema("Scan id.", "4d8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-		"status":               stringEnum("Scan status.", "completed", "pending", "running", "completed", "failed"),
+		"status":               stringEnum("Scan status.", "running", "pending", "running", "completed", "failed"),
 		"mode":                 stringEnum("Workspace mode at scan time.", "local", "local", "linked"),
-		"lookbackDays":         intSchema("Historical lookback in days.", 90),
+		"lookbackDays":         intSchema("Historical lookback in days.", 180),
 		"threadsSeen":          intSchema("Threads examined.", 42),
 		"candidatesSeen":       intSchema("Detector candidates found.", 7),
 		"relationshipsCreated": intSchema("New relationships recorded.", 3),
@@ -949,15 +949,36 @@ func addRevenuePaths(paths obj) {
 	})}
 
 	paths["/v1/revenue-leak-scans"] = obj{
-		"get": operation("Revenue", "List revenue leak scans", "Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions.", "listRevenueLeakScans", bearer(), []any{obj{"name": "limit", "in": "query", "required": false, "description": "Maximum scans to return (default 10, max 100).", "schema": obj{"type": "integer", "minimum": 1, "maximum": 100}}}, nil, obj{
-			"200": jsonResponse("Audit history.", objectSchema("Audit history.", obj{"scans": arraySchema("Scans newest first.", ref("RevenueLeakScan"))}, "scans"), nil),
+		"get": operation("Revenue", "List revenue leak scans", "Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions. A full page is the end of the history when hasMore is false.", "listRevenueLeakScans", bearer(), []any{
+			obj{"name": "limit", "in": "query", "required": false, "description": "Maximum scans to return (default 10, max 100).", "schema": obj{"type": "integer", "minimum": 1, "maximum": 100}},
+			obj{"name": "offset", "in": "query", "required": false, "description": "Page offset.", "schema": obj{"type": "integer", "minimum": 0}},
+		}, nil, obj{
+			"200": jsonResponse("Audit history.", objectSchema("Audit history. A full page is the end of the history when hasMore is false.", obj{
+				"hasMore": obj{"description": "Another audit exists beyond this page.", "type": "boolean"},
+				"scans":   arraySchema("Scans newest first.", ref("RevenueLeakScan")),
+			}, "scans"), nil),
 			"400": responseRef("400"),
 			"401": responseRef("401"),
 		}),
-		"post": operation("Revenue", "Start a revenue leak scan", "Starts a bounded historical scan over the user's connected Gmail (deterministic detectors, draft-first actions). One scan runs per workspace at a time; poll the scan id for progress.", "startRevenueLeakScan", bearer(), nil, jsonRequestOptional("Scan options.", objectSchema("Scan request.", obj{
-			"lookbackDays": intSchema("Historical lookback in days (default 90, max 365).", 90),
-		}), obj{"lookbackDays": 90}), obj{
-			"202": jsonResponse("Scan started.", ref("RevenueLeakScan"), nil),
+		"post": operation("Revenue", "Run Promise Leak Audit", "Run Promise Leak Audit reads the last six months of connected Gmail. The button sends lookbackDays 180. One audit runs at a time; poll the scan id for progress.", "startRevenueLeakScan", bearer(), nil, jsonRequestOptional("Scan options.", objectSchema("Scan request.", obj{
+			"lookbackDays": intSchema("Historical lookback in days. Run Promise Leak Audit sends 180. Omitted values use 180. Maximum 365.", 180),
+		}), obj{"lookbackDays": 180}), obj{
+			"202": jsonResponse("Scan started.", ref("RevenueLeakScan"), obj{
+				"id":                   "4d8dfa9b-a7b2-46ea-982c-622a914c00e5",
+				"status":               "running",
+				"mode":                 "local",
+				"lookbackDays":         180,
+				"threadsSeen":          0,
+				"candidatesSeen":       0,
+				"relationshipsCreated": 0,
+				"evidencesCreated":     0,
+				"actionsCreated":       0,
+				"commitmentsCreated":   0,
+				"threadsDeepRead":      0,
+				"threadsSnippetOnly":   0,
+				"threadsSkipped":       0,
+				"startedAt":            "2026-07-23T12:00:00Z",
+			}),
 			"401": responseRef("401"),
 			"409": problemResponse("A scan is already running, or no scan source is configured.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "revenue: scan unavailable: a scan is already running", "scan_unavailable")),
 		})}
@@ -1018,7 +1039,7 @@ func addRevenuePaths(paths obj) {
 	}, nil, obj{
 		"200": jsonOrMarkdownResponse("The open promises report.", objectSchema("Open promises report.", obj{
 			"generatedAt":   stringSchema("When the report was produced.", "2026-09-09T12:00:00Z", obj{"format": "date-time"}),
-			"lookbackDays":  intSchema("Scan window in days.", 90),
+			"lookbackDays":  intSchema("Scan window in days.", 180),
 			"threadsSeen":   intSchema("Conversations read.", 412),
 			"scanStatus":    stringSchema("Scan status.", "completed"),
 			"outboundCount": intSchema("Promises we made.", 12),

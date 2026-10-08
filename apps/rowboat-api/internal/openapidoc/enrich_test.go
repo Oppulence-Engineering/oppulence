@@ -1460,6 +1460,58 @@ func assertReconcileNow(t *testing.T, spec obj) {
 	if refs, ok := evaluation["evidenceRefs"].([]any); !ok || len(refs) != 0 {
 		t.Fatalf("evidence refs: %#v", evaluation["evidenceRefs"])
 	}
+
+	assertAuditWindow(t, spec)
+}
+
+func TestAuditButtonSendsSixMonthWindow(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertAuditWindow(t, spec)
+}
+
+func assertAuditWindow(t *testing.T, spec obj) {
+	t.Helper()
+	post := asObj(asObj(asObj(spec["paths"])["/v1/revenue-leak-scans"])["post"])
+	if post["summary"] != "Run Promise Leak Audit" {
+		t.Fatalf("audit summary = %#v", post["summary"])
+	}
+	media := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])
+	example := asObj(media["example"])
+	if !auditDays(example["lookbackDays"], 180) {
+		t.Fatalf("request lookback = %#v", example["lookbackDays"])
+	}
+	lookback := asObj(asObj(asObj(media["schema"])["properties"])["lookbackDays"])
+	if lookback["description"] != "Historical lookback in days. Run Promise Leak Audit sends 180. Omitted values use 180. Maximum 365." {
+		t.Fatalf("lookback description = %#v", lookback["description"])
+	}
+	started := asObj(asObj(asObj(asObj(asObj(post["responses"])["202"])["content"])["application/json"])["example"])
+	if started["status"] != "running" || !auditDays(started["lookbackDays"], 180) || started["completedAt"] != nil || started["error"] != nil {
+		t.Fatalf("started audit = %#v", started)
+	}
+	if !auditDays(started["threadsSeen"], 0) {
+		t.Fatalf("started audit already counted threads: %#v", started["threadsSeen"])
+	}
+	status := asObj(asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueLeakScan"])["properties"])["status"])
+	if status["example"] != "running" || status["description"] != "Scan status." {
+		t.Fatalf("scan status example = %#v", status)
+	}
+	report := asObj(asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/revenue-leak-scans/{scanId}/report"])["get"])["responses"])["200"])["content"])
+	window := asObj(asObj(asObj(asObj(report["application/json"])["schema"])["properties"])["lookbackDays"])
+	if !auditDays(window["example"], 180) {
+		t.Fatalf("report window = %#v", window["example"])
+	}
+}
+
+func auditDays(value any, want int) bool {
+	switch days := value.(type) {
+	case int:
+		return days == want
+	case float64:
+		return days == float64(want)
+	default:
+		return false
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
