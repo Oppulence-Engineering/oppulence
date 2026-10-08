@@ -1338,6 +1338,53 @@ func assertResearchStatus(t *testing.T, spec obj) {
 	if !reflect.DeepEqual(reason["enum"], []any{"consent_required", "plan_required", "capability_disabled", "provider_unconfigured", "unavailable"}) {
 		t.Fatalf("research status reasons: %#v", reason["enum"])
 	}
+
+	assertResearchEstimates(t, spec)
+}
+
+func TestResearchEstimatesPriceOneProRecord(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertResearchEstimates(t, spec)
+}
+
+func assertResearchEstimates(t *testing.T, spec obj) {
+	t.Helper()
+	paths := asObj(spec["paths"])
+	company := asObj(asObj(paths["/v1/research/companies/estimate"])["get"])
+	people := asObj(asObj(paths["/v1/research/people/estimate"])["get"])
+	if company["summary"] != "Estimate companies" || people["summary"] != "Estimate people" {
+		t.Fatalf("summaries: %#v %#v", company["summary"], people["summary"])
+	}
+	companyExample := asObj(asObj(asObj(asObj(asObj(company["responses"])["200"])["content"])["application/json"])["example"])
+	peopleExample := asObj(asObj(asObj(asObj(asObj(people["responses"])["200"])["content"])["application/json"])["example"])
+	if companyExample["processor"] != "pro" || peopleExample["processor"] != "pro" {
+		t.Fatalf("processors: %#v %#v", companyExample, peopleExample)
+	}
+	if !researchNumber(companyExample["companies"], 1) || companyExample["people"] != nil {
+		t.Fatalf("company count: %#v", companyExample)
+	}
+	if !researchNumber(peopleExample["people"], 1) || peopleExample["companies"] != nil {
+		t.Fatalf("people count: %#v", peopleExample)
+	}
+	for _, example := range []obj{companyExample, peopleExample} {
+		if !researchNumber(example["credits"], 1000) || !researchNumber(example["usd"], 0.1) || !researchNumber(example["batchSize"], 25) {
+			t.Fatalf("estimate price: %#v", example)
+		}
+	}
+}
+
+func researchNumber(got any, want float64) bool {
+	switch n := got.(type) {
+	case int:
+		return float64(n) == want
+	case int64:
+		return float64(n) == want
+	case float64:
+		return n == want
+	default:
+		return false
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
