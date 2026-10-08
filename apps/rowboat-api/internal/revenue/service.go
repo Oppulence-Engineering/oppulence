@@ -26,6 +26,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
+
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
@@ -759,6 +761,11 @@ const (
 	attentionQueueScreen = 10
 )
 
+// noteTemplatePage is the template list the notes page asks for. The button
+// is "Show the next templates" when another template this person saved sits
+// past that page. A favorite is a different list.
+const noteTemplatePage = 100
+
 // ListRelationships returns the workspace's relationships, most recent
 // interaction first. A company with no interaction follows those, newest
 // edit first. Each row includes its open queue actions so the caller can
@@ -913,6 +920,10 @@ func (s *Service) ListRelationshipsFiltered(
 
 		if hidden, ok := exactHiddenAttentionCompanyCount(needle); ok {
 			parts = append(parts, relationshipHasHiddenAttentionCompanies(hidden))
+		}
+
+		if labelPhraseMatches("show the next templates", needle) {
+			parts = append(parts, relationshipHasAnotherTemplatePage(u.ID))
 		}
 		if labelPhraseMatches("no activity", needle) {
 			parts = append(parts, relationship.LastTouchAtIsNil())
@@ -11014,6 +11025,32 @@ func relationshipHasHiddenAttentionCompanies(n int) predicate.Relationship {
 			writeAttentionRankOrder(b)
 			b.WriteString(fmt.Sprintf(" LIMIT %d) AS shown)) = ", attentionQueueScreen))
 			b.Arg(n)
+		}))
+	})
+}
+
+// relationshipHasAnotherTemplatePage is true when this person has another
+// page of note templates in the same workspace. The notes page prints
+// "Show the next templates" in that case.
+func relationshipHasAnotherTemplatePage(userID uuid.UUID) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(consoleresource.Table)
+			b.WriteString(" AS directory WHERE directory.")
+			b.WriteString(consoleresource.WorkspaceColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.WorkspaceColumn))
+			b.WriteString(" AND directory.")
+			b.WriteString(consoleresource.UserColumn)
+			b.WriteString(" = ")
+			b.Arg(userID.String())
+			b.WriteString(" AND directory.")
+			b.WriteString(consoleresource.FieldKind)
+			b.WriteString(" = ")
+			b.Arg("note_template")
+			b.WriteString(") > ")
+			b.Arg(noteTemplatePage)
 		}))
 	})
 }
