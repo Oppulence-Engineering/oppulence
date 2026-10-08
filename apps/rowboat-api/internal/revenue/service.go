@@ -833,6 +833,12 @@ func (s *Service) ListRelationshipsFiltered(
 		if labelPhraseMatches("show the next companies", needle) {
 			parts = append(parts, relationshipDirectoryHasAnotherPage())
 		}
+
+		// The graph inspector lists 12 connections, then "Show the other N
+		// connection(s)". A company with 12 or fewer has no such button.
+		if hidden, ok := hiddenGraphConnectionCount(needle); ok {
+			parts = append(parts, relationshipGraphConnectionCount(graphConnectionPage+hidden))
+		}
 		if labelPhraseMatches("no activity", needle) {
 			parts = append(parts, relationship.LastTouchAtIsNil())
 		}
@@ -1239,6 +1245,106 @@ func relationshipDirectoryHasAnotherPage() predicate.Relationship {
 			b.Arg(relationshipListLimit)
 		}))
 	})
+}
+
+// graphConnectionPage is the first screen of connections in the graph
+// inspector. The rest are behind "Show the other N connections".
+const graphConnectionPage = 12
+
+func hiddenGraphConnectionCount(needle string) (int, bool) {
+	if n, ok := countedPhrase(needle, "show the other ", " connections", 2); ok {
+		return n, true
+	}
+	if n, ok := countedPhrase(needle, "show the other ", " connection", 1); ok && n == 1 {
+		return n, true
+	}
+	return 0, false
+}
+
+func countedPhrase(needle, prefix, suffix string, min int) (int, bool) {
+	rest := needle
+	for rest != "" {
+		index := strings.Index(rest, prefix)
+		if index < 0 {
+			return 0, false
+		}
+		if index > 0 && phraseRune(rune(rest[index-1])) {
+			rest = rest[index+1:]
+			continue
+		}
+		body := rest[index+len(prefix):]
+		number, suffixAt := leadingCount(body)
+		if suffixAt < 0 || number < min || !strings.HasPrefix(body[suffixAt:], suffix) {
+			rest = rest[index+len(prefix):]
+			continue
+		}
+		end := suffixAt + len(suffix)
+		if end < len(body) && phraseRune(rune(body[end])) {
+			rest = rest[index+len(prefix):]
+			continue
+		}
+		return number, true
+	}
+	return 0, false
+}
+
+func leadingCount(body string) (int, int) {
+	i := 0
+	for i < len(body) && body[i] >= '0' && body[i] <= '9' {
+		i++
+	}
+	if i == 0 {
+		return 0, -1
+	}
+	number, err := strconv.Atoi(body[:i])
+	if err != nil || strconv.Itoa(number) != body[:i] {
+		return 0, -1
+	}
+	return number, i
+}
+
+func phraseRune(r rune) bool {
+	return (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')
+}
+
+func relationshipGraphConnectionCount(n int) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("(")
+			writeRelationshipChildCount(b, s, relationshipparticipant.Table, relationshipparticipant.RelationshipColumn)
+			b.WriteString(" + ")
+			writeRelationshipChildCount(b, s, commitment.Table, commitment.RelationshipColumn)
+			b.WriteString(" + ")
+			writeRelationshipChildCount(b, s, revenueaction.Table, revenueaction.RelationshipColumn)
+			b.WriteString(" + ")
+			writeRelationshipChildCount(b, s, relationshipobservation.Table, relationshipobservation.RelationshipColumn)
+			b.WriteString(" + ")
+			writeRelationshipJSONLength(b, s, relationship.FieldRisks)
+			b.WriteString(" + ")
+			writeRelationshipJSONLength(b, s, relationship.FieldMilestones)
+			b.WriteString(") = ")
+			b.Arg(n)
+		}))
+	})
+}
+
+func writeRelationshipChildCount(b *sql.Builder, s *sql.Selector, table, column string) {
+	b.WriteString("(SELECT COUNT(*) FROM ")
+	b.WriteString(table)
+	b.WriteString(" AS child WHERE child.")
+	b.WriteString(column)
+	b.WriteString(" = ")
+	b.WriteString(s.C(relationship.FieldID))
+	b.WriteString(")")
+}
+
+func writeRelationshipJSONLength(b *sql.Builder, s *sql.Selector, field string) {
+	column := s.C(field)
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString(fmt.Sprintf("jsonb_array_length(coalesce(%s, '[]'::jsonb))", column))
+		return
+	}
+	b.WriteString(fmt.Sprintf("json_array_length(coalesce(%s, '[]'))", column))
 }
 
 // relationshipNormalizedContains matches the words a teammate sees. A domain
