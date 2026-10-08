@@ -2546,8 +2546,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Execute an action
-     * @description Executes the approved current revision exactly once through the assigned execution owner, with an idempotency key derived from the action and revision. A duplicate execute returns the existing result. A lost provider result is marked ambiguous and never automatically resent.
+     * Create provider draft
+     * @description Create provider draft posts no request body. The stored action is sent and handled, and the draft time is recorded. Send approved email uses this same call when the action is in send mode.
      */
     post: operations["executeRevenueAction"];
     delete?: never;
@@ -21136,12 +21136,43 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Action after execution. */
+      /** @description Provider draft created. */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "actionType": "warm_follow_up",
+           *       "approvalStatus": "approved",
+           *       "approvedAt": "2026-07-12T12:05:00Z",
+           *       "approvedRevision": 1,
+           *       "channel": "email",
+           *       "createdAt": "2026-07-12T12:00:00Z",
+           *       "detector": "requested_follow_up_due",
+           *       "evidence": [],
+           *       "executedAt": "2026-07-12T12:06:00Z",
+           *       "executionMode": "draft",
+           *       "executionOwner": "rowboat",
+           *       "executionStatus": "sent",
+           *       "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "policyStatus": "pending",
+           *       "priorityScore": 82,
+           *       "proposedMessage": "Hi Jordan — you asked me to circle back this month...",
+           *       "proposedSubject": "Following up as promised",
+           *       "providerMessageId": "draft_1",
+           *       "queueStatus": "handled",
+           *       "reason": "They asked for a follow-up in July.",
+           *       "recipientEmail": "buyer@example.com",
+           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "relationshipName": "Acme",
+           *       "revision": 1,
+           *       "revisionHash": "sha256:ab12...",
+           *       "senderAccountRef": "gmail:me@company.com",
+           *       "updatedAt": "2026-07-12T12:06:00Z"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueAction"];
         };
       };

@@ -1578,6 +1578,14 @@ func TestSaveDraftPostsSubjectAndMessage(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)
 	assertSaveDraft(t, spec)
+
+	assertProviderDraft(t, spec)
+}
+
+func TestProviderDraftStoresSentHandled(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertProviderDraft(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -2838,6 +2846,32 @@ func assertSaveDraft(t *testing.T, spec obj) {
 	revision := asObj(asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueAction"])["properties"])["revision"])
 	if !openAPIIntEqual(revision["example"], 1) {
 		t.Fatalf("shared revision example changed: %#v", revision)
+	}
+}
+
+func assertProviderDraft(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/revenue-actions/{actionId}/execute"])["post"])
+	if op["summary"] != "Create provider draft" || op["operationId"] != "executeRevenueAction" {
+		t.Fatalf("provider draft operation: summary=%#v id=%#v", op["summary"], op["operationId"])
+	}
+	if op["requestBody"] != nil {
+		t.Fatalf("provider draft sends no body: %#v", op["requestBody"])
+	}
+	description, _ := op["description"].(string)
+	if !strings.Contains(description, "no request body") || !strings.Contains(description, "sent and handled") {
+		t.Fatalf("provider draft description: %q", description)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	if example["executionStatus"] != "sent" || example["queueStatus"] != "handled" || example["executionMode"] != "draft" || example["providerMessageId"] != "draft_1" || example["executedAt"] != "2026-07-12T12:06:00Z" {
+		t.Fatalf("provider draft: %#v", example)
+	}
+	if _, ok := example["executionError"]; ok {
+		t.Fatalf("provider draft clears the error: %#v", example["executionError"])
+	}
+	props := asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueAction"])["properties"])
+	if asObj(props["executionStatus"])["example"] != "pending" || asObj(props["queueStatus"])["example"] != "open" {
+		t.Fatalf("shared action examples changed: execution=%#v queue=%#v", props["executionStatus"], props["queueStatus"])
 	}
 }
 

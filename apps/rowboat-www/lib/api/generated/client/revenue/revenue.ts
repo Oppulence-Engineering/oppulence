@@ -538,8 +538,8 @@ export const getExecuteRevenueActionUrl = (actionId: string) => {
 };
 
 /**
- * Executes the approved current revision exactly once through the assigned execution owner, with an idempotency key derived from the action and revision. A duplicate execute returns the existing result. A lost provider result is marked ambiguous and never automatically resent.
- * @summary Execute an action
+ * Create provider draft posts no request body. The stored action is sent and handled, and the draft time is recorded. Send approved email uses this same call when the action is in send mode.
+ * @summary Create provider draft
  */
 export const executeRevenueAction = async (
   actionId: string,

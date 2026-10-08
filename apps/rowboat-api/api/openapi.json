@@ -27435,7 +27435,7 @@
     },
     "/v1/revenue-actions/{actionId}/execute": {
       "post": {
-        "description": "Executes the approved current revision exactly once through the assigned execution owner, with an idempotency key derived from the action and revision. A duplicate execute returns the existing result. A lost provider result is marked ambiguous and never automatically resent.",
+        "description": "Create provider draft posts no request body. The stored action is sent and handled, and the draft time is recorded. Send approved email uses this same call when the action is in send mode.",
         "operationId": "executeRevenueAction",
         "parameters": [
           {
@@ -27444,6 +27444,7 @@
             "name": "actionId",
             "required": true,
             "schema": {
+              "example": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
               "format": "uuid",
               "type": "string"
             }
@@ -27453,12 +27454,41 @@
           "200": {
             "content": {
               "application/json": {
+                "example": {
+                  "actionType": "warm_follow_up",
+                  "approvalStatus": "approved",
+                  "approvedAt": "2026-07-12T12:05:00Z",
+                  "approvedRevision": 1,
+                  "channel": "email",
+                  "createdAt": "2026-07-12T12:00:00Z",
+                  "detector": "requested_follow_up_due",
+                  "evidence": [],
+                  "executedAt": "2026-07-12T12:06:00Z",
+                  "executionMode": "draft",
+                  "executionOwner": "rowboat",
+                  "executionStatus": "sent",
+                  "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "policyStatus": "pending",
+                  "priorityScore": 82,
+                  "proposedMessage": "Hi Jordan — you asked me to circle back this month...",
+                  "proposedSubject": "Following up as promised",
+                  "providerMessageId": "draft_1",
+                  "queueStatus": "handled",
+                  "reason": "They asked for a follow-up in July.",
+                  "recipientEmail": "buyer@example.com",
+                  "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "relationshipName": "Acme",
+                  "revision": 1,
+                  "revisionHash": "sha256:ab12...",
+                  "senderAccountRef": "gmail:me@company.com",
+                  "updatedAt": "2026-07-12T12:06:00Z"
+                },
                 "schema": {
                   "$ref": "#/components/schemas/RevenueAction"
                 }
               }
             },
-            "description": "Action after execution."
+            "description": "Provider draft created."
           },
           "401": {
             "$ref": "#/components/responses/401"
@@ -27508,8 +27538,10 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Execute an action",
-        "tags": ["Revenue"]
+        "summary": "Create provider draft",
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-actions/{actionId}/outcomes": {
