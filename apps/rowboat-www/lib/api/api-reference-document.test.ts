@@ -3363,7 +3363,7 @@ describe("API reference document", () => {
     const companyID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5";
     expect(operation.summary).toBe("Open a company");
     expect(operation.description).toBe(
-      "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com. The risk is that the security review has no owner. The LinkedIn row opens the Acme company page. The category is Artificial intelligence. The milestone is that the proposal was shared. The headquarters is San Francisco, California, United States. The source row opens the Acme team page. Avery Chen's title is VP Operations.",
+      "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com. The risk is that the security review has no owner. The LinkedIn row opens the Acme company page. The category is Artificial intelligence. The milestone is that the proposal was shared. The headquarters is San Francisco, California, United States. The source row opens the Acme team page. Avery Chen's title is VP Operations. The sheet says 4 account details still need a source.",
     );
     expect(operation.parameters).toEqual([
       expect.objectContaining({
@@ -3423,6 +3423,32 @@ describe("API reference document", () => {
     expect(example.missionControl.evidence.lifecycle.value).toBe("evaluation");
     for (const key of ["lifecycle", "health", "engagement", "sentiment"]) {
       expect(example.missionControl.evidence[key].authority).toBe("source_fact");
+    }
+    expect(example.missionControl.completeness.explanation).toBe(
+      "No source connection has completed its first useful sync.",
+    );
+    expect(example.missionControl.completeness.missingMaterialDimensions).toEqual([
+      "milestone",
+      "next_action",
+      "risk",
+      "summary",
+    ]);
+    expect(Object.keys(example.missionControl.evidence).sort()).toEqual([
+      "engagement",
+      "health",
+      "lifecycle",
+      "milestone",
+      "next_action",
+      "risk",
+      "sentiment",
+      "summary",
+    ]);
+    for (const dimension of ["summary", "next_action", "risk", "milestone"]) {
+      expect(example.missionControl.evidence[dimension]).toMatchObject({
+        dimension,
+        supported: false,
+        missingReason: "No active assertion supports this value at the response asOf boundary.",
+      });
     }
   });
 

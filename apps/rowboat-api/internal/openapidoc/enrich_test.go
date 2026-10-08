@@ -818,6 +818,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	assertReviewEvidence(t, schemas)
 	assertReview(t, spec)
 	assertOpenedCompany(t, spec)
+	assertOpenedCompany(t, spec)
 }
 
 func TestConversationReviewNamesTheItem(t *testing.T) {
@@ -4196,6 +4197,24 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 		if asObj(asObj(mission["evidence"])[key])["authority"] != "source_fact" {
 			t.Fatalf("%s authority: %#v", key, asObj(asObj(mission["evidence"])[key])["authority"])
 		}
+	}
+	completeness := asObj(mission["completeness"])
+	if completeness["explanation"] != openedCompanyGapExplanation || completeness["status"] != "partial" {
+		t.Fatalf("completeness: %#v", completeness)
+	}
+	missing, err := json.Marshal(completeness["missingMaterialDimensions"])
+	if err != nil || string(missing) != `["milestone","next_action","risk","summary"]` {
+		t.Fatalf("missing details: %s %v", missing, err)
+	}
+	evidence := asObj(mission["evidence"])
+	for _, dimension := range []string{"summary", "next_action", "risk", "milestone"} {
+		item := asObj(evidence[dimension])
+		if item["supported"] != false || item["missingReason"] != "No active assertion supports this value at the response asOf boundary." {
+			t.Fatalf("%s evidence: %#v", dimension, item)
+		}
+	}
+	if len(evidence) != 8 {
+		t.Fatalf("evidence count: %d", len(evidence))
 	}
 	if asObj(asObj(media["schema"])["properties"])["emailThreads"] == nil {
 		t.Fatal("opened company schema omits email threads")
