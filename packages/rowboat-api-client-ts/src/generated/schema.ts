@@ -884,8 +884,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Export a commitment record
-     * @description Returns one commitment as a standalone record: the obligation, its full state history, and the verbatim cited evidence with timestamps. Pass format=md for the Markdown document a user forwards. A record that cannot leave the tool cannot settle an argument.
+     * Export record
+     * @description Export record downloads this promise as Markdown. The request uses format md. The file names the company, the promise, the state, the due date, the quoted mail, and the history.
      */
     get: operations["exportCommitment"];
     put?: never;
@@ -16171,7 +16171,7 @@ export interface operations {
   exportCommitment: {
     parameters: {
       query?: {
-        /** @description md for Markdown; JSON otherwise. */
+        /** @description md for the file Export record downloads. */
         format?: string;
       };
       header?: never;
@@ -16183,7 +16183,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description The exportable record. */
+      /** @description The Markdown file Export record downloads. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -16306,6 +16306,32 @@ export interface operations {
              */
             text: string;
           };
+          /**
+           * @example # Commitment record
+           *
+           *     **We promised:** Migration live by the 14th
+           *
+           *     | Field | Value |
+           *     |---|---|
+           *     | Company | Acme |
+           *     | State | At risk |
+           *     | Due | 2026-09-14 |
+           *     | Owner | alex@example.com |
+           *     | Counterparty | jordan@example.com |
+           *     | Record generated | 2026-09-09T12:00:00Z |
+           *
+           *     ## Evidence
+           *
+           *     > We will have the migration live by the 14th.
+           *
+           *     — Gmail, 2026-09-06T12:00:00Z · https://mail.google.com/thread-1
+           *
+           *     Content hash `sha256:abc123`
+           *
+           *     ## History
+           *
+           *     2. **Confirmed in this workspace** — 2026-09-07T09:00:00Z (Someone in this workspace, alex@example.com)
+           */
           "text/markdown": string;
         };
       };

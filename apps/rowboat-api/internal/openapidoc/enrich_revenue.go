@@ -1466,11 +1466,11 @@ func addRevenuePaths(paths obj) {
 		}, "commitments"), nil),
 		"400": responseRef("400"), "401": responseRef("401"),
 	})}
-	paths["/v1/commitments/{commitmentId}/export"] = obj{"get": operation("Relationship Intelligence", "Export a commitment record", "Returns one commitment as a standalone record: the obligation, its full state history, and the verbatim cited evidence with timestamps. Pass format=md for the Markdown document a user forwards. A record that cannot leave the tool cannot settle an argument.", "exportCommitment", bearer(), []any{
-		obj{"name": "commitmentId", "in": "path", "required": true, "description": "Commitment id.", "schema": obj{"type": "string", "format": "uuid"}},
-		obj{"name": "format", "in": "query", "required": false, "description": "md for Markdown; JSON otherwise.", "schema": obj{"type": "string"}},
+	paths["/v1/commitments/{commitmentId}/export"] = obj{"get": operation("Relationship Intelligence", "Export record", "Export record downloads this promise as Markdown. The request uses format md. The file names the company, the promise, the state, the due date, the quoted mail, and the history.", "exportCommitment", bearer(), []any{
+		obj{"name": "commitmentId", "in": "path", "required": true, "description": "Commitment id.", "schema": uuidSchema("Commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5")},
+		obj{"name": "format", "in": "query", "required": false, "description": "md for the file Export record downloads.", "schema": stringSchema("Export format.", "md")},
 	}, nil, obj{
-		"200": jsonOrMarkdownResponse("The exportable record.", objectSchema("Commitment record.", obj{
+		"200": markdownDownloadResponse("The Markdown file Export record downloads.", objectSchema("Commitment record.", obj{
 			"id":           stringSchema("Commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 			"generatedAt":  stringSchema("When the record was produced.", "2026-09-09T12:00:00Z", obj{"format": "date-time"}),
 			"account":      stringSchema("Counterparty account.", "Acme"),
@@ -1488,7 +1488,7 @@ func addRevenuePaths(paths obj) {
 			"history": arraySchema("Ordered state changes.", objectSchema("Transition.", obj{
 				"version": intSchema("Event version.", 2), "kind": stringSchema("Event kind.", "internally_confirmed"), "actorType": stringSchema("Who caused it.", "user"), "actorRef": stringSchema("User who recorded this change.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"), "occurredAt": stringSchema("When.", "2026-09-07T09:00:00Z", obj{"format": "date-time"}),
 			}, "version", "kind", "actorType", "occurredAt")),
-		}, "id", "generatedAt", "account", "direction", "text", "state", "confidence", "evidence", "history"), nil),
+		}, "id", "generatedAt", "account", "direction", "text", "state", "confidence", "evidence", "history"), exportedCommitmentMarkdown),
 		"401": responseRef("401"), "404": responseRef("404"),
 	})}
 	paths["/v1/revenue-leak-scans/{scanId}/report"] = obj{"get": operation("Revenue", "Get the open promises report", "Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.", "getOpenPromisesReport", bearer(), []any{
@@ -2329,3 +2329,5 @@ func documentedPolicyRecheck() obj {
 		"expiresAt":    "2026-07-13T12:00:00Z",
 	}
 }
+
+const exportedCommitmentMarkdown = "# Commitment record\n\n**We promised:** Migration live by the 14th\n\n| Field | Value |\n|---|---|\n| Company | Acme |\n| State | At risk |\n| Due | 2026-09-14 |\n| Owner | alex@example.com |\n| Counterparty | jordan@example.com |\n| Record generated | 2026-09-09T12:00:00Z |\n\n## Evidence\n\n> We will have the migration live by the 14th.\n\n— Gmail, 2026-09-06T12:00:00Z · https://mail.google.com/thread-1\n\nContent hash `sha256:abc123`\n\n## History\n\n2. **Confirmed in this workspace** — 2026-09-07T09:00:00Z (Someone in this workspace, alex@example.com)\n"

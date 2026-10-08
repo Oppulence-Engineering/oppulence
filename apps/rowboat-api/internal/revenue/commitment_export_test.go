@@ -191,3 +191,40 @@ func TestCommitmentRecordMarkdownUsesCompanyWords(t *testing.T) {
 		t.Fatalf("kept promise labels = %q / %q", registerStateLabel("met"), commitmentHistoryLabel("fulfilled"))
 	}
 }
+
+func TestExportRecordMarkdownMatchesTheDocumentedPromise(t *testing.T) {
+	when := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	due := time.Date(2026, 9, 14, 17, 0, 0, 0, time.UTC)
+	evidenceAt := time.Date(2026, 9, 6, 12, 0, 0, 0, time.UTC)
+	historyAt := time.Date(2026, 9, 7, 9, 0, 0, 0, time.UTC)
+	doc := (&CommitmentRecord{
+		ID:           "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+		GeneratedAt:  when,
+		Account:      "Acme",
+		Direction:    "promised_by_me",
+		Text:         "Migration live by the 14th",
+		State:        "at_risk",
+		DueAt:        &due,
+		DuePhrase:    "by the 14th",
+		Owner:        "alex@example.com",
+		Counterparty: "jordan@example.com",
+		Evidence: []ExportedEvidence{{
+			Source:      "gmail",
+			Excerpt:     "We will have the migration live by the 14th.",
+			OccurredAt:  evidenceAt,
+			ContentHash: "sha256:abc123",
+			SourceURI:   "https://mail.google.com/thread-1",
+		}},
+		History: []ExportedTransition{{
+			Version:    2,
+			Kind:       "internally_confirmed",
+			ActorType:  "user",
+			ActorRef:   "alex@example.com",
+			OccurredAt: historyAt,
+		}},
+	}).Markdown()
+	const want = "# Commitment record\n\n**We promised:** Migration live by the 14th\n\n| Field | Value |\n|---|---|\n| Company | Acme |\n| State | At risk |\n| Due | 2026-09-14 |\n| Owner | alex@example.com |\n| Counterparty | jordan@example.com |\n| Record generated | 2026-09-09T12:00:00Z |\n\n## Evidence\n\n> We will have the migration live by the 14th.\n\n— Gmail, 2026-09-06T12:00:00Z · https://mail.google.com/thread-1\n\nContent hash `sha256:abc123`\n\n## History\n\n2. **Confirmed in this workspace** — 2026-09-07T09:00:00Z (Someone in this workspace, alex@example.com)\n"
+	if doc != want {
+		t.Fatalf("markdown:\n%s", doc)
+	}
+}

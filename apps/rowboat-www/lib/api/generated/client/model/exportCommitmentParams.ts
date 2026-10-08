@@ -8,7 +8,7 @@
 
 export type ExportCommitmentParams = {
   /**
-   * md for Markdown; JSON otherwise.
+   * Export format.
    */
   format?: string;
 };

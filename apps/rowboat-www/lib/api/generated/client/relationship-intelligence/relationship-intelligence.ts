@@ -202,8 +202,8 @@ export const getExportCommitmentUrl = (commitmentId: string, params?: ExportComm
 };
 
 /**
- * Returns one commitment as a standalone record: the obligation, its full state history, and the verbatim cited evidence with timestamps. Pass format=md for the Markdown document a user forwards. A record that cannot leave the tool cannot settle an argument.
- * @summary Export a commitment record
+ * Export record downloads this promise as Markdown. The request uses format md. The file names the company, the promise, the state, the due date, the quoted mail, and the history.
+ * @summary Export record
  */
 export const exportCommitment = async (
   commitmentId: string,
