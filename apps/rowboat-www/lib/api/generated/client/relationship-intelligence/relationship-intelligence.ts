@@ -947,7 +947,7 @@ export const getGetRelationshipPersonAttributesUrl = (personId: string) => {
 };
 
 /**
- * Open person loads the profile behind a name in the directory. The request sends only the person id. The answer is each stored detail: the value, where it came from, and why it is there.
+ * Open person loads the profile behind a name in the directory. The request sends only the person id. The answer is each stored detail: the value, where it came from, and why it is there. A researched detail includes the page the directory opens to verify it.
  * @summary Open person
  */
 export const getRelationshipPersonAttributes = async (

@@ -1499,6 +1499,22 @@ export const getGetRelationshipPersonAttributesResponseMock = (
 ): GetRelationshipPersonAttributes200 => ({
   attributes: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => ({
+      citations: faker.helpers.arrayElement([
+        Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+          excerpts: faker.helpers.arrayElement([
+            Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
+              faker.string.alpha({ length: { min: 10, max: 20 } }),
+            ),
+            undefined,
+          ]),
+          title: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+          url: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        })),
+        undefined,
+      ]),
       confidence: faker.number.float({ fractionDigits: 2 }),
       dimension: faker.string.alpha({ length: { min: 10, max: 20 } }),
       extractor: faker.string.alpha({ length: { min: 10, max: 20 } }),

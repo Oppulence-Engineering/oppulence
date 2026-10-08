@@ -2094,7 +2094,7 @@ export const DeleteRelationshipPerson404Response = zod
   );
 
 /**
- * Open person loads the profile behind a name in the directory. The request sends only the person id. The answer is each stored detail: the value, where it came from, and why it is there.
+ * Open person loads the profile behind a name in the directory. The request sends only the person id. The answer is each stored detail: the value, where it came from, and why it is there. A researched detail includes the page the directory opens to verify it.
  * @summary Open person
  */
 export const GetRelationshipPersonAttributesParams = zod.object({
@@ -2107,6 +2107,23 @@ export const GetRelationshipPersonAttributes200Response = zod
       .array(
         zod
           .strictObject({
+            citations: zod
+              .array(
+                zod
+                  .strictObject({
+                    excerpts: zod
+                      .array(zod.string().describe("Quoted line."))
+                      .optional()
+                      .describe("Quoted lines from that page."),
+                    title: zod.string().optional().describe("Title of the page."),
+                    url: zod.string().describe("Page to open."),
+                  })
+                  .describe("One page."),
+              )
+              .optional()
+              .describe(
+                "Pages that support a researched detail. The directory opens each one to verify it.",
+              ),
             confidence: zod.number().describe("How strongly this detail is held."),
             dimension: zod.string().describe("Which detail this is."),
             extractor: zod.string().describe("How it was read."),

@@ -2790,8 +2790,7 @@ func assertOpenPerson(t *testing.T, paths obj) {
 	if op["summary"] != "Open person" {
 		t.Fatalf("summary: %#v", op["summary"])
 	}
-	const wantDescription = "Open person loads the profile behind a name in the directory. The request sends only the person id. The answer is each stored detail: the value, where it came from, and why it is there."
-	if op["description"] != wantDescription {
+	if op["description"] != openPersonDescription {
 		t.Fatalf("description: %#v", op["description"])
 	}
 	params, _ := op["parameters"].([]any)
@@ -2809,6 +2808,11 @@ func assertOpenPerson(t *testing.T, paths obj) {
 	}
 	if string(got) != string(want) {
 		t.Fatalf("example:\n%s\nwant:\n%s", got, want)
+	}
+	citations := asObj(asObj(asObj(asObj(asObj(asObj(media["schema"])["properties"])["attributes"])["items"])["properties"])["citations"])
+	page := asObj(asObj(citations["items"])["properties"])
+	if asObj(page["url"])["example"] != openPersonCitationURL {
+		t.Fatalf("citation page: %#v", page["url"])
 	}
 }
 
