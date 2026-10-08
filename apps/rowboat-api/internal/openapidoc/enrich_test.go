@@ -323,6 +323,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil || schemas["BackgroundTask"] == nil || schemas["BackgroundTaskTemplate"] == nil || schemas["RevisionConflictEnvelope"] == nil || schemas["IntegrationTemplateBlock"] == nil || schemas["SlackWorkspacesResponse"] == nil || schemas["SlackThreadReadResponse"] == nil || schemas["EntityProjection"] == nil || schemas["EntitySpine"] == nil {
 		t.Fatal("checked-in openapi json is missing enriched runtime schemas")
 	}
+	assertRunRetryTrigger(t, spec)
 	if schemas["ConnectorCredentialCleanupJob"] != nil || schemas["ConnectorCredentialRecovery"] != nil {
 		t.Fatal("checked-in openapi json exposes internal credential cleanup or recovery state")
 	}
@@ -398,5 +399,25 @@ func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) 
 		if asObj(token["responses"])[status] == nil {
 			t.Fatalf("MCP token missing %s", status)
 		}
+	}
+}
+
+func TestRunRetryTriggerIsDocumented(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertRunRetryTrigger(t, spec)
+}
+
+func assertRunRetryTrigger(t *testing.T, spec obj) {
+	t.Helper()
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	run := asObj(schemas["BackgroundTaskRun"])
+	trigger := asObj(asObj(run["properties"])["trigger"])
+	if trigger["description"] != "Trigger source for a task run." || trigger["example"] != "manual" || trigger["type"] != "string" {
+		t.Fatalf("run retry trigger: %#v", trigger)
+	}
+	enum, ok := trigger["enum"].([]any)
+	if !ok || !reflect.DeepEqual(enum, []any{"manual", "cron", "window", "event", "retry"}) {
+		t.Fatalf("run retry trigger enum: %#v", trigger["enum"])
 	}
 }

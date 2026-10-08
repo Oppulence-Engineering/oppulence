@@ -7,15 +7,6 @@
  */
 
 /**
- * Trigger source for a task run.
+ * Editor document, when one was saved.
  */
-export type BackgroundTaskRunTrigger =
-  (typeof BackgroundTaskRunTrigger)[keyof typeof BackgroundTaskRunTrigger];
-
-export const BackgroundTaskRunTrigger = {
-  manual: "manual",
-  cron: "cron",
-  window: "window",
-  event: "event",
-  retry: "retry",
-} as const;
+export type ListWorkspaceNotes200NotesItemContent = { [key: string]: unknown };

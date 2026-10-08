@@ -297,6 +297,19 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the Retry trigger a run shows", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const trigger = presented.components.schemas.BackgroundTaskRun.properties.trigger;
+    expect(trigger).toMatchObject({
+      description: "Trigger source for a task run.",
+      example: "manual",
+      enum: ["manual", "cron", "window", "event", "retry"],
+      type: "string",
+    });
+    expect(JSON.stringify(trigger)).not.toContain("acta_");
+    expect(JSON.stringify(trigger)).not.toContain('"token"');
+  });
+
   it("names the observation a commitment event recorded", () => {
     const presented = presentApiReferenceDocument(spec);
     const event = presented.components.schemas.CommitmentEvent.properties;

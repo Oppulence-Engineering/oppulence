@@ -1917,7 +1917,7 @@
           },
           "trigger": {
             "description": "Trigger source for a task run.",
-            "enum": ["manual", "cron", "window", "event"],
+            "enum": ["manual", "cron", "window", "event", "retry"],
             "example": "manual",
             "type": "string"
           },
