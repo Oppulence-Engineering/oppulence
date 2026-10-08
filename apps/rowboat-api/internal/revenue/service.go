@@ -19,6 +19,10 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
@@ -847,6 +851,9 @@ func (s *Service) ListRelationshipsFiltered(
 		}
 		if mail := relationshipSheetMailMatch(needle); mail != nil {
 			parts = append(parts, mail)
+		}
+		if access := relationshipSheetMailAccessMatch(u.ID, s.now(), needle); access != nil {
+			parts = append(parts, access)
 		}
 		if empty := relationshipSheetEmptyCopyMatch(needle); empty != nil {
 			parts = append(parts, empty)
@@ -5774,6 +5781,281 @@ func relationshipOpenActionCount(compare string, n int) predicate.Relationship {
 			b.Arg(n)
 		}))
 	})
+}
+
+// relationshipSheetMailAccessMatch matches the access line on an email or
+// meeting row. The sheet prints that line for the person searching, so the
+// same mail is "Your mailbox" for its owner and a different sentence for a
+// teammate. A deleted row is not on the timeline.
+func relationshipSheetMailAccessMatch(actor uuid.UUID, now time.Time, needle string) predicate.Relationship {
+	var preds []predicate.Relationship
+	if labelPhraseMatches("your mailbox", needle) {
+		preds = append(preds, relationshipMailAccess(actor, now, "mailbox_owner"))
+	}
+	if needle == "protected" {
+		preds = append(preds, relationshipMailAccess(actor, now, "protected"))
+	}
+	if labelPhraseMatches("kept private", needle) {
+		preds = append(preds, relationshipMailAccess(actor, now, "owner_private"))
+	}
+	if labelPhraseMatches("shared with you", needle) {
+		preds = append(preds, relationshipMailAccess(actor, now, "explicit_grant"))
+	}
+	if labelPhraseMatches("shared in this workspace", needle) {
+		preds = append(preds, relationshipMailAccess(actor, now, "owner_default"))
+	}
+	switch len(preds) {
+	case 0:
+		return nil
+	case 1:
+		return preds[0]
+	default:
+		return relationship.Or(preds...)
+	}
+}
+
+func relationshipMailAccess(actor uuid.UUID, now time.Time, reason string) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			b.WriteString("EXISTS (SELECT 1 FROM ")
+			b.WriteString(communicationinteraction.Table)
+			b.WriteString(" AS mail WHERE mail.")
+			b.WriteString(communicationinteraction.RelationshipColumn)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" AND mail.")
+			b.WriteString(communicationinteraction.FieldDeleted)
+			b.WriteString(" = ")
+			b.Arg(false)
+			b.WriteString(" AND ")
+			writeMailAccessReason(b, s, actor, now, reason)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeMailAccessReason(b *sql.Builder, s *sql.Selector, actor uuid.UUID, now time.Time, reason string) {
+	switch reason {
+	case "mailbox_owner":
+		writeMailOwnerIs(b, s, actor, true)
+	case "protected":
+		writeMailOwnerIs(b, s, actor, false)
+		b.WriteString(" AND ")
+		writeMailProtected(b, s)
+	case "owner_private":
+		writeMailOwnerIs(b, s, actor, false)
+		b.WriteString(" AND NOT ")
+		writeMailProtected(b, s)
+		b.WriteString(" AND ")
+		writeMailKeptPrivate(b, s)
+	case "explicit_grant":
+		writeMailTeammateVisible(b, s, actor)
+		b.WriteString(" AND ")
+		writeMailGrant(b, s, actor, now)
+	default:
+		writeMailTeammateVisible(b, s, actor)
+		b.WriteString(" AND NOT ")
+		writeMailGrant(b, s, actor, now)
+	}
+}
+
+func writeMailTeammateVisible(b *sql.Builder, s *sql.Selector, actor uuid.UUID) {
+	writeMailOwnerIs(b, s, actor, false)
+	b.WriteString(" AND NOT ")
+	writeMailProtected(b, s)
+	b.WriteString(" AND NOT ")
+	writeMailKeptPrivate(b, s)
+}
+
+func writeMailOwnerIs(b *sql.Builder, s *sql.Selector, actor uuid.UUID, owner bool) {
+	b.WriteString("mail.")
+	b.WriteString(communicationinteraction.OwnerColumn)
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("::text")
+	}
+	if owner {
+		b.WriteString(" = ")
+	} else {
+		b.WriteString(" <> ")
+	}
+	b.Arg(actor.String())
+}
+
+func writeMailProtected(b *sql.Builder, s *sql.Selector) {
+	writeMailRuleMatch(b, s, "protected_address", "protected_domain")
+}
+
+func writeMailKeptPrivate(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("(")
+	writeMailRuleMatch(b, s, "blocked_address", "blocked_domain")
+	b.WriteString(" OR ")
+	writeMailPrivatePolicy(b, s)
+	b.WriteString(")")
+}
+
+func writeMailRuleMatch(b *sql.Builder, s *sql.Selector, addressKind, domainKind string) {
+	email := "lower(trim(person." + communicationparticipant.FieldEmail + "))"
+	value := "rule." + communicationprivacyrule.FieldValue
+	b.WriteString("EXISTS (SELECT 1 FROM ")
+	b.WriteString(communicationprivacyrule.Table)
+	b.WriteString(" AS rule, ")
+	b.WriteString(communicationparticipant.Table)
+	b.WriteString(" AS person WHERE rule.")
+	b.WriteString(communicationprivacyrule.FieldActive)
+	b.WriteString(" = ")
+	b.Arg(true)
+	b.WriteString(" AND rule.")
+	b.WriteString(communicationprivacyrule.WorkspaceColumn)
+	b.WriteString(" = mail.")
+	b.WriteString(communicationinteraction.WorkspaceColumn)
+	b.WriteString(" AND rule.")
+	b.WriteString(communicationprivacyrule.OwnerColumn)
+	b.WriteString(" = mail.")
+	b.WriteString(communicationinteraction.OwnerColumn)
+	b.WriteString(" AND person.")
+	b.WriteString(communicationparticipant.InteractionColumn)
+	b.WriteString(" = mail.")
+	b.WriteString(communicationinteraction.FieldID)
+	b.WriteString(" AND ((rule.")
+	b.WriteString(communicationprivacyrule.FieldKind)
+	b.WriteString(" = ")
+	b.Arg(addressKind)
+	b.WriteString(" AND ")
+	b.WriteString(email)
+	b.WriteString(" = ")
+	b.WriteString(value)
+	b.WriteString(") OR (rule.")
+	b.WriteString(communicationprivacyrule.FieldKind)
+	b.WriteString(" = ")
+	b.Arg(domainKind)
+	b.WriteString(" AND length(")
+	b.WriteString(email)
+	b.WriteString(") > length(")
+	b.WriteString(value)
+	b.WriteString(") AND substr(")
+	b.WriteString(email)
+	b.WriteString(", length(")
+	b.WriteString(email)
+	b.WriteString(") - length(")
+	b.WriteString(value)
+	b.WriteString("), 1) = '@' AND substr(")
+	b.WriteString(email)
+	b.WriteString(", length(")
+	b.WriteString(email)
+	b.WriteString(") - length(")
+	b.WriteString(value)
+	b.WriteString(") + 1) = ")
+	b.WriteString(value)
+	b.WriteString(")))")
+}
+
+func writeMailPrivatePolicy(b *sql.Builder, s *sql.Selector) {
+	b.WriteString("COALESCE((SELECT policy.")
+	b.WriteString(communicationprivacypolicy.FieldMetadataVisibility)
+	b.WriteString(" FROM ")
+	b.WriteString(communicationprivacypolicy.Table)
+	b.WriteString(" AS policy WHERE policy.")
+	b.WriteString(communicationprivacypolicy.WorkspaceColumn)
+	b.WriteString(" = mail.")
+	b.WriteString(communicationinteraction.WorkspaceColumn)
+	b.WriteString(" AND policy.")
+	b.WriteString(communicationprivacypolicy.OwnerColumn)
+	b.WriteString(" = mail.")
+	b.WriteString(communicationinteraction.OwnerColumn)
+	b.WriteString(" AND policy.")
+	b.WriteString(communicationprivacypolicy.FieldSourceAccountID)
+	b.WriteString(" = lower(trim(mail.")
+	b.WriteString(communicationinteraction.FieldSourceAccountID)
+	b.WriteString(")) LIMIT 1), (SELECT policy.")
+	b.WriteString(communicationprivacypolicy.FieldMetadataVisibility)
+	b.WriteString(" FROM ")
+	b.WriteString(communicationprivacypolicy.Table)
+	b.WriteString(" AS policy WHERE policy.")
+	b.WriteString(communicationprivacypolicy.WorkspaceColumn)
+	b.WriteString(" = mail.")
+	b.WriteString(communicationinteraction.WorkspaceColumn)
+	b.WriteString(" AND policy.")
+	b.WriteString(communicationprivacypolicy.FieldSourceAccountID)
+	b.WriteString(" = ")
+	b.Arg(workspaceCommunicationDefaultsAccount)
+	b.WriteString(" ORDER BY policy.")
+	b.WriteString(communicationprivacypolicy.FieldUpdatedAt)
+	b.WriteString(" DESC LIMIT 1), ")
+	b.Arg("workspace")
+	b.WriteString(") = ")
+	b.Arg("private")
+}
+
+func writeMailGrant(b *sql.Builder, s *sql.Selector, actor uuid.UUID, now time.Time) {
+	b.WriteString("EXISTS (SELECT 1 FROM ")
+	b.WriteString(communicationsharegrant.Table)
+	b.WriteString(" AS grant_row WHERE grant_row.")
+	b.WriteString(communicationsharegrant.WorkspaceColumn)
+	b.WriteString(" = mail.")
+	b.WriteString(communicationinteraction.WorkspaceColumn)
+	b.WriteString(" AND grant_row.")
+	b.WriteString(communicationsharegrant.OwnerColumn)
+	b.WriteString(" = mail.")
+	b.WriteString(communicationinteraction.OwnerColumn)
+	b.WriteString(" AND grant_row.")
+	b.WriteString(communicationsharegrant.FieldRevokedAt)
+	b.WriteString(" IS NULL AND (grant_row.")
+	b.WriteString(communicationsharegrant.FieldExpiresAt)
+	b.WriteString(" IS NULL OR grant_row.")
+	b.WriteString(communicationsharegrant.FieldExpiresAt)
+	b.WriteString(" > ")
+	b.Arg(now.UTC())
+	b.WriteString(") AND (grant_row.")
+	b.WriteString(communicationsharegrant.GranteeColumn)
+	b.WriteString(" IS NULL OR ")
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("grant_row.")
+		b.WriteString(communicationsharegrant.GranteeColumn)
+		b.WriteString("::text = ")
+	} else {
+		b.WriteString("grant_row.")
+		b.WriteString(communicationsharegrant.GranteeColumn)
+		b.WriteString(" = ")
+	}
+	b.Arg(actor.String())
+	b.WriteString(") AND grant_row.")
+	b.WriteString(communicationsharegrant.FieldResourceID)
+	b.WriteString(" <> '' AND ((grant_row.")
+	b.WriteString(communicationsharegrant.FieldResourceType)
+	b.WriteString(" = 'message' AND grant_row.")
+	b.WriteString(communicationsharegrant.FieldResourceID)
+	b.WriteString(" = mail.")
+	b.WriteString(communicationinteraction.FieldProviderObjectID)
+	b.WriteString(") OR (grant_row.")
+	b.WriteString(communicationsharegrant.FieldResourceType)
+	b.WriteString(" = 'thread' AND grant_row.")
+	b.WriteString(communicationsharegrant.FieldResourceID)
+	b.WriteString(" = ")
+	writeMailThreadID(b, s)
+	b.WriteString(") OR (grant_row.")
+	b.WriteString(communicationsharegrant.FieldResourceType)
+	b.WriteString(" = 'relationship' AND grant_row.")
+	b.WriteString(communicationsharegrant.FieldResourceID)
+	b.WriteString(" = ")
+	b.WriteString("mail.")
+	b.WriteString(communicationinteraction.RelationshipColumn)
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("::text")
+	}
+	b.WriteString(")))")
+}
+
+func writeMailThreadID(b *sql.Builder, s *sql.Selector) {
+	column := "mail." + communicationinteraction.FieldMetadataJSON
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("COALESCE(")
+		b.WriteString(column)
+		b.WriteString("::jsonb->>'threadId', '')")
+		return
+	}
+	b.WriteString("COALESCE(json_extract(")
+	b.WriteString(column)
+	b.WriteString(", '$.threadId'), '')")
 }
 
 // relationshipSheetMailMatch matches the mail section on the company sheet.
