@@ -694,6 +694,16 @@ describe("API reference document", () => {
     });
   });
 
+  it("does not select relationship:123 on a saved graph view", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const state = presented.components.schemas.ConsoleGraphSavedViewState.properties;
+    expect(state.selectedNodeId).toMatchObject({
+      description: "Optional selected graph node.",
+      example: "relationship:3a196c5e-b10e-46cb-a177-7c001f7be573",
+    });
+    expect(state.relationshipId.example).toBe("3a196c5e-b10e-46cb-a177-7c001f7be573");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
