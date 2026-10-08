@@ -148,6 +148,24 @@ func builtinConversationPolicyVersion() string {
 // A review acknowledgement is stored only when this value matches.
 const documentedRelationshipStateHash = "sha256:454f195e2389d36fd49e5c9b9656b7b47a3629332a84eb570edf3fa5248851e1"
 
+const priorityBreakdownDescription = "Factors the review lists."
+
+func priorityBreakdownExample() obj {
+	return obj{
+		"commitment_urgency":  25,
+		"evidence_quality":    10,
+		"recency_signal":      12,
+		"relationship_value":  20,
+		"uncertainty_penalty": -5,
+	}
+}
+
+func priorityBreakdownSchema() obj {
+	schema := freeFormSchema(priorityBreakdownDescription)
+	schema["example"] = priorityBreakdownExample()
+	return schema
+}
+
 func addRevenueSchemas(schemas obj) {
 	schemas["RevenueWorkspace"] = objectSchema("Mapping between the Rowboat tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.", obj{
 		"id":                     uuidSchema("Workspace id.", "0b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
@@ -667,7 +685,7 @@ func addRevenueSchemas(schemas obj) {
 		"proposedMessage":         stringSchema("Proposed message body.", "Hi Jordan — you asked me to circle back this month..."),
 		"senderAccountRef":        stringSchema("Sender account reference.", "gmail:me@company.com"),
 		"priorityScore":           intSchema("Explainable priority score (0-100).", 82),
-		"priorityComponents":      freeFormSchema("Per-component priority breakdown; every component is stored and shown."),
+		"priorityComponents":      priorityBreakdownSchema(),
 		"queueStatus":             stringEnum("Operator triage state.", "open", "open", "snoozed", "dismissed", "handled"),
 		"policyStatus":            stringEnum("Preflight state. Facade unavailability keeps pending (fail closed).", "pending", "pending", "passed", "review_required", "blocked", "stale"),
 		"approvalStatus":          stringEnum("Approval state, bound to the exact revision and decision.", "pending", "pending", "approved", "rejected"),

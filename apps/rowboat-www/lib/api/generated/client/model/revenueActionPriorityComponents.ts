@@ -7,6 +7,6 @@
  */
 
 /**
- * Per-component priority breakdown; every component is stored and shown.
+ * Factors the review lists.
  */
 export type RevenueActionPriorityComponents = { [key: string]: unknown };

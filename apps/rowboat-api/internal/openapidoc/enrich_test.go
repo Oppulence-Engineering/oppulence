@@ -6652,6 +6652,40 @@ func assertEventParties(t *testing.T, schemas obj) {
 	}
 }
 
+func TestPriorityBreakdownIsDocumented(t *testing.T) {
+	raw, err := os.ReadFile("../../api/openapi.json")
+	if err != nil {
+		t.Fatalf("read checked-in openapi json: %v", err)
+	}
+	var checked obj
+	if err := json.Unmarshal(raw, &checked); err != nil {
+		t.Fatalf("parse checked-in openapi json: %v", err)
+	}
+	assertPriorityBreakdown(t, asObj(asObj(checked["components"])["schemas"]))
+	fresh := obj{"components": obj{"schemas": obj{}}}
+	Enrich(fresh)
+	assertPriorityBreakdown(t, asObj(asObj(fresh["components"])["schemas"]))
+}
+
+func assertPriorityBreakdown(t *testing.T, schemas obj) {
+	t.Helper()
+	parts := asObj(asObj(asObj(schemas["RevenueAction"])["properties"])["priorityComponents"])
+	if parts["description"] != priorityBreakdownDescription {
+		t.Fatalf("priority breakdown description: %#v", parts["description"])
+	}
+	got, err := json.Marshal(parts["example"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(priorityBreakdownExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("priority breakdown example: %s", got)
+	}
+}
+
 func assertEventObservation(t *testing.T, schemas obj) {
 	t.Helper()
 	event := asObj(schemas["CommitmentEvent"])

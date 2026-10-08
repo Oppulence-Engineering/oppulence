@@ -11415,7 +11415,16 @@ export interface components {
        * @enum {string}
        */
       policyStatus: "pending" | "passed" | "review_required" | "blocked" | "stale";
-      /** @description Per-component priority breakdown; every component is stored and shown. */
+      /**
+       * @description Factors the review lists.
+       * @example {
+       *       "commitment_urgency": 25,
+       *       "evidence_quality": 10,
+       *       "recency_signal": 12,
+       *       "relationship_value": 20,
+       *       "uncertainty_penalty": -5
+       *     }
+       */
       priorityComponents?: {
         [key: string]: unknown;
       };

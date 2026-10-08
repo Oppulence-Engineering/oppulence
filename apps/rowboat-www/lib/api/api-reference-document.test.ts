@@ -490,6 +490,16 @@ describe("API reference document", () => {
 
   it("names the observation a commitment event recorded", () => {
     const presented = presentApiReferenceDocument(spec);
+    expect(presented.components.schemas.RevenueAction.properties.priorityComponents).toMatchObject({
+      description: "Factors the review lists.",
+      example: {
+        commitment_urgency: 25,
+        evidence_quality: 10,
+        recency_signal: 12,
+        relationship_value: 20,
+        uncertainty_penalty: -5,
+      },
+    });
     const event = presented.components.schemas.CommitmentEvent.properties;
     const observationID = "6b8dfa9b-a7b2-46ea-982c-622a914c00e5";
     expect(event.sourceObservationId).toMatchObject({
