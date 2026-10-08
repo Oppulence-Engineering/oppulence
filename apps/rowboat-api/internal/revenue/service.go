@@ -991,6 +991,13 @@ func (s *Service) ListRelationshipsFiltered(
 		if roster := relationshipSheetActivityRosterMatch(needle); roster != nil {
 			parts = append(parts, roster)
 		}
+
+		if provider := relationshipSheetActivityProviderMatch(needle); provider != nil {
+			parts = append(parts, provider)
+		}
+		if mailDirection := relationshipSheetActivityMailDirectionMatch(needle); mailDirection != nil {
+			parts = append(parts, mailDirection)
+		}
 		if actionLabel := relationshipSheetActionLabelMatch(needle); actionLabel != nil {
 			parts = append(parts, actionLabel)
 		}
@@ -3165,6 +3172,132 @@ func writeNormalizedCount(b *sql.Builder, s *sql.Selector, facts, key string) {
 	}
 	b.WriteString("replace(replace(replace(lower(")
 	writeCountShown(b, s, facts, key)
+	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
+	for range 4 {
+		b.WriteString(", '  ', ' ')")
+	}
+	b.WriteString(")")
+}
+
+// relationshipSheetActivityProviderMatch is "Provider: Gmail" or
+// "Provider: A note" on an opened activity. The stored slug is the heading's
+// name, so "gmail" prints as Gmail and "desktop_note" prints as A note.
+// A label that repeats the row summary stays hidden. local-user is not a provider.
+func relationshipSheetActivityProviderMatch(needle string) predicate.Relationship {
+	return relationshipSheetLabeledFactMatch(needle, "provider: ", "provider", activityProviderLabels)
+}
+
+// relationshipSheetActivityMailDirectionMatch is "Direction: Outbound" or
+// "Direction: Inbound" on an opened activity. Mail stores the lowercase word.
+// "Direction: We owe them" is a promise, not this fact.
+func relationshipSheetActivityMailDirectionMatch(needle string) predicate.Relationship {
+	return relationshipSheetLabeledFactMatch(needle, "direction: ", "direction", activityMailDirectionLabels)
+}
+
+var activityProviderLabels = [][2]string{
+	{"gmail", "Gmail"},
+	{"google", "Google"},
+	{"calendar", "Calendar"},
+	{"slack", "Slack"},
+	{"hubspot", "HubSpot"},
+	{"meeting", "A meeting"},
+	{"desktop_note", "A note"},
+	{"voice_note", "A voice note"},
+	{"browser", "The browser"},
+	{"crm", "The CRM"},
+	{"user", "Added by you"},
+	{"web", "The web"},
+	{"composio", "A connected app"},
+}
+
+var activityMailDirectionLabels = [][2]string{
+	{"outbound", "Outbound"},
+	{"inbound", "Inbound"},
+}
+
+func relationshipSheetLabeledFactMatch(needle, marker, key string, labels [][2]string) predicate.Relationship {
+	index := strings.Index(needle, marker)
+	if index < 0 {
+		return nil
+	}
+	value := strings.TrimSpace(needle[index+len(marker):])
+	if value == "" {
+		return nil
+	}
+	return relationship.HasObservationsWith(observationLabeledFact(key, value, labels))
+}
+
+func observationLabeledFact(key, value string, labels [][2]string) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			facts := s.C(relationshipobservation.FieldNormalizedFactsJSON)
+			summary := s.C(relationshipobservation.FieldSummary)
+			b.WriteString("(")
+			writeLabeledFactShown(b, s, facts, key, labels)
+			b.WriteString(" <> '' AND lower(")
+			writeLabeledFactTrim(b, s, facts, key)
+			b.WriteString(") NOT IN ('local-user', 'meeting-counterparty') AND ")
+			writeNormalizedLabeledFact(b, s, facts, key, labels)
+			b.WriteString(" = ")
+			b.Arg(value)
+			b.WriteString(" AND ")
+			writeLabeledFactShown(b, s, facts, key, labels)
+			b.WriteString(" <> ")
+			if s.Dialect() == dialect.Postgres {
+				b.WriteString("btrim(coalesce(")
+			} else {
+				b.WriteString("trim(coalesce(")
+			}
+			b.WriteString(summary)
+			b.WriteString(", '')))")
+		}))
+	})
+}
+
+func writeLabeledFactTrim(b *sql.Builder, s *sql.Selector, facts, key string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(coalesce(")
+		b.WriteString(facts)
+		b.WriteString("::jsonb->>'")
+		b.WriteString(key)
+		b.WriteString("', ''))")
+		return
+	}
+	b.WriteString("trim(coalesce(CAST(json_extract(")
+	b.WriteString(facts)
+	b.WriteString(", '$.")
+	b.WriteString(key)
+	b.WriteString("') AS TEXT), ''))")
+}
+
+func writeLabeledFactShown(b *sql.Builder, s *sql.Selector, facts, key string, labels [][2]string) {
+	b.WriteString("(CASE lower(")
+	writeLabeledFactTrim(b, s, facts, key)
+	b.WriteString(")")
+	for _, label := range labels {
+		b.WriteString(" WHEN ")
+		b.Arg(label[0])
+		b.WriteString(" THEN ")
+		b.Arg(label[1])
+	}
+	b.WriteString(" ELSE ")
+	writeLabeledFactTrim(b, s, facts, key)
+	b.WriteString(" END)")
+}
+
+func writeNormalizedLabeledFact(b *sql.Builder, s *sql.Selector, facts, key string, labels [][2]string) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("btrim(regexp_replace(replace(replace(replace(lower(")
+		writeLabeledFactShown(b, s, facts, key, labels)
+		b.WriteString("), '-', ' '), '_', ' '), '.', ' '), '[[:space:]]+', ' ', 'g'))")
+		return
+	}
+	b.WriteString("trim(")
+	for range 4 {
+		b.WriteString("replace(")
+	}
+	b.WriteString("replace(replace(replace(lower(")
+	writeLabeledFactShown(b, s, facts, key, labels)
 	b.WriteString("), '-', ' '), '_', ' '), '.', ' ')")
 	for range 4 {
 		b.WriteString(", '  ', ' ')")

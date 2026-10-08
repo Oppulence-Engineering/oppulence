@@ -2833,6 +2833,72 @@ func TestRelationshipSearchFindsTheActivityRoster(t *testing.T) {
 	assertCompanyQuery("external participant count")
 }
 
+func TestRelationshipSearchFindsTheActivityProvider(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	saveNote := func(name, summary, facts string, payload []byte) {
+		t.Helper()
+		rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := time.Now().UTC()
+		create := f.client.RelationshipObservation.Create().
+			SetWorkspace(ws).SetUser(f.user).SetRelationship(rel).
+			SetSource("gmail").SetExternalID(name).SetEventType("thread.snapshot").
+			SetOccurredAt(now).SetReceivedAt(now).SetContentHash(name).
+			SetSummary(summary).
+			SetNormalizedFactsJSON(facts)
+		if len(payload) > 0 {
+			create.SetPayloadCiphertext(payload)
+		}
+		if _, err := create.Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	saveNote("Quill Packet", "Gmail thread observed: Harbor packet", `{"provider":"gmail"}`, nil)
+	saveNote("Cedar Echo", "Gmail", `{"provider":"gmail"}`, nil)
+	saveNote("Birch Slide", "Gmail thread observed: Birch slide", `{"direction":"outbound"}`, nil)
+	saveNote("Cedar Quiet", "Gmail thread observed: Cedar quiet", `{"direction":"inbound"}`, []byte{1, 2, 3})
+	saveNote("Cedar Mine", "Gmail thread observed: Cedar mine", `{"provider":"hubspot"}`, nil)
+	saveNote("Cedar Mark", "Gmail thread observed: Cedar mark", `{"provider":"desktop_note"}`, nil)
+	saveNote("Cedar Locked", "Outbound", `{"direction":"outbound"}`, nil)
+	saveNote("Cedar West", "Gmail thread observed: Cedar west", `{"provider":"local-user"}`, nil)
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Provider: Gmail", "Quill Packet")
+	assertCompanyQuery("which activity says provider: Gmail", "Quill Packet")
+	assertCompanyQuery("Provider: HubSpot", "Cedar Mine")
+	assertCompanyQuery("Provider: A note", "Cedar Mark")
+	assertCompanyQuery("Direction: Outbound", "Birch Slide")
+	assertCompanyQuery("Direction: Inbound", "Cedar Quiet")
+	assertCompanyQuery("Direction: We owe them")
+	assertCompanyQuery("Provider: local-user")
+	assertCompanyQuery("provider")
+	assertCompanyQuery("direction")
+	assertCompanyQuery("outbound")
+}
+
 func TestRelationshipSearchFindsTheFollowUpLabel(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

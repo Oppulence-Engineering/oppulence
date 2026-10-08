@@ -265,4 +265,24 @@ describe("source product copy", () => {
     expect(lines.join("\n")).not.toMatch(/18abc|18def|Thread Id|Message Id/);
     expect(activityLinesBesideSummary(["Attachment Count: 1"], "1")).toEqual([]);
   });
+
+  it("names a provider and a mail direction the way the heading does", () => {
+    expect(
+      activityEvidenceLines(null, {
+        provider: "gmail",
+        direction: "outbound",
+      }),
+    ).toEqual(["Provider: Gmail", "Direction: Outbound"]);
+    expect(activityEvidenceLines(null, { provider: "desktop_note", direction: "inbound" })).toEqual([
+      "Provider: A note",
+      "Direction: Inbound",
+    ]);
+    expect(activityEvidenceLines(null, { provider: "hubspot" })).toEqual(["Provider: HubSpot"]);
+    expect(activityEvidenceLines(null, { provider: "local-user", direction: "meeting-counterparty" })).toEqual([
+      "Nothing else was saved with this activity.",
+    ]);
+    expect(activityLinesBesideSummary(["Provider: Gmail", "Direction: Outbound"], "Gmail")).toEqual([
+      "Direction: Outbound",
+    ]);
+  });
 });

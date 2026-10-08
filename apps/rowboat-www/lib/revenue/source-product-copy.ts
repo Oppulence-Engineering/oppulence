@@ -160,6 +160,24 @@ export function activitySourceLabel(source: string): string {
   return ACTIVITY_SOURCE_LABELS[key] ?? enumLabel(key);
 }
 
+/** Gmail stores the connector slug. The activity uses the same name as the heading. */
+function activityProviderLine(value: unknown): string | null {
+  const text = activityScalar(value);
+  if (!text || text === "local-user" || text === "meeting-counterparty") return null;
+  return `Provider: ${activitySourceLabel(text)}`;
+}
+
+/** Mail direction is outbound or inbound. The activity capitalizes the word. */
+function activityMailDirectionLine(value: unknown): string | null {
+  const text = activityScalar(value);
+  if (!text || text === "local-user" || text === "meeting-counterparty") return null;
+  const key = text.trim().toLowerCase();
+  if (key === "outbound") return "Direction: Outbound";
+  if (key === "inbound") return "Direction: Inbound";
+  const shown = /^[a-z0-9_]+$/.test(text) && text.includes("_") ? enumLabel(text) : text;
+  return `Direction: ${shown}`;
+}
+
 const ACTION_OUTCOME_LABELS: Record<string, string> = {
   sent: "Message sent",
   delivered: "Delivered",
@@ -381,6 +399,16 @@ function linesFromActivity(value: unknown): string[] {
     if (HIDDEN_ACTIVITY_KEYS.has(key)) continue;
     if (key === "commitment_direction") {
       const direction = activityDirectionLine(item);
+      if (direction) lines.push(direction);
+      continue;
+    }
+    if (key === "provider") {
+      const provider = activityProviderLine(item);
+      if (provider) lines.push(provider);
+      continue;
+    }
+    if (key === "direction") {
+      const direction = activityMailDirectionLine(item);
       if (direction) lines.push(direction);
       continue;
     }
