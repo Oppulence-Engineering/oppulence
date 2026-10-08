@@ -1769,6 +1769,7 @@ function SourceConnectionCards({
             account && account.backfillTotal > 0
               ? Math.round((account.backfillCompleted / account.backfillTotal) * 100)
               : null;
+          const lag = account ? sourceLagLabel(account.lagSeconds) : "";
           return (
             <article
               key={item.source}
@@ -1802,7 +1803,7 @@ function SourceConnectionCards({
                   <p>
                     {completenessProductLabel(account.completeness)}
                     {progress !== null ? ` · ${progress}% of history synced` : ""}
-                    {account.lagSeconds ? ` · ${Math.round(account.lagSeconds / 60)}m lag` : ""}
+                    {lag ? ` · ${lag}` : ""}
                   </p>
                   {account.missingScopes.length > 0 ? (
                     <p className="text-amber-600">
@@ -2110,6 +2111,27 @@ export function completenessHeading(status: string, supported: number): string {
   const count = Number.isFinite(supported) ? Math.max(0, Math.round(supported)) : 0;
   if (status.trim() === "partial" && count === 0) return "No account details have a source yet";
   return completenessProductLabel(status);
+}
+
+/**
+ * Sync lag is a duration. A missed day was printing as thousands of minutes
+ * instead of how long the source has been behind.
+ */
+export function sourceLagLabel(lagSeconds: number): string {
+  if (!Number.isFinite(lagSeconds) || lagSeconds <= 0) return "";
+  const minute = 60;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  if (lagSeconds < hour) {
+    const minutes = Math.max(1, Math.round(lagSeconds / minute));
+    return minutes === 1 ? "1 minute behind" : `${minutes} minutes behind`;
+  }
+  if (lagSeconds < day) {
+    const hours = Math.round(lagSeconds / hour);
+    return hours === 1 ? "1 hour behind" : `${hours} hours behind`;
+  }
+  const days = Math.max(1, Math.round(lagSeconds / day));
+  return days === 1 ? "1 day behind" : `${days} days behind`;
 }
 
 /** Stored completeness statuses are not labels. The company sheet names what is missing. */
