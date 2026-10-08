@@ -2771,7 +2771,7 @@ export const ListBackgroundTaskRunEvents200Response = zod
           .strictObject({
             event: zod
               .record(zod.string(), zod.unknown())
-              .describe("Original JSON event object from the desktop run log."),
+              .describe("Payload the transcript reads. A model call names the model."),
             id: zod.uuid().describe("Stable UUID primary key."),
             receivedAt: zod.iso
               .datetime({ offset: true })
@@ -2780,7 +2780,9 @@ export const ListBackgroundTaskRunEvents200Response = zod
             type: zod
               .string()
               .nullish()
-              .describe("Event type, either supplied explicitly or copied from event.type."),
+              .describe(
+                "Heading for this transcript row. A model call is runtime.llm_call_started.",
+              ),
           })
           .describe("Mirrored JSONL event from a background task run log."),
       )

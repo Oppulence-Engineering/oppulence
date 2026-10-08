@@ -7,6 +7,6 @@
  */
 
 /**
- * Original JSON event object from the desktop run log.
+ * Payload the transcript reads. A model call names the model.
  */
 export type BackgroundTaskRunEventEvent = { [key: string]: unknown };

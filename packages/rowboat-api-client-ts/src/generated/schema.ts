@@ -4649,7 +4649,13 @@ export interface components {
     };
     /** @description Mirrored JSONL event from a background task run log. */
     BackgroundTaskRunEvent: {
-      /** @description Original JSON event object from the desktop run log. */
+      /**
+       * @description Payload the transcript reads. A model call names the model.
+       * @example {
+       *       "model": "openai/gpt-4.1",
+       *       "type": "runtime.llm_call_started"
+       *     }
+       */
       event: {
         [key: string]: unknown;
       };
@@ -4671,8 +4677,8 @@ export interface components {
        */
       seq: number;
       /**
-       * @description Event type, either supplied explicitly or copied from event.type.
-       * @example temporal.completed
+       * @description Heading for this transcript row. A model call is runtime.llm_call_started.
+       * @example runtime.llm_call_started
        */
       type?: string | null;
     };

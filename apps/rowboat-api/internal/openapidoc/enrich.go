@@ -550,11 +550,13 @@ func addBackgroundTaskSchemas(schemas obj) {
 		"startedAt":          stringSchema("Run start timestamp.", "2026-06-04T21:01:00Z", obj{"format": "date-time"}, nullable()),
 		"completedAt":        stringSchema("Run completion timestamp.", "2026-06-04T21:02:00Z", obj{"format": "date-time"}, nullable()),
 	}, "revision")
+	modelCall := freeFormSchema(transcriptModelCallDescription)
+	modelCall["example"] = obj{"model": transcriptModelCallModel, "type": transcriptModelCallType}
 	schemas["BackgroundTaskRunEvent"] = objectSchema("One durable log/progress event mirrored from a desktop run or API-worker workflow.", obj{
 		"id":         uuidSchema("Stable server id for the event row.", "06227adb-924f-46f1-b324-1b10d080a660"),
 		"seq":        intSchema("Zero-based sequence number within the run log. Duplicate seq values for a run are ignored on append.", 1),
-		"type":       stringSchema("Event type, either supplied explicitly or copied from event.type.", "temporal.completed", nullable()),
-		"event":      freeFormSchema("Original JSON event object from the desktop run log."),
+		"type":       stringSchema(transcriptModelCallTypeDescription, transcriptModelCallType, nullable()),
+		"event":      modelCall,
 		"receivedAt": stringSchema("Server timestamp when the event was stored.", "2026-06-04T21:02:05Z", obj{"format": "date-time"}),
 	}, "id", "seq", "event", "receivedAt")
 	schemas["BackgroundTaskRunEventsResponse"] = objectSchema("Ordered durable task log/progress event list for a run.", obj{
@@ -3203,6 +3205,13 @@ func backgroundTaskQueuedRunExample() obj {
 	run["revision"] = 1
 	return run
 }
+
+const (
+	transcriptModelCallType            = "runtime.llm_call_started"
+	transcriptModelCallModel           = "openai/gpt-4.1"
+	transcriptModelCallTypeDescription = "Heading for this transcript row. A model call is runtime.llm_call_started."
+	transcriptModelCallDescription     = "Payload the transcript reads. A model call names the model."
+)
 
 func backgroundTaskRunEventExample() obj {
 	return obj{
