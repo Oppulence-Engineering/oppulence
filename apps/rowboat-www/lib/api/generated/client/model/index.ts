@@ -632,6 +632,8 @@ export * from "./startGoogleOAuth200";
 export * from "./startRevenueLeakScanBody";
 export * from "./startSlackOAuth200";
 export * from "./streamBackgroundTaskRunEventsParams";
+export * from "./submitAgentSessionTurn202";
+export * from "./submitAgentSessionTurnBody";
 export * from "./subscription";
 export * from "./subscriptionHistory";
 export * from "./subscriptionHistoryOperation";

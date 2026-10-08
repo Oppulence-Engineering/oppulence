@@ -1124,6 +1124,19 @@ func documentedChatApproval() obj {
 	}
 }
 
+const nextChatMessage = "Ask about a company, a promise, or the next step."
+
+func documentedNextChatMessage() obj {
+	return obj{"input": nextChatMessage}
+}
+
+func documentedAcceptedChatTurn() obj {
+	return obj{
+		"accepted": true,
+		"turnSeq":  1,
+	}
+}
+
 func addAgentSessionPaths(paths obj) {
 	paths["/v1/agent-sessions"] = obj{
 		"get": operation("Agent Sessions", "List agent sessions", "Returns the authenticated user's recent durable agent conversations. A full page of 50 is the end of the history when hasMore is false.", "listAgentSessions", bearer(), nil, nil, obj{

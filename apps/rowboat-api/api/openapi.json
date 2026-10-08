@@ -16444,6 +16444,101 @@
         ]
       }
     },
+    "/v1/agent-sessions/{id}/turns": {
+      "post": {
+        "description": "Submit sends the next message in the open chat. It posts only \"Ask about a company, a promise, or the next step.\" The opening message already took sequence 0, so this turn is accepted as sequence 1.",
+        "operationId": "submitAgentSessionTurn",
+        "parameters": [
+          {
+            "description": "Stable session id.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session id.",
+              "example": "session_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "input": "Ask about a company, a promise, or the next step."
+              },
+              "schema": {
+                "description": "Next chat message.",
+                "properties": {
+                  "input": {
+                    "description": "Message text.",
+                    "example": "Ask about a company, a promise, or the next step.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "input"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Next chat message.",
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "accepted": true,
+                  "turnSeq": 1
+                },
+                "schema": {
+                  "description": "Accepted turn.",
+                  "properties": {
+                    "accepted": {
+                      "description": "The turn was queued.",
+                      "example": true,
+                      "type": "boolean"
+                    },
+                    "turnSeq": {
+                      "description": "Sequence of the accepted turn.",
+                      "example": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "accepted",
+                    "turnSeq"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Turn accepted."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Submit",
+        "tags": [
+          "Agent Sessions"
+        ]
+      }
+    },
     "/v1/agent-sessions/{id}/events": {
       "get": {
         "description": "Returns ordered durable events used to reconstruct a conversation after navigation or reload.",
