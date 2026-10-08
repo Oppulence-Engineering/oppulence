@@ -4931,6 +4931,8 @@ func assertScanProgress(t *testing.T, spec obj) {
 	}
 
 	assertActionApprove(t, spec)
+
+	assertActionExecute(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -6475,5 +6477,57 @@ func assertActionApprove(t *testing.T, spec obj) {
 	}
 	if strings.Contains(encoded, "executedAt") || strings.Contains(encoded, "resultRef") {
 		t.Fatalf("approve and run example already ran the action: %s", encoded)
+	}
+}
+
+func TestActionExecute(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertActionExecute(t, spec)
+}
+
+func assertActionExecute(t *testing.T, spec obj) {
+	t.Helper()
+	post := asObj(asObj(asObj(spec["paths"])["/v1/action-proposals/{id}/execute"])["post"])
+	if post["summary"] != "Execute" || post["operationId"] != "executeActionProposal" || post["description"] != actionExecuteDescription {
+		t.Fatalf("execute operation: summary=%#v id=%#v description=%#v", post["summary"], post["operationId"], post["description"])
+	}
+	params, ok := post["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("execute parameters: %#v", post["parameters"])
+	}
+	param := asObj(params[0])
+	if param["name"] != "id" || param["example"] != actionExecuteProposalID || param["required"] != true {
+		t.Fatalf("execute param: %#v", param)
+	}
+	if asObj(param["schema"])["example"] != actionExecuteProposalID {
+		t.Fatalf("execute schema example: %#v", param["schema"])
+	}
+	request := asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])["example"]
+	requestRaw, err := json.Marshal(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(requestRaw) != `{"token":"`+actionExecuteSample+`"}` {
+		t.Fatalf("execute request: %s", requestRaw)
+	}
+	example := asObj(asObj(asObj(asObj(post["responses"])["200"])["content"])["application/json"])["example"]
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(actionExecuteExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("execute example:\n%s\nwant:\n%s", got, want)
+	}
+	encoded := string(got) + string(requestRaw)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, "documented-audit-ledger") || strings.Contains(encoded, "test-signing-secret") {
+		t.Fatalf("execute example publishes a live approval: %s", encoded)
+	}
+	if strings.Contains(string(got), "resolvedAt") || strings.Contains(string(got), "returnEventId") {
+		t.Fatalf("execute example already closed the loop: %s", got)
 	}
 }

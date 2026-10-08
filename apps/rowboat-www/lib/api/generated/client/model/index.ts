@@ -268,6 +268,8 @@ export * from "./errorEnvelope";
 export * from "./exaSearchRequest";
 export * from "./exaSearchRequestContents";
 export * from "./exaSearchResponse";
+export * from "./executeActionProposal200";
+export * from "./executeActionProposalBody";
 export * from "./exportCommitment200One";
 export * from "./exportCommitment200OneEvidenceItem";
 export * from "./exportCommitment200OneHistoryItem";
