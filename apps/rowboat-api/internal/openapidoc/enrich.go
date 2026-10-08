@@ -384,7 +384,7 @@ func addBackgroundTaskSchemas(schemas obj) {
 		"active":             boolSchema("Whether instantiated tasks are active by default.", true),
 		"triggers":           triggerJSON,
 		"model":              stringSchema("Default model id for runs.", "anthropic/claude-sonnet-4-5", nullable()),
-		"provider":           stringSchema("Default provider slug.", "openrouter", nullable()),
+		"provider":           stringSchema("Default provider for tasks created from this template.", "openrouter", nullable()),
 		"executionTarget":    stringEnum("Default execution target.", "api", "api", "desktop"),
 		"tags":               arraySchema("Template tags for UI grouping.", stringSchema("Tag.", "gmail")),
 		"requiredConnectors": arraySchema("Connectors this template expects for full fidelity.", stringSchema("Connector slug.", "google")),
@@ -1979,6 +1979,25 @@ func enrichEntitySchemas(schemas obj) {
 				delta["example"] = -42
 			}
 		}
+	}
+
+	// The shared provider note samples openai. Built-in templates, and the
+	// override used when creating a task from one, use openrouter.
+	for _, item := range []struct {
+		schema, description, example string
+	}{
+		{"BackgroundTaskTemplate", "Default provider for tasks created from this template.", "openrouter"},
+		{"BackgroundTaskTemplateInstantiateRequest", "Provider override.", "openrouter"},
+	} {
+		schema := asObj(schemas[item.schema])
+		if schema == nil {
+			continue
+		}
+		properties := asObj(schema["properties"])
+		if properties == nil || properties["provider"] == nil {
+			continue
+		}
+		properties["provider"] = stringSchema(item.description, item.example, nullable())
 	}
 
 	backgroundPropDocs := map[string]obj{

@@ -281,6 +281,17 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if userEmail["description"] != "Best-known WorkOS primary email for the user." || userEmail["example"] != "user@example.com" {
 		t.Fatalf("User.email lost the signed-in address: %#v", userEmail)
 	}
+	templateProvider := asObj(asObj(asObj(schemas["BackgroundTaskTemplate"])["properties"])["provider"])
+	if templateProvider["example"] != "openrouter" || templateProvider["description"] != "Default provider for tasks created from this template." {
+		t.Fatalf("BackgroundTaskTemplate.provider sampled the wrong service: %#v", templateProvider)
+	}
+	instantiateProvider := asObj(asObj(asObj(schemas["BackgroundTaskTemplateInstantiateRequest"])["properties"])["provider"])
+	if instantiateProvider["example"] != "openrouter" || instantiateProvider["description"] != "Provider override." {
+		t.Fatalf("BackgroundTaskTemplateInstantiateRequest.provider sampled the wrong service: %#v", instantiateProvider)
+	}
+	if taskProvider := asObj(taskProperties["provider"]); taskProvider["example"] != "openai" {
+		t.Fatalf("BackgroundTask.provider lost its example: %#v", taskProvider)
+	}
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
@@ -387,6 +398,17 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	}
 	if schemas["ConnectorCredentialCleanupJob"] != nil || schemas["ConnectorCredentialRecovery"] != nil {
 		t.Fatal("checked-in openapi json exposes internal credential cleanup or recovery state")
+	}
+	templateProvider := asObj(asObj(asObj(schemas["BackgroundTaskTemplate"])["properties"])["provider"])
+	if templateProvider["example"] != "openrouter" || templateProvider["description"] != "Default provider for tasks created from this template." {
+		t.Fatalf("checked-in BackgroundTaskTemplate.provider sampled the wrong service: %#v", templateProvider)
+	}
+	instantiateProvider := asObj(asObj(asObj(schemas["BackgroundTaskTemplateInstantiateRequest"])["properties"])["provider"])
+	if instantiateProvider["example"] != "openrouter" || instantiateProvider["description"] != "Provider override." {
+		t.Fatalf("checked-in BackgroundTaskTemplateInstantiateRequest.provider sampled the wrong service: %#v", instantiateProvider)
+	}
+	if taskProvider := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["provider"]); taskProvider["example"] != "openai" {
+		t.Fatalf("checked-in BackgroundTask.provider lost its example: %#v", taskProvider)
 	}
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
