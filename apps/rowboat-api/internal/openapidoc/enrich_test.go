@@ -299,6 +299,7 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if chatModel := asObj(asObj(asObj(schemas["LLMChatCompletionsRequest"])["properties"])["model"]); chatModel["example"] != "openai/gpt-4.1-mini" {
 		t.Fatalf("LLMChatCompletionsRequest.model lost its chat example: %#v", chatModel)
 	}
+	assertNonUUIDIdentifiers(t, schemas)
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
@@ -425,6 +426,8 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if chatModel := asObj(asObj(asObj(schemas["LLMChatCompletionsRequest"])["properties"])["model"]); chatModel["example"] != "openai/gpt-4.1-mini" {
 		t.Fatalf("checked-in LLMChatCompletionsRequest.model lost its chat example: %#v", chatModel)
 	}
+
+	assertNonUUIDIdentifiers(t, schemas)
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -554,6 +557,32 @@ func assertBillingTrialStatus(t *testing.T, paths obj, schemas obj) {
 	billing := asObj(asObj(me["example"])["billing"])
 	if billing["status"] != billingTrialStatusExample || billing["trialExpiresAt"] != billingTrialExpiresAtExample {
 		t.Fatalf("current user billing sample: %#v", billing)
+	}
+}
+
+func assertNonUUIDIdentifiers(t *testing.T, schemas obj) {
+	t.Helper()
+	for _, item := range []struct {
+		schema, description, example string
+	}{
+		{"LLMModel", "Model id accepted by the model gateway.", "openai/gpt-4.1-mini"},
+		{"IntegrationTemplateBlock", "Stable block id within the connector.", "invoice-context"},
+		{"HubSpotSearchObject", "HubSpot record id.", "101"},
+		{"ConsentClientIdentity", "Hydra client id.", "rowboat-desktop"},
+		{"ConsentConnectorIdentity", "Connector slug.", "canvas"},
+		{"ConversationClaim", "Stable claim id.", "claim:ab12"},
+		{"ConversationReviewItem", "Stable review item id.", "review:ab12"},
+		{"RelationshipGraphNode", "Stable node id.", "relationship:9c8dfa9b-a7b2-46ea-982c-622a914c00e5"},
+		{"RelationshipGraphEdge", "Stable edge id.", "edge:ab12cd34"},
+	} {
+		id := asObj(asObj(asObj(schemas[item.schema])["properties"])["id"])
+		if id["description"] != item.description || id["example"] != item.example {
+			t.Fatalf("%s.id sampled a UUID: %#v", item.schema, id)
+		}
+	}
+	taskID := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["id"])
+	if taskID["example"] != "123e4567-e89b-12d3-a456-426614174000" || taskID["format"] != "uuid" {
+		t.Fatalf("BackgroundTask.id lost its UUID: %#v", taskID)
 	}
 }
 

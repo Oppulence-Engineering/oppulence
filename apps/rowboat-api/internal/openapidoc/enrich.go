@@ -618,7 +618,7 @@ func addLLMSchemas(schemas obj) {
 
 	schemas["LLMGatewayResponse"] = freeFormSchema("OpenAI-compatible upstream response. For streaming calls, the same endpoint returns text/event-stream chunks.")
 	schemas["LLMModel"] = objectSchema("Routable model id exposed to the desktop.", obj{
-		"id": stringSchema("Provider/model slug accepted by the LLM gateway.", "openai/gpt-4.1-mini"),
+		"id": stringSchema("Model id accepted by the model gateway.", "openai/gpt-4.1-mini"),
 	}, "id")
 	schemas["LLMModelsResponse"] = objectSchema("Catalog of priced and routable model ids.", obj{
 		"data": arraySchema("Available models sorted by id.", ref("LLMModel")),
@@ -2005,6 +2005,31 @@ func enrichEntitySchemas(schemas obj) {
 		if properties := asObj(embeddings["properties"]); properties != nil && properties["model"] != nil {
 			properties["model"] = stringSchema("Desktop-facing embedding model id.", "openai/text-embedding-3-small")
 		}
+	}
+
+	// The shared id note samples a UUID primary key. These ids are not UUIDs.
+	for _, item := range []struct {
+		schema, description, example string
+	}{
+		{"LLMModel", "Model id accepted by the model gateway.", "openai/gpt-4.1-mini"},
+		{"IntegrationTemplateBlock", "Stable block id within the connector.", "invoice-context"},
+		{"HubSpotSearchObject", "HubSpot record id.", "101"},
+		{"ConsentClientIdentity", "Hydra client id.", "rowboat-desktop"},
+		{"ConsentConnectorIdentity", "Connector slug.", "canvas"},
+		{"ConversationClaim", "Stable claim id.", "claim:ab12"},
+		{"ConversationReviewItem", "Stable review item id.", "review:ab12"},
+		{"RelationshipGraphNode", "Stable node id.", "relationship:9c8dfa9b-a7b2-46ea-982c-622a914c00e5"},
+		{"RelationshipGraphEdge", "Stable edge id.", "edge:ab12cd34"},
+	} {
+		schema := asObj(schemas[item.schema])
+		if schema == nil {
+			continue
+		}
+		properties := asObj(schema["properties"])
+		if properties == nil || properties["id"] == nil {
+			continue
+		}
+		properties["id"] = stringSchema(item.description, item.example)
 	}
 
 	backgroundPropDocs := map[string]obj{
