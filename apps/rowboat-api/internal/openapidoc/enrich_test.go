@@ -59,6 +59,8 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/agents",
 
 		"/v1/agents/{slug}",
+
+		"/v1/agent-sessions",
 		"/v1/llm/models",
 		"/v1/llm/chat/completions",
 		"/v1/llm/completions",
@@ -2290,6 +2292,46 @@ func assertDeletedAgent(t *testing.T, spec obj) {
 	gone := asObj(asObj(op["responses"])["204"])
 	if gone["description"] != "Agent removed." {
 		t.Fatalf("204 = %#v", gone["description"])
+	}
+
+	assertStartedChat(t, spec)
+}
+
+func TestSubmitStartsTheChat(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertStartedChat(t, spec)
+}
+
+func assertStartedChat(t *testing.T, spec obj) {
+	t.Helper()
+	path := asObj(asObj(spec["paths"])["/v1/agent-sessions"])
+	post := asObj(path["post"])
+	if post["summary"] != "Submit" {
+		t.Fatalf("submit summary = %#v", post["summary"])
+	}
+	if post["operationId"] != "createAgentSession" {
+		t.Fatalf("submit operation = %#v", post["operationId"])
+	}
+	request := asObj(asObj(asObj(asObj(post["requestBody"])["content"])["application/json"])["example"])
+	if mustJSON(request) != mustJSON(documentedStartedChatRequest()) {
+		t.Fatalf("submit request = %s", mustJSON(request))
+	}
+	created := asObj(asObj(asObj(asObj(asObj(post["responses"])["201"])["content"])["application/json"])["example"])
+	if mustJSON(created) != mustJSON(documentedStartedChat()) {
+		t.Fatalf("stored session = %s", mustJSON(created))
+	}
+	if created["sessionId"] == "session_abc123" || created["title"] == "Review the Acme renewal" {
+		t.Fatalf("stored session reused the history row: %s", mustJSON(created))
+	}
+	listed := asObj(asObj(asObj(asObj(asObj(asObj(path["get"])["responses"])["200"])["content"])["application/json"])["example"])
+	sessions, _ := listed["sessions"].([]any)
+	if len(sessions) == 0 {
+		t.Fatal("session history example is empty")
+	}
+	first := asObj(sessions[0])
+	if first["sessionId"] != "session_abc123" || first["title"] != "Review the Acme renewal" {
+		t.Fatalf("session history example changed: %s", mustJSON(first))
 	}
 }
 

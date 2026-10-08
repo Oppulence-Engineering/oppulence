@@ -317,7 +317,11 @@ export interface paths {
      */
     get: operations["listAgentSessions"];
     put?: never;
-    post?: never;
+    /**
+     * Submit
+     * @description Submit sends the first chat message. It posts agent assistant, channel web, and "Ask about a company, a promise, or the next step." as both the message and the title. The stored session is active, with no completed turns yet.
+     */
+    post: operations["createAgentSession"];
     delete?: never;
     options?: never;
     head?: never;
@@ -13893,6 +13897,79 @@ export interface operations {
       };
       401: components["responses"]["401"];
       500: components["responses"]["500"];
+    };
+  };
+  createAgentSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description First chat message. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "agent": "assistant",
+         *       "channel": "web",
+         *       "input": "Ask about a company, a promise, or the next step.",
+         *       "title": "Ask about a company, a promise, or the next step."
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Selected agent.
+           * @example assistant
+           */
+          agent: string;
+          /**
+           * @description Composer channel.
+           * @example web
+           */
+          channel?: string;
+          /**
+           * @description Message text.
+           * @example Ask about a company, a promise, or the next step.
+           */
+          input?: string;
+          /**
+           * @description Conversation title.
+           * @example Ask about a company, a promise, or the next step.
+           */
+          title?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Stored session. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "agent": "assistant",
+           *       "agentSource": "builtin",
+           *       "channel": "web",
+           *       "continuationToken": "agt_example",
+           *       "costUnits": 0,
+           *       "createdAt": "2026-09-02T15:00:00Z",
+           *       "llmCalls": 0,
+           *       "sessionId": "f8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+           *       "status": "active",
+           *       "title": "Ask about a company, a promise, or the next step.",
+           *       "toolCalls": 0,
+           *       "turns": 0
+           *     }
+           */
+          "application/json": components["schemas"]["DurableAgentSessionView"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      502: components["responses"]["502"];
     };
   };
   listAgentSessionEvents: {

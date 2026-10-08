@@ -7,7 +7,11 @@
  */
 import { faker } from "@faker-js/faker";
 
-import type { AgentSessionEventsResponse, AgentSessionListResponse } from "../model";
+import type {
+  AgentSessionEventsResponse,
+  AgentSessionListResponse,
+  DurableAgentSessionView,
+} from "../model";
 
 export const getListAgentSessionsResponseMock = (
   overrideResponse: Partial<Extract<AgentSessionListResponse, object>> = {},
@@ -56,6 +60,51 @@ export const getListAgentSessionsResponseMock = (
       turns: faker.number.int(),
     }),
   ),
+  ...overrideResponse,
+});
+
+export const getCreateAgentSessionResponseMock = (
+  overrideResponse: Partial<Extract<DurableAgentSessionView, object>> = {},
+): DurableAgentSessionView => ({
+  agent: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  agentSource: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  channel: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  continuationToken: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    null,
+  ]),
+  costUnits: faker.number.int(),
+  createdAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+  error: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  errorCode: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  lastActivityAt: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+    undefined,
+  ]),
+  llmCalls: faker.number.int(),
+  sessionId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  status: faker.helpers.arrayElement([
+    "active",
+    "paused",
+    "completed",
+    "failed",
+    "canceled",
+  ] as const),
+  title: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+    undefined,
+  ]),
+  toolCalls: faker.number.int(),
+  turns: faker.number.int(),
   ...overrideResponse,
 });
 

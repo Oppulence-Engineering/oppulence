@@ -1996,6 +1996,38 @@ describe("API reference document", () => {
     expect(remove.responses["204"].description).toBe("Agent removed.");
   });
 
+  it("samples the first chat message Submit stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const sessionPath = presented.paths["/v1/agent-sessions"];
+    const post = sessionPath.post;
+    expect(post.summary).toBe("Submit");
+    expect(post.description).toContain("Ask about a company, a promise, or the next step.");
+    expect(post.description).toContain("no completed turns");
+    expect(post.requestBody.content["application/json"].example).toEqual({
+      agent: "assistant",
+      input: "Ask about a company, a promise, or the next step.",
+      title: "Ask about a company, a promise, or the next step.",
+      channel: "web",
+    });
+    expect(post.responses["201"].content["application/json"].example).toMatchObject({
+      sessionId: "f8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+      agent: "assistant",
+      agentSource: "builtin",
+      status: "active",
+      channel: "web",
+      title: "Ask about a company, a promise, or the next step.",
+      turns: 0,
+      llmCalls: 0,
+      toolCalls: 0,
+      costUnits: 0,
+      continuationToken: "agt_example",
+    });
+    const listed = sessionPath.get.responses["200"].content["application/json"].example.sessions[0];
+    expect(listed.sessionId).toBe("session_abc123");
+    expect(listed.title).toBe("Review the Acme renewal");
+    expect(listed.turns).toBe(2);
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

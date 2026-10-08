@@ -94,6 +94,94 @@ export const ListAgentSessions500Response = zod
   );
 
 /**
+ * Submit sends the first chat message. It posts agent assistant, channel web, and "Ask about a company, a promise, or the next step." as both the message and the title. The stored session is active, with no completed turns yet.
+ * @summary Submit
+ */
+export const CreateAgentSessionBody = zod
+  .strictObject({
+    agent: zod.string().describe("Selected agent."),
+    channel: zod.string().optional().describe("Composer channel."),
+    input: zod.string().optional().describe("Message text."),
+    title: zod.string().optional().describe("Conversation title."),
+  })
+  .describe("First chat message.");
+
+export const CreateAgentSession201Response = zod
+  .strictObject({
+    agent: zod.string().describe("Pinned agent slug."),
+    agentSource: zod.string().nullish().describe("Agent definition source."),
+    channel: zod.string().describe("Originating channel."),
+    continuationToken: zod
+      .string()
+      .nullable()
+      .describe("Signed continuation handle when configured."),
+    costUnits: zod.int().describe("Cumulative metered cost units."),
+    createdAt: zod.iso.datetime({ offset: true }).describe("Session creation time."),
+    error: zod.string().nullish().describe("Terminal error summary."),
+    errorCode: zod.string().nullish().describe("Stable terminal error code."),
+    lastActivityAt: zod.iso
+      .datetime({ offset: true })
+      .nullish()
+      .describe("Most recent activity time."),
+    llmCalls: zod.int().describe("Cumulative model calls."),
+    sessionId: zod.string().describe("Stable session id."),
+    status: zod
+      .enum(["active", "paused", "completed", "failed", "canceled"])
+      .describe(
+        "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+      ),
+    title: zod.string().nullish().describe("Conversation title."),
+    toolCalls: zod.int().describe("Cumulative tool calls."),
+    turns: zod.int().describe("Completed turn count."),
+  })
+  .describe("Durable agent conversation metadata.");
+
+export const CreateAgentSession400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const CreateAgentSession401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const CreateAgentSession502Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
  * Returns ordered durable events used to reconstruct a conversation after navigation or reload.
  * @summary List agent session events
  */
