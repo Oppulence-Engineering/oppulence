@@ -262,6 +262,18 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if reason["type"] != "string" || reason["description"] != "Evidence-backed explanation." || reason["enum"] != nil {
 		t.Fatalf("MissionControlDimensionEvidence.reason was corrupted by generic entity metadata: %#v", reason)
 	}
+	snapshotState := asObj(asObj(asObj(schemas["RelationshipStateSnapshot"])["properties"])["state"])
+	if snapshotState["description"] != "Projected state at this version." || snapshotState["type"] != "object" || snapshotState["example"] != nil {
+		t.Fatalf("RelationshipStateSnapshot.state was rewritten as an OAuth ticket: %#v", snapshotState)
+	}
+	graphState := asObj(asObj(asObj(schemas["ConsoleGraphSavedViewPayload"])["properties"])["state"])
+	if graphState["$ref"] != "#/components/schemas/ConsoleGraphSavedViewState" || graphState["description"] != nil || graphState["example"] != nil {
+		t.Fatalf("ConsoleGraphSavedViewPayload.state was rewritten as an OAuth ticket: %#v", graphState)
+	}
+	oauthState := asObj(asObj(asObj(schemas["OAuthPending"])["properties"])["state"])
+	if oauthState["description"] != "Opaque one-time OAuth state/session ticket." || oauthState["example"] != "state_abc123" {
+		t.Fatalf("OAuthPending.state lost its handoff ticket: %#v", oauthState)
+	}
 	status := asObj(evidenceProperties["status"])
 	if status["type"] != "string" || status["description"] != "Assertion lifecycle state." || status["example"] != "accepted" {
 		t.Fatalf("MissionControlDimensionEvidence.status was corrupted by generic entity metadata: %#v", status)
@@ -365,6 +377,18 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	}
 	if ledger := asObj(asObj(asObj(schemas["CreditLedger"])["properties"])["reason"]); ledger["example"] != "llm_settle" {
 		t.Fatalf("checked-in CreditLedger.reason lost its ledger code: %#v", ledger)
+	}
+
+	snapshotState := asObj(asObj(asObj(schemas["RelationshipStateSnapshot"])["properties"])["state"])
+	if snapshotState["description"] != "Projected state at this version." || snapshotState["example"] != nil {
+		t.Fatalf("checked-in RelationshipStateSnapshot.state is an OAuth ticket: %#v", snapshotState)
+	}
+	graphState := asObj(asObj(asObj(schemas["ConsoleGraphSavedViewPayload"])["properties"])["state"])
+	if graphState["$ref"] != "#/components/schemas/ConsoleGraphSavedViewState" || graphState["example"] != nil {
+		t.Fatalf("checked-in ConsoleGraphSavedViewPayload.state is an OAuth ticket: %#v", graphState)
+	}
+	if oauth := asObj(asObj(asObj(schemas["OAuthPending"])["properties"])["state"]); oauth["example"] != "state_abc123" {
+		t.Fatalf("checked-in OAuthPending.state lost its handoff ticket: %#v", oauth)
 	}
 	if value := asObj(evidenceProperties["value"]); value["oneOf"] == nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.value is invalid: %#v", value)
