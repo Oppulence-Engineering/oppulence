@@ -4108,7 +4108,7 @@ export const GetRelationship200Response = zod
         delta: zod
           .record(zod.string(), zod.unknown())
           .describe(
-            "Credit delta. Negative values consume\/reserve credits; positive values grant or refund credits.",
+            "Exact before\/after values, uncertain claim ids, contradictions, and recommendation reason.",
           ),
         effectivePolicy: zod
           .strictObject({
@@ -5776,7 +5776,7 @@ export const CorrectConversationEvidence201Response = zod
         delta: zod
           .record(zod.string(), zod.unknown())
           .describe(
-            "Credit delta. Negative values consume\/reserve credits; positive values grant or refund credits.",
+            "Exact before\/after values, uncertain claim ids, contradictions, and recommendation reason.",
           ),
         effectivePolicy: zod
           .strictObject({
@@ -6174,7 +6174,7 @@ export const DecideConversationChange201Response = zod
         delta: zod
           .record(zod.string(), zod.unknown())
           .describe(
-            "Credit delta. Negative values consume\/reserve credits; positive values grant or refund credits.",
+            "Exact before\/after values, uncertain claim ids, contradictions, and recommendation reason.",
           ),
         effectivePolicy: zod
           .strictObject({

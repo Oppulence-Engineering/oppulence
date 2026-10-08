@@ -7,6 +7,6 @@
  */
 
 /**
- * Credit delta. Negative values consume/reserve credits; positive values grant or refund credits.
+ * Exact before/after values, uncertain claim ids, contradictions, and recommendation reason.
  */
 export type RelationshipIntelligenceDelta = { [key: string]: unknown };

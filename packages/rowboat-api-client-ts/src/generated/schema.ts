@@ -11013,8 +11013,24 @@ export interface components {
       /** @description Deletion status and verification. */
       deletionReceipts: components["schemas"]["ConversationDeletionReceipt"][];
       /**
-       * @description Credit delta. Negative values consume/reserve credits; positive values grant or refund credits.
-       * @example -42
+       * @description Exact before/after values, uncertain claim ids, contradictions, and recommendation reason.
+       * @example {
+       *       "changes": [
+       *         {
+       *           "after": "needs_attention",
+       *           "assertionIds": [
+       *             "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+       *           ],
+       *           "before": "healthy",
+       *           "dimension": "health",
+       *           "reason": "Champion engagement declined after pricing."
+       *         }
+       *       ],
+       *       "contradictions": [],
+       *       "fromVersion": 0,
+       *       "toVersion": 1,
+       *       "uncertainClaimIds": []
+       *     }
        */
       delta: {
         [key: string]: unknown;
@@ -23248,7 +23264,17 @@ export interface operations {
            *         "contradictionCases": [],
            *         "deletionReceipts": [],
            *         "delta": {
-           *           "changes": [],
+           *           "changes": [
+           *             {
+           *               "after": "needs_attention",
+           *               "assertionIds": [
+           *                 "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+           *               ],
+           *               "before": "healthy",
+           *               "dimension": "health",
+           *               "reason": "Champion engagement declined after pricing."
+           *             }
+           *           ],
            *           "contradictions": [],
            *           "fromVersion": 0,
            *           "toVersion": 1,

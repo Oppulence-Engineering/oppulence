@@ -4811,7 +4811,22 @@ describe("API reference document", () => {
       "Exact before/after values, uncertain claim ids, contradictions, and recommendation reason.",
     );
     expect(delta.type).toBe("object");
-    expect(delta.example).toBeUndefined();
+    expect(delta.example).toEqual({
+      changes: [
+        {
+          after: "needs_attention",
+          assertionIds: ["6b8dfa9b-a7b2-46ea-982c-622a914c00e5"],
+          before: "healthy",
+          dimension: "health",
+          reason: "Champion engagement declined after pricing.",
+        },
+      ],
+      contradictions: [],
+      fromVersion: 0,
+      toVersion: 1,
+      uncertainClaimIds: [],
+    });
+    expect(JSON.stringify(delta.example)).not.toContain("-42");
     const ledger = presented.components.schemas.CreditLedger.properties.delta;
     expect(ledger.description).toContain("Credit delta.");
     expect(ledger.example).toBe(-42);

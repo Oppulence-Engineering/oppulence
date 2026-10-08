@@ -6725,6 +6725,58 @@ func assertCompanyProfileFacts(t *testing.T, schemas obj) {
 	}
 }
 
+func TestRelationshipChangeIsDocumented(t *testing.T) {
+	raw, err := os.ReadFile("../../api/openapi.json")
+	if err != nil {
+		t.Fatalf("read checked-in openapi json: %v", err)
+	}
+	var checked obj
+	if err := json.Unmarshal(raw, &checked); err != nil {
+		t.Fatalf("parse checked-in openapi json: %v", err)
+	}
+	assertRelationshipChange(t, checked)
+	fresh := obj{"components": obj{"schemas": obj{}}}
+	Enrich(fresh)
+	assertRelationshipChange(t, fresh)
+}
+
+func assertRelationshipChange(t *testing.T, spec obj) {
+	t.Helper()
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	delta := asObj(asObj(asObj(schemas["RelationshipIntelligence"])["properties"])["delta"])
+	if delta["description"] != relationshipChangeDescription {
+		t.Fatalf("relationship change description: %#v", delta["description"])
+	}
+	got, err := json.Marshal(delta["example"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(relationshipChangeExample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("relationship change example: %s", got)
+	}
+	if ledgerSchema := asObj(schemas["CreditLedger"]); ledgerSchema != nil {
+		ledger := asObj(asObj(ledgerSchema["properties"])["delta"])
+		ledgerExample, err := json.Marshal(ledger["example"])
+		if err != nil || string(ledgerExample) != "-42" {
+			t.Fatalf("credit delta example: %s", ledgerExample)
+		}
+	}
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}"])["get"])
+	media := asObj(asObj(asObj(asObj(operation["responses"])["200"])["content"])["application/json"])
+	opened := asObj(asObj(asObj(media["example"])["intelligence"])["delta"])
+	openedRaw, err := json.Marshal(opened)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(openedRaw) != string(want) {
+		t.Fatalf("opened company change: %s", openedRaw)
+	}
+}
+
 func assertEventObservation(t *testing.T, schemas obj) {
 	t.Helper()
 	event := asObj(schemas["CommitmentEvent"])
