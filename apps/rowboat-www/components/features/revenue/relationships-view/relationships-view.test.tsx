@@ -1233,6 +1233,10 @@ describe("RelationshipsView", () => {
     expect(source).toContain("`Promises ${data.commitments.length}`");
     expect(source).toContain("`Promises (${data.commitments.length})`");
     expect(source).toContain('["Open promises", String(openCommitmentCount(data.commitments))]');
+    expect(supportedRecordValue("evaluation", { supported: true })).toBe("Evaluation");
+    expect(source).toContain(
+      '"Lifecycle",\n                      supportedRecordValue(\n                        data.relationship.lifecycle,\n                        data.missionControl.evidence.lifecycle,',
+    );
     expect(source).not.toContain(
       '["Open commitments", String(data.commitments.filter((item) => item.status === "open").length)]',
     );
