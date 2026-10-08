@@ -617,12 +617,48 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	}
 	assertEventObservation(t, schemas)
 	assertGraphExecutionNeedsReconcile(t, schemas)
+
+	assertEventParties(t, schemas)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{}}}
 	Enrich(spec)
 	assertEventObservation(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func TestCommitmentEventNamesTheParties(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertEventParties(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertEventParties(t *testing.T, schemas obj) {
+	t.Helper()
+	event := asObj(schemas["CommitmentEvent"])
+	if event == nil {
+		return
+	}
+	props := asObj(event["properties"])
+	owner := asObj(props["ownerParticipantRef"])
+	if owner["example"] != "alex@example.com" || owner["description"] != "Promise owner." {
+		t.Fatalf("event owner: %#v", owner)
+	}
+	counterparty := asObj(props["counterpartyParticipantRef"])
+	if counterparty["example"] != "jordan@example.com" || counterparty["description"] != "Promise counterparty." {
+		t.Fatalf("event counterparty: %#v", counterparty)
+	}
+	beneficiary := asObj(props["beneficiaryParticipantRef"])
+	if beneficiary["example"] != "customer:acme" || beneficiary["description"] != "Promise beneficiary." {
+		t.Fatalf("event beneficiary: %#v", beneficiary)
+	}
+	commitment := asObj(asObj(schemas["RelationshipCommitment"])["properties"])
+	if asObj(commitment["ownerParticipantRef"])["example"] != "alex@example.com" {
+		t.Fatalf("commitment owner changed: %#v", commitment["ownerParticipantRef"])
+	}
+	if asObj(props["actorRef"])["example"] == "alex@example.com" {
+		t.Fatalf("actor ref was replaced with the promise owner: %#v", props["actorRef"])
+	}
 }
 
 func assertEventObservation(t *testing.T, schemas obj) {

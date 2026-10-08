@@ -819,6 +819,27 @@ describe("API reference document", () => {
     );
   });
 
+  it("names the people a commitment event recorded", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const event = presented.components.schemas.CommitmentEvent.properties;
+    expect(event.ownerParticipantRef).toMatchObject({
+      description: "Promise owner.",
+      example: "alex@example.com",
+    });
+    expect(event.counterpartyParticipantRef).toMatchObject({
+      description: "Promise counterparty.",
+      example: "jordan@example.com",
+    });
+    expect(event.beneficiaryParticipantRef).toMatchObject({
+      description: "Promise beneficiary.",
+      example: "customer:acme",
+    });
+    expect(event.actorRef.example).not.toBe("alex@example.com");
+    expect(presented.components.schemas.RelationshipCommitment.properties.ownerParticipantRef.example).toBe(
+      "alex@example.com",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
