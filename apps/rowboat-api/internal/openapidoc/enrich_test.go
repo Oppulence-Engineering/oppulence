@@ -337,7 +337,40 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
+	assertNextEventsSequence(t, spec)
 	assertEventObservation(t, schemas)
+}
+
+func TestNextEventsSequenceIsDocumented(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertNextEventsSequence(t, spec)
+}
+
+func assertNextEventsSequence(t *testing.T, spec obj) {
+	t.Helper()
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	page := asObj(schemas["BackgroundTaskRunEventsResponse"])
+	next := asObj(asObj(page["properties"])["nextSeq"])
+	exampleOK := false
+	switch next["example"] {
+	case 499, float64(499):
+		exampleOK = true
+	}
+	if next["description"] != nextEventsSequenceDescription || !exampleOK || next["nullable"] != true || next["type"] != "integer" {
+		t.Fatalf("next events sequence: %#v", next)
+	}
+	if !reflect.DeepEqual(page["required"], []any{"events"}) {
+		t.Fatalf("next events required: %#v", page["required"])
+	}
+	paths := asObj(spec["paths"])
+	if paths == nil {
+		return
+	}
+	example := asObj(asObj(asObj(asObj(asObj(asObj(paths["/v1/background-tasks/{slug}/runs/{runId}/events"])["get"])["responses"])["200"])["content"])["application/json"])["example"]
+	if asObj(example)["nextSeq"] != nil {
+		t.Fatalf("first page must omit nextSeq: %#v", example)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

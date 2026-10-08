@@ -2657,6 +2657,10 @@ export const ListBackgroundTaskRunEvents200Response = zod
           .describe("Mirrored JSONL event from a background task run log."),
       )
       .describe("Run log\/progress events ordered by seq."),
+    nextSeq: zod
+      .int()
+      .nullish()
+      .describe("Last sequence on this page. Show the next events sends it as afterSeq."),
   })
   .describe("Ordered durable task log\/progress event list for a run.");
 

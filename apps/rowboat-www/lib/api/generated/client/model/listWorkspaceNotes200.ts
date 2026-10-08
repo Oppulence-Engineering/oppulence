@@ -5,17 +5,14 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { BackgroundTaskRunEvent } from "./backgroundTaskRunEvent";
+import type { ListWorkspaceNotes200NotesItem } from "./listWorkspaceNotes200NotesItem";
 
 /**
- * Ordered durable task log/progress event list for a run.
+ * Workspace notes page.
  */
-export interface BackgroundTaskRunEventsResponse {
-  /** Run log/progress events ordered by seq. */
-  events: BackgroundTaskRunEvent[];
-  /**
-   * Last sequence on this page. Show the next events sends it as afterSeq.
-   * @nullable
-   */
-  nextSeq?: number | null;
-}
+export type ListWorkspaceNotes200 = {
+  /** Whether another page of notes exists. */
+  hasMore: boolean;
+  /** Latest note for each note id. */
+  notes: ListWorkspaceNotes200NotesItem[];
+};

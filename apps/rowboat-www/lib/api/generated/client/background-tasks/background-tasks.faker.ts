@@ -1114,6 +1114,10 @@ export const getListBackgroundTaskRunEventsResponseMock = (
       ]),
     }),
   ),
+  nextSeq: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.number.int(), null]),
+    undefined,
+  ]),
   ...overrideResponse,
 });
 

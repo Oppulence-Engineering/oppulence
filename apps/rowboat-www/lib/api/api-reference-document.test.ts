@@ -57,6 +57,24 @@ describe("API reference document", () => {
     expect(page).not.toContain("fonts.scalar.com");
   });
 
+  it("samples the sequence Show the next events sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const page = presented.components.schemas.BackgroundTaskRunEventsResponse;
+    expect(page.properties.nextSeq).toMatchObject({
+      description: "Last sequence on this page. Show the next events sends it as afterSeq.",
+      example: 499,
+      nullable: true,
+      type: "integer",
+    });
+    expect(page.required).toEqual(["events"]);
+    const listed =
+      presented.paths["/v1/background-tasks/{slug}/runs/{runId}/events"].get.responses["200"]
+        .content["application/json"].example;
+    expect(listed.nextSeq).toBeUndefined();
+    expect(JSON.stringify(page)).not.toContain("acta_");
+    expect(JSON.stringify(page)).not.toContain('"token"');
+  });
+
   it("names reference sections in product language and keeps operations attached", () => {
     const presented = presentApiReferenceDocument({
       tags: [
