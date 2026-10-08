@@ -2121,6 +2121,24 @@ describe("API reference document", () => {
     expect(history.title).toBe("Review the Acme renewal");
   });
 
+  it("samples the token Approve on a payment returns", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const mint = presented.paths["/v1/agent-sessions/{id}/approvals/{approvalId}/token"].post;
+    expect(mint.summary).toBe("Approve payment");
+    expect(mint.description).toContain("posts no body");
+    expect(mint.description).toContain("2026-09-02T15:10:00Z");
+    expect(mint.requestBody).toBeUndefined();
+    const token = mint.responses["200"].content["application/json"].example;
+    expect(token).toEqual({
+      approvalToken: "agt_example.signature",
+      expiresAt: "2026-09-02T15:10:00Z",
+      mfa: false,
+    });
+    const history = presented.paths["/v1/agent-sessions"].get.responses["200"].content["application/json"].example
+      .sessions[0];
+    expect(history.title).toBe("Review the Acme renewal");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
