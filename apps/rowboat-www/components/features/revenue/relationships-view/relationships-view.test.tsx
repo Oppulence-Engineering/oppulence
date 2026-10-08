@@ -431,7 +431,11 @@ describe("RelationshipsView", () => {
     expect(source).toContain('placeholder="Company domain (optional)"');
     expect(source).toContain("Mail and meetings can fill in its people and activity later.");
     expect(source).toContain('["history", "Activity"]');
-    expect(source).toContain('["emails", `Emails ${data.emailThreads.length}`]');
+    expect(source).toContain('["emails", `Email threads ${data.emailThreads.length}`]');
+    expect(source).toContain("Email threads (${data.emailThreads.length})");
+    expect(source).not.toContain("`Emails ${data.emailThreads.length}`");
+    expect(source).not.toContain("Email activity (");
+    expect(source).not.toContain('>Emails</TableHead>');
     expect(source).toContain("id={`${id}:history`}");
     expect(source).toContain("id={`${id}:emails`}");
     expect(source).toContain('onClick={() => openSection(section)}');

@@ -255,7 +255,6 @@ const HEALTH_TONE: Record<string, string> = {
 
 type OptionalCompanyColumn =
   | "people"
-  | "emails"
   | "health"
   | "nextAction"
   | "headquarters"
@@ -266,7 +265,6 @@ type OptionalCompanyColumn =
 
 const OPTIONAL_COMPANY_COLUMNS: Array<{ id: OptionalCompanyColumn; label: string }> = [
   { id: "people", label: "People" },
-  { id: "emails", label: "Emails" },
   { id: "health", label: "Health" },
   { id: "nextAction", label: "Next action" },
   { id: "headquarters", label: "Headquarters" },
@@ -1470,9 +1468,6 @@ export function RelationshipsView({
                     {optionalColumns.includes("people") ? (
                       <TableHead className="h-10 w-20 border-r px-3 text-center">People</TableHead>
                     ) : null}
-                    {optionalColumns.includes("emails") ? (
-                      <TableHead className="h-10 w-20 border-r px-3 text-center">Emails</TableHead>
-                    ) : null}
                     {optionalColumns.includes("health") ? (
                       <TableHead className="h-10 w-28 border-r px-3">Health</TableHead>
                     ) : null}
@@ -1583,11 +1578,6 @@ export function RelationshipsView({
                       {optionalColumns.includes("people") ? (
                         <TableCell className="border-r px-3 text-center text-[13px] text-primary/60">
                           {relationship.peopleCount ?? 0}
-                        </TableCell>
-                      ) : null}
-                      {optionalColumns.includes("emails") ? (
-                        <TableCell className="border-r px-3 text-center text-[13px] text-primary/60">
-                          {relationship.emailThreadCount ?? 0}
                         </TableCell>
                       ) : null}
                       {optionalColumns.includes("health") ? (
@@ -4278,14 +4268,14 @@ export function RelationshipSheet({
 
             <div className="min-w-0 overflow-y-auto">
               <nav className="sticky top-0 z-10 flex h-12 items-center gap-1 border-b border-border bg-background px-4 text-xs">
-                {/* Activity is the history log. Emails is the thread list.
+                {/* Activity is the history log. Email threads is the Gmail list.
                     They used to scroll to the same place. Overview used to
                     stay highlighted after those clicks. */}
                 {(
                   [
                     ["overview", "Overview"],
                     ["history", "Activity"],
-                    ["emails", `Emails ${data.emailThreads.length}`],
+                    ["emails", `Email threads ${data.emailThreads.length}`],
                     ["commitments", `Promises ${data.commitments.length}`],
                     ["people", `People ${data.participants.length}`],
                   ] as const
@@ -4368,7 +4358,7 @@ export function RelationshipSheet({
                 </div>
 
                 <section id={`${id}:emails`} className="scroll-mt-16">
-                  <SectionTitle title={`Email activity (${data.emailThreads.length})`} />
+                  <SectionTitle title={`Email threads (${data.emailThreads.length})`} />
                   {data.emailThreads.length === 0 ? (
                     <EmptyText>
                       {emailActivityEmptyCopy(timeline.some((item) => item.source === "meeting"))}
