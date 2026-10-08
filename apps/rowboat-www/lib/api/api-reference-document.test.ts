@@ -1199,6 +1199,23 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the ids Fill in companies and people sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const company =
+      "9c8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    const person = "1b8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    const companies = presented.paths["/v1/research/companies"].post;
+    const people = presented.paths["/v1/research/people"].post;
+    expect(companies.summary).toBe("Fill in companies");
+    expect(people.summary).toBe("Fill in people");
+    expect(companies.requestBody.content["application/json"].example).toEqual({
+      relationshipIds: [company],
+    });
+    expect(people.requestBody.content["application/json"].example).toEqual({
+      personIds: [person],
+    });
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
