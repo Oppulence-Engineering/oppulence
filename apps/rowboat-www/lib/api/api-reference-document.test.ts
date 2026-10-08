@@ -744,6 +744,21 @@ describe("API reference document", () => {
     expect(snapshot.id.example).not.toBe("7b8dfa9b-a7b2-46ea-982c-622a914c00e5");
   });
 
+  it("names the observation a lineage row moved", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const lineage = presented.components.schemas.RelationshipIdentityLineage.properties;
+    expect(lineage.observationIds).toMatchObject({
+      description: "Moved observation ids.",
+      example: ["6b8dfa9b-a7b2-46ea-982c-622a914c00e5"],
+    });
+    expect(lineage.observationIds.items.example).toBe("6b8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    expect(JSON.stringify(lineage.observationIds)).not.toContain("observation:1");
+    expect(lineage.id.example).not.toBe("6b8dfa9b-a7b2-46ea-982c-622a914c00e5");
+    expect(presented.components.schemas.MissionControlEvidenceReference.properties.observationId.example).toBe(
+      "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+    );
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

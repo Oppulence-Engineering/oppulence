@@ -213,6 +213,8 @@ func addRevenueSchemas(schemas obj) {
 		"reason": stringSchema("Decision reason.", "Confirmed the provider records are the same account."), "decidedAt": stringSchema("Decision time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
 		"compensatesDecisionId": uuidSchema("Decision compensated by undo.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 	}, "id", "decision", "candidateVersion", "actorId", "decidedAt")
+	movedObservations := arraySchema("Moved observation ids.", stringSchema("Observation id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"))
+	movedObservations["example"] = []any{"6b8dfa9b-a7b2-46ea-982c-622a914c00e5"}
 	schemas["RelationshipIdentityLineage"] = objectSchema("Immutable graph lineage produced by an identity decision.", obj{
 		"id": uuidSchema("Lineage event id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "kind": stringSchema("Lineage kind.", "merged"),
 		"actorId": uuidSchema("User who recorded this change.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"), "reason": stringSchema("Reason.", "Confirmed duplicate."),

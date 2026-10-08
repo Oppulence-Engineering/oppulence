@@ -1294,6 +1294,41 @@ func assertSnapshotAssertionID(t *testing.T, schemas obj) {
 	if id := asObj(props["id"]); id["example"] == assertionID {
 		t.Fatalf("snapshot id reused the assertion id: %#v", id["example"])
 	}
+
+	assertMovedObservationID(t, schemas)
+}
+
+func TestLineageNamesTheMovedObservation(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertMovedObservationID(t, asObj(asObj(spec["components"])["schemas"]))
+}
+
+func assertMovedObservationID(t *testing.T, schemas obj) {
+	t.Helper()
+	lineage := asObj(schemas["RelationshipIdentityLineage"])
+	if lineage == nil {
+		return
+	}
+	props := asObj(lineage["properties"])
+	const observationID = "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+	ids := asObj(props["observationIds"])
+	if !reflect.DeepEqual(ids["example"], []any{observationID}) {
+		t.Fatalf("moved observation ids: %#v", ids["example"])
+	}
+	if asObj(ids["items"])["example"] != observationID {
+		t.Fatalf("observation id item: %#v", ids["items"])
+	}
+	if ids["description"] != "Moved observation ids." {
+		t.Fatalf("observation description changed: %#v", ids["description"])
+	}
+	if id := asObj(props["id"]); id["example"] == observationID {
+		t.Fatalf("lineage id reused the observation id: %#v", id["example"])
+	}
+	evidence := asObj(asObj(schemas["MissionControlEvidenceReference"])["properties"])
+	if asObj(evidence["observationId"])["example"] != observationID {
+		t.Fatalf("mission control observation id changed: %#v", evidence["observationId"])
+	}
 }
 
 func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {
