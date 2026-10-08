@@ -4786,6 +4786,7 @@ describe("API reference document", () => {
     const presented = presentApiReferenceDocument(spec);
     const run = presented.components.schemas.BackgroundTaskRunStatusResponse.properties.status;
     expect(run.example).toBe("queued");
+    expect(run.description).toBe("Queued, running, succeeded, failed, or stopped.");
     expect(presented.components.schemas.HealthResponse.properties.status.example).toBe("ok");
     expect(presented.components.schemas.ReadyResponse.properties.status.example).toBe("ready");
     expect(presented.components.schemas.RevenueWorkspace.properties.status.example).toBe("active");
