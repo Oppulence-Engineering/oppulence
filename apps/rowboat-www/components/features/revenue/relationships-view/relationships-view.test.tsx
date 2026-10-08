@@ -829,6 +829,10 @@ describe("RelationshipsView", () => {
     );
     expect(source).not.toContain("String(model.evidence.lifecycle?.value ?? \"unknown\")");
     expect(recordDetailBadge("Sentiment", "unknown")).toBe("Sentiment · Not known");
+    expect(source).toContain('<dt className="text-primary/40">Sentiment</dt>');
+    expect(source).toContain(
+      "supportedRecordValue(\n                      data.relationship.sentiment,\n                      data.missionControl.evidence.sentiment,",
+    );
     expect(recordDetailBadge("Health", "needs_attention")).toBe("Health · Needs attention");
     expect(supportedRecordValue("prospect", { supported: false })).toBe("Not known");
     expect(supportedRecordValue("prospect", { supported: true })).toBe("Prospect");
