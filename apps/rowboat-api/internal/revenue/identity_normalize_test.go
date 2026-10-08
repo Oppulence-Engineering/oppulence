@@ -956,6 +956,107 @@ func TestRelationshipSearchFindsNextTasks(t *testing.T) {
 	}
 }
 
+func TestRelationshipSearchFindsNextPromises(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	quill, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Quill North", AccountDomain: "quill-north.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "company", DisplayName: "Cedar Slide", AccountDomain: "cedar-slide.example",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	touched := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	due := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+	create := func(i int, text, direction, status, acceptance string, at time.Time) {
+		t.Helper()
+		if _, err := f.client.Commitment.Create().
+			SetID(uuid.MustParse(fmt.Sprintf("38000001-0000-4000-8000-%012x", i))).
+			SetWorkspace(ws).
+			SetUser(f.user).
+			SetRelationship(quill).
+			SetDirection(direction).
+			SetText(text).
+			SetStatus(status).
+			SetAcceptance(acceptance).
+			SetConfidence(1).
+			SetDueAt(at).
+			SetCreatedAt(touched).
+			SetUpdatedAt(touched).
+			Save(f.ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := 1; i <= promiseRegisterPage; i++ {
+		create(i, fmt.Sprintf("Directory Leaf %03d", i), "promised_by_me", "open", "accepted", due)
+	}
+	create(promiseRegisterPage+2, "They Quiet", "promised_by_them", "open", "accepted", due.AddDate(0, 6, 0))
+	create(promiseRegisterPage+3, "Finished Quiet", "promised_by_me", "fulfilled", "accepted", due)
+	create(promiseRegisterPage+4, "Candidate Quiet", "promised_by_me", "open", "candidate", due)
+	create(promiseRegisterPage+5, "Disputed Quiet", "promised_by_me", "open", "disputed", due)
+	for _, query := range []string{
+		"Show the next promises",
+		"show",
+		"next",
+		"promise",
+		"the next",
+		"show the next",
+	} {
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		names := []string{}
+		if found != nil {
+			names = namesOf(found.Relationships)
+		}
+		if err != nil || len(names) != 0 {
+			t.Fatalf("query %q = %v err=%v", query, names, err)
+		}
+	}
+	create(promiseRegisterPage+1, "Zed Hidden", "promised_by_me", "open", "accepted", due.AddDate(0, 5, 0))
+	found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: "Show the next promises"})
+	names := map[string]bool{}
+	if found != nil {
+		for _, name := range namesOf(found.Relationships) {
+			names[name] = true
+		}
+	}
+	if err != nil || len(names) != 2 || !names["Quill North"] || !names["Cedar Slide"] {
+		t.Fatalf("next promises = %v err=%v", names, err)
+	}
+	page, err := f.svc.ListCommitmentPage(f.ctx, f.user, CommitmentFilter{
+		Direction: "promised_by_me",
+		States:    []string{RegisterOpen, RegisterAtRisk},
+		Limit:     promiseRegisterPage,
+	})
+	if err != nil || page == nil || len(page.Commitments) != promiseRegisterPage || !page.HasMore {
+		t.Fatalf("promise page = %d hasMore=%v err=%v", len(page.Commitments), page != nil && page.HasMore, err)
+	}
+	for _, row := range page.Commitments {
+		if row.Text == "Zed Hidden" {
+			t.Fatal("hidden promise is on the first page")
+		}
+	}
+	rest, err := f.svc.ListCommitmentPage(f.ctx, f.user, CommitmentFilter{
+		Direction: "promised_by_me",
+		States:    []string{RegisterOpen, RegisterAtRisk},
+		Limit:     promiseRegisterPage,
+		Offset:    promiseRegisterPage,
+	})
+	if err != nil || rest == nil || rest.HasMore || len(rest.Commitments) != 1 || rest.Commitments[0].Text != "Zed Hidden" {
+		got := ""
+		if rest != nil && len(rest.Commitments) == 1 {
+			got = rest.Commitments[0].Text
+		}
+		t.Fatalf("next page = %q hasMore=%v err=%v", got, rest != nil && rest.HasMore, err)
+	}
+}
+
 func TestRelationshipSearchFindsTheLinkedInLabel(t *testing.T) {
 	f := newFixture(t)
 	saved, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
