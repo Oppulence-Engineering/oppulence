@@ -1199,8 +1199,8 @@ export interface paths {
     put?: never;
     post?: never;
     /**
-     * Delete console resource
-     * @description Deletes one caller-owned resource.
+     * Remove from favorites
+     * @description Remove from favorites deletes the saved favorite for that note. The note stays.
      */
     delete: operations["deleteConsoleResource"];
     options?: never;
@@ -18339,14 +18339,17 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Console resource id. */
+        /**
+         * @description Saved favorite to remove.
+         * @example e8dfa9b6-a7b2-46ea-982c-622a914c00e5
+         */
         resourceId: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Resource deleted. */
+      /** @description The favorite is gone. */
       204: {
         headers: {
           [name: string]: unknown;

@@ -5701,6 +5701,45 @@ func assertProfile(t *testing.T, paths obj) {
 	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "approvedAt") {
 		t.Fatalf("profile example looks live: %s", encoded)
 	}
+
+	assertRemoveFavorite(t, paths)
+}
+
+func TestRemoveFavoriteSamplesTheFavorite(t *testing.T) {
+	spec := obj{"paths": obj{}, "components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertRemoveFavorite(t, asObj(spec["paths"]))
+}
+
+func assertRemoveFavorite(t *testing.T, paths obj) {
+	t.Helper()
+	del := asObj(asObj(paths["/v1/console/resources/{resourceId}"])["delete"])
+	if del["summary"] != "Remove from favorites" || del["operationId"] != "deleteConsoleResource" || del["description"] != removeFavoriteDescription {
+		t.Fatalf("remove favorite operation: summary=%#v description=%#v id=%#v", del["summary"], del["description"], del["operationId"])
+	}
+	if del["requestBody"] != nil {
+		t.Fatalf("remove favorite body: %#v", del["requestBody"])
+	}
+	params, _ := del["parameters"].([]any)
+	if len(params) != 1 {
+		t.Fatalf("remove favorite parameters: %#v", del["parameters"])
+	}
+	param := asObj(params[0])
+	if param["name"] != "resourceId" || param["example"] != removeFavoriteID || asObj(param["schema"])["example"] != removeFavoriteID {
+		t.Fatalf("remove favorite id: %#v", param)
+	}
+	gone := asObj(asObj(del["responses"])["204"])
+	if gone["description"] != "The favorite is gone." || gone["content"] != nil {
+		t.Fatalf("remove favorite response: %#v", gone)
+	}
+	raw, err := json.Marshal(del)
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded := string(raw)
+	if strings.Contains(encoded, "acta_") || strings.Contains(encoded, `"token"`) || strings.Contains(encoded, "approvedAt") {
+		t.Fatalf("remove favorite looks live: %s", encoded)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

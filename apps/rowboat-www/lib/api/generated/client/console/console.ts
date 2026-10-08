@@ -411,8 +411,8 @@ export const getDeleteConsoleResourceUrl = (resourceId: string) => {
 };
 
 /**
- * Deletes one caller-owned resource.
- * @summary Delete console resource
+ * Remove from favorites deletes the saved favorite for that note. The note stays.
+ * @summary Remove from favorites
  */
 export const deleteConsoleResource = async (
   resourceId: string,

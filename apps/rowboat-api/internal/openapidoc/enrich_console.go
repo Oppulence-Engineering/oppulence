@@ -206,14 +206,11 @@ func addConsolePaths(paths obj) {
 	patchResponses := cloneResponses(getResponses)
 	patchResponses["200"] = jsonResponse("Stored template.", ref("ConsoleResource"), documentedEditedTemplate())
 	patchResponses["409"] = consoleConflictResponse()
-	deleteResponses := cloneResponses(authErrors)
-	deleteResponses["204"] = obj{"description": "Resource deleted."}
-	deleteResponses["404"] = consoleNotFoundResponse()
 	paths["/v1/console/resources/{resourceId}"] = obj{
 		"get": operation("Console", "Get console resource", "Returns one caller-owned resource.", "getConsoleResource", bearer(), resourceID, nil, getResponses),
 		"patch": operation("Console", "Save template", "Save template posts the name and payload of an existing note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0, and the update time is later.", "patchConsoleResource", bearer(), editedTemplateID,
 			jsonRequest("Mutable resource fields.", ref("ConsoleResourcePatch"), documentedEditedTemplateRequest()), patchResponses),
-		"delete": operation("Console", "Delete console resource", "Deletes one caller-owned resource.", "deleteConsoleResource", bearer(), resourceID, nil, deleteResponses),
+		"delete": removeFavoriteOperation(),
 	}
 }
 
