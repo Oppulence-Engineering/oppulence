@@ -275,6 +275,10 @@ const HIDDEN_ACTIVITY_KEYS = new Set([
   "commitment_due_timezone",
   // The clock was clamped. The first and last message days are the activity.
   "occurred_at_clamped",
+
+  // Gmail ids. The attachment and participant counts are the activity.
+  "thread_id",
+  "message_id",
 ]);
 
 const ACTIVITY_FACT_LABELS: Record<string, string> = {
