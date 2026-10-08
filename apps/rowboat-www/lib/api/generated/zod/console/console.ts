@@ -538,8 +538,8 @@ export const ListConsoleResources500Response = zod
   );
 
 /**
- * Creates a typed artifact. Replaying a note favorite returns the existing resource.
- * @summary Create console resource
+ * Save template posts a note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0.
+ * @summary Save template
  */
 export const createConsoleResourceBodyNameMax = 120;
 

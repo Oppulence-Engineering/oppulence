@@ -1110,8 +1110,8 @@ export interface paths {
     get: operations["listConsoleResources"];
     put?: never;
     /**
-     * Create console resource
-     * @description Creates a typed artifact. Replaying a note favorite returns the existing resource.
+     * Save template
+     * @description Save template posts a note template. The name and the title are Weekly account review, and the body is Agenda. The stored template keeps that title and body, with sort order 0.
      */
     post: operations["createConsoleResource"];
     delete?: never;
@@ -16385,6 +16385,16 @@ export interface operations {
     /** @description Typed resource. */
     requestBody: {
       content: {
+        /**
+         * @example {
+         *       "kind": "note_template",
+         *       "name": "Weekly account review",
+         *       "payload": {
+         *         "body": "Agenda",
+         *         "title": "Weekly account review"
+         *       }
+         *     }
+         */
         "application/json": components["schemas"]["ConsoleResourceCreate"];
       };
     };
@@ -16398,12 +16408,26 @@ export interface operations {
           "application/json": components["schemas"]["ConsoleResource"];
         };
       };
-      /** @description Created resource. */
+      /** @description Stored template. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "createdAt": "2026-09-17T20:00:00Z",
+           *       "id": "bed845f2-975a-4678-9c86-2157548161e4",
+           *       "kind": "note_template",
+           *       "name": "Weekly account review",
+           *       "payload": {
+           *         "body": "Agenda",
+           *         "title": "Weekly account review"
+           *       },
+           *       "sortOrder": 0,
+           *       "updatedAt": "2026-09-17T20:00:00Z"
+           *     }
+           */
           "application/json": components["schemas"]["ConsoleResource"];
         };
       };

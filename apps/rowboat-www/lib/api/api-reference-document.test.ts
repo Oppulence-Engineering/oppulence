@@ -1661,6 +1661,26 @@ describe("API reference document", () => {
     expect(presented.components.schemas.RevenueAction.properties.approvalStatus.example).toBe("pending");
   });
 
+  it("samples the note template Save template stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/console/resources"].post;
+    expect(operation.summary).toBe("Save template");
+    expect(operation.description).toContain("Weekly account review");
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      kind: "note_template",
+      name: "Weekly account review",
+      payload: { title: "Weekly account review", body: "Agenda" },
+    });
+    expect(operation.responses["201"].content["application/json"].example).toMatchObject({
+      id: "bed845f2-975a-4678-9c86-2157548161e4",
+      kind: "note_template",
+      name: "Weekly account review",
+      sortOrder: 0,
+      payload: { title: "Weekly account review", body: "Agenda" },
+    });
+    expect(presented.components.schemas.ConsoleResourceKind.example).toBe("graph_saved_view");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
