@@ -8612,9 +8612,9 @@ func relationshipSupportedDetailCount(n int, now time.Time) predicate.Relationsh
 }
 
 // relationshipSheetDetailSourceMatch matches the badges under "See where each
-// detail came from". A correction says a person confirmed it. A claim with no
-// observation says there is nothing to open. An empty detail says nothing
-// connected has filled it in.
+// detail came from". A correction says a person confirmed it, and that same
+// detail shows "Retract correction". A claim with no observation says there
+// is nothing to open. An empty detail says nothing connected has filled it in.
 func relationshipSheetDetailSourceMatch(needle string) predicate.Relationship {
 	now := time.Now()
 	var preds []predicate.Relationship
@@ -8628,6 +8628,10 @@ func relationshipSheetDetailSourceMatch(needle string) predicate.Relationship {
 		if sheetPhraseMatches(phrase, needle) {
 			preds = append(preds, relationshipHasDetailSource(sourceType, now))
 		}
+	}
+	// "correction" sits inside the button. The word alone is not the button.
+	if labelPhraseMatches("retract correction", needle) {
+		preds = append(preds, relationshipHasDetailSource("user_correction", now))
 	}
 	if needle == "not filled in yet" {
 		preds = append(preds, relationship.Not(

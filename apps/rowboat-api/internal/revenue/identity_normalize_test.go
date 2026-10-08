@@ -5123,11 +5123,76 @@ func TestRelationshipSearchFindsTheDetailSource(t *testing.T) {
 		}
 	}
 	assertCompanyQuery("Confirmed by a person", "Lumen Packet")
+	assertCompanyQuery("Retract correction", "Lumen Packet")
 	assertCompanyQuery("This detail has no source you can open", "Harbor Ledger")
 	assertCompanyQuery("Nothing connected has filled this in", "Quill Atelier", "Lumen Packet", "Harbor Ledger")
 	assertCompanyQuery("Not filled in yet", "Quill Atelier", "Lumen Packet", "Harbor Ledger")
 	assertCompanyQuery("From a connected source")
 	assertCompanyQuery("person")
+}
+
+func TestRelationshipSearchFindsRetractCorrection(t *testing.T) {
+	f := newFixture(t)
+	create := func(name string) *ent.Relationship {
+		t.Helper()
+		row, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+			Kind: "company", DisplayName: name,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return row
+	}
+	correct := func(row *ent.Relationship) string {
+		t.Helper()
+		if _, err := f.svc.CorrectRelationship(f.ctx, f.user, row.ID, RelationshipCorrectionInput{
+			Dimension: "health", Value: "healthy", Reason: "The account is healthy.",
+		}); err != nil {
+			t.Fatal(err)
+		}
+		model, err := f.svc.MissionControl(f.ctx, f.user, row.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		health := model.Evidence["health"]
+		if !health.Supported || health.Authority != "user_correction" || health.AssertionID == "" {
+			t.Fatalf("%s health = %+v", row.DisplayName, health)
+		}
+		return health.AssertionID
+	}
+	create("Quill North")
+	cedar := create("Cedar Slide")
+	correct(cedar)
+	aspen := create("Aspen Ledger")
+	assertionID, err := uuid.Parse(correct(aspen))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.RetractRelationshipAssertion(f.ctx, f.user, aspen.ID, assertionID, "The health note was wrong."); err != nil {
+		t.Fatal(err)
+	}
+
+	assertCompanyQuery := func(query string, want ...string) {
+		t.Helper()
+		found, err := f.svc.ListRelationshipsFiltered(f.ctx, f.user, RelationshipListFilter{Query: query})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := namesOf(found.Relationships)
+		if len(got) != len(want) {
+			t.Fatalf("query %q = %v, want %v", query, got, want)
+		}
+		for _, name := range want {
+			if !hasName(got, name) {
+				t.Fatalf("query %q = %v, want %v", query, got, want)
+			}
+		}
+	}
+	assertCompanyQuery("Retract correction", "Cedar Slide")
+	assertCompanyQuery("which companies can I retract correction", "Cedar Slide")
+	assertCompanyQuery("Confirmed by a person", "Cedar Slide")
+	assertCompanyQuery("retract")
+	assertCompanyQuery("correction")
 }
 
 func TestRelationshipSearchFindsTheSheetReviewAndRecommendation(t *testing.T) {
