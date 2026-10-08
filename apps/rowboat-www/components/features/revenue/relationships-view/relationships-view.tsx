@@ -4262,6 +4262,13 @@ export function RelationshipSheet({
                       data.missionControl.evidence.engagement,
                     )}
                   </dd>
+                  <dt className="text-primary/40">Sentiment</dt>
+                  <dd className="text-primary/75">
+                    {supportedRecordValue(
+                      data.relationship.sentiment,
+                      data.missionControl.evidence.sentiment,
+                    )}
+                  </dd>
                   <dt className="text-primary/40">Last activity</dt>
                   <dd className="text-primary/75">
                     {companyLastActivityLabel(data.relationship.lastTouchAt)}
