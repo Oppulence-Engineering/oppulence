@@ -409,7 +409,8 @@ export function personSheetSubtitle(person: Pick<RelationshipPerson, "primaryEma
 
 /**
  * The Role column is the title, or the seniority when no title is saved.
- * A company role such as Decision maker is printed with it.
+ * A company role such as Decision maker is printed with it. The person
+ * sheet uses the same line, so opening someone does not drop that role.
  */
 export function personDirectoryRole(person: {
   title?: string | null;
@@ -1095,7 +1096,7 @@ function PersonSheet({
   const sheetFacts: Array<[string, string | undefined]> = [
     ["Company", personCompanyTitle(person) || undefined],
     ["Domain", person.orgDomain],
-    ["Role", person.title],
+    ["Role", personDirectoryRole(person)],
     ["Seniority", personSeniorityLabel(person.seniority)],
     ["Department", person.department],
     ["Location", person.location],
