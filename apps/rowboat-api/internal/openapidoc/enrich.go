@@ -2070,6 +2070,20 @@ func enrichEntitySchemas(schemas obj) {
 		properties["provider"] = stringSchema(item.description, item.example)
 	}
 
+	// The shared provider note samples openai. An identity provider is the tool
+	// prefix of an external record, such as hubspot or gmail.
+	for _, name := range []string{"PersonIdentity", "RelationshipIdentity"} {
+		schema := asObj(schemas[name])
+		if schema == nil {
+			continue
+		}
+		properties := asObj(schema["properties"])
+		if properties == nil || properties["provider"] == nil {
+			continue
+		}
+		properties["provider"] = stringSchema("Tool this identity came from. For an external record it is the first part of that record, such as hubspot.", "hubspot")
+	}
+
 	backgroundPropDocs := map[string]obj{
 		"slug":                 {"description": "Stable per-user background task slug matching bg-tasks/<slug> locally.", "example": "daily-summary"},
 		"name":                 {"description": "Human-readable background task name.", "example": "Daily Account Summary"},

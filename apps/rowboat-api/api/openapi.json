@@ -9144,8 +9144,8 @@
             "$ref": "#/components/schemas/Person"
           },
           "provider": {
-            "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
-            "example": "openai",
+            "description": "Tool this identity came from. For an external record it is the first part of that record, such as hubspot.",
+            "example": "hubspot",
             "type": "string"
           },
           "source": {
@@ -10791,8 +10791,8 @@
             "type": "string"
           },
           "provider": {
-            "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
-            "example": "openai",
+            "description": "Tool this identity came from. For an external record it is the first part of that record, such as hubspot.",
+            "example": "hubspot",
             "type": "string"
           },
           "relationship": {

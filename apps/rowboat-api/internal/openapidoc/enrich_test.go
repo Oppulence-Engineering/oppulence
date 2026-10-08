@@ -327,6 +327,16 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if taskProvider := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["provider"]); taskProvider["example"] != "openai" {
 		t.Fatalf("BackgroundTask.provider lost its model example: %#v", taskProvider)
 	}
+	identityDescription := "Tool this identity came from. For an external record it is the first part of that record, such as hubspot."
+	for _, name := range []string{"PersonIdentity", "RelationshipIdentity"} {
+		provider := asObj(asObj(asObj(schemas[name])["properties"])["provider"])
+		if provider["example"] != "hubspot" || provider["description"] != identityDescription {
+			t.Fatalf("%s.provider sampled a model provider: %#v", name, provider)
+		}
+	}
+	if taskProvider := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["provider"]); taskProvider["example"] != "openai" {
+		t.Fatalf("BackgroundTask.provider lost its model example: %#v", taskProvider)
+	}
 
 	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
 	evidenceProperties := asObj(missionControlEvidence["properties"])
@@ -479,6 +489,17 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	historyProvider := asObj(asObj(asObj(schemas["OAuthConnectionHistory"])["properties"])["provider"])
 	if historyProvider["example"] != "google" || historyProvider["description"] != "Sign-in service recorded for this connection." {
 		t.Fatalf("checked-in OAuthConnectionHistory.provider sampled a model provider: %#v", historyProvider)
+	}
+	if taskProvider := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["provider"]); taskProvider["example"] != "openai" {
+		t.Fatalf("checked-in BackgroundTask.provider lost its model example: %#v", taskProvider)
+	}
+
+	identityDescription := "Tool this identity came from. For an external record it is the first part of that record, such as hubspot."
+	for _, name := range []string{"PersonIdentity", "RelationshipIdentity"} {
+		provider := asObj(asObj(asObj(schemas[name])["properties"])["provider"])
+		if provider["example"] != "hubspot" || provider["description"] != identityDescription {
+			t.Fatalf("checked-in %s.provider sampled a model provider: %#v", name, provider)
+		}
 	}
 	if taskProvider := asObj(asObj(asObj(schemas["BackgroundTask"])["properties"])["provider"]); taskProvider["example"] != "openai" {
 		t.Fatalf("checked-in BackgroundTask.provider lost its model example: %#v", taskProvider)
