@@ -6158,8 +6158,8 @@ export const CorrectConversationEvidence404Response = zod
   );
 
 /**
- * Approves, corrects, rejects, or defers one evidence-backed semantic candidate. A stale baseline returns 409 and no state mutation.
- * @summary Decide a proposed conversation change
+ * Approve accepts this proposed conversation change. The company and its review queue refresh.
+ * @summary Approve
  */
 export const DecideConversationChangeParams = zod.object({
   relationshipId: zod.uuid().describe("Relationship id."),

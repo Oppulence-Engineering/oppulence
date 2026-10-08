@@ -2302,8 +2302,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Decide a proposed conversation change
-     * @description Approves, corrects, rejects, or defers one evidence-backed semantic candidate. A stale baseline returns 409 and no state mutation.
+     * Approve
+     * @description Approve accepts this proposed conversation change. The company and its review queue refresh.
      */
     post: operations["decideConversationChange"];
     delete?: never;
@@ -22670,7 +22670,10 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /**
+         * @description Relationship id.
+         * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         relationshipId: string;
       };
       cookie?: never;
@@ -22717,12 +22720,104 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Updated relationship and refreshed review queue. */
+      /** @description The proposed change is accepted, and the review queue is refreshed. */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "intelligence": {
+           *         "claims": [
+           *           {
+           *             "captureCaveats": [
+           *               "Remote channel may contain multiple speakers."
+           *             ],
+           *             "confidence": 0.5,
+           *             "endMs": 16000,
+           *             "exactQuote": "We are concerned security could delay the renewal.",
+           *             "id": "claim:8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "kind": "risk",
+           *             "material": true,
+           *             "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "speakerConfidence": 0.5,
+           *             "speakerId": "anonymous:remote-channel",
+           *             "speakerLabel": "Other",
+           *             "startMs": 12000,
+           *             "stateDimension": "risk",
+           *             "value": "Security review may delay renewal."
+           *           }
+           *         ],
+           *         "contradictionCases": [],
+           *         "deletionReceipts": [],
+           *         "delta": {
+           *           "changes": [],
+           *           "contradictions": [],
+           *           "fromVersion": 4,
+           *           "toVersion": 5,
+           *           "uncertainClaimIds": []
+           *         },
+           *         "effectivePolicy": {
+           *           "capture": "require_consent",
+           *           "externalShare": true,
+           *           "legalHold": false,
+           *           "modelRoute": "local_only",
+           *           "policyVersion": "policy:9373cc30008dcb712c236fc9",
+           *           "publishEvidence": true,
+           *           "redactionClasses": [
+           *             "personal_identifier"
+           *           ],
+           *           "resolvedAt": "2026-07-31T14:00:00Z",
+           *           "retentionDays": 30,
+           *           "sourceLayerIds": [
+           *             "workspace:default"
+           *           ]
+           *         },
+           *         "governanceDecisions": [],
+           *         "governanceReceipts": [],
+           *         "liveCues": [],
+           *         "mutualActionPlans": [],
+           *         "recommendationEvaluations": [],
+           *         "recoveryEvaluations": [],
+           *         "reviewItems": []
+           *       },
+           *       "relationship": {
+           *         "accountDomain": "example.com",
+           *         "categories": [
+           *           "Artificial intelligence"
+           *         ],
+           *         "commitmentCount": 4,
+           *         "displayName": "Acme",
+           *         "emailThreadCount": 12,
+           *         "engagement": "steady",
+           *         "health": "needs_attention",
+           *         "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "kind": "company",
+           *         "lastChangedAt": "2026-07-25T16:00:00Z",
+           *         "lifecycle": "evaluation",
+           *         "milestones": [
+           *           "Proposal shared."
+           *         ],
+           *         "nextAction": "Confirm the security review owner.",
+           *         "peopleCount": 3,
+           *         "projectedAt": "2026-07-25T16:00:00Z",
+           *         "projectorVersion": 2,
+           *         "resourceRefs": [
+           *           "hubspot:company:123"
+           *         ],
+           *         "risks": [
+           *           "Security review has no owner."
+           *         ],
+           *         "sentiment": "mixed",
+           *         "stateHash": "sha256:ab12cd34",
+           *         "stateReason": "The proposed conversation change was accepted.",
+           *         "stateVersion": 5,
+           *         "status": "active",
+           *         "summary": "Asked for pricing in April; wants a follow-up in July."
+           *       }
+           *     }
+           */
           "application/json": {
             intelligence: components["schemas"]["RelationshipIntelligence"];
             relationship: components["schemas"]["RevenueRelationship"];

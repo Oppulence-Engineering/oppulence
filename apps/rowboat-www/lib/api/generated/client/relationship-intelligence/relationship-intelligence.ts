@@ -2159,8 +2159,8 @@ export const getDecideConversationChangeUrl = (relationshipId: string) => {
 };
 
 /**
- * Approves, corrects, rejects, or defers one evidence-backed semantic candidate. A stale baseline returns 409 and no state mutation.
- * @summary Decide a proposed conversation change
+ * Approve accepts this proposed conversation change. The company and its review queue refresh.
+ * @summary Approve
  */
 export const decideConversationChange = async (
   relationshipId: string,
