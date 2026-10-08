@@ -315,6 +315,33 @@ describe("API reference document", () => {
     );
   });
 
+  it("samples the agent Configure loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const agent = presented.paths["/v1/agents/{slug}"].get;
+    expect(agent.summary).toBe("Configure");
+    expect(agent.operationId).toBe("getAgent");
+    expect(agent.description).toBe(
+      "Configure loads this agent's name, purpose, model, and tools.",
+    );
+    expect(agent.requestBody).toBeUndefined();
+    expect(agent.parameters[0]).toMatchObject({
+      name: "slug",
+      example: "acme-follow-up",
+    });
+    expect(agent.responses["200"].description).toBe("The agent is ready to configure.");
+    expect(agent.responses["200"].content["application/json"].example).toEqual({
+      slug: "acme-follow-up",
+      name: "Acme follow-up",
+      source: "tenant",
+      instructions: "Draft the next follow-up for Acme.",
+      model: "openai/gpt-4.1-mini",
+      provider: "openrouter",
+      enabledTools: ["relationship.read"],
+    });
+    expect(JSON.stringify(agent.responses["200"])).not.toContain("acta_");
+    expect(JSON.stringify(agent.responses["200"])).not.toContain('"token"');
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

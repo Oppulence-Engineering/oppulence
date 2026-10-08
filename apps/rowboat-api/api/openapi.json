@@ -21464,6 +21464,115 @@
         "tags": ["Internal"]
       }
     },
+    "/v1/agents/{slug}": {
+      "get": {
+        "description": "Configure loads this agent's name, purpose, model, and tools.",
+        "operationId": "getAgent",
+        "parameters": [
+          {
+            "description": "Agent id.",
+            "example": "acme-follow-up",
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "description": "Agent id.",
+              "example": "acme-follow-up",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "enabledTools": [
+                    "relationship.read"
+                  ],
+                  "instructions": "Draft the next follow-up for Acme.",
+                  "model": "openai/gpt-4.1-mini",
+                  "name": "Acme follow-up",
+                  "provider": "openrouter",
+                  "slug": "acme-follow-up",
+                  "source": "tenant"
+                },
+                "schema": {
+                  "description": "One agent the workspace can configure.",
+                  "properties": {
+                    "enabledTools": {
+                      "description": "Tools this agent can use.",
+                      "items": {
+                        "description": "Tool id.",
+                        "example": "relationship.read",
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "instructions": {
+                      "description": "Purpose shown for this agent.",
+                      "example": "Draft the next follow-up for Acme.",
+                      "type": "string"
+                    },
+                    "model": {
+                      "description": "Model this agent uses.",
+                      "example": "openai/gpt-4.1-mini",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Name on the agents page.",
+                      "example": "Acme follow-up",
+                      "type": "string"
+                    },
+                    "provider": {
+                      "description": "Where that model runs.",
+                      "example": "openrouter",
+                      "type": "string"
+                    },
+                    "slug": {
+                      "description": "Agent id.",
+                      "example": "acme-follow-up",
+                      "type": "string"
+                    },
+                    "source": {
+                      "description": "tenant means this workspace owns the agent.",
+                      "example": "tenant",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "slug",
+                    "name",
+                    "source",
+                    "enabledTools"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The agent is ready to configure."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Configure",
+        "tags": [
+          "Agents"
+        ]
+      }
+    },
     "/v1/llm/chat/completions": {
       "post": {
         "description": "Credit-gated chat completion endpoint. The gateway estimates and reserves credits, routes the desktop model id to OpenAI or OpenRouter, forwards the request, streams or buffers the upstream response, then settles actual token usage.",

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -90,6 +91,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/relationships/{relationshipId}/conversation-corrections",
 		"/v1/relationship-observations/batch",
 		"/v1/workspace-notes",
+		"/v1/agents/{slug}",
 		"/v1/relationship-sources/status",
 		"/v1/relationship-recommendations/{actionId}/approve",
 		"/v1/relationship-recommendations/{actionId}/reject",
@@ -338,6 +340,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 	assertEventObservation(t, schemas)
+	assertConfigureAgent(t, spec)
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {
@@ -398,5 +401,49 @@ func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) 
 		if asObj(token["responses"])[status] == nil {
 			t.Fatalf("MCP token missing %s", status)
 		}
+	}
+}
+
+func TestConfigureAgentLoadsTheWorkspaceAgent(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertConfigureAgent(t, spec)
+}
+
+func assertConfigureAgent(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/agents/{slug}"])["get"])
+	if operation["summary"] != "Configure" || operation["operationId"] != "getAgent" || operation["description"] != configureAgentDescription {
+		t.Fatalf("configure copy: %#v", obj{"summary": operation["summary"], "operationId": operation["operationId"], "description": operation["description"]})
+	}
+	if operation["requestBody"] != nil {
+		t.Fatalf("configure sends no body: %#v", operation["requestBody"])
+	}
+	params, _ := operation["parameters"].([]any)
+	if len(params) != 1 {
+		t.Fatalf("parameters: %#v", operation["parameters"])
+	}
+	param := asObj(params[0])
+	if param["name"] != "slug" || param["example"] != configureAgentID {
+		t.Fatalf("agent id: %#v", param)
+	}
+	ok := asObj(asObj(operation["responses"])["200"])
+	if ok["description"] != configureAgentReady {
+		t.Fatalf("200 description: %#v", ok["description"])
+	}
+	example := asObj(asObj(asObj(ok["content"])["application/json"])["example"])
+	if example["slug"] != configureAgentID || example["name"] != "Acme follow-up" || example["source"] != "tenant" || example["instructions"] != "Draft the next follow-up for Acme." || example["model"] != "openai/gpt-4.1-mini" || example["provider"] != "openrouter" {
+		t.Fatalf("example: %#v", example)
+	}
+	tools, _ := example["enabledTools"].([]any)
+	if len(tools) != 1 || tools[0] != "relationship.read" {
+		t.Fatalf("tools: %#v", example["enabledTools"])
+	}
+	raw, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(raw), "acta_") || strings.Contains(string(raw), `"token"`) {
+		t.Fatalf("example leaks a token: %s", raw)
 	}
 }
