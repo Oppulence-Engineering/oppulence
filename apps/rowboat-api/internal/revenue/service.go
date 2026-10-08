@@ -5968,6 +5968,12 @@ func relationshipSheetSuggestionMatch(needle string) predicate.Relationship {
 	if sheetPhraseMatches("confirm the stakeholder identity or role", needle) || sheetPhraseMatches("who this is", needle) {
 		preds = append(preds, relationshipHasReviewClaim("entity"))
 	}
+	// The focused-review section says this only when the newest page has no
+	// review card and an older conversation still exists. A claim on that
+	// newest page keeps the approve sentence instead.
+	if labelPhraseMatches("older conversations may still need review", needle) {
+		preds = append(preds, relationshipHasOlderUnreviewedConversations())
+	}
 	switch len(preds) {
 	case 0:
 		return nil
@@ -6337,6 +6343,57 @@ func relationshipReviewCount(n int, atLeast bool) predicate.Relationship {
 			b.Arg(n)
 		}))
 	})
+}
+
+// relationshipHasOlderUnreviewedConversations matches the sheet line
+// "Older conversations may still need review." The newest page is
+// intelligenceObservationPage conversations. The line is hidden when that
+// page already has a review card, and when there is no older page.
+func relationshipHasOlderUnreviewedConversations() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.P(func(b *sql.Builder) {
+			obs := relationshipobservation.Table
+			relCol := relationshipobservation.RelationshipColumn
+			facts := relationshipobservation.FieldNormalizedFactsJSON
+			b.WriteString("(SELECT COUNT(*) FROM ")
+			b.WriteString(obs)
+			b.WriteString(" AS counted WHERE counted.")
+			b.WriteString(relCol)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(") > ")
+			b.WriteString(strconv.Itoa(intelligenceObservationPage))
+			b.WriteString(" AND NOT EXISTS (SELECT 1 FROM (SELECT page.")
+			b.WriteString(facts)
+			b.WriteString(" AS facts FROM ")
+			b.WriteString(obs)
+			b.WriteString(" AS page WHERE page.")
+			b.WriteString(relCol)
+			b.WriteString(" = ")
+			b.WriteString(s.C(relationship.FieldID))
+			b.WriteString(" ORDER BY page.")
+			b.WriteString(relationshipobservation.FieldOccurredAt)
+			b.WriteString(" DESC, page.")
+			b.WriteString(relationshipobservation.FieldID)
+			b.WriteString(" DESC LIMIT ")
+			b.WriteString(strconv.Itoa(intelligenceObservationPage))
+			b.WriteString(") AS newest WHERE ")
+			writeNewestPageNeedsReview(b, s)
+			b.WriteString(")")
+		}))
+	})
+}
+
+func writeNewestPageNeedsReview(b *sql.Builder, s *sql.Selector) {
+	if s.Dialect() == dialect.Postgres {
+		b.WriteString("EXISTS (SELECT 1 FROM jsonb_array_elements(CASE WHEN jsonb_typeof(newest.facts::jsonb->'conversation_claims') = 'array' THEN newest.facts::jsonb->'conversation_claims' ELSE '[]'::jsonb END) AS claim WHERE ")
+		writeReviewClaimCondition(b, s, "any")
+		b.WriteString(") OR CASE WHEN jsonb_typeof(newest.facts::jsonb->'conversation_claim_candidates') = 'array' THEN jsonb_array_length(newest.facts::jsonb->'conversation_claim_candidates') ELSE 0 END > 0")
+		return
+	}
+	b.WriteString("(json_valid(newest.facts) AND json_type(newest.facts, '$.conversation_claims') = 'array' AND EXISTS (SELECT 1 FROM json_each(newest.facts, '$.conversation_claims') AS claim WHERE ")
+	writeReviewClaimCondition(b, s, "any")
+	b.WriteString(")) OR (json_valid(newest.facts) AND json_type(newest.facts, '$.conversation_claim_candidates') = 'array' AND json_array_length(json_extract(newest.facts, '$.conversation_claim_candidates')) > 0)")
 }
 
 // relationshipSheetPrivacyMatch matches the sentences inside the company
