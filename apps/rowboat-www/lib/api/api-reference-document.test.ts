@@ -2679,6 +2679,30 @@ describe("API reference document", () => {
     expect(JSON.stringify(page)).not.toContain("Confirmed duplicate");
   });
 
+  it("samples the page What we owe loads", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/commitments"].get;
+    expect(operation.summary).toBe("What we owe");
+    expect(operation.description).toBe(
+      "What we owe loads promises we made that are still open. The request asks for promised by us, open and at risk, 200 at a time, and it does not ask for an older page. This workspace has no open promise we made, so the page is empty.",
+    );
+    expect(presented.paths["/v1/commitments/{commitmentId}/export"].get.operationId).toBe("exportCommitment");
+    const examples = Object.fromEntries(
+      operation.parameters.map((parameter: { name: string; schema?: { example?: unknown }; example?: unknown }) => [
+        parameter.name,
+        parameter.example ?? parameter.schema?.example,
+      ]),
+    );
+    expect(examples).toMatchObject({ direction: "promised_by_me", state: "open,at_risk", limit: 200 });
+    expect(examples.offset).toBeUndefined();
+    expect(examples.includeCandidates).toBeUndefined();
+    expect(examples.dueBefore).toBeUndefined();
+    const page = operation.responses["200"].content["application/json"].example;
+    expect(page).toEqual({ commitments: [], hasMore: false });
+    expect(JSON.stringify(page)).not.toContain("Acme");
+    expect(JSON.stringify(page)).not.toContain("Migration live");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

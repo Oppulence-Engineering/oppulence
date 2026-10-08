@@ -143,7 +143,7 @@ export const getListCommitmentsResponseMock = (
       },
     }),
   ),
-  hasMore: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
+  hasMore: faker.datatype.boolean(),
   ...overrideResponse,
 });
 

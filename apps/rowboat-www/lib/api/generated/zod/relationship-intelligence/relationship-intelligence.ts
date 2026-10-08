@@ -8,33 +8,48 @@
 import * as zod from "zod";
 
 /**
- * Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register. A full page is the end of the register when hasMore is false.
- * @summary List the commitment register
+ * What we owe loads promises we made that are still open. The request asks for promised by us, open and at risk, 200 at a time, and it does not ask for an older page. This workspace has no open promise we made, so the page is empty.
+ * @summary What we owe
  */
 export const ListCommitmentsQueryParams = zod.object({
-  direction: zod.string().optional().describe("promised_by_me, promised_by_them, or mutual."),
+  direction: zod
+    .string()
+    .optional()
+    .describe("promised_by_me, promised_by_them, or mutual. What we owe asks for promised_by_me."),
   state: zod
     .string()
     .optional()
-    .describe(
-      "Comma-separated register states: open, at_risk, met, missed, waived, disputed. at_risk is derived from the due date.",
-    ),
-  owner: zod.string().optional().describe("Owner participant reference."),
-  relationshipId: zod.uuid().optional().describe("Restrict to one account."),
+    .describe("Comma-separated register states. What we owe asks for open and at risk."),
+  owner: zod
+    .string()
+    .optional()
+    .describe("Owner participant reference. What we owe does not send this."),
+  relationshipId: zod
+    .uuid()
+    .optional()
+    .describe("Restrict to one company. What we owe does not send this."),
   dueBefore: zod.iso
     .datetime({ offset: true })
     .optional()
-    .describe("Only commitments due before this instant."),
+    .describe("Only commitments due before this instant. What we owe does not send this."),
   changedSince: zod.iso
     .datetime({ offset: true })
     .optional()
-    .describe("Only commitments updated at or after this instant."),
-  limit: zod.coerce.number().int().optional().describe("Page size (default 50, max 200)."),
-  offset: zod.coerce.number().int().optional().describe("Page offset."),
+    .describe("Only commitments updated at or after this instant. What we owe does not send this."),
+  limit: zod.coerce
+    .number()
+    .int()
+    .optional()
+    .describe("Page size (max 200). What we owe asks for 200."),
+  offset: zod.coerce
+    .number()
+    .int()
+    .optional()
+    .describe("How many promises to skip. What we owe does not send this on the first page."),
   includeCandidates: zod.coerce
     .boolean()
     .optional()
-    .describe("Include unconfirmed extractions for a review surface."),
+    .describe("Include unconfirmed extractions. What we owe does not send this."),
 });
 
 export const ListCommitments200Response = zod
@@ -87,9 +102,9 @@ export const ListCommitments200Response = zod
           .describe("One cross-account register row with its reader-facing state and account."),
       )
       .describe("Register rows, each with its derived state and account."),
-    hasMore: zod.boolean().optional().describe("Another promise exists beyond this page."),
+    hasMore: zod.boolean().describe("Another promise exists beyond this page."),
   })
-  .describe("Commitment register. A full page is the end of the register when hasMore is false.");
+  .describe("Promise page.");
 
 export const ListCommitments400Response = zod
   .strictObject({

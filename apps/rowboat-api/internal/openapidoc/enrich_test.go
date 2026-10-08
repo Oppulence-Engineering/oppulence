@@ -3396,6 +3396,67 @@ func assertPendingDuplicates(t *testing.T, paths obj) {
 	if strings.Contains(string(got), "hubspot") || strings.Contains(string(got), "other@example.com") || strings.Contains(string(got), "Confirmed duplicate") || strings.Contains(string(got), "anchor_collision") {
 		t.Fatalf("duplicates example still uses the invented candidate: %s", got)
 	}
+
+	assertWhatWeOwe(t, paths)
+}
+
+func TestWhatWeOweSamplesTheEmptyRegister(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertWhatWeOwe(t, asObj(spec["paths"]))
+}
+
+func assertWhatWeOwe(t *testing.T, paths obj) {
+	t.Helper()
+	if asObj(asObj(paths["/v1/commitments/{commitmentId}/export"])["get"])["operationId"] != "exportCommitment" {
+		t.Fatal("export commitment was dropped")
+	}
+	op := asObj(asObj(paths["/v1/commitments"])["get"])
+	if op["summary"] != "What we owe" || op["description"] != whatWeOweDescription || op["operationId"] != "listCommitments" {
+		t.Fatalf("what we owe copy: summary=%#v description=%#v id=%#v", op["summary"], op["description"], op["operationId"])
+	}
+	examples := map[string]string{}
+	for _, param := range op["parameters"].([]any) {
+		item := asObj(param)
+		name, _ := item["name"].(string)
+		raw, err := json.Marshal(asObj(item["schema"])["example"])
+		if err != nil {
+			t.Fatal(err)
+		}
+		examples[name] = string(raw)
+		if name == "direction" || name == "state" || name == "limit" {
+			level, err := json.Marshal(item["example"])
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(level) != string(raw) {
+				t.Fatalf("%s parameter example %#v != schema %#v", name, string(level), string(raw))
+			}
+		}
+	}
+	if examples["direction"] != `"promised_by_me"` || examples["state"] != `"open,at_risk"` || examples["limit"] != "200" {
+		t.Fatalf("what we owe query examples: %#v", examples)
+	}
+	for _, name := range []string{"owner", "relationshipId", "dueBefore", "changedSince", "offset", "includeCandidates"} {
+		if examples[name] != "null" {
+			t.Fatalf("%s example = %s, want null", name, examples[name])
+		}
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	got, err := json.Marshal(example)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := json.Marshal(whatWeOwePage())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("what we owe example:\n%s\nwant:\n%s", got, want)
+	}
+	if strings.Contains(string(got), "Acme") || strings.Contains(string(got), "Migration live") || strings.Contains(string(got), "8b8dfa9b-a7b2-46ea-982c-622a914c00e5") {
+		t.Fatalf("what we owe example still uses the invented promise: %s", got)
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

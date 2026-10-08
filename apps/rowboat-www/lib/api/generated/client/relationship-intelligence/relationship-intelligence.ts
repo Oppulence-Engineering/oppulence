@@ -135,8 +135,8 @@ export const getListCommitmentsUrl = (params?: ListCommitmentsParams) => {
 };
 
 /**
- * Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register. A full page is the end of the register when hasMore is false.
- * @summary List the commitment register
+ * What we owe loads promises we made that are still open. The request asks for promised by us, open and at risk, 200 at a time, and it does not ask for an older page. This workspace has no open promise we made, so the page is empty.
+ * @summary What we owe
  */
 export const listCommitments = async (
   params?: ListCommitmentsParams,
