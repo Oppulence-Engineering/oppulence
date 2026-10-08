@@ -11,7 +11,7 @@ import type { DurableAgentSessionEventData } from "./durableAgentSessionEventDat
  * One ordered durable agent lifecycle or transcript event.
  */
 export interface DurableAgentSessionEvent {
-  /** Payload the approval card reads. It names the tool and how much it can change. */
+  /** Payload the approval card reads. */
   data: DurableAgentSessionEventData;
   /** Stable session event sequence. */
   seq: number;

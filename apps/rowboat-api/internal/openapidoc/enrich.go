@@ -236,7 +236,7 @@ const (
 	chatApprovalEventTier            = "act"
 	chatApprovalEventID              = "session_abc123/turn/0/approval/0"
 	chatApprovalEventTypeDescription = "Chat event. An approval request pauses until Approve."
-	chatApprovalEventDataDescription = "Payload the approval card reads. It names the tool and how much it can change."
+	chatApprovalEventDataDescription = "Payload the approval card reads."
 )
 
 func addAgentSessionSchemas(schemas obj) {

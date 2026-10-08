@@ -7147,7 +7147,7 @@ export interface components {
     /** @description One ordered durable agent lifecycle or transcript event. */
     DurableAgentSessionEvent: {
       /**
-       * @description Payload the approval card reads. It names the tool and how much it can change.
+       * @description Payload the approval card reads.
        * @example {
        *       "approvalId": "session_abc123/turn/0/approval/0",
        *       "tool": "slack.post_message",

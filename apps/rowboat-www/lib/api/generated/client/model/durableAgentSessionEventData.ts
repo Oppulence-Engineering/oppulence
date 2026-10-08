@@ -7,6 +7,6 @@
  */
 
 /**
- * Payload the approval card reads. It names the tool and how much it can change.
+ * Payload the approval card reads.
  */
 export type DurableAgentSessionEventData = { [key: string]: unknown };

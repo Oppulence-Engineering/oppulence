@@ -95,7 +95,7 @@ describe("API reference document", () => {
       example: "agent.approval_requested",
     });
     expect(event.data).toMatchObject({
-      description: "Payload the approval card reads. It names the tool and how much it can change.",
+      description: "Payload the approval card reads.",
       example: {
         approvalId: "session_abc123/turn/0/approval/0",
         tool: "slack.post_message",
