@@ -26,9 +26,11 @@ const (
 	openedCompanyCategory = "Artificial intelligence"
 	// The sheet Milestones list prints this sentence. An empty list says None recorded.
 	openedCompanyMilestone = "Proposal shared."
+	// The sheet Source row opens this page. The link says Check the source.
+	openedCompanySourceURL = "https://acme.example/team"
 )
 
-const openedCompanyOperationDescription = "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com. The risk is that the security review has no owner. The LinkedIn row opens the Acme company page. The category is Artificial intelligence. The milestone is that the proposal was shared. The headquarters is San Francisco, California, United States."
+const openedCompanyOperationDescription = "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com. The risk is that the security review has no owner. The LinkedIn row opens the Acme company page. The category is Artificial intelligence. The milestone is that the proposal was shared. The headquarters is San Francisco, California, United States. The source row opens the Acme team page."
 
 func openedCompanyParams() []any {
 	return []any{obj{
@@ -56,6 +58,7 @@ func openedCompanySheetExample() obj {
 			"commitmentCount":       0,
 			"companyDescription":    openedCompanyDescription,
 			"companyEnrichmentData": companyProfileFactsExample(),
+			"companyEnrichmentRefs": obj{"headquarters": []any{openedCompanySourceURL}},
 			"lifecycle":             "evaluation",
 			"linkedinUrl":           openedCompanyLinkedInURL,
 			"engagement":            "declining",

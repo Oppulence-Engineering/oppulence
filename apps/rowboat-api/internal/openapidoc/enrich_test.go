@@ -4167,6 +4167,11 @@ func assertOpenedCompany(t *testing.T, spec obj) {
 	if factsErr != nil || wantErr != nil || string(facts) != string(wantFacts) {
 		t.Fatalf("profile facts: %s", facts)
 	}
+	refs := asObj(relationship["companyEnrichmentRefs"])
+	sources, ok := refs["headquarters"].([]any)
+	if !ok || len(sources) != 1 || sources[0] != openedCompanySourceURL {
+		t.Fatalf("enrichment refs: %#v", relationship["companyEnrichmentRefs"])
+	}
 	threads, ok := example["emailThreads"].([]any)
 	if !ok || len(threads) != 0 {
 		t.Fatalf("email threads: %#v", example["emailThreads"])
