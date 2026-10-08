@@ -2756,7 +2756,7 @@ describe("API reference document", () => {
     const operation = presented.paths["/v1/relationships"].get;
     expect(operation.summary).toBe("All companies");
     expect(operation.description).toBe(
-      "All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention. The next action is to confirm the security review owner.",
+      "All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention. The next action is to confirm the security review owner. The LinkedIn column opens the Acme company page.",
     );
     for (const parameter of operation.parameters) {
       expect(parameter.schema.example).toBeUndefined();
@@ -2776,6 +2776,7 @@ describe("API reference document", () => {
       engagement: "declining",
       health: "needs_attention",
       nextAction: "Confirm the security review owner.",
+      linkedinUrl: "https://www.linkedin.com/company/acme",
       stateVersion: 1,
       stateHash: "sha256:61dd3377d3854c6f9c104af050ad3f0f87ff6cdd1c3458c17541cbc1e87fc887",
     });

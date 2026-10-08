@@ -2620,9 +2620,11 @@ const (
 	companyDirectoryReason      = "Champion engagement declined after pricing. Security review has no meeting. CRM stage is evaluation."
 	companyDirectoryTouchedAt   = "2026-07-25T15:00:00Z"
 	companyDirectoryProjectedAt = "2026-07-25T16:00:00Z"
-	companyDirectoryDescription = "All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention. The next action is to confirm the security review owner."
+	companyDirectoryDescription = "All companies loads the directory. The request sends no search and no health, stage, or older-page offset. Acme is the one company: evaluation, declining engagement, and health that needs attention. The next action is to confirm the security review owner. The LinkedIn column opens the Acme company page."
 	// The directory's Next action column prints this sentence.
 	companyDirectoryNextAction = "Confirm the security review owner."
+	// The directory LinkedIn cell says View profile and opens this page. Without it the cell searches and says Find profile.
+	companyDirectoryLinkedInURL = "https://www.linkedin.com/company/acme"
 )
 
 func companyDirectoryPage() obj {
@@ -2639,6 +2641,7 @@ func companyDirectoryPage() obj {
 			"emailThreadCount": 0,
 			"commitmentCount":  0,
 			"lifecycle":        "evaluation",
+			"linkedinUrl":      companyDirectoryLinkedInURL,
 			"engagement":       "declining",
 			"sentiment":        "unknown",
 			"health":           "needs_attention",
