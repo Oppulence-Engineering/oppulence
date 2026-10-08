@@ -2093,7 +2093,7 @@ export const getCorrectConversationEvidenceUrl = (relationshipId: string) => {
 };
 
 /**
- * Resolves a focused word, speaker, entity, or material-claim review item. State-affecting corrections append a top-precedence user assertion and reproject deterministically.
+ * Correct sends the company id, the review item id, and the edited value. It always sends the focused-review reason.
  * @summary Correct reviewed conversation evidence
  */
 export const correctConversationEvidence = async (

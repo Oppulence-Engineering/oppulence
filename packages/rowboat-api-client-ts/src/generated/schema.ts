@@ -2263,7 +2263,7 @@ export interface paths {
     put?: never;
     /**
      * Correct reviewed conversation evidence
-     * @description Resolves a focused word, speaker, entity, or material-claim review item. State-affecting corrections append a top-precedence user assertion and reproject deterministically.
+     * @description Correct sends the company id, the review item id, and the edited value. It always sends the focused-review reason.
      */
     post: operations["correctConversationEvidence"];
     delete?: never;
@@ -21954,7 +21954,10 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Relationship id. */
+        /**
+         * @description Relationship id.
+         * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
         relationshipId: string;
       };
       cookie?: never;
@@ -21965,8 +21968,8 @@ export interface operations {
         /**
          * @example {
          *       "correctedValue": "Avery Chen",
-         *       "reason": "Avery was the speaker.",
-         *       "reviewItemId": "review:ab12"
+         *       "reason": "User corrected conversation evidence during focused review.",
+         *       "reviewItemId": "review:da47aac4d2da3c20"
          *     }
          */
         "application/json": {
@@ -21977,12 +21980,12 @@ export interface operations {
           correctedValue: string;
           /**
            * @description Correction reason.
-           * @example Avery was the speaker.
+           * @example User corrected conversation evidence during focused review.
            */
           reason: string;
           /**
            * @description Focused review item id.
-           * @example review:ab12
+           * @example review:da47aac4d2da3c20
            */
           reviewItemId: string;
         };
@@ -21995,6 +21998,120 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "intelligence": {
+           *         "claims": [
+           *           {
+           *             "captureCaveats": [
+           *               "Remote channel may contain multiple speakers."
+           *             ],
+           *             "confidence": 0.72,
+           *             "endMs": 16000,
+           *             "exactQuote": "We are concerned security could delay the renewal.",
+           *             "id": "claim:ab12",
+           *             "kind": "risk",
+           *             "material": true,
+           *             "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "speakerConfidence": 1,
+           *             "speakerId": "anonymous:remote-channel",
+           *             "speakerLabel": "Avery Chen",
+           *             "startMs": 12000,
+           *             "stateDimension": "risk",
+           *             "value": "Security review may delay renewal."
+           *           }
+           *         ],
+           *         "contradictionCases": [],
+           *         "deletionReceipts": [],
+           *         "delta": {
+           *           "changes": [],
+           *           "contradictions": [],
+           *           "fromVersion": 0,
+           *           "recommendationReason": "Security review was promised, but no owner or meeting exists.",
+           *           "toVersion": 4,
+           *           "uncertainClaimIds": [
+           *             "claim:ab12"
+           *           ]
+           *         },
+           *         "effectivePolicy": {
+           *           "capture": "require_consent",
+           *           "externalShare": true,
+           *           "legalHold": false,
+           *           "modelRoute": "local_only",
+           *           "policyVersion": "policy:ab12",
+           *           "publishEvidence": true,
+           *           "redactionClasses": [
+           *             "personal_identifier"
+           *           ],
+           *           "resolvedAt": "2026-07-31T14:00:00Z",
+           *           "retentionDays": 30,
+           *           "sourceLayerIds": [
+           *             "workspace:default"
+           *           ]
+           *         },
+           *         "governanceDecisions": [],
+           *         "governanceReceipts": [],
+           *         "liveCues": [],
+           *         "mutualActionPlans": [],
+           *         "observationPageHasMore": false,
+           *         "recommendationEvaluations": [],
+           *         "recoveryEvaluations": [],
+           *         "reviewItems": [
+           *           {
+           *             "claimId": "claim:ab12",
+           *             "confidence": 0.72,
+           *             "currentValue": "Security review may delay renewal.",
+           *             "exactQuote": "We are concerned security could delay the renewal.",
+           *             "id": "review:658c70e2b09ed264",
+           *             "kind": "claim",
+           *             "label": "Low-confidence material claim",
+           *             "observationId": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *             "stateDimension": "risk"
+           *           }
+           *         ]
+           *       },
+           *       "relationship": {
+           *         "accountDomain": "example.com",
+           *         "categories": [
+           *           "Artificial intelligence"
+           *         ],
+           *         "commitmentCount": 4,
+           *         "companyDescription": "Builds AI infrastructure for customer operations.",
+           *         "companyEnrichedAt": "2026-09-06T08:00:00Z",
+           *         "displayName": "Jordan Buyer",
+           *         "emailThreadCount": 12,
+           *         "engagement": "declining",
+           *         "health": "needs_attention",
+           *         "id": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *         "kind": "person",
+           *         "lastChangedAt": "2026-07-25T16:00:00Z",
+           *         "lastTouchAt": "2026-04-10T15:00:00Z",
+           *         "lifecycle": "evaluation",
+           *         "linkedinUrl": "https://www.linkedin.com/company/acme",
+           *         "milestones": [
+           *           "Proposal shared."
+           *         ],
+           *         "nextAction": "Confirm the security review owner.",
+           *         "nextActionAt": "2026-07-01T00:00:00Z",
+           *         "peopleCount": 3,
+           *         "primaryEmail": "buyer@example.com",
+           *         "projectedAt": "2026-07-25T16:00:00Z",
+           *         "projectorVersion": 2,
+           *         "resourceRefs": [
+           *           "hubspot:company:123"
+           *         ],
+           *         "risks": [
+           *           "Security review has no owner."
+           *         ],
+           *         "sentiment": "mixed",
+           *         "stateHash": "sha256:ab12cd34",
+           *         "stateReason": "Security review was promised, but no owner or meeting exists.",
+           *         "stateVersion": 4,
+           *         "status": "active",
+           *         "summary": "Asked for pricing in April; wants a follow-up in July."
+           *       }
+           *     }
+           */
           "application/json": {
             intelligence: components["schemas"]["RelationshipIntelligence"];
             relationship: components["schemas"]["RevenueRelationship"];

@@ -4407,6 +4407,73 @@ func assertReviewedCompany(t *testing.T, spec obj) {
 	if asObj(review)["example"] != nil {
 		t.Fatalf("conversation review sample changed: %#v", review)
 	}
+
+	assertConversationCorrection(t, spec)
+}
+
+func TestConversationCorrection(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertConversationCorrection(t, spec)
+}
+
+func assertConversationCorrection(t *testing.T, spec obj) {
+	t.Helper()
+	operation := asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/conversation-corrections"])["post"])
+	if operation["summary"] != "Correct reviewed conversation evidence" {
+		t.Fatalf("summary: %#v", operation["summary"])
+	}
+	if operation["description"] != "Correct sends the company id, the review item id, and the edited value. It always sends the focused-review reason." {
+		t.Fatalf("description: %#v", operation["description"])
+	}
+	params, ok := operation["parameters"].([]any)
+	if !ok || len(params) != 1 {
+		t.Fatalf("params: %#v", operation["parameters"])
+	}
+	param := asObj(params[0])
+	if param["name"] != "relationshipId" || param["example"] != conversationCorrectionCompanyID || asObj(param["schema"])["example"] != conversationCorrectionCompanyID {
+		t.Fatalf("param: %#v", param)
+	}
+	request := asObj(asObj(asObj(operation["requestBody"])["content"])["application/json"])
+	requestExample := asObj(request["example"])
+	if requestExample["reviewItemId"] != "review:da47aac4d2da3c20" || requestExample["correctedValue"] != conversationCorrectionValue || requestExample["reason"] != conversationCorrectionReason {
+		t.Fatalf("request: %#v", requestExample)
+	}
+	encoded, err := json.Marshal(requestExample)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(encoded), "Avery was the speaker.") || strings.Contains(string(encoded), "review:ab12") {
+		t.Fatalf("request still has the old sample: %s", encoded)
+	}
+	response := asObj(asObj(asObj(asObj(operation["responses"])["201"])["content"])["application/json"])
+	responseExample := asObj(response["example"])
+	relationship := asObj(responseExample["relationship"])
+	if relationship["id"] != conversationCorrectionCompanyID || relationship["health"] != "needs_attention" {
+		t.Fatalf("relationship: %#v", relationship)
+	}
+	intelligence := asObj(responseExample["intelligence"])
+	claims, ok := intelligence["claims"].([]any)
+	if !ok || len(claims) != 1 {
+		t.Fatalf("claims: %#v", intelligence["claims"])
+	}
+	claim := asObj(claims[0])
+	confidence, err := json.Marshal(claim["speakerConfidence"])
+	if err != nil || string(confidence) != "1" || claim["speakerLabel"] != conversationCorrectionValue {
+		t.Fatalf("speaker: %s %#v", confidence, claim)
+	}
+	items, ok := intelligence["reviewItems"].([]any)
+	if !ok || len(items) != 1 || asObj(items[0])["id"] != "review:658c70e2b09ed264" {
+		t.Fatalf("review items: %#v", intelligence["reviewItems"])
+	}
+	decisions := asObj(asObj(asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/conversation-decisions"])["post"])["requestBody"])["content"])
+	decisionExample := asObj(asObj(decisions["application/json"])["example"])
+	if decisionExample["reason"] != "Customer stated this directly." {
+		t.Fatalf("decision sample changed: %#v", decisionExample)
+	}
+	if asObj(asObj(asObj(spec["paths"])["/v1/relationships/{relationshipId}/acknowledgements"])["post"])["summary"] != "Acknowledge Mission Control state" {
+		t.Fatal("acknowledgement summary changed")
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

@@ -3200,6 +3200,40 @@ describe("API reference document", () => {
     expect(JSON.stringify(operation.requestBody)).not.toContain("sha256:ab12\"");
   });
 
+  it("samples the conversation Correct sends", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation =
+      presented.paths["/v1/relationships/{relationshipId}/conversation-corrections"].post;
+    const companyID = "9c8dfa9b-a7b2-46ea-982c-622a914c00e5";
+    expect(operation.summary).toBe("Correct a reviewed conversation");
+    expect(operation.description).toBe(
+      "Correct sends the company id, the review item id, and the edited value. It always sends the focused-review reason.",
+    );
+    expect(operation.parameters).toEqual([
+      expect.objectContaining({
+        name: "relationshipId",
+        example: companyID,
+        schema: expect.objectContaining({ example: companyID }),
+      }),
+    ]);
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      correctedValue: "Avery Chen",
+      reason: "User corrected conversation evidence during focused review.",
+      reviewItemId: "review:da47aac4d2da3c20",
+    });
+    const response = operation.responses["201"].content["application/json"].example;
+    expect(response.relationship.id).toBe(companyID);
+    expect(response.intelligence.claims[0]).toMatchObject({
+      speakerLabel: "Avery Chen",
+      speakerConfidence: 1,
+    });
+    expect(response.intelligence.reviewItems.map((item: { id: string }) => item.id)).toEqual([
+      "review:658c70e2b09ed264",
+    ]);
+    expect(JSON.stringify(operation.requestBody)).not.toContain("Avery was the speaker.");
+    expect(JSON.stringify(operation.requestBody)).not.toContain("review:ab12");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");
