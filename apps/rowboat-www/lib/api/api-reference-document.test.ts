@@ -1564,6 +1564,23 @@ describe("API reference document", () => {
     ).toBe("suppression.opted_out");
   });
 
+  it("samples the rejected recommendation Reject stores", () => {
+    const presented = presentApiReferenceDocument(spec);
+    const operation = presented.paths["/v1/relationship-recommendations/{actionId}/reject"].post;
+    expect(operation.summary).toBe("Reject");
+    expect(operation.operationId).toBe("rejectRelationshipRecommendation");
+    expect(operation.requestBody.content["application/json"].example).toEqual({
+      reason: "Not the right next move",
+    });
+    expect(operation.responses["200"].content["application/json"].example).toMatchObject({
+      approvalStatus: "rejected",
+      queueStatus: "open",
+      reason: "They asked for a follow-up in July.",
+    });
+    expect(operation.responses["200"].content["application/json"].example.approvedAt).toBeUndefined();
+    expect(presented.components.schemas.RevenueAction.properties.approvalStatus.example).toBe("pending");
+  });
+
   it("says the reference could not be loaded when the spec is missing", () => {
     const page = renderApiReferencePage(null);
     expect(page).toContain("The API reference could not be loaded.");

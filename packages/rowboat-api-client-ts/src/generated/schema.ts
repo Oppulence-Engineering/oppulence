@@ -1794,8 +1794,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Reject a recommendation
-     * @description Relationship-intelligence alias for rejecting the current action revision.
+     * Reject
+     * @description Reject posts Not the right next move. The stored recommendation is rejected, and it stays open in the queue.
      */
     post: operations["rejectRelationshipRecommendation"];
     delete?: never;
@@ -18709,13 +18709,13 @@ export interface operations {
       content: {
         /**
          * @example {
-         *       "reason": "Not the right next move."
+         *       "reason": "Not the right next move"
          *     }
          */
         "application/json": {
           /**
            * @description Rejection reason.
-           * @example Not the right next move.
+           * @example Not the right next move
            */
           reason: string;
         };
@@ -18728,6 +18728,33 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          /**
+           * @example {
+           *       "actionType": "warm_follow_up",
+           *       "approvalStatus": "rejected",
+           *       "channel": "email",
+           *       "createdAt": "2026-07-12T12:00:00Z",
+           *       "detector": "requested_follow_up_due",
+           *       "evidence": [],
+           *       "executionMode": "draft",
+           *       "executionOwner": "rowboat",
+           *       "executionStatus": "pending",
+           *       "id": "1a8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "policyStatus": "pending",
+           *       "priorityScore": 82,
+           *       "proposedMessage": "Hi Jordan — you asked me to circle back this month...",
+           *       "proposedSubject": "Following up as promised",
+           *       "queueStatus": "open",
+           *       "reason": "They asked for a follow-up in July.",
+           *       "recipientEmail": "buyer@example.com",
+           *       "relationshipId": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+           *       "relationshipName": "Acme",
+           *       "revision": 1,
+           *       "revisionHash": "sha256:ab12...",
+           *       "senderAccountRef": "gmail:me@company.com",
+           *       "updatedAt": "2026-07-12T12:04:00Z"
+           *     }
+           */
           "application/json": components["schemas"]["RevenueAction"];
         };
       };

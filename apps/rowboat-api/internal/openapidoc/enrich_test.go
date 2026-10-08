@@ -1671,6 +1671,41 @@ func assertPolicyRecheck(t *testing.T, spec obj) {
 	if asObj(reasons["items"])["example"] != "suppression.opted_out" {
 		t.Fatalf("shared reason code changed: %#v", reasons["items"])
 	}
+
+	assertRecommendationReject(t, spec)
+}
+
+func TestRecommendationRejectStoresRejected(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	assertRecommendationReject(t, spec)
+}
+
+func assertRecommendationReject(t *testing.T, spec obj) {
+	t.Helper()
+	op := asObj(asObj(asObj(spec["paths"])["/v1/relationship-recommendations/{actionId}/reject"])["post"])
+	if op["summary"] != "Reject" || op["operationId"] != "rejectRelationshipRecommendation" {
+		t.Fatalf("recommendation reject: summary=%#v id=%#v", op["summary"], op["operationId"])
+	}
+	description, _ := op["description"].(string)
+	if !strings.Contains(description, "Not the right next move") || !strings.Contains(description, "stays open") {
+		t.Fatalf("recommendation reject description: %q", description)
+	}
+	request := asObj(asObj(asObj(asObj(op["requestBody"])["content"])["application/json"])["example"])
+	if request["reason"] != "Not the right next move" {
+		t.Fatalf("recommendation reject request: %#v", request)
+	}
+	example := asObj(asObj(asObj(asObj(asObj(op["responses"])["200"])["content"])["application/json"])["example"])
+	if example["approvalStatus"] != "rejected" || example["queueStatus"] != "open" || example["reason"] != "They asked for a follow-up in July." || !openAPIIntEqual(example["revision"], 1) {
+		t.Fatalf("rejected recommendation: %#v", example)
+	}
+	if _, ok := example["approvedAt"]; ok {
+		t.Fatalf("reject does not approve: %#v", example["approvedAt"])
+	}
+	props := asObj(asObj(asObj(asObj(spec["components"])["schemas"])["RevenueAction"])["properties"])
+	if asObj(props["approvalStatus"])["example"] != "pending" {
+		t.Fatalf("shared approval example changed: %#v", props["approvalStatus"])
+	}
 }
 
 func TestCommitmentEventNamesTheObservation(t *testing.T) {

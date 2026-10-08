@@ -857,8 +857,8 @@ export const getRejectRelationshipRecommendationUrl = (actionId: string) => {
 };
 
 /**
- * Relationship-intelligence alias for rejecting the current action revision.
- * @summary Reject a recommendation
+ * Reject posts Not the right next move. The stored recommendation is rejected, and it stays open in the queue.
+ * @summary Reject
  */
 export const rejectRelationshipRecommendation = async (
   actionId: string,

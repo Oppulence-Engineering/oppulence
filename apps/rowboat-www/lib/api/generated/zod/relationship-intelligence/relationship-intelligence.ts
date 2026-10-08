@@ -2086,8 +2086,8 @@ export const ApproveRelationshipRecommendation409Response = zod
   );
 
 /**
- * Relationship-intelligence alias for rejecting the current action revision.
- * @summary Reject a recommendation
+ * Reject posts Not the right next move. The stored recommendation is rejected, and it stays open in the queue.
+ * @summary Reject
  */
 export const RejectRelationshipRecommendationParams = zod.object({
   actionId: zod.uuid().describe("Recommendation\/action id."),
