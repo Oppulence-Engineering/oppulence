@@ -16,9 +16,11 @@ const (
 	openedCompanyProjectedAt   = "2026-07-25T16:00:00Z"
 	// The sheet's Description row prints this sentence.
 	openedCompanyDescription = "Builds AI infrastructure for customer operations."
+	// The sheet Email row prints this address. With it missing the row says Not filled in.
+	openedCompanyEmail = "avery@acme.com"
 )
 
-const openedCompanyOperationDescription = "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source."
+const openedCompanyOperationDescription = "The company sheet loads one company. The request sends that company id and no query. Acme comes back with its people, email threads, and promises. The description says it builds AI infrastructure for customer operations. Each detail came from a connected source. The email is avery@acme.com."
 
 func openedCompanyParams() []any {
 	return []any{obj{
@@ -59,13 +61,14 @@ func openedCompanySheetExample() obj {
 			"milestones":         empty,
 			"resourceRefs":       empty,
 			"categories":         empty,
+			"primaryEmail":     openedCompanyEmail,
 		},
 		"actions":         empty,
 		"recommendations": empty,
 		"participants": []any{obj{
 			"id":           openedCompanyParticipantID,
 			"displayName":  "Avery Chen",
-			"email":        "avery@acme.com",
+			"email":        openedCompanyEmail,
 			"role":         "champion",
 			"active":       true,
 			"externalRefs": empty,
